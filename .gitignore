@@ -1,0 +1,12 @@
+*~
+*.o
+*.hi
+*.dyn_o
+*.dyn_hi
+*.swp
+.cabal-sandbox/
+cabal.sandbox.config
+*packages.conf.d/
+packages/
+.stack-work
+/dist
