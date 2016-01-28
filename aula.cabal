@@ -2,7 +2,7 @@ name:                aula
 version:             0.1.0
 -- synopsis:
 -- description:
-license:             AGPL-3
+license:             AGPL
 license-file:        LICENSE
 author:              Matthias Fischmann
 maintainer:          mf@zerobuzz.net
