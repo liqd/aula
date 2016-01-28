@@ -12,10 +12,8 @@ build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 
-executable aula
-  main-is:
-      Main.hs
-  other-modules:
+library
+  exposed-modules:
       Config
     , Frontend
     , Transaction
@@ -23,17 +21,51 @@ executable aula
   build-depends:
       base >=4.8 && <4.9
     , acid-state
+    , blaze-html
+    , bytestring
+    , cassava
     , containers
+    , cookie
     , lens
     , mtl
+    , postgresql-simple
     , safecopy
+    , scrypt
     , servant
     , servant-server
-    , servant-session
+    -- , servant-session
     , string-conversions
     , text
     , time
   hs-source-dirs:
       src
+  default-language:
+      Haskell2010
+
+executable aula
+  main-is:
+      Aula.hs
+  hs-source-dirs:
+      exec
+  build-depends:
+      base >=4.8 && <4.9
+    , aula
+  default-language:
+      Haskell2010
+
+executable importusers
+  main-is:
+    ImportUsers.hs
+  hs-source-dirs:
+      exec
+  build-depends:
+      base >=4.8 && <4.9
+    , aula
+    , bytestring
+    , cassava
+    , nonce
+    , postgresql-simple
+    , text
+    , vector
   default-language:
       Haskell2010

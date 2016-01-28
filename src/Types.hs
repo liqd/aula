@@ -1,16 +1,21 @@
 {-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 
 module Types
 where
 
 import Control.Lens (makeLenses)
+-- import Crypto.Scrypt (EncryptedPass)
 import Data.SafeCopy
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time (UTCTime)
 import GHC.Generics
 
+import Database.PostgreSQL.Simple.ToField (ToField)
+
+import qualified Data.Csv as CSV
 import qualified Data.Text as ST
 
 
@@ -28,9 +33,9 @@ data IdeaSpace = IdeaSpace
     , _ideaSpaceMeta      :: MetaInfo
     , _ideaSpaceTitle     :: ST
     , _ideaSpaceText      :: ST
-    , _ideaSpacePhase     :: Phase
+    , _ideaSpacePhase     :: IdeaSpacePhase
     , _ideaSpaceWildIdeas :: Set Idea
-    , _ideaSpaceTopics    :: Set (IdeaSpace Topic)
+    -- , _ideaSpaceTopics    :: Set (IdeaSpace Topic)
     }
   deriving (Show, Eq, Ord, Generic)
 
@@ -41,11 +46,11 @@ data IdeaSpaceType =
   deriving (Show, Eq, Ord, Generic)
 
 data IdeaSpacePhase =
-    WildIdeas       -- ^ "Wilde-Ideen-Sammlung"
-  | EditTopics      -- ^ "Ausarbeitungsphase"
-  | FixFeasibility  -- ^ "Prüfungsphase"
-  | Vote            -- ^ "Abstimmungsphase"
-  | Finished        -- ^ "Ergebnisphase"
+    PhaseWildIdeas       -- ^ "Wilde-Ideen-Sammlung"
+  | PhaseEditTopics      -- ^ "Ausarbeitungsphase"
+  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
+  | PhaseVote            -- ^ "Abstimmungsphase"
+  | PhaseFinished        -- ^ "Ergebnisphase"
   deriving (Show, Eq, Ord, Generic)
 
 -- | "Idee".
@@ -89,16 +94,21 @@ data User = User
     { _userMeta           :: MetaInfo
     , _userId             :: UserId
     , _userName           :: ST
-    , _userPassword       :: ...
-    , _userEmail          :: ...
-    , _userInDeletations  :: Set UserId
-    , _userOutDeletations :: Set UserId
+    , _userPassword       :: EncryptedPass
+    , _userEmail          :: Maybe Email
+    -- should probably not be included in user type but looked up as needed
+    -- , _userInDelegations  :: Set UserId
+    -- , _userOutDelegations :: Set UserId
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Generic)
 
 data UserId = UserId Int
   deriving (Show, Eq, Ord, Generic)
 
+newtype EncryptedPass = EncrypedPass SBS
+
+newtype Email = Email ST -- TODO: replace by structured email type
+    deriving (Eq, Ord, Show, ToField, CSV.FromField)
 
 makeLenses ''MetaInfo
 makeLenses ''IdeaSpace
@@ -109,13 +119,3 @@ makeLenses ''Comment
 makeLenses ''Vote
 makeLenses ''User
 makeLenses ''UserId
-
-$(deriveSafeCopy 0 'base ''MetaInfo)
-$(deriveSafeCopy 0 'base ''IdeaSpace)
-$(deriveSafeCopy 0 'base ''IdeaSpaceType)
-$(deriveSafeCopy 0 'base ''Idea)
-$(deriveSafeCopy 0 'base ''Category)
-$(deriveSafeCopy 0 'base ''Comment)
-$(deriveSafeCopy 0 'base ''Vote)
-$(deriveSafeCopy 0 'base ''User)
-$(deriveSafeCopy 0 'base ''UserId)
