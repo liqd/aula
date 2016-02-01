@@ -1,65 +1,82 @@
-{-# LANGUAGE DeriveGeneric    #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE DataKinds                   #-}
+{-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
+{-# LANGUAGE KindSignatures              #-}
+{-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE ViewPatterns                #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans -Wall -Werror #-}
 
 module Types
 where
 
 import Control.Lens (makeLenses)
-import Data.SafeCopy
+import Control.Monad
+-- import Crypto.Scrypt (EncryptedPass)
+import Data.Binary
+import Data.Char
 import Data.Set (Set)
 import Data.String.Conversions
-import Data.Time (UTCTime)
+import Data.Time
 import GHC.Generics
 
-import qualified Data.Text as ST
+import Database.PostgreSQL.Simple.ToField (ToField)
 
+import qualified Data.Csv as CSV
+
+
+-- | Globally Unique ID (for reference in the database).  (FIXME: should we have different id types
+-- for different object types?)
+type GUID = Integer
 
 data MetaInfo = MetaInfo
-    { _metaCreatedBy :: UserId
-    , _metaCreatedAt :: UTCTime
-    , _metaChangedBy :: UserId
-    , _metaChangedAt :: UTCTime
+    { _metaId        :: GUID
+    , _metaCreatedBy :: GUID
+    , _metaCreatedAt :: Timestamp
+    , _metaChangedBy :: GUID
+    , _metaChangedAt :: Timestamp
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+newtype Article = Article { fromArticle :: [ST] }
+  deriving (Eq, Ord, Show, Read, Generic)
 
 -- | "Ideenraum" is one of "Thema", "Klasse", "Schule".
-data IdeaSpace = IdeaSpace
-    { _ideaSpaceType      :: IdeaSpaceType
-    , _ideaSpaceMeta      :: MetaInfo
+data IdeaSpace (a :: IdeaSpaceType) = IdeaSpace
+    { _ideaSpaceMeta      :: MetaInfo
     , _ideaSpaceTitle     :: ST
-    , _ideaSpaceText      :: ST
-    , _ideaSpacePhase     :: Phase
+    , _ideaSpaceArticle   :: Article
+    , _ideaSpacePhase     :: IdeaSpacePhase
     , _ideaSpaceWildIdeas :: Set Idea
-    , _ideaSpaceTopics    :: Set (IdeaSpace Topic)
+    , _ideaSpaceTopics    :: Maybe (Set (IdeaSpace 'Topic))
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Read, Generic)
 
 data IdeaSpaceType =
     Topic
   | Class
   | School
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 data IdeaSpacePhase =
-    WildIdeas       -- ^ "Wilde-Ideen-Sammlung"
-  | EditTopics      -- ^ "Ausarbeitungsphase"
-  | FixFeasibility  -- ^ "Prüfungsphase"
-  | Vote            -- ^ "Abstimmungsphase"
-  | Finished        -- ^ "Ergebnisphase"
-  deriving (Show, Eq, Ord, Generic)
+    PhaseWildIdeas       -- ^ "Wilde-Ideen-Sammlung"
+  | PhaseEditTopics      -- ^ "Ausarbeitungsphase"
+  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
+  | PhaseVote            -- ^ "Abstimmungsphase"
+  | PhaseFinished        -- ^ "Ergebnisphase"
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
--- | "Idee".
+-- | "Idee"
 data Idea = Idea
     { _ideaMeta       :: MetaInfo
-    , _ideaSpace      :: IdeaSpace
     , _ideaTitle      :: ST
-    , _ideaText       :: ST
+    , _ideaArticle    :: Article
     , _ideaCategory   :: Category
     , _ideaComments   :: Set Comment
     , _ideaVotes      :: Set Vote
     , _ideaInfeasible :: Maybe ST  -- ^ Reason for infisibility, if any.
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Read, Generic)
 
 -- | "Kategorie"
 data Category =
@@ -68,54 +85,95 @@ data Category =
   | CatClass        -- ^ "Unterricht"
   | CatTime         -- ^ "Zeit"
   | CatEnvironment  -- ^ "Umgebung"
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 -- | "Verbesserungsvorschlag"
 data Comment = Comment
-    { _commentMeta  :: MetaInfo
-    , _commentText  :: ST
-    , _commentVotes :: Set Vote
+    { _commentMeta    :: MetaInfo
+    , _commentArticle :: Article
+    , _commentVotes   :: Set Vote
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Read, Generic)
 
 -- | "Stimme"
 data Vote = Vote
     { _voteMeta  :: MetaInfo
     , _voteValue :: Maybe Bool
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Read, Generic)
 
 data User = User
     { _userMeta           :: MetaInfo
-    , _userId             :: UserId
     , _userName           :: ST
-    , _userPassword       :: ...
-    , _userEmail          :: ...
-    , _userInDeletations  :: Set UserId
-    , _userOutDeletations :: Set UserId
+    , _userPassword       :: EncryptedPass
+    , _userEmail          :: Maybe Email
     }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Read, Generic)
 
-data UserId = UserId Int
-  deriving (Show, Eq, Ord, Generic)
+newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
+  deriving (Eq, Ord, Show, Read, Generic)
 
+newtype Email = Email ST -- TODO: replace by structured email type
+    deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic)
+
+-- | "Beauftragung"
+data Delegation = Delegation
+    { _delegationFrom :: GUID
+    , _delegationTo   :: GUID
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
+  deriving (Eq, Ord, Generic)
 
 makeLenses ''MetaInfo
+makeLenses ''Article
 makeLenses ''IdeaSpace
 makeLenses ''IdeaSpaceType
+makeLenses ''IdeaSpacePhase
 makeLenses ''Idea
 makeLenses ''Category
 makeLenses ''Comment
 makeLenses ''Vote
 makeLenses ''User
-makeLenses ''UserId
+makeLenses ''EncryptedPass
+makeLenses ''Email
+makeLenses ''Delegation
 
-$(deriveSafeCopy 0 'base ''MetaInfo)
-$(deriveSafeCopy 0 'base ''IdeaSpace)
-$(deriveSafeCopy 0 'base ''IdeaSpaceType)
-$(deriveSafeCopy 0 'base ''Idea)
-$(deriveSafeCopy 0 'base ''Category)
-$(deriveSafeCopy 0 'base ''Comment)
-$(deriveSafeCopy 0 'base ''Vote)
-$(deriveSafeCopy 0 'base ''User)
-$(deriveSafeCopy 0 'base ''UserId)
+instance Binary MetaInfo
+instance Binary Article
+instance Binary (IdeaSpace a)
+instance Binary IdeaSpaceType
+instance Binary IdeaSpacePhase
+instance Binary Idea
+instance Binary Category
+instance Binary Comment
+instance Binary Vote
+instance Binary User
+instance Binary EncryptedPass
+instance Binary Email
+instance Binary Delegation
+
+instance Binary Timestamp where
+    put (Timestamp t) = put $ show t
+    get = get >>= maybe mzero return . parseTimestamp
+
+instance Show Timestamp where
+    show = show . renderTimestamp
+
+instance Read Timestamp where
+    readsPrec _ s = case splitAt (timestampFormatLength + 2) $ dropWhile isSpace s of
+        (parseTimestamp . read -> Just t, r) -> [(t, r)]
+        _                             -> error $ "Read Timestamp: " ++ show s
+
+parseTimestamp :: String -> Maybe Timestamp
+parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat
+
+renderTimestamp :: Timestamp -> String
+renderTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
+
+timestampFormat :: String
+timestampFormat = "%F_%T_%q"
+
+timestampFormatLength :: Int
+timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)

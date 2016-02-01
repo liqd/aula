@@ -1,41 +1,38 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module Transaction where
 
 import Control.Lens
-import Control.Monad.Reader (ask)
-import Control.Monad.State (get, put, modify)
-import Data.Acid
-import Data.Monoid
-import Data.SafeCopy
-import Data.Set (Set)
+import Control.Monad (void)
+import Data.String (fromString)
+import Data.Text (Text)
+import Control.Applicative ((<$>))
 
 import qualified Data.Set as Set
+
+import Data.ByteString (ByteString)
 
 import Types
 
 import qualified Config
 
+import Database.PostgreSQL.Simple (Connection, execute_, execute)
 
-data Db = Db
-    { _dbIdeas :: Set Idea
-    }
-  deriving (Show)
+dbName :: ByteString
+dbName = "auladb"
 
-makeLenses ''Db
+schemaFile :: FilePath
+schemaFile = "./schema/schema.sql"
 
-instance Monoid Db where
-  mempty = Db Set.empty
-  Db s1 `mappend` Db s2 = Db $ s1 <> s2
+createDB :: Connection -> IO ()
+createDB conn = do
+    schema <- readFile schemaFile
+    void $ execute_ conn (fromString schema)
 
-$(deriveSafeCopy 0 'base ''Db)
-
-addIdea :: Idea -> Update Db ()
-addIdea idea = modify $ dbIdeas %~ (Set.insert idea)
-
-viewIdeas :: Query Db (Set Idea)
-viewIdeas = (^. dbIdeas) <$> ask
-
-$(makeAcidic ''Db ['addIdea, 'viewIdeas])
+createUser :: Connection -> ByteString -> Text -> Maybe Email -> IO ()
+createUser conn pw name email =
+    -- TODO: make up password
+    void $ execute conn "INSERT INTO users (name, email, password) VALUES (?, ?, ?)" (name, email, pw)
