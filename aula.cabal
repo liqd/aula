@@ -21,19 +21,25 @@ library
   build-depends:
       base >=4.8 && <4.9
     , acid-state
+    , binary
     , blaze-html
+    , blaze-markup
     , bytestring
     , cassava
     , containers
     , cookie
+    , directory
     , lens
     , mtl
     , postgresql-simple
+    , pretty-show
+    , QuickCheck
+    , quickcheck-instances
     , safecopy
     , scrypt
     , servant
+    , servant-blaze
     , servant-server
-    -- , servant-session
     , string-conversions
     , text
     , time

@@ -1,0 +1,10 @@
+body {
+    max-width: 90%;
+    align: middle;
+    margin: 25px;
+}
+
+div {
+    background: yellow;
+    vertical-align: baseline;
+}
