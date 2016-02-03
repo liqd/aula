@@ -126,34 +126,6 @@ data Delegation = Delegation
 newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
 
-makeLenses ''MetaInfo
-makeLenses ''Article
-makeLenses ''IdeaSpace
-makeLenses ''IdeaSpaceType
-makeLenses ''IdeaSpacePhase
-makeLenses ''Idea
-makeLenses ''Category
-makeLenses ''Comment
-makeLenses ''Vote
-makeLenses ''User
-makeLenses ''EncryptedPass
-makeLenses ''Email
-makeLenses ''Delegation
-
-instance Binary MetaInfo
-instance Binary Article
-instance Binary (IdeaSpace a)
-instance Binary IdeaSpaceType
-instance Binary IdeaSpacePhase
-instance Binary Idea
-instance Binary Category
-instance Binary Comment
-instance Binary Vote
-instance Binary User
-instance Binary EncryptedPass
-instance Binary Email
-instance Binary Delegation
-
 instance Binary Timestamp where
     put (Timestamp t) = put $ show t
     get = get >>= maybe mzero return . parseTimestamp
@@ -177,3 +149,31 @@ timestampFormat = "%F_%T_%q"
 
 timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
+
+instance Binary MetaInfo
+instance Binary Article
+instance Binary (IdeaSpace a)
+instance Binary IdeaSpaceType
+instance Binary IdeaSpacePhase
+instance Binary Idea
+instance Binary Category
+instance Binary Comment
+instance Binary Vote
+instance Binary User
+instance Binary EncryptedPass
+instance Binary Email
+instance Binary Delegation
+
+makeLenses ''MetaInfo
+makeLenses ''Article
+makeLenses ''IdeaSpace
+makeLenses ''IdeaSpaceType
+makeLenses ''IdeaSpacePhase
+makeLenses ''Idea
+makeLenses ''Category
+makeLenses ''Comment
+makeLenses ''Vote
+makeLenses ''User
+makeLenses ''EncryptedPass
+makeLenses ''Email
+makeLenses ''Delegation
