@@ -10,123 +10,6 @@
 module Types
 where
 
-{-
-
->>> NOTES BEFORE THE PAD:
-
-
-"Article" -> "Document".  make it markdownable.
-
-"ideaSpaceArticle" => "ideaSpacePhase".
-
-should "IdeaSpacePhase" be a field in "IdeaSpace"?  call it "Phase"!
-
-should "IdeaSpaceType" be a type parameter?
-
-ideaVotes is there, but ideaLikes missing.  type Like = (Bool, UserId).  think of a better name for Like.  Star?  Endorsement?  Interest?
-
-ideaInfeasible :: Maybe (Bool, Document, MetaInfo?, ...?)
-
-data Comment = Comment { ..., _commentReplies :: Set Comment, ... }
-
-_voteValue: make ternary ADT, not 'Maybe Bool'
-
-votes in comments can't be neutral.  that's yet another type.  IdeaVote, CommentVote.
-
-
-
-
-
-questions for product owner:
- - ideas have a single author.  is that correct.
- - abuse button for ideas?
- - full names or nicks.
-
-
->>> NOTES FROM THE PAD:
-
-
-data User = User
-    { _userMeta           :: MetaInfo
-    , _userLogin                   :: ST
-    , _userFullName           :: (ST, ST)
-    , _userAvatar  :: Image  -- dummy type.
-    , _userGroups      :: [Group]
-    , _userPassword       :: EncryptedPass
-    , _userEmail          :: Maybe Email
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-newtype Email = Email ST -- TODO: replace by structured email type
-    deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic- | Globally Unique ID (for reference in the database).  (FIXME: should we have different id types
--- for different object types?)
-newtype GUID a = GUID Integer
-data Group = Admin | Moderator | Principal | Student | Guest | InClass Class
-
-data Class =
-  { _className :: ST
-   , _classYear :: Year
-   }
-
-[Student, InClass "7a"]
-
-
-data MetaInfo = MetaInfo
-                  { _metaId        :: GUID
-                  , _metaCreatedBy :: GUID ////use  USER
-                  , _metaCreatedAt :: Timestamp
-                  , _metaChangedBy :: GUID
-                  , _metaChangedAt :: Timestamp
-                  }                              deriving (Eq, Ord, Show, Read, Generic)
-
-
--- | "Beauftragung"
-data Delegation = Delegation
-                  { _delegationMeta :: MetaInfo
-                  , _delegationIdeaSpace :: GUID  -- FIXME: can you delegate for particular Idea?  how do we express that?  do we need delegation on topic?
-                  , _delegationFrom :: GUID
-                  , _delegationTo   :: GUID
-                  }                              deriving (Eq, Ord, Show, Read, Generic)
-
-
-
-topics are just tags.  does that work?  either way make topics separate data type and an idea should have a relation with a topic.
-
-IdeaSpaceType lacks info about school class.
-
-
-data IdeaSpaceType = Class Class | School
-
-idea has a `Maybe Topic`.  Topic has name, description, image, meta.
-
-
-
-data IdeaSpacePhase =
-    PhaseWildIdeas       -- ^ "Wilde-Ideen-Sammlung"
-  | PhaseEditTopics      -- ^ "Ausarbeitungsphase"
-  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
-  | PhaseVote            -- ^ "Abstimmungsphase"
-  | PhaseFinished        -- ^ "Ergebnisphase"
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
-
-
-- treat this per idea, not IdeaSpace.
-- all more rigid phase transition rules can be implemented with that.
-- example: FixFeasibility is over for topic once all ideas have left FixFeasibility phase.
-
-
-
-
-
-
-
-
-
--}
-
 import Control.Lens (makeLenses)
 import Control.Monad
 -- import Crypto.Scrypt (EncryptedPass)
@@ -144,38 +27,63 @@ import qualified Data.Csv as CSV
 
 -- | Globally Unique ID (for reference in the database).  (FIXME: should we have different id types
 -- for different object types?)
-type GUID = Integer
+newtype GUID a = GUID Integer
+  deriving (Eq, Ord, Show, Read, Generic)
 
-data MetaInfo = MetaInfo
-    { _metaId        :: GUID
-    , _metaCreatedBy :: GUID
+data MetaInfo a = MetaInfo
+    { _metaId        :: GUID a
+    , _metaCreatedBy :: GUID User
     , _metaCreatedAt :: Timestamp
-    , _metaChangedBy :: GUID
+    , _metaChangedBy :: GUID User
     , _metaChangedAt :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-newtype Article = Article { fromArticle :: [ST] }
+-- | Markdown content.
+newtype Document = Document { fromDocument :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
 
--- | "Ideenraum" is one of "Thema", "Klasse", "Schule".
-data IdeaSpace (a :: IdeaSpaceType) = IdeaSpace
-    { _ideaSpaceMeta      :: MetaInfo
-    , _ideaSpaceTitle     :: ST
-    , _ideaSpaceArticle   :: Article
-    , _ideaSpacePhase     :: IdeaSpacePhase
-    , _ideaSpaceWildIdeas :: Set Idea
-    , _ideaSpaceTopics    :: Maybe (Set (IdeaSpace 'Topic))
+-- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
+-- every school year.)
+data SchoolClass = SchoolClass
+    { _className       :: ST  -- ^ e.g. "7a"
+    , _classSchoolYear :: ST  -- ^ e.g. "2015/16"
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 data IdeaSpaceType =
-    Topic
-  | Class
-  | School
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+    ISSchool
+  | ISClass SchoolClass
+  deriving (Eq, Ord, Show, Read, Generic)
 
-data IdeaSpacePhase =
+data Topic = Topic
+    { _topicMeta  :: MetaInfo Topic
+    , _topicName  :: ST
+    , _topicDesc  :: Document
+    , _topicImage :: PNG
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+-- | "Ideenraum" is one of "Thema", "Klasse", "Schule".
+data IdeaSpace = IdeaSpace
+    { _ideaSpaceMeta      :: MetaInfo IdeaSpace
+    , _ideaSpaceTitle     :: ST
+    , _ideaSpaceType      :: IdeaSpaceType  -- ^ (FIXME: Can we do this on the type level?
+                                            -- 'SchoolClass' can't be lifted, though.)
+    , _ideaSpaceDesc      :: Document
+    , _ideaSpaceWildIdeas :: Set Idea
+    , _ideaSpaceTopics    :: Set Topic
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+
+-- | Process phases are a property of 'Idea'.
+--
+-- FIXME: How do we express that FixFeasibility is over for a Topic, not just a few of its 'Ideas'?
+-- The rule is that once all ideas have left FixFeasibility phase, the Topic leaves the phsae.  This
+-- rule can be expressed in terms of the current data model ("only ideas have phases"), but there
+-- may be a better way.
+data Phase =
     PhaseWildIdeas       -- ^ "Wilde-Ideen-Sammlung"
   | PhaseEditTopics      -- ^ "Ausarbeitungsphase"
   | PhaseFixFeasibility  -- ^ "Prüfungsphase"
@@ -185,15 +93,41 @@ data IdeaSpacePhase =
 
 -- | "Idee"
 data Idea = Idea
-    { _ideaMeta       :: MetaInfo
+    { _ideaMeta       :: MetaInfo Idea
     , _ideaTitle      :: ST
-    , _ideaArticle    :: Article
+    , _ideaDesc       :: Document
     , _ideaCategory   :: Category
+    , _ideaPhase      :: Phase
+    , _ideaTopic      :: Maybe Topic
     , _ideaComments   :: Set Comment
-    , _ideaVotes      :: Set Vote
-    , _ideaInfeasible :: Maybe ST  -- ^ Reason for infisibility, if any.
+    , _ideaLikes      :: Set Like
+    , _ideaVotes      :: Set IdeaVote
+    , _ideaFeasible   :: Maybe Feasible
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+data Feasible = Feasible
+    { _feasibleMeta   :: MetaInfo Feasible
+    , _feasibleValue  :: Bool
+    , _feasibleReason :: Document
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+-- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
+data Like = Like
+    { _likeMeta  :: MetaInfo Like
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+-- | "Stimme" for "Idee".  As opposed to 'CommentVote', which doesn't have neutral.
+data IdeaVote = IdeaVote
+    { _ideaVoteMeta  :: MetaInfo IdeaVote
+    , _ideaVoteValue :: IdeaVoteValue
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+data IdeaVoteValue = IdeaVoteYes | IdeaVoteNo | IdeaVoteNeutral
+  deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 -- | "Kategorie"
 data Category =
@@ -205,38 +139,63 @@ data Category =
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 -- | "Verbesserungsvorschlag"
+--
+-- 'Comments' are hierarchical.  The application logic is responsible for putting some limit on the
+-- recursion depth under which all children become siblings.  (FIXME: or should we represent this in
+-- the types?)
 data Comment = Comment
-    { _commentMeta    :: MetaInfo
-    , _commentArticle :: Article
-    , _commentVotes   :: Set Vote
+    { _commentMeta    :: MetaInfo Comment
+    , _commentText    :: Document
+    , _commentVotes   :: Set Comment
+    , _commentReplies :: Set CommentVote
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
--- | "Stimme"
-data Vote = Vote
-    { _voteMeta  :: MetaInfo
-    , _voteValue :: Maybe Bool
+-- | "Stimme" for "Idee"
+data CommentVote = CommentVote
+    { _commentVoteMeta  :: MetaInfo CommentVote
+    , _commentVoteValue :: Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 data User = User
-    { _userMeta           :: MetaInfo
-    , _userName           :: ST
-    , _userPassword       :: EncryptedPass
-    , _userEmail          :: Maybe Email
+    { _userMeta     :: MetaInfo User
+    , _userLogin    :: ST
+    , _userFullName :: (ST, ST)
+    , _userAvatar   :: PNG
+    , _userGroups   :: [Group]  -- ^ (could be a set)
+    , _userPassword :: EncryptedPass
+    , _userEmail    :: Maybe Email
     }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+-- | Dummy for PNG images.  FIXME: use type from juicypixels?
+type PNG = ()
+
+data Group =
+    Admin
+  | Moderator
+  | Principal
+  | Student
+  | Guest
+  | InClass SchoolClass
   deriving (Eq, Ord, Show, Read, Generic)
 
 newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
 
-newtype Email = Email ST -- TODO: replace by structured email type
+-- | FIXME: replace with structured email type.
+newtype Email = Email ST
     deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"
+--
+-- TODO: do we nee delegation by 'Idea'?  by 'ISTopic'?
 data Delegation = Delegation
-    { _delegationFrom :: GUID
-    , _delegationTo   :: GUID
+    { _delegationMeta      :: MetaInfo Delegation
+--    , _delegationIdeaSpace :: GUID (IdeaSpace a)  -- FIXME
+    , _delegationFrom      :: GUID User
+    , _delegationTo        :: GUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -267,30 +226,43 @@ timestampFormat = "%F_%T_%q"
 timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 
-instance Binary MetaInfo
-instance Binary Article
-instance Binary (IdeaSpace a)
-instance Binary IdeaSpaceType
-instance Binary IdeaSpacePhase
-instance Binary Idea
 instance Binary Category
 instance Binary Comment
-instance Binary Vote
-instance Binary User
-instance Binary EncryptedPass
-instance Binary Email
+instance Binary CommentVote
 instance Binary Delegation
+instance Binary Document
+instance Binary Email
+instance Binary EncryptedPass
+instance Binary Feasible
+instance Binary Group
+instance Binary (GUID a)
+instance Binary Idea
+instance Binary IdeaSpace
+instance Binary IdeaSpaceType
+instance Binary IdeaVote
+instance Binary IdeaVoteValue
+instance Binary Like
+instance Binary (MetaInfo a)
+instance Binary Phase
+instance Binary SchoolClass
+instance Binary Topic
+instance Binary User
 
-makeLenses ''MetaInfo
-makeLenses ''Article
-makeLenses ''IdeaSpace
-makeLenses ''IdeaSpaceType
-makeLenses ''IdeaSpacePhase
-makeLenses ''Idea
 makeLenses ''Category
 makeLenses ''Comment
-makeLenses ''Vote
-makeLenses ''User
-makeLenses ''EncryptedPass
-makeLenses ''Email
+makeLenses ''CommentVote
 makeLenses ''Delegation
+makeLenses ''Document
+makeLenses ''Email
+makeLenses ''EncryptedPass
+makeLenses ''Feasible
+makeLenses ''Idea
+makeLenses ''IdeaSpace
+makeLenses ''IdeaSpaceType
+makeLenses ''IdeaVote
+makeLenses ''Like
+makeLenses ''MetaInfo
+makeLenses ''Phase
+makeLenses ''SchoolClass
+makeLenses ''Topic
+makeLenses ''User
