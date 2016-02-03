@@ -10,6 +10,123 @@
 module Types
 where
 
+{-
+
+>>> NOTES BEFORE THE PAD:
+
+
+"Article" -> "Document".  make it markdownable.
+
+"ideaSpaceArticle" => "ideaSpacePhase".
+
+should "IdeaSpacePhase" be a field in "IdeaSpace"?  call it "Phase"!
+
+should "IdeaSpaceType" be a type parameter?
+
+ideaVotes is there, but ideaLikes missing.  type Like = (Bool, UserId).  think of a better name for Like.  Star?  Endorsement?  Interest?
+
+ideaInfeasible :: Maybe (Bool, Document, MetaInfo?, ...?)
+
+data Comment = Comment { ..., _commentReplies :: Set Comment, ... }
+
+_voteValue: make ternary ADT, not 'Maybe Bool'
+
+votes in comments can't be neutral.  that's yet another type.  IdeaVote, CommentVote.
+
+
+
+
+
+questions for product owner:
+ - ideas have a single author.  is that correct.
+ - abuse button for ideas?
+ - full names or nicks.
+
+
+>>> NOTES FROM THE PAD:
+
+
+data User = User
+    { _userMeta           :: MetaInfo
+    , _userLogin                   :: ST
+    , _userFullName           :: (ST, ST)
+    , _userAvatar  :: Image  -- dummy type.
+    , _userGroups      :: [Group]
+    , _userPassword       :: EncryptedPass
+    , _userEmail          :: Maybe Email
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+newtype Email = Email ST -- TODO: replace by structured email type
+    deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic- | Globally Unique ID (for reference in the database).  (FIXME: should we have different id types
+-- for different object types?)
+newtype GUID a = GUID Integer
+data Group = Admin | Moderator | Principal | Student | Guest | InClass Class
+
+data Class =
+  { _className :: ST
+   , _classYear :: Year
+   }
+
+[Student, InClass "7a"]
+
+
+data MetaInfo = MetaInfo
+                  { _metaId        :: GUID
+                  , _metaCreatedBy :: GUID ////use  USER
+                  , _metaCreatedAt :: Timestamp
+                  , _metaChangedBy :: GUID
+                  , _metaChangedAt :: Timestamp
+                  }                              deriving (Eq, Ord, Show, Read, Generic)
+
+
+-- | "Beauftragung"
+data Delegation = Delegation
+                  { _delegationMeta :: MetaInfo
+                  , _delegationIdeaSpace :: GUID  -- FIXME: can you delegate for particular Idea?  how do we express that?  do we need delegation on topic?
+                  , _delegationFrom :: GUID
+                  , _delegationTo   :: GUID
+                  }                              deriving (Eq, Ord, Show, Read, Generic)
+
+
+
+topics are just tags.  does that work?  either way make topics separate data type and an idea should have a relation with a topic.
+
+IdeaSpaceType lacks info about school class.
+
+
+data IdeaSpaceType = Class Class | School
+
+idea has a `Maybe Topic`.  Topic has name, description, image, meta.
+
+
+
+data IdeaSpacePhase =
+    PhaseWildIdeas       -- ^ "Wilde-Ideen-Sammlung"
+  | PhaseEditTopics      -- ^ "Ausarbeitungsphase"
+  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
+  | PhaseVote            -- ^ "Abstimmungsphase"
+  | PhaseFinished        -- ^ "Ergebnisphase"
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+
+- treat this per idea, not IdeaSpace.
+- all more rigid phase transition rules can be implemented with that.
+- example: FixFeasibility is over for topic once all ideas have left FixFeasibility phase.
+
+
+
+
+
+
+
+
+
+-}
+
 import Control.Lens (makeLenses)
 import Control.Monad
 -- import Crypto.Scrypt (EncryptedPass)
