@@ -100,7 +100,7 @@ data Idea = Idea
     , _ideaPhase      :: Phase
     , _ideaTopic      :: Maybe Topic
     , _ideaComments   :: Set Comment
-    , _ideaLikes      :: Set Like
+    , _ideaLikes      :: Set IdeaLike
     , _ideaVotes      :: Set IdeaVote
     , _ideaFeasible   :: Maybe Feasible
     }
@@ -114,8 +114,8 @@ data Feasible = Feasible
   deriving (Eq, Ord, Show, Read, Generic)
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
-data Like = Like
-    { _likeMeta  :: MetaInfo Like
+data IdeaLike = IdeaLike
+    { _likeMeta  :: MetaInfo IdeaLike
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -244,7 +244,7 @@ instance Binary IdeaSpace
 instance Binary IdeaSpaceType
 instance Binary IdeaVote
 instance Binary IdeaVoteValue
-instance Binary Like
+instance Binary IdeaLike
 instance Binary (MetaInfo a)
 instance Binary Phase
 instance Binary SchoolClass
@@ -264,7 +264,7 @@ makeLenses ''Idea
 makeLenses ''IdeaSpace
 makeLenses ''IdeaSpaceType
 makeLenses ''IdeaVote
-makeLenses ''Like
+makeLenses ''IdeaLike
 makeLenses ''MetaInfo
 makeLenses ''Phase
 makeLenses ''SchoolClass

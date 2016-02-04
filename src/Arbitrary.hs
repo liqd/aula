@@ -175,8 +175,8 @@ instance Arbitrary Category where
 instance Arbitrary Comment where
     arbitrary = Comment <$> arb <*> arb <*> arb' <*> arb'
 
-instance Arbitrary Like where
-    arbitrary = Like <$> arb
+instance Arbitrary IdeaLike where
+    arbitrary = IdeaLike <$> arb
 
 instance Arbitrary IdeaVote where
     arbitrary = IdeaVote <$> arb <*> arb
