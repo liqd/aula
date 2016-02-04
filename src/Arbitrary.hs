@@ -139,14 +139,14 @@ arb = arbitrary
 arb' :: Arbitrary a => Gen a
 arb' = scale (`div` 3) arb
 
-instance Arbitrary (GUID a) where
-    arbitrary = GUID <$> arb
+instance Arbitrary (AUID a) where
+    arbitrary = AUID <$> arb
 
 instance Arbitrary (MetaInfo a) where
     arbitrary = MetaInfo <$> arb <*> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary Document where
-    arbitrary = Document . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
+    arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
 
 instance Arbitrary IdeaSpace where
     arbitrary = IdeaSpace <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
@@ -190,11 +190,14 @@ instance Arbitrary Feasible where
 instance Arbitrary CommentVote where
     arbitrary = CommentVote <$> arb <*> arb
 
+instance Arbitrary UpDown where
+    arbitrary = elements [minBound..]
+
 instance Arbitrary Group where
     arbitrary = oneof $ (InClass <$> arb) : (pure <$> [Admin, Moderator, Principal, Student, Guest])
 
 instance Arbitrary User where
-    arbitrary = User <$> arb <*> arbWord <*> arb <*> arb <*> arb <*> arb <*> arb
+    arbitrary = User <$> arb <*> arbWord <*> arbWord <*> arb <*> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary EncryptedPass where
     arbitrary = EncryptedPass <$> arb
