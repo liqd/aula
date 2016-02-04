@@ -12,7 +12,7 @@ import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
-import Test.QuickCheck (Arbitrary(..), Gen, elements, scale)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale)
 import Test.QuickCheck.Instances ()
 
 import Types
@@ -139,35 +139,62 @@ arb = arbitrary
 arb' :: Arbitrary a => Gen a
 arb' = scale (`div` 3) arb
 
-instance Arbitrary MetaInfo where
+instance Arbitrary (GUID a) where
+    arbitrary = GUID <$> arb
+
+instance Arbitrary (MetaInfo a) where
     arbitrary = MetaInfo <$> arb <*> arb <*> arb <*> arb <*> arb
 
-instance Arbitrary Article where
-    arbitrary = Article . fmap fromParagraph <$> scale (`div` 5) arb
+instance Arbitrary Document where
+    arbitrary = Document . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
 
-instance Arbitrary (IdeaSpace a) where
+instance Arbitrary IdeaSpace where
     arbitrary = IdeaSpace <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
 
 instance Arbitrary IdeaSpaceType where
+    arbitrary = oneof [pure ISSchool, ISClass <$> arb]
+
+instance Arbitrary SchoolClass where
+    arbitrary = SchoolClass <$> arbPhrase <*> arbPhrase  -- FIXME
+
+instance Arbitrary Phase where
     arbitrary = elements [minBound..]
 
-instance Arbitrary IdeaSpacePhase where
-    arbitrary = elements [minBound..]
+instance Arbitrary Topic where
+    arbitrary = Topic <$> arb <*> arbWord <*> arb <*> arb
 
 instance Arbitrary Idea where
-    arbitrary = Idea <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb' <*> arb'
+    arbitrary = Idea <$> arb <*> arbPhrase <*> arb'
+                     <*> arb' <*> arb' <*> arb'
+                     <*> arb' <*> arb' <*> arb'
+                     <*> arb'
 
 instance Arbitrary Category where
     arbitrary = elements [minBound..]
 
 instance Arbitrary Comment where
-    arbitrary = Comment <$> arb <*> arb <*> arb
+    arbitrary = Comment <$> arb <*> arb <*> arb' <*> arb'
 
-instance Arbitrary Vote where
-    arbitrary = Vote <$> arb <*> arb
+instance Arbitrary Like where
+    arbitrary = Like <$> arb
+
+instance Arbitrary IdeaVote where
+    arbitrary = IdeaVote <$> arb <*> arb
+
+instance Arbitrary IdeaVoteValue where
+    arbitrary = elements [minBound..]
+
+instance Arbitrary Feasible where
+    arbitrary = Feasible <$> arb <*> arb <*> arb
+
+instance Arbitrary CommentVote where
+    arbitrary = CommentVote <$> arb <*> arb
+
+instance Arbitrary Group where
+    arbitrary = oneof $ (InClass <$> arb) : (pure <$> [Admin, Moderator, Principal, Student, Guest])
 
 instance Arbitrary User where
-    arbitrary = User <$> arb <*> arbWord <*> arb <*> arb
+    arbitrary = User <$> arb <*> arbWord <*> arb <*> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary EncryptedPass where
     arbitrary = EncryptedPass <$> arb
