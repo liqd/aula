@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE ViewPatterns        #-}
@@ -9,6 +11,7 @@
 module Arbitrary (topLevelDomains, loremIpsum) where
 
 import Data.Char
+import Data.Functor.Infix ((<$$>))
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
@@ -16,6 +19,7 @@ import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale)
 import Test.QuickCheck.Instances ()
 
 import Types
+import Frontend.Html
 
 
 ----------------------------------------------------------------------
@@ -107,7 +111,28 @@ instance Arbitrary Email where
 
 
 ----------------------------------------------------------------------
--- aula-specific helper types
+-- Frontend.Html stuff
+
+xx :: (a -> ST) -> a -> AuthorWidget
+xx = (\mk -> AuthorWidget . mk)
+
+instance Arbitrary PageComment where
+    arbitrary = PageComment <$> arb <*> (xx <$> mkMockAuthorName)
+
+{-
+instance Arbitrary PageIdea where
+    arbitrary = do
+        mkAuthor :: (forall a. MetaInfo a -> ST) <- AuthorWidget <$$> mkMockAuthorName
+        idea     <- arb
+        return $ PageIdea (idea, mkAuthor)
+-}
+
+mkMockAuthorName :: Gen (forall a. MetaInfo a -> ST)
+mkMockAuthorName = const <$> arbWord
+
+
+----------------------------------------------------------------------
+-- aula-specific helpers
 
 instance Arbitrary (AUID a) where
     arbitrary = AUID <$> arb

@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 
 module Main (main) where
@@ -67,6 +67,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Arbitrary
 import Config
 import Frontend
+import Frontend.Html
 import Types
 
 
@@ -78,12 +79,6 @@ samplePages = sequence
     , f <$> (generate arbitrary :: IO Idea)
     , f <$> (generate arbitrary :: IO Idea)
     , f <$> (generate arbitrary :: IO Idea)
-    , f <$> (generate arbitrary :: IO (IdeaSpace Topic))
-    , f <$> (generate arbitrary :: IO (IdeaSpace Topic))
-    , f <$> (generate arbitrary :: IO (IdeaSpace Class))
-    , f <$> (generate arbitrary :: IO (IdeaSpace Class))
-    , f <$> (generate arbitrary :: IO (IdeaSpace School))
-    , f <$> (generate arbitrary :: IO (IdeaSpace School))
     ]
   where
     f :: (Typeable a, Show a, ToMarkup a) => a -> (TypeRep, String)

@@ -24,28 +24,29 @@ library
   build-depends:
       base >=4.8 && <4.9
     , aeson
-    , transformers
-    , case-insensitive
-    , http-types
-    , wai
-    , warp
-    , process
-    , filepath
-    , blaze-builder
     , binary
+    , blaze-builder
     , blaze-html
     , blaze-markup
     , bytestring
+    , case-insensitive
     , cassava
     , containers
     , cookie
     , directory
+    , filepath
+    , functor-infix
+    , http-types
     , lens
     , mtl
     , postgresql-simple
     , pretty-show
+    , process
     , QuickCheck
     , quickcheck-instances
+    , transformers
+    , wai
+    , warp
     , safecopy
     , scrypt
     , servant

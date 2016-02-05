@@ -5,13 +5,18 @@
 
 -- | ...
 --
--- We provide newtypes @Page...@ even if there is an application type already.  Example: For 'Idea',
--- we define 'PageIdea'.  This has at least two benefits:
+-- We provide data types @Page...@ even if there is an application type already.  Example: For
+-- 'Idea', we define 'PageIdea'.  This has at least two benefits:
 --
 -- - page types should always be defined here to avoid orphans;
 -- - we can add additional information (like author name if we only have an author's id) and thus
 --   avoid making page rendering effectful.
 module Frontend.Html
+    ( Frame(Frame)
+    , PageIdea(PageIdea)
+    , PageComment(PageComment)
+    , AuthorWidget(AuthorWidget)
+    )
 where
 
 import Control.Lens ((^.))
@@ -29,7 +34,7 @@ import Types
 
 
 ----------------------------------------------------------------------
--- newtypes for html pages or templates
+-- types for html pages or templates
 
 -- | Wrap anything that has 'ToMarkup' and wrap it in an HTML body with complete page.
 newtype Frame body = Frame body
@@ -58,10 +63,10 @@ instance ToMarkup AuthorWidget where
 ----------------------------------------------------------------------
 -- 'ToMarkup' instances for the application types.
 
-newtype PageIdea = PageIdea (Idea, forall a. MetaInfo a -> AuthorWidget)
+data PageIdea = PageIdea Idea (forall a. MetaInfo a -> AuthorWidget)
 
 instance ToMarkup PageIdea where
-    toMarkup (PageIdea (idea, mkAuthor)) = div $ do
+    toMarkup (PageIdea idea mkAuthor) = div $ do
         h2 . text $ idea ^. ideaTitle
 
         div . string . show $ idea ^. ideaCategory
@@ -98,15 +103,12 @@ instance ToMarkup PageIdea where
             span . string $ (show . Set.size $ idea ^. ideaComments) <> " Verbesserungsvorschläge"
             span $ button ! value "create_comment" $ text "Neuer Verbesserungsvorschlag"
             hr
-            sequence_ . (toMarkup . pageComment mkAuthor <$>) . Set.toList $ idea ^. ideaComments
+            sequence_ . (toMarkup . (`PageComment` mkAuthor) <$>) . Set.toList $ idea ^. ideaComments
 
-newtype PageComment = PageComment (Comment, forall a. MetaInfo a -> AuthorWidget)
-
-pageComment :: (forall a. MetaInfo a -> AuthorWidget) -> Comment -> PageComment
-pageComment mkAuthor comment = PageComment (comment, mkAuthor)
+data PageComment = PageComment Comment (forall a. MetaInfo a -> AuthorWidget)
 
 instance ToMarkup PageComment where
-    toMarkup (PageComment (comment, mkAuthor)) = div $ do
+    toMarkup (PageComment comment mkAuthor) = div $ do
         div $ do
             span . toMarkup . mkAuthor     $ comment ^. commentMeta
             span . toMarkup . VotesWidget  $ comment ^. commentVotes
