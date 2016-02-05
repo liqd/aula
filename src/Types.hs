@@ -133,12 +133,14 @@ data Topic = Topic
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
--- | Topic phases.
+-- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
+-- constructor for that here.)
 data Phase =
-    PhaseEditTopics      -- ^ "Ausarbeitungsphase"
-  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
-  | PhaseVote            -- ^ "Abstimmungsphase"
-  | PhaseFinished        -- ^ "Ergebnisphase"
+    PhaseRefinement    -- ^ 2. "Ausarbeitungsphase"
+  | PhaseJury          -- ^ 3. "Prüfungsphase"
+  | PhaseVoting        -- ^ 4. "Abstimmungsphase"
+  | PhaseResult        -- ^ 5. "Ergebnisphase"
+  | PhaseFinished      -- ^ 6. "Ergebnisphase"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 
