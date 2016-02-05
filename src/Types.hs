@@ -5,24 +5,24 @@
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE ViewPatterns                #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Types
 where
 
 import Control.Lens (makeLenses)
 import Control.Monad
--- import Crypto.Scrypt (EncryptedPass)
 import Data.Binary
 import Data.Char
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time
 import GHC.Generics
+import Text.Blaze (ToMarkup)
 
-import Database.PostgreSQL.Simple.ToField (ToField)
-
+import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
+import qualified Text.Blaze.Html5 as H
 
 
 ----------------------------------------------------------------------
@@ -173,12 +173,13 @@ data Group =
   | Admin
   deriving (Eq, Ord, Show, Read, Generic)
 
+-- | FIXME: import Crypto.Scrypt (EncryptedPass)
 newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
 
 -- | FIXME: replace with structured email type.
 newtype Email = Email ST
-    deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic)
+    deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"
 data Delegation = Delegation
@@ -216,6 +217,9 @@ data MetaInfo a = MetaInfo
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance ToMarkup Document where
+    toMarkup = H.div . H.p . H.text . fromMarkdown
 
 
 ----------------------------------------------------------------------

@@ -14,9 +14,11 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-      Config
-    , Frontend
+      Api
     , Arbitrary
+    , Config
+    , Frontend
+    , Frontend.Html
     , Transaction
     , Types
   build-depends:
