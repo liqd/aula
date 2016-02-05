@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -14,7 +15,7 @@ where
 
 import Data.Maybe
 import Control.Exception
-import Control.Lens ((^.), (&), (.~), (%~), _Left, view)
+import Control.Lens  -- ((^.), (&), (.~), (%~), _Left, view)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except (ExceptT(ExceptT))
 import Control.Monad (when, filterM, forM_)
@@ -104,7 +105,7 @@ instance ToMarkup Comment where
             H.span . toMarkup . AuthorWidget $ comment ^. commentMeta
             H.span . toMarkup . VotesWidget  $ comment ^. commentVotes
         H.div $ do
-            toMarkup $ comment ^. commentArticle
+            toMarkup $ comment ^. commentText
         H.div $ do
             H.span $ H.text "[antworten]"
             H.span $ H.text "[melden]"
@@ -126,8 +127,8 @@ instance ToMarkup Idea where
 
         -- balken: pro, kontra
         H.div . H.pre $ do
-            let y = yesVotes $ idea ^. ideaVotes
-                n = noVotes  $ idea ^. ideaVotes
+            let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
+                n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
             H.div $ do
                 H.span . H.string $ "    " <> replicate y '+' <> ":" <> replicate n '-'
             H.div $ do
@@ -140,7 +141,7 @@ instance ToMarkup Idea where
             H.button H.! A.value "no"      $ H.text "dagegen"
 
         -- article
-        H.div . toMarkup $ idea ^. ideaArticle
+        H.div . toMarkup $ idea ^. ideaDesc
 
         -- comments
         H.div $ do
@@ -150,43 +151,27 @@ instance ToMarkup Idea where
             H.hr
             sequence_ . (toMarkup <$>) . Set.toList $ idea ^. ideaComments
 
-
-instance ToMarkup (IdeaSpace Topic) where
-    toMarkup = H.p . H.string . show . typeOf
-
-instance ToMarkup (IdeaSpace Class) where
-    toMarkup = H.p . H.string . show . typeOf
-
-instance ToMarkup (IdeaSpace School) where
-    toMarkup = H.p . H.string . show . typeOf
-
-instance ToMarkup Article where
-    toMarkup = H.div . mapM_ (H.p . H.text) . fromArticle
+instance ToMarkup Document where
+    toMarkup = H.div . H.p . H.text . fromMarkdown
 
 
 ----------------------------------------------------------------------
 
-newtype VotesWidget = VotesWidget (Set Vote)
+newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
-instance ToMarkup VotesWidget where
+instance ToMarkup CommentVotesWidget where
     toMarkup (VotesWidget votes) = H.string $ y ++ n
       where
-        y = "[yes: " <> show (yesVotes votes) <> "]"
-        n = "[no: " <> show (noVotes votes) <> "]"
+        y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
+        n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
 
-newtype AuthorWidget = AuthorWidget MetaInfo
+newtype AuthorWidget a = AuthorWidget (MetaInfo a)
 
-instance ToMarkup AuthorWidget where
+instance ToMarkup (AuthorWidget a) where
     toMarkup (AuthorWidget mi) = H.text $ "[author: " <> (cs . show $ mi ^. metaCreatedBy) <> "]"
 
 
 ----------------------------------------------------------------------
 
-yesVotes :: Set Vote -> Int
-yesVotes = Set.size . Set.filter ((== Just True) . view voteValue)
-
-noVotes :: Set Vote -> Int
-noVotes = Set.size . Set.filter ((== Just False) . view voteValue)
-
-neutralVotes :: Set Vote -> Int
-neutralVotes = Set.size . Set.filter ((== Nothing) . view voteValue)
+countVotes :: (Eq value) => value -> Lens' vote value -> Set vote -> Int
+countVotes value lens = Set.size . Set.filter ((== value) . view lens)
