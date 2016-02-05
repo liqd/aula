@@ -18,6 +18,123 @@ import Test.QuickCheck.Instances ()
 import Types
 
 
+----------------------------------------------------------------------
+-- idea
+
+instance Arbitrary Idea where
+    arbitrary = Idea <$> arb <*> arbPhrase <*> arb'
+                     <*> arb' <*> arb' <*> arb'
+                     <*> arb' <*> arb' <*> arb'
+                     <*> arb' <*> arb'
+
+instance Arbitrary Category where
+    arbitrary = elements [minBound..]
+
+instance Arbitrary IdeaLike where
+    arbitrary = IdeaLike <$> arb
+
+instance Arbitrary IdeaVote where
+    arbitrary = IdeaVote <$> arb <*> arb
+
+instance Arbitrary IdeaVoteValue where
+    arbitrary = elements [minBound..]
+
+instance Arbitrary Feasible where
+    arbitrary = Feasible <$> arb <*> arb <*> arb
+
+
+----------------------------------------------------------------------
+-- comment
+
+instance Arbitrary Comment where
+    arbitrary = Comment <$> arb <*> arb <*> arb' <*> arb'
+
+instance Arbitrary CommentVote where
+    arbitrary = CommentVote <$> arb <*> arb
+
+instance Arbitrary UpDown where
+    arbitrary = elements [minBound..]
+
+
+----------------------------------------------------------------------
+-- idea space, topic, phase
+
+instance Arbitrary IdeaSpace where
+    arbitrary = oneof [pure SchoolSpace, ClassSpace <$> arb]
+
+instance Arbitrary SchoolClass where
+    arbitrary = SchoolClass <$> name <*> year
+      where
+        name = elements [ cs $ show age ++ [branch] | age <- [1..12], branch <- ['a'..'e'] ]
+        year = elements $ cs . show <$> [2012..2020]
+
+instance Arbitrary Topic where
+    arbitrary = Topic <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
+
+instance Arbitrary Phase where
+    arbitrary = elements [minBound..]
+
+
+----------------------------------------------------------------------
+-- user
+
+instance Arbitrary User where
+    arbitrary = User <$> arb <*> arbWord <*> arbWord <*> arb <*> arb <*> arb <*> arb <*> arb
+
+instance Arbitrary Group where
+    arbitrary = oneof
+        [ Student <$> arb
+        , ClassGuest <$> arb
+        , pure SchoolGuest
+        , pure Moderator
+        , pure Principal
+        , pure Admin
+        ]
+
+instance Arbitrary EncryptedPass where
+    arbitrary = EncryptedPass <$> arb
+
+instance Arbitrary Email where
+    arbitrary = do
+        localName  <- arbWord
+        domainName <- arbWord
+        tld        <- elements topLevelDomains
+        return . Email . mconcat $ [localName, "@", domainName, ".", tld]
+
+-- FIXME: instance Arbitrary Delegation
+
+-- FIXME: instance Arbitrary DelegationContext
+
+
+----------------------------------------------------------------------
+-- aula-specific helper types
+
+instance Arbitrary (AUID a) where
+    arbitrary = AUID <$> arb
+
+instance Arbitrary (MetaInfo a) where
+    arbitrary = MetaInfo <$> arb <*> arb <*> arb <*> arb <*> arb
+
+instance Arbitrary Document where
+    arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
+
+
+----------------------------------------------------------------------
+-- general-purpose helpers
+
+arb :: Arbitrary a => Gen a
+arb = arbitrary
+
+arb' :: Arbitrary a => Gen a
+arb' = scale (`div` 3) arb
+
+instance Arbitrary Timestamp where
+    arbitrary = Timestamp <$> arb
+
+
+----------------------------------------------------------------------
+-- arbitrary readable text
+
 -- | source: lipsum.com
 loremIpsum :: [ST]
 loremIpsum = ST.unlines <$>
@@ -132,82 +249,3 @@ instance Arbitrary Paragraph where
 
 topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
-
-arb :: Arbitrary a => Gen a
-arb = arbitrary
-
-arb' :: Arbitrary a => Gen a
-arb' = scale (`div` 3) arb
-
-instance Arbitrary (AUID a) where
-    arbitrary = AUID <$> arb
-
-instance Arbitrary (MetaInfo a) where
-    arbitrary = MetaInfo <$> arb <*> arb <*> arb <*> arb <*> arb
-
-instance Arbitrary Document where
-    arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
-
-instance Arbitrary IdeaSpace where
-    arbitrary = IdeaSpace <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
-
-instance Arbitrary IdeaSpaceType where
-    arbitrary = oneof [pure ISSchool, ISClass <$> arb]
-
-instance Arbitrary SchoolClass where
-    arbitrary = SchoolClass <$> arbPhrase <*> arbPhrase  -- FIXME
-
-instance Arbitrary Phase where
-    arbitrary = elements [minBound..]
-
-instance Arbitrary Topic where
-    arbitrary = Topic <$> arb <*> arbWord <*> arb <*> arb
-
-instance Arbitrary Idea where
-    arbitrary = Idea <$> arb <*> arbPhrase <*> arb'
-                     <*> arb' <*> arb' <*> arb'
-                     <*> arb' <*> arb' <*> arb'
-                     <*> arb'
-
-instance Arbitrary Category where
-    arbitrary = elements [minBound..]
-
-instance Arbitrary Comment where
-    arbitrary = Comment <$> arb <*> arb <*> arb' <*> arb'
-
-instance Arbitrary IdeaLike where
-    arbitrary = IdeaLike <$> arb
-
-instance Arbitrary IdeaVote where
-    arbitrary = IdeaVote <$> arb <*> arb
-
-instance Arbitrary IdeaVoteValue where
-    arbitrary = elements [minBound..]
-
-instance Arbitrary Feasible where
-    arbitrary = Feasible <$> arb <*> arb <*> arb
-
-instance Arbitrary CommentVote where
-    arbitrary = CommentVote <$> arb <*> arb
-
-instance Arbitrary UpDown where
-    arbitrary = elements [minBound..]
-
-instance Arbitrary Group where
-    arbitrary = oneof $ (InClass <$> arb) : (pure <$> [Admin, Moderator, Principal, Student, Guest])
-
-instance Arbitrary User where
-    arbitrary = User <$> arb <*> arbWord <*> arbWord <*> arb <*> arb <*> arb <*> arb <*> arb
-
-instance Arbitrary EncryptedPass where
-    arbitrary = EncryptedPass <$> arb
-
-instance Arbitrary Email where
-    arbitrary = do
-        localName  <- arbWord
-        domainName <- arbWord
-        tld        <- elements topLevelDomains
-        return . Email . mconcat $ [localName, "@", domainName, ".", tld]
-
-instance Arbitrary Timestamp where
-    arbitrary = Timestamp <$> arb
