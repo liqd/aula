@@ -159,13 +159,15 @@ data User = User
 -- | Dummy for PNG images.  FIXME: use type from juicypixels?
 type PNG = ()
 
+-- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
+-- (Rationale: e.g. teachres have trust each other and can cover for each other.)
 data Group =
-    Admin
+    Student SchoolClass
+  | ClassGuest SchoolClass  -- ^ e.g., parents
+  | SchoolGuest  -- ^ e.g., researchers
   | Moderator
   | Principal
-  | Student
-  | Guest
-  | InClass SchoolClass
+  | Admin
   deriving (Eq, Ord, Show, Read, Generic)
 
 newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
