@@ -104,7 +104,7 @@ data UpDown = Up | Down
 
 
 ----------------------------------------------------------------------
--- idea spaces, topics, phases.
+-- idea space, topic, phase
 
 -- | "Ideenraum" is one of "Klasse", "Schule".
 data IdeaSpace =
@@ -126,10 +126,10 @@ data SchoolClass = SchoolClass
 data Topic = Topic
     { _topicMeta      :: MetaInfo Topic
     , _topicTitle     :: ST
-    , _topicIdeaSpace :: IdeaSpace
-    , _topicPhase     :: Phase
     , _topicDesc      :: Document
     , _topicImage     :: PNG
+    , _topicIdeaSpace :: IdeaSpace
+    , _topicPhase     :: Phase
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
