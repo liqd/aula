@@ -66,7 +66,7 @@ data IdeaVote = IdeaVote
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-data IdeaVoteValue = IdeaVoteYes | IdeaVoteNo | IdeaVoteNeutral
+data IdeaVoteValue = Yes | No | Neutral
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 data Feasible = Feasible
