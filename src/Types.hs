@@ -28,16 +28,16 @@ import qualified Data.Csv as CSV
 ----------------------------------------------------------------------
 -- idea
 
--- | "Idee"
+-- | "Idee".  Ideas can be either be wild or contained in exactly one 'Topic'.
 data Idea = Idea
     { _ideaMeta       :: MetaInfo Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category
-    , _ideaPhase      :: Phase
     , _ideaTopic      :: Maybe Topic
     , _ideaComments   :: Set Comment
     , _ideaLikes      :: Set IdeaLike
+    , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
     , _ideaVotes      :: Set IdeaVote
     , _ideaFeasible   :: Maybe Feasible
     }
@@ -51,28 +51,6 @@ data Category =
   | CatTime         -- ^ "Zeit"
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
-
--- | Process phases are a property of 'Idea'.
---
--- FIXME: How do we express that FixFeasibility is over for a Topic, not just a few of its 'Ideas'?
--- The rule is that once all ideas have left FixFeasibility phase, the Topic leaves the phsae.  This
--- rule can be expressed in terms of the current data model ("only ideas have phases"), but there
--- may be a better way.
-data Phase =
-    PhaseWildIdeas       -- ^ "Wilde-Ideen-Sammlung"
-  | PhaseEditTopics      -- ^ "Ausarbeitungsphase"
-  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
-  | PhaseVote            -- ^ "Abstimmungsphase"
-  | PhaseFinished        -- ^ "Ergebnisphase"
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
-
-data Topic = Topic
-    { _topicMeta  :: MetaInfo Topic
-    , _topicName  :: ST
-    , _topicDesc  :: Document
-    , _topicImage :: PNG
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
@@ -125,23 +103,12 @@ data UpDown = Up | Down
 
 
 ----------------------------------------------------------------------
--- idea space
+-- idea spaces, topics, phases.
 
--- | "Ideenraum" is one of "Thema", "Klasse", "Schule".
-data IdeaSpace = IdeaSpace
-    { _ideaSpaceMeta      :: MetaInfo IdeaSpace
-    , _ideaSpaceTitle     :: ST
-    , _ideaSpaceType      :: IdeaSpaceType  -- ^ (FIXME: Can we do this on the type level?
-                                            -- 'SchoolClass' can't be lifted, though.)
-    , _ideaSpaceDesc      :: Document
-    , _ideaSpaceWildIdeas :: Set Idea
-    , _ideaSpaceTopics    :: Set Topic
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-data IdeaSpaceType =
-    ISSchool
-  | ISClass SchoolClass
+-- | "Ideenraum" is one of "Klasse", "Schule".
+data IdeaSpace =
+    SchoolSpace
+  | ClassSpace SchoolClass
   deriving (Eq, Ord, Show, Read, Generic)
 
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
@@ -151,6 +118,27 @@ data SchoolClass = SchoolClass
     , _classSchoolYear :: ST  -- ^ e.g. "2015/16"
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- | A 'Topic' is created inside an 'IdeaSpace'.  It is used as a container for a "wild idea" that
+-- has reached a quorum, plus more ideas that the moderator decides belong here.  'Topic's have
+-- 'Phase's.  All 'Idea's in a 'Topic' must have the same 'IdeaSpace' as the 'Topic'.
+data Topic = Topic
+    { _topicMeta      :: MetaInfo Topic
+    , _topicTitle     :: ST
+    , _topicIdeaSpace :: IdeaSpace
+    , _topicPhase     :: Phase
+    , _topicDesc      :: Document
+    , _topicImage     :: PNG
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+-- | Topic phases.
+data Phase =
+    PhaseEditTopics      -- ^ "Ausarbeitungsphase"
+  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
+  | PhaseVote            -- ^ "Abstimmungsphase"
+  | PhaseFinished        -- ^ "Ergebnisphase"
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 
 ----------------------------------------------------------------------
@@ -188,14 +176,18 @@ newtype Email = Email ST
     deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"
---
--- TODO: do we nee delegation by 'Idea'?  by 'ISTopic'?
 data Delegation = Delegation
-    { _delegationMeta      :: MetaInfo Delegation
---    , _delegationIdeaSpace :: AUID (IdeaSpace a)  -- FIXME
-    , _delegationFrom      :: AUID User
-    , _delegationTo        :: AUID User
+    { _delegationMeta    :: MetaInfo Delegation
+    , _delegationContext :: DelegationContext
+    , _delegationFrom    :: AUID User
+    , _delegationTo      :: AUID User
     }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+data DelegationContext =
+    DelCtxIdeaSpace IdeaSpace
+  | DelCtxTopic (AUID Topic)
+  | DelCtxIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 
@@ -260,6 +252,7 @@ instance Binary Category
 instance Binary Comment
 instance Binary CommentVote
 instance Binary Delegation
+instance Binary DelegationContext
 instance Binary Document
 instance Binary Email
 instance Binary EncryptedPass
@@ -268,7 +261,6 @@ instance Binary Group
 instance Binary Idea
 instance Binary IdeaLike
 instance Binary IdeaSpace
-instance Binary IdeaSpaceType
 instance Binary IdeaVote
 instance Binary IdeaVoteValue
 instance Binary (MetaInfo a)
@@ -282,6 +274,7 @@ makeLenses ''Category
 makeLenses ''Comment
 makeLenses ''CommentVote
 makeLenses ''Delegation
+makeLenses ''DelegationContext
 makeLenses ''Document
 makeLenses ''Email
 makeLenses ''EncryptedPass
@@ -289,7 +282,6 @@ makeLenses ''Feasible
 makeLenses ''Idea
 makeLenses ''IdeaLike
 makeLenses ''IdeaSpace
-makeLenses ''IdeaSpaceType
 makeLenses ''IdeaVote
 makeLenses ''MetaInfo
 makeLenses ''Phase
