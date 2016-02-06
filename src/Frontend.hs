@@ -15,7 +15,6 @@ where
 
 import Control.Exception (assert)
 import Control.Lens ((^.))
-import Data.String.Conversions (ST)
 import Data.String (fromString)
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
 import Servant
@@ -48,15 +47,20 @@ frontendH =
 -- | Ask the database for a dictionary of all user ids and logins.  Return a pure function that
 -- looks up a creator id from 'MetaInfo' in that dictionary.
 --
+-- Motivation: allows to define simple data types for pages that can be used as servant result types
+-- in the routing table and converted to 'Html' with 'toMarkup'.
+--
 -- FIXME: this is not fast.  quick and crazy ideas for better implementations:
---     - maintain an 'MVar' for the dictionary in the persistence layer that is kept in sync with
+--     1. maintain an 'MVar' for the dictionary in the persistence layer that is kept in sync with
 --       the database
---     - we already have the 'Idea' (or whatever) at the time we want to invoke this function.  we
+--     2. we already have the 'Idea' (or whatever) at the time we want to invoke this function.  we
 --       could collect all user ids from that and only retrieve those from the DB into the dict that
 --       we actually need.
 --
---     None of this is very pretty.  The original motivation to go through all these moves was to
---     have simple newtypes for pages that can be given as servant result types and converted to
---     'Html' with 'toMarkup', which is pure.
-mkAuthorName :: IO (AUID User -> ST)
-mkAuthorName = return (\_ -> assert False $ error "mkAuthorName: not implemented.")
+-- FIXME: breaks serialization (Show) in exec/RenderHtml, because now Page* contains functions.
+--     1. solution 2 from previous FIXME.  dicts in the form of assoc tables can have Show.
+--     2. use the cloud haskell serialization trick for functions?
+--
+-- None of this is very pretty.  yet...
+mkAuthorWidget :: IO (AUID User -> AuthorWidget)
+mkAuthorWidget = return (\_ -> assert False $ error "mkAuthorName: not implemented.")

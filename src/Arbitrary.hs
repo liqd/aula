@@ -113,22 +113,14 @@ instance Arbitrary Email where
 ----------------------------------------------------------------------
 -- Frontend.Html stuff
 
-xx :: (a -> ST) -> a -> AuthorWidget
-xx = (\mk -> AuthorWidget . mk)
-
 instance Arbitrary PageComment where
-    arbitrary = PageComment <$> arb <*> (xx <$> mkMockAuthorName)
+    arbitrary = PageComment <$> arb <*> mkMockAuthor
 
-{-
 instance Arbitrary PageIdea where
-    arbitrary = do
-        mkAuthor :: (forall a. MetaInfo a -> ST) <- AuthorWidget <$$> mkMockAuthorName
-        idea     <- arb
-        return $ PageIdea (idea, mkAuthor)
--}
+    arbitrary = PageIdea <$> arb <*> mkMockAuthor
 
-mkMockAuthorName :: Gen (AUID User -> ST)
-mkMockAuthorName = const <$> arbWord
+mkMockAuthor :: Gen (AUID User -> AuthorWidget)
+mkMockAuthor = arbWord >>= \author -> pure (\_ -> AuthorWidget author)
 
 
 ----------------------------------------------------------------------
