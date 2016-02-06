@@ -63,7 +63,7 @@ instance ToMarkup AuthorWidget where
 ----------------------------------------------------------------------
 -- 'ToMarkup' instances for the application types.
 
-data PageIdea = PageIdea Idea (forall a. MetaInfo a -> AuthorWidget)
+data PageIdea = PageIdea Idea (AUID User -> AuthorWidget)
 
 instance ToMarkup PageIdea where
     toMarkup (PageIdea idea mkAuthor) = div $ do
@@ -105,12 +105,12 @@ instance ToMarkup PageIdea where
             hr
             sequence_ . (toMarkup . (`PageComment` mkAuthor) <$>) . Set.toList $ idea ^. ideaComments
 
-data PageComment = PageComment Comment (forall a. MetaInfo a -> AuthorWidget)
+data PageComment = PageComment Comment (AUID User -> AuthorWidget)
 
 instance ToMarkup PageComment where
     toMarkup (PageComment comment mkAuthor) = div $ do
         div $ do
-            span . toMarkup . mkAuthor     $ comment ^. commentMeta
+            span . toMarkup . mkAuthor     $ comment ^. commentMeta . metaCreatedBy
             span . toMarkup . VotesWidget  $ comment ^. commentVotes
         div $ do
             toMarkup $ comment ^. commentText

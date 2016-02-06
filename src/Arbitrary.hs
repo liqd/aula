@@ -127,7 +127,7 @@ instance Arbitrary PageIdea where
         return $ PageIdea (idea, mkAuthor)
 -}
 
-mkMockAuthorName :: Gen (forall a. MetaInfo a -> ST)
+mkMockAuthorName :: Gen (AUID User -> ST)
 mkMockAuthorName = const <$> arbWord
 
 

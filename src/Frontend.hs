@@ -58,5 +58,5 @@ frontendH =
 --     None of this is very pretty.  The original motivation to go through all these moves was to
 --     have simple newtypes for pages that can be given as servant result types and converted to
 --     'Html' with 'toMarkup', which is pure.
-mkAuthorName :: IO (MetaInfo a -> ST)
+mkAuthorName :: IO (AUID User -> ST)
 mkAuthorName = return (\_ -> assert False $ error "mkAuthorName: not implemented.")
