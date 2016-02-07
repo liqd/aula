@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -54,21 +55,27 @@ instance ToMarkup CommentVotesWidget where
         y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
         n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
 
-newtype AuthorWidget = AuthorWidget ST
+newtype AuthorWidget a = AuthorWidget (MetaInfo a)
 
-instance ToMarkup AuthorWidget where
-    toMarkup (AuthorWidget username) = text $ "[author: " <> username <> "]"
+instance ToMarkup (AuthorWidget a) where
+    toMarkup (AuthorWidget mi) = span $ do
+        text "["
+        img ! (src . textValue $ mi ^. metaCreatedByAvatar)
+        text (mi ^. metaCreatedByLogin)
+        text "]"
 
 
 ----------------------------------------------------------------------
 -- 'ToMarkup' instances for the application types.
 
-data PageIdea = PageIdea Idea (AUID User -> AuthorWidget)
+data PageIdea = PageIdea Idea
+  deriving (Eq, Show, Read)
 
 instance ToMarkup PageIdea where
-    toMarkup (PageIdea idea mkAuthor) = div $ do
+    toMarkup (PageIdea idea) = div $ do
         h2 . text $ idea ^. ideaTitle
 
+        div . toMarkup . AuthorWidget $ idea ^. ideaMeta
         div . string . show $ idea ^. ideaCategory
 
         -- von X / X stimmen / X verbesserungvorschläge
@@ -103,14 +110,15 @@ instance ToMarkup PageIdea where
             span . string $ (show . Set.size $ idea ^. ideaComments) <> " Verbesserungsvorschläge"
             span $ button ! value "create_comment" $ text "Neuer Verbesserungsvorschlag"
             hr
-            sequence_ . (toMarkup . (`PageComment` mkAuthor) <$>) . Set.toList $ idea ^. ideaComments
+            sequence_ . (toMarkup . PageComment <$>) . Set.toList $ idea ^. ideaComments
 
-data PageComment = PageComment Comment (AUID User -> AuthorWidget)
+data PageComment = PageComment Comment
+  deriving (Eq, Show, Read)
 
 instance ToMarkup PageComment where
-    toMarkup (PageComment comment mkAuthor) = div $ do
+    toMarkup (PageComment comment) = div $ do
         div $ do
-            span . toMarkup . mkAuthor     $ comment ^. commentMeta . metaCreatedBy
+            span . toMarkup . AuthorWidget $ comment ^. commentMeta
             span . toMarkup . VotesWidget  $ comment ^. commentVotes
         div $ do
             toMarkup $ comment ^. commentText

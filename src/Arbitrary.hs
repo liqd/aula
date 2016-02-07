@@ -114,13 +114,10 @@ instance Arbitrary Email where
 -- Frontend.Html stuff
 
 instance Arbitrary PageComment where
-    arbitrary = PageComment <$> arb <*> mkMockAuthor
+    arbitrary = PageComment <$> arb
 
 instance Arbitrary PageIdea where
-    arbitrary = PageIdea <$> arb <*> mkMockAuthor
-
-mkMockAuthor :: Gen (AUID User -> AuthorWidget)
-mkMockAuthor = arbWord >>= \author -> pure (\_ -> AuthorWidget author)
+    arbitrary = PageIdea <$> arb
 
 
 ----------------------------------------------------------------------
@@ -130,7 +127,7 @@ instance Arbitrary (AUID a) where
     arbitrary = AUID <$> arb
 
 instance Arbitrary (MetaInfo a) where
-    arbitrary = MetaInfo <$> arb <*> arb <*> arb <*> arb <*> arb
+    arbitrary = MetaInfo <$> arb <*> arb <*> arbWord <*> arbPhrase <*> arb <*> arb <*> arb
 
 instance Arbitrary Document where
     arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb

@@ -127,7 +127,7 @@ data Topic = Topic
     { _topicMeta      :: MetaInfo Topic
     , _topicTitle     :: ST
     , _topicDesc      :: Document
-    , _topicImage     :: PNG
+    , _topicImage     :: URL
     , _topicIdeaSpace :: IdeaSpace
     , _topicPhase     :: Phase
     }
@@ -147,20 +147,18 @@ data Phase =
 ----------------------------------------------------------------------
 -- user
 
+-- | FIXME: introduce newtypes 'UserLogin', 'UserFirstName', 'UserLastName'?
 data User = User
     { _userMeta      :: MetaInfo User
     , _userLogin     :: ST
     , _userFirstName :: ST
     , _userLastName  :: ST
-    , _userAvatar    :: PNG
+    , _userAvatar    :: URL
     , _userGroups    :: [Group]  -- ^ (could be a set)
     , _userPassword  :: EncryptedPass
     , _userEmail     :: Maybe Email
     }
   deriving (Eq, Ord, Show, Read, Generic)
-
--- | Dummy for PNG images.  FIXME: use type from juicypixels?
-type PNG = ()
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -206,11 +204,13 @@ newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic)
 
 data MetaInfo a = MetaInfo
-    { _metaId        :: AUID a
-    , _metaCreatedBy :: AUID User
-    , _metaCreatedAt :: Timestamp
-    , _metaChangedBy :: AUID User
-    , _metaChangedAt :: Timestamp
+    { _metaId              :: AUID a
+    , _metaCreatedBy       :: AUID User
+    , _metaCreatedByLogin  :: ST
+    , _metaCreatedByAvatar :: URL
+    , _metaCreatedAt       :: Timestamp
+    , _metaChangedBy       :: AUID User
+    , _metaChangedAt       :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -224,6 +224,9 @@ instance ToMarkup Document where
 
 ----------------------------------------------------------------------
 -- general-purpose types
+
+-- | Dummy for URL.  FIXME: use uri-bytestring?
+type URL = ST
 
 newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
