@@ -1,8 +1,8 @@
-{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE KindSignatures     #-}
 {-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE ImpredicativeTypes #-}
 
-{-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Werror #-}
 
 -- | ...
 --
@@ -35,7 +35,7 @@ import Types
 
 
 ----------------------------------------------------------------------
--- types for html pages or templates
+-- building blocks
 
 -- | Wrap anything that has 'ToMarkup' and wrap it in an HTML body with complete page.
 newtype Frame body = Frame body
@@ -66,7 +66,169 @@ instance ToMarkup (AuthorWidget a) where
 
 
 ----------------------------------------------------------------------
--- 'ToMarkup' instances for the application types.
+-- pages
+
+-- | 1. Rooms overview
+data PageRoomsOverview = PageRoomsOverview
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageRoomsOverview where
+    toMarkup _ = "PageRoomsOverview"
+
+
+-- | 2. Ideas overview
+data PageIdeasOverview = PageIdeasOverview
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeasOverview where
+    toMarkup _ = "PageIdeasOverview"
+
+
+-- | 3. Ideas in discussion
+data PageIdeasInDiscussion = PageIdeasInDiscussion
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeasInDiscussion where
+    toMarkup _ = "PageIdeasInDiscussion"
+
+
+-- | 4. Topic overview
+data PageTopicOverview (a :: TopicOverviewPageState) = PageTopicOverview
+  deriving (Eq, Show, Read)
+
+data TopicOverviewPageState =
+    TopicOverviewRefinementPhase   -- ^ 4.1 Topic overview: Refinement phase
+  | TopicOverviewAssessmentPhase   -- ^ 4.2 Topic overview: Assessment phase
+  | TopicOverviewVotingPhase       -- ^ 4.3 Topic overview: Voting phase
+  | TopicOverviewResultPhase       -- ^ 4.4 Topic overview: Result phase
+  | TopicOverviewDelegations       -- ^ 4.5 Topic overview: Delegations
+  deriving (Eq, Show, Read)
+
+instance ToMarkup (PageTopicOverview a) where
+    toMarkup _ = "PageTopicOverview TopicOverviewPageState"
+
+
+-- | 5. Idea detail page
+data PageIdeaDetail (a :: IdeaDetailPageState) = PageIdeaDetail
+  deriving (Eq, Show, Read)
+
+data IdeaDetailPageState =
+    IdeaDetailNewIdeas             -- ^ 5.1 Idea detail page: New ideas
+  | IdeaDetailRefinementPhase      -- ^ 5.2 Idea detail page: Refinement phase
+  | IdeaDetailAssessmentPhase      -- ^ 5.3 Idea detail page: Assessment phase
+  | IdeaDetailVotingPhase          -- ^ 5.4 Idea detail page: Voting phase
+  | IdeaDetailMoveIdeaToTopic      -- ^ 5.5 Idea detail page: Move idea to topic
+  | IdeaDetailFeasibleNotFeasible  -- ^ 5.6 Idea detail page: Feasible/ not feasible
+  | IdeaDetailWinner               -- ^ 5.7 Idea detail page: Winner
+
+instance ToMarkup (PageIdeaDetail a) where
+    toMarkup _ = "PageIdeaDetail IdeaDetailPageState"
+
+
+-- | 6. Create idea
+data PageCreateIdea = PageCreateIdea
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageCreateIdea where
+    toMarkup _ = "PageCreateIdea"
+
+
+-- | 7. Edit idea
+data PageEditIdea = PageEditIdea
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageEditIdea where
+    toMarkup _ = "PageEditIdea"
+
+
+-- | 8. User profile
+data PageUserProfile (a :: UserProfilePageState) = PageUserProfile
+  deriving (Eq, Show, Read)
+
+data UserProfilePageState =
+    UserProfileCreateIdeas     -- ^ 8.1 User profile: Created ideas
+  | UserProfileDelegatedVotes  -- ^ 8.2 User profile: Delegated votes
+
+instance ToMarkup (PageUserProfile a) where
+    toMarkup _ = "PageUserProfile UserProfilePageState"
+
+
+-- | 9. User settings
+data PageUserSettings = PageUserSettings
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageUserSettings where
+    toMarkup _ = "PageUserSettings"
+
+
+-- | 10. Create topic
+data PageCreateTopic (a :: CreateTopicPageState) = PageCreateTopic
+  deriving (Eq, Show, Read)
+
+data CreateTopicPageState =
+    CreateTopicS1  -- ^ 10.1 Create topic: Create topic
+  | CreateTopicS2  -- ^ 10.2 Create topic: Move ideas to topic
+
+instance ToMarkup (PageCreateTopic a) where
+    toMarkup _ = "PageCreateTopic CreateTopicPageState"
+
+
+-- | 11. Admin settings
+data PageAdminSettings (a :: AdminSettingsPageState) = PageAdminSettings
+  deriving (Eq, Show, Read)
+
+data AdminSettingsPageState =
+    AdminSettingsDurationsAndQuorum          -- ^ 11.1 Admin settings: Durations & quorum
+  | AdminSettingsManageGroupsAndPermissions  -- ^ 11.2 Admin settings: Manage groups & permissions
+  | AdminSettingsUserCreateAndImport         -- ^ 11.3 Admin settings: User creation & user import
+  | AdminSettingsEventsProtocol              -- ^ 11.4 Admin settings: Events protocol
+
+instance ToMarkup (PageAdminSettings a) where
+    toMarkup _ = "PageAdminSettings AdminSettingsPageState"
+
+
+-- | 12. Delegate vote
+data PageDelegateVote = PageDelegateVote
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageDelegateVote where
+    toMarkup _ = "PageDelegateVote"
+
+
+-- | 13. Delegation network
+data PageDelegationNetwork = PageDelegationNetwork
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageDelegationNetwork where
+    toMarkup _ = "PageDelegationNetwork"
+
+
+-- | 14. Static page: Imprint
+data PageStaticImprint = PageStaticImprint
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageStaticImprint where
+    toMarkup _ = "PageStaticImprint"
+
+
+-- | 15. Static page: Terms of use
+data PageStaticTermsOfUse = PageStaticTermsOfUse
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageStaticTermsOfUse where
+    toMarkup _ = "PageStaticTermsOfUse"
+
+
+-- | 16. Home page with login prompt
+data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageHomeWithLoginPrompt where
+    toMarkup _ = "PageHomeWithLoginPrompt"
+
+
+
+
 
 data PageIdea = PageIdea Idea
   deriving (Eq, Show, Read)
