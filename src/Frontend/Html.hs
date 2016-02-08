@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE KindSignatures     #-}
 {-# LANGUAGE OverloadedStrings  #-}
 
@@ -13,11 +14,6 @@
 -- - we can add additional information (like author name if we only have an author's id) and thus
 --   avoid making page rendering effectful.
 module Frontend.Html
-    ( Frame(Frame)
-    , PageIdea(PageIdea)
-    , PageComment(PageComment)
-    , AuthorWidget(AuthorWidget)
-    )
 where
 
 import Control.Lens ((^.))
@@ -102,14 +98,14 @@ data TopicOverviewPageState =
   | TopicOverviewVotingPhase       -- ^ 4.3 Topic overview: Voting phase
   | TopicOverviewResultPhase       -- ^ 4.4 Topic overview: Result phase
   | TopicOverviewDelegations       -- ^ 4.5 Topic overview: Delegations
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Enum, Bounded, Read)
 
 instance ToMarkup (PageTopicOverview a) where
     toMarkup _ = "PageTopicOverview TopicOverviewPageState"
 
 
 -- | 5. Idea detail page
-data PageIdeaDetail (a :: IdeaDetailPageState) = PageIdeaDetail
+data PageIdeaDetail (a :: IdeaDetailPageState) = PageIdeaDetail Idea
   deriving (Eq, Show, Read)
 
 data IdeaDetailPageState =
@@ -118,11 +114,12 @@ data IdeaDetailPageState =
   | IdeaDetailAssessmentPhase      -- ^ 5.3 Idea detail page: Assessment phase
   | IdeaDetailVotingPhase          -- ^ 5.4 Idea detail page: Voting phase
   | IdeaDetailMoveIdeaToTopic      -- ^ 5.5 Idea detail page: Move idea to topic
-  | IdeaDetailFeasibleNotFeasible  -- ^ 5.6 Idea detail page: Feasible/ not feasible
+  | IdeaDetailFeasibleNotFeasible  -- ^ 5.6 Idea detail page: Feasible / not feasible
   | IdeaDetailWinner               -- ^ 5.7 Idea detail page: Winner
+  deriving (Eq, Show, Enum, Bounded, Read)
 
 instance ToMarkup (PageIdeaDetail a) where
-    toMarkup _ = "PageIdeaDetail IdeaDetailPageState"
+    toMarkup (PageIdeaDetail idea) = toMarkup (PageIdea idea)
 
 
 -- | 6. Create idea
@@ -148,6 +145,7 @@ data PageUserProfile (a :: UserProfilePageState) = PageUserProfile
 data UserProfilePageState =
     UserProfileCreateIdeas     -- ^ 8.1 User profile: Created ideas
   | UserProfileDelegatedVotes  -- ^ 8.2 User profile: Delegated votes
+  deriving (Eq, Show, Enum, Bounded, Read)
 
 instance ToMarkup (PageUserProfile a) where
     toMarkup _ = "PageUserProfile UserProfilePageState"
@@ -168,6 +166,7 @@ data PageCreateTopic (a :: CreateTopicPageState) = PageCreateTopic
 data CreateTopicPageState =
     CreateTopicS1  -- ^ 10.1 Create topic: Create topic
   | CreateTopicS2  -- ^ 10.2 Create topic: Move ideas to topic
+  deriving (Eq, Show, Enum, Bounded, Read)
 
 instance ToMarkup (PageCreateTopic a) where
     toMarkup _ = "PageCreateTopic CreateTopicPageState"
@@ -182,6 +181,7 @@ data AdminSettingsPageState =
   | AdminSettingsManageGroupsAndPermissions  -- ^ 11.2 Admin settings: Manage groups & permissions
   | AdminSettingsUserCreateAndImport         -- ^ 11.3 Admin settings: User creation & user import
   | AdminSettingsEventsProtocol              -- ^ 11.4 Admin settings: Events protocol
+  deriving (Eq, Show, Enum, Bounded, Read)
 
 instance ToMarkup (PageAdminSettings a) where
     toMarkup _ = "PageAdminSettings AdminSettingsPageState"

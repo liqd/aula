@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -20,6 +21,58 @@ import Test.QuickCheck.Instances ()
 
 import Types
 import Frontend.Html
+
+
+----------------------------------------------------------------------
+-- pages
+
+instance Arbitrary PageRoomsOverview where
+    arbitrary = pure PageRoomsOverview
+
+instance Arbitrary PageIdeasOverview where
+    arbitrary = pure PageIdeasOverview
+
+instance Arbitrary PageIdeasInDiscussion where
+    arbitrary = pure PageIdeasInDiscussion
+
+instance Arbitrary (PageTopicOverview a) where
+    arbitrary = pure PageTopicOverview
+
+instance Arbitrary (PageIdeaDetail a) where
+    arbitrary = PageIdeaDetail <$> arb
+
+instance Arbitrary PageCreateIdea where
+    arbitrary = pure PageCreateIdea
+
+instance Arbitrary PageEditIdea where
+    arbitrary = pure PageEditIdea
+
+instance Arbitrary (PageUserProfile a) where
+    arbitrary = pure PageUserProfile
+
+instance Arbitrary PageUserSettings where
+    arbitrary = pure PageUserSettings
+
+instance Arbitrary (PageCreateTopic a) where
+    arbitrary = pure PageCreateTopic
+
+instance Arbitrary (PageAdminSettings a) where
+    arbitrary = pure PageAdminSettings
+
+instance Arbitrary PageDelegateVote where
+    arbitrary = pure PageDelegateVote
+
+instance Arbitrary PageDelegationNetwork where
+    arbitrary = pure PageDelegationNetwork
+
+instance Arbitrary PageStaticImprint where
+    arbitrary = pure PageStaticImprint
+
+instance Arbitrary PageStaticTermsOfUse where
+    arbitrary = pure PageStaticTermsOfUse
+
+instance Arbitrary PageHomeWithLoginPrompt where
+    arbitrary = pure PageHomeWithLoginPrompt
 
 
 ----------------------------------------------------------------------
@@ -108,16 +161,6 @@ instance Arbitrary Email where
 -- FIXME: instance Arbitrary Delegation
 
 -- FIXME: instance Arbitrary DelegationContext
-
-
-----------------------------------------------------------------------
--- Frontend.Html stuff
-
-instance Arbitrary PageComment where
-    arbitrary = PageComment <$> arb
-
-instance Arbitrary PageIdea where
-    arbitrary = PageIdea <$> arb
 
 
 ----------------------------------------------------------------------
