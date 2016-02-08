@@ -131,3 +131,18 @@ executable aula-html-dummies
     , blaze-builder
   default-language:
       Haskell2010
+
+test-suite tests
+  default-language:
+      Haskell2010
+  type:
+      exitcode-stdio-1.0
+  hs-source-dirs:
+      tests
+  other-modules:
+    -- (modules to be collected by hspec-discover are not to be mentioned here.)
+  main-is:
+      Spec.hs
+  build-depends:
+      base >=4.8 && <4.9
+    , hspec
