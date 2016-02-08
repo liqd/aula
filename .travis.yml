@@ -1,0 +1,23 @@
+language: c
+
+sudo: false
+
+addons:
+    apt:
+        sources:
+            - hvr-ghc
+        packages:
+            - ghc-7.10.3
+            - happy-1.19.3
+            - alex-3.1.4
+            - cabal-install-1.22
+
+before_install:
+    - grep '\(MemTotal\|SwapTotal\)' /proc/meminfo
+    - git show | head -1  # (for matching against commit hash given on the travis log web page)
+    - export PATH=/opt/ghc/7.10.3/bin:/opt/alex/3.1.4/bin:/opt/happy/1.19.3/bin:/opt/cabal/1.22/bin:$PATH
+    - export PATH=~/.cabal/bin:$PATH
+    - cabal update
+
+script:
+    - cabal install
