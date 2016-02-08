@@ -61,33 +61,35 @@ instance ToMarkup (AuthorWidget a) where
         text (mi ^. metaCreatedByLogin)
         text "]"
 
-headerMarkup :: Markup
-headerMarkup = aulaLogo >> userAvatar >> hr
-  where
-    aulaLogo = span $ text "aula"
-    userAvatar = span $ text "MyUserName" -- should be on the right
+headerMarkup :: Html
+headerMarkup = div $ do
+    span $ text "aula"
+    -- TODO: these should be links
+    span $ text "Ideenräume"
+    span $ text "Beauftragungsnetzwerk"
+    span $ text "Hi VorNac"
+    span $ img ! src "the_avatar"
+    hr
 
-footerMarkup :: Markup
+footerMarkup :: Html
 footerMarkup = span $ do
     hr
     -- TODO: these should be links
-    text "Nutzungsbedingungen"
-    text "Impressum"
+    span $ text "Nutzungsbedingungen"
+    span $ text "Impressum"
     -- Should be on the right (and we need to specify encoding in html)
-    text "Made with ♡ by Liqd"
+    span $ text "Made with ♡ by Liqd"
 
 
 ----------------------------------------------------------------------
 -- pages
 
 -- | 1. Rooms overview
-data PageRoomsOverview = PageRoomsOverview [String] -- should be a list of rooms,
-    -- but the click dummy doesn't show any rooms
+data PageRoomsOverview = PageRoomsOverview [String]
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageRoomsOverview where
-    toMarkup (PageRoomsOverview rooms) = ul $
-        forM_ rooms $ li . toMarkup
+    toMarkup (PageRoomsOverview rooms) = ul . forM_ rooms $ li . toMarkup
 
 
 -- | 2. Ideas overview
@@ -96,9 +98,10 @@ data PageIdeasOverview = PageIdeasOverview [Idea]
 
 instance ToMarkup PageIdeasOverview where
     toMarkup (PageIdeasOverview ideas) = do
-        -- "WILDE IDEEN"
-        h1 "Was soll sich veraendern?"
-        p $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die Idee abstimmen und diese somit >>auf den Tisch bringen <<"
+        p $ "WILDE IDEEN"
+        h1 "Was soll sich verändern?"
+        p $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
+            <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
         p $ button $ text "+ Neue Idee" -- FIXME: should link to idea creation form
         p $ do
             -- FIXME: these buttons should filter the ideas by category
@@ -107,20 +110,7 @@ instance ToMarkup PageIdeasOverview where
             button $ text "Unterricht"
             button $ text "Zeit"
             button $ text "Umgebung"
-        ul $ mapM_ renderIdeaEntry ideas
-      where
-        renderIdeaEntry :: Idea -> Markup
-        renderIdeaEntry idea = li . div $ do
-            span $ do
-                h2 (text $ idea ^. ideaTitle) >> br
-                text "von " >> (renderUserName $ idea ^.(ideaMeta . metaCreatedByLogin))
-            span $ renderRightColumn idea
-        renderUserName name = text name -- TODO: link to user profile
-        renderRightColumn idea = do
-            p $ do
-                toMarkup (Set.size (idea ^. ideaComments))
-                text " Verbesserungsvorschlaege"
-            -- FIXME: show how many votes are in and how many are required
+        ul $ mapM_ (toMarkup . ListItemIdea) ideas
 
 
 -- | 3. Ideas in discussion
@@ -360,6 +350,24 @@ instance ToMarkup PageHomeWithLoginPrompt where
 
 
 
+
+
+data ListItemIdea = ListItemIdea Idea
+  deriving (Eq, Show, Read)
+
+instance ToMarkup ListItemIdea where
+    toMarkup (ListItemIdea idea) = li . div $ do
+        span $ do
+            h2 (text $ idea ^. ideaTitle) >> br
+            text "von " >> (renderUserName $ idea ^.(ideaMeta . metaCreatedByLogin))
+        span $ renderRightColumn idea
+      where
+        renderUserName name = text name -- TODO: link to user profile
+        renderRightColumn idea = do
+            p $ do
+                toMarkup (Set.size (idea ^. ideaComments))
+                text " Verbesserungsvorschlaege"
+            -- TODO: show how many votes are in and how many are required
 
 
 data PageIdea = PageIdea Idea
