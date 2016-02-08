@@ -14,36 +14,39 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-      Config
-    , Frontend
+      Api
     , Arbitrary
+    , Config
+    , Frontend
+    , Frontend.Html
     , Transaction
     , Types
   build-depends:
       base >=4.8 && <4.9
     , aeson
-    , transformers
-    , case-insensitive
-    , http-types
-    , wai
-    , warp
-    , process
-    , filepath
-    , blaze-builder
     , binary
+    , blaze-builder
     , blaze-html
     , blaze-markup
     , bytestring
+    , case-insensitive
     , cassava
     , containers
     , cookie
     , directory
+    , filepath
+    , functor-infix
+    , http-types
     , lens
     , mtl
     , postgresql-simple
     , pretty-show
+    , process
     , QuickCheck
     , quickcheck-instances
+    , transformers
+    , wai
+    , warp
     , safecopy
     , scrypt
     , servant
@@ -57,7 +60,7 @@ library
   default-language:
       Haskell2010
 
-executable aula
+executable aula-server
   main-is:
       Aula.hs
   hs-source-dirs:
@@ -68,7 +71,7 @@ executable aula
   default-language:
       Haskell2010
 
-executable importusers
+executable aula-import-users
   main-is:
     ImportUsers.hs
   hs-source-dirs:
@@ -85,7 +88,7 @@ executable importusers
   default-language:
       Haskell2010
 
-executable aula-html
+executable aula-html-dummies
   main-is:
     RenderHtml.hs
   hs-source-dirs:

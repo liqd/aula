@@ -5,24 +5,24 @@
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE ViewPatterns                #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Types
 where
 
 import Control.Lens (makeLenses)
 import Control.Monad
--- import Crypto.Scrypt (EncryptedPass)
 import Data.Binary
 import Data.Char
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time
 import GHC.Generics
+import Text.Blaze (ToMarkup)
 
-import Database.PostgreSQL.Simple.ToField (ToField)
-
+import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
+import qualified Text.Blaze.Html5 as H
 
 
 ----------------------------------------------------------------------
@@ -66,7 +66,7 @@ data IdeaVote = IdeaVote
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-data IdeaVoteValue = IdeaVoteYes | IdeaVoteNo | IdeaVoteNeutral
+data IdeaVoteValue = Yes | No | Neutral
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 data Feasible = Feasible
@@ -127,38 +127,38 @@ data Topic = Topic
     { _topicMeta      :: MetaInfo Topic
     , _topicTitle     :: ST
     , _topicDesc      :: Document
-    , _topicImage     :: PNG
+    , _topicImage     :: URL
     , _topicIdeaSpace :: IdeaSpace
     , _topicPhase     :: Phase
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
--- | Topic phases.
+-- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
+-- constructor for that here.)
 data Phase =
-    PhaseEditTopics      -- ^ "Ausarbeitungsphase"
-  | PhaseFixFeasibility  -- ^ "Prüfungsphase"
-  | PhaseVote            -- ^ "Abstimmungsphase"
-  | PhaseFinished        -- ^ "Ergebnisphase"
+    PhaseRefinement    -- ^ 2. "Ausarbeitungsphase"
+  | PhaseJury          -- ^ 3. "Prüfungsphase"
+  | PhaseVoting        -- ^ 4. "Abstimmungsphase"
+  | PhaseResult        -- ^ 5. "Ergebnisphase"
+  | PhaseFinished      -- ^ 6. "Ergebnisphase"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 
 ----------------------------------------------------------------------
 -- user
 
+-- | FIXME: introduce newtypes 'UserLogin', 'UserFirstName', 'UserLastName'?
 data User = User
     { _userMeta      :: MetaInfo User
     , _userLogin     :: ST
     , _userFirstName :: ST
     , _userLastName  :: ST
-    , _userAvatar    :: PNG
+    , _userAvatar    :: URL
     , _userGroups    :: [Group]  -- ^ (could be a set)
     , _userPassword  :: EncryptedPass
     , _userEmail     :: Maybe Email
     }
   deriving (Eq, Ord, Show, Read, Generic)
-
--- | Dummy for PNG images.  FIXME: use type from juicypixels?
-type PNG = ()
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -171,12 +171,13 @@ data Group =
   | Admin
   deriving (Eq, Ord, Show, Read, Generic)
 
+-- | FIXME: import Crypto.Scrypt (EncryptedPass)
 newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
 
 -- | FIXME: replace with structured email type.
 newtype Email = Email ST
-    deriving (Eq, Ord, Show, Read, ToField, CSV.FromField, Generic)
+    deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"
 data Delegation = Delegation
@@ -203,11 +204,13 @@ newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic)
 
 data MetaInfo a = MetaInfo
-    { _metaId        :: AUID a
-    , _metaCreatedBy :: AUID User
-    , _metaCreatedAt :: Timestamp
-    , _metaChangedBy :: AUID User
-    , _metaChangedAt :: Timestamp
+    { _metaId              :: AUID a
+    , _metaCreatedBy       :: AUID User
+    , _metaCreatedByLogin  :: ST
+    , _metaCreatedByAvatar :: URL
+    , _metaCreatedAt       :: Timestamp
+    , _metaChangedBy       :: AUID User
+    , _metaChangedAt       :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -215,9 +218,15 @@ data MetaInfo a = MetaInfo
 newtype Document = Markdown { fromMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance ToMarkup Document where
+    toMarkup = H.div . H.p . H.text . fromMarkdown
+
 
 ----------------------------------------------------------------------
 -- general-purpose types
+
+-- | Dummy for URL.  FIXME: use uri-bytestring?
+type URL = ST
 
 newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
