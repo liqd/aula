@@ -27,10 +27,10 @@ import Frontend.Html
 -- pages
 
 instance Arbitrary PageRoomsOverview where
-    arbitrary = pure PageRoomsOverview
+    arbitrary = PageRoomsOverview <$> arbitrary
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = pure PageIdeasOverview
+    arbitrary = PageIdeasOverview <$> arbitrary
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = pure PageIdeasInDiscussion

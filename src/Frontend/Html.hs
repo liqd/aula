@@ -17,6 +17,7 @@ module Frontend.Html
 where
 
 import Control.Lens ((^.))
+import Control.Monad (forM_)
 import Data.Set (Set)
 import Data.String.Conversions
 import Prelude hiding (head, span, div)
@@ -41,7 +42,7 @@ instance (ToMarkup body) => ToMarkup (Frame body) where
         head $ do
             title $ text "AuLA"
             link ! rel "stylesheet" ! href "/screen.css"
-        body (toMarkup bdy)
+        body (headerMarkup >> toMarkup bdy >> footerMarkup)
 
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
@@ -60,24 +61,66 @@ instance ToMarkup (AuthorWidget a) where
         text (mi ^. metaCreatedByLogin)
         text "]"
 
+headerMarkup :: Markup
+headerMarkup = aulaLogo >> userAvatar >> hr
+  where
+    aulaLogo = span $ text "aula"
+    userAvatar = span $ text "MyUserName" -- should be on the right
+
+footerMarkup :: Markup
+footerMarkup = span $ do
+    hr
+    -- TODO: these should be links
+    text "Nutzungsbedingungen"
+    text "Impressum"
+    -- Should be on the right (and we need to specify encoding in html)
+    text "Made with ♡ by Liqd"
+
 
 ----------------------------------------------------------------------
 -- pages
 
 -- | 1. Rooms overview
-data PageRoomsOverview = PageRoomsOverview
+data PageRoomsOverview = PageRoomsOverview [String] -- should be a list of rooms,
+    -- but the click dummy doesn't show any rooms
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageRoomsOverview where
-    toMarkup _ = "PageRoomsOverview"
+    toMarkup (PageRoomsOverview rooms) = ul $
+        forM_ rooms $ li . toMarkup
 
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview
+data PageIdeasOverview = PageIdeasOverview [Idea]
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageIdeasOverview where
-    toMarkup _ = "PageIdeasOverview"
+    toMarkup (PageIdeasOverview ideas) = do
+        -- "WILDE IDEEN"
+        h1 "Was soll sich veraendern?"
+        p $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die Idee abstimmen und diese somit >>auf den Tisch bringen <<"
+        p $ button $ text "+ Neue Idee" -- FIXME: should link to idea creation form
+        p $ do
+            -- FIXME: these buttons should filter the ideas by category
+            button $ text "Regeln"
+            button $ text "Ausstattung"
+            button $ text "Unterricht"
+            button $ text "Zeit"
+            button $ text "Umgebung"
+        ul $ mapM_ renderIdeaEntry ideas
+      where
+        renderIdeaEntry :: Idea -> Markup
+        renderIdeaEntry idea = li . div $ do
+            span $ do
+                h2 (text $ idea ^. ideaTitle) >> br
+                text "von " >> (renderUserName $ idea ^.(ideaMeta . metaCreatedByLogin))
+            span $ renderRightColumn idea
+        renderUserName name = text name -- TODO: link to user profile
+        renderRightColumn idea = do
+            p $ do
+                toMarkup (Set.size (idea ^. ideaComments))
+                text " Verbesserungsvorschlaege"
+            -- FIXME: show how many votes are in and how many are required
 
 
 -- | 3. Ideas in discussion
