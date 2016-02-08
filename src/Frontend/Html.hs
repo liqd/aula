@@ -174,35 +174,40 @@ instance ToMarkup (PageCreateTopic a) where
     toMarkup _ = "PageCreateTopic CreateTopicPageState"
 
 
--- | 11. Admin settings
-data PageAdminSettings (a :: AdminSettingsPageState) where
-    PageAdminSettingsDurationsAndQuorum         :: PageAdminSettings 'AdminSettingsDurationsAndQuorum
-    PageAdminSettingsManageGroupsAndPermissions :: PageAdminSettings 'AdminSettingsManageGroupsAndPermissions
-    PageAdminSettingsUserCreateAndImport        :: PageAdminSettings 'AdminSettingsUserCreateAndImport
-    PageAdminSettingsEventsProtocol             :: PageAdminSettings 'AdminSettingsEventsProtocol
+-- | 11.1 Admin settings: Durations & quorum
+data PageAdminSettingsDurationsAndQuorum =
+    PageAdminSettingsDurationsAndQuorum
+  deriving (Eq, Show, Read)
 
-deriving instance Eq (PageAdminSettings a)
-deriving instance Show (PageAdminSettings a)
-deriving instance Read (PageAdminSettings a)
+instance ToMarkup PageAdminSettingsDurationsAndQuorum where
+    toMarkup _ = "PageAdminSettingsDurationsAndQuorum"
 
-data AdminSettingsPageState =
-    AdminSettingsDurationsAndQuorum          -- ^ 11.1 Admin settings: Durations & quorum
-  | AdminSettingsManageGroupsAndPermissions  -- ^ 11.2 Admin settings: Manage groups & permissions
-  | AdminSettingsUserCreateAndImport         -- ^ 11.3 Admin settings: User creation & user import
-  | AdminSettingsEventsProtocol              -- ^ 11.4 Admin settings: Events protocol
-  deriving (Eq, Show, Enum, Bounded, Read)
 
-instance ToMarkup (PageAdminSettings AdminSettingsDurationsAndQuorum) where
-    toMarkup _ = "PageAdminSettings AdminSettingsDurationsAndQuorum"
+-- | 11.2 Admin settings: Manage groups & permissions
+data PageAdminSettingsGroupsAndPermissions =
+    PageAdminSettingsManageGroupsAndPermissions
+  deriving (Eq, Show, Read)
 
-instance ToMarkup (PageAdminSettings AdminSettingsManageGroupsAndPermissions) where
-    toMarkup _ = "PageAdminSettings AdminSettingsManageGroupsAndPermissions"
+instance ToMarkup PageAdminSettingsGroupsAndPermissions where
+    toMarkup _ = "PageAdminSettingsGroupsAndPermissions"
 
-instance ToMarkup (PageAdminSettings AdminSettingsUserCreateAndImport) where
-    toMarkup _ = "PageAdminSettings AdminSettingsUserCreateAndImport"
 
-instance ToMarkup (PageAdminSettings AdminSettingsEventsProtocol) where
-    toMarkup _ = "PageAdminSettings AdminSettingsEventsProtocol"
+-- | 11.3 Admin settings: User creation & user import
+data PageAdminSettingsUserCreateAndImport =
+    PageAdminSettingsUserCreateAndImport
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageAdminSettingsUserCreateAndImport where
+    toMarkup _ = "PageAdminSettingsUserCreateAndImport"
+
+
+-- | 11.4 Admin settings: Events protocol
+data PageAdminSettingsEventsProtocol =
+    PageAdminSettingsEventsProtocol
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageAdminSettingsEventsProtocol where
+    toMarkup _ = "PageAdminSettingsEventsProtocol"
 
 
 -- | 12. Delegate vote
