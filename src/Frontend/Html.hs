@@ -17,6 +17,7 @@ module Frontend.Html
 where
 
 import Control.Lens ((^.))
+import Control.Monad (forM_)
 import Data.Set (Set)
 import Data.String.Conversions
 import Prelude hiding (head, span, div)
@@ -41,7 +42,7 @@ instance (ToMarkup body) => ToMarkup (Frame body) where
         head $ do
             title $ text "AuLA"
             link ! rel "stylesheet" ! href "/screen.css"
-        body (toMarkup bdy)
+        body (headerMarkup >> toMarkup bdy >> footerMarkup)
 
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
@@ -60,24 +61,56 @@ instance ToMarkup (AuthorWidget a) where
         text (mi ^. metaCreatedByLogin)
         text "]"
 
+headerMarkup :: Html
+headerMarkup = div $ do
+    span $ text "aula"
+    -- TODO: these should be links
+    span $ text "Ideenräume"
+    span $ text "Beauftragungsnetzwerk"
+    span $ text "Hi VorNac"
+    span $ img ! src "the_avatar"
+    hr
+
+footerMarkup :: Html
+footerMarkup = span $ do
+    hr
+    -- TODO: these should be links
+    span $ text "Nutzungsbedingungen"
+    span $ text "Impressum"
+    -- Should be on the right (and we need to specify encoding in html)
+    span $ text "Made with ♡ by Liqd"
+
 
 ----------------------------------------------------------------------
 -- pages
 
 -- | 1. Rooms overview
-data PageRoomsOverview = PageRoomsOverview
+data PageRoomsOverview = PageRoomsOverview [String]
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageRoomsOverview where
-    toMarkup _ = "PageRoomsOverview"
+    toMarkup (PageRoomsOverview rooms) = forM_ rooms $ div . toMarkup
 
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview
+data PageIdeasOverview = PageIdeasOverview [Idea]
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageIdeasOverview where
-    toMarkup _ = "PageIdeasOverview"
+    toMarkup (PageIdeasOverview ideas) = do
+        p $ "WILDE IDEEN"
+        h1 "Was soll sich verändern?"
+        p $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
+            <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
+        div $ button $ text "+ Neue Idee" -- FIXME: should link to idea creation form
+        div $ do
+            -- FIXME: these buttons should filter the ideas by category
+            button $ text "Regeln"
+            button $ text "Ausstattung"
+            button $ text "Unterricht"
+            button $ text "Zeit"
+            button $ text "Umgebung"
+        div $ mapM_ (toMarkup . ListItemIdea) ideas
 
 
 -- | 3. Ideas in discussion
@@ -317,6 +350,26 @@ instance ToMarkup PageHomeWithLoginPrompt where
 
 
 
+
+
+data ListItemIdea = ListItemIdea Idea
+  deriving (Eq, Show, Read)
+
+instance ToMarkup ListItemIdea where
+    toMarkup (ListItemIdea idea) = div $ do
+        span $ do
+            img ! src "some_avatar"
+        span $ do
+            div (text $ idea ^. ideaTitle)
+            div (text "von " >> (renderUserName $ idea ^.(ideaMeta . metaCreatedByLogin)))
+        span $ do
+            span $ do
+                let s = Set.size (idea ^. ideaComments)
+                toMarkup s
+                text $ if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
+            -- TODO: show how many votes are in and how many are required
+      where
+        renderUserName name = text name  -- TODO: link to user profile
 
 
 data PageIdea = PageIdea Idea
