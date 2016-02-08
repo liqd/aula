@@ -131,38 +131,100 @@ instance ToMarkup PageIdeasInDiscussion where
     toMarkup _ = "PageIdeasInDiscussion"
 
 
--- | 4. Topic overview
-data PageTopicOverview (a :: TopicOverviewPageState) = PageTopicOverview
+-- | 4.1 Topic overview: Refinement phase
+data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase
   deriving (Eq, Show, Read)
 
-data TopicOverviewPageState =
-    TopicOverviewRefinementPhase   -- ^ 4.1 Topic overview: Refinement phase
-  | TopicOverviewAssessmentPhase   -- ^ 4.2 Topic overview: Assessment phase
-  | TopicOverviewVotingPhase       -- ^ 4.3 Topic overview: Voting phase
-  | TopicOverviewResultPhase       -- ^ 4.4 Topic overview: Result phase
-  | TopicOverviewDelegations       -- ^ 4.5 Topic overview: Delegations
-  deriving (Eq, Show, Enum, Bounded, Read)
-
-instance ToMarkup (PageTopicOverview a) where
-    toMarkup _ = "PageTopicOverview TopicOverviewPageState"
+instance ToMarkup PageTopicOverviewRefinementPhase where
+    toMarkup _ = "PageTopicOverviewRefinementPhase"
 
 
--- | 5. Idea detail page
-data PageIdeaDetail (a :: IdeaDetailPageState) = PageIdeaDetail Idea
+-- | 4.2 Topic overview: Assessment phase
+data PageTopicOverviewAssessmentPhase = PageTopicOverviewAssessmentPhase
   deriving (Eq, Show, Read)
 
-data IdeaDetailPageState =
-    IdeaDetailNewIdeas             -- ^ 5.1 Idea detail page: New ideas
-  | IdeaDetailRefinementPhase      -- ^ 5.2 Idea detail page: Refinement phase
-  | IdeaDetailAssessmentPhase      -- ^ 5.3 Idea detail page: Assessment phase
-  | IdeaDetailVotingPhase          -- ^ 5.4 Idea detail page: Voting phase
-  | IdeaDetailMoveIdeaToTopic      -- ^ 5.5 Idea detail page: Move idea to topic
-  | IdeaDetailFeasibleNotFeasible  -- ^ 5.6 Idea detail page: Feasible / not feasible
-  | IdeaDetailWinner               -- ^ 5.7 Idea detail page: Winner
-  deriving (Eq, Show, Enum, Bounded, Read)
+instance ToMarkup PageTopicOverviewAssessmentPhase where
+    toMarkup _ = "PageTopicOverviewAssessmentPhase"
 
-instance ToMarkup (PageIdeaDetail a) where
-    toMarkup (PageIdeaDetail idea) = toMarkup (PageIdea idea)
+
+-- | 4.3 Topic overview: Voting phase
+data PageTopicOverviewVotingPhase = PageTopicOverviewVotingPhase
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageTopicOverviewVotingPhase where
+    toMarkup _ = "PageTopicOverviewVotingPhase"
+
+
+-- | 4.4 Topic overview: Result phase
+data PageTopicOverviewResultPhase = PageTopicOverviewResultPhase
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageTopicOverviewResultPhase where
+    toMarkup _ = "PageTopicOverviewResultPhase"
+
+
+-- | 4.5 Topic overview: Delegations
+data PageTopicOverviewDelegations = PageTopicOverviewDelegations
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageTopicOverviewDelegations where
+    toMarkup _ = "PageTopicOverviewDelegations"
+
+
+-- | 5.1 Idea detail page: New ideas
+data PageIdeaDetailNewIdeas = PageIdeaDetailNewIdeas Idea
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailNewIdeas where
+    toMarkup (PageIdeaDetailNewIdeas idea) = toMarkup (PageIdea idea)
+
+
+-- | 5.2 Idea detail page: Refinement phase
+data PageIdeaDetailRefinementPhase = PageIdeaDetailRefinementPhase
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailRefinementPhase where
+    toMarkup _ = "PageIdeaDetailRefinementPhase"
+
+
+-- | 5.3 Idea detail page: Assessment phase
+data PageIdeaDetailAssessmentPhase = PageIdeaDetailAssessmentPhase
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailAssessmentPhase where
+    toMarkup _ = "PageIdeaDetailAssessmentPhase"
+
+
+-- | 5.4 Idea detail page: Voting phase
+data PageIdeaDetailVotingPhase = PageIdeaDetailVotingPhase
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailVotingPhase where
+    toMarkup _ = "PageIdeaDetailVotingPhase"
+
+
+-- | 5.5 Idea detail page: Move idea to topic
+data PageIdeaDetailMoveIdeaToTopic = PageIdeaDetailMoveIdeaToTopic
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailMoveIdeaToTopic where
+    toMarkup _ = "PageIdeaDetailMoveIdeaToTopic"
+
+
+-- | 5.6 Idea detail page: Feasible / not feasible
+data PageIdeaDetailFeasibleNotFeasible = PageIdeaDetailFeasibleNotFeasible
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailFeasibleNotFeasible where
+    toMarkup _ = "PageIdeaDetailFeasibleNotFeasible"
+
+
+-- | 5.7 Idea detail page: Winner
+data PageIdeaDetailWinner = PageIdeaDetailWinner
+    deriving (Eq, Show, Read)
+
+instance ToMarkup PageIdeaDetailWinner where
+    toMarkup _ = "PageIdeaDetailWinner"
 
 
 -- | 6. Create idea
@@ -181,17 +243,20 @@ instance ToMarkup PageEditIdea where
     toMarkup _ = "PageEditIdea"
 
 
--- | 8. User profile
-data PageUserProfile (a :: UserProfilePageState) = PageUserProfile
+-- | 8.1 User profile: Created ideas
+data PageUserProfileCreateIdeas = PageUserProfileCreateIdeas
   deriving (Eq, Show, Read)
 
-data UserProfilePageState =
-    UserProfileCreateIdeas     -- ^ 8.1 User profile: Created ideas
-  | UserProfileDelegatedVotes  -- ^ 8.2 User profile: Delegated votes
-  deriving (Eq, Show, Enum, Bounded, Read)
+instance ToMarkup PageUserProfileCreateIdeas where
+    toMarkup _ = "PageUserProfileCreateIdeas"
 
-instance ToMarkup (PageUserProfile a) where
-    toMarkup _ = "PageUserProfile UserProfilePageState"
+
+-- | 8.2 User profile: Delegated votes
+data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageUserProfileDelegatedVotes where
+    toMarkup _ = "PageUserProfileDelegatedVotes"
 
 
 -- | 9. User settings
@@ -202,32 +267,56 @@ instance ToMarkup PageUserSettings where
     toMarkup _ = "PageUserSettings"
 
 
--- | 10. Create topic
-data PageCreateTopic (a :: CreateTopicPageState) = PageCreateTopic
+-- | 10.1 Create topic: Create topic
+data PageCreateTopic = PageCreateTopic
   deriving (Eq, Show, Read)
 
-data CreateTopicPageState =
-    CreateTopicS1  -- ^ 10.1 Create topic: Create topic
-  | CreateTopicS2  -- ^ 10.2 Create topic: Move ideas to topic
-  deriving (Eq, Show, Enum, Bounded, Read)
-
-instance ToMarkup (PageCreateTopic a) where
-    toMarkup _ = "PageCreateTopic CreateTopicPageState"
+instance ToMarkup PageCreateTopic where
+    toMarkup _ = "PageCreateTopic"
 
 
--- | 11. Admin settings
-data PageAdminSettings (a :: AdminSettingsPageState) = PageAdminSettings
+-- | 10.2 Create topic: Move ideas to topic
+data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas
   deriving (Eq, Show, Read)
 
-data AdminSettingsPageState =
-    AdminSettingsDurationsAndQuorum          -- ^ 11.1 Admin settings: Durations & quorum
-  | AdminSettingsManageGroupsAndPermissions  -- ^ 11.2 Admin settings: Manage groups & permissions
-  | AdminSettingsUserCreateAndImport         -- ^ 11.3 Admin settings: User creation & user import
-  | AdminSettingsEventsProtocol              -- ^ 11.4 Admin settings: Events protocol
-  deriving (Eq, Show, Enum, Bounded, Read)
+instance ToMarkup PageCreateTopicAddIdeas where
+    toMarkup _ = "PageCreateTopicAddIdeas"
 
-instance ToMarkup (PageAdminSettings a) where
-    toMarkup _ = "PageAdminSettings AdminSettingsPageState"
+
+-- | 11.1 Admin settings: Durations & quorum
+data PageAdminSettingsDurationsAndQuorum =
+    PageAdminSettingsDurationsAndQuorum
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageAdminSettingsDurationsAndQuorum where
+    toMarkup _ = "PageAdminSettingsDurationsAndQuorum"
+
+
+-- | 11.2 Admin settings: Manage groups & permissions
+data PageAdminSettingsGroupsAndPermissions =
+    PageAdminSettingsGroupsAndPermissions
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageAdminSettingsGroupsAndPermissions where
+    toMarkup _ = "PageAdminSettingsGroupsAndPermissions"
+
+
+-- | 11.3 Admin settings: User creation & user import
+data PageAdminSettingsUserCreateAndImport =
+    PageAdminSettingsUserCreateAndImport
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageAdminSettingsUserCreateAndImport where
+    toMarkup _ = "PageAdminSettingsUserCreateAndImport"
+
+
+-- | 11.4 Admin settings: Events protocol
+data PageAdminSettingsEventsProtocol =
+    PageAdminSettingsEventsProtocol
+  deriving (Eq, Show, Read)
+
+instance ToMarkup PageAdminSettingsEventsProtocol where
+    toMarkup _ = "PageAdminSettingsEventsProtocol"
 
 
 -- | 12. Delegate vote

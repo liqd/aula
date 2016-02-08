@@ -35,11 +35,41 @@ instance Arbitrary PageIdeasOverview where
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = pure PageIdeasInDiscussion
 
-instance Arbitrary (PageTopicOverview a) where
-    arbitrary = pure PageTopicOverview
+instance Arbitrary PageTopicOverviewRefinementPhase where
+    arbitrary = pure PageTopicOverviewRefinementPhase
 
-instance Arbitrary (PageIdeaDetail a) where
-    arbitrary = PageIdeaDetail <$> arb
+instance Arbitrary PageTopicOverviewAssessmentPhase where
+    arbitrary = pure PageTopicOverviewAssessmentPhase
+
+instance Arbitrary PageTopicOverviewVotingPhase where
+    arbitrary = pure PageTopicOverviewVotingPhase
+
+instance Arbitrary PageTopicOverviewResultPhase where
+    arbitrary = pure PageTopicOverviewResultPhase
+
+instance Arbitrary PageTopicOverviewDelegations where
+    arbitrary = pure PageTopicOverviewDelegations
+
+instance Arbitrary PageIdeaDetailNewIdeas where
+    arbitrary = PageIdeaDetailNewIdeas <$> arb
+
+instance Arbitrary PageIdeaDetailRefinementPhase where
+    arbitrary = pure PageIdeaDetailRefinementPhase
+
+instance Arbitrary PageIdeaDetailAssessmentPhase where
+    arbitrary = pure PageIdeaDetailAssessmentPhase
+
+instance Arbitrary PageIdeaDetailVotingPhase where
+    arbitrary = pure PageIdeaDetailVotingPhase
+
+instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
+    arbitrary = pure PageIdeaDetailMoveIdeaToTopic
+
+instance Arbitrary PageIdeaDetailFeasibleNotFeasible where
+    arbitrary = pure PageIdeaDetailFeasibleNotFeasible
+
+instance Arbitrary PageIdeaDetailWinner where
+    arbitrary = pure PageIdeaDetailWinner
 
 instance Arbitrary PageCreateIdea where
     arbitrary = pure PageCreateIdea
@@ -47,17 +77,32 @@ instance Arbitrary PageCreateIdea where
 instance Arbitrary PageEditIdea where
     arbitrary = pure PageEditIdea
 
-instance Arbitrary (PageUserProfile a) where
-    arbitrary = pure PageUserProfile
+instance Arbitrary PageUserProfileCreateIdeas where
+    arbitrary = pure PageUserProfileCreateIdeas
+
+instance Arbitrary PageUserProfileDelegatedVotes where
+    arbitrary = pure PageUserProfileDelegatedVotes
 
 instance Arbitrary PageUserSettings where
     arbitrary = pure PageUserSettings
 
-instance Arbitrary (PageCreateTopic a) where
+instance Arbitrary PageCreateTopic where
     arbitrary = pure PageCreateTopic
 
-instance Arbitrary (PageAdminSettings a) where
-    arbitrary = pure PageAdminSettings
+instance Arbitrary PageCreateTopicAddIdeas where
+    arbitrary = pure PageCreateTopicAddIdeas
+
+instance Arbitrary PageAdminSettingsDurationsAndQuorum where
+    arbitrary = pure PageAdminSettingsDurationsAndQuorum
+
+instance Arbitrary PageAdminSettingsGroupsAndPermissions where
+    arbitrary = pure PageAdminSettingsGroupsAndPermissions
+
+instance Arbitrary PageAdminSettingsUserCreateAndImport where
+    arbitrary = pure PageAdminSettingsUserCreateAndImport
+
+instance Arbitrary PageAdminSettingsEventsProtocol where
+    arbitrary = pure PageAdminSettingsEventsProtocol
 
 instance Arbitrary PageDelegateVote where
     arbitrary = pure PageDelegateVote
