@@ -89,7 +89,7 @@ data PageRoomsOverview = PageRoomsOverview [String]
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageRoomsOverview where
-    toMarkup (PageRoomsOverview rooms) = ul . forM_ rooms $ li . toMarkup
+    toMarkup (PageRoomsOverview rooms) = forM_ rooms $ div . toMarkup
 
 
 -- | 2. Ideas overview
@@ -102,15 +102,15 @@ instance ToMarkup PageIdeasOverview where
         h1 "Was soll sich verändern?"
         p $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
             <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        p $ button $ text "+ Neue Idee" -- FIXME: should link to idea creation form
-        p $ do
+        div $ button $ text "+ Neue Idee" -- FIXME: should link to idea creation form
+        div $ do
             -- FIXME: these buttons should filter the ideas by category
             button $ text "Regeln"
             button $ text "Ausstattung"
             button $ text "Unterricht"
             button $ text "Zeit"
             button $ text "Umgebung"
-        ul $ mapM_ (toMarkup . ListItemIdea) ideas
+        div $ mapM_ (toMarkup . ListItemIdea) ideas
 
 
 -- | 3. Ideas in discussion
@@ -356,18 +356,20 @@ data ListItemIdea = ListItemIdea Idea
   deriving (Eq, Show, Read)
 
 instance ToMarkup ListItemIdea where
-    toMarkup (ListItemIdea idea) = li . div $ do
+    toMarkup (ListItemIdea idea) = div $ do
         span $ do
-            h2 (text $ idea ^. ideaTitle) >> br
-            text "von " >> (renderUserName $ idea ^.(ideaMeta . metaCreatedByLogin))
-        span $ renderRightColumn idea
-      where
-        renderUserName name = text name -- TODO: link to user profile
-        renderRightColumn idea = do
-            p $ do
-                toMarkup (Set.size (idea ^. ideaComments))
-                text " Verbesserungsvorschlaege"
+            img ! src "some_avatar"
+        span $ do
+            div (text $ idea ^. ideaTitle)
+            div (text "von " >> (renderUserName $ idea ^.(ideaMeta . metaCreatedByLogin)))
+        span $ do
+            span $ do
+                let s = Set.size (idea ^. ideaComments)
+                toMarkup s
+                text $ if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
             -- TODO: show how many votes are in and how many are required
+      where
+        renderUserName name = text name  -- TODO: link to user profile
 
 
 data PageIdea = PageIdea Idea
