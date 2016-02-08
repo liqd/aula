@@ -1,7 +1,9 @@
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE GADTs              #-}
 {-# LANGUAGE KindSignatures     #-}
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -173,8 +175,15 @@ instance ToMarkup (PageCreateTopic a) where
 
 
 -- | 11. Admin settings
-data PageAdminSettings (a :: AdminSettingsPageState) = PageAdminSettings
-  deriving (Eq, Show, Read)
+data PageAdminSettings (a :: AdminSettingsPageState) where
+    PageAdminSettingsDurationsAndQuorum         :: PageAdminSettings 'AdminSettingsDurationsAndQuorum
+    PageAdminSettingsManageGroupsAndPermissions :: PageAdminSettings 'AdminSettingsManageGroupsAndPermissions
+    PageAdminSettingsUserCreateAndImport        :: PageAdminSettings 'AdminSettingsUserCreateAndImport
+    PageAdminSettingsEventsProtocol             :: PageAdminSettings 'AdminSettingsEventsProtocol
+
+deriving instance Eq (PageAdminSettings a)
+deriving instance Show (PageAdminSettings a)
+deriving instance Read (PageAdminSettings a)
 
 data AdminSettingsPageState =
     AdminSettingsDurationsAndQuorum          -- ^ 11.1 Admin settings: Durations & quorum
@@ -183,8 +192,17 @@ data AdminSettingsPageState =
   | AdminSettingsEventsProtocol              -- ^ 11.4 Admin settings: Events protocol
   deriving (Eq, Show, Enum, Bounded, Read)
 
-instance ToMarkup (PageAdminSettings a) where
-    toMarkup _ = "PageAdminSettings AdminSettingsPageState"
+instance ToMarkup (PageAdminSettings AdminSettingsDurationsAndQuorum) where
+    toMarkup _ = "PageAdminSettings AdminSettingsDurationsAndQuorum"
+
+instance ToMarkup (PageAdminSettings AdminSettingsManageGroupsAndPermissions) where
+    toMarkup _ = "PageAdminSettings AdminSettingsManageGroupsAndPermissions"
+
+instance ToMarkup (PageAdminSettings AdminSettingsUserCreateAndImport) where
+    toMarkup _ = "PageAdminSettings AdminSettingsUserCreateAndImport"
+
+instance ToMarkup (PageAdminSettings AdminSettingsEventsProtocol) where
+    toMarkup _ = "PageAdminSettings AdminSettingsEventsProtocol"
 
 
 -- | 12. Delegate vote
