@@ -1,5 +1,8 @@
 status: just brainstorming
 
+## Build Status
+
+[![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula)
 
 ## HTML hacking
 
