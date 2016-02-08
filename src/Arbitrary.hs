@@ -56,8 +56,17 @@ instance Arbitrary PageUserSettings where
 instance Arbitrary (PageCreateTopic a) where
     arbitrary = pure PageCreateTopic
 
-instance Arbitrary (PageAdminSettings a) where
-    arbitrary = pure PageAdminSettings
+instance Arbitrary PageAdminSettingsDurationsAndQuorum where
+    arbitrary = pure PageAdminSettingsDurationsAndQuorum
+
+instance Arbitrary PageAdminSettingsGroupsAndPermissions where
+    arbitrary = pure PageAdminSettingsGroupsAndPermissions
+
+instance Arbitrary PageAdminSettingsUserCreateAndImport where
+    arbitrary = pure PageAdminSettingsUserCreateAndImport
+
+instance Arbitrary PageAdminSettingsEventsProtocol where
+    arbitrary = pure PageAdminSettingsEventsProtocol
 
 instance Arbitrary PageDelegateVote where
     arbitrary = pure PageDelegateVote

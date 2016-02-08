@@ -185,7 +185,7 @@ instance ToMarkup PageAdminSettingsDurationsAndQuorum where
 
 -- | 11.2 Admin settings: Manage groups & permissions
 data PageAdminSettingsGroupsAndPermissions =
-    PageAdminSettingsManageGroupsAndPermissions
+    PageAdminSettingsGroupsAndPermissions
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageAdminSettingsGroupsAndPermissions where
