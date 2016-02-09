@@ -35,6 +35,23 @@ lucid:
 - slightly tidier than blaze in many details.
 
 
+## blaze is not a monad
+
+From the blaze-html and blaze-markup packages:
+
+> This use has its cost, as we don't support passing values inside the
+> monad.  Hence, `return x >>= f != f x`. We tried supporting passing
+> values, but it cost too much performance.
+
+```haskell
+    h1 >>= f = h1 >> f
+        (error "Text.Blaze.Internal.MarkupM: invalid use of monadic bind")
+```
+
+https://github.com/jaspervdj/blaze-html/blob/master/doc/RFC.lhs#L199-L201
+https://github.com/jaspervdj/blaze-markup/blob/486b7b1804be815369e8d154f489958d4b5f00b7/src/Text/Blaze/Internal.hs#L192-L193
+
+
 # configifier
 
 We use a compiled-in record type that contains the few things we need
