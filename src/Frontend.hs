@@ -21,7 +21,7 @@ import Servant
 import Servant.HTML.Blaze
 import Test.QuickCheck
 
-import Api.NoPersistent
+import Api.Persistent
 import Config
 import Frontend.Html
 import Arbitrary ()

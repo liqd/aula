@@ -5,7 +5,7 @@
 
 {-# OPTIONS_GHC #-}
 
-module Api.NoPersistent
+module Api.Persistent
     ( Persist
     , runPersist
     , getIdeasH
