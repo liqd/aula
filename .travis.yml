@@ -21,7 +21,7 @@ before_install:
     - cabal --version
 
 script:
-    - cabal install --enable-tests --only-dependencies
+    - cabal install --enable-tests --only-dependencies --reorder-goals
     - cabal configure --enable-tests --disable-optimization
     - cabal build
     - cabal test --show-details=streaming
