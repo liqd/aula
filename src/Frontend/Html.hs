@@ -220,12 +220,12 @@ instance ToMarkup PageIdeaDetailWinner where
 
 
 -- | 6. Create idea
-data PageCreateIdea = PageCreateIdea
+data PageCreateIdea = PageCreateIdea ST
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageCreateIdea where
-    toMarkup _ = "PageCreateIdea"
-
+    toMarkup (PageCreateIdea t) = do
+        p . text $ "added: " <> t
 
 -- | 7. Edit idea
 data PageEditIdea = PageEditIdea
@@ -371,7 +371,7 @@ instance ToMarkup ListItemIdea where
                 text $ if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
             -- TODO: show how many votes are in and how many are required
       where
-        renderUserName name = text name  -- TODO: link to user profile
+        renderUserName n = text n  -- TODO: link to user profile
 
 
 data PageIdea = PageIdea Idea
