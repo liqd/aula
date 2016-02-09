@@ -48,7 +48,7 @@ type FrontendH =
 frontendH :: Server FrontendH
 frontendH =
        return (Frame "yihaah!")
-  :<|> (liftIO (generate arbitrary) >>= addIdeaH >> return (Frame "new idea created."))
-  :<|> (Frame . PageIdeasOverview <$> getIdeasH)
+  :<|> (liftIO $ generate arbitrary >>= runPersist . addIdeaH >> return (Frame "new idea created."))
+  :<|> (liftIO . runPersist $ Frame . PageIdeasOverview <$> getIdeasH)
 
   :<|> serveDirectory (Config.config ^. htmlStatic)

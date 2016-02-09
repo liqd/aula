@@ -1,16 +1,16 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ViewPatterns          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
+{-# LANGUAGE OverloadedStrings           #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
+{-# LANGUAGE TemplateHaskell             #-}
 
 {-# OPTIONS_GHC #-}
 
 module Api.NoPersistent
+    ( Persist
+    , runPersist
+    , getIdeasH
+    , addIdeaH
+    )
 where
 
 import Control.Concurrent.STM
@@ -41,8 +41,12 @@ aulaState :: TVar AulaData
 aulaState = unsafePerformIO . newTVarIO $ AulaData []
 
 
-getIdeasH :: (MonadIO m) => m [Idea]
-getIdeasH = liftIO . fmap (view dbIdeas) . atomically . readTVar $ aulaState
+newtype Persist a = Persist { runPersist :: IO a }
+  deriving (Functor, Applicative, Monad, MonadIO)
 
-addIdeaH :: (MonadIO m) => Idea -> m ()
-addIdeaH idea = liftIO . atomically $ modifyTVar' aulaState (dbIdeas %~ (idea:))
+
+getIdeasH :: Persist [Idea]
+getIdeasH = Persist . fmap (view dbIdeas) . atomically . readTVar $ aulaState
+
+addIdeaH :: Idea -> Persist ()
+addIdeaH idea = Persist . atomically $ modifyTVar' aulaState (dbIdeas %~ (idea:))
