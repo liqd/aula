@@ -23,6 +23,7 @@ library
     , Types
   build-depends:
       base >=4.8 && <4.9
+    , thentos-core
     , aeson
     , binary
     , blaze-builder
@@ -98,7 +99,6 @@ executable aula-html-dummies
       base >=4.8 && <4.9
     , aula
 
-    , acid-state
     , binary
     , blaze-html
     , blaze-markup
