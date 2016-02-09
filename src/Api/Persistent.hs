@@ -41,6 +41,9 @@ aulaState :: TVar AulaData
 aulaState = unsafePerformIO . newTVarIO $ AulaData []
 
 
+-- | FIXME: call this type 'Action'?  Or 'Aula'?  Or 'AulaAction'?  As of the time of writing this
+-- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
+-- in thentos) and application logic (Action in thentos).  to be discussed later?
 newtype Persist a = Persist { runPersist :: IO a }
   deriving (Functor, Applicative, Monad, MonadIO)
 
