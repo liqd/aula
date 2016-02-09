@@ -72,7 +72,7 @@ headerMarkup = div $ do
     hr
 
 footerMarkup :: Html
-footerMarkup = span $ do
+footerMarkup = div $ do
     hr
     -- TODO: these should be links
     span $ text "Nutzungsbedingungen"
