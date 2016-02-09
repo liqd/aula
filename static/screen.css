@@ -5,6 +5,14 @@ body {
 }
 
 div {
-    background: yellow;
     vertical-align: baseline;
+    margin: 24px;
+    padding: 12px;
+}
+
+span {
+    vertical-align: baseline;
+    margin: 24px;
+    padding: 12px;
+    border-style: dashed dashed dashed;
 }
