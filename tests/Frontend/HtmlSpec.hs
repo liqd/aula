@@ -6,56 +6,57 @@ import Frontend.Html
 
 import Control.Applicative ((<$>))
 import Data.Typeable (Typeable, typeOf)
-import Text.Blaze (ToMarkup(..))
-import Text.Blaze.Html.Renderer.String (renderHtml)
-
+import Lucid (ToHtml, toHtml, renderText)
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (Arbitrary(..), Gen, Testable, forAll, property)
+
+import qualified Data.Text.Lazy as LT
+
 
 spec :: Spec
 spec = do
     mapM_ renderMarkup [
-          M (arb :: Gen PageRoomsOverview)
-        , M (arb :: Gen PageIdeasOverview)
-        , M (arb :: Gen PageIdeasInDiscussion)
-        , M (arb :: Gen PageTopicOverviewRefinementPhase)
-        , M (arb :: Gen PageTopicOverviewAssessmentPhase)
-        , M (arb :: Gen PageTopicOverviewVotingPhase)
-        , M (arb :: Gen PageTopicOverviewResultPhase)
-        , M (arb :: Gen PageTopicOverviewDelegations)
-        , M (arb :: Gen PageIdeaDetailNewIdeas)
-        , M (arb :: Gen PageIdeaDetailRefinementPhase)
-        , M (arb :: Gen PageIdeaDetailAssessmentPhase)
-        , M (arb :: Gen PageIdeaDetailVotingPhase)
-        , M (arb :: Gen PageIdeaDetailMoveIdeaToTopic)
-        , M (arb :: Gen PageIdeaDetailFeasibleNotFeasible)
-        , M (arb :: Gen PageIdeaDetailWinner)
-        , M (arb :: Gen PageCreateIdea)
-        , M (arb :: Gen PageEditIdea)
-        , M (arb :: Gen PageUserProfileCreateIdeas)
-        , M (arb :: Gen PageUserProfileDelegatedVotes)
-        , M (arb :: Gen PageUserSettings)
-        , M (arb :: Gen PageCreateTopic)
-        , M (arb :: Gen PageCreateTopicAddIdeas)
-        , M (arb :: Gen PageAdminSettingsDurationsAndQuorum)
-        , M (arb :: Gen PageAdminSettingsGroupsAndPermissions)
-        , M (arb :: Gen PageAdminSettingsUserCreateAndImport)
-        , M (arb :: Gen PageAdminSettingsEventsProtocol)
-        , M (arb :: Gen PageDelegateVote)
-        , M (arb :: Gen PageDelegationNetwork)
-        , M (arb :: Gen PageStaticImprint)
-        , M (arb :: Gen PageStaticTermsOfUse)
-        , M (arb :: Gen PageHomeWithLoginPrompt)
-        , M (PageIdea    <$> arb)
-        , M (PageComment <$> arb)
+          H (arb :: Gen PageRoomsOverview)
+        , H (arb :: Gen PageIdeasOverview)
+        , H (arb :: Gen PageIdeasInDiscussion)
+        , H (arb :: Gen PageTopicOverviewRefinementPhase)
+        , H (arb :: Gen PageTopicOverviewAssessmentPhase)
+        , H (arb :: Gen PageTopicOverviewVotingPhase)
+        , H (arb :: Gen PageTopicOverviewResultPhase)
+        , H (arb :: Gen PageTopicOverviewDelegations)
+        , H (arb :: Gen PageIdeaDetailNewIdeas)
+        , H (arb :: Gen PageIdeaDetailRefinementPhase)
+        , H (arb :: Gen PageIdeaDetailAssessmentPhase)
+        , H (arb :: Gen PageIdeaDetailVotingPhase)
+        , H (arb :: Gen PageIdeaDetailMoveIdeaToTopic)
+        , H (arb :: Gen PageIdeaDetailFeasibleNotFeasible)
+        , H (arb :: Gen PageIdeaDetailWinner)
+        , H (arb :: Gen PageCreateIdea)
+        , H (arb :: Gen PageEditIdea)
+        , H (arb :: Gen PageUserProfileCreateIdeas)
+        , H (arb :: Gen PageUserProfileDelegatedVotes)
+        , H (arb :: Gen PageUserSettings)
+        , H (arb :: Gen PageCreateTopic)
+        , H (arb :: Gen PageCreateTopicAddIdeas)
+        , H (arb :: Gen PageAdminSettingsDurationsAndQuorum)
+        , H (arb :: Gen PageAdminSettingsGroupsAndPermissions)
+        , H (arb :: Gen PageAdminSettingsUserCreateAndImport)
+        , H (arb :: Gen PageAdminSettingsEventsProtocol)
+        , H (arb :: Gen PageDelegateVote)
+        , H (arb :: Gen PageDelegationNetwork)
+        , H (arb :: Gen PageStaticImprint)
+        , H (arb :: Gen PageStaticTermsOfUse)
+        , H (arb :: Gen PageHomeWithLoginPrompt)
+        , H (PageIdea    <$> arb)
+        , H (PageComment <$> arb)
         ]
     where
         arb :: Arbitrary a => Gen a
         arb = arbitrary
 
-data MarkupGen where
-    M :: (Show m, Typeable m, ToMarkup m) => Gen m -> MarkupGen 
+data HtmlGen where
+    H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen
 
 -- | Checks if the markup rendering does not contains bottoms.
-renderMarkup (M g) = describe (show $ typeOf g) .
-    it "renders" . property . forAll g $ \pageSource -> length (renderHtml (toMarkup pageSource)) > 0
+renderMarkup (H g) = describe (show $ typeOf g) .
+    it "renders" . property . forAll g $ \pageSource -> LT.length (renderText (toHtml pageSource)) > 0
