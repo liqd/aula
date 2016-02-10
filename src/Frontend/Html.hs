@@ -89,7 +89,9 @@ data PageRoomsOverview = PageRoomsOverview [String]
   deriving (Eq, Show, Read)
 
 instance ToMarkup PageRoomsOverview where
-    toMarkup (PageRoomsOverview rooms) = forM_ rooms $ div . toMarkup
+    toMarkup (PageRoomsOverview rooms) = case rooms of
+      [] -> p "Keine Ideenräume"
+      _  -> forM_ rooms $ div . toMarkup
 
 
 -- | 2. Ideas overview
