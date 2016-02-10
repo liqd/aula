@@ -17,6 +17,7 @@ import Control.Monad.Trans.Except (ExceptT)
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
 import Servant
 import Servant.HTML.Blaze
+import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck (generate, arbitrary)
 import Text.Blaze.Html (Html, toMarkup, text)
 import Text.Digestive.Form ((.:))
@@ -42,6 +43,11 @@ runFrontend = runSettings settings $ serve (Proxy :: Proxy FrontendH) frontendH
              . setPort (Config.config ^. listenerPort)
              $ defaultSettings
 
+-- | FIXME: this should be in moved to a state object that is passed down from 'runFrontend'.
+runPersist :: Persist a -> IO a
+runPersist = unNat $ unsafePerformIO mkRunPersist
+
+
 type GetH = Get '[HTML]
 
 type FrontendH =
@@ -54,8 +60,8 @@ type FrontendH =
 frontendH :: Server FrontendH
 frontendH =
        return (Frame "yihaah!")
-  :<|> (liftIO $ generate arbitrary >>= runPersist . addIdeaH >> return (Frame "new idea created."))
-  :<|> (liftIO . runPersist $ Frame . PageIdeasOverview <$> getIdeasH)
+  :<|> (liftIO $ generate arbitrary >>= runPersist . addIdea >> return (Frame "new idea created."))
+  :<|> (liftIO . runPersist $ Frame . PageIdeasOverview <$> getIdeas)
   :<|> myFirstForm
   :<|> serveDirectory (Config.config ^. htmlStatic)
 
@@ -71,7 +77,7 @@ myFirstForm = formH "/ideas/create" p1 p2 r
     p2 :: ST -> ExceptT ServantErr IO Html
     p2 title = liftIO $ do
         idea <- (ideaTitle .~ title) <$> generate arbitrary
-        runPersist $ addIdeaH idea
+        runPersist $ addIdea idea
         return . toMarkup . Frame . text $ title
 
     r :: View Html -> ST -> ExceptT ServantErr IO Html
