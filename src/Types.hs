@@ -10,7 +10,7 @@
 module Types
 where
 
-import Control.Lens (makeLenses)
+import Control.Lens (makeLenses, Lens')
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -301,3 +301,33 @@ makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
+
+userId              :: Lens' User (AUID User)
+userId              = userMeta . metaId
+userCreatedBy       :: Lens' User (AUID User)
+userCreatedBy       = userMeta . metaCreatedBy
+userCreatedByLogin  :: Lens' User ST
+userCreatedByLogin  = userMeta . metaCreatedByLogin
+userCreatedByAvatar :: Lens' User URL
+userCreatedByAvatar = userMeta . metaCreatedByAvatar
+userCreatedAt       :: Lens' User Timestamp
+userCreatedAt       = userMeta . metaCreatedAt
+userChangedBy       :: Lens' User (AUID User)
+userChangedBy       = userMeta . metaChangedBy
+userChangedAt       :: Lens' User Timestamp
+userChangedAt       = userMeta . metaChangedAt
+
+ideaId              :: Lens' Idea (AUID Idea)
+ideaId              = ideaMeta . metaId
+ideaCreatedBy       :: Lens' Idea (AUID User)
+ideaCreatedBy       = ideaMeta . metaCreatedBy
+ideaCreatedByLogin  :: Lens' Idea ST
+ideaCreatedByLogin  = ideaMeta . metaCreatedByLogin
+ideaCreatedByAvatar :: Lens' Idea URL
+ideaCreatedByAvatar = ideaMeta . metaCreatedByAvatar
+ideaCreatedAt       :: Lens' Idea Timestamp
+ideaCreatedAt       = ideaMeta . metaCreatedAt
+ideaChangedBy       :: Lens' Idea (AUID User)
+ideaChangedBy       = ideaMeta . metaChangedBy
+ideaChangedAt       :: Lens' Idea Timestamp
+ideaChangedAt       = ideaMeta . metaChangedAt

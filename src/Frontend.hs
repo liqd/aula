@@ -18,7 +18,7 @@ import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
 import Servant
 import Servant.HTML.Blaze
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (generate, arbitrary)
+import Test.QuickCheck (Arbitrary, generate, arbitrary)
 import Text.Blaze.Html (Html, toMarkup, text)
 import Text.Digestive.Form ((.:))
 import Text.Digestive.View (View)
@@ -47,22 +47,34 @@ runFrontend = runSettings settings $ serve (Proxy :: Proxy FrontendH) frontendH
 runPersist :: Persist a -> IO a
 runPersist = unNat $ unsafePerformIO mkRunPersist
 
-
 type GetH = Get '[HTML]
 
 type FrontendH =
-       GetH (Frame String)
-  :<|> "ideas" :> "create_random" :> GetH (Frame String)
+       GetH (Frame ST)
+  :<|> "ideas" :> "create_random" :> GetH (Frame ST)
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> "ideas" :> "create" :> FormH HTML Html ST
+  :<|> "users" :> "create_random" :> GetH (Frame ST)
+  :<|> "users" :> GetH (Frame (PageShow [User]))
+  :<|> "login" :> Capture "login" ST :> GetH (Frame ST)
   :<|> Raw
+
+createRandom :: (MonadIO m, Arbitrary a) => ST -> Lens' AulaData [a] -> m (Frame ST)
+createRandom s l =
+  liftIO $ generate arbitrary >>= runPersist . addDb l >> return (Frame ("new " <> s <> " created."))
+
+render :: MonadIO m => Persist body -> m (Frame body)
+render m = liftIO . runPersist $ Frame <$> m
 
 frontendH :: Server FrontendH
 frontendH =
        return (Frame "yihaah!")
-  :<|> (liftIO $ generate arbitrary >>= runPersist . addIdea >> return (Frame "new idea created."))
-  :<|> (liftIO . runPersist $ Frame . PageIdeasOverview <$> getIdeas)
+  :<|> createRandom "idea" dbIdeas
+  :<|> render (PageIdeasOverview <$> getIdeas)
   :<|> myFirstForm
+  :<|> createRandom "user" dbUsers
+  :<|> render (PageShow <$> getUsers)
+  :<|> (\login -> liftIO . runPersist $ Frame ("You are now logged in as " <> login) <$ loginUser login)
   :<|> serveDirectory (Config.config ^. htmlStatic)
 
 
