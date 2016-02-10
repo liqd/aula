@@ -35,6 +35,8 @@ library
     , cassava
     , containers
     , cookie
+    , digestive-functors
+    , digestive-functors-blaze
     , directory
     , filepath
     , functor-infix
