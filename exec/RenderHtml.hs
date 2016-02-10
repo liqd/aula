@@ -1,34 +1,24 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 
 module Main (main) where
 
-import Data.Maybe
 import Control.Exception
 import Control.Lens ((^.))
 import Control.Monad (forM_)
+import Data.Maybe
 import Data.String.Conversions
 import Data.Typeable
-import Test.QuickCheck
-import Text.Blaze
-import System.Process
+import Lucid
+import System.Directory
 import System.Environment
 import System.FilePath
-import System.Directory
-import Text.Blaze.Renderer.Pretty (renderMarkup)
-import Text.Show.Pretty (ppShow)
 import System.IO.Unsafe (unsafePerformIO)
-
-import qualified Text.Blaze.Html5 as H
+import System.Process
+import Test.QuickCheck
+import Text.Show.Pretty (ppShow)
 
 import Arbitrary ()
 import Config
@@ -70,7 +60,7 @@ samplePages = sequence
     , f <$> (generate arbitrary :: IO PageHomeWithLoginPrompt)
     ]
   where
-    f :: (Typeable a, Show a, ToMarkup a) => a -> (TypeRep, String)
+    f :: (Typeable a, Show a, ToHtml a) => a -> (TypeRep, String)
     f x = (typeOf x, terminatingShow x)
 
     terminatingShow :: (Show a) => a -> String
@@ -83,7 +73,7 @@ samplePages = sequence
 
 -- | ...
 --
--- FIXME: check out blaze-from-html package
+-- FIXME: check out blaze-from-html package (lucid doesn't seem to have that yet).
 -- FIXME: document
 main :: IO ()
 main = do
@@ -148,7 +138,7 @@ refreshSamples = withSamplesDirectoryCurrent $ do
     putStrLn "done."
 
 
--- | Take a binary serialization and use current 'ToMarkup' instances for
+-- | Take a binary serialization and use current 'ToHtml' instances for
 dynamicRender :: String -> String
 dynamicRender s = case catMaybes
             [ g (Proxy :: Proxy PageRoomsOverview)
@@ -186,12 +176,12 @@ dynamicRender s = case catMaybes
     (v:_) -> v
     [] -> assert False $ error "dynamicRender: impossible."
   where
-    g :: forall a. (Read a, ToMarkup a) => Proxy a -> Maybe String
+    g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe String
     g proxy = unsafePerformIO $ violate (f proxy s) `catch` (\(SomeException _) -> return Nothing)
       where
         violate s' = length s' `seq` return (Just s')
 
-    f :: forall a. (Read a, ToMarkup a) => Proxy a -> String -> String
-    f Proxy s'' = v `seq` (renderMarkup . H.toHtml . Frame $ v)
+    f :: forall a. (Read a, ToHtml a) => Proxy a -> String -> String
+    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame $ v)
       where
         v = read s'' :: a

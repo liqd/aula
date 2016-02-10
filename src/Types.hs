@@ -18,11 +18,10 @@ import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time
 import GHC.Generics
-import Text.Blaze (ToMarkup)
+import Lucid
 
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
-import qualified Text.Blaze.Html5 as H
 
 
 ----------------------------------------------------------------------
@@ -218,8 +217,9 @@ data MetaInfo a = MetaInfo
 newtype Document = Markdown { fromMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance ToMarkup Document where
-    toMarkup = H.div . H.p . H.text . fromMarkdown
+instance ToHtml Document where
+    toHtml    = div_ . p_ . toHtml    . fromMarkdown
+    toHtmlRaw = div_ . p_ . toHtmlRaw . fromMarkdown
 
 
 ----------------------------------------------------------------------
