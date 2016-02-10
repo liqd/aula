@@ -232,7 +232,7 @@ newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
 
 instance Binary Timestamp where
-    put (Timestamp t) = put $ show t
+    put = put . renderTimestamp
     get = get >>= maybe mzero return . parseTimestamp
 
 instance Show Timestamp where
