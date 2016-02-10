@@ -11,3 +11,10 @@ before_install:
 
 script:
     - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-build.sh"
+
+notifications:
+    email: false
+    irc:
+        channels:
+            - "irc.freenode.net#thentos"
+        on_pull_requests: true

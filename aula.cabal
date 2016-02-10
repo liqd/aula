@@ -15,6 +15,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:
       Api
+    , Api.Persistent
     , Arbitrary
     , Config
     , Frontend
@@ -23,6 +24,7 @@ library
     , Types
   build-depends:
       base >=4.8 && <4.9
+    , thentos-core
     , aeson
     , binary
     , blaze-builder
@@ -33,6 +35,8 @@ library
     , cassava
     , containers
     , cookie
+    , digestive-functors
+    , digestive-functors-blaze
     , directory
     , filepath
     , functor-infix
@@ -44,6 +48,7 @@ library
     , process
     , QuickCheck
     , quickcheck-instances
+    , stm
     , transformers
     , wai
     , warp
@@ -97,7 +102,6 @@ executable aula-html-dummies
       base >=4.8 && <4.9
     , aula
 
-    , acid-state
     , binary
     , blaze-html
     , blaze-markup

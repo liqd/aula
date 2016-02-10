@@ -30,7 +30,7 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arbitrary
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arbitrary
+    arbitrary = PageIdeasOverview <$> arb
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = pure PageIdeasInDiscussion
@@ -72,7 +72,7 @@ instance Arbitrary PageIdeaDetailWinner where
     arbitrary = pure PageIdeaDetailWinner
 
 instance Arbitrary PageCreateIdea where
-    arbitrary = pure PageCreateIdea
+    arbitrary = PageCreateIdea <$> arbPhrase
 
 instance Arbitrary PageEditIdea where
     arbitrary = pure PageEditIdea

@@ -85,9 +85,9 @@ samplePages = sequence
 --
 -- FIXME: check out blaze-from-html package
 -- FIXME: document
--- FIXME: change working directory relative to the executable
 main :: IO ()
 main = do
+    setCurrentDirectoryToAulaRoot
     args <- getArgs
     progName <- getProgName
     case args of

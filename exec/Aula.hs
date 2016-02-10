@@ -4,6 +4,9 @@ module Main where
 
 import Types
 import Frontend
+import Config
 
 main :: IO ()
-main = runFrontend
+main = do
+    setCurrentDirectoryToAulaRoot
+    runFrontend
