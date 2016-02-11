@@ -41,7 +41,7 @@ newtype Frame body = Frame body
 
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw = toHtml
-    toHtml (Frame bdy) = do
+    toHtml (Frame bdy) = doctypehtml_ $ do
         head_ $ do
             title_ "AuLA"
             link_ [rel_ "stylesheet", href_ "/screen.css"]

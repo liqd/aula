@@ -1,4 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -22,6 +24,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Process
 import Test.QuickCheck
 import Text.Show.Pretty (ppShow)
+
+import qualified Data.Text.IO as ST
 
 import Arbitrary ()
 import Config
@@ -142,15 +146,15 @@ refreshSamples = withSamplesDirectoryCurrent $ do
     forM_ hs $ \fn -> do
         let fn' = dropExtension fn <.> ".html-compact.html"
             fn'' = dropExtension fn <.> ".html-tidy.html"
-        readFile fn >>= writeFile fn' . dynamicRender
+        ST.readFile fn >>= ST.writeFile fn' . dynamicRender
         when withTidy . void . system $
-            "tidy -indent < " ++ show fn' ++ " > " ++ show fn'' ++ " 2>/dev/null"
+            "tidy -utf8 -indent < " ++ show fn' ++ " > " ++ show fn'' ++ " 2>/dev/null"
 
     putStrLn "done."
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for
-dynamicRender :: String -> String
+dynamicRender :: ST -> ST
 dynamicRender s = case catMaybes
             [ g (Proxy :: Proxy PageRoomsOverview)
             , g (Proxy :: Proxy PageIdeasOverview)
@@ -186,14 +190,13 @@ dynamicRender s = case catMaybes
             ] of
     (v:_) -> v
     [] -> error $ "dynamicRender: problem parsing the following type." ++
-                  "  run with --recreate?\n\n" ++ s ++ "\n\n"
+                  "  run with --recreate?\n\n" ++ cs s ++ "\n\n"
   where
-    g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe String
-    g proxy = unsafePerformIO $ violate (f proxy s) `catch` (\(SomeException _) -> return Nothing)
-      where
-        violate s' = length s' `seq` return (Just s')
+    g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe ST
+    g proxy = unsafePerformIO $ (case f proxy s of !s' -> return $ Just s')
+                        `catch` (\(SomeException _) -> return Nothing)
 
-    f :: forall a. (Read a, ToHtml a) => Proxy a -> String -> String
-    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame $ v)
+    f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
+    f Proxy (cs -> !s'') = v `seq` (cs . renderText . toHtml . Frame $ v)
       where
         v = read s'' :: a
