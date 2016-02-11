@@ -68,8 +68,9 @@ footerMarkup = div_ $ do
 -- | Debugging page, uses the 'Show' instance of the underlying type.
 newtype PageShow a = PageShow { _unPageShow :: a }
 
-instance Show a => ToMarkup (PageShow a) where
-    toMarkup = pre . code . toMarkup . show . _unPageShow
+instance Show a => ToHtml (PageShow a) where
+    toHtmlRaw = toHtml
+    toHtml = pre_ . code_ . toHtml . show . _unPageShow
 
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
