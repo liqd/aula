@@ -74,7 +74,7 @@ independent command lines.
 We use the following features from thentos:
 
 - session state
-- digestive-functions for servant
+- digestive-functors for servant
 - CSRF protection
 
 Note that some (most?) of these features should be factored out into

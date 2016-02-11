@@ -10,7 +10,7 @@
 module Types
 where
 
-import Control.Lens (makeLenses)
+import Control.Lens (makeLenses, Lens')
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -301,3 +301,29 @@ makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
+
+class HasMetaInfo a where
+    metaInfo        :: Lens' a (MetaInfo a)
+    _Id             :: Lens' a (AUID a)
+    _Id             = metaInfo . metaId
+    createdBy       :: Lens' a (AUID User)
+    createdBy       = metaInfo . metaCreatedBy
+    createdByLogin  :: Lens' a ST
+    createdByLogin  = metaInfo . metaCreatedByLogin
+    createdByAvatar :: Lens' a URL
+    createdByAvatar = metaInfo . metaCreatedByAvatar
+    createdAt       :: Lens' a Timestamp
+    createdAt       = metaInfo . metaCreatedAt
+    changedBy       :: Lens' a (AUID User)
+    changedBy       = metaInfo . metaChangedBy
+    changedAt       :: Lens' a Timestamp
+    changedAt       = metaInfo . metaChangedAt
+
+instance HasMetaInfo CommentVote where metaInfo = commentVoteMeta
+instance HasMetaInfo Delegation where metaInfo = delegationMeta
+instance HasMetaInfo Feasible where metaInfo = feasibleMeta
+instance HasMetaInfo Idea where metaInfo = ideaMeta
+instance HasMetaInfo IdeaLike where metaInfo = likeMeta
+instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
+instance HasMetaInfo Topic where metaInfo = topicMeta
+instance HasMetaInfo User where metaInfo = userMeta

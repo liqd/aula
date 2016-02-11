@@ -65,6 +65,12 @@ footerMarkup = div_ $ do
     -- TODO: Should be on the right (and we need to specify encoding in html)
     span_ "Made with ♡ by Liqd"
 
+-- | Debugging page, uses the 'Show' instance of the underlying type.
+newtype PageShow a = PageShow { _unPageShow :: a }
+
+instance Show a => ToMarkup (PageShow a) where
+    toMarkup = pre . code . toMarkup . show . _unPageShow
+
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
