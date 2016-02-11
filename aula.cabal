@@ -27,21 +27,19 @@ library
     , thentos-core
     , aeson
     , binary
-    , blaze-builder
-    , blaze-html
-    , blaze-markup
     , bytestring
     , case-insensitive
     , cassava
     , containers
     , cookie
     , digestive-functors
-    , digestive-functors-blaze
+    , digestive-functors-lucid
     , directory
     , filepath
     , functor-infix
     , http-types
     , lens
+    , lucid
     , mtl
     , postgresql-simple
     , pretty-show
@@ -55,7 +53,7 @@ library
     , safecopy
     , scrypt
     , servant
-    , servant-blaze
+    , servant-lucid
     , servant-server
     , string-conversions
     , text
@@ -103,14 +101,13 @@ executable aula-html-dummies
     , aula
 
     , binary
-    , blaze-html
-    , blaze-markup
     , bytestring
     , cassava
     , containers
     , cookie
     , directory
     , lens
+    , lucid
     , mtl
     , postgresql-simple
     , pretty-show
@@ -119,7 +116,6 @@ executable aula-html-dummies
     , safecopy
     , scrypt
     , servant
-    , servant-blaze
     , servant-server
     , string-conversions
     , text
@@ -132,7 +128,6 @@ executable aula-html-dummies
     , warp
     , process
     , filepath
-    , blaze-builder
   default-language:
       Haskell2010
 
@@ -151,7 +146,7 @@ test-suite tests
       aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
-    , blaze-markup >=0.7 && <0.8
-    , blaze-html >= 0.8 && <0.9
     , hspec
+    , lucid
     , QuickCheck >= 2.8 && <2.9
+    , text

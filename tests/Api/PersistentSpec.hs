@@ -5,8 +5,6 @@ import Frontend.Html
 
 import Control.Applicative ((<$>))
 import Data.Typeable (Typeable, typeOf)
-import Text.Blaze (ToMarkup(..))
-import Text.Blaze.Html.Renderer.String (renderHtml)
 
 import Test.Hspec -- (Spec, describe, it)
 import Test.QuickCheck -- (Arbitrary(..), Gen, Testable, forAll, property)
