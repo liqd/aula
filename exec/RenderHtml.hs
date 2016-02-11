@@ -5,17 +5,19 @@
 
 module Main (main) where
 
-import Control.Exception
+import Control.Exception (assert, catch, SomeException(SomeException))
 import Control.Lens ((^.))
-import Control.Monad (forM_)
-import Data.Maybe
+import Control.Monad (forM_, unless, when, void)
+import Data.Maybe (catMaybes)
 import Data.String.Conversions
-import Data.Typeable
+import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import Lucid
 import System.Directory
 import System.Environment
+import System.Exit
 import System.FilePath
+import System.IO hiding (utf8)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process
 import Test.QuickCheck
@@ -129,13 +131,20 @@ recreateSamples = do
 refreshSamples :: IO ()
 refreshSamples = withSamplesDirectoryCurrent $ do
     putStrLn "refresh..."
+    withTidy :: Bool <- (== ExitSuccess) <$> system "which tidy >/dev/null"
+    unless withTidy $ do
+        hPutStrLn stderr "WARNING: tidy not in path.  will not generate pretty-printed pages."
+
     -- read *.hs
     hs <- filter ((== ".hs") . takeExtension) <$> getDirectoryContents "."
 
     -- write *.html
     forM_ hs $ \fn -> do
-        let fn' = dropExtension fn <.> ".html"
+        let fn' = dropExtension fn <.> ".html-compact.html"
+            fn'' = dropExtension fn <.> ".html-tidy.html"
         readFile fn >>= writeFile fn' . dynamicRender
+        when withTidy . void . system $
+            "tidy -indent < " ++ show fn' ++ " > " ++ show fn'' ++ " 2>/dev/null"
 
     putStrLn "done."
 
@@ -176,7 +185,8 @@ dynamicRender s = case catMaybes
             , g (Proxy :: Proxy PageHomeWithLoginPrompt)
             ] of
     (v:_) -> v
-    [] -> assert False $ error "dynamicRender: impossible."
+    [] -> error $ "dynamicRender: problem parsing the following type." ++
+                  "  run with --recreate?\n\n" ++ s ++ "\n\n"
   where
     g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe String
     g proxy = unsafePerformIO $ violate (f proxy s) `catch` (\(SomeException _) -> return Nothing)
