@@ -4,7 +4,7 @@
 sensei: .phony
 	cabal exec -- sensei -isrc -itests tests/Spec.hs
 
-THENTOS_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/tests/
+FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/tests/
 
 # aware of aula and thentos sources
 sensei-full: .phony
