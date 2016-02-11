@@ -87,4 +87,4 @@ findUserByLogin login = find (\u -> u ^. userLogin == login) <$> getUsers
 
 -- | FIXME: anyone can login
 loginUser :: ST -> Persist ()
-loginUser login = modifyDb dbCurrentUser . const . fmap (view userId) =<< findUserByLogin login
+loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login

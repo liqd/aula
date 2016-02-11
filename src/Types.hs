@@ -302,32 +302,28 @@ makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
 
-userId              :: Lens' User (AUID User)
-userId              = userMeta . metaId
-userCreatedBy       :: Lens' User (AUID User)
-userCreatedBy       = userMeta . metaCreatedBy
-userCreatedByLogin  :: Lens' User ST
-userCreatedByLogin  = userMeta . metaCreatedByLogin
-userCreatedByAvatar :: Lens' User URL
-userCreatedByAvatar = userMeta . metaCreatedByAvatar
-userCreatedAt       :: Lens' User Timestamp
-userCreatedAt       = userMeta . metaCreatedAt
-userChangedBy       :: Lens' User (AUID User)
-userChangedBy       = userMeta . metaChangedBy
-userChangedAt       :: Lens' User Timestamp
-userChangedAt       = userMeta . metaChangedAt
+class HasMetaInfo a where
+    metaInfo        :: Lens' a (MetaInfo a)
+    _Id             :: Lens' a (AUID a)
+    _Id             = metaInfo . metaId
+    createdBy       :: Lens' a (AUID User)
+    createdBy       = metaInfo . metaCreatedBy
+    createdByLogin  :: Lens' a ST
+    createdByLogin  = metaInfo . metaCreatedByLogin
+    createdByAvatar :: Lens' a URL
+    createdByAvatar = metaInfo . metaCreatedByAvatar
+    createdAt       :: Lens' a Timestamp
+    createdAt       = metaInfo . metaCreatedAt
+    changedBy       :: Lens' a (AUID User)
+    changedBy       = metaInfo . metaChangedBy
+    changedAt       :: Lens' a Timestamp
+    changedAt       = metaInfo . metaChangedAt
 
-ideaId              :: Lens' Idea (AUID Idea)
-ideaId              = ideaMeta . metaId
-ideaCreatedBy       :: Lens' Idea (AUID User)
-ideaCreatedBy       = ideaMeta . metaCreatedBy
-ideaCreatedByLogin  :: Lens' Idea ST
-ideaCreatedByLogin  = ideaMeta . metaCreatedByLogin
-ideaCreatedByAvatar :: Lens' Idea URL
-ideaCreatedByAvatar = ideaMeta . metaCreatedByAvatar
-ideaCreatedAt       :: Lens' Idea Timestamp
-ideaCreatedAt       = ideaMeta . metaCreatedAt
-ideaChangedBy       :: Lens' Idea (AUID User)
-ideaChangedBy       = ideaMeta . metaChangedBy
-ideaChangedAt       :: Lens' Idea Timestamp
-ideaChangedAt       = ideaMeta . metaChangedAt
+instance HasMetaInfo CommentVote where metaInfo = commentVoteMeta
+instance HasMetaInfo Delegation where metaInfo = delegationMeta
+instance HasMetaInfo Feasible where metaInfo = feasibleMeta
+instance HasMetaInfo Idea where metaInfo = ideaMeta
+instance HasMetaInfo IdeaLike where metaInfo = likeMeta
+instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
+instance HasMetaInfo Topic where metaInfo = topicMeta
+instance HasMetaInfo User where metaInfo = userMeta
