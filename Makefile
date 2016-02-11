@@ -10,8 +10,14 @@ FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_
 sensei-full: .phony
 	cabal exec -- sensei $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_ARGS)
 
-repl-full: .phony
-	cabal exec -- ghci $(FULL_SOURCES) -optP-DDEVELOPMENT ./exec/Aula.hs
-
 seito: .phony
 	sleep 0.2 && seito
+
+aula-server: .phony
+	cabal exec -- ghci $(FULL_SOURCES) ./exec/Aula.hs
+
+click-dummies-recreate: .phony
+	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs --recreate
+
+click-dummies-refresh: .phony
+	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs --refresh
