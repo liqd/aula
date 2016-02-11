@@ -38,6 +38,7 @@ import Types
 newtype Frame body = Frame body
 
 instance (ToHtml body) => ToHtml (Frame body) where
+    toHtmlRaw = toHtml
     toHtml (Frame bdy) = do
         head_ $ do
             title_ "AuLA"
@@ -67,6 +68,7 @@ footerMarkup = div_ $ do
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
+    toHtmlRaw = toHtml
     toHtml (VotesWidget votes) = toHtml $ y ++ n
       where
         y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
@@ -75,6 +77,7 @@ instance ToHtml CommentVotesWidget where
 newtype AuthorWidget a = AuthorWidget (MetaInfo a)
 
 instance ToHtml (AuthorWidget a) where
+    toHtmlRaw = toHtml
     toHtml (AuthorWidget mi) = span_ $ do
         "["
         img_ [src_ $ mi ^. metaCreatedByAvatar]
@@ -90,6 +93,7 @@ data PageRoomsOverview = PageRoomsOverview [String]
   deriving (Eq, Show, Read)
 
 instance ToHtml PageRoomsOverview where
+    toHtmlRaw = toHtml
     toHtml (PageRoomsOverview rooms) = case rooms of
       [] -> p_ "Keine Ideenräume"
       _  -> forM_ rooms $ div_ . toHtml
@@ -100,6 +104,7 @@ data PageIdeasOverview = PageIdeasOverview [Idea]
   deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeasOverview where
+    toHtmlRaw = toHtml
     toHtml (PageIdeasOverview ideas) = do
         p_ $ "WILDE IDEEN"
         h1_ "Was soll sich verändern?"
@@ -121,6 +126,7 @@ data PageIdeasInDiscussion = PageIdeasInDiscussion
   deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeasInDiscussion where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeasInDiscussion"
 
 
@@ -129,6 +135,7 @@ data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase
   deriving (Eq, Show, Read)
 
 instance ToHtml PageTopicOverviewRefinementPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageTopicOverviewRefinementPhase"
 
 
@@ -137,6 +144,7 @@ data PageTopicOverviewAssessmentPhase = PageTopicOverviewAssessmentPhase
   deriving (Eq, Show, Read)
 
 instance ToHtml PageTopicOverviewAssessmentPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageTopicOverviewAssessmentPhase"
 
 
@@ -145,6 +153,7 @@ data PageTopicOverviewVotingPhase = PageTopicOverviewVotingPhase
   deriving (Eq, Show, Read)
 
 instance ToHtml PageTopicOverviewVotingPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageTopicOverviewVotingPhase"
 
 
@@ -153,6 +162,7 @@ data PageTopicOverviewResultPhase = PageTopicOverviewResultPhase
   deriving (Eq, Show, Read)
 
 instance ToHtml PageTopicOverviewResultPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageTopicOverviewResultPhase"
 
 
@@ -161,6 +171,7 @@ data PageTopicOverviewDelegations = PageTopicOverviewDelegations
   deriving (Eq, Show, Read)
 
 instance ToHtml PageTopicOverviewDelegations where
+    toHtmlRaw = toHtml
     toHtml _ = "PageTopicOverviewDelegations"
 
 
@@ -169,6 +180,7 @@ data PageIdeaDetailNewIdeas = PageIdeaDetailNewIdeas Idea
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailNewIdeas where
+    toHtmlRaw = toHtml
     toHtml (PageIdeaDetailNewIdeas idea) = toHtml (PageIdea idea)
 
 
@@ -177,6 +189,7 @@ data PageIdeaDetailRefinementPhase = PageIdeaDetailRefinementPhase
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailRefinementPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeaDetailRefinementPhase"
 
 
@@ -185,6 +198,7 @@ data PageIdeaDetailAssessmentPhase = PageIdeaDetailAssessmentPhase
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailAssessmentPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeaDetailAssessmentPhase"
 
 
@@ -193,6 +207,7 @@ data PageIdeaDetailVotingPhase = PageIdeaDetailVotingPhase
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailVotingPhase where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeaDetailVotingPhase"
 
 
@@ -201,6 +216,7 @@ data PageIdeaDetailMoveIdeaToTopic = PageIdeaDetailMoveIdeaToTopic
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailMoveIdeaToTopic where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeaDetailMoveIdeaToTopic"
 
 
@@ -209,6 +225,7 @@ data PageIdeaDetailFeasibleNotFeasible = PageIdeaDetailFeasibleNotFeasible
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailFeasibleNotFeasible where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeaDetailFeasibleNotFeasible"
 
 
@@ -217,6 +234,7 @@ data PageIdeaDetailWinner = PageIdeaDetailWinner
     deriving (Eq, Show, Read)
 
 instance ToHtml PageIdeaDetailWinner where
+    toHtmlRaw = toHtml
     toHtml _ = "PageIdeaDetailWinner"
 
 
@@ -225,6 +243,7 @@ data PageCreateIdea = PageCreateIdea ST
   deriving (Eq, Show, Read)
 
 instance ToHtml PageCreateIdea where
+    toHtmlRaw = toHtml
     toHtml (PageCreateIdea t) = do
         p_ . toHtml $ "added: " <> t
 
@@ -233,6 +252,7 @@ data PageEditIdea = PageEditIdea
   deriving (Eq, Show, Read)
 
 instance ToHtml PageEditIdea where
+    toHtmlRaw = toHtml
     toHtml _ = "PageEditIdea"
 
 
@@ -241,6 +261,7 @@ data PageUserProfileCreateIdeas = PageUserProfileCreateIdeas
   deriving (Eq, Show, Read)
 
 instance ToHtml PageUserProfileCreateIdeas where
+    toHtmlRaw = toHtml
     toHtml _ = "PageUserProfileCreateIdeas"
 
 
@@ -249,6 +270,7 @@ data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes
   deriving (Eq, Show, Read)
 
 instance ToHtml PageUserProfileDelegatedVotes where
+    toHtmlRaw = toHtml
     toHtml _ = "PageUserProfileDelegatedVotes"
 
 
@@ -257,6 +279,7 @@ data PageUserSettings = PageUserSettings
   deriving (Eq, Show, Read)
 
 instance ToHtml PageUserSettings where
+    toHtmlRaw = toHtml
     toHtml _ = "PageUserSettings"
 
 
@@ -265,6 +288,7 @@ data PageCreateTopic = PageCreateTopic
   deriving (Eq, Show, Read)
 
 instance ToHtml PageCreateTopic where
+    toHtmlRaw = toHtml
     toHtml _ = "PageCreateTopic"
 
 
@@ -273,6 +297,7 @@ data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas
   deriving (Eq, Show, Read)
 
 instance ToHtml PageCreateTopicAddIdeas where
+    toHtmlRaw = toHtml
     toHtml _ = "PageCreateTopicAddIdeas"
 
 
@@ -282,6 +307,7 @@ data PageAdminSettingsDurationsAndQuorum =
   deriving (Eq, Show, Read)
 
 instance ToHtml PageAdminSettingsDurationsAndQuorum where
+    toHtmlRaw = toHtml
     toHtml _ = "PageAdminSettingsDurationsAndQuorum"
 
 
@@ -291,6 +317,7 @@ data PageAdminSettingsGroupsAndPermissions =
   deriving (Eq, Show, Read)
 
 instance ToHtml PageAdminSettingsGroupsAndPermissions where
+    toHtmlRaw = toHtml
     toHtml _ = "PageAdminSettingsGroupsAndPermissions"
 
 
@@ -300,6 +327,7 @@ data PageAdminSettingsUserCreateAndImport =
   deriving (Eq, Show, Read)
 
 instance ToHtml PageAdminSettingsUserCreateAndImport where
+    toHtmlRaw = toHtml
     toHtml _ = "PageAdminSettingsUserCreateAndImport"
 
 
@@ -309,6 +337,7 @@ data PageAdminSettingsEventsProtocol =
   deriving (Eq, Show, Read)
 
 instance ToHtml PageAdminSettingsEventsProtocol where
+    toHtmlRaw = toHtml
     toHtml _ = "PageAdminSettingsEventsProtocol"
 
 
@@ -317,6 +346,7 @@ data PageDelegateVote = PageDelegateVote
   deriving (Eq, Show, Read)
 
 instance ToHtml PageDelegateVote where
+    toHtmlRaw = toHtml
     toHtml _ = "PageDelegateVote"
 
 
@@ -325,6 +355,7 @@ data PageDelegationNetwork = PageDelegationNetwork
   deriving (Eq, Show, Read)
 
 instance ToHtml PageDelegationNetwork where
+    toHtmlRaw = toHtml
     toHtml _ = "PageDelegationNetwork"
 
 
@@ -333,6 +364,7 @@ data PageStaticImprint = PageStaticImprint
   deriving (Eq, Show, Read)
 
 instance ToHtml PageStaticImprint where
+    toHtmlRaw = toHtml
     toHtml _ = "PageStaticImprint"
 
 
@@ -341,6 +373,7 @@ data PageStaticTermsOfUse = PageStaticTermsOfUse
   deriving (Eq, Show, Read)
 
 instance ToHtml PageStaticTermsOfUse where
+    toHtmlRaw = toHtml
     toHtml _ = "PageStaticTermsOfUse"
 
 
@@ -349,6 +382,7 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
   deriving (Eq, Show, Read)
 
 instance ToHtml PageHomeWithLoginPrompt where
+    toHtmlRaw = toHtml
     toHtml _ = "PageHomeWithLoginPrompt"
 
 
@@ -359,6 +393,7 @@ data ListItemIdea = ListItemIdea Idea
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
+    toHtmlRaw = toHtml
     toHtml (ListItemIdea idea) = div_ $ do
         span_ $ do
             img_ [src_ "some_avatar"]
@@ -377,6 +412,7 @@ data PageIdea = PageIdea Idea
   deriving (Eq, Show, Read)
 
 instance ToHtml PageIdea where
+    toHtmlRaw = toHtml
     toHtml (PageIdea idea) = div_ $ do
         h2_ . toHtml $ idea ^. ideaTitle
 
@@ -421,6 +457,7 @@ data PageComment = PageComment Comment
   deriving (Eq, Show, Read)
 
 instance ToHtml PageComment where
+    toHtmlRaw = toHtml
     toHtml (PageComment comment) = div_ $ do
         div_ $ do
             span_ . toHtml . AuthorWidget $ comment ^. commentMeta
