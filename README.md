@@ -19,6 +19,10 @@ status: just brainstorming
     - cabal run aula-server
 - then point your browser to localhost:8080
 
+if you want to hack both thentos and aula, `/root/thentos` is exposed
+as a docker volume similarly to `/root/aula`.  Just duplicate the `-v`
+option to `docker run`.
+
 
 ## HTML hacking
 
