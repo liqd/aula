@@ -44,6 +44,12 @@ instance (ToMarkup body) => ToMarkup (Frame body) where
             link ! rel "stylesheet" ! href "/screen.css"
         body (headerMarkup >> toMarkup bdy >> footerMarkup)
 
+-- | Debugging page, uses the 'Show' instance of the underlying type.
+newtype PageShow a = PageShow { _unPageShow :: a }
+
+instance Show a => ToMarkup (PageShow a) where
+    toMarkup = pre . code . toMarkup . show . _unPageShow
+
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToMarkup CommentVotesWidget where
