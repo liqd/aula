@@ -38,7 +38,7 @@ testing.  If you want to use it, follow these steps:
 - git clone https://github.com/liqd/aula
 - export AULA_ROOT_PATH=`pwd`/aula
 - cd aula
-- cabal sandbox init --sandbox=../thentos
+- cabal sandbox init --sandbox=../thentos/.cabal-sandbox
 - cabal install
 - make sensei-full
 
