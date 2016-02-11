@@ -27,7 +27,7 @@ option to `docker run`.
 ## Getting started (with sensei)
 
 https://github.com/hspec/sensei is a tool for rapid re-compilation and
-testing.  It works with .  If you want to use it, follow these steps:
+testing.  If you want to use it, follow these steps:
 
 - git clone --recursive https://github.com/hspec/sensei
 - git clone --recursive https://github.com/liqd/thentos
@@ -48,6 +48,11 @@ run the test suite.
 You can use seito (same git repo, different executable) to pull the
 last error report into your IDE to get pointed to the source code
 locations.
+
+Backround: sensei does not support multi-package development as such,
+so we simply add the source files of all packages we want to use to
+the source paths with a long list of `-i`s.  This way, any change in
+any of `thentos-*` or `aula` will trigger a re-run.
 
 
 ## HTML hacking
