@@ -107,6 +107,7 @@ executable aula-html-dummies
     , containers
     , cookie
     , directory
+    , fsnotify
     , lens
     , lucid
     , mtl

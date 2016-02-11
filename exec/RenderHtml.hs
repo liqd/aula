@@ -1,5 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -7,9 +7,10 @@
 
 module Main (main) where
 
+import Control.Concurrent (threadDelay)
 import Control.Exception (assert, catch, SomeException(SomeException))
 import Control.Lens ((^.))
-import Control.Monad (forM_, unless, when, void)
+import Control.Monad (forM_, unless, when, void, forever)
 import Data.Maybe (catMaybes)
 import Data.String.Conversions
 import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
@@ -19,6 +20,7 @@ import System.Directory
 import System.Environment
 import System.Exit
 import System.FilePath
+import System.FSNotify
 import System.IO hiding (utf8)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process
@@ -91,7 +93,8 @@ main = do
     case args of
         ["--recreate"] -> recreateSamples
         ["--refresh"]  -> refreshSamples
-        bad -> error $ progName ++ ": bad args " ++ show bad
+        ["--watch"]    -> refreshSamples >> void watchRefresh
+        _ -> error $ "usage: " ++ progName ++ " [--recreate|--refresh|--watch]"
 
 
 withSamplesDirectoryCurrent :: IO () -> IO ()
@@ -151,6 +154,16 @@ refreshSamples = withSamplesDirectoryCurrent $ do
             "tidy -utf8 -indent < " ++ show fn' ++ " > " ++ show fn'' ++ " 2>/dev/null"
 
     putStrLn "done."
+
+
+-- | run --refresh on changes in ./src.  (Ideally, this would use ghcid to keep the code in memory
+-- and only reload the parts that have changed.  sensei does that.)
+watchRefresh :: IO StopListening
+watchRefresh = withManager $ \mgr -> do
+    let sleep = threadDelay 1000000
+        action = system "date; time cabal run -- aula-html-dummies --refresh"
+    _ <- watchTree mgr "src" (\_ -> True) (\_ -> action >> sleep)
+    forever sleep
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for
