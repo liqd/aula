@@ -11,6 +11,7 @@ import Control.Monad (forM_)
 import Data.Maybe
 import Data.String.Conversions
 import Data.Typeable
+import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import Lucid
 import System.Directory
 import System.Environment
@@ -77,6 +78,7 @@ samplePages = sequence
 -- FIXME: document
 main :: IO ()
 main = do
+    setLocaleEncoding utf8
     setCurrentDirectoryToAulaRoot
     args <- getArgs
     progName <- getProgName
