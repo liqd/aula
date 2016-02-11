@@ -4,7 +4,7 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 -- | ...
 --
@@ -21,6 +21,7 @@ import Control.Lens ((^.))
 import Control.Monad (forM_)
 import Data.Set (Set)
 import Data.String.Conversions
+import Data.Typeable (Typeable)
 import Prelude hiding (head, span, div)
 import Lucid
 import Lucid.Base
@@ -29,6 +30,7 @@ import qualified Data.Set as Set
 
 import Api
 import Types
+import Frontend.Core
 
 
 ----------------------------------------------------------------------
@@ -76,16 +78,16 @@ newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml (VotesWidget votes) = toHtml $ y ++ n
+    toHtml p@(VotesWidget votes) = semanticDiv p . toHtml $ y ++ n
       where
         y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
         n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
 
 newtype AuthorWidget a = AuthorWidget (MetaInfo a)
 
-instance ToHtml (AuthorWidget a) where
+instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
-    toHtml (AuthorWidget mi) = span_ $ do
+    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         "["
         img_ [src_ $ mi ^. metaCreatedByAvatar]
         toHtml $ mi ^. metaCreatedByLogin
@@ -101,7 +103,7 @@ data PageRoomsOverview = PageRoomsOverview [String]
 
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml
-    toHtml (PageRoomsOverview rooms) = case rooms of
+    toHtml p@(PageRoomsOverview rooms) = semanticDiv p $ case rooms of
       [] -> p_ "Keine Ideenräume"
       _  -> forM_ rooms $ div_ . toHtml
 
@@ -112,7 +114,7 @@ data PageIdeasOverview = PageIdeasOverview [Idea]
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml (PageIdeasOverview ideas) = do
+    toHtml p@(PageIdeasOverview ideas) = semanticDiv p $ do
         p_ $ "WILDE IDEEN"
         h1_ "Was soll sich verändern?"
         p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
@@ -134,7 +136,7 @@ data PageIdeasInDiscussion = PageIdeasInDiscussion
 
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeasInDiscussion"
+    toHtml p = semanticDiv p "PageIdeasInDiscussion"
 
 
 -- | 4.1 Topic overview: Refinement phase
@@ -143,7 +145,7 @@ data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase
 
 instance ToHtml PageTopicOverviewRefinementPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageTopicOverviewRefinementPhase"
+    toHtml p = semanticDiv p "PageTopicOverviewRefinementPhase"
 
 
 -- | 4.2 Topic overview: Assessment phase
@@ -152,7 +154,7 @@ data PageTopicOverviewAssessmentPhase = PageTopicOverviewAssessmentPhase
 
 instance ToHtml PageTopicOverviewAssessmentPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageTopicOverviewAssessmentPhase"
+    toHtml p = semanticDiv p "PageTopicOverviewAssessmentPhase"
 
 
 -- | 4.3 Topic overview: Voting phase
@@ -161,7 +163,7 @@ data PageTopicOverviewVotingPhase = PageTopicOverviewVotingPhase
 
 instance ToHtml PageTopicOverviewVotingPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageTopicOverviewVotingPhase"
+    toHtml p = semanticDiv p "PageTopicOverviewVotingPhase"
 
 
 -- | 4.4 Topic overview: Result phase
@@ -170,7 +172,7 @@ data PageTopicOverviewResultPhase = PageTopicOverviewResultPhase
 
 instance ToHtml PageTopicOverviewResultPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageTopicOverviewResultPhase"
+    toHtml p = semanticDiv p "PageTopicOverviewResultPhase"
 
 
 -- | 4.5 Topic overview: Delegations
@@ -179,7 +181,7 @@ data PageTopicOverviewDelegations = PageTopicOverviewDelegations
 
 instance ToHtml PageTopicOverviewDelegations where
     toHtmlRaw = toHtml
-    toHtml _ = "PageTopicOverviewDelegations"
+    toHtml p = semanticDiv p "PageTopicOverviewDelegations"
 
 
 -- | 5.1 Idea detail page: New ideas
@@ -188,7 +190,7 @@ data PageIdeaDetailNewIdeas = PageIdeaDetailNewIdeas Idea
 
 instance ToHtml PageIdeaDetailNewIdeas where
     toHtmlRaw = toHtml
-    toHtml (PageIdeaDetailNewIdeas idea) = toHtml (PageIdea idea)
+    toHtml p@(PageIdeaDetailNewIdeas idea) = semanticDiv p $ toHtml (PageIdea idea)
 
 
 -- | 5.2 Idea detail page: Refinement phase
@@ -197,7 +199,7 @@ data PageIdeaDetailRefinementPhase = PageIdeaDetailRefinementPhase
 
 instance ToHtml PageIdeaDetailRefinementPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeaDetailRefinementPhase"
+    toHtml p = semanticDiv p "PageIdeaDetailRefinementPhase"
 
 
 -- | 5.3 Idea detail page: Assessment phase
@@ -206,7 +208,7 @@ data PageIdeaDetailAssessmentPhase = PageIdeaDetailAssessmentPhase
 
 instance ToHtml PageIdeaDetailAssessmentPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeaDetailAssessmentPhase"
+    toHtml p = semanticDiv p "PageIdeaDetailAssessmentPhase"
 
 
 -- | 5.4 Idea detail page: Voting phase
@@ -215,7 +217,7 @@ data PageIdeaDetailVotingPhase = PageIdeaDetailVotingPhase
 
 instance ToHtml PageIdeaDetailVotingPhase where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeaDetailVotingPhase"
+    toHtml p = semanticDiv p "PageIdeaDetailVotingPhase"
 
 
 -- | 5.5 Idea detail page: Move idea to topic
@@ -224,7 +226,7 @@ data PageIdeaDetailMoveIdeaToTopic = PageIdeaDetailMoveIdeaToTopic
 
 instance ToHtml PageIdeaDetailMoveIdeaToTopic where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeaDetailMoveIdeaToTopic"
+    toHtml p = semanticDiv p "PageIdeaDetailMoveIdeaToTopic"
 
 
 -- | 5.6 Idea detail page: Feasible / not feasible
@@ -233,7 +235,7 @@ data PageIdeaDetailFeasibleNotFeasible = PageIdeaDetailFeasibleNotFeasible
 
 instance ToHtml PageIdeaDetailFeasibleNotFeasible where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeaDetailFeasibleNotFeasible"
+    toHtml p = semanticDiv p "PageIdeaDetailFeasibleNotFeasible"
 
 
 -- | 5.7 Idea detail page: Winner
@@ -242,7 +244,7 @@ data PageIdeaDetailWinner = PageIdeaDetailWinner
 
 instance ToHtml PageIdeaDetailWinner where
     toHtmlRaw = toHtml
-    toHtml _ = "PageIdeaDetailWinner"
+    toHtml p = semanticDiv p "PageIdeaDetailWinner"
 
 
 -- | 6. Create idea
@@ -251,7 +253,7 @@ data PageCreateIdea = PageCreateIdea ST
 
 instance ToHtml PageCreateIdea where
     toHtmlRaw = toHtml
-    toHtml (PageCreateIdea t) = do
+    toHtml p@(PageCreateIdea t) = semanticDiv p $ do
         p_ . toHtml $ "added: " <> t
 
 -- | 7. Edit idea
@@ -260,7 +262,7 @@ data PageEditIdea = PageEditIdea
 
 instance ToHtml PageEditIdea where
     toHtmlRaw = toHtml
-    toHtml _ = "PageEditIdea"
+    toHtml p = semanticDiv p "PageEditIdea"
 
 
 -- | 8.1 User profile: Created ideas
@@ -269,7 +271,7 @@ data PageUserProfileCreateIdeas = PageUserProfileCreateIdeas
 
 instance ToHtml PageUserProfileCreateIdeas where
     toHtmlRaw = toHtml
-    toHtml _ = "PageUserProfileCreateIdeas"
+    toHtml p = semanticDiv p "PageUserProfileCreateIdeas"
 
 
 -- | 8.2 User profile: Delegated votes
@@ -278,7 +280,7 @@ data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes
 
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
-    toHtml _ = "PageUserProfileDelegatedVotes"
+    toHtml p = semanticDiv p "PageUserProfileDelegatedVotes"
 
 
 -- | 9. User settings
@@ -287,7 +289,7 @@ data PageUserSettings = PageUserSettings
 
 instance ToHtml PageUserSettings where
     toHtmlRaw = toHtml
-    toHtml _ = "PageUserSettings"
+    toHtml p = semanticDiv p "PageUserSettings"
 
 
 -- | 10.1 Create topic: Create topic
@@ -296,7 +298,7 @@ data PageCreateTopic = PageCreateTopic
 
 instance ToHtml PageCreateTopic where
     toHtmlRaw = toHtml
-    toHtml _ = "PageCreateTopic"
+    toHtml p = semanticDiv p "PageCreateTopic"
 
 
 -- | 10.2 Create topic: Move ideas to topic
@@ -305,7 +307,7 @@ data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas
 
 instance ToHtml PageCreateTopicAddIdeas where
     toHtmlRaw = toHtml
-    toHtml _ = "PageCreateTopicAddIdeas"
+    toHtml p = semanticDiv p "PageCreateTopicAddIdeas"
 
 
 -- | 11.1 Admin settings: Durations & quorum
@@ -315,7 +317,7 @@ data PageAdminSettingsDurationsAndQuorum =
 
 instance ToHtml PageAdminSettingsDurationsAndQuorum where
     toHtmlRaw = toHtml
-    toHtml _ = "PageAdminSettingsDurationsAndQuorum"
+    toHtml p = semanticDiv p "PageAdminSettingsDurationsAndQuorum"
 
 
 -- | 11.2 Admin settings: Manage groups & permissions
@@ -325,7 +327,7 @@ data PageAdminSettingsGroupsAndPermissions =
 
 instance ToHtml PageAdminSettingsGroupsAndPermissions where
     toHtmlRaw = toHtml
-    toHtml _ = "PageAdminSettingsGroupsAndPermissions"
+    toHtml p = semanticDiv p "PageAdminSettingsGroupsAndPermissions"
 
 
 -- | 11.3 Admin settings: User creation & user import
@@ -335,7 +337,7 @@ data PageAdminSettingsUserCreateAndImport =
 
 instance ToHtml PageAdminSettingsUserCreateAndImport where
     toHtmlRaw = toHtml
-    toHtml _ = "PageAdminSettingsUserCreateAndImport"
+    toHtml p = semanticDiv p "PageAdminSettingsUserCreateAndImport"
 
 
 -- | 11.4 Admin settings: Events protocol
@@ -345,7 +347,7 @@ data PageAdminSettingsEventsProtocol =
 
 instance ToHtml PageAdminSettingsEventsProtocol where
     toHtmlRaw = toHtml
-    toHtml _ = "PageAdminSettingsEventsProtocol"
+    toHtml p = semanticDiv p "PageAdminSettingsEventsProtocol"
 
 
 -- | 12. Delegate vote
@@ -354,7 +356,7 @@ data PageDelegateVote = PageDelegateVote
 
 instance ToHtml PageDelegateVote where
     toHtmlRaw = toHtml
-    toHtml _ = "PageDelegateVote"
+    toHtml p = semanticDiv p "PageDelegateVote"
 
 
 -- | 13. Delegation network
@@ -363,7 +365,7 @@ data PageDelegationNetwork = PageDelegationNetwork
 
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
-    toHtml _ = "PageDelegationNetwork"
+    toHtml p = semanticDiv p "PageDelegationNetwork"
 
 
 -- | 14. Static page: Imprint
@@ -372,7 +374,7 @@ data PageStaticImprint = PageStaticImprint
 
 instance ToHtml PageStaticImprint where
     toHtmlRaw = toHtml
-    toHtml _ = "PageStaticImprint"
+    toHtml p = semanticDiv p "PageStaticImprint"
 
 
 -- | 15. Static page: Terms of use
@@ -381,7 +383,7 @@ data PageStaticTermsOfUse = PageStaticTermsOfUse
 
 instance ToHtml PageStaticTermsOfUse where
     toHtmlRaw = toHtml
-    toHtml _ = "PageStaticTermsOfUse"
+    toHtml p = semanticDiv p "PageStaticTermsOfUse"
 
 
 -- | 16. Home page with login prompt
@@ -390,7 +392,7 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
 
 instance ToHtml PageHomeWithLoginPrompt where
     toHtmlRaw = toHtml
-    toHtml _ = "PageHomeWithLoginPrompt"
+    toHtml p = semanticDiv p "PageHomeWithLoginPrompt"
 
 
 
@@ -401,7 +403,7 @@ data ListItemIdea = ListItemIdea Idea
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml (ListItemIdea idea) = div_ $ do
+    toHtml p@(ListItemIdea idea) = semanticDiv p $ do
         span_ $ do
             img_ [src_ "some_avatar"]
         span_ $ do
@@ -420,7 +422,7 @@ data PageIdea = PageIdea Idea
 
 instance ToHtml PageIdea where
     toHtmlRaw = toHtml
-    toHtml (PageIdea idea) = div_ $ do
+    toHtml p@(PageIdea idea) = semanticDiv p $ do
         h2_ . toHtml $ idea ^. ideaTitle
 
         div_ . toHtml . AuthorWidget $ idea ^. ideaMeta
@@ -465,7 +467,7 @@ data PageComment = PageComment Comment
 
 instance ToHtml PageComment where
     toHtmlRaw = toHtml
-    toHtml (PageComment comment) = div_ $ do
+    toHtml p@(PageComment comment) = semanticDiv p $ do
         div_ $ do
             span_ . toHtml . AuthorWidget $ comment ^. commentMeta
             span_ . toHtml . VotesWidget  $ comment ^. commentVotes

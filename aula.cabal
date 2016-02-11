@@ -19,6 +19,7 @@ library
     , Arbitrary
     , Config
     , Frontend
+    , Frontend.Core
     , Frontend.Html
     , Transaction
     , Types
