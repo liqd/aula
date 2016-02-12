@@ -1,25 +1,33 @@
+{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 
 module Main (main) where
 
-import Control.Exception
+import Control.Concurrent (threadDelay)
+import Control.Exception (assert, catch, SomeException(SomeException))
 import Control.Lens ((^.))
-import Control.Monad (forM_)
-import Data.Maybe
+import Control.Monad (forM_, unless, when, void, forever)
+import Data.Maybe (catMaybes)
 import Data.String.Conversions
-import Data.Typeable
+import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import Lucid
 import System.Directory
 import System.Environment
+import System.Exit
 import System.FilePath
+import System.FSNotify
+import System.IO hiding (utf8)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process
 import Test.QuickCheck
 import Text.Show.Pretty (ppShow)
+
+import qualified Data.Text.IO as ST
 
 import Arbitrary ()
 import Config
@@ -85,7 +93,8 @@ main = do
     case args of
         ["--recreate"] -> recreateSamples
         ["--refresh"]  -> refreshSamples
-        bad -> error $ progName ++ ": bad args " ++ show bad
+        ["--watch"]    -> refreshSamples >> void watchRefresh
+        _ -> error $ "usage: " ++ progName ++ " [--recreate|--refresh|--watch]"
 
 
 withSamplesDirectoryCurrent :: IO () -> IO ()
@@ -129,19 +138,36 @@ recreateSamples = do
 refreshSamples :: IO ()
 refreshSamples = withSamplesDirectoryCurrent $ do
     putStrLn "refresh..."
+    withTidy :: Bool <- (== ExitSuccess) <$> system "which tidy >/dev/null"
+    unless withTidy $ do
+        hPutStrLn stderr "WARNING: tidy not in path.  will not generate pretty-printed pages."
+
     -- read *.hs
     hs <- filter ((== ".hs") . takeExtension) <$> getDirectoryContents "."
 
     -- write *.html
     forM_ hs $ \fn -> do
-        let fn' = dropExtension fn <.> ".html"
-        readFile fn >>= writeFile fn' . dynamicRender
+        let fn' = dropExtension fn <.> ".html-compact.html"
+            fn'' = dropExtension fn <.> ".html-tidy.html"
+        ST.readFile fn >>= ST.writeFile fn' . dynamicRender
+        when withTidy . void . system $
+            "tidy -utf8 -indent < " ++ show fn' ++ " > " ++ show fn'' ++ " 2>/dev/null"
 
     putStrLn "done."
 
 
+-- | run --refresh on changes in ./src.  (Ideally, this would use ghcid to keep the code in memory
+-- and only reload the parts that have changed.  sensei does that.)
+watchRefresh :: IO StopListening
+watchRefresh = withManager $ \mgr -> do
+    let sleep = threadDelay 1000000
+        action = system "date; time cabal run -- aula-html-dummies --refresh"
+    _ <- watchTree mgr "src" (\_ -> True) (\_ -> action >> sleep)
+    forever sleep
+
+
 -- | Take a binary serialization and use current 'ToHtml' instances for
-dynamicRender :: String -> String
+dynamicRender :: ST -> ST
 dynamicRender s = case catMaybes
             [ g (Proxy :: Proxy PageRoomsOverview)
             , g (Proxy :: Proxy PageIdeasOverview)
@@ -176,14 +202,14 @@ dynamicRender s = case catMaybes
             , g (Proxy :: Proxy PageHomeWithLoginPrompt)
             ] of
     (v:_) -> v
-    [] -> assert False $ error "dynamicRender: impossible."
+    [] -> error $ "dynamicRender: problem parsing the following type." ++
+                  "  run with --recreate?\n\n" ++ cs s ++ "\n\n"
   where
-    g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe String
-    g proxy = unsafePerformIO $ violate (f proxy s) `catch` (\(SomeException _) -> return Nothing)
-      where
-        violate s' = length s' `seq` return (Just s')
+    g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe ST
+    g proxy = unsafePerformIO $ (case f proxy s of !s' -> return $ Just s')
+                        `catch` (\(SomeException _) -> return Nothing)
 
-    f :: forall a. (Read a, ToHtml a) => Proxy a -> String -> String
-    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame $ v)
+    f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
+    f Proxy (cs -> !s'') = v `seq` (cs . renderText . toHtml . Frame $ v)
       where
         v = read s'' :: a

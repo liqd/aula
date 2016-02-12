@@ -32,12 +32,13 @@ import Thentos.Prelude
 import Api.Persistent
 import Arbitrary ()
 import Config
+import Frontend.Core
 import Frontend.Html
 import Types
 
 
 runFrontend :: IO ()
-runFrontend = runSettings settings $ serve (Proxy :: Proxy FrontendH) frontendH
+runFrontend = runSettings settings . aulaTweaks $ serve (Proxy :: Proxy FrontendH) frontendH
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)

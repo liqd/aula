@@ -19,6 +19,7 @@ library
     , Arbitrary
     , Config
     , Frontend
+    , Frontend.Core
     , Frontend.Html
     , Transaction
     , Types
@@ -106,6 +107,7 @@ executable aula-html-dummies
     , containers
     , cookie
     , directory
+    , fsnotify
     , lens
     , lucid
     , mtl
