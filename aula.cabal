@@ -150,3 +150,7 @@ test-suite tests
     , lucid
     , QuickCheck >= 2.8 && <2.9
     , text
+    , lens
+    , transformers
+    , string-conversions
+    , servant-server
