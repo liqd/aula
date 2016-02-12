@@ -14,8 +14,19 @@ import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStr
 import Network.Wai (Middleware)
 
 
+-- | This will generate the following snippet:
+--
+-- > <div data-aula="PageIdea"> ... </div>
+--
+-- Which serves two purposes:
+--
+--     * It helps the front-en developer to identify which part of the generated pages comes from which
+--       combinator
+--     * Later on when we write selenium suite, the semantic tags helps up to parse, identify and test
+--       elements on the page.
 semanticDiv :: forall m a. (Monad m, ToHtml a, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
+
 
 -- | 'serveDirectory' lets wai guess the mime type, and wai's guess is not good enough.  This
 -- 'Middleware' solves that.  (Alternatively, we could clone serveDirectory and solve the problem
