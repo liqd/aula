@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -24,6 +25,14 @@ import Servant.API (FromHttpApiData)
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
+----------------------------------------------------------------------
+-- prototypes of types
+
+type family Prototype type_ :: *
+
+-- HACK
+class FromPrototype p where
+    fromPrototype :: Prototype p -> p
 
 ----------------------------------------------------------------------
 -- idea
@@ -43,6 +52,17 @@ data Idea = Idea
     , _ideaFeasible   :: Maybe Feasible
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- | Prototype for Idea creation.
+data ProtoIdea = ProtoIdea
+    { _protoIdeaTitle      :: ST
+    , _protoIdeaDesc       :: Document
+    , _protoIdeaCategory   :: Category
+    , _protoIdeaSpace      :: IdeaSpace
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+type instance Prototype Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
@@ -133,6 +153,11 @@ data Topic = Topic
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+type instance Prototype Topic = Topic
+
+instance FromPrototype Topic where
+    fromPrototype = id
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
@@ -159,6 +184,9 @@ data User = User
     , _userEmail     :: Maybe Email
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- FIXME: Temporal hack to be able to save users.
+type instance Prototype User = User
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -293,6 +321,7 @@ makeLenses ''Email
 makeLenses ''EncryptedPass
 makeLenses ''Feasible
 makeLenses ''Idea
+makeLenses ''ProtoIdea
 makeLenses ''IdeaLike
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
