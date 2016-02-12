@@ -3,6 +3,7 @@ module Frontend.HtmlSpec where
 
 import Arbitrary
 import Frontend.Html
+import Frontend.Page.CreateIdea
 
 import Control.Applicative ((<$>))
 import Data.Typeable (Typeable, typeOf)

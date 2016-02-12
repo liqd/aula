@@ -19,7 +19,10 @@ library
     , Arbitrary
     , Config
     , Frontend
+    , Frontend.Core
     , Frontend.Html
+    , Frontend.Page.CreateIdea
+    , Persistent
     , Transaction
     , Types
   build-depends:
