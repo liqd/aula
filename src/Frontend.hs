@@ -30,7 +30,7 @@ import Types
 import qualified Frontend.Page.CreateIdea as Page
 
 runFrontend :: IO ()
-runFrontend = runSettings settings $ serve (Proxy :: Proxy FrontendH) frontendH
+runFrontend = runSettings settings . aulaTweaks $ serve (Proxy :: Proxy FrontendH) frontendH
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
