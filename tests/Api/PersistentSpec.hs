@@ -1,5 +1,6 @@
 {-# LANGUAGE ImpredicativeTypes #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE TypeOperators      #-}
 
 module Api.PersistentSpec where
 
