@@ -12,9 +12,17 @@ module Api.Persistent
     , AulaLens
     , AulaGetter
     , mkRunPersist
+
+    -- * generic
     , getDb
     , addDb
     , modifyDb
+    , findIn
+    , findInBy
+    , findInById
+    , findAllIn
+    , findAllInBy
+
     , getIdeas
     , addIdea
     , getUsers
@@ -74,6 +82,21 @@ modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %
 addDb :: AulaLens [a] -> a -> Persist ()
 addDb l a = modifyDb l (a:)
 
+findIn :: AulaGetter [a] -> (a -> Bool) -> Persist (Maybe a)
+findIn l p = find p <$> getDb l
+
+findAllIn :: AulaGetter [a] -> (a -> Bool) -> Persist [a]
+findAllIn l p = filter p <$> getDb l
+
+findInBy :: Eq b => AulaGetter [a] -> Lens' a b -> b -> Persist (Maybe a)
+findInBy l f b = findIn l (\x -> x ^. f == b)
+
+findAllInBy :: Eq b => AulaGetter [a] -> Lens' a b -> b -> Persist [a]
+findAllInBy l f b = findAllIn l (\x -> x ^. f == b)
+
+findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> Persist (Maybe a)
+findInById l = findInBy l _Id
+
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
@@ -87,7 +110,7 @@ addUser :: User -> Persist ()
 addUser = addDb dbUsers
 
 findUserByLogin :: ST -> Persist (Maybe User)
-findUserByLogin login = find (\u -> u ^. userLogin == login) <$> getUsers
+findUserByLogin = findInBy dbUsers userLogin
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
