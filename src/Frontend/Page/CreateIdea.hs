@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -28,7 +29,24 @@ instance ToHtml PageCreateIdea where
         p_ $ "The idea has been created."
 
 instance FormPageView PageCreateIdea where
-    formPageView v formAction PageCreateIdea = do
+    type FormPageResult PageCreateIdea = ProtoIdea
+
+    makeForm PageCreateIdea =
+        ProtoIdea
+        <$> ("title"         .: DF.text Nothing)
+        <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
+        <*> ("idea-category" .: DF.choice categories Nothing)
+        <*> (pure SchoolSpace)
+        where
+          categories = [
+                (CatRule,        "Regel")
+              , (CatEquipment,   "Ausstattung")
+              , (CatClass,       "Unterricht")
+              , (CatTime,        "Zeit")
+              , (CatEnvironment, "Umgebung")
+              ]
+
+    formPage v formAction PageCreateIdea = do
         div_ $ do
             h3_ "Create Idea"
             DF.form v formAction $ do
@@ -50,19 +68,7 @@ createIdea :: Server (FormH HTML (Html ()) ST)
 createIdea = formRedirectH "/ideas/create" p1 p2 r
   where
     p1 :: DF.Form (Html ()) (ExceptT ServantErr IO) ProtoIdea
-    p1 = ProtoIdea
-      <$> ("title"         .: DF.text Nothing)
-      <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-      <*> ("idea-category" .: DF.choice categories Nothing)
-      <*> (pure SchoolSpace)
-      where
-        categories = [
-              (CatRule,        "Regel")
-            , (CatEquipment,   "Ausstattung")
-            , (CatClass,       "Unterricht")
-            , (CatTime,        "Zeit")
-            , (CatEnvironment, "Umgebung")
-            ]
+    p1 = makeForm PageCreateIdea
 
     p2 :: ProtoIdea -> ExceptT ServantErr IO ST
     p2 idea = liftIO $ do
@@ -72,4 +78,4 @@ createIdea = formRedirectH "/ideas/create" p1 p2 r
         return $ redirectOf PageCreateIdea
 
     r :: View (Html ()) -> ST -> ExceptT ServantErr IO (Html ())
-    r v formAction = pure . pageFrame $ formPageView v formAction PageCreateIdea
+    r v formAction = pure . pageFrame $ formPage v formAction PageCreateIdea

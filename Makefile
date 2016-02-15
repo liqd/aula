@@ -21,3 +21,6 @@ click-dummies-recreate: .phony
 
 click-dummies-refresh: .phony
 	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs --refresh
+
+test-repl:
+	cabal exec -- ghci $(FULL_SOURCES)

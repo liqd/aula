@@ -1,22 +1,28 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Frontend.HtmlSpec where
 
 import Arbitrary
+import Frontend.Core
 import Frontend.Html
 import Frontend.Page.CreateIdea
 
 import Control.Applicative ((<$>))
+import Control.Monad.Trans.Except
+import Data.Either (either)
 import Data.Typeable (Typeable, typeOf)
 import Lucid (ToHtml, toHtml, renderText)
-import Test.Hspec (Spec, describe, it)
+import Test.Hspec (Spec, context, describe, it)
 import Test.QuickCheck (Arbitrary(..), Gen, Testable, forAll, property)
+import Test.QuickCheck.Monadic (assert, monadicIO, run)
 
+import Text.Digestive.View
 import qualified Data.Text.Lazy as LT
 
 
 spec :: Spec
 spec = do
-    mapM_ renderMarkup [
+    context "ToHtml" $ mapM_ renderMarkup [
           H (arb :: Gen PageRoomsOverview)
         , H (arb :: Gen PageIdeasOverview)
         , H (arb :: Gen PageIdeasInDiscussion)
@@ -51,6 +57,9 @@ spec = do
         , H (PageIdea    <$> arb)
         , H (PageComment <$> arb)
         ]
+    context "PageFormView" $ mapM_ renderForm [
+          F (arb :: Gen PageCreateIdea)
+        ]
     where
         arb :: Arbitrary a => Gen a
         arb = arbitrary
@@ -59,5 +68,19 @@ data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen
 
 -- | Checks if the markup rendering does not contains bottoms.
-renderMarkup (H g) = describe (show $ typeOf g) .
-    it "renders" . property . forAll g $ \pageSource -> LT.length (renderText (toHtml pageSource)) > 0
+renderMarkup (H g) =
+    it (show $ typeOf g) . property . forAll g $ \pageSource -> LT.length (renderText (toHtml pageSource)) > 0
+
+data FormGen where
+    F :: (Show m, Typeable m, FormPageView m) => Gen m -> FormGen
+
+-- | Checks if the form rendering does not contains bottoms and
+-- the view has all the fields defined for GET form creation.
+renderForm (F g) =
+    it (show $ typeOf g) . property . forAll g $ \page -> monadicIO $ do
+        len <- run . fmap failOnError . runExceptT $ do
+            v <- getForm "" $ makeForm page
+            return $ LT.length (renderText $ formPage v "formAction" page)
+        assert (len > 0)
+    where
+        failOnError = either (error . show) id
