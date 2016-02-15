@@ -1,19 +1,23 @@
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Core
 where
 
+import Control.Monad.Trans.Except (ExceptT)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
+import Servant (ServantErr)
 import Text.Digestive.View
 
+import qualified Text.Digestive.Form as DF
 
 -- | This will generate the following snippet:
 --
@@ -50,8 +54,11 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 
 -- | Render Form based Views 
 class FormPageView p where
-    -- | Generates a Html view from the given view, form action, and the @p@ page
-    formPageView :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+    type FormPageResult p :: *
+    -- | Generates a Html view from the given page
+    makeForm :: p -> DF.Form (Html ()) (ExceptT ServantErr IO) (FormPageResult p)
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
 -- | The page after submitting a form should be redirected 
 class RedirectOf p where
