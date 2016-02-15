@@ -156,7 +156,7 @@ instance ToHtml PageIdeasInDiscussion where
 -- | 4 Topic overview
 data PageTopicOverview
   = PageTopicOverviewRefinementPhase' PageTopicOverviewRefinementPhase
-  | PageTopicOverviewJuryPhase' PageTopicOverviewJuryPhase
+  | PageTopicOverviewJuryPhase'       PageTopicOverviewJuryPhase
   | PageTopicOverviewVotingPhase'     PageTopicOverviewVotingPhase
   | PageTopicOverviewResultPhase'     PageTopicOverviewResultPhase
   deriving (Eq, Show, Read)
