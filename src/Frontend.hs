@@ -85,8 +85,23 @@ frontendH =
   :<|> (\login -> liftIO . runPersist $ Frame ("You are now logged in as " <> login) <$ loginUser login)
   :<|> createRandom "topic" dbTopics
   :<|> render (PageShow <$> getTopics)
+  :<|> pageTopicOverview
   :<|> serveDirectory (Config.config ^. htmlStatic)
 
+pageTopicOverview :: MonadIO m => AUID Topic -> m (Frame PageTopicOverview)
+pageTopicOverview topicId = liftIO . runPersist $ do
+    -- FIXME 404
+    Just topic <- findTopic topicId
+    ideas      <- findIdeasByTopic topic
+    pure . Frame $ case topic ^. topicPhase of
+        PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
+        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase
+        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase
+        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase
+        -- FIXME: how do we display a topic in the finished phase?
+        -- Is this the same the result phase?
+        -- Maybe some buttons to hide?
+        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase
 
 -- FIXME: would it be possible to have to html type params for 'FormH'?  one for the result of r,
 -- and one for the result of p2?  then the result of p2 could have any 'ToHtml' instance.

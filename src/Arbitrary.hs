@@ -36,7 +36,7 @@ instance Arbitrary PageIdeasInDiscussion where
     arbitrary = pure PageIdeasInDiscussion
 
 instance Arbitrary PageTopicOverviewRefinementPhase where
-    arbitrary = pure PageTopicOverviewRefinementPhase
+    arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewJuryPhase where
     arbitrary = pure PageTopicOverviewJuryPhase

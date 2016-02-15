@@ -1,8 +1,9 @@
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -153,14 +154,49 @@ instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageIdeasInDiscussion"
 
+-- | 4 Topic overview
+data PageTopicOverview
+  = PageTopicOverviewRefinementPhase' PageTopicOverviewRefinementPhase
+  | PageTopicOverviewJuryPhase' PageTopicOverviewJuryPhase
+  | PageTopicOverviewVotingPhase'     PageTopicOverviewVotingPhase
+  | PageTopicOverviewResultPhase'     PageTopicOverviewResultPhase
+  deriving (Eq, Show, Read)
+
+instance ToHtml PageTopicOverview where
+    toHtmlRaw = toHtml
+    toHtml = \case
+      PageTopicOverviewRefinementPhase' p -> toHtml p
+      PageTopicOverviewJuryPhase'       p -> toHtml p
+      PageTopicOverviewVotingPhase'     p -> toHtml p
+      PageTopicOverviewResultPhase'     p -> toHtml p
 
 -- | 4.1 Topic overview: Refinement phase
-data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase
+-- FIXME: In this page there is a second tab which shows delegations
+-- we might need a second page.
+data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase Topic [Idea]
   deriving (Eq, Show, Read)
 
 instance ToHtml PageTopicOverviewRefinementPhase where
     toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewRefinementPhase"
+    toHtml p@(PageTopicOverviewRefinementPhase topic ideas) = do
+        semanticDiv p $ do
+            div_ [id_ "navigation"] $ do
+                a_ [id_ "back-themes"] "<- Zu Allen Themen"
+                a_ "..."
+                a_ "beirbeiten"
+            h2_ "Ausarbeitungsphase"
+            div_ $ do
+                p_   [id_ "topic-title"] $ topic ^. topicTitle . html
+                div_ [id_ "topic-desc"] $ topic ^. topicDesc . html
+                a_   [id_ "add-idea"] "+ Neue Idee"
+                a_   [id_ "delegate-vote"] ":bullhorn: Stimme Beauftragen"
+            div_ [id_ "tabs"] $ do
+                a_ [id_ "tab-ideas"] "Alle Ideen"
+                a_ [id_ "tab-delegations"] "Beauftragen Stimmen"
+        div_ $ do
+            a_ [id_ "settings"] ":gear:"
+            div_ [id_ "ideas"] . for_ ideas $ \idea ->
+                ListItemIdea idea ^. html
 
 
 -- | 4.2 Topic overview: Jury (assessment) phase
