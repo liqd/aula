@@ -13,6 +13,7 @@ cabal configure --enable-tests --disable-optimization
 cabal build
 
 # Test
+set +e
 cabal test --show-details=never
 RESULT=`echo $?`
 cat dist/test/aula-*-tests.log
