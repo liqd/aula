@@ -46,8 +46,6 @@ instance RedirectOf PageCreateIdea where
 ----------------------------------------------------------------------
 -- handlers
 
--- FIXME: would it be possible to have to html type params for 'FormH'?  one for the result of r,
--- and one for the result of p2?  then the result of p2 could have any 'ToHtml' instance.
 createIdea :: Server (FormH HTML (Html ()) ST)
 createIdea = formRedirectH "/ideas/create" p1 p2 r
   where
@@ -59,10 +57,10 @@ createIdea = formRedirectH "/ideas/create" p1 p2 r
       <*> (pure SchoolSpace)
       where
         categories = [
-              (CatRule       , "Regel")
-            , (CatEquipment  , "Ausstattung")
-            , (CatClass      , "Unterricht")
-            , (CatTime       , "Zeit")
+              (CatRule,        "Regel")
+            , (CatEquipment,   "Ausstattung")
+            , (CatClass,       "Unterricht")
+            , (CatTime,        "Zeit")
             , (CatEnvironment, "Umgebung")
             ]
 
