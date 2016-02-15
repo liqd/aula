@@ -125,11 +125,11 @@ findIn l p = find p <$> getDb l
 findAllIn :: AulaGetter [a] -> (a -> Bool) -> Persist [a]
 findAllIn l p = filter p <$> getDb l
 
-findInBy :: Eq b => AulaGetter [a] -> Lens' a b -> b -> Persist (Maybe a)
-findInBy l f b = findIn l (\x -> x ^. f == b)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Persist (Maybe a)
+findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
-findAllInBy :: Eq b => AulaGetter [a] -> Lens' a b -> b -> Persist [a]
-findAllInBy l f b = findAllIn l (\x -> x ^. f == b)
+findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Persist [a]
+findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
 findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> Persist (Maybe a)
 findInById l = findInBy l _Id
