@@ -21,6 +21,7 @@ import Test.QuickCheck.Instances ()
 
 import Types
 import Frontend.Html
+import Frontend.Page.CreateIdea
 
 
 ----------------------------------------------------------------------
@@ -72,7 +73,7 @@ instance Arbitrary PageIdeaDetailWinner where
     arbitrary = pure PageIdeaDetailWinner
 
 instance Arbitrary PageCreateIdea where
-    arbitrary = PageCreateIdea <$> arbPhrase
+    arbitrary = pure PageCreateIdea
 
 instance Arbitrary PageEditIdea where
     arbitrary = pure PageEditIdea
@@ -122,6 +123,9 @@ instance Arbitrary PageHomeWithLoginPrompt where
 
 ----------------------------------------------------------------------
 -- idea
+
+instance Arbitrary ProtoIdea where
+    arbitrary = ProtoIdea <$> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary Idea where
     arbitrary = Idea <$> arb <*> arbPhrase <*> arb'

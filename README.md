@@ -15,7 +15,6 @@ status: just brainstorming
 - inside container:
     - cd /root/aula
     - cabal init --sandbox=/liqd/thentos/.cabal-sandbox
-    - perl -i -pe s/"127.0.0.1"/"0.0.0.0"/ src/Config.hs
     - cabal run aula-server
 - then point your browser to localhost:8080
 

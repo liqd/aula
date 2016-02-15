@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
@@ -25,7 +27,7 @@ import Data.String.Conversions
 import Data.Typeable (Typeable)
 import Prelude
 import Lucid hiding (for_)
-import Text.Show.Pretty (ppShow)
+import Prelude hiding (head, span, div)
 
 import qualified Data.Set as Set
 
@@ -49,44 +51,6 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
     toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
     toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
--- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
-newtype Frame body = Frame body
-
-instance (ToHtml body) => ToHtml (Frame body) where
-    toHtmlRaw = toHtml
-    toHtml (Frame bdy) = doctypehtml_ $ do
-        head_ $ do
-            title_ "AuLA"
-            link_ [rel_ "stylesheet", href_ "/screen.css"]
-        body_ $ do
-            headerMarkup >> toHtml bdy >> footerMarkup
-
-headerMarkup :: (Monad m) => HtmlT m ()
-headerMarkup = div_ $ do
-    span_ "aula"
-    -- TODO: these should be links
-    span_ "Ideenräume"
-    span_ "Beauftragungsnetzwerk"
-    span_ "Hi VorNac"
-    span_ $ img_ [src_ "the_avatar"]
-    hr_ []
-
-footerMarkup :: (Monad m) => HtmlT m ()
-footerMarkup = div_ $ do
-    hr_ []
-    -- TODO: these should be links
-    span_ "Nutzungsbedingungen"
-    span_ "Impressum"
-    -- TODO: Should be on the right (and we need to specify encoding in html)
-    span_ "Made with ♡ by Liqd"
-
--- | Debugging page, uses the 'Show' instance of the underlying type.
-newtype PageShow a = PageShow { _unPageShow :: a }
-
-instance Show a => ToHtml (PageShow a) where
-    toHtmlRaw = toHtml
-    toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
-
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
@@ -105,6 +69,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
         img_ [src_ $ mi ^. metaCreatedByAvatar]
         mi ^. metaCreatedByLogin . html
         "]"
+
 
 
 ----------------------------------------------------------------------
@@ -132,7 +97,7 @@ instance ToHtml PageIdeasOverview where
         h1_ "Was soll sich verändern?"
         p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
             <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        div_ $ button_ "+ Neue Idee" -- FIXME: should link to idea creation form
+        div_ $ button_ [onclick_ "location.href='/ideas/create'"] "+ Neue Idee" -- FIXME: should link to idea creation form
         div_ $ do
             -- FIXME: these buttons should filter the ideas by category
             button_ "Regeln"
@@ -295,15 +260,6 @@ instance ToHtml PageIdeaDetailWinner where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageIdeaDetailWinner"
 
-
--- | 6. Create idea
-data PageCreateIdea = PageCreateIdea ST
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageCreateIdea where
-    toHtmlRaw = toHtml
-    toHtml p@(PageCreateIdea t) = semanticDiv p $ do
-        p_ . toHtml $ "added: " <> t
 
 -- | 7. Edit idea
 data PageEditIdea = PageEditIdea

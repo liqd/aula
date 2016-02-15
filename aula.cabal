@@ -18,9 +18,12 @@ library
     , Api.Persistent
     , Arbitrary
     , Config
+    , CreateRandom
     , Frontend
     , Frontend.Core
     , Frontend.Html
+    , Frontend.Page.CreateIdea
+    , Persistent
     , Transaction
     , Types
   build-depends:
