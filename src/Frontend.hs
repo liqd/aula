@@ -50,19 +50,26 @@ runPersist = unNat $ unsafePerformIO mkRunPersist
 
 type GetH = Get '[HTML]
 
+type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
+
 type FrontendH =
        GetH (Frame ST)
-  :<|> "ideas" :> "create_random" :> GetH (Frame ST)
+  :<|> "ideas" :> CreateRandom Idea
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "users" :> "create_random" :> GetH (Frame ST)
+  :<|> "users" :> CreateRandom User
   :<|> "users" :> GetH (Frame (PageShow [User]))
   :<|> "login" :> Capture "login" ST :> GetH (Frame ST)
+  :<|> "topics" :> CreateRandom Topic
+  :<|> "topics" :> GetH (Frame (PageShow [Topic]))
+  :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
   :<|> Raw
 
-createRandom :: (MonadIO m, Arbitrary a) => ST -> Lens' AulaData [a] -> m (Frame ST)
-createRandom s l =
-  liftIO $ generate arbitrary >>= runPersist . addDb l >> return (Frame ("new " <> s <> " created."))
+createRandom :: (MonadIO m, Arbitrary a, Show a) => ST -> AulaLens [a] -> m (Frame (ST `Beside` PageShow a))
+createRandom s l = liftIO $ do
+    x <- generate arbitrary
+    runPersist $ addDb l x
+    return (Frame (("new " <> s <> " created.") `Beside` PageShow x))
 
 render :: MonadIO m => Persist body -> m (Frame body)
 render m = liftIO . runPersist $ Frame <$> m
@@ -76,8 +83,25 @@ frontendH =
   :<|> createRandom "user" dbUsers
   :<|> render (PageShow <$> getUsers)
   :<|> (\login -> liftIO . runPersist $ Frame ("You are now logged in as " <> login) <$ loginUser login)
+  :<|> createRandom "topic" dbTopics
+  :<|> render (PageShow <$> getTopics)
+  :<|> pageTopicOverview
   :<|> serveDirectory (Config.config ^. htmlStatic)
 
+pageTopicOverview :: MonadIO m => AUID Topic -> m (Frame PageTopicOverview)
+pageTopicOverview topicId = liftIO . runPersist $ do
+    -- FIXME 404
+    Just topic <- findTopic topicId
+    ideas      <- findIdeasByTopic topic
+    pure . Frame $ case topic ^. topicPhase of
+        PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
+        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase
+        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase
+        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase
+        -- FIXME: how do we display a topic in the finished phase?
+        -- Is this the same the result phase?
+        -- Maybe some buttons to hide?
+        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase
 
 -- FIXME: would it be possible to have to html type params for 'FormH'?  one for the result of r,
 -- and one for the result of p2?  then the result of p2 could have any 'ToHtml' instance.

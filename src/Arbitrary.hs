@@ -36,10 +36,10 @@ instance Arbitrary PageIdeasInDiscussion where
     arbitrary = pure PageIdeasInDiscussion
 
 instance Arbitrary PageTopicOverviewRefinementPhase where
-    arbitrary = pure PageTopicOverviewRefinementPhase
+    arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
 
-instance Arbitrary PageTopicOverviewAssessmentPhase where
-    arbitrary = pure PageTopicOverviewAssessmentPhase
+instance Arbitrary PageTopicOverviewJuryPhase where
+    arbitrary = pure PageTopicOverviewJuryPhase
 
 instance Arbitrary PageTopicOverviewVotingPhase where
     arbitrary = pure PageTopicOverviewVotingPhase
@@ -56,8 +56,8 @@ instance Arbitrary PageIdeaDetailNewIdeas where
 instance Arbitrary PageIdeaDetailRefinementPhase where
     arbitrary = pure PageIdeaDetailRefinementPhase
 
-instance Arbitrary PageIdeaDetailAssessmentPhase where
-    arbitrary = pure PageIdeaDetailAssessmentPhase
+instance Arbitrary PageIdeaDetailJuryPhase where
+    arbitrary = pure PageIdeaDetailJuryPhase
 
 instance Arbitrary PageIdeaDetailVotingPhase where
     arbitrary = pure PageIdeaDetailVotingPhase
