@@ -22,6 +22,7 @@ import Test.QuickCheck.Instances ()
 import Types
 import Frontend.Html
 import Frontend.Page.CreateIdea
+import Frontend.Topics
 
 
 ----------------------------------------------------------------------
@@ -40,13 +41,13 @@ instance Arbitrary PageTopicOverviewRefinementPhase where
     arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewJuryPhase where
-    arbitrary = pure PageTopicOverviewJuryPhase
+    arbitrary = PageTopicOverviewJuryPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewVotingPhase where
-    arbitrary = pure PageTopicOverviewVotingPhase
+    arbitrary = PageTopicOverviewVotingPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewResultPhase where
-    arbitrary = pure PageTopicOverviewResultPhase
+    arbitrary = PageTopicOverviewResultPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewDelegations where
     arbitrary = pure PageTopicOverviewDelegations

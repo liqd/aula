@@ -8,6 +8,8 @@ module Frontend.Core
 where
 
 import Control.Monad.Trans.Except (ExceptT)
+import Control.Lens
+import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid
@@ -16,6 +18,12 @@ import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStr
 import Network.Wai (Middleware)
 import Servant (ServantErr)
 import Text.Digestive.View
+import Text.Show.Pretty (ppShow)
+
+import Api
+import Types
+
+import qualified Data.Set as Set
 
 import qualified Text.Digestive.Form as DF
 
@@ -80,7 +88,8 @@ pageFrame bdy = do
     body_ $ do
         headerMarkup >> bdy >> footerMarkup
 
-headerMarkup :: forall m. (Monad m) => HtmlT m ()
+
+headerMarkup :: (Monad m) => HtmlT m ()
 headerMarkup = div_ $ do
     span_ "aula"
     -- TODO: these should be links
@@ -90,7 +99,7 @@ headerMarkup = div_ $ do
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
-footerMarkup :: forall m. (Monad m) => HtmlT m ()
+footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = div_ $ do
     hr_ []
     -- TODO: these should be links
@@ -99,9 +108,62 @@ footerMarkup = div_ $ do
     -- TODO: Should be on the right (and we need to specify encoding in html)
     span_ "Made with ♡ by Liqd"
 
+
+
+html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
+html = to toHtml
+
+showed :: Show a => Getter a String
+showed = to show
+
+data Beside a b = Beside a b
+
+instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
+    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
+    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
+
 -- | Debugging page, uses the 'Show' instance of the underlying type.
 newtype PageShow a = PageShow { _unPageShow :: a }
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
-    toHtml = pre_ . code_ . toHtml . show . _unPageShow
+    toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
+
+newtype CommentVotesWidget = VotesWidget (Set CommentVote)
+
+instance ToHtml CommentVotesWidget where
+    toHtmlRaw = toHtml
+    toHtml p@(VotesWidget votes) = semanticDiv p . toHtml $ y ++ n
+      where
+        y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
+        n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
+
+newtype AuthorWidget a = AuthorWidget (MetaInfo a)
+
+instance (Typeable a) => ToHtml (AuthorWidget a) where
+    toHtmlRaw = toHtml
+    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
+        "["
+        img_ [src_ $ mi ^. metaCreatedByAvatar]
+        mi ^. metaCreatedByLogin . html
+        "]"
+
+
+data ListItemIdea = ListItemIdea (Maybe Phase) Idea
+  deriving (Eq, Show, Read)
+
+instance ToHtml ListItemIdea where
+    toHtmlRaw = toHtml
+    toHtml p@(ListItemIdea _phase idea) = semanticDiv p $ do
+        -- FIXME use the phase
+        span_ $ do
+            img_ [src_ "some_avatar"]
+        span_ $ do
+            span_ $ idea ^. ideaTitle . html
+            span_ $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . html
+        span_ $ do
+            span_ $ do
+                let s = Set.size (idea ^. ideaComments)
+                s ^. showed . html
+                if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
+            -- TODO: show how many votes are in and how many are required

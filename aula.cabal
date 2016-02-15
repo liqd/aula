@@ -23,6 +23,7 @@ library
     , Frontend.Core
     , Frontend.Html
     , Frontend.Page.CreateIdea
+    , Frontend.Topics
     , Persistent
     , Transaction
     , Types

@@ -6,6 +6,7 @@ import Arbitrary
 import Frontend.Core
 import Frontend.Html
 import Frontend.Page.CreateIdea
+import Frontend.Topics
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans.Except
