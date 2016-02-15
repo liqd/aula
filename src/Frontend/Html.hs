@@ -26,7 +26,6 @@ import Data.String.Conversions
 import Data.Typeable (Typeable)
 import Prelude
 import Lucid hiding (for_)
-import Lucid.Base
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
