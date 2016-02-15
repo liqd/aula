@@ -17,13 +17,14 @@
 module Frontend.Html
 where
 
-import Control.Lens ((^.))
+import Control.Lens
 import Control.Monad (forM_)
+import Data.Foldable (for_)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable (Typeable)
-import Prelude hiding (head, span, div)
-import Lucid
+import Prelude
+import Lucid hiding (for_)
 import Lucid.Base
 import Text.Show.Pretty (ppShow)
 
@@ -36,6 +37,12 @@ import Frontend.Core
 
 ----------------------------------------------------------------------
 -- building blocks
+
+html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
+html = to toHtml
+
+showed :: Show a => Getter a String
+showed = to show
 
 data Beside a b = Beside a b
 
@@ -97,7 +104,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         "["
         img_ [src_ $ mi ^. metaCreatedByAvatar]
-        toHtml $ mi ^. metaCreatedByLogin
+        mi ^. metaCreatedByLogin . html
         "]"
 
 
@@ -134,7 +141,8 @@ instance ToHtml PageIdeasOverview where
             button_ "Unterricht"
             button_ "Zeit"
             button_ "Umgebung"
-        div_ $ mapM_ (toHtml . ListItemIdea) ideas
+        div_ [id_ "ideas"] . for_ ideas $ \idea ->
+            ListItemIdea idea ^. html
 
 
 -- | 3. Ideas in discussion
@@ -414,12 +422,12 @@ instance ToHtml ListItemIdea where
         span_ $ do
             img_ [src_ "some_avatar"]
         span_ $ do
-            div_ . toHtml $ idea ^. ideaTitle
-            div_ . toHtml $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin)
+            span_ $ idea ^. ideaTitle . html
+            span_ $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . html
         span_ $ do
             span_ $ do
                 let s = Set.size (idea ^. ideaComments)
-                toHtml $ show s
+                s ^. showed . html
                 if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
             -- TODO: show how many votes are in and how many are required
 
@@ -430,18 +438,20 @@ data PageIdea = PageIdea Idea
 instance ToHtml PageIdea where
     toHtmlRaw = toHtml
     toHtml p@(PageIdea idea) = semanticDiv p $ do
-        h2_ . toHtml $ idea ^. ideaTitle
+        let totalVotes    = Set.size $ idea ^. ideaVotes
+            totalComments = Set.size $ idea ^. ideaComments
+        h2_ $ idea ^. ideaTitle . html
 
-        div_ . toHtml . AuthorWidget $ idea ^. ideaMeta
-        div_ . toHtml . show         $ idea ^. ideaCategory
+        div_ $ idea ^. ideaMeta . to AuthorWidget . html
+        div_ $ idea ^. ideaCategory . showed . html
 
         -- von X / X stimmen / X verbesserungvorschläge
         div_ $ do
-            span_ $ "von " <> (toHtml . show $ idea ^. ideaMeta . metaCreatedBy)
+            span_ $ "von " <> idea ^. createdBy . showed . html
             span_ $ "/"
-            span_ $ (toHtml . show . Set.size $ idea ^. ideaVotes) <> " Stimmen"
+            span_ $ totalVotes ^. showed . html <> " Stimmen"
             span_ $ "/"
-            span_ $ (toHtml . show . Set.size $ idea ^. ideaComments) <> " Verbesserungsvorschläge"
+            span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
 
         -- visual vote stats
         div_ . pre_ $ do
@@ -454,20 +464,21 @@ instance ToHtml PageIdea where
 
         -- buttons
         div_ $ do
-            button_ [makeAttribute "yes"     "dafür"]   (pure ())  -- FIXME: is there a nicer way to say this?
-            button_ [makeAttribute "neutral" "neutral"] (pure ())
-            button_ [makeAttribute "no"      "dagegen"] (pure ())
+            button_ [value_ "yes"]     "dafür"
+            button_ [value_ "neutral"] "neutral"
+            button_ [value_ "no"]      "dagegen"
 
         -- article
-        div_ . toHtml $ idea ^. ideaDesc
+        div_ $ idea ^. ideaDesc . html
 
         -- comments
         div_ $ do
             hr_ []
-            span_ $ (toHtml . show . Set.size $ idea ^. ideaComments) <> " Verbesserungsvorschläge"
-            span_ $ button_ [makeAttribute "create_comment" "Neuer Verbesserungsvorschlag"] (pure ())
+            span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
+            span_ $ button_ [value_ "create_comment"] "Neuer Verbesserungsvorschlag"
             hr_ []
-            sequence_ . (toHtml . PageComment <$>) . Set.toList $ idea ^. ideaComments
+            for_ (idea ^. ideaComments) $ \c ->
+                PageComment c ^. html
 
 data PageComment = PageComment Comment
   deriving (Eq, Show, Read)
@@ -476,10 +487,10 @@ instance ToHtml PageComment where
     toHtmlRaw = toHtml
     toHtml p@(PageComment comment) = semanticDiv p $ do
         div_ $ do
-            span_ . toHtml . AuthorWidget $ comment ^. commentMeta
-            span_ . toHtml . VotesWidget  $ comment ^. commentVotes
+            span_ $ comment ^. commentMeta . to AuthorWidget . html
+            span_ $ comment ^. commentVotes . to VotesWidget . html
         div_ $ do
-            toHtml $ comment ^. commentText
+            comment ^. commentText . html
         div_ $ do
             span_ "[antworten]"
             span_ "[melden]"
