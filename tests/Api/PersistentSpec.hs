@@ -28,6 +28,7 @@ mkInitial = do
     rp <- mkEmpty
     generate arbitrary >>= unNat rp . addIdea
     generate arbitrary >>= unNat rp . addUser
+    generate arbitrary >>= unNat rp . addTopic
     return rp
 
 getDbSpec name getXs = do
@@ -74,6 +75,32 @@ findInBySpec name getXs findXBy f change =
                     mu <- liftIO . rp $ findXBy y
                     mu `shouldBe` (Just x)
 
+findAllInBySpec name getXs findAllXBy f change =
+    describe name $ do
+        context "on empty database" . before mkEmpty $ do
+            it "will come up empty" $ \(Nat rp) -> do
+                rf <- liftIO $ generate arbitrary
+                us <- liftIO . rp $ findAllXBy rf
+                us `shouldBe` []
+
+        context "on initial database" . before mkInitial $ do
+            context "if it does not exist" $ do
+                it "will come up empty" $ \(Nat rp) -> do
+                    [x] <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    us <- liftIO . rp $ findAllXBy (change y)
+                    us `shouldBe` []
+            context "if it exists" $ do
+                it "will come up with the newly added record" $ \(Nat rp) -> do
+                    [x] <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    us <- liftIO . rp $ findAllXBy y
+                    us `shouldBe` [x]
+
+-- Given an AUID pick a different one
+changeAUID :: AUID a -> AUID a
+changeAUID (AUID i) = AUID (succ i)
+
 spec :: Spec
 spec = do
     getDbSpec "getIdeas" getIdeas
@@ -82,7 +109,12 @@ spec = do
     getDbSpec "getUsers" getUsers
     addDbSpec "addUsers" getUsers addUser
 
+    getDbSpec "getTopics" getTopics
+    addDbSpec "addTopics" getTopics addTopic
+
     findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
+    findInBySpec "findTopic" getTopics findTopic _Id changeAUID
+    findAllInBySpec "findIdeasByTopicId" getIdeas findIdeasByTopicId (ideaTopic . _Just . _Id) changeAUID
 
     describe "loginUser" $ do
         let t rp login predicate = do
