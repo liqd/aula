@@ -12,7 +12,6 @@
 module Arbitrary (topLevelDomains, loremIpsum) where
 
 import Data.Char
-import Data.Functor.Infix ((<$$>))
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
@@ -172,8 +171,8 @@ instance Arbitrary IdeaSpace where
 instance Arbitrary SchoolClass where
     arbitrary = SchoolClass <$> name <*> year
       where
-        name = elements [ cs $ show age ++ [branch] | age <- [1..12], branch <- ['a'..'e'] ]
-        year = elements $ cs . show <$> [2012..2020]
+        name = elements [ cs $ show age ++ [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
+        year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary Topic where
     arbitrary = Topic <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'

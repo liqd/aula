@@ -1,23 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeFamilies       #-}
 {-# LANGUAGE OverloadedStrings  #-}
 
 module Transaction where
 
-import Control.Lens
 import Control.Monad (void)
 import Data.String (fromString)
 import Data.Text (Text)
-import Control.Applicative ((<$>))
-
-import qualified Data.Set as Set
 
 import Data.ByteString (ByteString)
 
 import Types
-
-import qualified Config
 
 import Database.PostgreSQL.Simple (Connection, execute_, execute)
 
