@@ -31,7 +31,9 @@ import qualified Data.Text.IO as ST
 
 import Arbitrary ()
 import Config
+import Frontend.Core
 import Frontend.Html
+import Frontend.Page.CreateIdea
 
 
 samplePages :: IO [(TypeRep, String)]
