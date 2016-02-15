@@ -158,10 +158,12 @@ data Topic = Topic
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-type instance Prototype Topic = Topic
+-- FIXME: Hack: Topic should have a real prototype
+type instance Proto Topic = Topic
 
-instance FromPrototype Topic where
-    fromPrototype = id
+-- FIXME: Hack: Topic should have a real prototype
+instance FromProto Topic where
+    fromProto t _ = t
 
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)

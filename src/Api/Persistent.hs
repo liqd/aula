@@ -129,7 +129,7 @@ addUser = addDb dbUsers
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
-addTopic :: Prototype Topic -> Persist Topic
+addTopic :: Proto Topic -> Persist Topic
 addTopic = addDb dbTopics
 
 findUserByLogin :: ST -> Persist (Maybe User)

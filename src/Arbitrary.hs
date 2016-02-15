@@ -124,6 +124,9 @@ instance Arbitrary PageHomeWithLoginPrompt where
 ----------------------------------------------------------------------
 -- idea
 
+instance Arbitrary ProtoIdea where
+    arbitrary = ProtoIdea <$> arb <*> arb <*> arb <*> arb
+
 instance Arbitrary Idea where
     arbitrary = Idea <$> arb <*> arbPhrase <*> arb'
                      <*> arb' <*> arb' <*> arb'
