@@ -25,6 +25,7 @@ import Data.Typeable (Typeable)
 import Prelude hiding (head, span, div)
 import Lucid
 import Lucid.Base
+import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
 
@@ -35,6 +36,12 @@ import Frontend.Core
 
 ----------------------------------------------------------------------
 -- building blocks
+
+data Beside a b = Beside a b
+
+instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
+    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
+    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 newtype Frame body = Frame body
@@ -72,7 +79,7 @@ newtype PageShow a = PageShow { _unPageShow :: a }
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
-    toHtml = pre_ . code_ . toHtml . show . _unPageShow
+    toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
