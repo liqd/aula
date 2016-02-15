@@ -10,18 +10,16 @@ status: just brainstorming
 - install docker
 - docker pull fisx/aula
 - git checkout aula
+- git checkout thentos
 - cd aula
-- docker run --rm -it -p 8080:8080 -v `pwd`:/root/aula fisx/aula /bin/bash
+- ./docker/run.sh
 - inside container:
+    - cd /root/thentos
+    - cabal init --sandbox=/liqd/thentos/.cabal-sandbox
     - cd /root/aula
     - cabal init --sandbox=/liqd/thentos/.cabal-sandbox
     - cabal run aula-server
 - then point your browser to localhost:8080
-
-if you want to hack both thentos and aula, `/root/thentos` is exposed
-as a docker volume similarly to `/root/aula`.  Just duplicate the `-v`
-option to `docker run`.
-
 
 ## Getting started (with sensei)
 
