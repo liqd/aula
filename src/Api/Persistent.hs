@@ -9,7 +9,8 @@
 
 module Api.Persistent
     ( Persist
-    , AulaData
+    , AulaLens
+    , AulaGetter
     , mkRunPersist
     , getDb
     , addDb
@@ -46,6 +47,9 @@ data AulaData = AulaData
 
 makeLenses ''AulaData
 
+type AulaLens a = Lens' AulaData a
+type AulaGetter a = Getter AulaData a
+
 emptyAulaData :: AulaData
 emptyAulaData = AulaData [] [] Nothing
 
@@ -61,13 +65,13 @@ mkRunPersist = do
     let run (Persist c) = c `runReaderT` tvar
     return $ Nat run
 
-getDb :: Lens' AulaData a -> Persist a
+getDb :: AulaGetter a -> Persist a
 getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
 
-modifyDb :: Lens' AulaData a -> (a -> a) -> Persist ()
+modifyDb :: AulaLens a -> (a -> a) -> Persist ()
 modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
 
-addDb :: Lens' AulaData [a] -> a -> Persist ()
+addDb :: AulaLens [a] -> a -> Persist ()
 addDb l a = modifyDb l (a:)
 
 getIdeas :: Persist [Idea]

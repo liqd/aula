@@ -60,7 +60,7 @@ type FrontendH =
   :<|> "login" :> Capture "login" ST :> GetH (Frame ST)
   :<|> Raw
 
-createRandom :: (MonadIO m, Arbitrary a) => ST -> Lens' AulaData [a] -> m (Frame ST)
+createRandom :: (MonadIO m, Arbitrary a) => ST -> AulaLens [a] -> m (Frame ST)
 createRandom s l =
   liftIO $ generate arbitrary >>= runPersist . addDb l >> return (Frame ("new " <> s <> " created."))
 
