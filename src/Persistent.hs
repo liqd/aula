@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Persistent (module Api.Persistent, runPersist)
 where

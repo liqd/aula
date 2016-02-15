@@ -5,7 +5,7 @@
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeOperators               #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Api.Persistent
     ( Persist
@@ -45,10 +45,10 @@ module Api.Persistent
 where
 
 import Data.Foldable (find)
-import Data.Maybe (fromJust)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
 import Control.Concurrent.STM
+import Control.Monad (join)
 import Control.Monad.Trans.Reader
 import Control.Lens
 import Control.Monad.IO.Class
@@ -93,12 +93,9 @@ getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
 modifyDb :: AulaLens a -> (a -> a) -> Persist ()
 modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
 
-addDb :: (HasMetaInfo a, FromPrototype a) => Lens' AulaData [a] -> Prototype a -> Persist a
+addDb :: (HasMetaInfo a, FromProto a) => Lens' AulaData [a] -> Proto a -> Persist a
 addDb l pa = do
-    u  <- currentUser
-    i  <- nextId
-    mi <- liftIO $ newMetaInfo u i
-    let a = (metaInfo .~ mi) $ fromPrototype pa
+    a  <- fromProto pa <$> (join $ newMetaInfo <$> currentUser <*> nextId)
     modifyDb l (a:)
     return a
 
@@ -120,7 +117,7 @@ findInById l = findInBy l _Id
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
-addIdea :: Prototype Idea -> Persist Idea
+addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeas
 
 getUsers :: Persist [User]
@@ -169,35 +166,34 @@ nextId = do
     AUID <$> getDb dbLastId
 
 currentUser :: Persist (AUID User)
-currentUser = fromJust <$> getDb dbCurrentUser
+currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
-instance FromPrototype User where
-    fromPrototype = id
+instance FromProto User where
+    fromProto u _ = u
 
-instance FromPrototype Idea where
-    fromPrototype i =
+instance FromProto Idea where
+    fromProto i m =
            (ideaTitle    .~ (i ^. protoIdeaTitle))
          . (ideaDesc     .~ (i ^. protoIdeaDesc))
          . (ideaCategory .~ (i ^. protoIdeaCategory))
          $ emptyIdea
+      where
+        emptyIdea = Idea
+            { _ideaMeta = m
+            , _ideaTitle = ""
+            , _ideaDesc  = Markdown ""
+            , _ideaCategory = CatRule
+            , _ideaSpace    = SchoolSpace
+            , _ideaTopic    = Nothing
+            , _ideaComments = Set.empty
+            , _ideaLikes    = Set.empty
+            , _ideaQuorumOk = False
+            , _ideaVotes    = Set.empty
+            , _ideaFeasible = Nothing
+            }
 
-emptyIdea :: Idea
-emptyIdea = Idea
-    { _ideaMeta = Prelude.error "blah"
-    , _ideaTitle = ""
-    , _ideaDesc  = Markdown ""
-    , _ideaCategory = CatRule
-    , _ideaSpace    = SchoolSpace
-    , _ideaTopic    = Nothing
-    , _ideaComments = Set.empty
-    , _ideaLikes    = Set.empty
-    , _ideaQuorumOk = False
-    , _ideaVotes    = Set.empty
-    , _ideaFeasible = Nothing
-    }
-
-newMetaInfo :: AUID User -> AUID a -> IO (MetaInfo a)
-newMetaInfo u i = do
+newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
+newMetaInfo u i = liftIO $ do
     now <- Timestamp <$> getCurrentTime
     return $ MetaInfo
         { _metaId              = i

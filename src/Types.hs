@@ -26,13 +26,18 @@ import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
 ----------------------------------------------------------------------
--- prototypes of types
+-- prototypes for types
 
-type family Prototype type_ :: *
+-- | Prototype for a type.
+-- The prototypes contains all the information which cannot be
+-- filled out of some type. Information which comes from outer
+-- source and will be saved into the database.
+type family Proto type_ :: *
 
--- HACK
-class FromPrototype p where
-    fromPrototype :: Prototype p -> p
+-- | The method how a 't' value is calculated from its prototype
+-- and a metainfo to that.
+class FromProto t where
+    fromProto :: Proto t -> MetaInfo t -> t
 
 ----------------------------------------------------------------------
 -- idea
@@ -62,7 +67,7 @@ data ProtoIdea = ProtoIdea
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-type instance Prototype Idea = ProtoIdea
+type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
@@ -185,8 +190,8 @@ data User = User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
--- FIXME: Temporal hack to be able to save users.
-type instance Prototype User = User
+-- FIXME: Temporary hack to be able to save users.
+type instance Proto User = User
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
