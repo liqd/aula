@@ -21,6 +21,8 @@ library
     , Frontend
     , Frontend.Core
     , Frontend.Html
+    , Frontend.Page.CreateIdea
+    , Persistent
     , Transaction
     , Types
   build-depends:

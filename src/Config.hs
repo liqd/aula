@@ -19,7 +19,7 @@ makeLenses ''Config
 
 config = Config
     { _dbPath = "./aula.db"
-    , _listenerInterface = "127.0.0.1"
+    , _listenerInterface = "0.0.0.0"
     , _listenerPort = 8080
     , _htmlStatic = "./static"
     }

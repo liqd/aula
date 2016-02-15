@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -23,6 +24,19 @@ import Lucid
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
+----------------------------------------------------------------------
+-- prototypes for types
+
+-- | Prototype for a type.
+-- The prototypes contains all the information which cannot be
+-- filled out of some type. Information which comes from outer
+-- source and will be saved into the database.
+type family Proto type_ :: *
+
+-- | The method how a 't' value is calculated from its prototype
+-- and a metainfo to that.
+class FromProto t where
+    fromProto :: Proto t -> MetaInfo t -> t
 
 ----------------------------------------------------------------------
 -- idea
@@ -42,6 +56,17 @@ data Idea = Idea
     , _ideaFeasible   :: Maybe Feasible
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- | Prototype for Idea creation.
+data ProtoIdea = ProtoIdea
+    { _protoIdeaTitle      :: ST
+    , _protoIdeaDesc       :: Document
+    , _protoIdeaCategory   :: Category
+    , _protoIdeaSpace      :: IdeaSpace
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
@@ -158,6 +183,9 @@ data User = User
     , _userEmail     :: Maybe Email
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- FIXME: Temporary hack to be able to save users.
+type instance Proto User = User
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -292,6 +320,7 @@ makeLenses ''Email
 makeLenses ''EncryptedPass
 makeLenses ''Feasible
 makeLenses ''Idea
+makeLenses ''ProtoIdea
 makeLenses ''IdeaLike
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
