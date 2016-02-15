@@ -182,7 +182,7 @@ instance ToHtml PageTopicOverviewRefinementPhase where
             div_ [id_ "navigation"] $ do
                 a_ [id_ "back-themes"] "<- Zu Allen Themen"
                 a_ "..."
-                a_ "beirbeiten"
+                a_ "bearbeiten"
             h2_ "Ausarbeitungsphase"
             div_ $ do
                 p_   [id_ "topic-title"] $ topic ^. topicTitle . html
