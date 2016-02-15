@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 # Change to the source directory which is attacehed as docker volume
 cd /root/aula
