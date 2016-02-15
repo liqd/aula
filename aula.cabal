@@ -18,6 +18,7 @@ library
     , Api.Persistent
     , Arbitrary
     , Config
+    , CreateRandom
     , Frontend
     , Frontend.Core
     , Frontend.Html
