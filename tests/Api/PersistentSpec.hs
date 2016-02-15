@@ -30,65 +30,59 @@ mkInitial = do
     generate arbitrary >>= unNat rp . addUser
     return rp
 
-spec :: Spec
-spec = do
-    describe "getIdeas" $ do
+getDbSpec name getXs = do
+    describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "returns the empty list" $ \(Nat rp) -> do
-                ideas <- rp getIdeas
-                ideas `shouldBe` []
+                xs <- rp getXs
+                xs `shouldBe` []
         context "on initial database" . before mkInitial $ do
             it "returns a list with one element" $ \(Nat rp) -> do
-                ideas <- rp getIdeas
-                length ideas `shouldBe` 1
+                xs <- rp getXs
+                length xs `shouldBe` 1
 
-    describe "addIdea" $ do
-        let t = it "adds an idea" $ \(Nat rp) -> do
-                    before' <- liftIO $ length <$> rp getIdeas
-                    liftIO $ generate arbitrary >>= rp . addIdea
-                    after' <- liftIO $ length <$> rp getIdeas
+addDbSpec name getXs addX =
+    describe name $ do
+        let t = it "adds one" $ \(Nat rp) -> do
+                    before' <- liftIO $ length <$> rp getXs
+                    liftIO $ generate arbitrary >>= rp . addX
+                    after' <- liftIO $ length <$> rp getXs
                     after' `shouldBe` before' + 1
 
         context "on empty database" . before mkEmpty $ t
         context "on initial database" . before mkInitial $ t
 
-    describe "getUsers" $ do
-        context "on empty database" . before mkEmpty $ do
-            it "returns the empty list" $ \(Nat rp) -> do
-                users <- rp getUsers
-                users `shouldBe` []
-        context "on initial database" . before mkInitial $ do
-            it "returs a non-empty list" $ \(Nat rp) -> do
-                users <- rp getUsers
-                length users `shouldNotBe` 0
-
-    describe "addUser" $ do
-        let t = it "adds a user" $ \(Nat rp) -> do
-                    before' <- liftIO $ length <$> rp getUsers
-                    liftIO $ generate arbitrary >>= rp . addUser
-                    after' <- liftIO $ length <$> rp getUsers
-                    after' `shouldBe` before' + 1
-
-        context "on empty database" . before mkEmpty $ t
-        context "on initial database" . before mkInitial $ t
-
-    describe "findUserByLogin" $ do
+findInBySpec name getXs findXBy f change =
+    describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "will come up empty" $ \(Nat rp) -> do
-                mu <- liftIO . rp $ findUserByLogin "samedifference"
+                rf <- liftIO $ generate arbitrary
+                mu <- liftIO . rp $ findXBy rf
                 mu `shouldBe` Nothing
 
         context "on initial database" . before mkInitial $ do
-            context "if user does not exist" $ do
+            context "if it does not exist" $ do
                 it "will come up empty" $ \(Nat rp) -> do
-                    [user] <- liftIO $ rp getUsers
-                    mu <- liftIO . rp $ findUserByLogin ("not" <> (user ^. userLogin))
+                    [x] <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    mu <- liftIO . rp $ findXBy (change y)
                     mu `shouldBe` Nothing
-            context "if user does exist" $ do
-                it "will come up with the user" $ \(Nat rp) -> do
-                    [user] <- liftIO $ rp getUsers
-                    mu <- liftIO . rp $ findUserByLogin (user ^. userLogin)
-                    mu `shouldBe` (Just user)
+            context "if it exists" $ do
+                it "will come up with the newly added record" $ \(Nat rp) -> do
+                    [x] <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    mu <- liftIO . rp $ findXBy y
+                    mu `shouldBe` (Just x)
+
+spec :: Spec
+spec = do
+    getDbSpec "getIdeas" getIdeas
+    addDbSpec "addIdea"  getIdeas addIdea
+
+    getDbSpec "getUsers" getUsers
+    addDbSpec "addUsers" getUsers addUser
+
+    findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
 
     describe "loginUser" $ do
         let t rp login predicate = do
