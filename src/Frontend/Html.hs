@@ -3,7 +3,6 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -62,7 +61,7 @@ instance (ToHtml body) => ToHtml (Frame body) where
         body_ $ do
             headerMarkup >> toHtml bdy >> footerMarkup
 
-headerMarkup :: forall m. (Monad m) => HtmlT m ()
+headerMarkup :: (Monad m) => HtmlT m ()
 headerMarkup = div_ $ do
     span_ "aula"
     -- TODO: these should be links
@@ -72,7 +71,7 @@ headerMarkup = div_ $ do
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
-footerMarkup :: forall m. (Monad m) => HtmlT m ()
+footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = div_ $ do
     hr_ []
     -- TODO: these should be links
