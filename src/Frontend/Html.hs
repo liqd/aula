@@ -148,13 +148,13 @@ instance ToHtml PageTopicOverviewRefinementPhase where
     toHtml p = semanticDiv p "PageTopicOverviewRefinementPhase"
 
 
--- | 4.2 Topic overview: Assessment phase
-data PageTopicOverviewAssessmentPhase = PageTopicOverviewAssessmentPhase
+-- | 4.2 Topic overview: Jury (assessment) phase
+data PageTopicOverviewJuryPhase = PageTopicOverviewJuryPhase
   deriving (Eq, Show, Read)
 
-instance ToHtml PageTopicOverviewAssessmentPhase where
+instance ToHtml PageTopicOverviewJuryPhase where
     toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewAssessmentPhase"
+    toHtml p = semanticDiv p "PageTopicOverviewJuryPhase"
 
 
 -- | 4.3 Topic overview: Voting phase
@@ -202,13 +202,13 @@ instance ToHtml PageIdeaDetailRefinementPhase where
     toHtml p = semanticDiv p "PageIdeaDetailRefinementPhase"
 
 
--- | 5.3 Idea detail page: Assessment phase
-data PageIdeaDetailAssessmentPhase = PageIdeaDetailAssessmentPhase
+-- | 5.3 Idea detail page: Jury (assessment) phase
+data PageIdeaDetailJuryPhase = PageIdeaDetailJuryPhase
     deriving (Eq, Show, Read)
 
-instance ToHtml PageIdeaDetailAssessmentPhase where
+instance ToHtml PageIdeaDetailJuryPhase where
     toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageIdeaDetailAssessmentPhase"
+    toHtml p = semanticDiv p "PageIdeaDetailJuryPhase"
 
 
 -- | 5.4 Idea detail page: Voting phase
