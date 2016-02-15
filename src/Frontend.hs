@@ -60,6 +60,9 @@ type FrontendH =
   :<|> "users" :> CreateRandom User
   :<|> "users" :> GetH (Frame (PageShow [User]))
   :<|> "login" :> Capture "login" ST :> GetH (Frame ST)
+  :<|> "topics" :> CreateRandom Topic
+  :<|> "topics" :> GetH (Frame (PageShow [Topic]))
+  :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
   :<|> Raw
 
 createRandom :: (MonadIO m, Arbitrary a, Show a) => ST -> AulaLens [a] -> m (Frame (ST `Beside` PageShow a))
@@ -80,6 +83,8 @@ frontendH =
   :<|> createRandom "user" dbUsers
   :<|> render (PageShow <$> getUsers)
   :<|> (\login -> liftIO . runPersist $ Frame ("You are now logged in as " <> login) <$ loginUser login)
+  :<|> createRandom "topic" dbTopics
+  :<|> render (PageShow <$> getTopics)
   :<|> serveDirectory (Config.config ^. htmlStatic)
 
 

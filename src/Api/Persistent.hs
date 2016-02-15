@@ -27,10 +27,16 @@ module Api.Persistent
     , addIdea
     , getUsers
     , addUser
+    , getTopics
+    , addTopic
+    , findTopic
     , findUserByLogin
+    , findIdeasByTopicId
+    , findIdeasByTopic
     , loginUser
     , dbIdeas
     , dbUsers
+    , dbTopics
     , dbCurrentUser
     )
 where
@@ -45,10 +51,10 @@ import Servant.Server ((:~>)(Nat))
 
 import Types
 
-
 data AulaData = AulaData
-    { _dbIdeas :: [Idea]
-    , _dbUsers :: [User]
+    { _dbIdeas       :: [Idea]
+    , _dbUsers       :: [User]
+    , _dbTopics      :: [Topic]
     , _dbCurrentUser :: Maybe (AUID User)
     }
   deriving (Eq, Show, Read)
@@ -59,7 +65,7 @@ type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData [] [] Nothing
+emptyAulaData = AulaData [] [] [] Nothing
 
 -- | FIXME: call this type 'Action'?  Or 'Aula'?  Or 'AulaAction'?  As of the time of writing this
 -- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
@@ -109,8 +115,23 @@ getUsers = getDb dbUsers
 addUser :: User -> Persist ()
 addUser = addDb dbUsers
 
+getTopics :: Persist [Topic]
+getTopics = getDb dbTopics
+
+addTopic :: Topic -> Persist ()
+addTopic = addDb dbTopics
+
 findUserByLogin :: ST -> Persist (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
+
+findTopic :: AUID Topic -> Persist (Maybe Topic)
+findTopic = findInById dbTopics
+
+findIdeasByTopicId :: AUID Topic -> Persist [Idea]
+findIdeasByTopicId topicId = findAllIn dbIdeas (\idea -> idea ^? ideaTopic . _Just . _Id == Just topicId)
+
+findIdeasByTopic :: Topic -> Persist [Idea]
+findIdeasByTopic = findIdeasByTopicId . view _Id
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
