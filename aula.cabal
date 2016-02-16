@@ -23,7 +23,9 @@ library
     , Frontend.Core
     , Frontend.Html
     , Frontend.Page.CreateIdea
-    , Frontend.Topics
+    , Frontend.Page.HomePageWithLoginPrompt
+    , Frontend.Page.Topics
+    , Frontend.Pages
     , Persistent
     , Transaction
     , Types

@@ -16,6 +16,9 @@ seito: .phony
 aula-server: .phony
 	cabal exec -- ghci $(FULL_SOURCES) ./exec/Aula.hs
 
+aula-server-run: .phony
+	cabal run -- aula-server
+
 click-dummies-recreate: .phony
 	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs --recreate
 
