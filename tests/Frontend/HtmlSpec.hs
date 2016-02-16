@@ -4,10 +4,6 @@
 module Frontend.HtmlSpec where
 
 import Arbitrary ()
-import Frontend.Core
-import Frontend.Html
-import Frontend.Page.CreateIdea
-import Frontend.Topics
 import Frontend.Pages
 
 import Control.Monad.Trans.Except
