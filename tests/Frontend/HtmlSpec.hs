@@ -1,7 +1,5 @@
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
@@ -19,9 +17,11 @@ import Frontend.Topics
 import Control.Monad.Identity
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
+import Data.List
 import Data.String.Conversions
+import Data.String
 import Data.Typeable (Typeable, typeOf)
-import Lucid (ToHtml, toHtml, renderText)
+import Lucid (Html, ToHtml, toHtml, renderText)
 import Servant.Server.Internal.ServantErr
 import Test.Hspec (Spec, context, it, pendingWith)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
@@ -117,8 +117,9 @@ postToForm (F g) = do
         page <- pick g
         payload <- pick (arbFormPageResult page)
 
-        let env :: Env (ExceptT ServantErr IO) = payloadToEnv payload
-            frm = makeForm page
+        let frm = makeForm page
+        env <- run . failOnError $ (`payloadToEnv` payload) <$> getForm "" frm
+
         (_, Just payload') <- run . failOnError $ postForm "" frm (\_ -> pure env)
         assert (payload' == payload)  -- FIXME: can we use shouldBe here?
 
@@ -130,15 +131,30 @@ arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r)
 arbFormPageResult _ = arbitrary
 
 class PayloadToEnv a where
-    payloadToEnv :: a -> Env (ExceptT ServantErr IO)
+    payloadToEnv :: View (Html ()) -> a -> Env (ExceptT ServantErr IO)
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnv (ProtoIdea t (Markdown d) c) = \case
+    payloadToEnv view (ProtoIdea t (Markdown d) c) = \case
         ["", "title"]         -> pure [TextInput t]
         ["", "idea-text"]     -> pure [TextInput d]
-        ["", "idea-category"] -> pure [TextInput . cs . showCategoryValue $ c]
+        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
         bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
       -- FIXME: reduce boilerplate?
 
-showCategoryValue :: Category -> String
-showCategoryValue ((`lookup` categoryValues) -> Just v) = v
+
+-- | This function is not pretty.
+--
+-- FIXME: rewrite the following brain dump: digestive forms gives somewhat-internal names to the
+-- fields.  for looking up the value of a field in the env, we need to re-construct those from the
+-- view.  since the view contains the viel values as html, not string, we need to render that.
+-- something like that.)
+selectCategoryValue :: ST -> View (Html ()) -> Category -> ST
+selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> value i
+  where
+    ref'    = absoluteRef ref view
+    value i = ref' <> "." <> i
+    choices = fieldInputChoice ref view
+    test (_, scat :: Html (), _) = showCategoryValue cat == renderText scat
+
+    showCategoryValue :: IsString s => Category -> s
+    showCategoryValue ((`lookup` categoryValues) -> Just v) = v
