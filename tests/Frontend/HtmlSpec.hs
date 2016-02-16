@@ -68,14 +68,17 @@ data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen
 
 -- | Checks if the markup rendering does not contains bottoms.
+renderMarkup :: HtmlGen -> Spec
 renderMarkup (H g) =
-    it (show $ typeOf g) . property . forAll g $ \pageSource -> LT.length (renderText (toHtml pageSource)) > 0
+    it (show $ typeOf g) . property . forAll g $ \pageSource ->
+        LT.length (renderText (toHtml pageSource)) > 0
 
 data FormGen where
     F :: (Show m, Typeable m, FormPageView m) => Gen m -> FormGen
 
 -- | Checks if the form rendering does not contains bottoms and
 -- the view has all the fields defined for GET form creation.
+renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show $ typeOf g) . property . forAll g $ \page -> monadicIO $ do
         len <- run . fmap failOnError . runExceptT $ do
