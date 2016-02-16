@@ -161,8 +161,8 @@ addUser = addDb dbUserMap
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
-moveIdeaToTopic :: AUID Idea -> AUID Topic -> Persist ()
-moveIdeaToTopic ideaId topicId = modifyIdea ideaId $ ideaTopic .~ Just topicId
+moveIdeaToTopic :: AUID Idea -> Maybe (AUID Topic) -> Persist ()
+moveIdeaToTopic ideaId topicId = modifyIdea ideaId $ ideaTopic .~ topicId
 
 addTopic :: Proto Topic -> Persist Topic
 addTopic pt = do
@@ -173,7 +173,7 @@ addTopic pt = do
     -- * Make it do nothing
     -- * Make it fail hard
     for_ (pt ^. protoTopicIdeas) $ \ideaId ->
-        moveIdeaToTopic ideaId (t ^. _Id)
+        moveIdeaToTopic ideaId (Just $ t ^. _Id)
     return t
 
 findUserByLogin :: ST -> Persist (Maybe User)
