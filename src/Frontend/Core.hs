@@ -7,6 +7,7 @@
 module Frontend.Core
 where
 
+import Control.Monad (void)
 import Control.Monad.Trans.Except (ExceptT)
 import Control.Lens
 import Data.Set (Set)
@@ -16,7 +17,9 @@ import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
-import Servant (ServantErr)
+import Servant (Server, ServantErr)
+import Servant.HTML.Lucid (HTML)
+import Servant.Missing (FormH, formRedirectH)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
@@ -68,6 +71,15 @@ class FormPageView p where
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
+-- | Defines some properties for pages
+class Page p where
+    -- | Computes True if the Page is public (e.g login, impressum), otherwise False.
+    isPublicPage :: p -> Bool
+    isPublicPage = not . isPrivatePage
+    -- | Computes True if the Page is private otherwise False.
+    isPrivatePage :: p -> Bool
+    isPrivatePage = not . isPublicPage
+
 -- | The page after submitting a form should be redirected 
 class RedirectOf p where
     -- | Calculates a redirect address from the given page
@@ -99,7 +111,7 @@ pageFrame bdy = do
 publicHeaderMarkup :: (Monad m) => HtmlT m ()
 publicHeaderMarkup = div_ $ do
     span_ "aula"
-    -- TODO: these should be links
+    -- TODO: this should be links
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
@@ -181,3 +193,26 @@ instance ToHtml ListItemIdea where
                 s ^. showed . html
                 if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
             -- TODO: show how many votes are in and how many are required
+
+-- | Creates a form handler for the given @formAction@ and @page@.
+-- The handler will generate a form on the GET requet and process
+-- the form result in POST request with the given @processor@ and after
+-- redirects the page to the place which is defined in the @RedirectsOf@
+-- typeclass.
+redirectFormHandler
+    :: (FormPageView p, Page p, RedirectOf p)
+    => ST -- ^ Form Action
+    -> p  -- ^ Page representation
+    -> (FormPageResult p -> ExceptT ServantErr IO a) -- ^ Processor for the form result
+    -> Server (FormH HTML (Html ()) ST)
+redirectFormHandler action page processor = formRedirectH action p1 p2 r
+  where
+    p1 = makeForm page
+
+    p2 result = do
+        void $ processor result
+        return $ redirectOf page
+
+    frame = if isPublicPage page then publicPageFrame else pageFrame
+
+    r v formAction = pure . frame $ formPage v formAction page

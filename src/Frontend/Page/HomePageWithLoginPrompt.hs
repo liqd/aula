@@ -18,6 +18,8 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
   deriving (Eq, Show, Read)
 
+instance Page PageHomeWithLoginPrompt where
+  isPublicPage _ = True
 
 ----------------------------------------------------------------------
 -- templates
@@ -49,15 +51,6 @@ instance RedirectOf PageHomeWithLoginPrompt where
     redirectOf _ = "/ideas"
 
 login :: Server (FormH HTML (Html ()) ST)
-login = formRedirectH "/login" p1 p2 r
+login = redirectFormHandler "/login" PageHomeWithLoginPrompt makeUserLogin
   where
-    p1 :: DF.Form (Html ()) (ExceptT ServantErr IO) (ST, ST)
-    p1 = makeForm PageHomeWithLoginPrompt
-
-    p2 :: (ST, ST) -> ExceptT ServantErr IO ST
-    p2 (user, _pass) = liftIO $ do
-        runPersist $ loginUser user
-        return $ redirectOf PageHomeWithLoginPrompt
-
-    r :: View (Html ()) -> ST -> ExceptT ServantErr IO (Html ())
-    r v formAction = pure . publicPageFrame $ formPage v formAction PageHomeWithLoginPrompt
+    makeUserLogin (user, _pass) = liftIO . runPersist $ loginUser user

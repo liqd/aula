@@ -18,6 +18,9 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 data PageCreateIdea = PageCreateIdea
   deriving (Eq, Show, Read)
 
+instance Page PageCreateIdea where
+  isPrivatePage _ = True
+
 ----------------------------------------------------------------------
 -- templates
 
@@ -62,17 +65,8 @@ instance RedirectOf PageCreateIdea where
     redirectOf _ = "/ideas"
 
 createIdea :: Server (FormH HTML (Html ()) ST)
-createIdea = formRedirectH "/ideas/create" p1 p2 r
+createIdea = redirectFormHandler "/ideas/create" PageCreateIdea newIdea
   where
-    p1 :: DF.Form (Html ()) (ExceptT ServantErr IO) ProtoIdea
-    p1 = makeForm PageCreateIdea
-
-    p2 :: ProtoIdea -> ExceptT ServantErr IO ST
-    p2 idea = liftIO $ do
-        void . runPersist $ do
-            forceLogin 1 -- FIXME: Login hack
-            addIdea idea
-        return $ redirectOf PageCreateIdea
-
-    r :: View (Html ()) -> ST -> ExceptT ServantErr IO (Html ())
-    r v formAction = pure . pageFrame $ formPage v formAction PageCreateIdea
+    newIdea idea = liftIO $ runPersist $ do
+        forceLogin 1 -- FIXME: Login hack
+        addIdea idea
