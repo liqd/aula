@@ -16,9 +16,8 @@ import Frontend.Html
 import Frontend.Page.CreateIdea
 import Frontend.Topics
 
-import Control.Monad.Identity
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
+import Data.Maybe
 import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
 import Lucid (ToHtml, toHtml, renderText)
@@ -26,7 +25,6 @@ import Servant.Server.Internal.ServantErr
 import Test.Hspec (Spec, context, it, pendingWith)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
-import Text.Digestive.Form
 import Text.Digestive.Types
 import Text.Digestive.View
 
@@ -141,4 +139,4 @@ instance PayloadToEnv ProtoIdea where
       -- FIXME: reduce boilerplate?
 
 showCategoryValue :: Category -> String
-showCategoryValue ((`lookup` categoryValues) -> Just v) = v
+showCategoryValue cat = fromMaybe (error "showCategoryValue") (lookup cat categoryValues)
