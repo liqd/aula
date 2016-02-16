@@ -27,6 +27,14 @@ import Servant.API (FromHttpApiData)
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
+-- | A shorter alias for 'mempty'.
+-- This definition could be moved to a prelude module once we have one.
+nil :: Monoid a => a
+nil = mempty
+
+isNil :: (Monoid a, Eq a) => a -> Bool
+isNil = (== nil)
+
 ----------------------------------------------------------------------
 -- prototypes for types
 
