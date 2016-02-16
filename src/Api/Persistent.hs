@@ -51,7 +51,7 @@ module Api.Persistent
     )
 where
 
-import Data.Foldable (find)
+import Data.Foldable (find, for_)
 import Data.Map (Map)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -161,8 +161,20 @@ addUser = addDb dbUserMap
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
+moveIdeaToTopic :: AUID Idea -> AUID Topic -> Persist ()
+moveIdeaToTopic ideaId topicId = modifyIdea ideaId $ ideaTopic .~ Just topicId
+
 addTopic :: Proto Topic -> Persist Topic
-addTopic = addDb dbTopicMap
+addTopic pt = do
+    t <- addDb dbTopicMap pt
+    -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
+    -- hide this risk since only ideas without topics will be visible.
+    -- Options:
+    -- * Make it do nothing
+    -- * Make it fail hard
+    for_ (pt ^. protoTopicIdeas) $ \ideaId ->
+        moveIdeaToTopic ideaId (t ^. _Id)
+    return t
 
 findUserByLogin :: ST -> Persist (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -228,6 +240,17 @@ instance FromProto Idea where
             , _ideaFeasible = Nothing
             }
 
+instance FromProto Topic where
+    fromProto t m = Topic
+        { _topicMeta      = m
+        , _topicTitle     = t ^. protoTopicTitle
+        , _topicDesc      = t ^. protoTopicDesc
+        , _topicImage     = t ^. protoTopicImage
+        , _topicIdeaSpace = t ^. protoTopicIdeaSpace
+        , _topicPhase     = PhaseRefinement
+        }
+
+-- | So far `newMetaInfo` is only used by `nextMetaInfo`.
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
 newMetaInfo u i = liftIO $ do
     now <- Timestamp <$> getCurrentTime

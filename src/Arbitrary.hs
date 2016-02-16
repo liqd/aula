@@ -174,6 +174,9 @@ instance Arbitrary SchoolClass where
         name = elements [ cs $ show age ++ [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
         year = elements $ cs . show <$> [2012..2020 :: Int]
 
+instance Arbitrary ProtoTopic where
+    arbitrary = ProtoTopic <$> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
+
 instance Arbitrary Topic where
     arbitrary = Topic <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
 
