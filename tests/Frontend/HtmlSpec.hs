@@ -12,7 +12,7 @@ import Frontend.Topics
 import Control.Monad.Trans.Except
 import Data.Typeable (Typeable, typeOf)
 import Lucid (ToHtml, toHtml, renderText)
-import Test.Hspec (Spec, context, it)
+import Test.Hspec (Spec, context, it, pendingWith)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run)
 
@@ -57,7 +57,7 @@ spec = do
         , H (PageIdea    <$> arb)
         , H (PageComment <$> arb)
         ]
-    context "PageFormView" $ mapM_ renderForm [
+    context "PageFormView" $ mapM_ testForm [
           F (arb :: Gen PageCreateIdea)
         ]
     where
@@ -76,14 +76,25 @@ renderMarkup (H g) =
 data FormGen where
     F :: (Show m, Typeable m, FormPageView m) => Gen m -> FormGen
 
+testForm :: FormGen -> Spec
+testForm fg = renderForm fg >> postToForm fg
+
 -- | Checks if the form rendering does not contains bottoms and
 -- the view has all the fields defined for GET form creation.
 renderForm :: FormGen -> Spec
 renderForm (F g) =
-    it (show $ typeOf g) . property . forAll g $ \page -> monadicIO $ do
+    it (show (typeOf g) ++ " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . fmap failOnError . runExceptT $ do
             v <- getForm "" $ makeForm page
             return $ LT.length (renderText $ formPage v "formAction" page)
         assert (len > 0)
+    where
+        failOnError = either (error . show) id
+
+-- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
+postToForm :: FormGen -> Spec
+postToForm (F g) =
+    it (show (typeOf g) ++ " (process form input)") $
+        pendingWith "not implemented."
     where
         failOnError = either (error . show) id
