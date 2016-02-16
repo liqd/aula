@@ -27,12 +27,14 @@ module Api.Persistent
     , getIdeas
     , addIdea
     , modifyIdea
+    , findIdea
     , getUsers
     , addUser
     , modifyUser
     , getTopics
     , addTopic
     , modifyTopic
+    , moveIdeaToTopic
     , findTopic
     , findUserByLogin
     , findIdeasByTopicId
@@ -139,6 +141,9 @@ getIdeas = getDb dbIdeas
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
+
+findIdea :: AUID Idea -> Persist (Maybe Idea)
+findIdea = findInById dbIdeas
 
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> Persist ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
