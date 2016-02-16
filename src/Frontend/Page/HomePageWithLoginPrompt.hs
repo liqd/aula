@@ -35,10 +35,12 @@ instance FormPageView PageHomeWithLoginPrompt where
 
     formPage v formAction p = do
         semanticDiv p $ do
-            DF.form v formAction $ do
+            div_ $ DF.form v formAction $ do
                 DF.inputText     "user" v >> br_ []
                 DF.inputPassword "pass" v >> br_ []
                 DF.inputSubmit   "Login"
+            div_ $ do
+                p_ $ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
 
 ----------------------------------------------------------------------
 -- handlers
@@ -58,4 +60,4 @@ login = formRedirectH "/login" p1 p2 r
         return $ redirectOf PageHomeWithLoginPrompt
 
     r :: View (Html ()) -> ST -> ExceptT ServantErr IO (Html ())
-    r v formAction = pure . pageFrame $ formPage v formAction PageHomeWithLoginPrompt
+    r v formAction = pure . publicPageFrame $ formPage v formAction PageHomeWithLoginPrompt

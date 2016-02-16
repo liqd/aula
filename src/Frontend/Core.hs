@@ -80,6 +80,14 @@ instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw          = toHtml
     toHtml (Frame bdy) = pageFrame (toHtml bdy)
 
+publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
+publicPageFrame bdy = do
+    head_ $ do
+        title_ "AuLA"
+        link_ [rel_ "stylesheet", href_ "/screen.css"]
+    body_ $ do
+        publicHeaderMarkup >> bdy >> footerMarkup
+
 pageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
 pageFrame bdy = do
     head_ $ do
@@ -88,6 +96,12 @@ pageFrame bdy = do
     body_ $ do
         headerMarkup >> bdy >> footerMarkup
 
+publicHeaderMarkup :: (Monad m) => HtmlT m ()
+publicHeaderMarkup = div_ $ do
+    span_ "aula"
+    -- TODO: these should be links
+    span_ $ img_ [src_ "the_avatar"]
+    hr_ []
 
 headerMarkup :: (Monad m) => HtmlT m ()
 headerMarkup = div_ $ do
