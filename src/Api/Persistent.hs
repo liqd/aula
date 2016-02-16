@@ -26,10 +26,13 @@ module Api.Persistent
 
     , getIdeas
     , addIdea
+    , modifyIdea
     , getUsers
     , addUser
+    , modifyUser
     , getTopics
     , addTopic
+    , modifyTopic
     , findTopic
     , findUserByLogin
     , findIdeasByTopicId
@@ -48,7 +51,7 @@ module Api.Persistent
     )
 where
 
-import Data.Foldable (find)
+import Data.Foldable (find, for_)
 import Data.Map (Map)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -137,6 +140,18 @@ getIdeas = getDb dbIdeas
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
 
+modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> Persist ()
+modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
+
+modifyIdea :: AUID Idea -> (Idea -> Idea) -> Persist ()
+modifyIdea = modifyAMap dbIdeaMap
+
+modifyUser :: AUID User -> (User -> User) -> Persist ()
+modifyUser = modifyAMap dbUserMap
+
+modifyTopic :: AUID Topic -> (Topic -> Topic) -> Persist ()
+modifyTopic = modifyAMap dbTopicMap
+
 getUsers :: Persist [User]
 getUsers = getDb dbUsers
 
@@ -146,8 +161,20 @@ addUser = addDb dbUserMap
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
+moveIdeaToTopic :: AUID Idea -> Maybe (AUID Topic) -> Persist ()
+moveIdeaToTopic ideaId topicId = modifyIdea ideaId $ ideaTopic .~ topicId
+
 addTopic :: Proto Topic -> Persist Topic
-addTopic = addDb dbTopicMap
+addTopic pt = do
+    t <- addDb dbTopicMap pt
+    -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
+    -- hide this risk since only ideas without topics will be visible.
+    -- Options:
+    -- * Make it do nothing
+    -- * Make it fail hard
+    for_ (pt ^. protoTopicIdeas) $ \ideaId ->
+        moveIdeaToTopic ideaId (Just $ t ^. _Id)
+    return t
 
 findUserByLogin :: ST -> Persist (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -213,6 +240,17 @@ instance FromProto Idea where
             , _ideaFeasible = Nothing
             }
 
+instance FromProto Topic where
+    fromProto t m = Topic
+        { _topicMeta      = m
+        , _topicTitle     = t ^. protoTopicTitle
+        , _topicDesc      = t ^. protoTopicDesc
+        , _topicImage     = t ^. protoTopicImage
+        , _topicIdeaSpace = t ^. protoTopicIdeaSpace
+        , _topicPhase     = PhaseRefinement
+        }
+
+-- | So far `newMetaInfo` is only used by `nextMetaInfo`.
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
 newMetaInfo u i = liftIO $ do
     now <- Timestamp <$> getCurrentTime

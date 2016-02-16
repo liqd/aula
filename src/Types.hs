@@ -168,12 +168,16 @@ data Topic = Topic
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
--- FIXME: Hack: Topic should have a real prototype
-type instance Proto Topic = Topic
+data ProtoTopic = ProtoTopic
+    { _protoTopicTitle     :: ST
+    , _protoTopicDesc      :: Document
+    , _protoTopicImage     :: URL
+    , _protoTopicIdeaSpace :: IdeaSpace
+    , _protoTopicIdeas     :: [AUID Idea]
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
 
--- FIXME: Hack: Topic should have a real prototype
-instance FromProto Topic where
-    fromProto t _ = t
+type instance Proto Topic = ProtoTopic
 
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
@@ -346,12 +350,13 @@ makeLenses ''Email
 makeLenses ''EncryptedPass
 makeLenses ''Feasible
 makeLenses ''Idea
-makeLenses ''ProtoIdea
 makeLenses ''IdeaLike
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''MetaInfo
 makeLenses ''Phase
+makeLenses ''ProtoIdea
+makeLenses ''ProtoTopic
 makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
