@@ -193,25 +193,19 @@ instance FromProto User where
     fromProto u _ = u
 
 instance FromProto Idea where
-    fromProto i m =
-           (ideaTitle    .~ (i ^. protoIdeaTitle))
-         . (ideaDesc     .~ (i ^. protoIdeaDesc))
-         . (ideaCategory .~ (i ^. protoIdeaCategory))
-         $ emptyIdea
-      where
-        emptyIdea = Idea
-            { _ideaMeta = m
-            , _ideaTitle = ""
-            , _ideaDesc  = Markdown ""
-            , _ideaCategory = CatRule
-            , _ideaSpace    = SchoolSpace
-            , _ideaTopic    = Nothing
-            , _ideaComments = Set.empty
-            , _ideaLikes    = Set.empty
-            , _ideaQuorumOk = False
-            , _ideaVotes    = Set.empty
-            , _ideaFeasible = Nothing
-            }
+    fromProto i m = Idea
+        { _ideaMeta     = m
+        , _ideaTitle    = i ^. protoIdeaTitle
+        , _ideaDesc     = i ^. protoIdeaDesc
+        , _ideaCategory = i ^. protoIdeaCategory
+        , _ideaSpace    = SchoolSpace
+        , _ideaTopic    = Nothing
+        , _ideaComments = Set.empty
+        , _ideaLikes    = Set.empty
+        , _ideaQuorumOk = False
+        , _ideaVotes    = Set.empty
+        , _ideaFeasible = Nothing
+        }
 
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
 newMetaInfo u i = liftIO $ do
