@@ -158,6 +158,7 @@ test-suite tests
     , QuickCheck >= 2.8 && <2.9
     , text
     , lens
+    , mtl
     , transformers
     , string-conversions
     , servant-server
