@@ -8,19 +8,20 @@
 
 module Frontend.HtmlSpec where
 
+import Arbitrary ()
 import Control.Monad.Identity
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import Data.List
-import Data.String.Conversions
+import Data.Maybe
 import Data.String
+import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
 import Lucid (Html, ToHtml, toHtml, renderText)
 import Servant.Server.Internal.ServantErr
 import Test.Hspec (Spec, context, it, pendingWith)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
-import Text.Digestive.Form
 import Text.Digestive.Types
 import Text.Digestive.View
 
@@ -139,7 +140,6 @@ instance PayloadToEnv ProtoIdea where
         ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
         bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
       -- FIXME: reduce boilerplate?
-
 
 -- | This function is not pretty.
 --
