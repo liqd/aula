@@ -45,23 +45,21 @@ instance FormPageView PageCreateIdea where
               , (CatEnvironment, "Umgebung")
               ]
 
-    formPage v formAction PageCreateIdea = do
-        div_ $ do
+    formPage v formAction p = do
+        semanticDiv p $ do
             h3_ "Create Idea"
             DF.form v formAction $ do
-                DF.inputText      "title" v
-                br_ []
-                DF.inputTextArea  Nothing Nothing "idea-text" v
-                br_ []
-                DF.inputSelect    "idea-category" v
-                br_ []
-                DF.inputSubmit "Add Idea"
+                DF.inputText     "title" v >> br_ []
+                DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
+                DF.inputSelect   "idea-category" v >> br_ []
+                DF.inputSubmit   "Add Idea"
 
-instance RedirectOf PageCreateIdea where
-    redirectOf _ = "/ideas"
 
 ----------------------------------------------------------------------
 -- handlers
+
+instance RedirectOf PageCreateIdea where
+    redirectOf _ = "/ideas"
 
 createIdea :: Server (FormH HTML (Html ()) ST)
 createIdea = formRedirectH "/ideas/create" p1 p2 r

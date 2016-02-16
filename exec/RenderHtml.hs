@@ -33,7 +33,7 @@ import Arbitrary ()
 import Config
 import Frontend.Core
 import Frontend.Html
-import Frontend.Page.CreateIdea
+import Frontend.Pages
 import Frontend.Topics
 
 
