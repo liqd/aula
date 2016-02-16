@@ -60,13 +60,13 @@ render m = liftIO . runPersist $ Frame <$> m
 frontendH :: Server FrontendH
 frontendH =
        return (Frame "yihaah!")
-  :<|> createRandom "idea" dbIdeas
+  :<|> createRandom "idea" dbIdeaMap
   :<|> render (PageIdeasOverview <$> getIdeas)
   :<|> Page.createIdea
-  :<|> createRandom "user" dbUsers
+  :<|> createRandom "user" dbUserMap
   :<|> render (PageShow <$> getUsers)
   :<|> (\login -> liftIO . runPersist $ Frame ("You are now logged in as " <> login) <$ loginUser login)
-  :<|> createRandom "topic" dbTopics
+  :<|> createRandom "topic" dbTopicMap
   :<|> render (PageShow <$> getTopics)
   :<|> pageTopicOverview
   :<|> serveDirectory (Config.config ^. htmlStatic)
