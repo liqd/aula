@@ -44,6 +44,7 @@ bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUs
                . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
                $ user
 
+getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
 getDbSpec name getXs = do
     describe name $ do
         context "on empty database" . before mkEmpty $ do
@@ -55,6 +56,7 @@ getDbSpec name getXs = do
                 xs <- rp getXs
                 length xs `shouldNotBe` 0
 
+addDbSpec :: (Foldable f, Arbitrary proto) => String -> Persist (f a) -> (proto -> Persist a) -> Spec
 addDbSpec name getXs addX =
     describe name $ do
         let t = it "adds one" $ \(Nat rp) -> do
@@ -66,6 +68,10 @@ addDbSpec name getXs addX =
         context "on empty database" . before mkEmpty $ t
         context "on initial database" . before mkInitial $ t
 
+findInBySpec :: (Eq a, Show a, Arbitrary k) =>
+                String -> Persist [a] -> (k -> Persist (Maybe a)) ->
+                Fold a k -> (k -> k) ->
+                Spec
 findInBySpec name getXs findXBy f change =
     describe name $ do
         context "on empty database" . before mkEmpty $ do
@@ -88,6 +94,10 @@ findInBySpec name getXs findXBy f change =
                     mu <- liftIO . rp $ findXBy y
                     mu `shouldBe` (Just x)
 
+findAllInBySpec :: (Eq a, Show a, Arbitrary k) =>
+                    String -> Persist [a] -> (k -> Persist [a]) ->
+                    Fold a k -> (k -> k) ->
+                    Spec
 findAllInBySpec name getXs findAllXBy f change =
     describe name $ do
         context "on empty database" . before mkEmpty $ do
