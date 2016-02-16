@@ -178,24 +178,6 @@ instance ToHtml PageUserSettings where
     toHtml p = semanticDiv p "PageUserSettings"
 
 
--- | 10.1 Create topic: Create topic
-data PageCreateTopic = PageCreateTopic
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageCreateTopic where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageCreateTopic"
-
-
--- | 10.2 Create topic: Move ideas to topic
-data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageCreateTopicAddIdeas where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageCreateTopicAddIdeas"
-
-
 -- | 11.1 Admin settings: Durations & quorum
 data PageAdminSettingsDurationsAndQuorum =
     PageAdminSettingsDurationsAndQuorum

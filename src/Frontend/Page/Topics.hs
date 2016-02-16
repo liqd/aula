@@ -3,23 +3,17 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Topics
 where
 
-import Control.Lens
-import Control.Monad
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (for_)
-import Data.String.Conversions
-import Prelude
-import Lucid hiding (for_)
+import Frontend.Prelude
 
-import Frontend.Core
-import Persistent
-import Types
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 
 -- | 4 Topic overview
@@ -152,3 +146,57 @@ data PageTopicOverviewDelegations = PageTopicOverviewDelegations
 instance ToHtml PageTopicOverviewDelegations where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageTopicOverviewDelegations"
+
+
+-- | 10.1 Create topic: Create topic
+data PageCreateTopic = PageCreateTopic
+  deriving (Eq, Show, Read)
+
+instance ToHtml PageCreateTopic where
+    toHtmlRaw = toHtml
+    toHtml p@PageCreateTopic = semanticDiv p $ do
+        p_ "The topic has been created." >> br_ []
+        p_ "Fügen Sie weitere wilde ideen dem neuen Thema hinzu"
+        a_ [id_ "add-ideas"] "+ Ideen auswählen"
+
+instance FormPageView PageCreateTopic where
+    type FormPageResult PageCreateTopic = ProtoTopic
+
+    makeForm PageCreateTopic =
+        ProtoTopic
+        <$> ("title" .: DF.text nil)
+        <*> ("desc"  .: (Markdown <$> DF.text Nothing))
+        <*> ("image" .: DF.text nil)
+        <*> pure SchoolSpace
+        <*> pure []
+
+    formPage v formAction p = do
+        semanticDiv p $ do
+            h3_ "Create Topic"
+            DF.form v formAction $ do
+                DF.inputText     "title" v >> br_ []
+                DF.inputTextArea Nothing Nothing "desc" v >> br_ []
+                DF.inputText     "image" v >> br_ []
+                DF.inputSubmit   "Add Topic"
+
+instance Page PageCreateTopic where
+  isPrivatePage _ = True
+
+instance RedirectOf PageCreateTopic where
+    redirectOf _ = "/topics"
+
+createTopic :: Server (FormH HTML (Html ()) ST)
+createTopic = redirectFormHandler "/topics/create" PageCreateTopic newTopic
+  where
+    newTopic topic = liftIO $ runPersist $ do
+        forceLogin 1 -- FIXME: Login hack
+        addTopic topic
+
+
+-- | 10.2 Create topic: Move ideas to topic
+data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas
+  deriving (Eq, Show, Read)
+
+instance ToHtml PageCreateTopicAddIdeas where
+    toHtmlRaw = toHtml
+    toHtml p = semanticDiv p "PageCreateTopicAddIdeas"

@@ -48,6 +48,7 @@ type FrontendH =
   :<|> "topics" :> CreateRandom Topic
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
+  :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
   :<|> Raw
 
 render :: MonadIO m => Persist body -> m (Frame body)
@@ -65,4 +66,5 @@ frontendH =
   :<|> createRandom "topic" dbTopicMap
   :<|> render (PageShow <$> getTopics)
   :<|> Pages.pageTopicOverview
+  :<|> Pages.createTopic
   :<|> serveDirectory (Config.config ^. htmlStatic)
