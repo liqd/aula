@@ -1,6 +1,11 @@
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+
 module Frontend.HtmlSpec where
 
 import Arbitrary ()
@@ -9,15 +14,22 @@ import Frontend.Html
 import Frontend.Page.CreateIdea
 import Frontend.Topics
 
+import Control.Monad.Identity
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import Data.Typeable (Typeable, typeOf)
 import Lucid (ToHtml, toHtml, renderText)
+import Servant.Server.Internal.ServantErr
 import Test.Hspec (Spec, context, it, pendingWith)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
-import Test.QuickCheck.Monadic (assert, monadicIO, run)
-
+import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
+import Text.Digestive.Form
+import Text.Digestive.Types
 import Text.Digestive.View
+
 import qualified Data.Text.Lazy as LT
+
+import Types
 
 
 spec :: Spec
@@ -74,7 +86,10 @@ renderMarkup (H g) =
         LT.length (renderText (toHtml pageSource)) > 0
 
 data FormGen where
-    F :: (Show m, Typeable m, FormPageView m) => Gen m -> FormGen
+    F :: ( r ~ FormPageResult m
+         , Show m, Typeable m, FormPageView m
+         , Show r, Eq r, Arbitrary r, TestForm r
+         ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
 testForm fg = renderForm fg >> postToForm fg
@@ -94,8 +109,32 @@ failOnError = fmap (either (error . show) id) . runExceptT
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 postToForm :: FormGen -> Spec
-postToForm (F g) =
-    it (show (typeOf g) ++ " (process form input)") $
+postToForm (F g) = do
+    it (show (typeOf g) ++ " (process valid forms)") . property . monadicIO $ do
+        page <- pick g
+        payload <- pick (arbFormPageResult page)
+
+        let env :: Env (ExceptT ServantErr IO) = payloadToEnv payload
+            frm = makeForm page
+        (_, Just payload') <- run . failOnError $ postForm "" frm (\_ -> pure env)
+        assert (payload' == payload)  -- FIXME: can we use shouldBe here?
+
+    it (show (typeOf g) ++ " (process *in*valid form input)") $
         pendingWith "not implemented."
-    where
-        failOnError = either (error . show) id
+
+
+arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
+arbFormPageResult _ = arbitrary
+
+class TestForm a where
+    payloadToEnv :: a -> Env (ExceptT ServantErr IO)
+
+instance TestForm ProtoIdea where
+    payloadToEnv (ProtoIdea t d c) = \_ -> pure
+        [ TextInput t
+        , TextInput d
+        , TextInput . showCategoryValue $ c
+        ]
+
+showCategoryValue :: Category -> String
+showCategoryValue cat = case lookup cat categoryValues of Just s -> s
