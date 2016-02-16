@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
@@ -140,4 +141,4 @@ instance PayloadToEnv ProtoIdea where
       -- FIXME: reduce boilerplate?
 
 showCategoryValue :: Category -> String
-showCategoryValue cat = case lookup cat categoryValues of Just s -> s
+showCategoryValue ((`lookup` categoryValues) -> Just v) = v
