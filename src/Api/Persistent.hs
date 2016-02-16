@@ -9,6 +9,7 @@
 
 module Api.Persistent
     ( Persist
+    , AMap
     , AulaLens
     , AulaGetter
     , mkRunPersist
@@ -37,6 +38,9 @@ module Api.Persistent
     , dbIdeas
     , dbUsers
     , dbTopics
+    , dbIdeaMap
+    , dbUserMap
+    , dbTopicMap
     , dbCurrentUser
     -- FIXME: Remove hack
     , forceLogin
@@ -45,6 +49,7 @@ module Api.Persistent
 where
 
 import Data.Foldable (find)
+import Data.Map (Map)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
 import Control.Concurrent.STM
@@ -57,13 +62,16 @@ import Servant.Server ((:~>)(Nat))
 import Types
 
 import qualified Data.Set as Set (empty)
+import qualified Data.Map as Map
+
+type AMap a = Map (AUID a) a
 
 data AulaData = AulaData
-    { _dbIdeas       :: [Idea]
-    , _dbUsers       :: [User]
-    , _dbTopics      :: [Topic]
+    { _dbIdeaMap     :: AMap Idea
+    , _dbUserMap     :: AMap User
+    , _dbTopicMap    :: AMap Topic
     , _dbCurrentUser :: Maybe (AUID User)
-    , _dbLastId :: Integer
+    , _dbLastId      :: Integer
     }
   deriving (Eq, Show, Read)
 
@@ -72,8 +80,17 @@ makeLenses ''AulaData
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
 
+dbIdeas :: AulaGetter [Idea]
+dbIdeas = dbIdeaMap . to Map.elems
+
+dbUsers :: AulaGetter [User]
+dbUsers = dbUserMap . to Map.elems
+
+dbTopics :: AulaGetter [Topic]
+dbTopics = dbTopicMap . to Map.elems
+
 emptyAulaData :: AulaData
-emptyAulaData = AulaData [] [] [] Nothing 0
+emptyAulaData = AulaData Map.empty Map.empty Map.empty Nothing 0
 
 -- | FIXME: call this type 'Action'?  Or 'Aula'?  Or 'AulaAction'?  As of the time of writing this
 -- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
@@ -93,10 +110,10 @@ getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
 modifyDb :: AulaLens a -> (a -> a) -> Persist ()
 modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
 
-addDb :: (HasMetaInfo a, FromProto a) => Lens' AulaData [a] -> Proto a -> Persist a
+addDb :: (HasMetaInfo a, FromProto a) => AulaLens (AMap a) -> Proto a -> Persist a
 addDb l pa = do
-    a  <- fromProto pa <$> (join $ newMetaInfo <$> currentUser <*> nextId)
-    modifyDb l (a:)
+    a  <- fromProto pa <$> nextMetaInfo
+    modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
 findIn :: AulaGetter [a] -> (a -> Bool) -> Persist (Maybe a)
@@ -118,19 +135,19 @@ getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
 addIdea :: Proto Idea -> Persist Idea
-addIdea = addDb dbIdeas
+addIdea = addDb dbIdeaMap
 
 getUsers :: Persist [User]
 getUsers = getDb dbUsers
 
 addUser :: User -> Persist User
-addUser = addDb dbUsers
+addUser = addDb dbUserMap
 
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
 addTopic :: Proto Topic -> Persist Topic
-addTopic = addDb dbTopics
+addTopic = addDb dbTopicMap
 
 findUserByLogin :: ST -> Persist (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -154,8 +171,12 @@ loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserB
 -- FIXME: This is not part of the interface
 
 -- | FIXME: Remove. Only used to add random generated entities.
-addDbEntity :: Lens' AulaData [a] -> a -> Persist ()
-addDbEntity l a = modifyDb l (a:)
+addDbEntity :: HasMetaInfo a => AulaLens (AMap a) -> a -> Persist a
+addDbEntity l pa = do
+    m <- nextMetaInfo
+    let a = pa & metaInfo .~ m
+    modifyDb l $ at (a ^. _Id) .~ Just a
+    return a
 
 forceLogin :: Integer -> Persist ()
 forceLogin x = modifyDb dbCurrentUser (const (Just (AUID x)))
@@ -204,3 +225,6 @@ newMetaInfo u i = liftIO $ do
         , _metaChangedBy       = u
         , _metaChangedAt       = now
         }
+
+nextMetaInfo :: Persist (MetaInfo a)
+nextMetaInfo = join $ newMetaInfo <$> currentUser <*> nextId
