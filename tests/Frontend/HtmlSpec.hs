@@ -8,12 +8,6 @@
 
 module Frontend.HtmlSpec where
 
-import Arbitrary ()
-import Frontend.Core
-import Frontend.Html
-import Frontend.Page.CreateIdea
-import Frontend.Topics
-
 import Control.Monad.Identity
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
@@ -32,6 +26,11 @@ import Text.Digestive.View
 
 import qualified Data.Text.Lazy as LT
 
+import Arbitrary ()
+import Frontend.Core
+import Frontend.Html
+import Frontend.Page.CreateIdea
+import Frontend.Topics
 import Types
 
 
