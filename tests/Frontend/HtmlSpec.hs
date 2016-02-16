@@ -84,12 +84,13 @@ testForm fg = renderForm fg >> postToForm fg
 renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show (typeOf g) ++ " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
-        len <- run . fmap failOnError . runExceptT $ do
+        len <- run . failOnError $ do
             v <- getForm "" $ makeForm page
             return $ LT.length (renderText $ formPage v "formAction" page)
         assert (len > 0)
-    where
-        failOnError = either (error . show) id
+
+failOnError :: ExceptT ServantErr IO a -> IO a
+failOnError = fmap (either (error . show) id) . runExceptT
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 postToForm :: FormGen -> Spec
