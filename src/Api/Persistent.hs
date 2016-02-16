@@ -139,7 +139,7 @@ findTopic :: AUID Topic -> Persist (Maybe Topic)
 findTopic = findInById dbTopics
 
 findIdeasByTopicId :: AUID Topic -> Persist [Idea]
-findIdeasByTopicId topicId = findAllIn dbIdeas (\idea -> idea ^? ideaTopic . _Just . _Id == Just topicId)
+findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
 
 findIdeasByTopic :: Topic -> Persist [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
