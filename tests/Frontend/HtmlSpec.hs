@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -17,6 +18,7 @@ import Frontend.Topics
 import Control.Monad.Identity
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
+import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
 import Lucid (ToHtml, toHtml, renderText)
 import Servant.Server.Internal.ServantErr
@@ -88,7 +90,7 @@ renderMarkup (H g) =
 data FormGen where
     F :: ( r ~ FormPageResult m
          , Show m, Typeable m, FormPageView m
-         , Show r, Eq r, Arbitrary r, TestForm r
+         , Show r, Eq r, Arbitrary r, PayloadToEnv r
          ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
@@ -126,15 +128,16 @@ postToForm (F g) = do
 arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 arbFormPageResult _ = arbitrary
 
-class TestForm a where
+class PayloadToEnv a where
     payloadToEnv :: a -> Env (ExceptT ServantErr IO)
 
-instance TestForm ProtoIdea where
-    payloadToEnv (ProtoIdea t d c) = \_ -> pure
-        [ TextInput t
-        , TextInput d
-        , TextInput . showCategoryValue $ c
-        ]
+instance PayloadToEnv ProtoIdea where
+    payloadToEnv (ProtoIdea t (Markdown d) c) = \case
+        ["", "title"]         -> pure [TextInput t]
+        ["", "idea-text"]     -> pure [TextInput d]
+        ["", "idea-category"] -> pure [TextInput . cs . showCategoryValue $ c]
+        bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
+      -- FIXME: reduce boilerplate?
 
 showCategoryValue :: Category -> String
 showCategoryValue cat = case lookup cat categoryValues of Just s -> s
