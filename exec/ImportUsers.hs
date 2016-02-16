@@ -5,7 +5,6 @@ module Main where
 import Control.Monad (forM_)
 import qualified Crypto.Nonce as Nonce
 import qualified Data.ByteString as B
-import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Database.PostgreSQL.Simple (connectPostgreSQL)
 import Data.Monoid ((<>))

@@ -6,7 +6,6 @@
 module Frontend.Page.CreateIdea
 where
 
-import Frontend.Html
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -72,7 +71,7 @@ createIdea = formRedirectH "/ideas/create" p1 p2 r
 
     p2 :: ProtoIdea -> ExceptT ServantErr IO ST
     p2 idea = liftIO $ do
-        runPersist $ do
+        void . runPersist $ do
             forceLogin 1 -- FIXME: Login hack
             addIdea idea
         return $ redirectOf PageCreateIdea

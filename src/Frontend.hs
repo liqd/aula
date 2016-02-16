@@ -25,6 +25,7 @@ import Config
 import CreateRandom
 import Frontend.Core
 import Frontend.Html
+import Frontend.Topics hiding (pageTopicOverview)
 import Types
 
 import qualified Frontend.Page.CreateIdea as Page
@@ -77,10 +78,10 @@ pageTopicOverview topicId = liftIO . runPersist $ do
     ideas      <- findIdeasByTopic topic
     pure . Frame $ case topic ^. topicPhase of
         PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
-        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase
-        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase
-        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase
+        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
+        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas
+        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
         -- FIXME: how do we display a topic in the finished phase?
         -- Is this the same the result phase?
         -- Maybe some buttons to hide?
-        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase
+        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas

@@ -2,7 +2,6 @@
 
 module Main where
 
-import Types
 import Frontend
 import Config
 

@@ -34,6 +34,7 @@ import Config
 import Frontend.Core
 import Frontend.Html
 import Frontend.Page.CreateIdea
+import Frontend.Topics
 
 
 samplePages :: IO [(TypeRep, String)]

@@ -1,19 +1,19 @@
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Frontend.HtmlSpec where
 
-import Arbitrary
+import Arbitrary ()
 import Frontend.Core
 import Frontend.Html
 import Frontend.Page.CreateIdea
+import Frontend.Topics
 
-import Control.Applicative ((<$>))
 import Control.Monad.Trans.Except
-import Data.Either (either)
 import Data.Typeable (Typeable, typeOf)
 import Lucid (ToHtml, toHtml, renderText)
-import Test.Hspec (Spec, context, describe, it)
-import Test.QuickCheck (Arbitrary(..), Gen, Testable, forAll, property)
+import Test.Hspec (Spec, context, it)
+import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run)
 
 import Text.Digestive.View

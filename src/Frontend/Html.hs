@@ -22,54 +22,15 @@ where
 import Control.Lens
 import Control.Monad (forM_)
 import Data.Foldable (for_)
-import Data.Set (Set)
 import Data.String.Conversions
-import Data.Typeable (Typeable)
 import Prelude
 import Lucid hiding (for_)
-import Prelude hiding (head, span, div)
 
 import qualified Data.Set as Set
 
 import Api
 import Types
 import Frontend.Core
-
-
-----------------------------------------------------------------------
--- building blocks
-
-html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
-html = to toHtml
-
-showed :: Show a => Getter a String
-showed = to show
-
-data Beside a b = Beside a b
-
-instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
-    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
-    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
-
-newtype CommentVotesWidget = VotesWidget (Set CommentVote)
-
-instance ToHtml CommentVotesWidget where
-    toHtmlRaw = toHtml
-    toHtml p@(VotesWidget votes) = semanticDiv p . toHtml $ y ++ n
-      where
-        y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
-        n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
-
-newtype AuthorWidget a = AuthorWidget (MetaInfo a)
-
-instance (Typeable a) => ToHtml (AuthorWidget a) where
-    toHtmlRaw = toHtml
-    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        "["
-        img_ [src_ $ mi ^. metaCreatedByAvatar]
-        mi ^. metaCreatedByLogin . html
-        "]"
-
 
 
 ----------------------------------------------------------------------
@@ -106,7 +67,7 @@ instance ToHtml PageIdeasOverview where
             button_ "Zeit"
             button_ "Umgebung"
         div_ [id_ "ideas"] . for_ ideas $ \idea ->
-            ListItemIdea idea ^. html
+            ListItemIdea Nothing idea ^. html
 
 
 -- | 3. Ideas in discussion
@@ -116,86 +77,6 @@ data PageIdeasInDiscussion = PageIdeasInDiscussion
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageIdeasInDiscussion"
-
--- | 4 Topic overview
-data PageTopicOverview
-  = PageTopicOverviewRefinementPhase' PageTopicOverviewRefinementPhase
-  | PageTopicOverviewJuryPhase'       PageTopicOverviewJuryPhase
-  | PageTopicOverviewVotingPhase'     PageTopicOverviewVotingPhase
-  | PageTopicOverviewResultPhase'     PageTopicOverviewResultPhase
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageTopicOverview where
-    toHtmlRaw = toHtml
-    toHtml = \case
-      PageTopicOverviewRefinementPhase' p -> toHtml p
-      PageTopicOverviewJuryPhase'       p -> toHtml p
-      PageTopicOverviewVotingPhase'     p -> toHtml p
-      PageTopicOverviewResultPhase'     p -> toHtml p
-
--- | 4.1 Topic overview: Refinement phase
--- FIXME: In this page there is a second tab which shows delegations
--- we might need a second page.
-data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase Topic [Idea]
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageTopicOverviewRefinementPhase where
-    toHtmlRaw = toHtml
-    toHtml p@(PageTopicOverviewRefinementPhase topic ideas) = do
-        semanticDiv p $ do
-            div_ [id_ "navigation"] $ do
-                a_ [id_ "back-themes"] "<- Zu Allen Themen"
-                a_ "..."
-                a_ "bearbeiten"
-            h2_ "Ausarbeitungsphase"
-            div_ $ do
-                p_   [id_ "topic-title"] $ topic ^. topicTitle . html
-                div_ [id_ "topic-desc"] $ topic ^. topicDesc . html
-                a_   [id_ "add-idea"] "+ Neue Idee"
-                a_   [id_ "delegate-vote"] ":bullhorn: Stimme Beauftragen"
-            div_ [id_ "tabs"] $ do
-                a_ [id_ "tab-ideas"] "Alle Ideen"
-                a_ [id_ "tab-delegations"] "Beauftragen Stimmen"
-        div_ $ do
-            a_ [id_ "settings"] ":gear:"
-            div_ [id_ "ideas"] . for_ ideas $ \idea ->
-                ListItemIdea idea ^. html
-
-
--- | 4.2 Topic overview: Jury (assessment) phase
-data PageTopicOverviewJuryPhase = PageTopicOverviewJuryPhase
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageTopicOverviewJuryPhase where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewJuryPhase"
-
-
--- | 4.3 Topic overview: Voting phase
-data PageTopicOverviewVotingPhase = PageTopicOverviewVotingPhase
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageTopicOverviewVotingPhase where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewVotingPhase"
-
-
--- | 4.4 Topic overview: Result phase
-data PageTopicOverviewResultPhase = PageTopicOverviewResultPhase
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageTopicOverviewResultPhase where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewResultPhase"
-
-
--- | 4.5 Topic overview: Delegations
-data PageTopicOverviewDelegations = PageTopicOverviewDelegations
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageTopicOverviewDelegations where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewDelegations"
 
 
 -- | 5.1 Idea detail page: New ideas
@@ -401,25 +282,6 @@ instance ToHtml PageHomeWithLoginPrompt where
 
 
 
-
-
-data ListItemIdea = ListItemIdea Idea
-  deriving (Eq, Show, Read)
-
-instance ToHtml ListItemIdea where
-    toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea idea) = semanticDiv p $ do
-        span_ $ do
-            img_ [src_ "some_avatar"]
-        span_ $ do
-            span_ $ idea ^. ideaTitle . html
-            span_ $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . html
-        span_ $ do
-            span_ $ do
-                let s = Set.size (idea ^. ideaComments)
-                s ^. showed . html
-                if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
-            -- TODO: show how many votes are in and how many are required
 
 
 data PageIdea = PageIdea Idea

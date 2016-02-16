@@ -11,7 +11,6 @@ import Thentos.Prelude
 
 import Persistent
 import Frontend.Core
-import Frontend.Html
 import Test.QuickCheck
 
 createRandom :: (MonadIO m, Arbitrary a, Show a) => ST -> AulaLens [a] -> m (Frame (ST `Beside` PageShow a))

@@ -2,9 +2,10 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TypeOperators      #-}
 
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Api.PersistentSpec where
 
-import Arbitrary
+import Arbitrary ()
 import Control.Lens
 import Control.Monad.IO.Class
 import Data.Maybe
@@ -43,10 +44,10 @@ spec = do
 
     describe "addIdea" $ do
         let t = it "adds an idea" $ \(Nat rp) -> do
-                    before <- liftIO $ length <$> rp getIdeas
+                    before' <- liftIO $ length <$> rp getIdeas
                     liftIO $ generate arbitrary >>= rp . addIdea
-                    after <- liftIO $ length <$> rp getIdeas
-                    after `shouldBe` before + 1
+                    after' <- liftIO $ length <$> rp getIdeas
+                    after' `shouldBe` before' + 1
 
         context "on empty database" . before mkEmpty $ t
         context "on initial database" . before mkInitial $ t
@@ -63,10 +64,10 @@ spec = do
 
     describe "addUser" $ do
         let t = it "adds a user" $ \(Nat rp) -> do
-                    before <- liftIO $ length <$> rp getUsers
+                    before' <- liftIO $ length <$> rp getUsers
                     liftIO $ generate arbitrary >>= rp . addUser
-                    after <- liftIO $ length <$> rp getUsers
-                    after `shouldBe` before + 1
+                    after' <- liftIO $ length <$> rp getUsers
+                    after' `shouldBe` before' + 1
 
         context "on empty database" . before mkEmpty $ t
         context "on initial database" . before mkInitial $ t
@@ -107,7 +108,7 @@ spec = do
 
             context "if user does exist" $ do
                 context "if password is wrong" $ do
-                    it "will not log you in" $ \rp -> do
+                    it "will not log you in" $ \_rp -> do
                         pendingWith "this prototype doesn't do this yet."
 
                 context "if password is correct" $ do

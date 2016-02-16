@@ -1,6 +1,7 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module TypesSpec where
 
-import Arbitrary
+import Arbitrary ()
 import Types
 
 import Data.Binary (encode, decode)

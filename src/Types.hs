@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
+{-# LANGUAGE LambdaCase                  #-}
+{-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
@@ -174,6 +176,14 @@ data Phase =
   | PhaseResult        -- ^ 5. "Ergebnisphase"
   | PhaseFinished      -- ^ 6. "Ergebnisphase"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+phaseName :: Phase -> ST
+phaseName = \case
+    PhaseRefinement -> "Ausarbeitungsphase"
+    PhaseJury       -> "Prüfungsphase"
+    PhaseVoting     -> "Abstimmungsphase"
+    PhaseResult     -> "Ergebnisphase"
+    PhaseFinished   -> "Ergebnisphase"
 
 
 ----------------------------------------------------------------------

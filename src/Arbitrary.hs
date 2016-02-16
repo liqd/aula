@@ -12,7 +12,6 @@
 module Arbitrary (topLevelDomains, loremIpsum) where
 
 import Data.Char
-import Data.Functor.Infix ((<$$>))
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
@@ -22,6 +21,7 @@ import Test.QuickCheck.Instances ()
 import Types
 import Frontend.Html
 import Frontend.Page.CreateIdea
+import Frontend.Topics
 
 
 ----------------------------------------------------------------------
@@ -40,13 +40,13 @@ instance Arbitrary PageTopicOverviewRefinementPhase where
     arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewJuryPhase where
-    arbitrary = pure PageTopicOverviewJuryPhase
+    arbitrary = PageTopicOverviewJuryPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewVotingPhase where
-    arbitrary = pure PageTopicOverviewVotingPhase
+    arbitrary = PageTopicOverviewVotingPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewResultPhase where
-    arbitrary = pure PageTopicOverviewResultPhase
+    arbitrary = PageTopicOverviewResultPhase <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewDelegations where
     arbitrary = pure PageTopicOverviewDelegations
@@ -171,8 +171,8 @@ instance Arbitrary IdeaSpace where
 instance Arbitrary SchoolClass where
     arbitrary = SchoolClass <$> name <*> year
       where
-        name = elements [ cs $ show age ++ [branch] | age <- [1..12], branch <- ['a'..'e'] ]
-        year = elements $ cs . show <$> [2012..2020]
+        name = elements [ cs $ show age ++ [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
+        year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary Topic where
     arbitrary = Topic <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
