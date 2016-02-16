@@ -35,7 +35,6 @@ instance FormPageView PageCreateIdea where
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: DF.choice categories Nothing)
-        <*> (pure SchoolSpace)
         where
           categories = [
                 (CatRule,        "Regel")
