@@ -32,6 +32,9 @@ import Frontend.Pages
 import Types
 
 
+----------------------------------------------------------------------
+-- list all types for testing
+
 spec :: Spec
 spec = do
     context "ToHtml" $ mapM_ renderMarkup [
@@ -76,6 +79,45 @@ spec = do
     where
         arb :: Arbitrary a => Gen a
         arb = arbitrary
+
+
+----------------------------------------------------------------------
+-- translate form data back to form input
+
+instance PayloadToEnv ProtoIdea where
+    payloadToEnv view (ProtoIdea t (Markdown d) c) = \case
+        ["", "title"]         -> pure [TextInput t]
+        ["", "idea-text"]     -> pure [TextInput d]
+        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
+        bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
+      -- FIXME: reduce boilerplate?
+
+-- | This function is not pretty.
+--
+-- FIXME: rewrite the following brain dump: digestive forms gives somewhat-internal names to the
+-- fields.  for looking up the value of a field in the env, we need to re-construct those from the
+-- view.  since the view contains the viel values as html, not string, we need to render that.
+-- something like that.)
+selectCategoryValue :: ST -> View (Html ()) -> Category -> ST
+selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> value i
+  where
+    ref'    = absoluteRef ref view
+    value i = ref' <> "." <> i
+    choices = fieldInputChoice ref view
+    test (_, scat :: Html (), _) = showCategoryValue cat == renderText scat
+
+    showCategoryValue :: IsString s => Category -> s
+    showCategoryValue ((`lookup` categoryValues) -> Just v) = v
+
+instance PayloadToEnv LoginFormData where
+    payloadToEnv _ (LoginFormData (name, pass)) = \case
+        ["", "user"] -> pure [TextInput name]
+        ["", "pass"] -> pure [TextInput pass]
+        bad -> error $ "instance PayloadToEnv LoginFormData: " ++ show bad
+
+
+----------------------------------------------------------------------
+-- machine room
 
 data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen
@@ -130,36 +172,3 @@ arbFormPageResult _ = arbitrary
 
 class PayloadToEnv a where
     payloadToEnv :: View (Html ()) -> a -> Env (ExceptT ServantErr IO)
-
-instance PayloadToEnv ProtoIdea where
-    payloadToEnv view (ProtoIdea t (Markdown d) c) = \case
-        ["", "title"]         -> pure [TextInput t]
-        ["", "idea-text"]     -> pure [TextInput d]
-        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
-        bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
-      -- FIXME: reduce boilerplate?
-      -- FIXME: find a better place in the code for these instances?
-
-instance PayloadToEnv LoginFormData where
-    payloadToEnv _ (LoginFormData (name, pass)) = \case
-        ["", "user"] -> pure [TextInput name]
-        ["", "pass"] -> pure [TextInput pass]
-        bad -> error $ "instance PayloadToEnv LoginFormData: " ++ show bad
-
-
--- | This function is not pretty.
---
--- FIXME: rewrite the following brain dump: digestive forms gives somewhat-internal names to the
--- fields.  for looking up the value of a field in the env, we need to re-construct those from the
--- view.  since the view contains the viel values as html, not string, we need to render that.
--- something like that.)
-selectCategoryValue :: ST -> View (Html ()) -> Category -> ST
-selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> value i
-  where
-    ref'    = absoluteRef ref view
-    value i = ref' <> "." <> i
-    choices = fieldInputChoice ref view
-    test (_, scat :: Html (), _) = showCategoryValue cat == renderText scat
-
-    showCategoryValue :: IsString s => Category -> s
-    showCategoryValue ((`lookup` categoryValues) -> Just v) = v
