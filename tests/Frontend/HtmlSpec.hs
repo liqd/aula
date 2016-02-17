@@ -92,12 +92,24 @@ instance PayloadToEnv ProtoIdea where
         bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
       -- FIXME: reduce boilerplate?
 
--- | This function is not pretty.
+-- | Translate a 'Category' value into the select string for the form 'Env'.
 --
--- FIXME: rewrite the following brain dump: digestive forms gives somewhat-internal names to the
--- fields.  for looking up the value of a field in the env, we need to re-construct those from the
--- view.  since the view contains the viel values as html, not string, we need to render that.
--- something like that.)
+-- FIXME: this function should be more general.
+-- FIXME: none of this is very elegant.  can we improve on it?
+--
+-- Text fields in forms are nice because the values in the form 'Env' contains simply the text
+-- itself, as it ends up in the parsed form playload.  Selections (pull-down menus) are trickier,
+-- because 'Env' maps their path to an internal representation of a reference to the selected item,
+-- rather than the human-readable menu entry.
+--
+-- This function mimics the 'inputSelect' functions internal behavior from the
+-- digestive-functors-lucid package: it extracts an enumeration of the input choices from the views,
+-- constructs the form field values from that, and looks up the one whose item description matches
+-- the given category value.
+--
+-- Since the item descriptions are available only as 'Html', not as text, and 'Html' doesn't have
+-- 'Eq', we need to apply another trick and transform both the category value and the item
+-- description to 'LT'.
 selectCategoryValue :: ST -> View (Html ()) -> Category -> ST
 selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> value i
   where
