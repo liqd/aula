@@ -63,7 +63,7 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 ----------------------------------------------------------------------
 -- building blocks
 
--- | Render Form based Views 
+-- | Render Form based Views
 class FormPageView p where
     type FormPageResult p :: *
     -- | Generates a Html view from the given page
@@ -80,7 +80,7 @@ class Page p where
     isPrivatePage :: p -> Bool
     isPrivatePage = not . isPublicPage
 
--- | The page after submitting a form should be redirected 
+-- | The page after submitting a form should be redirected
 class RedirectOf p where
     -- | Calculates a redirect address from the given page
     redirectOf :: p -> ST
