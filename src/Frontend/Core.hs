@@ -7,9 +7,9 @@
 module Frontend.Core
 where
 
-import Control.Monad (void)
-import Control.Monad.Trans.Except (ExceptT)
 import Control.Lens
+import Control.Monad.Trans.Except (ExceptT)
+import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
@@ -208,11 +208,6 @@ redirectFormHandler
 redirectFormHandler action page processor = formRedirectH action p1 p2 r
   where
     p1 = makeForm page
-
-    p2 result = do
-        void $ processor result
-        return $ redirectOf page
-
+    p2 result = processor result $> redirectOf page
     frame = if isPublicPage page then publicPageFrame else pageFrame
-
     r v formAction = pure . frame $ formPage v formAction page
