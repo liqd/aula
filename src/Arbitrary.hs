@@ -119,7 +119,7 @@ instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = pure PageHomeWithLoginPrompt
 
 instance Arbitrary LoginFormData where
-    arbitrary = LoginFormData <$> ((,) <$> arbWord <*> arbWord)
+    arbitrary = LoginFormData <$> arbWord <*> arbWord
 
 
 ----------------------------------------------------------------------

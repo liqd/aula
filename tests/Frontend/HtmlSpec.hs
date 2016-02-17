@@ -122,7 +122,7 @@ selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> v
     showCategoryValue ((`lookup` categoryValues) -> Just v) = v
 
 instance PayloadToEnv LoginFormData where
-    payloadToEnv _ (LoginFormData (name, pass)) = \case
+    payloadToEnv _ (LoginFormData name pass) = \case
         ["", "user"] -> pure [TextInput name]
         ["", "pass"] -> pure [TextInput pass]
         bad -> error $ "instance PayloadToEnv LoginFormData: " ++ show bad

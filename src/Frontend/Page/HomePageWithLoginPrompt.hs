@@ -28,15 +28,15 @@ instance ToHtml PageHomeWithLoginPrompt where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageHomeWithLoginPrompt"
 
-newtype LoginFormData = LoginFormData (ST, ST)
+data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
 instance FormPageView PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData
 
-    makeForm _ = LoginFormData <$> do
-        (,) <$> ("user" .: DF.text Nothing)
-            <*> ("pass" .: DF.text Nothing)
+    makeForm _ = LoginFormData
+        <$> ("user" .: DF.text Nothing)
+        <*> ("pass" .: DF.text Nothing)
 
     formPage v formAction p = do
         semanticDiv p $ do
@@ -56,4 +56,4 @@ instance RedirectOf PageHomeWithLoginPrompt where
 login :: Server (FormH HTML (Html ()) ST)
 login = redirectFormHandler "/login" PageHomeWithLoginPrompt makeUserLogin
   where
-    makeUserLogin (LoginFormData (user, _pass)) = liftIO . runPersist $ loginUser user
+    makeUserLogin (LoginFormData user _pass) = liftIO . runPersist $ loginUser user
