@@ -9,6 +9,7 @@
 module Frontend.Page.Topic
 where
 
+import Action (Action, persistent)
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -31,8 +32,8 @@ instance ToHtml PageTopicOverview where
       PageTopicOverviewVotingPhase'     p -> toHtml p
       PageTopicOverviewResultPhase'     p -> toHtml p
 
-pageTopicOverview :: MonadIO m => AUID Topic -> m (Frame PageTopicOverview)
-pageTopicOverview topicId = liftIO . runPersist $ do
+pageTopicOverview :: AUID Topic -> Action (Frame PageTopicOverview)
+pageTopicOverview topicId = persistent $ do
     -- FIXME 404
     Just topic <- findTopic topicId
     ideas      <- findIdeasByTopic topic
@@ -184,13 +185,10 @@ instance Page PageCreateTopic where
 instance RedirectOf PageCreateTopic where
     redirectOf _ = "/topics"
 
-createTopic :: Server (FormH HTML (Html ()) ST)
+createTopic :: ServerT (FormH HTML (Html ()) ST) Action
 createTopic = redirectFormHandler "/topics/create" PageCreateTopic newTopic
   where
-    newTopic topic = liftIO . runPersist $ do
-        forceLogin 1 -- FIXME: Login hack
-        addTopic topic
-
+    newTopic topic = persistent $ addTopic topic
 
 -- | 10.2 Create topic: Move ideas to topic
 data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas

@@ -9,7 +9,6 @@ module Frontend.Core
 where
 
 import Control.Lens
-import Control.Monad.Trans.Except (ExceptT)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
@@ -18,12 +17,13 @@ import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
-import Servant (Server, ServantErr)
+import Servant (ServerT)
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, formRedirectH)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
+import Action hiding (User)
 import Api
 import Types
 
@@ -68,7 +68,7 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 class FormPageView p where
     type FormPageResult p :: *
     -- | Generates a Html view from the given page
-    makeForm :: p -> DF.Form (Html ()) (ExceptT ServantErr IO) (FormPageResult p)
+    makeForm :: p -> DF.Form (Html ()) Action (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -212,8 +212,8 @@ redirectFormHandler
     :: (FormPageView p, Page p, RedirectOf p)
     => ST -- ^ Form Action
     -> p  -- ^ Page representation
-    -> (FormPageResult p -> ExceptT ServantErr IO a) -- ^ Processor for the form result
-    -> Server (FormH HTML (Html ()) ST)
+    -> (FormPageResult p -> Action a) -- ^ Processor for the form result
+    -> ServerT (FormH HTML (Html ()) ST) Action
 redirectFormHandler action page processor = formRedirectH action p1 p2 r
   where
     p1 = makeForm page

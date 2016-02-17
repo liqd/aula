@@ -16,6 +16,7 @@ library
   exposed-modules:
       Api
     , Api.Persistent
+    , Action
     , Arbitrary
     , Config
     , CreateRandom

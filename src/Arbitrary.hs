@@ -8,14 +8,14 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
 
-module Arbitrary (topLevelDomains, loremIpsum) where
+module Arbitrary (topLevelDomains, loremIpsum, generate, arbitrary) where
 
 import Control.Monad (replicateM)
 import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
 import Test.QuickCheck.Instances ()
 
 import Types

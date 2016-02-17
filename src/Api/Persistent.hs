@@ -48,8 +48,8 @@ module Api.Persistent
     , dbTopicMap
     , dbCurrentUser
     -- FIXME: Remove hack
-    , forceLogin
     , addDbEntity
+    , bootstrapUser
     )
 where
 
@@ -100,7 +100,10 @@ emptyAulaData = AulaData nil nil nil Nothing 0
 -- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
 -- in thentos) and application logic (Action in thentos).  to be discussed later?
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
-  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving (Functor, Applicative, Monad)
+
+persistIO :: IO a -> Persist a
+persistIO = Persist . liftIO
 
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = do
@@ -209,9 +212,6 @@ addDbEntity l pa = do
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
-forceLogin :: Integer -> Persist ()
-forceLogin x = modifyDb dbCurrentUser (const (Just (AUID x)))
-
 nextId :: Persist (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
@@ -222,6 +222,21 @@ currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
 instance FromProto User where
     fromProto u _ = u
+
+-- | FIXME: who will create the first user?
+bootstrapUser :: (Persist :~> IO) -> User -> IO User
+bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUser)
+  where
+    uid :: Integer
+    uid = 0
+
+    forceLogin :: Integer -> Persist ()
+    forceLogin x = modifyDb dbCurrentUser (const (Just (AUID x)))
+
+    tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
+    tweak user = (userMeta . metaId .~ AUID 0)
+               . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
+               $ user
 
 instance FromProto Idea where
     fromProto i m = Idea
@@ -250,9 +265,9 @@ instance FromProto Topic where
 
 -- | So far `newMetaInfo` is only used by `nextMetaInfo`.
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
-newMetaInfo u i = liftIO $ do
-    now <- Timestamp <$> getCurrentTime
-    return MetaInfo
+newMetaInfo u i = do
+    now <- Timestamp <$> persistIO getCurrentTime
+    return $ MetaInfo
         { _metaId              = i
         , _metaCreatedBy       = u
         , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'

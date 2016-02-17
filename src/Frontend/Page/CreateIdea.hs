@@ -6,6 +6,7 @@
 module Frontend.Page.CreateIdea
 where
 
+import Action (Action, persistent)
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -62,9 +63,7 @@ categoryValues = [ (CatRule,        "Regel")
 instance RedirectOf PageCreateIdea where
     redirectOf _ = "/ideas"
 
-createIdea :: Server (FormH HTML (Html ()) ST)
+createIdea :: ServerT (FormH HTML (Html ()) ST) Action
 createIdea = redirectFormHandler "/ideas/create" PageCreateIdea newIdea
   where
-    newIdea idea = liftIO . runPersist $ do
-        forceLogin 1 -- FIXME: Login hack
-        addIdea idea
+    newIdea idea = persistent $ addIdea idea

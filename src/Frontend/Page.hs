@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Werror -Wall #-}
+
 module Frontend.Page (module P)
 where
 
