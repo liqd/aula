@@ -262,8 +262,8 @@ newMetaInfo u i = liftIO $ do
     return $ MetaInfo
         { _metaId              = i
         , _metaCreatedBy       = u
-        , _metaCreatedByLogin  = ""
-        , _metaCreatedByAvatar = ""
+        , _metaCreatedByLogin  = ""  -- FIXME: we should probably lookup user under 'u' and keep this in sync.
+        , _metaCreatedByAvatar = ""  -- FIXME: dito.
         , _metaCreatedAt       = now
         , _metaChangedBy       = u
         , _metaChangedAt       = now

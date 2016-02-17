@@ -39,7 +39,7 @@ bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUs
     uid :: Integer
     uid = 0
 
-    tweak :: User -> User
+    tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
     tweak user = (userMeta . metaId .~ AUID 0)
                . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
                $ user
