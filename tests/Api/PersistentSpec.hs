@@ -26,69 +26,119 @@ mkEmpty = mkRunPersist
 mkInitial :: IO (Persist :~> IO)
 mkInitial = do
     rp <- mkEmpty
-    generate arbitrary >>= unNat rp . addIdea
-    generate arbitrary >>= unNat rp . addUser
+    generate arbitrary >>= bootstrapUser rp
+    _wildIdea <- generate arbitrary >>= unNat rp . addIdea
+    topicIdea <- generate arbitrary >>= unNat rp . addIdea
+    generate arbitrary >>= unNat rp . addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id])
     return rp
 
-spec :: Spec
-spec = do
-    describe "getIdeas" $ do
+-- | FIXME: who will create the first user?
+bootstrapUser :: (Persist :~> IO) -> User -> IO User
+bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUser)
+  where
+    uid :: Integer
+    uid = 0
+
+    tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
+    tweak user = (userMeta . metaId .~ AUID 0)
+               . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
+               $ user
+
+getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
+getDbSpec name getXs = do
+    describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "returns the empty list" $ \(Nat rp) -> do
-                ideas <- rp getIdeas
-                ideas `shouldBe` []
+                xs <- rp getXs
+                xs `shouldBe` []
         context "on initial database" . before mkInitial $ do
-            it "returns a list with one element" $ \(Nat rp) -> do
-                ideas <- rp getIdeas
-                length ideas `shouldBe` 1
+            it "returns a non-empty list" $ \(Nat rp) -> do
+                xs <- rp getXs
+                length xs `shouldNotBe` 0
 
-    describe "addIdea" $ do
-        let t = it "adds an idea" $ \(Nat rp) -> do
-                    before' <- liftIO $ length <$> rp getIdeas
-                    liftIO $ generate arbitrary >>= rp . addIdea
-                    after' <- liftIO $ length <$> rp getIdeas
+addDbSpec :: (Foldable f, Arbitrary proto) => String -> Persist (f a) -> (proto -> Persist a) -> Spec
+addDbSpec name getXs addX =
+    describe name $ do
+        let t = it "adds one" $ \(Nat rp) -> do
+                    before' <- liftIO $ length <$> rp getXs
+                    liftIO $ generate arbitrary >>= rp . addX
+                    after' <- liftIO $ length <$> rp getXs
                     after' `shouldBe` before' + 1
 
         context "on empty database" . before mkEmpty $ t
         context "on initial database" . before mkInitial $ t
 
-    describe "getUsers" $ do
-        context "on empty database" . before mkEmpty $ do
-            it "returns the empty list" $ \(Nat rp) -> do
-                users <- rp getUsers
-                users `shouldBe` []
-        context "on initial database" . before mkInitial $ do
-            it "returs a non-empty list" $ \(Nat rp) -> do
-                users <- rp getUsers
-                length users `shouldNotBe` 0
-
-    describe "addUser" $ do
-        let t = it "adds a user" $ \(Nat rp) -> do
-                    before' <- liftIO $ length <$> rp getUsers
-                    liftIO $ generate arbitrary >>= rp . addUser
-                    after' <- liftIO $ length <$> rp getUsers
-                    after' `shouldBe` before' + 1
-
-        context "on empty database" . before mkEmpty $ t
-        context "on initial database" . before mkInitial $ t
-
-    describe "findUserByLogin" $ do
+findInBySpec :: (Eq a, Show a, Arbitrary k) =>
+                String -> Persist [a] -> (k -> Persist (Maybe a)) ->
+                Fold a k -> (k -> k) ->
+                Spec
+findInBySpec name getXs findXBy f change =
+    describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "will come up empty" $ \(Nat rp) -> do
-                mu <- liftIO . rp $ findUserByLogin "samedifference"
+                rf <- liftIO $ generate arbitrary
+                mu <- liftIO . rp $ findXBy rf
                 mu `shouldBe` Nothing
 
         context "on initial database" . before mkInitial $ do
-            context "if user does not exist" $ do
+            context "if it does not exist" $ do
                 it "will come up empty" $ \(Nat rp) -> do
-                    [user] <- liftIO $ rp getUsers
-                    mu <- liftIO . rp $ findUserByLogin ("not" <> (user ^. userLogin))
+                    x:_ <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    mu <- liftIO . rp $ findXBy (change y)
                     mu `shouldBe` Nothing
-            context "if user does exist" $ do
-                it "will come up with the user" $ \(Nat rp) -> do
-                    [user] <- liftIO $ rp getUsers
-                    mu <- liftIO . rp $ findUserByLogin (user ^. userLogin)
-                    mu `shouldBe` (Just user)
+            context "if it exists" $ do
+                it "will come up with the newly added record" $ \(Nat rp) -> do
+                    x:_ <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    mu <- liftIO . rp $ findXBy y
+                    mu `shouldBe` (Just x)
+
+findAllInBySpec :: (Eq a, Show a, Arbitrary k) =>
+                    String -> Persist [a] -> (k -> Persist [a]) ->
+                    Fold a k -> (k -> k) ->
+                    Spec
+findAllInBySpec name getXs findAllXBy f change =
+    describe name $ do
+        context "on empty database" . before mkEmpty $ do
+            it "will come up empty" $ \(Nat rp) -> do
+                rf <- liftIO $ generate arbitrary
+                us <- liftIO . rp $ findAllXBy rf
+                us `shouldBe` []
+
+        context "on initial database" . before mkInitial $ do
+            context "if it does not exist" $ do
+                it "will come up empty" $ \(Nat rp) -> do
+                    x:_ <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    us <- liftIO . rp $ findAllXBy (change y)
+                    us `shouldBe` []
+            context "if it exists" $ do
+                it "will come up with the newly added record" $ \(Nat rp) -> do
+                    x:_ <- liftIO $ rp getXs
+                    let Just y = x ^? f
+                    us <- liftIO . rp $ findAllXBy y
+                    us `shouldBe` [x]
+
+-- Given an AUID pick a different one
+changeAUID :: AUID a -> AUID a
+changeAUID (AUID i) = AUID (succ i)
+
+spec :: Spec
+spec = do
+    getDbSpec "getIdeas" getIdeas
+    addDbSpec "addIdea"  getIdeas addIdea
+
+    getDbSpec "getUsers" getUsers
+    addDbSpec "addUsers" getUsers addUser
+
+    getDbSpec "getTopics" getTopics
+    addDbSpec "addTopics" getTopics addTopic
+
+    findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
+    findInBySpec "findTopic" getTopics findTopic _Id changeAUID
+    let getIdeasWithTopic = filter (isJust . view ideaTopic) <$> getIdeas
+    findAllInBySpec "findIdeasByTopicId" getIdeasWithTopic findIdeasByTopicId (ideaTopic . _Just) changeAUID
 
     describe "loginUser" $ do
         let t rp login predicate = do
@@ -103,7 +153,7 @@ spec = do
         context "on initial database" . before mkInitial $ do
             context "if user does not exist" $ do
                 it "will not log you in" $ \(Nat rp) -> do
-                    [user] <- liftIO $ rp getUsers
+                    user:_ <- liftIO $ rp getUsers
                     t rp ("not" <> (user ^. userLogin)) isNothing
 
             context "if user does exist" $ do
@@ -113,5 +163,5 @@ spec = do
 
                 context "if password is correct" $ do
                     it "will indeed log you in (yeay)" $ \(Nat rp) -> do
-                        [user] <- liftIO $ rp getUsers
+                        user:_ <- liftIO $ rp getUsers
                         t rp (user ^. userLogin) isJust
