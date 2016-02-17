@@ -66,7 +66,6 @@ import Servant.Server ((:~>)(Nat))
 
 import Types
 
-import qualified Data.Set as Set (empty)
 import qualified Data.Map as Map
 
 type AMap a = Map (AUID a) a
@@ -95,7 +94,7 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData Map.empty Map.empty Map.empty Nothing 0
+emptyAulaData = AulaData nil nil nil Nothing 0
 
 -- | FIXME: call this type 'Action'?  Or 'Aula'?  Or 'AulaAction'?  As of the time of writing this
 -- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
@@ -232,10 +231,10 @@ instance FromProto Idea where
         , _ideaCategory = i ^. protoIdeaCategory
         , _ideaSpace    = SchoolSpace
         , _ideaTopic    = Nothing
-        , _ideaComments = Set.empty
-        , _ideaLikes    = Set.empty
+        , _ideaComments = nil
+        , _ideaLikes    = nil
         , _ideaQuorumOk = False
-        , _ideaVotes    = Set.empty
+        , _ideaVotes    = nil
         , _ideaFeasible = Nothing
         }
 
@@ -256,8 +255,8 @@ newMetaInfo u i = liftIO $ do
     return $ MetaInfo
         { _metaId              = i
         , _metaCreatedBy       = u
-        , _metaCreatedByLogin  = ""  -- FIXME: take from 'u'
-        , _metaCreatedByAvatar = ""  -- FIXME: take from 'u'
+        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
+        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
         , _metaCreatedAt       = now
         , _metaChangedBy       = u
         , _metaChangedAt       = now
