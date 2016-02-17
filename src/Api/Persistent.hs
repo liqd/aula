@@ -27,12 +27,14 @@ module Api.Persistent
     , getIdeas
     , addIdea
     , modifyIdea
+    , findIdea
     , getUsers
     , addUser
     , modifyUser
     , getTopics
     , addTopic
     , modifyTopic
+    , moveIdeaToTopic
     , findTopic
     , findUserByLogin
     , findIdeasByTopicId
@@ -125,11 +127,11 @@ findIn l p = find p <$> getDb l
 findAllIn :: AulaGetter [a] -> (a -> Bool) -> Persist [a]
 findAllIn l p = filter p <$> getDb l
 
-findInBy :: Eq b => AulaGetter [a] -> Lens' a b -> b -> Persist (Maybe a)
-findInBy l f b = findIn l (\x -> x ^. f == b)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Persist (Maybe a)
+findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
-findAllInBy :: Eq b => AulaGetter [a] -> Lens' a b -> b -> Persist [a]
-findAllInBy l f b = findAllIn l (\x -> x ^. f == b)
+findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Persist [a]
+findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
 findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> Persist (Maybe a)
 findInById l = findInBy l _Id
@@ -139,6 +141,9 @@ getIdeas = getDb dbIdeas
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
+
+findIdea :: AUID Idea -> Persist (Maybe Idea)
+findIdea = findInById dbIdeas
 
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> Persist ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
@@ -257,8 +262,8 @@ newMetaInfo u i = liftIO $ do
     return $ MetaInfo
         { _metaId              = i
         , _metaCreatedBy       = u
-        , _metaCreatedByLogin  = ""
-        , _metaCreatedByAvatar = ""
+        , _metaCreatedByLogin  = ""  -- FIXME: we should probably lookup user under 'u' and keep this in sync.
+        , _metaCreatedByAvatar = ""  -- FIXME: dito.
         , _metaCreatedAt       = now
         , _metaChangedBy       = u
         , _metaChangedAt       = now
