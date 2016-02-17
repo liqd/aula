@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures -fno-warn-incomplete-patterns #-}
 
 module Frontend.HtmlSpec where
 
@@ -138,6 +138,14 @@ instance PayloadToEnv ProtoIdea where
         ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
         bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
       -- FIXME: reduce boilerplate?
+      -- FIXME: find a better place in the code for these instances?
+
+instance PayloadToEnv LoginFormData where
+    payloadToEnv _ (LoginFormData (name, pass)) = \case
+        ["", "user"] -> pure [TextInput name]
+        ["", "pass"] -> pure [TextInput pass]
+        bad -> error $ "instance PayloadToEnv LoginFormData: " ++ show bad
+
 
 -- | This function is not pretty.
 --
