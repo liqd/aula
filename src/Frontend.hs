@@ -23,12 +23,8 @@ import Persistent
 import Arbitrary ()
 import Config
 import CreateRandom
-import Frontend.Core
-import Frontend.Html
-import Frontend.Topics hiding (pageTopicOverview)
+import Frontend.Pages as Pages
 import Types
-
-import qualified Frontend.Page.CreateIdea as Page
 
 runFrontend :: IO ()
 runFrontend = runSettings settings . aulaTweaks $ serve (Proxy :: Proxy FrontendH) frontendH
@@ -43,12 +39,12 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
 type FrontendH =
        GetH (Frame ST)
+  :<|> "login" :> FormH HTML (Html ()) ST
   :<|> "ideas" :> CreateRandom Idea
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
   :<|> "users" :> CreateRandom User
   :<|> "users" :> GetH (Frame (PageShow [User]))
-  :<|> "login" :> Capture "login" ST :> GetH (Frame ST)
   :<|> "topics" :> CreateRandom Topic
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
@@ -60,28 +56,13 @@ render m = liftIO . runPersist $ Frame <$> m
 frontendH :: Server FrontendH
 frontendH =
        return (Frame "yihaah!")
+  :<|> Pages.login
   :<|> createRandom "idea" dbIdeaMap
   :<|> render (PageIdeasOverview <$> getIdeas)
-  :<|> Page.createIdea
+  :<|> Pages.createIdea
   :<|> createRandom "user" dbUserMap
   :<|> render (PageShow <$> getUsers)
-  :<|> (\login -> liftIO . runPersist $ Frame ("You are now logged in as " <> login) <$ loginUser login)
   :<|> createRandom "topic" dbTopicMap
   :<|> render (PageShow <$> getTopics)
-  :<|> pageTopicOverview
+  :<|> Pages.pageTopicOverview
   :<|> serveDirectory (Config.config ^. htmlStatic)
-
-pageTopicOverview :: MonadIO m => AUID Topic -> m (Frame PageTopicOverview)
-pageTopicOverview topicId = liftIO . runPersist $ do
-    -- FIXME 404
-    Just topic <- findTopic topicId
-    ideas      <- findIdeasByTopic topic
-    pure . Frame $ case topic ^. topicPhase of
-        PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
-        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
-        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas
-        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
-        -- FIXME: how do we display a topic in the finished phase?
-        -- Is this the same the result phase?
-        -- Maybe some buttons to hide?
-        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas

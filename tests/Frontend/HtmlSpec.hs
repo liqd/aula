@@ -4,16 +4,13 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures #-}
 
 module Frontend.HtmlSpec where
 
 import Arbitrary ()
-import Control.Monad.Identity
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import Data.List
-import Data.Maybe
 import Data.String
 import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
@@ -31,7 +28,7 @@ import Arbitrary ()
 import Frontend.Core
 import Frontend.Html
 import Frontend.Page.CreateIdea
-import Frontend.Topics
+import Frontend.Pages
 import Types
 
 
@@ -74,6 +71,7 @@ spec = do
         ]
     context "PageFormView" $ mapM_ testForm [
           F (arb :: Gen PageCreateIdea)
+        , F (arb :: Gen PageHomeWithLoginPrompt)
         ]
     where
         arb :: Arbitrary a => Gen a

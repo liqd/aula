@@ -6,18 +6,20 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
-module Frontend.Topics
+module Frontend.Page.Topics
 where
 
 import Control.Lens
 import Control.Monad
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (for_)
 import Data.String.Conversions
 import Prelude
 import Lucid hiding (for_)
 
-import Types
 import Frontend.Core
+import Persistent
+import Types
 
 
 -- | 4 Topic overview
@@ -35,6 +37,21 @@ instance ToHtml PageTopicOverview where
       PageTopicOverviewJuryPhase'       p -> toHtml p
       PageTopicOverviewVotingPhase'     p -> toHtml p
       PageTopicOverviewResultPhase'     p -> toHtml p
+
+pageTopicOverview :: MonadIO m => AUID Topic -> m (Frame PageTopicOverview)
+pageTopicOverview topicId = liftIO . runPersist $ do
+    -- FIXME 404
+    Just topic <- findTopic topicId
+    ideas      <- findIdeasByTopic topic
+    pure . Frame $ case topic ^. topicPhase of
+        PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
+        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
+        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas
+        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
+        -- FIXME: how do we display a topic in the finished phase?
+        -- Is this the same the result phase?
+        -- Maybe some buttons to hide?
+        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
 
 data TabTopicOverview
   = TabAllIdeas
@@ -58,8 +75,8 @@ tabLink curTab targetTab =
   where
     attr = class_ $ tabSelected curTab targetTab
 
-pageTopicOverview :: Monad m => TabTopicOverview -> Topic -> [Idea] -> HtmlT m ()
-pageTopicOverview tab topic ideas = do
+pageTopicOverviewTemplate :: Monad m => TabTopicOverview -> Topic -> [Idea] -> HtmlT m ()
+pageTopicOverviewTemplate tab topic ideas = do
     div_ $ do
         div_ [id_ "navigation"] $ do
             a_ [id_ "back-themes"] "<- Zu Allen Themen"
@@ -92,7 +109,7 @@ instance ToHtml PageTopicOverviewRefinementPhase where
     toHtmlRaw = toHtml
     toHtml p@(PageTopicOverviewRefinementPhase topic ideas) =
         -- FIXME: assert topicPhase is PhaseRefinement
-        semanticDiv p $ pageTopicOverview TabAllIdeas topic ideas
+        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
 
 
 -- | 4.2 Topic overview: Jury (assessment) phase
@@ -103,7 +120,7 @@ instance ToHtml PageTopicOverviewJuryPhase where
     toHtmlRaw = toHtml
     toHtml p@(PageTopicOverviewJuryPhase topic ideas) =
         -- FIXME: assert topicPhase is PhaseJury
-        semanticDiv p $ pageTopicOverview TabAllIdeas topic ideas
+        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
 
 
 -- | 4.3 Topic overview: Voting phase
@@ -114,7 +131,7 @@ instance ToHtml PageTopicOverviewVotingPhase where
     toHtmlRaw = toHtml
     toHtml p@(PageTopicOverviewVotingPhase topic ideas) =
         -- FIXME: assert topicPhase is PhaseVoting
-        semanticDiv p $ pageTopicOverview TabAllIdeas topic ideas
+        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
 
 
 -- | 4.4 Topic overview: Result phase
@@ -125,7 +142,7 @@ instance ToHtml PageTopicOverviewResultPhase where
     toHtmlRaw = toHtml
     toHtml p@(PageTopicOverviewResultPhase topic ideas) =
         -- FIXME: assert topicPhase is PhaseResult
-        semanticDiv p $ pageTopicOverview TabAllIdeas topic ideas
+        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
 
 
 -- | 4.5 Topic overview: Delegations

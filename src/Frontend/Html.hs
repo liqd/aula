@@ -272,18 +272,6 @@ instance ToHtml PageStaticTermsOfUse where
     toHtml p = semanticDiv p "PageStaticTermsOfUse"
 
 
--- | 16. Home page with login prompt
-data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageHomeWithLoginPrompt where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageHomeWithLoginPrompt"
-
-
-
-
-
 data PageIdea = PageIdea Idea
   deriving (Eq, Show, Read)
 
