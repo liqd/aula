@@ -25,10 +25,7 @@ import Text.Digestive.View
 import qualified Data.Text.Lazy as LT
 
 import Arbitrary ()
-import Frontend.Core
-import Frontend.Html
-import Frontend.Page.CreateIdea
-import Frontend.Pages
+import Frontend.Page
 import Types
 
 

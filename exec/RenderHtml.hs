@@ -31,7 +31,7 @@ import qualified Data.Text.IO as ST
 
 import Arbitrary ()
 import Config
-import Frontend.Pages
+import Frontend.Page
 
 
 samplePages :: IO [(TypeRep, String)]

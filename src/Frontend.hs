@@ -23,7 +23,7 @@ import Persistent
 import Arbitrary ()
 import Config
 import CreateRandom
-import Frontend.Pages as Pages
+import Frontend.Page as Page
 import Types
 
 runFrontend :: IO ()
@@ -57,14 +57,14 @@ render m = liftIO . runPersist $ Frame <$> m
 frontendH :: Server FrontendH
 frontendH =
        return (Frame "yihaah!")
-  :<|> Pages.login
+  :<|> Page.login
   :<|> createRandom "idea" dbIdeaMap
   :<|> render (PageIdeasOverview <$> getIdeas)
-  :<|> Pages.createIdea
+  :<|> Page.createIdea
   :<|> createRandom "user" dbUserMap
   :<|> render (PageShow <$> getUsers)
   :<|> createRandom "topic" dbTopicMap
   :<|> render (PageShow <$> getTopics)
-  :<|> Pages.pageTopicOverview
-  :<|> Pages.createTopic
+  :<|> Page.pageTopicOverview
+  :<|> Page.createTopic
   :<|> serveDirectory (Config.config ^. htmlStatic)

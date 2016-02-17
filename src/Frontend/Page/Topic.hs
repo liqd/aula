@@ -7,7 +7,7 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
-module Frontend.Page.Topics
+module Frontend.Page.Topic
 where
 
 import Frontend.Prelude
