@@ -7,9 +7,9 @@
 module Frontend.Core
 where
 
-import Control.Monad (void)
-import Control.Monad.Trans.Except (ExceptT)
 import Control.Lens
+import Control.Monad.Trans.Except (ExceptT)
+import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
@@ -63,7 +63,7 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 ----------------------------------------------------------------------
 -- building blocks
 
--- | Render Form based Views 
+-- | Render Form based Views
 class FormPageView p where
     type FormPageResult p :: *
     -- | Generates a Html view from the given page
@@ -80,7 +80,7 @@ class Page p where
     isPrivatePage :: p -> Bool
     isPrivatePage = not . isPublicPage
 
--- | The page after submitting a form should be redirected 
+-- | The page after submitting a form should be redirected
 class RedirectOf p where
     -- | Calculates a redirect address from the given page
     redirectOf :: p -> ST
@@ -208,11 +208,6 @@ redirectFormHandler
 redirectFormHandler action page processor = formRedirectH action p1 p2 r
   where
     p1 = makeForm page
-
-    p2 result = do
-        void $ processor result
-        return $ redirectOf page
-
+    p2 result = processor result $> redirectOf page
     frame = if isPublicPage page then publicPageFrame else pageFrame
-
     r v formAction = pure . frame $ formPage v formAction page
