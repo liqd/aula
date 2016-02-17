@@ -37,16 +37,7 @@ instance FormPageView PageCreateIdea where
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-        <*> ("idea-category" .: DF.choice categories Nothing)
-        <*> (pure SchoolSpace)
-        where
-          categories = [
-                (CatRule,        "Regel")
-              , (CatEquipment,   "Ausstattung")
-              , (CatClass,       "Unterricht")
-              , (CatTime,        "Zeit")
-              , (CatEnvironment, "Umgebung")
-              ]
+        <*> ("idea-category" .: DF.choice categoryValues Nothing)
 
     formPage v formAction p = do
         semanticDiv p $ do
@@ -57,6 +48,13 @@ instance FormPageView PageCreateIdea where
                 DF.inputSelect   "idea-category" v >> br_ []
                 DF.inputSubmit   "Add Idea"
 
+categoryValues :: IsString s => [(Category, s)]
+categoryValues = [ (CatRule,        "Regel")
+                 , (CatEquipment,   "Ausstattung")
+                 , (CatClass,       "Unterricht")
+                 , (CatTime,        "Zeit")
+                 , (CatEnvironment, "Umgebung")
+                 ]
 
 ----------------------------------------------------------------------
 -- handlers

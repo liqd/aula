@@ -118,12 +118,15 @@ instance Arbitrary PageStaticTermsOfUse where
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = pure PageHomeWithLoginPrompt
 
+instance Arbitrary LoginFormData where
+    arbitrary = LoginFormData <$> arbWord <*> arbWord
+
 
 ----------------------------------------------------------------------
 -- idea
 
 instance Arbitrary ProtoIdea where
-    arbitrary = ProtoIdea <$> arb <*> arb <*> arb <*> arb
+    arbitrary = ProtoIdea <$> arbWord <*> arb <*> arb
 
 instance Arbitrary Idea where
     arbitrary = Idea <$> arb <*> arbPhrase <*> arb'
