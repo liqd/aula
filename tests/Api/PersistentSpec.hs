@@ -52,7 +52,7 @@ getDbSpec name getXs = do
                 xs <- rp getXs
                 xs `shouldBe` []
         context "on initial database" . before mkInitial $ do
-            it "returs a non-empty list" $ \(Nat rp) -> do
+            it "returns a non-empty list" $ \(Nat rp) -> do
                 xs <- rp getXs
                 length xs `shouldNotBe` 0
 
