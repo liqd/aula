@@ -19,7 +19,7 @@ import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale)
 import Test.QuickCheck.Instances ()
 
 import Types
-import Frontend.Pages
+import Frontend.Page
 
 
 ----------------------------------------------------------------------

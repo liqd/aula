@@ -3,7 +3,7 @@
 
 {-# OPTIONS_GHC -Werror #-}
 
-module Frontend.Page.HomePageWithLoginPrompt
+module Frontend.Page.Login
 where
 
 import Frontend.Prelude

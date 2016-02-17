@@ -6,7 +6,7 @@ module Frontend.PageSpec
 where
 
 import Arbitrary ()
-import Frontend.Pages
+import Frontend.Page
 
 
 import Data.Typeable (Typeable, typeOf)
