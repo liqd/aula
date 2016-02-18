@@ -1,10 +1,11 @@
+HLINT=hlint
+FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/tests/
+
 .phony:
 
 # only aware of aula sources
 sensei: .phony
 	cabal exec -- sensei -isrc -itests tests/Spec.hs $(SENSEI_ARGS)
-
-FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/tests/
 
 # aware of aula and thentos sources
 sensei-full: .phony
@@ -27,3 +28,7 @@ click-dummies-refresh: .phony
 
 test-repl:
 	cabal exec -- ghci $(FULL_SOURCES)
+
+hlint:
+	$(HLINT) --version
+	find src exec -name '*.hs' | xargs $(HLINT)
