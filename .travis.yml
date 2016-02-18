@@ -8,6 +8,7 @@ before_install:
     - git show | head -1  # (for matching against commit hash given on the travis log web page)
     - docker pull fisx/aula
     - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-list-sandbox-packages.sh"
+    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-hlint.sh"
 
 script:
     - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-build.sh"
