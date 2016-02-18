@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -10,16 +11,17 @@
 module Action
     ( ActionError
     , Action
+    , ActionUserHandler(..)
+    , ActionLog(..)
+    , ActionPersist(..)
+    , ActionMonad
     , mkRunAction
-    , logEvent
-    , login
-    , persistent
 
     , UserState(..)
     , sessionCookie
     , username
     -- FIXME: Remove, only needed by random
-    , actionIO
+    , ActionIO(..)
     )
 where
 
@@ -38,7 +40,7 @@ import Servant
 
 -- | Top level errors can happen
 -- FIXME: Create a different type
-type ActionError = ServantErr
+type ActionExcept = ServantErr
 
 -- | User representation during an action
 -- FIXME: Figure out which information is needed here.
@@ -50,14 +52,41 @@ data UserState
 -- FIXME: Figure out the exact stack we need to use here.
 -- Storing the actual session data, userid etc.
 -- We should decide on exact userstate and handle everything here.
-newtype Action a = Action (ExceptT ActionError (RWST (Persist :~> IO) () UserState IO) a)
-  deriving ( Functor
-           , Applicative
-           , Monad
-           , MonadError ServantErr
-           , MonadReader (Persist :~> IO)
-           , MonadState UserState
-           )
+newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserState IO) a)
+    deriving ( Functor
+             , Applicative
+             , Monad
+             , MonadError ActionExcept
+             , MonadReader (Persist :~> IO)
+             , MonadState UserState
+             )
+
+class Monad m => ActionLog m where
+    -- | Log events
+    logEvent :: ST -> m ()
+
+class Monad m => ActionPersist m where
+    -- | Run @Persist@ computation in the action monad.
+    persistent :: Persist a -> m a
+
+class Monad m => ActionUserHandler m where
+    -- | Make the user logged in
+    login  :: ST -> m ()
+    -- | Make the user log out
+    logout :: m ()
+
+class MonadError ActionExcept m => ActionError m
+
+-- | FIXME: Action should not have IO computations
+class Monad m => ActionIO m where
+    actionIO :: IO a -> m a
+
+class ( ActionLog m
+      , ActionPersist m
+      , ActionUserHandler m
+      , ActionIO m
+      , ActionError m
+      ) => ActionMonad m
 
 ----------------------------------------------------------------------
 -- Construction
@@ -73,26 +102,30 @@ mkRunAction persistNat =
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
 
--- | LiftIO action to Action monad, but hide this implementation detail.
-actionIO :: IO a -> Action a
-actionIO = Action . liftIO
-
 ----------------------------------------------------------------------
 -- Combinators
 
--- | Make the user logged in
-login :: ST -> Action ()
-login username = do
-    put $ User username "session"
-    persistent $ loginUser username
+instance ActionUserHandler Action where
+    login username = do
+        put $ User username "session"
+        persistent $ loginUser username
 
--- | Log events
-logEvent :: String -> Action ()
-logEvent = actionIO . putStrLn
+    logout = do
+        gets _username >>= persistent . logoutUser
+        put $ UnknownUser
 
--- | Run @Persist@ computation in the action monad.
-persistent :: Persist a -> Action a
-persistent r = ask >>= \(Nat rp) -> actionIO $ rp r
+instance ActionLog Action where
+    logEvent = actionIO . putStrLn . show
+
+instance ActionPersist Action where
+    persistent r = ask >>= \(Nat rp) -> actionIO $ rp r
+
+instance ActionError Action
+
+instance ActionIO Action where
+    actionIO = Action . liftIO
+
+instance ActionMonad Action
 
 {-
 -- FIXME: This is an example.

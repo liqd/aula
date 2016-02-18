@@ -6,7 +6,7 @@
 module Frontend.Page.Login
 where
 
-import Action (Action)
+import Action (ActionMonad)
 import qualified Action
 import Frontend.Prelude
 
@@ -55,7 +55,7 @@ instance FormPageView PageHomeWithLoginPrompt where
 instance RedirectOf PageHomeWithLoginPrompt where
     redirectOf _ = "/ideas"
 
-login :: ServerT (FormH HTML (Html ()) ST) Action
+login :: (ActionMonad action) => ServerT (FormH HTML (Html ()) ST) action
 login = redirectFormHandler "/login" PageHomeWithLoginPrompt makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login user

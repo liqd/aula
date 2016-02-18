@@ -16,8 +16,10 @@ import Frontend.Core
 import Test.QuickCheck
 
 -- | Create random entities as in the Aula Action monad.
-createRandom :: (Arbitrary a, Show a, HasMetaInfo a) =>
-                ST -> AulaLens (AMap a) -> Action (Frame (ST `Beside` PageShow a))
+createRandom
+    :: ( Arbitrary a, Show a, HasMetaInfo a
+       , ActionPersist m, ActionIO m)
+    => ST -> AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom s l = do
    px <- actionIO $ generate arbitrary
    x <- persistent $ addDbEntity l px

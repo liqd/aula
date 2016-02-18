@@ -40,6 +40,7 @@ module Api.Persistent
     , findIdeasByTopicId
     , findIdeasByTopic
     , loginUser
+    , logoutUser
     , dbIdeas
     , dbUsers
     , dbTopics
@@ -199,6 +200,9 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 -- | FIXME: every login changes all other logins
 loginUser :: ST -> Persist ()
 loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
+
+logoutUser :: ST -> Persist ()
+logoutUser _login = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
 -- HACK to make easy to emulate db savings from prototypes
