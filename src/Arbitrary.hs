@@ -228,6 +228,8 @@ instance Arbitrary (MetaInfo a) where
 instance Arbitrary Document where
     arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
 
+instance (Arbitrary a) => Arbitrary (PageShow a) where
+    arbitrary = PageShow <$> arb 
 
 ----------------------------------------------------------------------
 -- general-purpose helpers

@@ -49,10 +49,12 @@ type FrontendH =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
   :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "imprint" :> GetH (Frame PageStaticImprint)
+  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
   :<|> Raw
 
-render :: MonadIO m => Persist body -> m (Frame body)
-render m = liftIO . runPersist $ Frame <$> m
+render :: (Page body, MonadIO m) => Persist body -> m (Frame body)
+render m = liftIO . runPersist $ makeFrame <$> m
 
 frontendH :: Server FrontendH
 frontendH =
@@ -67,4 +69,6 @@ frontendH =
   :<|> render (PageShow <$> getTopics)
   :<|> Page.pageTopicOverview
   :<|> Page.createTopic
+  :<|> render (pure PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
+  :<|> render (pure PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
   :<|> serveDirectory (Config.config ^. htmlStatic)

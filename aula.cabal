@@ -24,6 +24,7 @@ library
     , Frontend.Html
     , Frontend.Page.CreateIdea
     , Frontend.Page.Login
+    , Frontend.Page.Static
     , Frontend.Page.Topic
     , Frontend.Page
     , Persistent
