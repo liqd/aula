@@ -20,6 +20,7 @@ import Data.Char
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time
+import Data.Typeable (Proxy(Proxy))
 import GHC.Generics
 import Lucid
 import Servant.API (FromHttpApiData)
@@ -34,6 +35,9 @@ nil = mempty
 
 isNil :: (Monoid a, Eq a) => a -> Bool
 isNil = (== nil)
+
+readWith :: Read a => Proxy a -> String -> a
+readWith Proxy = read
 
 ----------------------------------------------------------------------
 -- prototypes for types
@@ -298,7 +302,7 @@ instance Show Timestamp where
 instance Read Timestamp where
     readsPrec _ s = case splitAt (timestampFormatLength + 2) $ dropWhile isSpace s of
         (parseTimestamp . read -> Just t, r) -> [(t, r)]
-        _                             -> error $ "Read Timestamp: " ++ show s
+        _                             -> error $ "Read Timestamp: " <> show s
 
 parseTimestamp :: String -> Maybe Timestamp
 parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat
