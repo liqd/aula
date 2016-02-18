@@ -28,7 +28,7 @@ instance Page PageCreateIdea where
 instance ToHtml PageCreateIdea where
     toHtmlRaw = toHtml
     toHtml (PageCreateIdea) = do
-        p_ $ "The idea has been created."
+        p_ "The idea has been created."
 
 instance FormPageView PageCreateIdea where
     type FormPageResult PageCreateIdea = ProtoIdea
@@ -65,6 +65,6 @@ instance RedirectOf PageCreateIdea where
 createIdea :: Server (FormH HTML (Html ()) ST)
 createIdea = redirectFormHandler "/ideas/create" PageCreateIdea newIdea
   where
-    newIdea idea = liftIO $ runPersist $ do
+    newIdea idea = liftIO . runPersist $ do
         forceLogin 1 -- FIXME: Login hack
         addIdea idea

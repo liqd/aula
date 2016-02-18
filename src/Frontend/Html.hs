@@ -2,7 +2,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 
@@ -54,7 +53,7 @@ data PageIdeasOverview = PageIdeasOverview [Idea]
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageIdeasOverview ideas) = semanticDiv p $ do
-        p_ $ "WILDE IDEEN"
+        p_ "WILDE IDEEN"
         h1_ "Was soll sich verändern?"
         p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
             <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
@@ -254,9 +253,9 @@ instance ToHtml PageIdea where
         -- von X / X stimmen / X verbesserungvorschläge
         div_ $ do
             span_ $ "von " <> idea ^. createdBy . showed . html
-            span_ $ "/"
+            span_ "/"
             span_ $ totalVotes ^. showed . html <> " Stimmen"
-            span_ $ "/"
+            span_ "/"
             span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
 
         -- visual vote stats
