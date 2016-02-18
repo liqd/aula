@@ -353,7 +353,7 @@ instance Arbitrary Paragraph where
     arbitrary = Paragraph <$> (arbitrary >>= create . (+ 13) . abs)
       where
         create :: Int -> Gen ST
-        create n = terminate <$> replicate n (elements loremIpsumDict)
+        create n = terminate <$> replicateM n (elements loremIpsumDict)
 
         terminate :: [ST] -> ST
         terminate (ST.unwords -> xs) = (if isAlpha $ ST.last xs then ST.init xs else xs) <> "."

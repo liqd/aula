@@ -31,4 +31,4 @@ test-repl:
 
 hlint:
 	$(HLINT) --version
-	find src exec -name '*.hs' | xargs $(HLINT)
+	find src exec tests -name '*.hs' | xargs $(HLINT)

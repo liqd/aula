@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -130,7 +129,7 @@ recreateSamples = do
                 f ' ' = '_'
                 f c = c
 
-        writeFile (fn <.> "hs")            $ valueRepShow
+        writeFile (fn <.> "hs")              valueRepShow
         writeFile (fn <.> "hs" <.> "html") $ "<pre>" <> valueRepShow <> "</pre>"
 
 
@@ -210,6 +209,6 @@ dynamicRender s = case catMaybes
                         `catch` (\(SomeException _) -> return Nothing)
 
     f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
-    f Proxy (cs -> !s'') = v `seq` (cs . renderText . toHtml . Frame $ v)
+    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame $ v)
       where
-        v = read s'' :: a
+        v = read (cs s'') :: a
