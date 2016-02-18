@@ -19,6 +19,10 @@ spec = do
         mapM_ publicPagePrivatePageInverseProp [
               P (arb :: Gen PageCreateIdea)
             , P (arb :: Gen PageHomeWithLoginPrompt)
+            , P (arb :: Gen PageIdeasOverview)
+            , P (arb :: Gen (PageShow ()))
+            , P (arb :: Gen PageStaticImprint)
+            , P (arb :: Gen PageStaticTermsOfUse)
             ]
     where
         arb :: Arbitrary a => Gen a

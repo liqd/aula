@@ -86,11 +86,17 @@ class RedirectOf p where
     redirectOf :: p -> ST
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
-newtype Frame body = Frame body
+data Frame body = Frame body | PublicFrame body
+
+makeFrame :: Page p => p -> Frame p
+makeFrame p
+  | isPublicPage p = PublicFrame p
+  | otherwise      = Frame p
 
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw          = toHtml
-    toHtml (Frame bdy) = pageFrame (toHtml bdy)
+    toHtml (Frame bdy)       = pageFrame (toHtml bdy)
+    toHtml (PublicFrame bdy) = publicPageFrame (toHtml bdy)
 
 publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
 publicPageFrame bdy = do
@@ -129,8 +135,8 @@ footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = div_ $ do
     hr_ []
     -- TODO: these should be links
-    span_ "Nutzungsbedingungen"
-    span_ "Impressum"
+    span_ $ a_ [href_ "/terms"] "Nutzungsbedingungen"
+    span_ $ a_ [href_ "/imprint"] "Impressum"
     -- TODO: Should be on the right (and we need to specify encoding in html)
     span_ "Made with ♡ by Liqd"
 
@@ -150,6 +156,10 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
 
 -- | Debugging page, uses the 'Show' instance of the underlying type.
 newtype PageShow a = PageShow { _unPageShow :: a }
+    deriving (Show)
+
+instance Page (PageShow a) where
+    isPrivatePage _ = True
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml

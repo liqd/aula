@@ -69,6 +69,8 @@ instance ToHtml PageIdeasOverview where
         div_ [id_ "ideas"] . for_ ideas $ \idea ->
             ListItemIdea Nothing idea ^. html
 
+instance Page PageIdeasOverview where
+    isPrivatePage _ = True
 
 -- | 3. Ideas in discussion
 data PageIdeasInDiscussion = PageIdeasInDiscussion
@@ -234,24 +236,6 @@ data PageDelegationNetwork = PageDelegationNetwork
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageDelegationNetwork"
-
-
--- | 14. Static page: Imprint
-data PageStaticImprint = PageStaticImprint
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageStaticImprint where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageStaticImprint"
-
-
--- | 15. Static page: Terms of use
-data PageStaticTermsOfUse = PageStaticTermsOfUse
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageStaticTermsOfUse where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageStaticTermsOfUse"
 
 
 data PageIdea = PageIdea Idea
