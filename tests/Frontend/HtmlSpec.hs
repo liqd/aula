@@ -8,7 +8,6 @@
 
 module Frontend.HtmlSpec where
 
-import Arbitrary ()
 import Control.Monad.Trans.Except
 import Data.List
 import Data.String

@@ -40,12 +40,12 @@ instance FormPageView PageHomeWithLoginPrompt where
 
     formPage v formAction p = do
         semanticDiv p $ do
-            div_ $ DF.form v formAction $ do
+            div_ . DF.form v formAction $ do
                 DF.inputText     "user" v >> br_ []
                 DF.inputPassword "pass" v >> br_ []
                 DF.inputSubmit   "Login"
             div_ $ do
-                p_ $ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
+                p_ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
 
 ----------------------------------------------------------------------
 -- handlers
