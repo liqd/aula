@@ -6,7 +6,7 @@
 module Frontend.Page.CreateIdea
 where
 
-import Action (ActionMonad, persistent)
+import Action (ActionM)
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -63,7 +63,7 @@ categoryValues = [ (CatRule,        "Regel")
 instance RedirectOf PageCreateIdea where
     redirectOf _ = "/ideas"
 
-createIdea :: (ActionMonad action) => ServerT (FormH HTML (Html ()) ST) action
+createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 createIdea = redirectFormHandler "/ideas/create" PageCreateIdea newIdea
   where
     newIdea idea = persistent $ addIdea idea

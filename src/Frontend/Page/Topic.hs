@@ -9,7 +9,7 @@
 module Frontend.Page.Topic
 where
 
-import Action (ActionMonad, ActionPersist(..))
+import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -32,7 +32,7 @@ instance ToHtml PageTopicOverview where
       PageTopicOverviewVotingPhase'     p -> toHtml p
       PageTopicOverviewResultPhase'     p -> toHtml p
 
-pageTopicOverview :: (ActionMonad action) => AUID Topic -> action (Frame PageTopicOverview)
+pageTopicOverview :: (ActionM action) => AUID Topic -> action (Frame PageTopicOverview)
 pageTopicOverview topicId = persistent $ do
     -- FIXME 404
     Just topic <- findTopic topicId
@@ -185,7 +185,7 @@ instance Page PageCreateTopic where
 instance RedirectOf PageCreateTopic where
     redirectOf _ = "/topics"
 
-createTopic :: (ActionMonad action) => ServerT (FormH HTML (Html ()) ST) action
+createTopic :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 createTopic = redirectFormHandler "/topics/create" PageCreateTopic newTopic
   where
     newTopic topic = persistent $ addTopic topic

@@ -68,7 +68,7 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 class FormPageView p where
     type FormPageResult p :: *
     -- | Generates a Html view from the given page
-    makeForm :: (ActionMonad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    makeForm :: (ActionM m) => p -> DF.Form (Html ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -209,7 +209,7 @@ instance ToHtml ListItemIdea where
 -- redirects the page to the place which is defined in the @RedirectsOf@
 -- typeclass.
 redirectFormHandler
-    :: ( FormPageView p, Page p, RedirectOf p, ActionMonad action)
+    :: ( FormPageView p, Page p, RedirectOf p, ActionM action)
     => ST -- ^ Form Action
     -> p  -- ^ Page representation
     -> (FormPageResult p -> action a) -- ^ Processor for the form result

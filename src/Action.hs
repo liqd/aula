@@ -14,7 +14,7 @@ module Action
     , ActionUserHandler(..)
     , ActionLog(..)
     , ActionPersist(..)
-    , ActionMonad
+    , ActionM
     , mkRunAction
 
     , UserState(..)
@@ -67,6 +67,7 @@ class Monad m => ActionLog m where
 
 class Monad m => ActionPersist m where
     -- | Run @Persist@ computation in the action monad.
+    -- Authorization of the action should happen here.
     persistent :: Persist a -> m a
 
 class Monad m => ActionUserHandler m where
@@ -86,7 +87,7 @@ class ( ActionLog m
       , ActionUserHandler m
       , ActionIO m
       , ActionError m
-      ) => ActionMonad m
+      ) => ActionM m
 
 ----------------------------------------------------------------------
 -- Construction
@@ -125,7 +126,7 @@ instance ActionError Action
 instance ActionIO Action where
     actionIO = Action . liftIO
 
-instance ActionMonad Action
+instance ActionM Action
 
 {-
 -- FIXME: This is an example.
