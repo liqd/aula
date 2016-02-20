@@ -64,22 +64,35 @@ to some of the runCabal invocations.
 
 ## HTML hacking
 
-To watch some generated test content (mostly for work on HTML / css):
+To create arbitrary (randomized) test content and browse it (mostly
+for work on HTML / css):
 
 ```shell
 cabal sandbox init
 cabal install
-cabal run -- aula-server
+make click-dummies-recreate
+make aula-server
 ```
 
-To re-generate the HTML:
+To refresh the HTML from the same content (same texts and everything):
 
 ```shell
-cabal run -- aula-html-dummies --refresh
+make click-dummies-refresh
 ```
 
-To generate new haskell data values (implies re-generation of HTML):
+The html pages are created in `/tmp/aula-samples/`, and can be browsed
+under `http://localhost:8080/samples/`.  You can either edit the html
+pages directly, or the source code in this repo under
+`src/Frontend/Page/*.hs`.  If you edit `src/...`, `/tmp/aula-samples/`
+will be overwritten.  If you want to keep changes you did to the
+generated html code, you can initialize a local git repo (`cd
+/tmp/aula-samples && git init`) and commit your changes before editing
+the haskell sources.  If you do so, you can use `git diff` to make
+sure that the haskell code does what you expected.
 
-```shell
-cabal run -- aula-html-dummies --recreate
-```
+Both `aula-server` and `click-dummies-refresh` go into a loop, so you
+need to terminals.  If you have two displays, you can move your
+browser and the terminal with the refresh loop to one, and your source
+code editor to the other.  The source code will auto-refresh on the
+former and you will never have to focus there, no matter whether you
+work on the haskell sources or on the html.
