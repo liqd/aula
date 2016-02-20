@@ -113,10 +113,10 @@ instance ActionUserHandler Action where
 
     logout = do
         gets _username >>= persistent . logoutUser
-        put $ UnknownUser
+        put UnknownUser
 
 instance ActionLog Action where
-    logEvent = actionIO . putStrLn . show
+    logEvent = actionIO . print
 
 instance ActionPersist Action where
     persistent r = ask >>= \(Nat rp) -> actionIO $ rp r

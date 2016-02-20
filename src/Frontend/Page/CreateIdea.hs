@@ -6,7 +6,7 @@
 module Frontend.Page.CreateIdea
 where
 
-import Action (ActionM)
+import Action (ActionM, persistent)
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -28,7 +28,7 @@ instance Page PageCreateIdea where
 -- | The page is shown when the idea creation has happened.
 instance ToHtml PageCreateIdea where
     toHtmlRaw = toHtml
-    toHtml (PageCreateIdea) = do
+    toHtml PageCreateIdea = do
         p_ "The idea has been created."
 
 instance FormPageView PageCreateIdea where

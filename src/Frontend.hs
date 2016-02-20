@@ -93,5 +93,5 @@ frontendH =
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
   :<|> Page.pageTopicOverview
   :<|> Page.createTopic
-  :<|> (pure $ Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
-  :<|> (pure $ Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
+  :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
+  :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.

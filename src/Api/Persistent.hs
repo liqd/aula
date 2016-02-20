@@ -271,7 +271,7 @@ instance FromProto Topic where
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
 newMetaInfo u i = do
     now <- Timestamp <$> persistIO getCurrentTime
-    return $ MetaInfo
+    return MetaInfo
         { _metaId              = i
         , _metaCreatedBy       = u
         , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
