@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE TypeFamilies        #-}
@@ -81,7 +80,7 @@ pageTopicOverviewTemplate tab topic ideas = do
             div_ [id_ "topic-desc"] $ topic ^. topicDesc . html
             when (phase == PhaseRefinement) $
                 a_   [id_ "add-idea"] "+ Neue Idee"
-            when (phase < PhaseResult) $
+            when (phase < PhaseResult) .
                 a_  [id_ "delegate-vote"] $ span_ [id_ "bullhorn"] ":bullhorn:" <> " Stimme Beauftragen"
         div_ [id_ "tabs"] $ do
             tabLink tab TabAllIdeas
@@ -188,7 +187,7 @@ instance RedirectOf PageCreateTopic where
 createTopic :: Server (FormH HTML (Html ()) ST)
 createTopic = redirectFormHandler "/topics/create" PageCreateTopic newTopic
   where
-    newTopic topic = liftIO $ runPersist $ do
+    newTopic topic = liftIO . runPersist $ do
         forceLogin 1 -- FIXME: Login hack
         addTopic topic
 

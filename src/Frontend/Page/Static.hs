@@ -26,10 +26,10 @@ instance ToHtml PageStaticImprint where
     toHtml p = semanticDiv p $ do
         div_ $ h1_ "Impressum"
         div_ $ do
-            div_ $ p_ $ do 
+            div_ . p_ $ do
                 b_ "Inhaltich"
                 "politik-digital e.V."
-            div_ $ p_ $ do
+            div_ . p_ $ do
                 p_ $ b_ "Projektleitung"
                 p_ $ b_ "Technische Leitung"
 

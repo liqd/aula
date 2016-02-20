@@ -92,7 +92,7 @@ findInBySpec name getXs findXBy f change =
                     x:_ <- liftIO $ rp getXs
                     let Just y = x ^? f
                     mu <- liftIO . rp $ findXBy y
-                    mu `shouldBe` (Just x)
+                    mu `shouldBe` Just x
 
 findAllInBySpec :: (Eq a, Show a, Arbitrary k) =>
                     String -> Persist [a] -> (k -> Persist [a]) ->

@@ -3,9 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 

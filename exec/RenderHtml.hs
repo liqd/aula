@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -77,7 +76,7 @@ samplePages = sequence
       where
         n = 1000000
         s = take n $ ppShow x
-        e = "terminatingShow: " ++ s
+        e = "terminatingShow: " <> s
 
 
 -- | ...
@@ -94,7 +93,7 @@ main = do
         ["--recreate"] -> recreateSamples
         ["--refresh"]  -> refreshSamples
         ["--watch"]    -> refreshSamples >> void watchRefresh
-        _ -> error $ "usage: " ++ progName ++ " [--recreate|--refresh|--watch]"
+        _ -> error $ "usage: " <> progName <> " [--recreate|--refresh|--watch]"
 
 
 withSamplesDirectoryCurrent :: IO () -> IO ()
@@ -120,8 +119,8 @@ recreateSamples = do
     writeSample :: (Int, (TypeRep, String)) -> IO ()
     writeSample (ix, (typRep, valueRepShow)) = do
         let fn :: FilePath
-            fn | ix < 100 = (reverse . take 3 . reverse $ "000" ++ show ix ++ "_")
-                         ++ show' typRep
+            fn | ix < 100 = (reverse . take 3 . reverse $ "000" <> show ix <> "_")
+                         <> show' typRep
                | otherwise = assert False $ error "recreateSamples: impossible."
 
             show' :: (Show a) => a -> String
@@ -130,7 +129,7 @@ recreateSamples = do
                 f ' ' = '_'
                 f c = c
 
-        writeFile (fn <.> "hs")            $ valueRepShow
+        writeFile (fn <.> "hs")              valueRepShow
         writeFile (fn <.> "hs" <.> "html") $ "<pre>" <> valueRepShow <> "</pre>"
 
 
@@ -151,7 +150,7 @@ refreshSamples = withSamplesDirectoryCurrent $ do
             fn'' = dropExtension fn <.> ".html-tidy.html"
         ST.readFile fn >>= ST.writeFile fn' . dynamicRender
         when withTidy . void . system $
-            "tidy -utf8 -indent < " ++ show fn' ++ " > " ++ show fn'' ++ " 2>/dev/null"
+            "tidy -utf8 -indent < " <> show fn' <> " > " <> show fn'' <> " 2>/dev/null"
 
     putStrLn "done."
 
@@ -202,14 +201,14 @@ dynamicRender s = case catMaybes
             , g (Proxy :: Proxy PageHomeWithLoginPrompt)
             ] of
     (v:_) -> v
-    [] -> error $ "dynamicRender: problem parsing the following type." ++
-                  "  run with --recreate?\n\n" ++ cs s ++ "\n\n"
+    [] -> error $ "dynamicRender: problem parsing the following type." <>
+                  "  run with --recreate?\n\n" <> cs s <> "\n\n"
   where
     g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe ST
     g proxy = unsafePerformIO $ (case f proxy s of !s' -> return $ Just s')
                         `catch` (\(SomeException _) -> return Nothing)
 
     f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
-    f Proxy (cs -> !s'') = v `seq` (cs . renderText . toHtml . Frame $ v)
+    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame $ v)
       where
-        v = read s'' :: a
+        v = read (cs s'') :: a

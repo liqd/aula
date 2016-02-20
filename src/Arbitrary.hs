@@ -4,13 +4,13 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
 
 module Arbitrary (topLevelDomains, loremIpsum) where
 
+import Control.Monad (replicateM)
 import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
@@ -172,7 +172,7 @@ instance Arbitrary IdeaSpace where
 instance Arbitrary SchoolClass where
     arbitrary = SchoolClass <$> name <*> year
       where
-        name = elements [ cs $ show age ++ [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
+        name = elements [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
         year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary ProtoTopic where
@@ -229,7 +229,7 @@ instance Arbitrary Document where
     arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
 
 instance (Arbitrary a) => Arbitrary (PageShow a) where
-    arbitrary = PageShow <$> arb 
+    arbitrary = PageShow <$> arb
 
 ----------------------------------------------------------------------
 -- general-purpose helpers
@@ -345,7 +345,7 @@ arbWord = ST.filter isAlpha <$> elements loremIpsumDict
 arbPhrase :: Gen ST
 arbPhrase = do
     n <- (+ 3) . (`mod` 5) <$> arbitrary
-    ST.intercalate " " <$> sequence (List.replicate n arbWord)
+    ST.intercalate " " <$> replicateM n arbWord
 
 newtype Paragraph = Paragraph { fromParagraph :: ST }
 
@@ -353,7 +353,7 @@ instance Arbitrary Paragraph where
     arbitrary = Paragraph <$> (arbitrary >>= create . (+ 13) . abs)
       where
         create :: Int -> Gen ST
-        create n = fmap terminate . sequence . List.take n . repeat . elements $ loremIpsumDict
+        create n = terminate <$> replicateM n (elements loremIpsumDict)
 
         terminate :: [ST] -> ST
         terminate (ST.unwords -> xs) = (if isAlpha $ ST.last xs then ST.init xs else xs) <> "."
