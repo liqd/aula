@@ -36,7 +36,7 @@ pageTopicOverview topicId = liftIO . runPersist $ do
     -- FIXME 404
     Just topic <- findTopic topicId
     ideas      <- findIdeasByTopic topic
-    pure . Frame $ case topic ^. topicPhase of
+    pure . Frame frameUserHack $ case topic ^. topicPhase of
         PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
         PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
         PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas

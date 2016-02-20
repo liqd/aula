@@ -56,7 +56,7 @@ render m = liftIO . runPersist $ makeFrame <$> m
 
 frontendH :: Server FrontendH
 frontendH =
-       return (Frame "yihaah!")
+       return (PublicFrame "yihaah!")
   :<|> Page.login
   :<|> createRandom "idea" dbIdeaMap
   :<|> render (PageIdeasOverview <$> getIdeas)

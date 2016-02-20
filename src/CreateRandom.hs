@@ -19,4 +19,4 @@ createRandom :: (MonadIO m, Arbitrary a, Show a, HasMetaInfo a) =>
 createRandom s l = liftIO $ do
    px <- generate arbitrary
    x <- runPersist $ addDbEntity l px
-   return (Frame (("new " <> s <> " created.") `Beside` PageShow x))
+   return (Frame frameUserHack (("new " <> s <> " created.") `Beside` PageShow x))

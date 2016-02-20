@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -209,6 +210,6 @@ dynamicRender s = case catMaybes
                         `catch` (\(SomeException _) -> return Nothing)
 
     f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
-    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame $ v)
+    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame frameUserHack $ v)
       where
         v = read (cs s'') :: a

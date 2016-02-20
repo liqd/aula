@@ -1,6 +1,7 @@
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -86,16 +87,16 @@ class RedirectOf p where
     redirectOf :: p -> ST
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
-data Frame body = Frame body | PublicFrame body
+data Frame body = Frame User body | PublicFrame body
 
 makeFrame :: Page p => p -> Frame p
 makeFrame p
   | isPublicPage p = PublicFrame p
-  | otherwise      = Frame p
+  | otherwise      = Frame frameUserHack p
 
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw          = toHtml
-    toHtml (Frame bdy)       = pageFrame (toHtml bdy)
+    toHtml (Frame usr bdy)   = pageFrame usr (toHtml bdy)
     toHtml (PublicFrame bdy) = publicPageFrame (toHtml bdy)
 
 publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
@@ -106,13 +107,13 @@ publicPageFrame bdy = do
     body_ $ do
         publicHeaderMarkup >> bdy >> footerMarkup
 
-pageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
-pageFrame bdy = do
+pageFrame :: (Monad m) => User -> HtmlT m a -> HtmlT m ()
+pageFrame usr bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ "/screen.css"]
     body_ $ do
-        headerMarkup >> bdy >> footerMarkup
+        headerMarkup usr >> bdy >> footerMarkup
 
 publicHeaderMarkup :: (Monad m) => HtmlT m ()
 publicHeaderMarkup = div_ $ do
@@ -121,13 +122,13 @@ publicHeaderMarkup = div_ $ do
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
-headerMarkup :: (Monad m) => HtmlT m ()
-headerMarkup = div_ $ do
+headerMarkup :: (Monad m) => User -> HtmlT m ()
+headerMarkup usr = div_ $ do
     span_ "aula"
     -- TODO: these should be links
     span_ "Ideenräume"
     span_ "Beauftragungsnetzwerk"
-    span_ "Hi VorNac"
+    span_ (toHtml $ "Hi " <> (usr ^. userLogin))
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
@@ -139,8 +140,6 @@ footerMarkup = div_ $ do
     span_ $ a_ [href_ "/imprint"] "Impressum"
     -- TODO: Should be on the right (and we need to specify encoding in html)
     span_ "Made with ♡ by Liqd"
-
-
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
@@ -219,5 +218,33 @@ redirectFormHandler action page processor = formRedirectH action p1 p2 r
   where
     p1 = makeForm page
     p2 result = processor result $> redirectOf page
-    frame = if isPublicPage page then publicPageFrame else pageFrame
+    frame = if isPublicPage page then publicPageFrame else pageFrame frameUserHack
     r v formAction = pure . frame $ formPage v formAction page
+
+----------------------------------------------------------------------
+-- HACKS
+
+frameUserHack :: User
+frameUserHack = User
+    { _userMeta      = frameUserMetaInfo
+    , _userLogin     = "VorNam"
+    , _userFirstName = "Vorname"
+    , _userLastName  = "Name"
+    , _userAvatar    = "https://avatar.com"
+    , _userGroups    = nil  -- ^ (could be a set)
+    , _userPassword  = EncryptedPass ""
+    , _userEmail     = Nothing
+    }
+  where
+    sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
+
+    frameUserMetaInfo :: MetaInfo User
+    frameUserMetaInfo= MetaInfo
+        { _metaId              = AUID 1
+        , _metaCreatedBy       = AUID 0
+        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
+        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
+        , _metaCreatedAt       = sometime
+        , _metaChangedBy       = AUID 0
+        , _metaChangedAt       = sometime
+        }
