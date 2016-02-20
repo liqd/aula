@@ -85,7 +85,7 @@ instance PayloadToEnv ProtoIdea where
         ["", "title"]         -> pure [TextInput t]
         ["", "idea-text"]     -> pure [TextInput d]
         ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
-        bad -> error $ "instance PayloadToEnv ProtoIdea: " ++ show bad
+        bad -> error $ "instance PayloadToEnv ProtoIdea: " <> show bad
       -- FIXME: reduce boilerplate?
 
 -- | Translate a 'Category' value into the select string for the form 'Env'.
@@ -121,7 +121,7 @@ instance PayloadToEnv LoginFormData where
     payloadToEnv _ (LoginFormData name pass) = \case
         ["", "user"] -> pure [TextInput name]
         ["", "pass"] -> pure [TextInput pass]
-        bad -> error $ "instance PayloadToEnv LoginFormData: " ++ show bad
+        bad -> error $ "instance PayloadToEnv LoginFormData: " <> show bad
 
 
 ----------------------------------------------------------------------
@@ -149,7 +149,7 @@ testForm fg = renderForm fg >> postToForm fg
 -- the view has all the fields defined for GET form creation.
 renderForm :: FormGen -> Spec
 renderForm (F g) =
-    it (show (typeOf g) ++ " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
+    it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . failOnError $ do
             v <- getForm "" $ makeForm page
             return $ LT.length (renderText $ formPage v "formAction" page)
@@ -172,7 +172,7 @@ failOnError = fmap (either (error . show) id) . runExceptT
 -- bad env.
 postToForm :: FormGen -> Spec
 postToForm (F g) = do
-    it (show (typeOf g) ++ " (process valid forms)") . property . monadicIO $ do
+    it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
         page <- pick g
         payload <- pick (arbFormPageResult page)
 
@@ -182,7 +182,7 @@ postToForm (F g) = do
         (_, Just payload') <- run . failOnError $ postForm "" frm (\_ -> pure env)
         assert (payload' == payload)  -- FIXME: can we use shouldBe here?
 
-    it (show (typeOf g) ++ " (process *in*valid form input)") $
+    it (show (typeOf g) <> " (process *in*valid form input)") $
         pendingWith "not implemented."  -- FIXME
 
 

@@ -298,7 +298,7 @@ instance Show Timestamp where
 instance Read Timestamp where
     readsPrec _ s = case splitAt (timestampFormatLength + 2) $ dropWhile isSpace s of
         (parseTimestamp . read -> Just t, r) -> [(t, r)]
-        _                             -> error $ "Read Timestamp: " ++ show s
+        _                             -> error $ "Read Timestamp: " <> show s
 
 parseTimestamp :: String -> Maybe Timestamp
 parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat

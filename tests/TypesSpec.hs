@@ -2,6 +2,7 @@
 module TypesSpec where
 
 import Arbitrary ()
+import Data.Monoid ((<>))
 import Types
 
 import Data.Binary (encode, decode)
@@ -22,4 +23,4 @@ timestamp = describe "Timestamp" $ do
     it "parseTimestamp and renderTimestamp are inverses" . property $
         isJust . parseTimestamp . renderTimestamp
     it "parseTimestamp should fail on noise" . property $
-        isNothing . parseTimestamp . (++"noise") . renderTimestamp
+        isNothing . parseTimestamp . (<> "noise") . renderTimestamp

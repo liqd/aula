@@ -172,7 +172,7 @@ instance Arbitrary IdeaSpace where
 instance Arbitrary SchoolClass where
     arbitrary = SchoolClass <$> name <*> year
       where
-        name = elements [ cs $ show age ++ [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
+        name = elements [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
         year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary ProtoTopic where

@@ -169,7 +169,7 @@ newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget votes) = semanticDiv p . toHtml $ y ++ n
+    toHtml p@(VotesWidget votes) = semanticDiv p . toHtml $ y <> n
       where
         y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
         n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
