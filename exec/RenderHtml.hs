@@ -27,6 +27,7 @@ import Text.Show.Pretty (ppShow)
 import qualified Data.Text.IO as ST
 
 import Arbitrary ()
+import Config (getSamplesPath)
 import Frontend.Page
 import Types (readWith, User)
 
@@ -87,14 +88,9 @@ spec = describe "refresh html samples" . it "works" . run $ refreshSamples
 run :: IO () -> IO ()
 run action = do
     setLocaleEncoding utf8
-    createDirectoryIfMissing True targetPath
-    withCurrentDirectory targetPath action
-
-
--- | target path is rather rigit, if you ever change this, make sure it is kept in sync with the
--- `static/samples` symlink.
-targetPath :: FilePath
-targetPath = "/tmp/aula-samples"
+    samplesPath <- getSamplesPath
+    createDirectoryIfMissing True samplesPath
+    withCurrentDirectory samplesPath action
 
 
 -- | generate new arbitrary instances; return their 'show' and 'typeOf'.
