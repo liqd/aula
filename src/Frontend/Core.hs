@@ -108,10 +108,14 @@ publicPageFrame bdy = do
         publicHeaderMarkup >> bdy >> footerMarkup
 
 pageFrame :: (Monad m) => User -> HtmlT m a -> HtmlT m ()
-pageFrame usr bdy = do
+pageFrame usr = pageFrame' [] usr
+
+pageFrame' :: (Monad m) => [HtmlT m a] -> User -> HtmlT m a -> HtmlT m ()
+pageFrame' extraHeaders usr bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ "/screen.css"]
+        sequence_ extraHeaders
     body_ $ do
         headerMarkup usr >> bdy >> footerMarkup
 

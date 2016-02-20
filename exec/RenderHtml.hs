@@ -181,6 +181,10 @@ dynamicRender s = case catMaybes $ pages g of
                         `catch` (\(SomeException _) -> return Nothing)
 
     f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
-    f Proxy s'' = v `seq` (cs . renderText . toHtml . Frame frameUserHack $ v)
+    f Proxy s'' = v `seq` (cs . renderText . pf $ v)
       where
-        v = read (cs s'') :: a
+        v :: a
+        v = read s''
+
+        pf :: a -> Html ()
+        pf = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] . toHtml
