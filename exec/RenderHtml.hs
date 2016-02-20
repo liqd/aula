@@ -128,17 +128,13 @@ recreateSamples = do
     writeSample :: (Int, (TypeRep, String)) -> IO ()
     writeSample (ix, (typRep, valueRepShow)) = do
         let fn :: FilePath
-            fn = showNum ix <> "_" <> showPageName typRep
+            fn = showNum ix <> "_" <> (tr <$> show typRep)
 
-            showNum :: Int -> String
             showNum i | i < 999 = reverse . take 3 . reverse $ "000" <> show ix
                       | otherwise = assert False $ error "recreateSamples: impossible."
 
-            showPageName :: (Show a) => a -> String
-            showPageName = map f . show
-              where
-                f ' ' = '_'
-                f c = c
+            tr ' ' = '_'
+            tr  c  =  c
 
         writeFile (fn <.> "hs")              valueRepShow
         writeFile (fn <.> "hs" <.> "html") $ "<pre>" <> valueRepShow <> "</pre>"
