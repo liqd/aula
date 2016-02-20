@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -8,9 +7,9 @@
 
 module Main (main, spec) where
 
-import Control.Exception (assert, catch, SomeException(SomeException))
+import Control.Exception (assert, catch, SomeException(SomeException), evaluate)
 import Control.Monad (forM_, unless, when, void)
-import Data.Maybe (catMaybes)
+import Control.Lens ((^?), each, _Just)
 import Data.String.Conversions
 import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
@@ -20,7 +19,6 @@ import System.Directory.Extra
 import System.Exit
 import System.FilePath
 import System.IO hiding (utf8)
-import System.IO.Unsafe (unsafePerformIO)
 import System.Process
 import Test.Hspec
 import Test.QuickCheck
@@ -30,6 +28,7 @@ import qualified Data.Text.IO as ST
 
 import Arbitrary ()
 import Frontend.Page
+import Types (readWith, User)
 
 
 -- | config section: add new page types here.
@@ -162,7 +161,7 @@ refreshSamples = do
     forM_ hs $ \fn -> do
         let fn' = dropExtension fn <.> ".html-compact.html"
             fn'' = dropExtension fn <.> ".html-tidy.html"
-        ST.readFile fn >>= ST.writeFile fn' . dynamicRender
+        ST.readFile fn >>= dynamicRender >>= ST.writeFile fn'
         when withTidy . void . system $
             "tidy -utf8 -indent < " <> show fn' <> " > " <> show fn'' <> " 2>/dev/null"
 
@@ -170,21 +169,24 @@ refreshSamples = do
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for
-dynamicRender :: ST -> ST
-dynamicRender s = case catMaybes $ pages g of
-    (v:_) -> v
-    [] -> error $ "dynamicRender: problem parsing the type of the following value." <>
-                  "  recreate samples?\n\n" <> cs s <> "\n\n"
+dynamicRender :: ST -> IO ST
+dynamicRender s = do
+    vs <- sequence $ pages g
+    case vs ^? each . _Just of
+        Just v -> return v
+        Nothing -> error $ "dynamicRender: problem parsing the type of the following value." <>
+                           "  recreate samples?\n\n" <> cs s <> "\n\n"
   where
-    g :: forall a. (Read a, ToHtml a) => Proxy a -> Maybe ST
-    g proxy = unsafePerformIO $ (case f proxy s of !s' -> return $ Just s')
-                        `catch` (\(SomeException _) -> return Nothing)
-
-    f :: forall a. (Read a, ToHtml a) => Proxy a -> ST -> ST
-    f Proxy s'' = v `seq` (cs . renderText . pf $ v)
+    g :: forall a. (Read a, ToHtml a) => Proxy a -> IO (Maybe ST)
+    g proxy = yes `catch` \(SomeException _) -> no
       where
-        v :: a
-        v = read s''
+        yes :: IO (Maybe ST)
+        yes = do
+            user <- generate arbitrary
+            Just <$> evaluate (cs . renderText . pf user . readWith proxy . cs $ s)
 
-        pf :: a -> Html ()
-        pf = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] . toHtml
+        no :: IO (Maybe ST)
+        no = return Nothing
+
+        pf :: User -> a -> Html ()
+        pf user = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] user . toHtml

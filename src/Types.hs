@@ -17,6 +17,7 @@ import Control.Lens (makeLenses, Lens')
 import Control.Monad
 import Data.Binary
 import Data.Char
+import Data.Proxy (Proxy(Proxy))
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time
@@ -37,6 +38,10 @@ nil = mempty
 
 isNil :: (Monoid a, Eq a) => a -> Bool
 isNil = (== nil)
+
+readWith :: Read a => Proxy a -> String -> a
+readWith Proxy = read
+
 
 ----------------------------------------------------------------------
 -- prototypes for types
