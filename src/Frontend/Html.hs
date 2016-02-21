@@ -19,7 +19,6 @@ module Frontend.Html
 where
 
 import Control.Lens
-import Control.Monad (forM_)
 import Data.Foldable (for_)
 import Data.String.Conversions
 import Prelude
@@ -34,51 +33,6 @@ import Frontend.Core
 
 ----------------------------------------------------------------------
 -- pages
-
--- | 1. Rooms overview
-data PageRoomsOverview = PageRoomsOverview [String]
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageRoomsOverview where
-    toHtmlRaw = toHtml
-    toHtml p@(PageRoomsOverview rooms) = semanticDiv p $ case rooms of
-      [] -> p_ "Keine Ideenräume"
-      _  -> forM_ rooms $ div_ . toHtml
-
-
--- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview [Idea]
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageIdeasOverview where
-    toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview ideas) = semanticDiv p $ do
-        p_ "WILDE IDEEN"
-        h1_ "Was soll sich verändern?"
-        p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
-            <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        div_ $ button_ [onclick_ "location.href='/ideas/create'"] "+ Neue Idee" -- FIXME: should link to idea creation form
-        div_ $ do
-            -- FIXME: these buttons should filter the ideas by category
-            button_ "Regeln"
-            button_ "Ausstattung"
-            button_ "Unterricht"
-            button_ "Zeit"
-            button_ "Umgebung"
-        div_ [id_ "ideas"] . for_ ideas $ \idea ->
-            ListItemIdea Nothing idea ^. html
-
-instance Page PageIdeasOverview where
-    isPrivatePage _ = True
-
--- | 3. Ideas in discussion
-data PageIdeasInDiscussion = PageIdeasInDiscussion
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageIdeasInDiscussion where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageIdeasInDiscussion"
-
 
 -- | 5.1 Idea detail page: New ideas
 data PageIdeaDetailNewIdeas = PageIdeaDetailNewIdeas Idea
