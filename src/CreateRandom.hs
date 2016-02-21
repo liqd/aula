@@ -18,9 +18,9 @@ import Test.QuickCheck
 -- | Create random entities as in the Aula Action monad.
 createRandom
     :: ( Arbitrary a, Show a, HasMetaInfo a
-       , ActionPersist m, ActionIO m)
+       , ActionPersist m, MonadIO m)
     => ST -> AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom s l = do
-   px <- actionIO $ generate arbitrary
+   px <- liftIO $ generate arbitrary
    x <- persistent $ addDbEntity l px
    return (Frame frameUserHack (("new " <> s <> " created.") `Beside` PageShow x))

@@ -20,8 +20,6 @@ module Action
     , UserState(..)
     , sessionCookie
     , username
-
-    , ActionIO(..)  -- FIXME: Remove, only needed by random
     )
 where
 
@@ -59,6 +57,7 @@ newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserSt
     deriving ( Functor
              , Applicative
              , Monad
+             , MonadIO
              , MonadError ActionExcept
              , MonadReader (Persist :~> IO)
              , MonadState UserState
@@ -81,15 +80,12 @@ class Monad m => ActionUserHandler m where
 
 class MonadError ActionExcept m => ActionError m
 
--- | FIXME: Action should not have IO computations
-class Monad m => ActionIO m where
-    actionIO :: IO a -> m a
-
 class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
-      , ActionIO m
       , ActionError m
+      , MonadIO m  -- FIXME: can we get rid of this?  (it is needed in "CreateRandom", but also for
+                   -- 'ActionLog', 'ActionPersist'.)
       ) => ActionM m
 
 ----------------------------------------------------------------------
@@ -118,15 +114,12 @@ instance ActionUserHandler Action where
         put UnknownUser
 
 instance ActionLog Action where
-    logEvent = actionIO . print
+    logEvent = liftIO . print
 
 instance ActionPersist Action where
-    persistent r = ask >>= \(Nat rp) -> actionIO $ rp r
+    persistent r = ask >>= \(Nat rp) -> liftIO $ rp r
 
 instance ActionError Action
-
-instance ActionIO Action where
-    actionIO = Action . liftIO
 
 instance ActionM Action
 
