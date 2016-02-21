@@ -72,6 +72,7 @@ library
       Frontend.Page
       Frontend.Page.CreateIdea
       Frontend.Page.Login
+      Frontend.Page.Overview
       Frontend.Page.Static
       Frontend.Page.Topic
       Frontend.Prelude
@@ -301,6 +302,7 @@ test-suite spec
       Frontend.Page
       Frontend.Page.CreateIdea
       Frontend.Page.Login
+      Frontend.Page.Overview
       Frontend.Page.Static
       Frontend.Page.Topic
       Frontend.Prelude

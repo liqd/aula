@@ -56,6 +56,8 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
 type FrontendH =
        GetH (Frame ST)
+  :<|> "ideaspaces" :> GetH (Frame PageRoomsOverview)
+  :<|> "ideaspaces" :> CreateRandom IdeaSpace
   :<|> "login" :> FormH HTML (Html ()) ST
   :<|> "ideas" :> CreateRandom Idea
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
@@ -89,6 +91,8 @@ aula (Nat runAction) =
 frontendH :: ServerT FrontendH Action
 frontendH =
        return (PublicFrame "yihaah!")
+  :<|> (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
+  :<|> createRandomNoMeta dbSpaceSet
   :<|> Page.login
   :<|> createRandom dbIdeaMap
   :<|> (Frame frameUserHack . PageIdeasOverview <$> Action.persistent getIdeas)
