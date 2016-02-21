@@ -8,12 +8,12 @@ module CreateRandom
 where
 
 import Thentos.Prelude
+import Test.QuickCheck (Arbitrary, generate, arbitrary)
 
 import Action
-import Types
-import Persistent
 import Frontend.Core
-import Test.QuickCheck
+import Persistent
+import Types
 
 -- | Create random entities as in the Aula Action monad.
 createRandom
