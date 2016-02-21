@@ -24,6 +24,7 @@ module Api.Persistent
     , findAllIn
     , findAllInBy
 
+    , getSpaces
     , getIdeas
     , addIdea
     , modifyIdea
@@ -44,6 +45,7 @@ module Api.Persistent
     , dbIdeas
     , dbUsers
     , dbTopics
+    , dbSpaceSet
     , dbIdeaMap
     , dbUserMap
     , dbTopicMap
@@ -56,6 +58,7 @@ where
 
 import Data.Foldable (find, for_)
 import Data.Map (Map)
+import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
 import Control.Concurrent.STM
@@ -68,11 +71,13 @@ import Servant.Server ((:~>)(Nat))
 import Types
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 type AMap a = Map (AUID a) a
 
 data AulaData = AulaData
-    { _dbIdeaMap     :: AMap Idea
+    { _dbSpaceSet    :: Set IdeaSpace
+    , _dbIdeaMap     :: AMap Idea
     , _dbUserMap     :: AMap User
     , _dbTopicMap    :: AMap Topic
     , _dbCurrentUser :: Maybe (AUID User)
@@ -85,6 +90,9 @@ makeLenses ''AulaData
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
 
+dbSpaces :: AulaGetter [IdeaSpace]
+dbSpaces = dbSpaceSet . to Set.elems
+
 dbIdeas :: AulaGetter [Idea]
 dbIdeas = dbIdeaMap . to Map.elems
 
@@ -95,7 +103,7 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil Nothing 0
+emptyAulaData = AulaData nil nil nil nil Nothing 0
 
 -- | FIXME: call this type 'Action'?  Or 'Aula'?  Or 'AulaAction'?  As of the time of writing this
 -- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
@@ -138,6 +146,9 @@ findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
 findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> Persist (Maybe a)
 findInById l = findInBy l _Id
+
+getSpaces :: Persist [IdeaSpace]
+getSpaces = getDb dbSpaces
 
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
