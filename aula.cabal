@@ -109,13 +109,14 @@ executable aula-html-dummies
       base >=4.8 && <4.9
     , aula
 
+    , extra
+    , hspec
     , binary
     , bytestring
     , cassava
     , containers
     , cookie
     , directory
-    , fsnotify
     , lens
     , lucid
     , mtl

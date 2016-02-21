@@ -71,11 +71,14 @@ type FrontendH =
 
 type Aula =
        FrontendH
-  :<|> Raw
+  :<|> "samples" :> Raw
+  :<|> Raw  -- FIXME: change this to @"static" :> Raw@
+            -- (@Raw@ on the empty path may accidentally process other end-points)
 
 aula :: (Action :~> ExceptT ServantErr IO) -> Server Aula
 aula (Nat runAction) =
        enter runActionForceLogin frontendH
+  :<|> (\req cont -> getSamplesPath >>= \path -> serveDirectory path req cont)
   :<|> serveDirectory (Config.config ^. htmlStatic)
   where
     -- FIXME: Login shouldn't happen here

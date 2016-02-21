@@ -3,28 +3,31 @@ FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_
 
 .phony:
 
+%.unregister:
+	-cabal exec -- ghc-pkg unregister $*
+
+unregister-full:
+	make thentos-adhocracy.unregister thentos-tests.unregister thentos-core.unregister aula.unregister
+
 # only aware of aula sources
-sensei: .phony
+sensei: .phony aula.unregister
 	cabal exec -- sensei -isrc -itests tests/Spec.hs $(SENSEI_ARGS)
 
 # aware of aula and thentos sources
-sensei-full: .phony
+sensei-full: .phony unregister-full
 	cabal exec -- sensei $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_ARGS)
 
 seito: .phony
 	sleep 0.2 && seito
 
 aula-server: .phony
-	cabal exec -- ghci $(FULL_SOURCES) ./exec/Aula.hs
-
-aula-server-run: .phony
-	cabal run -- aula-server
+	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/Aula.hs
 
 click-dummies-recreate: .phony
-	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs --recreate
+	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs
 
-click-dummies-refresh: .phony
-	cabal exec -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs --refresh
+click-dummies-refresh: .phony aula.unregister
+	cabal exec -- sensei $(FULL_SOURCES) ./exec/RenderHtml.hs
 
 test-repl:
 	cabal exec -- ghci $(FULL_SOURCES)

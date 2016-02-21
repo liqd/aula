@@ -5,6 +5,8 @@ module Config
 where
 
 import Control.Lens
+import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>))
 import System.Directory
 import System.Environment
 
@@ -29,3 +31,10 @@ config = Config
 setCurrentDirectoryToAulaRoot :: IO ()
 setCurrentDirectoryToAulaRoot = do
     getEnvironment >>= maybe (pure ()) setCurrentDirectory . lookup "AULA_ROOT_PATH"
+
+
+getSamplesPath :: IO FilePath
+getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
+  where
+    var = "AULA_SAMPLES"
+    msg = "please set $" <> var <> " to a path (will be created if n/a)"
