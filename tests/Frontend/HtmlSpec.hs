@@ -161,7 +161,7 @@ renderForm (F g) =
 failOnError :: Action a -> IO a
 failOnError = fmap (either (error . show) id) . runExceptT . runAction
   where
-    runAction = unNat . ($ UnknownUser) . unsafePerformIO $ fmap mkRunAction mkRunPersist
+    runAction = unNat . ($ UserLoggedOut) . unsafePerformIO $ fmap mkRunAction mkRunPersist
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --

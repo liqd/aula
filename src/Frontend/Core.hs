@@ -23,7 +23,7 @@ import Servant.Missing (FormH, formRedirectH)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
-import Action hiding (User)
+import Action
 import Api
 import Types
 

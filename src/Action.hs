@@ -17,7 +17,7 @@ module Action
     , ActionM
     , mkRunAction
 
-    , UserState(..)
+    , UserState(UserLoggedOut, UserLoggedIn)
     , sessionCookie
     , username
     )
@@ -44,8 +44,8 @@ type ActionExcept = ServantErr
 -- | User representation during an action
 -- FIXME: Figure out which information is needed here.
 data UserState
-    = UnknownUser
-    | User { _username :: ST, _sessionCookie :: ST }
+    = UserLoggedOut
+    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
 
 -- | The actions a user can perform.
 --
@@ -106,12 +106,12 @@ mkRunAction persistNat = \s -> Nat (run s)
 
 instance ActionUserHandler Action where
     login username = do
-        put $ User username "session"
+        put $ UserLoggedIn username "session"
         persistent $ loginUser username
 
     logout = do
         gets _username >>= persistent . logoutUser
-        put UnknownUser
+        put UserLoggedOut
 
 instance ActionLog Action where
     logEvent = liftIO . print

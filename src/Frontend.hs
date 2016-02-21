@@ -38,7 +38,7 @@ runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
     bootsrapDB persist -- FIXME: Remove Bootstrapping DB
-    runSettings settings . aulaTweaks $ serve (Proxy :: Proxy Aula) (aula (action UnknownUser))
+    runSettings settings . aulaTweaks $ serve (Proxy :: Proxy Aula) (aula (action UserLoggedOut))
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
