@@ -125,13 +125,6 @@ instance ActionError Action
 
 instance ActionM Action
 
-{-
--- FIXME: This is an example.
--- Authorizes the current user to do something.
-authorize :: Action s a -> Action s a
-authorize = id
--}
-
 ----------------------------------------------------------------------
 -- Lens
 
