@@ -20,8 +20,8 @@ module Action
     , UserState(..)
     , sessionCookie
     , username
-    -- FIXME: Remove, only needed by random
-    , ActionIO(..)
+
+    , ActionIO(..)  -- FIXME: Remove, only needed by random
     )
 where
 
