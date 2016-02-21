@@ -49,6 +49,7 @@ runFrontend = do
 
 type GetH = Get '[HTML]
 
+-- FIXME: this should be in module "CreateRandom".
 type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
 type FrontendH =
@@ -84,12 +85,12 @@ frontendH :: ServerT FrontendH Action
 frontendH =
        return (PublicFrame "yihaah!")
   :<|> Page.login
-  :<|> createRandom "idea" dbIdeaMap
+  :<|> createRandom dbIdeaMap
   :<|> (Frame frameUserHack . PageIdeasOverview <$> Action.persistent getIdeas)
   :<|> Page.createIdea
-  :<|> createRandom "user" dbUserMap
+  :<|> createRandom dbUserMap
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
-  :<|> createRandom "topic" dbTopicMap
+  :<|> createRandom dbTopicMap
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
   :<|> Page.pageTopicOverview
   :<|> Page.createTopic
