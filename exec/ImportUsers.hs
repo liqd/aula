@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | import users into sql database from csv via cli.
+--
+-- FIXME: we will need to offer a web UI for this.
 module Main where
 
 import Control.Monad (forM_)
