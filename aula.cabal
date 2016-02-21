@@ -28,6 +28,7 @@ library
     , Frontend.Page.Static
     , Frontend.Page.Topic
     , Frontend.Page
+    , Frontend.Prelude
     , Persistent
     , Transaction
     , Types
