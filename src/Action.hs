@@ -15,6 +15,7 @@ module Action
     , ActionPersist(persistent)
     , ActionUserHandler(login, logout)
     , ActionError
+    , ActionIO(..)  -- FIXME: Remove, only needed by create random
 
       -- * concrete monad type (abstract)
     , Action
@@ -43,12 +44,11 @@ class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
-      , MonadIO m  -- FIXME: can we get rid of this?  (it is needed in "CreateRandom", but also for
-                   -- 'ActionLog', 'ActionPersist'.)
+      , ActionIO m  -- FIXME: can we get rid of this?  (it is needed in "CreateRandom", but also for
+                    -- 'ActionLog', 'ActionPersist'.)
       ) => ActionM m
 
 instance ActionM Action
-
 
 class Monad m => ActionLog m where
     -- | Log events
@@ -84,6 +84,11 @@ class MonadError ActionExcept m => ActionError m
 
 instance ActionError Action
 
+class Monad m => ActionIO m where
+    actionIO :: IO a -> m a
+
+instance ActionIO Action where
+    actionIO = Action . liftIO
 
 ----------------------------------------------------------------------
 -- concrete monad type; user state
@@ -126,7 +131,6 @@ mkRunAction persistNat = \s -> Nat (run s)
     run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
-
 
 ----------------------------------------------------------------------
 -- Lens
