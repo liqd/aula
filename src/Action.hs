@@ -38,7 +38,8 @@ import Servant
 ----------------------------------------------------------------------
 -- User behaviour
 
--- | Top level errors can happen
+-- | Top level errors can happen.
+--
 -- FIXME: Create a different type
 type ActionExcept = ServantErr
 
@@ -48,10 +49,12 @@ data UserState
     = UnknownUser
     | User { _username :: ST, _sessionCookie :: ST }
 
--- | The actions what a user can do.
--- FIXME: Figure out the exact stack we need to use here.
--- Storing the actual session data, userid etc.
--- We should decide on exact userstate and handle everything here.
+-- | The actions a user can perform.
+--
+-- FIXME:
+-- - Figure out the exact stack we need to use here.
+-- - Store the actual session data, userid etc.
+-- - We should decide on exact userstate and handle everything here.
 newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserState IO) a)
     deriving ( Functor
              , Applicative
