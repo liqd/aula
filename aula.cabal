@@ -1,37 +1,28 @@
-name:                aula
-version:             0.1.0
--- synopsis:
--- description:
-license:             AGPL
-license-file:        LICENSE
-author:              Matthias Fischmann
-maintainer:          mf@zerobuzz.net
--- copyright:
-category:            Web
-build-type:          Simple
--- extra-source-files:
-cabal-version:       >=1.10
+-- This file has been generated from package.yaml by hpack version 0.8.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           aula
+version:        0.1.0
+category:       Web
+homepage:       https://github.com/liqd/aula#readme
+bug-reports:    https://github.com/liqd/aula/issues
+author:         Andor Penzes <andor.penzes@liqd.de>, Andres Löh <andres@well-typed.com>, Caronline Clifford <caroline.clifford@liqd.de>, Matthias Fischmann <mv@zerobuzz.net>, Mikolaj Pouillarski <mikolaj@well-typed.com>, Nicolas Pouillard <np@nicolaspouillard.fr>
+maintainer:     matthias.fischmann@liqd.net
+copyright:      2016-2017 liquid democracy e.V. Berlin
+license:        AGPL
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/liqd/aula
 
 library
-  exposed-modules:
-      Api
-    , Api.Persistent
-    , Action
-    , Arbitrary
-    , Config
-    , CreateRandom
-    , Frontend
-    , Frontend.Core
-    , Frontend.Html
-    , Frontend.Page.CreateIdea
-    , Frontend.Page.Login
-    , Frontend.Page.Static
-    , Frontend.Page.Topic
-    , Frontend.Page
-    , Frontend.Prelude
-    , Persistent
-    , Transaction
-    , Types
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
     , thentos-core
@@ -56,115 +47,264 @@ library
     , process
     , QuickCheck
     , quickcheck-instances
-    , stm
-    , transformers
-    , wai
-    , warp
     , safecopy
     , scrypt
     , servant
     , servant-lucid
     , servant-server
+    , stm
     , string-conversions
     , text
     , time
-  hs-source-dirs:
-      src
-  default-language:
-      Haskell2010
-
-executable aula-server
-  main-is:
-      Aula.hs
-  hs-source-dirs:
-      exec
-  build-depends:
-      base >=4.8 && <4.9
-    , aula
-  default-language:
-      Haskell2010
+    , transformers
+    , wai
+    , warp
+  exposed-modules:
+      Action
+      Api
+      Api.Persistent
+      Arbitrary
+      Config
+      CreateRandom
+      Frontend
+      Frontend.Core
+      Frontend.Html
+      Frontend.Page
+      Frontend.Page.CreateIdea
+      Frontend.Page.Login
+      Frontend.Page.Static
+      Frontend.Page.Topic
+      Frontend.Prelude
+      Persistent
+      Transaction
+      Types
+  default-language: Haskell2010
 
 executable aula-import-users
-  main-is:
-    ImportUsers.hs
+  main-is: ImportUsers.hs
   hs-source-dirs:
       exec
+  ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , aula
-    , bytestring
-    , cassava
-    , nonce
-    , postgresql-simple
-    , text
-    , vector
-  default-language:
-      Haskell2010
-
-executable aula-html-dummies
-  main-is:
-    RenderHtml.hs
-  hs-source-dirs:
-      exec
-  build-depends:
-      base >=4.8 && <4.9
-    , aula
-
-    , extra
-    , hspec
+    , thentos-core
+    , aeson
     , binary
     , bytestring
+    , case-insensitive
     , cassava
     , containers
     , cookie
+    , digestive-functors
+    , digestive-functors-lucid
     , directory
+    , filepath
+    , functor-infix
+    , http-types
     , lens
     , lucid
     , mtl
     , postgresql-simple
     , pretty-show
+    , process
     , QuickCheck
     , quickcheck-instances
     , safecopy
     , scrypt
     , servant
+    , servant-lucid
     , servant-server
+    , stm
     , string-conversions
     , text
     , time
-    , aeson
     , transformers
-    , case-insensitive
-    , http-types
     , wai
     , warp
-    , process
-    , filepath
-  default-language:
-      Haskell2010
+    , aula
+    , nonce
+    , vector
+  other-modules:
+      Aula
+      RenderHtml
+  default-language: Haskell2010
 
-test-suite tests
-  default-language:
-      Haskell2010
-  type:
-      exitcode-stdio-1.0
+executable aula-html-dummies
+  main-is: RenderHtml.hs
+  hs-source-dirs:
+      exec
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <4.9
+    , thentos-core
+    , aeson
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava
+    , containers
+    , cookie
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , filepath
+    , functor-infix
+    , http-types
+    , lens
+    , lucid
+    , mtl
+    , postgresql-simple
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , safecopy
+    , scrypt
+    , servant
+    , servant-lucid
+    , servant-server
+    , stm
+    , string-conversions
+    , text
+    , time
+    , transformers
+    , wai
+    , warp
+    , aula
+    , extra
+    , fsnotify
+    , hspec
+  other-modules:
+      Aula
+      ImportUsers
+  default-language: Haskell2010
+
+executable aula-server
+  main-is: Aula.hs
+  hs-source-dirs:
+      exec
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <4.9
+    , thentos-core
+    , aeson
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava
+    , containers
+    , cookie
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , filepath
+    , functor-infix
+    , http-types
+    , lens
+    , lucid
+    , mtl
+    , postgresql-simple
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , safecopy
+    , scrypt
+    , servant
+    , servant-lucid
+    , servant-server
+    , stm
+    , string-conversions
+    , text
+    , time
+    , transformers
+    , wai
+    , warp
+    , aula
+  other-modules:
+      ImportUsers
+      RenderHtml
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
   hs-source-dirs:
       tests
-  other-modules:
-    -- (modules to be collected by hspec-discover are not to be mentioned here.)
-  main-is:
-      Spec.hs
+    , src
+  ghc-options: -Wall
   build-depends:
-      aula
+      base >=4.8 && <4.9
+    , thentos-core
+    , aeson
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava
+    , containers
+    , cookie
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , filepath
+    , functor-infix
+    , http-types
+    , lens
+    , lucid
+    , mtl
+    , postgresql-simple
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , safecopy
+    , scrypt
+    , servant
+    , servant-lucid
+    , servant-server
+    , stm
+    , string-conversions
+    , text
+    , time
+    , transformers
+    , wai
+    , warp
+    , aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
     , digestive-functors >= 0.8 && <0.9
     , hspec
-    , lucid
-    , QuickCheck >= 2.8 && <2.9
-    , text
     , lens
+    , lucid
     , mtl
-    , transformers
-    , string-conversions
+    , QuickCheck >= 2.8 && <2.9
     , servant-server
+    , string-conversions
+    , text
+    , transformers
+  other-modules:
+      AllModulesSpec
+      Api.PersistentSpec
+      Frontend.HtmlSpec
+      Frontend.PageSpec
+      FrontendSpec
+      TypesSpec
+      Action
+      Api
+      Api.Persistent
+      Arbitrary
+      Config
+      CreateRandom
+      Frontend
+      Frontend.Core
+      Frontend.Html
+      Frontend.Page
+      Frontend.Page.CreateIdea
+      Frontend.Page.Login
+      Frontend.Page.Static
+      Frontend.Page.Topic
+      Frontend.Prelude
+      Persistent
+      Transaction
+      Types
+  default-language: Haskell2010
