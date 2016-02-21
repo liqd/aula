@@ -158,6 +158,7 @@ renderForm (F g) =
             return $ LT.length (renderText $ formPage v "formAction" page)
         assert (len > 0)
 
+-- FIXME: I don't think we need unsafePerformIO here.
 failOnError :: Action a -> IO a
 failOnError = fmap (either (error . show) id) . runExceptT . runAction
   where

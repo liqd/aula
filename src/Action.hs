@@ -92,8 +92,10 @@ class ( ActionLog m
 -- Construction
 
 -- | Creates a natural transformation from Action to IO
--- FIXME: The ability to change that state.
--- The state should be available after run
+--
+-- FIXME:
+-- - The ability to change the state is missing.
+-- - The state should be available after run.
 mkRunAction :: (Persist :~> IO) -> UserState -> (Action :~> ExceptT ServantErr IO)
 mkRunAction persistNat = \s -> Nat (run s)
   where

@@ -186,9 +186,7 @@ instance RedirectOf PageCreateTopic where
     redirectOf _ = "/topics"
 
 createTopic :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createTopic = redirectFormHandler "/topics/create" PageCreateTopic newTopic
-  where
-    newTopic topic = persistent $ addTopic topic
+createTopic = redirectFormHandler "/topics/create" PageCreateTopic (persistent . addTopic)
 
 -- | 10.2 Create topic: Move ideas to topic
 data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas

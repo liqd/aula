@@ -227,8 +227,12 @@ currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 instance FromProto User where
     fromProto u _ = u
 
--- | FIXME: who will create the first user?
-bootstrapUser :: (Persist :~> IO) -> User -> IO User
+-- | Add the first user to an empty database.  AUID is set to 0.
+--
+-- FIXME: we can pick a valid AUID, or we can make sure that the database is completely empty.
+-- either way, we will probably need something like this function in production to create the first
+-- user, and it shouldn't be possible to use it to corrupt the 'Persist' state.
+bootstrapUser :: (Persist :~> IO) -> Proto User -> IO User
 bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUser)
   where
     uid :: Integer

@@ -209,7 +209,7 @@ instance ToHtml ListItemIdea where
 -- redirects the page to the place which is defined in the @RedirectsOf@
 -- typeclass.
 redirectFormHandler
-    :: ( FormPageView p, Page p, RedirectOf p, ActionM action)
+    :: (FormPageView p, Page p, RedirectOf p, ActionM action)
     => ST -- ^ Form Action
     -> p  -- ^ Page representation
     -> (FormPageResult p -> action a) -- ^ Processor for the form result

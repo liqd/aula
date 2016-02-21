@@ -64,6 +64,4 @@ instance RedirectOf PageCreateIdea where
     redirectOf _ = "/ideas"
 
 createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createIdea = redirectFormHandler "/ideas/create" PageCreateIdea newIdea
-  where
-    newIdea idea = persistent $ addIdea idea
+createIdea = redirectFormHandler "/ideas/create" PageCreateIdea (persistent . addIdea)

@@ -45,6 +45,8 @@ isNil = (== nil)
 -- The prototypes contains all the information which cannot be
 -- filled out of some type. Information which comes from outer
 -- source and will be saved into the database.
+--
+-- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
 
 -- | The method how a 't' value is calculated from its prototype
