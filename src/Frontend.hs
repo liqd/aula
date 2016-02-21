@@ -28,8 +28,10 @@ import Types
 
 import qualified Action
 
-adminUsername :: ST
-adminUsername = "admin"
+-- FIXME: generate a proper user here, with real time stamp and AUID and everything.  no need to use
+-- arbitrary in 'bootstrapDB' below!
+adminUsernameHack :: ST
+adminUsernameHack = "admin"
 
 runFrontend :: IO ()
 runFrontend = do
@@ -45,7 +47,7 @@ runFrontend = do
     -- FIXME: Remove Bootstrapping DB
     bootsrapDB :: Persist :~> IO -> IO ()
     bootsrapDB persist =
-        generate arbitrary >>= void . bootstrapUser persist . (userLogin .~ adminUsername)
+        generate arbitrary >>= void . bootstrapUser persist . (userLogin .~ adminUsernameHack)
 
 type GetH = Get '[HTML]
 
@@ -78,7 +80,7 @@ aula (Nat runAction) =
   where
     -- FIXME: Login shouldn't happen here
     runActionForceLogin = Nat $ \action -> runAction $ do
-        Action.login adminUsername
+        Action.login adminUsernameHack
         action
 
 frontendH :: ServerT FrontendH Action
