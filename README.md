@@ -68,6 +68,7 @@ To create arbitrary (randomized) test content and browse it (mostly
 for work on HTML / css):
 
 ```shell
+export AULA_SAMPLES=/tmp/aula-samples/
 cabal sandbox init
 cabal install
 make click-dummies-recreate
