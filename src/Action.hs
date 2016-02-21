@@ -95,11 +95,10 @@ class ( ActionLog m
 -- | Creates a natural transformation from Action to IO
 -- FIXME: The ability to change that state.
 -- The state should be available after run
-mkRunAction :: (Persist :~> IO) -> (UserState -> (Action :~> ExceptT ServantErr IO))
-mkRunAction persistNat =
-    let run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
-    in \s -> Nat (run s)
+mkRunAction :: (Persist :~> IO) -> UserState -> (Action :~> ExceptT ServantErr IO)
+mkRunAction persistNat = \s -> Nat (run s)
   where
+    run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
 
