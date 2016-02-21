@@ -231,7 +231,7 @@ frameUserHack = User
     , _userFirstName = "Vorname"
     , _userLastName  = "Name"
     , _userAvatar    = "https://avatar.com"
-    , _userGroups    = nil  -- ^ (could be a set)
+    , _userGroups    = nil
     , _userPassword  = EncryptedPass ""
     , _userEmail     = Nothing
     }

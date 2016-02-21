@@ -178,8 +178,8 @@ addTopic pt = do
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
-    -- * Make it do nothing
-    -- * Make it fail hard
+    -- - Make it do nothing
+    -- - Make it fail hard
     for_ (pt ^. protoTopicIdeas) $ \ideaId ->
         moveIdeaToTopic ideaId (Just $ t ^. _Id)
     return t
