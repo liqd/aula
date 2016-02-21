@@ -1,0 +1,96 @@
+name:        aula
+version:     0.1.0
+license:     AGPL
+copyright:   2016-2017 liquid democracy e.V. Berlin
+author:      Andor Penzes <andor.penzes@liqd.de>, Andres Löh <andres@well-typed.com>, Caronline Clifford <caroline.clifford@liqd.de>, Matthias Fischmann <mv@zerobuzz.net>, Mikolaj Pouillarski <mikolaj@well-typed.com>, Nicolas Pouillard <np@nicolaspouillard.fr>
+maintainer:  matthias.fischmann@liqd.net
+github:      liqd/aula
+category:    Web
+
+ghc-options: -Wall
+
+dependencies:
+    - base >=4.8 && <4.9
+    - thentos-core
+    - aeson
+    - binary
+    - bytestring
+    - case-insensitive
+    - cassava
+    - containers
+    - cookie
+    - digestive-functors
+    - digestive-functors-lucid
+    - directory
+    - filepath
+    - functor-infix
+    - http-types
+    - lens
+    - lucid
+    - mtl
+    - postgresql-simple
+    - pretty-show
+    - process
+    - QuickCheck
+    - quickcheck-instances
+    - safecopy
+    - scrypt
+    - servant
+    - servant-lucid
+    - servant-server
+    - stm
+    - string-conversions
+    - text
+    - time
+    - transformers
+    - wai
+    - warp
+
+library:
+  source-dirs: src
+
+executables:
+  aula-server:
+    main: Aula.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+
+  aula-html-dummies:
+    main: RenderHtml.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+      - fsnotify
+
+  aula-import-users:
+    main: ImportUsers.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+      - nonce
+      - vector
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - tests
+      - src
+    dependencies:
+      - aula
+      - base >=4.8 && <4.9
+      - binary >= 0.7.5 && <0.8
+      - digestive-functors >= 0.8 && <0.9
+      - hspec
+      - lens
+      - lucid
+      - mtl
+      - QuickCheck >= 2.8 && <2.9
+      - servant-server
+      - string-conversions
+      - text
+      - transformers
