@@ -40,6 +40,7 @@ module Api.Persistent
     , findIdeasByTopicId
     , findIdeasByTopic
     , loginUser
+    , logoutUser
     , dbIdeas
     , dbUsers
     , dbTopics
@@ -48,8 +49,8 @@ module Api.Persistent
     , dbTopicMap
     , dbCurrentUser
     -- FIXME: Remove hack
-    , forceLogin
     , addDbEntity
+    , bootstrapUser
     )
 where
 
@@ -100,7 +101,10 @@ emptyAulaData = AulaData nil nil nil Nothing 0
 -- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
 -- in thentos) and application logic (Action in thentos).  to be discussed later?
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
-  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving (Functor, Applicative, Monad)
+
+persistIO :: IO a -> Persist a
+persistIO = Persist . liftIO
 
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = do
@@ -174,8 +178,8 @@ addTopic pt = do
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
-    -- * Make it do nothing
-    -- * Make it fail hard
+    -- - Make it do nothing
+    -- - Make it fail hard
     for_ (pt ^. protoTopicIdeas) $ \ideaId ->
         moveIdeaToTopic ideaId (Just $ t ^. _Id)
     return t
@@ -197,6 +201,9 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 loginUser :: ST -> Persist ()
 loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
 
+logoutUser :: ST -> Persist ()
+logoutUser _login = modifyDb dbCurrentUser $ const Nothing
+
 -------------------------------------------------------------------
 -- HACK to make easy to emulate db savings from prototypes
 -- FIXME: This is not part of the interface
@@ -209,9 +216,6 @@ addDbEntity l pa = do
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
-forceLogin :: Integer -> Persist ()
-forceLogin x = modifyDb dbCurrentUser (const (Just (AUID x)))
-
 nextId :: Persist (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
@@ -222,6 +226,25 @@ currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
 instance FromProto User where
     fromProto u _ = u
+
+-- | Add the first user to an empty database.  AUID is set to 0.
+--
+-- FIXME: we can pick a valid AUID, or we can make sure that the database is completely empty.
+-- either way, we will probably need something like this function in production to create the first
+-- user, and it shouldn't be possible to use it to corrupt the 'Persist' state.
+bootstrapUser :: (Persist :~> IO) -> Proto User -> IO User
+bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUser)
+  where
+    uid :: Integer
+    uid = 0
+
+    forceLogin :: Integer -> Persist ()
+    forceLogin x = modifyDb dbCurrentUser (const (Just (AUID x)))
+
+    tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
+    tweak user = (userMeta . metaId .~ AUID 0)
+               . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
+               $ user
 
 instance FromProto Idea where
     fromProto i m = Idea
@@ -250,8 +273,8 @@ instance FromProto Topic where
 
 -- | So far `newMetaInfo` is only used by `nextMetaInfo`.
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
-newMetaInfo u i = liftIO $ do
-    now <- Timestamp <$> getCurrentTime
+newMetaInfo u i = do
+    now <- Timestamp <$> persistIO getCurrentTime
     return MetaInfo
         { _metaId              = i
         , _metaCreatedBy       = u

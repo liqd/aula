@@ -6,6 +6,7 @@
 module Frontend.Page.CreateIdea
 where
 
+import Action (ActionM, persistent)
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -27,7 +28,7 @@ instance Page PageCreateIdea where
 -- | The page is shown when the idea creation has happened.
 instance ToHtml PageCreateIdea where
     toHtmlRaw = toHtml
-    toHtml (PageCreateIdea) = do
+    toHtml PageCreateIdea = do
         p_ "The idea has been created."
 
 instance FormPageView PageCreateIdea where
@@ -62,9 +63,5 @@ categoryValues = [ (CatRule,        "Regel")
 instance RedirectOf PageCreateIdea where
     redirectOf _ = "/ideas"
 
-createIdea :: Server (FormH HTML (Html ()) ST)
-createIdea = redirectFormHandler "/ideas/create" PageCreateIdea newIdea
-  where
-    newIdea idea = liftIO . runPersist $ do
-        forceLogin 1 -- FIXME: Login hack
-        addIdea idea
+createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
+createIdea = redirectFormHandler "/ideas/create" PageCreateIdea (persistent . addIdea)

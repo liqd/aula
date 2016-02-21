@@ -14,7 +14,8 @@ import Data.String
 import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
 import Lucid (Html, ToHtml, toHtml, renderText)
-import Servant.Server.Internal.ServantErr
+import Servant (unNat)
+import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec (Spec, context, it, pendingWith)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
@@ -23,8 +24,10 @@ import Text.Digestive.View
 
 import qualified Data.Text.Lazy as LT
 
+import Action
 import Arbitrary ()
 import Frontend.Page
+import Persistent
 import Types
 
 
@@ -155,8 +158,11 @@ renderForm (F g) =
             return $ LT.length (renderText $ formPage v "formAction" page)
         assert (len > 0)
 
-failOnError :: ExceptT ServantErr IO a -> IO a
-failOnError = fmap (either (error . show) id) . runExceptT
+-- FIXME: I don't think we need unsafePerformIO here.
+failOnError :: Action a -> IO a
+failOnError = fmap (either (error . show) id) . runExceptT . runAction
+  where
+    runAction = unNat . ($ UserLoggedOut) . unsafePerformIO $ fmap mkRunAction mkRunPersist
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
@@ -190,4 +196,4 @@ arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r)
 arbFormPageResult _ = arbitrary
 
 class PayloadToEnv a where
-    payloadToEnv :: View (Html ()) -> a -> Env (ExceptT ServantErr IO)
+    payloadToEnv :: View (Html ()) -> a -> Env Action

@@ -9,7 +9,6 @@ module Frontend.Core
 where
 
 import Control.Lens
-import Control.Monad.Trans.Except (ExceptT)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
@@ -18,12 +17,13 @@ import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
-import Servant (Server, ServantErr)
+import Servant (ServerT)
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, formRedirectH)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
+import Action
 import Api
 import Types
 
@@ -68,7 +68,7 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 class FormPageView p where
     type FormPageResult p :: *
     -- | Generates a Html view from the given page
-    makeForm :: p -> DF.Form (Html ()) (ExceptT ServantErr IO) (FormPageResult p)
+    makeForm :: (ActionM m) => p -> DF.Form (Html ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -209,11 +209,11 @@ instance ToHtml ListItemIdea where
 -- redirects the page to the place which is defined in the @RedirectsOf@
 -- typeclass.
 redirectFormHandler
-    :: (FormPageView p, Page p, RedirectOf p)
+    :: (FormPageView p, Page p, RedirectOf p, ActionM action)
     => ST -- ^ Form Action
     -> p  -- ^ Page representation
-    -> (FormPageResult p -> ExceptT ServantErr IO a) -- ^ Processor for the form result
-    -> Server (FormH HTML (Html ()) ST)
+    -> (FormPageResult p -> action a) -- ^ Processor for the form result
+    -> ServerT (FormH HTML (Html ()) ST) action
 redirectFormHandler action page processor = formRedirectH action p1 p2 r
   where
     p1 = makeForm page
@@ -231,7 +231,7 @@ frameUserHack = User
     , _userFirstName = "Vorname"
     , _userLastName  = "Name"
     , _userAvatar    = "https://avatar.com"
-    , _userGroups    = nil  -- ^ (could be a set)
+    , _userGroups    = nil
     , _userPassword  = EncryptedPass ""
     , _userEmail     = Nothing
     }

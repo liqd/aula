@@ -7,16 +7,22 @@
 module CreateRandom
 where
 
+import Data.Typeable (typeOf)
+import Test.QuickCheck (Arbitrary, generate, arbitrary)
 import Thentos.Prelude
 
-import Types
-import Persistent
+import Action
 import Frontend.Core
-import Test.QuickCheck
+import Persistent
+import Types
 
-createRandom :: (MonadIO m, Arbitrary a, Show a, HasMetaInfo a) =>
-                ST -> AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
-createRandom s l = liftIO $ do
-   px <- generate arbitrary
-   x <- runPersist $ addDbEntity l px
-   return (Frame frameUserHack (("new " <> s <> " created.") `Beside` PageShow x))
+-- | Create random entities as in the Aula Action monad.
+createRandom
+    :: ( Arbitrary a, Show a, Typeable a, HasMetaInfo a
+       , ActionPersist m, ActionIO m)
+    => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
+createRandom l = do
+   px <- actionIO $ generate arbitrary
+   x <- persistent $ addDbEntity l px
+   return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
+                                     `Beside` PageShow x))

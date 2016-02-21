@@ -32,3 +32,6 @@ test-repl:
 hlint:
 	$(HLINT) --version
 	find src exec tests -name '*.hs' | xargs $(HLINT)
+
+ghci-no-type-errors:
+	cabal exec -- ghci $(FULL_SOURCES) -fdefer-type-errors

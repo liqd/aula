@@ -32,18 +32,6 @@ mkInitial = do
     generate arbitrary >>= unNat rp . addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id])
     return rp
 
--- | FIXME: who will create the first user?
-bootstrapUser :: (Persist :~> IO) -> User -> IO User
-bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUser)
-  where
-    uid :: Integer
-    uid = 0
-
-    tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
-    tweak user = (userMeta . metaId .~ AUID 0)
-               . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
-               $ user
-
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
 getDbSpec name getXs = do
     describe name $ do

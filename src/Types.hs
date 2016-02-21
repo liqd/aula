@@ -27,6 +27,9 @@ import Servant.API (FromHttpApiData)
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
+----------------------------------------------------------------------
+-- Monoid
+
 -- | A shorter alias for 'mempty'.
 -- This definition could be moved to a prelude module once we have one.
 nil :: Monoid a => a
@@ -42,6 +45,8 @@ isNil = (== nil)
 -- The prototypes contains all the information which cannot be
 -- filled out of some type. Information which comes from outer
 -- source and will be saved into the database.
+--
+-- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
 
 -- | The method how a 't' value is calculated from its prototype
