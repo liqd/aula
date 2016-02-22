@@ -50,6 +50,8 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 -- 'Middleware' solves that.  (Alternatively, we could clone serveDirectory and solve the problem
 -- closer to its cause, but the current solution makes it easier to add other tweaks as the need
 -- arises.)
+--
+-- FIXME: rename to 'aulaMiddleware'?  'tweaks' explains nothing.
 aulaTweaks :: Middleware
 aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
   where
