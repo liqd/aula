@@ -183,35 +183,31 @@ aulaAdmin =
 
 type AulaTesting =
        GetH (Frame ST)
-  :<|> "spaces" :> GetH (Frame PageRoomsOverview)
-  :<|> "spaces" :> CreateRandom IdeaSpace
-  :<|> "login" :> FormH HTML (Html ()) ST
+
   :<|> "ideas" :> CreateRandom Idea
+  :<|> "space" :> CreateRandom IdeaSpace
+  :<|> "topic" :> CreateRandom Topic
+  :<|> "user"  :> CreateRandom User
+
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "users" :> CreateRandom User
-  :<|> "users" :> GetH (Frame (PageShow [User]))
-  :<|> "topics" :> CreateRandom Topic
+
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
   :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "imprint" :> GetH (Frame PageStaticImprint)
-  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
        return (PublicFrame "yihaah!")
-  :<|> (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
-  :<|> createRandomNoMeta dbSpaceSet
-  :<|> Page.login
+
   :<|> createRandom dbIdeaMap
+  :<|> createRandomNoMeta dbSpaceSet
+  :<|> createRandom dbTopicMap
+  :<|> createRandom dbUserMap
+
   :<|> (Frame frameUserHack . PageIdeasOverview SchoolSpace <$> Action.persistent getIdeas)
   :<|> Page.createIdea
-  :<|> createRandom dbUserMap
-  :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
-  :<|> createRandom dbTopicMap
+
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
   :<|> Page.pageTopicOverview
   :<|> Page.createTopic
-  :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
-  :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
