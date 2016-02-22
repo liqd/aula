@@ -55,6 +55,7 @@ module Api.Persistent
     -- FIXME: Remove hack
     , addDbEntity
     , bootstrapUser
+    , adminUsernameHack
     )
 where
 
@@ -242,13 +243,16 @@ currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 instance FromProto User where
     fromProto u _ = u
 
+adminUsernameHack :: ST
+adminUsernameHack = "admin"
+
 -- | Add the first user to an empty database.  AUID is set to 0.
 --
 -- FIXME: we can pick a valid AUID, or we can make sure that the database is completely empty.
 -- either way, we will probably need something like this function in production to create the first
 -- user, and it shouldn't be possible to use it to corrupt the 'Persist' state.
-bootstrapUser :: (Persist :~> IO) -> Proto User -> IO User
-bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUser)
+bootstrapUser :: Proto User -> Persist User
+bootstrapUser protoUser = forceLogin uid >> addUser (tweak protoUser)
   where
     uid :: Integer
     uid = 0
@@ -259,6 +263,7 @@ bootstrapUser (Nat rp) protoUser = rp $ forceLogin uid >> addUser (tweak protoUs
     tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
     tweak user = (userMeta . metaId .~ AUID 0)
                . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
+               . (userLogin .~ adminUsernameHack)
                $ user
 
 instance FromProto Idea where

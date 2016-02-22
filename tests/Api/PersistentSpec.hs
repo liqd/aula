@@ -14,23 +14,20 @@ import Servant.Server
 import Test.Hspec
 import Test.QuickCheck
 
+import CreateRandom
 import Api.Persistent
 import Types
-
-
--- | the empty database
-mkEmpty :: IO (Persist :~> IO)
-mkEmpty = mkRunPersist
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: IO (Persist :~> IO)
 mkInitial = do
-    rp <- mkEmpty
-    generate arbitrary >>= bootstrapUser rp
-    _wildIdea <- generate arbitrary >>= unNat rp . addIdea
-    topicIdea <- generate arbitrary >>= unNat rp . addIdea
-    generate arbitrary >>= unNat rp . addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id])
+    rp <- mkRunPersist
+    unNat rp genInitalDb
     return rp
+
+-- | the empty database
+mkEmpty :: IO (Persist :~> IO)
+mkEmpty = mkRunPersist
 
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
 getDbSpec name getXs = do

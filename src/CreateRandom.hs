@@ -10,7 +10,7 @@ where
 
 import Data.Typeable (typeOf)
 import Data.Set (Set, insert)
-import Servant ((:>))
+import Servant
 import Test.QuickCheck (Arbitrary, generate, arbitrary)
 import Thentos.Prelude
 
@@ -18,8 +18,12 @@ import Action
 import Frontend.Core
 import Persistent
 import Types
+import Arbitrary ()
 
 type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
+
+genArbitrary :: Arbitrary a => Persist a
+genArbitrary = persistIO $ generate arbitrary
 
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
@@ -27,8 +31,7 @@ createRandom
        , ActionPersist m, ActionIO m)
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
-   px <- actionIO $ generate arbitrary
-   x <- persistent $ addDbEntity l px
+   x <- persistent $ addDbEntity l =<< genArbitrary
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
@@ -42,3 +45,12 @@ createRandomNoMeta l = do
    persistent $ modifyDb l (insert x)
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
+
+-- | generate one arbitrary item of each type (idea, user, ...)
+genInitalDb :: Persist ()
+genInitalDb = do
+    _firstUser <- bootstrapUser =<< genArbitrary
+    _wildIdea <- addIdea =<< genArbitrary
+    topicIdea <- addIdea =<< genArbitrary
+    _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+    return ()

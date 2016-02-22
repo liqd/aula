@@ -20,7 +20,6 @@ import Thentos.Prelude
 
 import Persistent
 import Action (Action, mkRunAction, UserState(..))
-import Arbitrary (arbitrary, generate)
 import Config
 import CreateRandom
 import Frontend.Page as Page
@@ -32,16 +31,11 @@ import qualified Action
 ----------------------------------------------------------------------
 -- driver
 
--- FIXME: generate a proper user here, with real time stamp and AUID and everything.  no need to use
--- arbitrary in 'bootstrapDB' below!
-adminUsernameHack :: ST
-adminUsernameHack = "admin"
-
 runFrontend :: IO ()
 runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
-    bootsrapDB persist -- FIXME: Remove Bootstrapping DB
+    unNat persist bootsrapDB -- FIXME: Remove Bootstrapping DB
     runSettings settings . aulaTweaks $ serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
@@ -49,9 +43,8 @@ runFrontend = do
              $ defaultSettings
 
     -- FIXME: Remove Bootstrapping DB
-    bootsrapDB :: Persist :~> IO -> IO ()
-    bootsrapDB persist =
-        generate arbitrary >>= void . bootstrapUser persist . (userLogin .~ adminUsernameHack)
+    bootsrapDB :: Persist ()
+    bootsrapDB = genInitalDb
 
 
 ----------------------------------------------------------------------
