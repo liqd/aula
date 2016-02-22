@@ -74,7 +74,7 @@ instance Arbitrary PageCreateIdea where
     arbitrary = pure PageCreateIdea
 
 instance Arbitrary PageEditIdea where
-    arbitrary = pure PageEditIdea
+    arbitrary = PageEditIdea <$> arb
 
 instance Arbitrary PageUserProfileCreateIdeas where
     arbitrary = pure PageUserProfileCreateIdeas

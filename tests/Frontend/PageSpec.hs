@@ -18,6 +18,7 @@ spec = do
     describe "Private and Public page should be inverse" $
         mapM_ publicPagePrivatePageInverseProp [
               P (arb :: Gen PageCreateIdea)
+            , P (arb :: Gen PageEditIdea)
             , P (arb :: Gen PageHomeWithLoginPrompt)
             , P (arb :: Gen PageIdeasOverview)
             , P (arb :: Gen (PageShow ()))

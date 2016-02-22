@@ -50,6 +50,7 @@ type AulaTop =
   :<|> "samples" :> Raw
   :<|> "static"  :> Raw
 
+
 aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter runActionForceLogin (aulaMain :<|> aulaTesting)
@@ -179,6 +180,7 @@ type AulaTesting =
 
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "ideas" :> "edit" :> Capture "idea" (AUID Idea) :> FormH HTML (Html ()) ST
 
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
@@ -195,6 +197,7 @@ aulaTesting =
 
   :<|> (Frame frameUserHack . PageIdeasOverview SchoolSpace <$> Action.persistent getIdeas)
   :<|> Page.createIdea
+  :<|> Page.editIdea
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
   :<|> Page.pageTopicOverview

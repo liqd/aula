@@ -37,13 +37,15 @@ data LoginFormData = LoginFormData ST ST
 instance FormPageView PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData
 
-    makeForm _ = LoginFormData
+    formAction _ = P.path P.Login
+
+    makeForm _ = pure $ LoginFormData
         <$> ("user" .: DF.text Nothing)
         <*> ("pass" .: DF.text Nothing)
 
-    formPage v formAction p = do
+    formPage v fa p = pure $ do
         semanticDiv p $ do
-            div_ . DF.form v formAction $ do
+            div_ . DF.form v fa $ do
                 DF.inputText     "user" v >> br_ []
                 DF.inputPassword "pass" v >> br_ []
                 DF.inputSubmit   "Login"
@@ -57,6 +59,6 @@ instance RedirectOf PageHomeWithLoginPrompt where
     redirectOf _ = P.path P.SpaceAll
 
 login :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-login = redirectFormHandler (P.path P.Login) (pure PageHomeWithLoginPrompt) makeUserLogin
+login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login user

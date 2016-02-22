@@ -71,7 +71,7 @@ library
       Frontend.Core
       Frontend.Html
       Frontend.Page
-      Frontend.Page.CreateIdea
+      Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
       Frontend.Page.Static
@@ -302,7 +302,7 @@ test-suite spec
       Frontend.Core
       Frontend.Html
       Frontend.Page
-      Frontend.Page.CreateIdea
+      Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
       Frontend.Page.Static

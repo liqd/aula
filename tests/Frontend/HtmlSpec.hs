@@ -75,6 +75,7 @@ spec = do
         ]
     context "PageFormView" $ mapM_ testForm [
           F (arb :: Gen PageCreateIdea)
+    --  , F (arb :: Gen PageEditIdea) FIXME Independent form view from information extraction
         , F (arb :: Gen PageHomeWithLoginPrompt)
         , F (arb :: Gen PageCreateTopic)
     --  , F (arb :: Gen PageCreateTopicAddIdeas) FIXME
@@ -174,8 +175,8 @@ renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . failOnError $ do
-            v <- getForm "" $ makeForm page
-            return $ LT.length (renderText $ formPage v "formAction" page)
+            v <- getForm "" =<< makeForm page
+            LT.length . renderText <$> formPage v "formAction" page
         assert (len > 0)
 
 runAction :: Action a -> ExceptT ServantErr IO a
@@ -203,15 +204,16 @@ postToForm (F g) = do
         page <- pick g
         payload <- pick (arbFormPageResult page)
 
-        let frm = makeForm page
-        env <- run . failOnError $ (`payloadToEnv` payload) <$> getForm "" frm
+        frm <- run' $ makeForm page
+        env <- run' $ (`payloadToEnv` payload) <$> getForm "" frm
 
-        (_, Just payload') <- run . failOnError $ postForm "" frm (\_ -> pure env)
+        (_, Just payload') <- run' $ postForm "" frm (\_ -> pure env)
         liftIO $ payload' `shouldBe` payload
 
     it (show (typeOf g) <> " (process *in*valid form input)") $
         pendingWith "not implemented."  -- FIXME
-
+    where
+        run' = run . failOnError
 
 arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 arbFormPageResult _ = arbitrary
