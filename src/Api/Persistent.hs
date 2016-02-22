@@ -105,9 +105,6 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil Nothing 0
 
--- | FIXME: call this type 'Action'?  Or 'Aula'?  Or 'AulaAction'?  As of the time of writing this
--- comment, it doesn't make sense to have separate abstractions for persistence layer (Transaction
--- in thentos) and application logic (Action in thentos).  to be discussed later?
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
   deriving (Functor, Applicative, Monad)
 

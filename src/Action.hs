@@ -44,8 +44,6 @@ class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
-      , ActionIO m  -- FIXME: can we get rid of this?  (it is needed in "CreateRandom", but also for
-                    -- 'ActionLog', 'ActionPersist'.)
       ) => ActionM m
 
 instance ActionM Action
@@ -55,7 +53,7 @@ class Monad m => ActionLog m where
     logEvent :: ST -> m ()
 
 instance ActionLog Action where
-    logEvent = liftIO . print
+    logEvent = Action . liftIO . print
 
 class Monad m => ActionPersist m where
     -- | Run @Persist@ computation in the action monad.
@@ -63,7 +61,7 @@ class Monad m => ActionPersist m where
     persistent :: Persist a -> m a
 
 instance ActionPersist Action where
-    persistent r = ask >>= \(Nat rp) -> liftIO $ rp r
+    persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
 
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
@@ -87,6 +85,11 @@ instance ActionError Action
 class Monad m => ActionIO m where
     actionIO :: IO a -> m a
 
+-- | FIXME: there are several things that we can do to make this safer:
+--
+-- - Drop function 'actionIO' and offer more specific methods like 'genericArbitrary'.
+-- - Drop 'Action' instance, make a 'newtype UnsafeAction = UA Action' and instantiate that.  This
+--   makes it more explicit where we make use of 'ActionIO'.
 instance ActionIO Action where
     actionIO = Action . liftIO
 
@@ -103,7 +106,6 @@ newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserSt
     deriving ( Functor
              , Applicative
              , Monad
-             , MonadIO
              , MonadError ActionExcept
              , MonadReader (Persist :~> IO)
              , MonadState UserState
