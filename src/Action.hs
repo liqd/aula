@@ -44,8 +44,6 @@ class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
-      , ActionIO m  -- FIXME: can we get rid of this?  (it is needed in "CreateRandom", but also for
-                    -- 'ActionLog', 'ActionPersist'.)
       ) => ActionM m
 
 instance ActionM Action
