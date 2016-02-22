@@ -26,6 +26,7 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
+    , getWildIdeas
     , addIdea
     , modifyIdea
     , findIdea
@@ -58,6 +59,7 @@ where
 
 import Data.Foldable (find, for_)
 import Data.Map (Map)
+import Data.Maybe
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -149,6 +151,9 @@ getSpaces = getDb dbSpaces
 
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
+
+getWildIdeas :: Persist [Idea]
+getWildIdeas = filter (isNothing . view ideaTopic) <$> getIdeas
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
