@@ -28,6 +28,10 @@ import Types
 
 import qualified Action
 
+
+----------------------------------------------------------------------
+-- driver
+
 -- FIXME: generate a proper user here, with real time stamp and AUID and everything.  no need to use
 -- arbitrary in 'bootstrapDB' below!
 adminUsernameHack :: ST
@@ -49,22 +53,9 @@ runFrontend = do
     bootsrapDB persist =
         generate arbitrary >>= void . bootstrapUser persist . (userLogin .~ adminUsernameHack)
 
-type FrontendH =
-       GetH (Frame ST)
-  :<|> "ideaspaces" :> GetH (Frame PageRoomsOverview)
-  :<|> "ideaspaces" :> CreateRandom IdeaSpace
-  :<|> "login" :> FormH HTML (Html ()) ST
-  :<|> "ideas" :> CreateRandom Idea
-  :<|> "ideas" :> GetH (Frame PageIdeasOverview)
-  :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "users" :> CreateRandom User
-  :<|> "users" :> GetH (Frame (PageShow [User]))
-  :<|> "topics" :> CreateRandom Topic
-  :<|> "topics" :> GetH (Frame (PageShow [Topic]))
-  :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
-  :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "imprint" :> GetH (Frame PageStaticImprint)
-  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
+
+----------------------------------------------------------------------
+-- driver
 
 type Aula =
        FrontendH
@@ -81,6 +72,24 @@ aula (Nat runAction) =
     runActionForceLogin = Nat $ \action -> runAction $ do
         Action.login adminUsernameHack
         action
+
+
+type FrontendH =
+       GetH (Frame ST)
+  :<|> "ideaspaces" :> GetH (Frame PageRoomsOverview)
+  :<|> "ideaspaces" :> CreateRandom IdeaSpace
+  :<|> "login" :> FormH HTML (Html ()) ST
+  :<|> "ideas" :> CreateRandom Idea
+  :<|> "ideas" :> GetH (Frame PageIdeasOverview)
+  :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "users" :> CreateRandom User
+  :<|> "users" :> GetH (Frame (PageShow [User]))
+  :<|> "topics" :> CreateRandom Topic
+  :<|> "topics" :> GetH (Frame (PageShow [Topic]))
+  :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
+  :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "imprint" :> GetH (Frame PageStaticImprint)
+  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
 frontendH :: ServerT FrontendH Action
 frontendH =
