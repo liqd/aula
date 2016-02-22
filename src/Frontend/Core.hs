@@ -132,14 +132,12 @@ pageFrame' extraHeaders usr bdy = do
 publicHeaderMarkup :: (Monad m) => HtmlT m ()
 publicHeaderMarkup = div_ $ do
     span_ "aula"
-    -- TODO: this should be links
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
 headerMarkup :: (Monad m) => User -> HtmlT m ()
 headerMarkup usr = div_ $ do
     span_ "aula"
-    -- TODO: these should be links
     span_ $ a_ [href_ "/spaces"] "Ideenräume"
     span_ $ a_ [href_ "/delegations"] "Beauftragungsnetzwerk"
     span_ (toHtml $ "Hi " <> (usr ^. userLogin))
@@ -149,10 +147,8 @@ headerMarkup usr = div_ $ do
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = div_ $ do
     hr_ []
-    -- TODO: these should be links
     span_ $ a_ [href_ "/terms"] "Nutzungsbedingungen"
     span_ $ a_ [href_ "/imprint"] "Impressum"
-    -- TODO: Should be on the right (and we need to specify encoding in html)
     span_ "Made with ♡ by Liqd"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
