@@ -85,6 +85,11 @@ instance ActionError Action
 class Monad m => ActionIO m where
     actionIO :: IO a -> m a
 
+-- | FIXME: there are several things that we can do to make this safer:
+--
+-- - Drop function 'actionIO' and offer more specific methods like 'genericArbitrary'.
+-- - Drop 'Action' instance, make a 'newtype UnsafeAction = UA Action' and instantiate that.  This
+--   makes it more explicit where we make use of 'ActionIO'.
 instance ActionIO Action where
     actionIO = Action . liftIO
 
