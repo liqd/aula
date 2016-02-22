@@ -7,7 +7,7 @@ version:        0.1.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
-author:         Andor Penzes <andor.penzes@liqd.de>, Andres Löh <andres@well-typed.com>, Caronline Clifford <caroline.clifford@liqd.de>, Matthias Fischmann <mf@zerobuzz.net>, Mikolaj Konarski <mikolaj@well-typed.com>, Nicolas Pouillard <np@nicolaspouillard.fr>
+author:         Andor Penzes <andor.penzes@liqd.de>, Andres Löh <andres@well-typed.com>, Caroline Clifford <caroline.clifford@liqd.de>, Matthias Fischmann <mf@zerobuzz.net>, Mikolaj Konarski <mikolaj@well-typed.com>, Nicolas Pouillard <np@nicolaspouillard.fr>
 
 maintainer:     matthias.fischmann@liqd.net
 copyright:      2016-2017 liquid democracy e.V. Berlin
