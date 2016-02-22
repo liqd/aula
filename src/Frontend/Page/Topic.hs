@@ -189,9 +189,46 @@ createTopic :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 createTopic = redirectFormHandler "/topics/create" (pure PageCreateTopic) (persistent . addTopic)
 
 -- | 10.2 Create topic: Move ideas to topic
-data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas
+data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas (AUID Topic) [Idea]
   deriving (Eq, Show, Read)
 
 instance ToHtml PageCreateTopicAddIdeas where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageCreateTopicAddIdeas"
+
+ideaToFormField :: Idea -> ST
+ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
+
+instance FormPageView PageCreateTopicAddIdeas where
+    -- While the input page contains all the wild ideas the result page only contains
+    -- the ideas to be added to the topic.
+    type FormPageResult PageCreateTopicAddIdeas = [AUID Idea]
+
+    makeForm (PageCreateTopicAddIdeas _ ideas) =
+        fmap catMaybes . sequenceA $
+        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing) | idea <- ideas ]
+
+    formPage v formAction p@(PageCreateTopicAddIdeas _ ideas) = do
+        semanticDiv p $ do
+            h3_ "Wählen Sie weitere Ideen aus"
+            DF.form v formAction $ do
+                ul_ $ do
+                    for_ ideas $ \idea ->
+                        li_ $ do
+                            DF.inputCheckbox (ideaToFormField idea) v
+                            idea ^. ideaTitle . html
+                DF.inputSubmit "Speichern"
+                button_ "Abbrechen" -- FIXME
+
+instance Page PageCreateTopicAddIdeas where
+    isPrivatePage _ = True
+
+instance RedirectOf PageCreateTopicAddIdeas where
+    redirectOf (PageCreateTopicAddIdeas topicId _) = "/topics/" <> cs (show topicId) -- FIXME safe links
+
+formAddIdeasToTopic :: ActionM m => AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
+formAddIdeasToTopic topicId =
+    redirectFormHandler ("/topics/" <> cs (show topicId) <> "/ideas") getPage addIdeas
+  where
+    getPage = PageCreateTopicAddIdeas topicId <$> persistent getWildIdeas
+    addIdeas ideas = persistent $ moveIdeasToTopic ideas (Just topicId)
