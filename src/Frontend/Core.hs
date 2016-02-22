@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeOperators        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -10,6 +12,7 @@ module Frontend.Core
 where
 
 import Control.Lens
+import Control.Monad.Except (MonadError, throwError)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
@@ -18,9 +21,10 @@ import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
-import Servant (ServerT, Get)
+import Servant
 import Servant.HTML.Lucid (HTML)
-import Servant.Missing (FormH, formRedirectH)
+import Servant.Missing (FormH)
+import Text.Digestive (Form)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
@@ -213,23 +217,48 @@ instance ToHtml ListItemIdea where
                 if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
             -- TODO: show how many votes are in and how many are required
 
--- | Creates a form handler for the given @formAction@ and @page@.
--- The handler will generate a form on the GET requet and process
--- the form result in POST request with the given @processor@ and after
--- redirects the page to the place which is defined in the @RedirectsOf@
--- typeclass.
-redirectFormHandler
-    :: (FormPageView p, Page p, RedirectOf p, ActionM action)
-    => ST -- ^ Form Action
-    -> p  -- ^ Page representation
-    -> (FormPageResult p -> action a) -- ^ Processor for the form result
-    -> ServerT (FormH HTML (Html ()) ST) action
-redirectFormHandler action page processor = formRedirectH action p1 p2 r
+-- FIXME: this is a temporary situation where we want to wait a conclusion on:
+-- https://github.com/haskell-servant/servant/pull/391
+-- before either:
+-- * discarding formRedirectH' and use formRedirectH and before
+-- * push this change towards Servant.Missing
+-- * keep a version here
+formRedirectH' :: forall page payload m htm html.
+     (Monad m, MonadError ServantErr m)
+  => ST                              -- ^ formAction
+  -> m page
+  -> (page -> Form html m payload)           -- ^ processor1
+  -> (page -> payload -> m ST)               -- ^ processor2
+  -> (page -> View html -> ST -> m html)     -- ^ renderer
+  -> ServerT (FormH htm html payload) m
+formRedirectH' formAction getPage processor1 processor2 renderer = getH :<|> postH
   where
-    p1 = makeForm page
-    p2 result = processor result $> redirectOf page
-    frame = if isPublicPage page then publicPageFrame else pageFrame frameUserHack
-    r v formAction = pure . frame $ formPage v formAction page
+    getH = do
+        page <- getPage
+        v <- getForm formAction (processor1 page)
+        renderer page v formAction
+
+    postH env = do
+        page <- getPage
+        (v, mpayload) <- postForm formAction (processor1 page) (\_ -> return $ return . runIdentity . env)
+        case mpayload of
+            Just payload -> processor2 page payload >>= redirect
+            Nothing      -> renderer page v formAction
+
+    redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+
+redirectFormHandler
+    :: (FormPageView p, Page p, RedirectOf p, ActionM m)
+    => ST                        -- ^ Form Action
+    -> m p                       -- ^ Page representation
+    -> (FormPageResult p -> m a) -- ^ Processor for the form result
+    -> ServerT (FormH HTML (Html ()) ST) m
+redirectFormHandler action getPage processor = formRedirectH' action getPage makeForm p2 r
+  where
+    p2 page result = processor result $> redirectOf page
+    r page v formAction =
+        let frame = if isPublicPage page then publicPageFrame else pageFrame frameUserHack in
+        pure . frame $ formPage v formAction page
 
 ----------------------------------------------------------------------
 -- HACKS
