@@ -36,7 +36,7 @@ module Api.Persistent
     , getTopics
     , addTopic
     , modifyTopic
-    , moveIdeaToTopic
+    , moveIdeasToTopic
     , findTopic
     , findUserByLogin
     , findIdeasByTopicId
@@ -182,8 +182,10 @@ addUser = addDb dbUserMap
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
-moveIdeaToTopic :: AUID Idea -> Maybe (AUID Topic) -> Persist ()
-moveIdeaToTopic ideaId topicId = modifyIdea ideaId $ ideaTopic .~ topicId
+moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> Persist ()
+moveIdeasToTopic ideaIds topicId =
+    for_ ideaIds $ \ideaId ->
+        modifyIdea ideaId $ ideaTopic .~ topicId
 
 addTopic :: Proto Topic -> Persist Topic
 addTopic pt = do
@@ -193,8 +195,7 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    for_ (pt ^. protoTopicIdeas) $ \ideaId ->
-        moveIdeaToTopic ideaId (Just $ t ^. _Id)
+    moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
 findUserByLogin :: ST -> Persist (Maybe User)
