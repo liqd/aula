@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeFamilies         #-}
@@ -17,7 +18,7 @@ import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
-import Servant (ServerT)
+import Servant (ServerT, Get)
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, formRedirectH)
 import Text.Digestive.View
@@ -28,8 +29,8 @@ import Api
 import Types
 
 import qualified Data.Set as Set
-
 import qualified Text.Digestive.Form as DF
+
 
 -- | This will generate the following snippet:
 --
@@ -49,6 +50,8 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 -- 'Middleware' solves that.  (Alternatively, we could clone serveDirectory and solve the problem
 -- closer to its cause, but the current solution makes it easier to add other tweaks as the need
 -- arises.)
+--
+-- FIXME: rename to 'aulaMiddleware'?  'tweaks' explains nothing.
 aulaTweaks :: Middleware
 aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
   where
@@ -63,6 +66,8 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 
 ----------------------------------------------------------------------
 -- building blocks
+
+type GetH = Get '[HTML]
 
 -- | Render Form based Views
 class FormPageView p where
@@ -99,11 +104,12 @@ instance (ToHtml body) => ToHtml (Frame body) where
     toHtml (Frame usr bdy)   = pageFrame usr (toHtml bdy)
     toHtml (PublicFrame bdy) = publicPageFrame (toHtml bdy)
 
+-- | FIXME: share code better between 'pageFrame', 'pageFrame'', 'publicPageFrame'.
 publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
 publicPageFrame bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ "/screen.css"]
+        link_ [rel_ "stylesheet", href_ "/static/screen.css"]
     body_ $ do
         publicHeaderMarkup >> bdy >> footerMarkup
 
@@ -114,7 +120,7 @@ pageFrame' :: (Monad m) => [HtmlT m a] -> User -> HtmlT m a -> HtmlT m ()
 pageFrame' extraHeaders usr bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ "/screen.css"]
+        link_ [rel_ "stylesheet", href_ "/static/screen.css"]
         sequence_ extraHeaders
     body_ $ do
         headerMarkup usr >> bdy >> footerMarkup

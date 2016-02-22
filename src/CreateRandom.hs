@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -9,6 +10,7 @@ where
 
 import Data.Typeable (typeOf)
 import Data.Set (Set, insert)
+import Servant ((:>))
 import Test.QuickCheck (Arbitrary, generate, arbitrary)
 import Thentos.Prelude
 
@@ -16,6 +18,8 @@ import Action
 import Frontend.Core
 import Persistent
 import Types
+
+type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
