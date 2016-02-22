@@ -88,8 +88,8 @@ type AulaMain =
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegations" :> "edit" :> FormH HTML (Html ()) ()
-  :<|> "delegations" :> "view" :> GetH (Frame ST)
+  :<|> "delegation" :> "edit" :> FormH HTML (Html ()) ()
+  :<|> "delegation" :> "view" :> GetH (Frame ST)
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
@@ -108,8 +108,8 @@ aulaMain =
   :<|> aulaUser
   :<|> aulaAdmin
 
-  :<|> error "api not implemented: \"delegations\" :> \"edit\" :> FormH HTML (Html ()) ()"
-  :<|> error "api not implemented: \"delegations\" :> \"view\" :> GetH (Frame ST)"
+  :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormH HTML (Html ()) ()"
+  :<|> error "api not implemented: \"delegation\" :> \"view\" :> GetH (Frame ST)"
 
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
