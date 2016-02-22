@@ -11,7 +11,7 @@ where
 import Data.Typeable (typeOf)
 import Data.Set (Set, insert)
 import Servant
-import Test.QuickCheck (Arbitrary, generate, arbitrary)
+import Test.QuickCheck (Arbitrary)
 import Thentos.Prelude
 
 import Action
@@ -22,35 +22,32 @@ import Arbitrary ()
 
 type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
-genArbitrary :: Arbitrary a => Persist a
-genArbitrary = persistIO $ generate arbitrary
-
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
     :: ( Arbitrary a, Show a, Typeable a, HasMetaInfo a
-       , ActionPersist m, ActionIO m)
+       , ActionPersist m, GenData m)
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
-   x <- persistent $ addDbEntity l =<< genArbitrary
+   x <- persistent . addDbEntity l =<< genData
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
 -- | Create random entities that have no 'MetaInfo'.  (Currently only 'Set' elements.)
 createRandomNoMeta
     :: ( Arbitrary a, Ord a, Show a, Typeable a
-       , ActionPersist m, ActionIO m)
+       , ActionPersist m, GenData m)
     => AulaLens (Set a) -> m (Frame (ST `Beside` PageShow a))
 createRandomNoMeta l = do
-   x <- actionIO $ generate arbitrary
+   x <- genData
    persistent $ modifyDb l (insert x)
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
 -- | generate one arbitrary item of each type (idea, user, ...)
-genInitalDb :: Persist ()
-genInitalDb = do
-    _firstUser <- bootstrapUser =<< genArbitrary
-    _wildIdea <- addIdea =<< genArbitrary
-    topicIdea <- addIdea =<< genArbitrary
-    _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+genInitalTestDb :: Persist ()
+genInitalTestDb = do
+    _firstUser <- bootstrapUser =<< genData
+    _wildIdea <- addIdea =<< genData
+    topicIdea <- addIdea =<< genData
+    _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genData
     return ()

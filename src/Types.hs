@@ -27,6 +27,8 @@ import Servant.API (FromHttpApiData)
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
+import Test.QuickCheck (Arbitrary)
+
 ----------------------------------------------------------------------
 -- a small prelude
 
@@ -397,3 +399,9 @@ instance HasMetaInfo IdeaLike where metaInfo = likeMeta
 instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
+
+----------------------------------------------------------------------
+-- Generate random data
+
+class Monad m => GenData m where
+    genData :: Arbitrary a => m a

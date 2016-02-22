@@ -22,7 +22,7 @@ import Types
 mkInitial :: IO (Persist :~> IO)
 mkInitial = do
     rp <- mkRunPersist
-    unNat rp genInitalDb
+    unNat rp genInitalTestDb
     return rp
 
 -- | the empty database

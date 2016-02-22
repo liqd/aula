@@ -35,17 +35,12 @@ runFrontend :: IO ()
 runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
-    unNat persist bootsrapDB -- FIXME: Remove Bootstrapping DB
+    unNat persist genInitalTestDb -- FIXME: Remove Bootstrapping DB
     runSettings settings . aulaTweaks $ serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
              $ defaultSettings
-
-    -- FIXME: Remove Bootstrapping DB
-    bootsrapDB :: Persist ()
-    bootsrapDB = genInitalDb
-
 
 ----------------------------------------------------------------------
 -- driver

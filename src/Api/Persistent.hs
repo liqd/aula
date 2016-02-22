@@ -77,6 +77,9 @@ import Types
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+-- FIXME: Remove
+import Test.QuickCheck (generate, arbitrary)
+
 type AMap a = Map (AUID a) a
 
 data AulaData = AulaData
@@ -114,6 +117,10 @@ newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
 
 persistIO :: IO a -> Persist a
 persistIO = Persist . liftIO
+
+-- FIXME: Remove
+instance GenData Persist where
+    genData = persistIO $ generate arbitrary
 
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = do

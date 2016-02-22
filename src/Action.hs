@@ -15,7 +15,6 @@ module Action
     , ActionPersist(persistent)
     , ActionUserHandler(login, logout)
     , ActionError
-    , ActionIO(..)  -- FIXME: Remove, only needed by create random
 
       -- * concrete monad type (abstract)
     , Action
@@ -35,7 +34,10 @@ import Data.String.Conversions (ST)
 import Persistent
 import Prelude hiding (log)
 import Servant
+import Types (GenData(..))
 
+-- FIXME: Remove. It is scaffolding to generate random data
+import Test.QuickCheck (arbitrary, generate)
 
 ----------------------------------------------------------------------
 -- constraint types
@@ -82,16 +84,9 @@ class MonadError ActionExcept m => ActionError m
 
 instance ActionError Action
 
-class Monad m => ActionIO m where
-    actionIO :: IO a -> m a
-
--- | FIXME: there are several things that we can do to make this safer:
---
--- - Drop function 'actionIO' and offer more specific methods like 'genericArbitrary'.
--- - Drop 'Action' instance, make a 'newtype UnsafeAction = UA Action' and instantiate that.  This
---   makes it more explicit where we make use of 'ActionIO'.
-instance ActionIO Action where
-    actionIO = Action . liftIO
+-- FIXME: Remove.
+instance GenData Action where
+    genData = Action . liftIO $ generate arbitrary
 
 ----------------------------------------------------------------------
 -- concrete monad type; user state
