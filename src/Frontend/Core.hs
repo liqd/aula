@@ -99,11 +99,12 @@ instance (ToHtml body) => ToHtml (Frame body) where
     toHtml (Frame usr bdy)   = pageFrame usr (toHtml bdy)
     toHtml (PublicFrame bdy) = publicPageFrame (toHtml bdy)
 
+-- | FIXME: share code better between 'pageFrame', 'pageFrame'', 'publicPageFrame'.
 publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
 publicPageFrame bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ "/screen.css"]
+        link_ [rel_ "stylesheet", href_ "/static/screen.css"]
     body_ $ do
         publicHeaderMarkup >> bdy >> footerMarkup
 
@@ -114,7 +115,7 @@ pageFrame' :: (Monad m) => [HtmlT m a] -> User -> HtmlT m a -> HtmlT m ()
 pageFrame' extraHeaders usr bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ "/screen.css"]
+        link_ [rel_ "stylesheet", href_ "/static/screen.css"]
         sequence_ extraHeaders
     body_ $ do
         headerMarkup usr >> bdy >> footerMarkup

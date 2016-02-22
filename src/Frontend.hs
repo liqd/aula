@@ -74,8 +74,7 @@ type FrontendH =
 type Aula =
        FrontendH
   :<|> "samples" :> Raw
-  :<|> Raw  -- FIXME: change this to @"static" :> Raw@
-            -- (@Raw@ on the empty path may accidentally process other end-points)
+  :<|> "static"  :> Raw
 
 aula :: (Action :~> ExceptT ServantErr IO) -> Server Aula
 aula (Nat runAction) =
