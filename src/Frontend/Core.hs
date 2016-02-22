@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE TypeFamilies         #-}
@@ -17,7 +18,7 @@ import Lucid
 import Lucid.Base
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
 import Network.Wai (Middleware)
-import Servant (ServerT)
+import Servant (ServerT, Get)
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, formRedirectH)
 import Text.Digestive.View
@@ -28,8 +29,8 @@ import Api
 import Types
 
 import qualified Data.Set as Set
-
 import qualified Text.Digestive.Form as DF
+
 
 -- | This will generate the following snippet:
 --
@@ -63,6 +64,8 @@ aulaTweaks app req cont = app req $ \resp -> do cont $ f resp
 
 ----------------------------------------------------------------------
 -- building blocks
+
+type GetH = Get '[HTML]
 
 -- | Render Form based Views
 class FormPageView p where

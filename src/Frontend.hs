@@ -49,11 +49,6 @@ runFrontend = do
     bootsrapDB persist =
         generate arbitrary >>= void . bootstrapUser persist . (userLogin .~ adminUsernameHack)
 
-type GetH = Get '[HTML]
-
--- FIXME: this should be in module "CreateRandom".
-type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
-
 type FrontendH =
        GetH (Frame ST)
   :<|> "ideaspaces" :> GetH (Frame PageRoomsOverview)
