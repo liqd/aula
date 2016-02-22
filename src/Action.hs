@@ -53,7 +53,7 @@ class Monad m => ActionLog m where
     logEvent :: ST -> m ()
 
 instance ActionLog Action where
-    logEvent = liftIO . print
+    logEvent = Action . liftIO . print
 
 class Monad m => ActionPersist m where
     -- | Run @Persist@ computation in the action monad.
@@ -61,7 +61,7 @@ class Monad m => ActionPersist m where
     persistent :: Persist a -> m a
 
 instance ActionPersist Action where
-    persistent r = ask >>= \(Nat rp) -> liftIO $ rp r
+    persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
 
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
@@ -101,7 +101,6 @@ newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserSt
     deriving ( Functor
              , Applicative
              , Monad
-             , MonadIO
              , MonadError ActionExcept
              , MonadReader (Persist :~> IO)
              , MonadState UserState
