@@ -16,3 +16,7 @@ span {
     padding: 12px;
     border-style: dashed dashed dashed;
 }
+
+.active {
+    background: darkgreen;
+}

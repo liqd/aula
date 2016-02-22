@@ -29,10 +29,10 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arbitrary
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
-    arbitrary = pure PageIdeasInDiscussion
+    arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
 instance Arbitrary PageTopicOverviewRefinementPhase where
     arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb

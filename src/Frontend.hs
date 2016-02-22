@@ -56,8 +56,8 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
 type FrontendH =
        GetH (Frame ST)
-  :<|> "ideaspaces" :> GetH (Frame PageRoomsOverview)
-  :<|> "ideaspaces" :> CreateRandom IdeaSpace
+  :<|> "spaces" :> GetH (Frame PageRoomsOverview)
+  :<|> "spaces" :> CreateRandom IdeaSpace
   :<|> "login" :> FormH HTML (Html ()) ST
   :<|> "ideas" :> CreateRandom Idea
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
@@ -95,7 +95,7 @@ frontendH =
   :<|> createRandomNoMeta dbSpaceSet
   :<|> Page.login
   :<|> createRandom dbIdeaMap
-  :<|> (Frame frameUserHack . PageIdeasOverview <$> Action.persistent getIdeas)
+  :<|> (Frame frameUserHack . PageIdeasOverview SchoolSpace <$> Action.persistent getIdeas)
   :<|> Page.createIdea
   :<|> createRandom dbUserMap
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
