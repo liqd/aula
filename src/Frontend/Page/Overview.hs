@@ -6,24 +6,34 @@
 {-# OPTIONS_GHC -Werror #-}
 
 module Frontend.Page.Overview
+    ( PageRoomsOverview(..)
+    , PageIdeasOverview(..)
+    , PageIdeasInDiscussion(..)
+    )
 where
 
 import Frontend.Prelude
 
 
 ----------------------------------------------------------------------
--- page
+-- pages
 
 -- | 1. Rooms overview
 data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview [Idea]
+data PageIdeasOverview = PageIdeasOverview IdeaSpace [Idea]
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageIdeasInDiscussion = PageIdeasInDiscussion
+data PageIdeasInDiscussion = PageIdeasInDiscussion IdeaSpace [Topic]
+  deriving (Eq, Show, Read)
+
+data Tabs = Tabs ActiveTab IdeaSpace
+  deriving (Eq, Show, Read)
+
+data ActiveTab = WildIdeas | Topics
   deriving (Eq, Show, Read)
 
 
@@ -45,9 +55,13 @@ instance ToHtml PageRoomsOverview where
             -- options.  one would be to only show the year if it is not the current one, or always show
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
 
+instance Page PageRoomsOverview where
+    isPrivatePage _ = True
+
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview ideas) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview space ideas) = semanticDiv p $ do
+        toHtml $ Tabs WildIdeas space
         p_ "WILDE IDEEN"
         h1_ "Was soll sich verändern?"
         p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
@@ -68,4 +82,27 @@ instance Page PageIdeasOverview where
 
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageIdeasInDiscussion"
+    toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
+        toHtml $ Tabs Topics space
+        forM_ topics $ \topic -> do
+            hr_ []
+            img_ [src_ "FIXME", alt_ "FIXME"]
+            div_ . toHtml . show $ topic ^. topicPhase
+            div_ . toHtml $ topic ^. topicTitle
+            div_ . toHtml $ topic ^. topicDesc
+            a_ [href_ "FIXME: link to topic details"] "link"
+
+instance Page PageIdeasInDiscussion where
+    isPrivatePage _ = True
+
+instance ToHtml Tabs where
+    toHtmlRaw = toHtml
+    toHtml (Tabs activeTab space) = div_ $ do
+        span_ [class_ "active" | activeTab == WildIdeas] $ do
+            "Wilde Ideen " >> toHtml (spaceDesc space)
+        span_ [class_ "active" | activeTab == Topics] $ do
+            "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
+      where
+        spaceDesc :: IdeaSpace -> ST
+        spaceDesc SchoolSpace     = "der Schule"
+        spaceDesc (ClassSpace (SchoolClass n _)) = "der Klasse " <> n

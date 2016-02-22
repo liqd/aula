@@ -130,8 +130,8 @@ headerMarkup :: (Monad m) => User -> HtmlT m ()
 headerMarkup usr = div_ $ do
     span_ "aula"
     -- TODO: these should be links
-    span_ "Ideenräume"
-    span_ "Beauftragungsnetzwerk"
+    span_ $ a_ [href_ "/spaces"] "Ideenräume"
+    span_ $ a_ [href_ "/delegations"] "Beauftragungsnetzwerk"
     span_ (toHtml $ "Hi " <> (usr ^. userLogin))
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
