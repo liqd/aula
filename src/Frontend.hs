@@ -81,10 +81,9 @@ type AulaMain =
   :<|> "space" :> Capture "space" ST :> AulaSpace
 
        -- view all users
-  :<|> "user" :> GetH (PageShow [User])
+  :<|> "user" :> GetH (Frame (PageShow [User]))
        -- enter user profile
-  :<|> "user" :> Capture "user" ST :> AulaUser
-
+  :<|> "user" :> Capture "user" (AUID User) :> AulaUser
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
@@ -102,21 +101,20 @@ type AulaMain =
 
 aulaMain :: ServerT AulaMain Action
 aulaMain =
-       error "api not implemented: \"space\" :> GetH (Frame PageRoomsOverview)"
+       (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
   :<|> error "api not implemented: \"space\" :> Capture \"space\" ST :> AulaSpace"
 
-  :<|> error "api not implemented: \"user\"  :> GetH (PageShow [User])"
-  :<|> error "api not implemented: \"user\"  :> Capture \"user\" ST :> AulaUser"
-
-  :<|> error "api not implemented: \"admin\"  :> AulaAdmin"
+  :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
+  :<|> aulaUser
+  :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegations\" :> \"edit\" :> FormH HTML (Html ()) ()"
   :<|> error "api not implemented: \"delegations\" :> \"view\" :> GetH (Frame ST)"
 
-  :<|> error "api not implemented: \"imprint\" :> GetH (Frame PageStaticImprint)"
-  :<|> error "api not implemented: \"terms\" :> GetH (Frame PageStaticTermsOfUse)"
+  :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
+  :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
-  :<|> error "api not implemented: \"login\" :> FormH HTML (Html ()) ST"
+  :<|> Page.login
 
 
 type AulaSpace =
@@ -158,8 +156,8 @@ type AulaUser =
   :<|> "delegations" :> GetH (PageShow [Delegation])
   :<|> "settings"    :> GetH (Frame ST)
 
-aulaUser :: ServerT AulaUser Action
-aulaUser =
+aulaUser :: AUID User -> ServerT AulaUser Action
+aulaUser _ =
        error "api not implemented: \"ideas\"       :> GetH (PageShow [Idea])"
   :<|> error "api not implemented: \"delegations\" :> GetH (PageShow [Delegation])"
   :<|> error "api not implemented: \"settings\"    :> GetH (Frame ST)"
