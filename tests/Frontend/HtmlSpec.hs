@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -75,6 +76,8 @@ spec = do
     context "PageFormView" $ mapM_ testForm [
           F (arb :: Gen PageCreateIdea)
         , F (arb :: Gen PageHomeWithLoginPrompt)
+        , F (arb :: Gen PageCreateTopic)
+    --  , F (arb :: Gen PageCreateTopicAddIdeas) FIXME
         ]
     where
         arb :: Arbitrary a => Gen a
@@ -126,6 +129,22 @@ instance PayloadToEnv LoginFormData where
         ["", "user"] -> pure [TextInput name]
         ["", "pass"] -> pure [TextInput pass]
         bad -> error $ "instance PayloadToEnv LoginFormData: " <> show bad
+
+instance PayloadToEnv ProtoTopic where
+    payloadToEnv _ (ProtoTopic title (Markdown desc) image _ _) = \case
+        ["", "title"] -> pure [TextInput title]
+        ["", "desc"]  -> pure [TextInput desc]
+        ["", "image"] -> pure [TextInput image]
+        [""]          -> pure [] -- FIXME: why?
+        bad -> error $ "instance PayloadToEnv ProtoTopic: " <> show bad
+
+instance PayloadToEnv [AUID Idea] where
+    payloadToEnv _ ideas = \case
+        ["", s] | "idea-" `isPrefixOf` (cs s :: String) -> pure [TextInput (if cs s `elem` ideas' then "on" else "off")]
+        [""]                                            -> pure [] -- FIXME: why?
+        bad -> error $ "instance PayloadToEnv [AUID Idea]: " <> show bad
+      where
+        ideas' = [ "idea-" <> show i | i <- ideas ]
 
 
 ----------------------------------------------------------------------
