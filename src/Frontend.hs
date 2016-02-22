@@ -42,7 +42,7 @@ runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
     bootsrapDB persist -- FIXME: Remove Bootstrapping DB
-    runSettings settings . aulaTweaks $ serve (Proxy :: Proxy Aula) (aula (action UserLoggedOut))
+    runSettings settings . aulaTweaks $ serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
@@ -57,14 +57,14 @@ runFrontend = do
 ----------------------------------------------------------------------
 -- driver
 
-type Aula =
-       FrontendH
+type AulaTop =
+       (AulaMain :<|> "testing" :> AulaTesting)
   :<|> "samples" :> Raw
   :<|> "static"  :> Raw
 
-aula :: (Action :~> ExceptT ServantErr IO) -> Server Aula
-aula (Nat runAction) =
-       enter runActionForceLogin frontendH
+aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
+aulaTop (Nat runAction) =
+       enter runActionForceLogin (aulaMain :<|> aulaTesting)
   :<|> (\req cont -> getSamplesPath >>= \path -> serveDirectory path req cont)
   :<|> serveDirectory (Config.config ^. htmlStatic)
   where
@@ -74,7 +74,116 @@ aula (Nat runAction) =
         action
 
 
-type FrontendH =
+type AulaMain =
+       -- view all spaces
+       "space" :> GetH (Frame PageRoomsOverview)
+       -- enter one space
+  :<|> "space" :> Capture "space" ST :> AulaSpace
+
+       -- view all users
+  :<|> "user" :> GetH (PageShow [User])
+       -- enter user profile
+  :<|> "user" :> Capture "user" ST :> AulaUser
+
+       -- enter admin api
+  :<|> "admin" :> AulaAdmin
+
+       -- delegation network
+  :<|> "delegations" :> "edit" :> FormH HTML (Html ()) ()
+  :<|> "delegations" :> "view" :> GetH (Frame ST)
+
+       -- static content
+  :<|> "imprint" :> GetH (Frame PageStaticImprint)
+  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
+
+       -- login
+  :<|> "login" :> FormH HTML (Html ()) ST
+
+
+aulaMain :: ServerT AulaMain Action
+aulaMain =
+       error "api not implemented: \"space\" :> GetH (Frame PageRoomsOverview)"
+  :<|> error "api not implemented: \"space\" :> Capture \"space\" ST :> AulaSpace"
+
+  :<|> error "api not implemented: \"user\"  :> GetH (PageShow [User])"
+  :<|> error "api not implemented: \"user\"  :> Capture \"user\" ST :> AulaUser"
+
+  :<|> error "api not implemented: \"admin\"  :> AulaAdmin"
+
+  :<|> error "api not implemented: \"delegations\" :> \"edit\" :> FormH HTML (Html ()) ()"
+  :<|> error "api not implemented: \"delegations\" :> \"view\" :> GetH (Frame ST)"
+
+  :<|> error "api not implemented: \"imprint\" :> GetH (Frame PageStaticImprint)"
+  :<|> error "api not implemented: \"terms\" :> GetH (Frame PageStaticTermsOfUse)"
+
+  :<|> error "api not implemented: \"login\" :> FormH HTML (Html ()) ST"
+
+
+type AulaSpace =
+       -- browse wild ideas in an idea space
+       "idea" :> GetH (Frame PageIdeasOverview)
+       -- view idea details (applies to both wild ideas and ideas in topics)
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> GetH (Frame PageTopicOverview)
+       -- edit idea (applies to both wild ideas and ideas in topics)
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> FormH HTML (Html ()) Idea
+       -- create wild idea
+  :<|> "idea" :> "create" :> FormH HTML (Html ()) ST
+
+       -- browse topics in an idea space
+  :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
+       -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"       :> GetH (Frame PageTopicOverview)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations" :> GetH (Frame PageTopicOverview)
+       -- create new topic
+  :<|> "topic" :> "create" :> FormH HTML (Html ()) ST
+       -- create new idea inside topic
+  :<|> "topic" :> "idea" :> "create" :> FormH HTML (Html ()) ST
+
+aulaSpace :: ServerT AulaSpace Action
+aulaSpace =
+       error "api not implemented: \"idea\"   :> GetH (Frame PageIdeasOverview)"
+  :<|> error "api not implemented: \"idea\"   :> Capture \"idea\" (AUID Idea) :> GetH (Frame PageTopicOverview)"
+  :<|> error "api not implemented: \"idea\"   :> Capture \"idea\" (AUID Idea) :> FormH HTML (Html ()) Idea"
+  :<|> error "api not implemented: \"idea\"   :> \"create\" :> FormH HTML (Html ()) ST"
+
+  :<|> error "api not implemented: \"topic\"  :> GetH (Frame PageIdeasInDiscussion)"
+  :<|> error "api not implemented: \"topic\"  :> Capture \"topic\" (AUID Topic) :> \"ideas\"       :> GetH (Frame PageTopicOverview)"
+  :<|> error "api not implemented: \"topic\"  :> Capture \"topic\" (AUID Topic) :> \"delegations\" :> GetH (Frame PageTopicOverview)"
+  :<|> error "api not implemented: \"topic\"  :> \"create\" :> FormH HTML (Html ()) ST"
+  :<|> error "api not implemented: \"topic\"  :> \"idea\" :> \"create\" :> FormH HTML (Html ()) ST"
+
+
+type AulaUser =
+       "ideas"       :> GetH (PageShow [Idea])
+  :<|> "delegations" :> GetH (PageShow [Delegation])
+  :<|> "settings"    :> GetH (Frame ST)
+
+aulaUser :: ServerT AulaUser Action
+aulaUser =
+       error "api not implemented: \"ideas\"       :> GetH (PageShow [Idea])"
+  :<|> error "api not implemented: \"delegations\" :> GetH (PageShow [Delegation])"
+  :<|> error "api not implemented: \"settings\"    :> GetH (Frame ST)"
+
+
+type AulaAdmin =
+       -- durations and quorum
+       "params" :> GetH (Frame ST)
+       -- groups and permissions
+  :<|> "access" :> GetH (Frame ST)
+       -- user creation and import
+  :<|> "user"   :> GetH (PageShow [Idea])
+       -- event log
+  :<|> "event"  :> GetH (PageShow [Idea])
+
+aulaAdmin :: ServerT AulaAdmin Action
+aulaAdmin =
+       error "api not implemented: \"params\" :> GetH (Frame ST)"
+  :<|> error "api not implemented: \"access\" :> GetH (Frame ST)"
+  :<|> error "api not implemented: \"user\"   :> GetH (PageShow [Idea])"
+  :<|> error "api not implemented: \"event\"  :> GetH (PageShow [Idea])"
+
+
+type AulaTesting =
        GetH (Frame ST)
   :<|> "ideaspaces" :> GetH (Frame PageRoomsOverview)
   :<|> "ideaspaces" :> CreateRandom IdeaSpace
@@ -91,8 +200,8 @@ type FrontendH =
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
-frontendH :: ServerT FrontendH Action
-frontendH =
+aulaTesting :: ServerT AulaTesting Action
+aulaTesting =
        return (PublicFrame "yihaah!")
   :<|> (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
   :<|> createRandomNoMeta dbSpaceSet
