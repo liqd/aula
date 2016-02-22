@@ -121,9 +121,9 @@ type AulaSpace =
        -- browse wild ideas in an idea space
        "idea" :> GetH (Frame PageIdeasOverview)
        -- view idea details (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> GetH (Frame PageTopicOverview)
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame PageTopicOverview)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> FormH HTML (Html ()) Idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormH HTML (Html ()) Idea
        -- create wild idea
   :<|> "idea" :> "create" :> FormH HTML (Html ()) ST
 
