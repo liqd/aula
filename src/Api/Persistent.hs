@@ -26,6 +26,7 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
+    , getWildIdeas
     , addIdea
     , modifyIdea
     , findIdea
@@ -35,7 +36,7 @@ module Api.Persistent
     , getTopics
     , addTopic
     , modifyTopic
-    , moveIdeaToTopic
+    , moveIdeasToTopic
     , findTopic
     , findUserByLogin
     , findIdeasByTopicId
@@ -58,6 +59,7 @@ where
 
 import Data.Foldable (find, for_)
 import Data.Map (Map)
+import Data.Maybe
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -150,6 +152,9 @@ getSpaces = getDb dbSpaces
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
+getWildIdeas :: Persist [Idea]
+getWildIdeas = filter (isNothing . view ideaTopic) <$> getIdeas
+
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
 
@@ -177,8 +182,10 @@ addUser = addDb dbUserMap
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
-moveIdeaToTopic :: AUID Idea -> Maybe (AUID Topic) -> Persist ()
-moveIdeaToTopic ideaId topicId = modifyIdea ideaId $ ideaTopic .~ topicId
+moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> Persist ()
+moveIdeasToTopic ideaIds topicId =
+    for_ ideaIds $ \ideaId ->
+        modifyIdea ideaId $ ideaTopic .~ topicId
 
 addTopic :: Proto Topic -> Persist Topic
 addTopic pt = do
@@ -188,8 +195,7 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    for_ (pt ^. protoTopicIdeas) $ \ideaId ->
-        moveIdeaToTopic ideaId (Just $ t ^. _Id)
+    moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
 findUserByLogin :: ST -> Persist (Maybe User)

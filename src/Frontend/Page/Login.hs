@@ -56,6 +56,6 @@ instance RedirectOf PageHomeWithLoginPrompt where
     redirectOf _ = "/ideas"
 
 login :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-login = redirectFormHandler "/login" PageHomeWithLoginPrompt makeUserLogin
+login = redirectFormHandler "/login" (pure PageHomeWithLoginPrompt) makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login user

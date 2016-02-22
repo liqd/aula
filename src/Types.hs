@@ -28,10 +28,9 @@ import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
 ----------------------------------------------------------------------
--- Monoid
+-- a small prelude
 
 -- | A shorter alias for 'mempty'.
--- This definition could be moved to a prelude module once we have one.
 nil :: Monoid a => a
 nil = mempty
 
@@ -40,6 +39,9 @@ isNil = (== nil)
 
 readWith :: Read a => Proxy a -> String -> a
 readWith Proxy = read
+
+justIf :: a -> Bool -> Maybe a
+justIf x b = if b then Just x else Nothing
 
 
 ----------------------------------------------------------------------

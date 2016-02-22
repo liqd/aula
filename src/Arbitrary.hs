@@ -89,7 +89,7 @@ instance Arbitrary PageCreateTopic where
     arbitrary = pure PageCreateTopic
 
 instance Arbitrary PageCreateTopicAddIdeas where
-    arbitrary = pure PageCreateTopicAddIdeas
+    arbitrary = PageCreateTopicAddIdeas <$> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurationsAndQuorum where
     arbitrary = pure PageAdminSettingsDurationsAndQuorum
@@ -176,7 +176,7 @@ instance Arbitrary SchoolClass where
         year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary ProtoTopic where
-    arbitrary = ProtoTopic <$> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
+    arbitrary = ProtoTopic <$> arbPhrase <*> arb' <*> arb' <*> pure SchoolSpace <*> pure []
 
 instance Arbitrary Topic where
     arbitrary = Topic <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
