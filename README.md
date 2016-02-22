@@ -1,5 +1,3 @@
-status: just brainstorming
-
 ## Build Status
 
 [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula)
@@ -9,17 +7,18 @@ status: just brainstorming
 
 - install docker
 - docker pull fisx/aula
-- git checkout aula
-- git checkout thentos
+- git clone https://github.com/liqd/aula
+- git clone --recursive https://github.com/liqd/thentos
 - cd aula
 - ./docker/run.sh
 - inside container:
     - cd /root/thentos
-    - cabal init --sandbox=/liqd/thentos/.cabal-sandbox
+    - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
     - cd /root/aula
-    - cabal init --sandbox=/liqd/thentos/.cabal-sandbox
+    - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
     - cabal run aula-server
 - then point your browser to localhost:8080
+
 
 ## Getting started (with sensei)
 
@@ -41,6 +40,7 @@ testing.  If you want to use it, follow these steps:
 - cd aula
 - cabal sandbox init --sandbox=../thentos/.cabal-sandbox
 - cabal install --enable-tests
+- cabal run aula-server
 - make sensei-full
 
 This will watch your files, and if anything changes, re-compile and
@@ -50,12 +50,12 @@ You can use seito (same git repo, different executable) to pull the
 last error report into your IDE to get pointed to the source code
 locations.
 
-Backround: sensei does not support multi-package development as such,
+Background: sensei does not support multi-package development as such,
 so we simply add the source files of all packages we want to use to
 the source paths with a long list of `-i`s.  This way, any change in
 any of `thentos-*` or `aula` will trigger a re-run.
 
-Note, if compilation speed is an issue, you can modify thentos-install.hs,
+Note: if compilation speed is an issue, you can modify thentos-install.hs,
 commenting out thentos-adhocracy and adding --disable-optimization
 (and --disable-library-profiling, if you have profiling on by default,
 but don't want to use prof stack traces for this project)
