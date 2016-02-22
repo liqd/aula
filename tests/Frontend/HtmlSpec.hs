@@ -18,7 +18,7 @@ import Data.Typeable (Typeable, typeOf)
 import Lucid (Html, ToHtml, toHtml, renderText)
 import Servant (unNat)
 import Servant.Server.Internal.ServantErr
-import Test.Hspec (Spec, context, it, pendingWith)
+import Test.Hspec (Spec, context, it, pendingWith, shouldBe)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
 import Text.Digestive.Types
@@ -207,7 +207,7 @@ postToForm (F g) = do
         env <- run . failOnError $ (`payloadToEnv` payload) <$> getForm "" frm
 
         (_, Just payload') <- run . failOnError $ postForm "" frm (\_ -> pure env)
-        assert (payload' == payload)  -- FIXME: can we use shouldBe here?
+        liftIO $ payload' `shouldBe` payload
 
     it (show (typeOf g) <> " (process *in*valid form input)") $
         pendingWith "not implemented."  -- FIXME
