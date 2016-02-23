@@ -15,6 +15,9 @@ type UriPath = ST
 class HasPath p where
     pth :: p -> UriPath
 
+-- FIXME: add `</>` (do not export)
+-- FIXME: add `href_ . P.pth` (do export!)
+
 data Top =
     TopMain Main  -- (we don't do proper paths for /testing/)
   | TopSamples
