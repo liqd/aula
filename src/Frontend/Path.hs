@@ -7,15 +7,19 @@ module Frontend.Path
 where
 
 import Thentos.Prelude
+import Thentos.Types ((<//>))
 
 import Types
 
 type UriPath = ST
 
+(</>) :: UriPath -> UriPath -> UriPath
+(</>) = (<//>)
+
+
 class HasPath p where
     pth :: p -> UriPath
 
--- FIXME: add `</>` (do not export)
 -- FIXME: add `href_ . P.pth` (do export!)
 
 data Top =
@@ -42,9 +46,9 @@ data Main =
 
 instance HasPath Main where
     pth MainSpaceAll               = "space/"
-    pth (MainSpaceOne sid p)       = "space/" <> sid <> "/" <> pth p
+    pth (MainSpaceOne sid p)       = "space/" </> sid </> pth p
     pth MainUserAll                = "user/"
-    pth (MainUserOne (AUID uid) p) = "user/" <> cs (show uid) <> "/" <> pth p
+    pth (MainUserOne (AUID uid) p) = "user/" </> cs (show uid) </> pth p
     pth MainAdmin                  = "admin/"
     pth MainDelegationEdit         = "deletagion/edit/"
     pth MainDelegationView         = "deletagion/view/"
@@ -65,14 +69,14 @@ data Space =
 
 instance HasPath Space where
     pth SpaceIdeaAll                           = "idea/"
-    pth (SpaceIdeaOneView (AUID iid))          = "idea/" <> cs (show iid) <> "/view/"
-    pth (SpaceIdeaOneEdit (AUID iid))          = "idea/" <> cs (show iid) <> "/edit/"
+    pth (SpaceIdeaOneView (AUID iid))          = "idea/" </> cs (show iid) </> "/view/"
+    pth (SpaceIdeaOneEdit (AUID iid))          = "idea/" </> cs (show iid) </> "/edit/"
     pth SpaceIdeaCreate                        = "idea/create/"
     pth SpaceTopicAll                          = "topic/"
-    pth (SpaceTopicOneIdeas (AUID tid))        = "topic/" <> cs (show tid) <> "/ideas/"
-    pth (SpaceTopicOneDelegations (AUID tid))  = "topic/" <> cs (show tid) <> "/delegations/"
+    pth (SpaceTopicOneIdeas (AUID tid))        = "topic/" </> cs (show tid) </> "/ideas/"
+    pth (SpaceTopicOneDelegations (AUID tid))  = "topic/" </> cs (show tid) </> "/delegations/"
     pth SpaceTopicCreate                       = "topic/create/"
-    pth (SpaceTopicIdeaCreate (AUID tid))      = "topic/" <> cs (show tid) <> "/idea/create/"
+    pth (SpaceTopicIdeaCreate (AUID tid))      = "topic/" </> cs (show tid) </> "/idea/create/"
 
 data User =
     UserIdeas
