@@ -63,8 +63,8 @@ categoryValues = [ (CatRule,        "Regel")
 -- handlers
 
 instance RedirectOf PageCreateIdea where
-    redirectOf _ = P.pth $ P.TopTesting "ideas"
+    redirectOf _ = P.path $ P.TopTesting "ideas"
 
 createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createIdea = redirectFormHandler (P.pth $ P.TopTesting "ideas/create")
+createIdea = redirectFormHandler (P.path $ P.TopTesting "ideas/create")
                 (pure PageCreateIdea) (persistent . addIdea)

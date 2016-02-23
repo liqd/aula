@@ -4,7 +4,7 @@
 
 -- | rule: always add (and expect) trailing slashes.
 module Frontend.Path
-    ( pth, href_, (</>)
+    ( path, href_, (</>)
     , UriPath
     , Top(..)
     , Main(..)
@@ -28,14 +28,14 @@ type UriPath = ST
 (</>) = (<//>)
 
 href_ :: HasPath p => p -> Lucid.Attribute
-href_ = Lucid.href_ . pth
+href_ = Lucid.href_ . path
 
 
 class HasPath p where
-    pth :: p -> UriPath
-    pth = ("/" </>) . relpth
+    path :: p -> UriPath
+    path = ("/" </>) . relPath
 
-    relpth :: p -> UriPath
+    relPath :: p -> UriPath
 
 data Top =
     TopMain Main
@@ -43,10 +43,10 @@ data Top =
   | TopSamples
   | TopStatic
 
-instance HasPath Top where relpth = top
+instance HasPath Top where relPath = top
 
 top :: Top -> UriPath
-top (TopMain p)    = pth p
+top (TopMain p)    = path p
 top (TopTesting p) = "testing/" </> p
 top TopSamples     = "samples/"
 top TopStatic      = "static/"
@@ -63,7 +63,7 @@ data Main =
   | Terms
   | Login
 
-instance HasPath Main where relpth = main
+instance HasPath Main where relPath = main
 
 main :: Main -> UriPath
 main SpaceAll               = "space/"

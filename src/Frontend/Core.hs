@@ -116,7 +116,7 @@ publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
 publicPageFrame bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.pth P.TopStatic </> "screen.css"]
+        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "screen.css"]
     body_ $ do
         publicHeaderMarkup >> bdy >> footerMarkup
 
@@ -127,7 +127,7 @@ pageFrame' :: (Monad m) => [HtmlT m a] -> User -> HtmlT m a -> HtmlT m ()
 pageFrame' extraHeaders usr bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.pth P.TopStatic </> "screen.css"]
+        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "screen.css"]
         sequence_ extraHeaders
     body_ $ do
         headerMarkup usr >> bdy >> footerMarkup

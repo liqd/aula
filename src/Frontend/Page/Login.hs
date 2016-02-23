@@ -54,9 +54,9 @@ instance FormPageView PageHomeWithLoginPrompt where
 -- handlers
 
 instance RedirectOf PageHomeWithLoginPrompt where
-    redirectOf _ = P.pth P.SpaceAll
+    redirectOf _ = P.path P.SpaceAll
 
 login :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-login = redirectFormHandler (P.pth P.Login) (pure PageHomeWithLoginPrompt) makeUserLogin
+login = redirectFormHandler (P.path P.Login) (pure PageHomeWithLoginPrompt) makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login user
