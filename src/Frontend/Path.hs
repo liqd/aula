@@ -4,7 +4,7 @@
 
 -- | rule: always add (and expect) trailing slashes.
 module Frontend.Path
-    ( pth, (</>)
+    ( pth, href_, (</>)
     , UriPath
     , Top(..)
     , Main(..)
@@ -17,18 +17,22 @@ where
 import Thentos.Prelude
 import Thentos.Types ((<//>))
 
+import qualified Lucid
+
 import Types
+
 
 type UriPath = ST
 
 (</>) :: UriPath -> UriPath -> UriPath
 (</>) = (<//>)
 
+href_ :: HasPath p => p -> Lucid.Attribute
+href_ = Lucid.href_ . pth
+
 
 class HasPath p where
     pth :: p -> UriPath
-
--- FIXME: add `href_ . P.pth` (do export!)
 
 data Top =
     TopMain Main  -- (we don't do proper paths for /testing/)

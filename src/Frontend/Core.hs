@@ -141,8 +141,8 @@ publicHeaderMarkup = div_ $ do
 headerMarkup :: (Monad m) => User -> HtmlT m ()
 headerMarkup usr = div_ $ do
     span_ "aula"
-    span_ $ a_ [href_ $ P.pth P.MainSpaceAll] "Ideenräume"
-    span_ $ a_ [href_ $ P.pth P.MainDelegationView] "Beauftragungsnetzwerk"
+    span_ $ a_ [P.href_ P.MainSpaceAll] "Ideenräume"
+    span_ $ a_ [P.href_ P.MainDelegationView] "Beauftragungsnetzwerk"
     span_ (toHtml $ "Hi " <> (usr ^. userLogin))
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
@@ -150,8 +150,8 @@ headerMarkup usr = div_ $ do
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = div_ $ do
     hr_ []
-    span_ $ a_ [href_ $ P.pth P.MainTerms] "Nutzungsbedingungen"
-    span_ $ a_ [href_ $ P.pth P.MainImprint] "Impressum"
+    span_ $ a_ [P.href_ P.MainTerms] "Nutzungsbedingungen"
+    span_ $ a_ [P.href_ P.MainImprint] "Impressum"
     span_ "Made with ♡ by Liqd"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
