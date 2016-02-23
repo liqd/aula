@@ -35,6 +35,7 @@ import Action
 import Api
 import Types
 
+import qualified Frontend.Path as P
 
 
 -- | This will generate the following snippet:
@@ -114,7 +115,7 @@ publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
 publicPageFrame bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ "/static/screen.css"]
+        link_ [rel_ "stylesheet", href_ $ P.pth P.TopStatic <> "screen.css"]
     body_ $ do
         publicHeaderMarkup >> bdy >> footerMarkup
 
@@ -125,7 +126,7 @@ pageFrame' :: (Monad m) => [HtmlT m a] -> User -> HtmlT m a -> HtmlT m ()
 pageFrame' extraHeaders usr bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ "/static/screen.css"]
+        link_ [rel_ "stylesheet", href_ $ P.pth P.TopStatic <> "screen.css"]
         sequence_ extraHeaders
     body_ $ do
         headerMarkup usr >> bdy >> footerMarkup
@@ -139,8 +140,8 @@ publicHeaderMarkup = div_ $ do
 headerMarkup :: (Monad m) => User -> HtmlT m ()
 headerMarkup usr = div_ $ do
     span_ "aula"
-    span_ $ a_ [href_ "/spaces"] "Ideenräume"
-    span_ $ a_ [href_ "/delegations"] "Beauftragungsnetzwerk"
+    span_ $ a_ [href_ . P.pth $ P.TopMain P.MainSpaceAll] "Ideenräume"
+    span_ $ a_ [href_ . P.pth $ P.TopMain P.MainDelegationView] "Beauftragungsnetzwerk"
     span_ (toHtml $ "Hi " <> (usr ^. userLogin))
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
@@ -148,8 +149,8 @@ headerMarkup usr = div_ $ do
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = div_ $ do
     hr_ []
-    span_ $ a_ [href_ "/terms"] "Nutzungsbedingungen"
-    span_ $ a_ [href_ "/imprint"] "Impressum"
+    span_ $ a_ [href_ . P.pth $ P.TopMain P.MainTerms] "Nutzungsbedingungen"
+    span_ $ a_ [href_ . P.pth $ P.TopMain P.MainImprint] "Impressum"
     span_ "Made with ♡ by Liqd"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
