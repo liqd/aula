@@ -19,6 +19,6 @@ cabal build --ghc-options="$GHC_OPTIONS"
 set +e
 cabal test --show-details=never --ghc-options="$GHC_OPTIONS"
 RESULT=`echo $?`
-cat dist/test/aula-*-tests.log
+cat dist/test/aula-*-*.log
 
 exit $RESULT
