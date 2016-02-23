@@ -84,7 +84,7 @@ To create arbitrary (randomized) test content and browse it (mostly
 for work on HTML / css):
 
 ```shell
-export AULA_SAMPLES=/tmp/aula-samples/
+export AULA_SAMPLES=$HOME/aula-samples/
 make click-dummies-recreate
 make aula-server
 ```
@@ -95,13 +95,13 @@ To refresh the HTML from the same content (same texts and everything):
 make click-dummies-refresh
 ```
 
-The html pages are created in `/tmp/aula-samples/`, and can be browsed
+The html pages are created in `$AULA_SAMPLES/`, and can be browsed
 under `http://localhost:8080/samples/`.  You can either edit the html
 pages directly, or the source code in this repo under
-`src/Frontend/Page/*.hs`.  If you edit `src/...`, `/tmp/aula-samples/`
+`src/Frontend/Page/*.hs`.  If you edit `src/...`, `$AULA_SAMPLES/*.html`
 will be overwritten.  If you want to keep changes you did to the
 generated html code, you can initialize a local git repo (`cd
-/tmp/aula-samples && git init`) and commit your changes before editing
+$AULA_SAMPLES && git init`) and commit your changes before editing
 the haskell sources.  If you do so, you can use `git diff` to make
 sure that the haskell code does what you expected.
 
