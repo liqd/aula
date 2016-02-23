@@ -34,7 +34,7 @@ import Data.String.Conversions (ST)
 import Persistent
 import Prelude hiding (log)
 import Servant
-import Types (GenData(..))
+import Types (GenArbitrary, genArbitrary)
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -84,9 +84,8 @@ class MonadError ActionExcept m => ActionError m
 
 instance ActionError Action
 
--- FIXME: Remove.
-instance GenData Action where
-    genData = Action . liftIO $ generate arbitrary
+instance GenArbitrary Action where
+    genArbitrary = Action . liftIO $ generate arbitrary
 
 ----------------------------------------------------------------------
 -- concrete monad type; user state

@@ -326,6 +326,11 @@ timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 
 
+-- | FIXME: should either go to the test suite or go away completely.
+class Monad m => GenArbitrary m where
+    genArbitrary :: Arbitrary a => m a
+
+
 ----------------------------------------------------------------------
 -- boilerplate: binary, lens (alpha order)
 
@@ -399,9 +404,3 @@ instance HasMetaInfo IdeaLike where metaInfo = likeMeta
 instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
-
-----------------------------------------------------------------------
--- Generate random data
-
-class Monad m => GenData m where
-    genData :: Arbitrary a => m a

@@ -117,9 +117,8 @@ newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
 persistIO :: IO a -> Persist a
 persistIO = Persist . liftIO
 
--- FIXME: Remove
-instance GenData Persist where
-    genData = persistIO $ generate arbitrary
+instance GenArbitrary Persist where
+    genArbitrary = persistIO $ generate arbitrary
 
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = do
