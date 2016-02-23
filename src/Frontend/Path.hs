@@ -4,6 +4,14 @@
 
 -- | rule: always add (and expect) trailing slashes.
 module Frontend.Path
+    ( pth, (</>)
+    , UriPath
+    , Top(..)
+    , Main(..)
+    , Space(..)
+    , Frontend.Path.User(..)
+    , Admin(..)
+    )
 where
 
 import Thentos.Prelude
@@ -27,34 +35,38 @@ data Top =
   | TopSamples
   | TopStatic
 
-instance HasPath Top where
-    pth (TopMain p) = pth p
-    pth TopSamples  = "samples/"
-    pth TopStatic   = "static/"
+instance HasPath Top where pth = top
+
+top :: Top -> UriPath
+top (TopMain p) = pth p
+top TopSamples  = "samples/"
+top TopStatic   = "static/"
 
 data Main =
     MainSpaceAll
   | MainSpaceOne ST Space
   | MainUserAll
   | MainUserOne (AUID Types.User) Frontend.Path.User
-  | MainAdmin
+  | MainAdmin Admin
   | MainDelegationEdit
   | MainDelegationView
   | MainImprint
   | MainTerms
   | MainLogin
 
-instance HasPath Main where
-    pth MainSpaceAll               = "space/"
-    pth (MainSpaceOne sid p)       = "space/" </> sid </> pth p
-    pth MainUserAll                = "user/"
-    pth (MainUserOne (AUID uid) p) = "user/" </> cs (show uid) </> pth p
-    pth MainAdmin                  = "admin/"
-    pth MainDelegationEdit         = "deletagion/edit/"
-    pth MainDelegationView         = "deletagion/view/"
-    pth MainImprint                = "imprint/"
-    pth MainTerms                  = "terms/"
-    pth MainLogin                  = "login/"
+instance HasPath Main where pth = main
+
+main :: Main -> UriPath
+main MainSpaceAll               = "space/"
+main (MainSpaceOne sid p)       = "space/" </> sid </> space p
+main MainUserAll                = "user/"
+main (MainUserOne (AUID uid) p) = "user/" </> cs (show uid) </> user p
+main (MainAdmin p)              = "admin/" </> admin p
+main MainDelegationEdit         = "deletagion/edit/"
+main MainDelegationView         = "deletagion/view/"
+main MainImprint                = "imprint/"
+main MainTerms                  = "terms/"
+main MainLogin                  = "login/"
 
 data Space =
     SpaceIdeaAll
@@ -67,26 +79,26 @@ data Space =
   | SpaceTopicCreate
   | SpaceTopicIdeaCreate (AUID Topic)
 
-instance HasPath Space where
-    pth SpaceIdeaAll                           = "idea/"
-    pth (SpaceIdeaOneView (AUID iid))          = "idea/" </> cs (show iid) </> "/view/"
-    pth (SpaceIdeaOneEdit (AUID iid))          = "idea/" </> cs (show iid) </> "/edit/"
-    pth SpaceIdeaCreate                        = "idea/create/"
-    pth SpaceTopicAll                          = "topic/"
-    pth (SpaceTopicOneIdeas (AUID tid))        = "topic/" </> cs (show tid) </> "/ideas/"
-    pth (SpaceTopicOneDelegations (AUID tid))  = "topic/" </> cs (show tid) </> "/delegations/"
-    pth SpaceTopicCreate                       = "topic/create/"
-    pth (SpaceTopicIdeaCreate (AUID tid))      = "topic/" </> cs (show tid) </> "/idea/create/"
+space :: Space -> UriPath
+space SpaceIdeaAll                           = "idea/"
+space (SpaceIdeaOneView (AUID iid))          = "idea/" </> cs (show iid) </> "/view/"
+space (SpaceIdeaOneEdit (AUID iid))          = "idea/" </> cs (show iid) </> "/edit/"
+space SpaceIdeaCreate                        = "idea/create/"
+space SpaceTopicAll                          = "topic/"
+space (SpaceTopicOneIdeas (AUID tid))        = "topic/" </> cs (show tid) </> "/ideas/"
+space (SpaceTopicOneDelegations (AUID tid))  = "topic/" </> cs (show tid) </> "/delegations/"
+space SpaceTopicCreate                       = "topic/create/"
+space (SpaceTopicIdeaCreate (AUID tid))      = "topic/" </> cs (show tid) </> "/idea/create/"
 
 data User =
     UserIdeas
   | UserDelegations
   | UserSettings
 
-instance HasPath Frontend.Path.User where
-    pth UserIdeas       = "ideas/"
-    pth UserDelegations = "delegations/"
-    pth UserSettings    = "settings/"
+user :: Frontend.Path.User -> UriPath
+user UserIdeas       = "ideas/"
+user UserDelegations = "delegations/"
+user UserSettings    = "settings/"
 
 data Admin =
     AdminParams
@@ -94,8 +106,8 @@ data Admin =
   | AdminUser
   | AdminEvent
 
-instance HasPath Admin where
-    pth AdminParams = "params/"
-    pth AdminAccess = "access/"
-    pth AdminUser   = "user/"
-    pth AdminEvent  = "event/"
+admin :: Admin -> UriPath
+admin AdminParams = "params/"
+admin AdminAccess = "access/"
+admin AdminUser   = "user/"
+admin AdminEvent  = "event/"
