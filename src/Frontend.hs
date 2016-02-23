@@ -169,16 +169,16 @@ type AulaAdmin =
        -- groups and permissions
   :<|> "access" :> GetH (Frame ST)
        -- user creation and import
-  :<|> "user"   :> GetH (PageShow [Idea])
+  :<|> "user"   :> GetH (Frame ST)
        -- event log
-  :<|> "event"  :> GetH (PageShow [Idea])
+  :<|> "event"  :> GetH (Frame ST)
 
 aulaAdmin :: ServerT AulaAdmin Action
 aulaAdmin =
        error "api not implemented: \"params\" :> GetH (Frame ST)"
   :<|> error "api not implemented: \"access\" :> GetH (Frame ST)"
-  :<|> error "api not implemented: \"user\"   :> GetH (PageShow [Idea])"
-  :<|> error "api not implemented: \"event\"  :> GetH (PageShow [Idea])"
+  :<|> error "api not implemented: \"user\"   :> GetH (Frame ST)"
+  :<|> error "api not implemented: \"event\"  :> GetH (Frame ST)"
 
 
 type AulaTesting =
