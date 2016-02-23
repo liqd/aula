@@ -12,12 +12,12 @@ cabal sandbox init --sandbox=$CABAL_SANDBOX
 
 # Install from the current code
 cabal install --enable-tests --only-dependencies --reorder-goals
-cabal configure --enable-tests --disable-optimization
+cabal configure --enable-tests --disable-optimization --enable-benchmarks --enable-coverage
 cabal build --ghc-options="$GHC_OPTIONS"
 
 # Test
 set +e
-cabal test --show-details=never --ghc-options="$GHC_OPTIONS"
+run-cabal-test --show-details=never --ghc-options="$GHC_OPTIONS"
 RESULT=`echo $?`
 cat dist/test/aula-*-tests.log
 
