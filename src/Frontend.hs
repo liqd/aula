@@ -135,7 +135,7 @@ type AulaSpace =
        -- create new topic
   :<|> "topic" :> "create" :> FormH HTML (Html ()) ST
        -- create new idea inside topic
-  :<|> "topic" :> "idea" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormH HTML (Html ()) ST
 
 aulaSpace :: ServerT AulaSpace Action
 aulaSpace =
