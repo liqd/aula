@@ -18,8 +18,15 @@ status: experimental
     - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
     - cd /root/aula
     - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-    - cabal run aula-server
+    - cabal install --enable-tests
+
+Now, to have a quick look at the pages, do
+
+- cabal run aula-server
 - then point your browser to localhost:8080
+
+Note: when you want to `git pull`, do this outside of docker,
+just as `git clone` was performed outside. Otherwise, paths may be wrong.
 
 
 ## Getting started (with sensei)
@@ -41,8 +48,15 @@ testing.  If you want to use it, follow these steps:
 - export AULA_ROOT_PATH=`pwd`/aula
 - cd aula
 - cabal sandbox init --sandbox=../thentos/.cabal-sandbox
-- cabal install --enable-tests
+
+Now, to have a quick look at the pages, do
+
 - cabal run aula-server
+- then point your browser to localhost:8080
+
+To start sensei, in another terminal do
+
+- cabal install --enable-tests
 - make sensei-full
 
 This will watch your files, and if anything changes, re-compile and
@@ -71,8 +85,6 @@ for work on HTML / css):
 
 ```shell
 export AULA_SAMPLES=/tmp/aula-samples/
-cabal sandbox init
-cabal install
 make click-dummies-recreate
 make aula-server
 ```
@@ -94,8 +106,8 @@ the haskell sources.  If you do so, you can use `git diff` to make
 sure that the haskell code does what you expected.
 
 Both `aula-server` and `click-dummies-refresh` go into a loop, so you
-need to terminals.  If you have two displays, you can move your
+need two terminals.  If you have two displays, you can move your
 browser and the terminal with the refresh loop to one, and your source
-code editor to the other.  The source code will auto-refresh on the
-former and you will never have to focus there, no matter whether you
+code editor to the other.  The browser will auto-refresh at any modification
+and you will never have to focus there, no matter whether you
 work on the haskell sources or on the html.
