@@ -33,13 +33,16 @@ href_ = Lucid.href_ . pth
 
 class HasPath p where
     pth :: p -> UriPath
+    pth = ("/" </>) . relpth
+
+    relpth :: p -> UriPath
 
 data Top =
     TopMain Main  -- (we don't do proper paths for /testing/)
   | TopSamples
   | TopStatic
 
-instance HasPath Top where pth = top
+instance HasPath Top where relpth = top
 
 top :: Top -> UriPath
 top (TopMain p) = pth p
@@ -58,7 +61,7 @@ data Main =
   | MainTerms
   | MainLogin
 
-instance HasPath Main where pth = main
+instance HasPath Main where relpth = main
 
 main :: Main -> UriPath
 main MainSpaceAll               = "space/"
