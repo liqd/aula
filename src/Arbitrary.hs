@@ -53,22 +53,22 @@ instance Arbitrary PageIdeaDetailNewIdeas where
     arbitrary = PageIdeaDetailNewIdeas <$> arb
 
 instance Arbitrary PageIdeaDetailRefinementPhase where
-    arbitrary = pure PageIdeaDetailRefinementPhase
+    arbitrary = PageIdeaDetailRefinementPhase <$> arb
 
 instance Arbitrary PageIdeaDetailJuryPhase where
-    arbitrary = pure PageIdeaDetailJuryPhase
+    arbitrary = PageIdeaDetailJuryPhase <$> arb
 
 instance Arbitrary PageIdeaDetailVotingPhase where
-    arbitrary = pure PageIdeaDetailVotingPhase
+    arbitrary = PageIdeaDetailVotingPhase <$> arb
 
 instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
     arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
 instance Arbitrary PageIdeaDetailFeasibleNotFeasible where
-    arbitrary = pure PageIdeaDetailFeasibleNotFeasible
+    arbitrary = PageIdeaDetailFeasibleNotFeasible <$> arb
 
 instance Arbitrary PageIdeaDetailWinner where
-    arbitrary = pure PageIdeaDetailWinner
+    arbitrary = PageIdeaDetailWinner <$> arb
 
 instance Arbitrary PageCreateIdea where
     arbitrary = pure PageCreateIdea
