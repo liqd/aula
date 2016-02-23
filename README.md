@@ -18,8 +18,15 @@ status: experimental
     - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
     - cd /root/aula
     - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-    - cabal run aula-server
+    - cabal install --enable-tests
+
+Now, to have a quick look at the pages, do
+
+- cabal run aula-server
 - then point your browser to localhost:8080
+
+Note: when you want to `git pull`, do this outside of docker,
+just as `git clone` was performed outside. Otherwise, paths may be wrong.
 
 
 ## Getting started (with sensei)
@@ -41,9 +48,16 @@ testing.  If you want to use it, follow these steps:
 - export AULA_ROOT_PATH=`pwd`/aula
 - cd aula
 - cabal sandbox init --sandbox=../thentos/.cabal-sandbox
-- cabal install --enable-tests
+
+Now, to have a quick look at the pages, do
+
 - cabal run aula-server
-- make sensei-full
+- then point your browser to localhost:8080
+
+To start sensei, in another terminal do
+
+- cabal install --enable-tests
+- make sensei
 
 This will watch your files, and if anything changes, re-compile and
 run the test suite.
@@ -70,9 +84,7 @@ To create arbitrary (randomized) test content and browse it (mostly
 for work on HTML / css):
 
 ```shell
-export AULA_SAMPLES=/tmp/aula-samples/
-cabal sandbox init
-cabal install
+export AULA_SAMPLES=$HOME/aula-samples/
 make click-dummies-recreate
 make aula-server
 ```
@@ -83,19 +95,25 @@ To refresh the HTML from the same content (same texts and everything):
 make click-dummies-refresh
 ```
 
-The html pages are created in `/tmp/aula-samples/`, and can be browsed
-under `http://localhost:8080/samples/`.  You can either edit the html
-pages directly, or the source code in this repo under
-`src/Frontend/Page/*.hs`.  If you edit `src/...`, `/tmp/aula-samples/`
-will be overwritten.  If you want to keep changes you did to the
-generated html code, you can initialize a local git repo (`cd
-/tmp/aula-samples && git init`) and commit your changes before editing
-the haskell sources.  If you do so, you can use `git diff` to make
-sure that the haskell code does what you expected.
+The html pages are created in `$AULA_SAMPLES/`, and can be browsed
+under `http://localhost:8080/samples/`.  You can do two things now:
+
+1. Edit the html pages directly.  If you want to keep or diff your
+   changes, you can initialize a local git repo (`cd $AULA_SAMPLES &&
+   git init`) and commit them there.
+
+2. Edit the source code in this repo under `src/Frontend/Page/*.hs`.
+   If you do this, `$AULA_SAMPLES/*.html` will be overwritten, so make
+   sure that all valuable changes you make there are under git control
+   and recorded apropriately.
+
+You can combine the two work-flows and edit first the html, then
+record, then edit the Haskell source code and use git to diff the
+generated html again the html you tweaked manually.
 
 Both `aula-server` and `click-dummies-refresh` go into a loop, so you
-need to terminals.  If you have two displays, you can move your
+need two terminals.  If you have two displays, you can move your
 browser and the terminal with the refresh loop to one, and your source
-code editor to the other.  The source code will auto-refresh on the
-former and you will never have to focus there, no matter whether you
+code editor to the other.  The browser will auto-refresh at any modification
+and you will never have to focus there, no matter whether you
 work on the haskell sources or on the html.
