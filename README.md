@@ -1,5 +1,6 @@
 status: experimental
 
+
 ## Build Status
 
 [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula)
@@ -36,7 +37,7 @@ Note: when you want to `git pull`, do this outside of docker,
 just as `git clone` was performed outside. Otherwise, paths may be wrong.
 
 
-## Getting started (with sensei)
+## Getting started (without docker)
 
 https://github.com/hspec/sensei is a tool for rapid re-compilation and
 testing.  If you want to use it, follow these steps:
@@ -67,6 +68,13 @@ cabal run aula-server
 ```
 
 then point your browser to localhost:8080
+
+
+## Using sensei for file-watch testing during development
+
+[This section assumes you run without docker, but with
+`./docker/run.sh` you should be able to do the same thing in the
+docker setting as well.]
 
 To start sensei, in another terminal do
 
