@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-
 
 -- | rule: always add (and expect) trailing slashes.
 module Frontend.Path
