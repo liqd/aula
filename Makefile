@@ -1,7 +1,17 @@
 HLINT=hlint
-FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/thentos-core/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/thentos-tests/tests/
+FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
 
 .phony:
+
+# use sensei if you only want to hack aula; use sensei-full if you
+# want to hack both aula and thentos.
+#
+# [fisx] the unregister rules are a hack: i experienced problems with
+# getting changes to source files noticed when any of the packages i
+# was sensei-ing were installed in the sandbox.  since i am
+# unregistering them as a precondition of the sensei rules, that
+# problem went away.  (more data on this or hypotheses on the source
+# of the problem are always welcome.)
 
 %.unregister:
 	-cabal exec -- ghc-pkg unregister $*

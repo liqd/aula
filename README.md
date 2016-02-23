@@ -1,5 +1,6 @@
 status: experimental
 
+
 ## Build Status
 
 [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula)
@@ -7,29 +8,36 @@ status: experimental
 
 ## Getting started (with docker)
 
-- install docker
-- docker pull fisx/aula
-- git clone https://github.com/liqd/aula
-- git clone --recursive https://github.com/liqd/thentos
-- cd aula
-- ./docker/run.sh
-- inside container:
-    - cd /root/thentos
-    - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-    - cd /root/aula
-    - cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-    - cabal install --enable-tests
+in a shell:
+
+```shell
+# install docker
+docker pull fisx/aula
+git clone https://github.com/liqd/aula
+git clone --recursive https://github.com/liqd/thentos
+cd aula
+./docker/run.sh
+# now you are inside the container.
+cd /root/thentos
+cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
+cd /root/aula
+cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
+cabal install --enable-tests
+```
 
 Now, to have a quick look at the pages, do
 
-- cabal run aula-server
-- then point your browser to localhost:8080
+```shell
+cabal run aula-server
+```
+
+then point your browser to localhost:8080
 
 Note: when you want to `git pull`, do this outside of docker,
 just as `git clone` was performed outside. Otherwise, paths may be wrong.
 
 
-## Getting started (with sensei)
+## Getting started (without docker)
 
 https://github.com/hspec/sensei is a tool for rapid re-compilation and
 testing.  If you want to use it, follow these steps:
@@ -38,26 +46,42 @@ testing.  If you want to use it, follow these steps:
   systems, those mentioned in
   https://github.com/liqd/aula-docker/blob/master/Dockerfile
   in particular, libpq-dev and zlib1g-dev
-- git clone --recursive https://github.com/hspec/sensei
-- git clone --recursive https://github.com/liqd/thentos
-- export THENTOS_ROOT_PATH=`pwd`/thentos
-- cd thentos
-- ./misc/thentos-install.hs -p
-- cd ..
-- git clone https://github.com/liqd/aula
-- export AULA_ROOT_PATH=`pwd`/aula
-- cd aula
-- cabal sandbox init --sandbox=../thentos/.cabal-sandbox
+- in a shell:
+
+```shell
+git clone --recursive https://github.com/hspec/sensei
+git clone --recursive https://github.com/liqd/thentos
+export THENTOS_ROOT_PATH=`pwd`/thentos/thentos-core
+cd thentos
+./misc/thentos-install.hs -p
+cd ..
+git clone https://github.com/liqd/aula
+export AULA_ROOT_PATH=`pwd`/aula
+cd aula
+cabal sandbox init --sandbox=../thentos/.cabal-sandbox
+```
 
 Now, to have a quick look at the pages, do
 
-- cabal run aula-server
-- then point your browser to localhost:8080
+```shell
+cabal run aula-server
+```
+
+then point your browser to localhost:8080
+
+
+## Using sensei for file-watch testing during development
+
+[This section assumes you run without docker, but with
+`./docker/run.sh` you should be able to do the same thing in the
+docker setting as well.]
 
 To start sensei, in another terminal do
 
-- cabal install --enable-tests
-- make sensei
+```shell
+cabal install --enable-tests
+make sensei
+```
 
 This will watch your files, and if anything changes, re-compile and
 run the test suite.
