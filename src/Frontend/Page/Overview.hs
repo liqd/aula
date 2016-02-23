@@ -12,6 +12,7 @@ module Frontend.Page.Overview
     )
 where
 
+import Frontend.Path (Top(TopTesting), path)
 import Frontend.Prelude
 
 
@@ -66,7 +67,7 @@ instance ToHtml PageIdeasOverview where
         h1_ "Was soll sich verändern?"
         p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
             <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        div_ $ button_ [onclick_ "location.href='/ideas/create'"] "+ Neue Idee" -- FIXME: should link to idea creation form
+        div_ $ button_ [onclick_ ("location.href='" <> (path $ TopTesting "/ideas/create") <> "'")] "+ Neue Idee" -- FIXME: should link to idea creation form
         div_ $ do
             -- FIXME: these buttons should filter the ideas by category
             button_ "Regeln"

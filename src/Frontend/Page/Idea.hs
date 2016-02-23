@@ -13,6 +13,7 @@ module Frontend.Page.Idea
 where
 
 import Action (ActionM, persistent)
+import Frontend.Path (Top(TopTesting), path)
 import Frontend.Prelude
 
 import qualified Text.Digestive.Form as DF
@@ -61,7 +62,7 @@ ideaFormFields v = do
 instance FormPageView PageCreateIdea where
     type FormPageResult PageCreateIdea = ProtoIdea
 
-    formAction _ = "/ideas/create"
+    formAction _ = path $ TopTesting "/ideas/create"
 
     makeForm _ =
         ProtoIdea
@@ -79,7 +80,8 @@ instance FormPageView PageCreateIdea where
 instance FormPageView PageEditIdea where
     type FormPageResult PageEditIdea = ProtoIdea
 
-    formAction (PageEditIdea idea) = "/ideas/edit/" <> cs (show $ idea ^. _Id)
+    formAction (PageEditIdea idea) =
+        path . TopTesting $ "/ideas/edit/" <> cs (show . (\ (AUID i) -> i) $ idea ^. _Id)
 
     makeForm (PageEditIdea idea) =
         ProtoIdea
@@ -87,7 +89,7 @@ instance FormPageView PageEditIdea where
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
 
-    formPage v fa p@(PageEditIdea _ideaId) =
+    formPage v fa p@(PageEditIdea _idea) =
         semanticDiv p $ do
             h3_ "Diene Idee"
             DF.form v fa $ do
@@ -106,13 +108,13 @@ instance ToHtml PageEditIdea where
 -- handlers
 
 instance RedirectOf PageCreateIdea where
-    redirectOf _ = "/ideas"
+    redirectOf _ = path $ TopTesting "/ideas"
 
 createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 createIdea = redirectFormHandler (pure PageCreateIdea) (persistent . addIdea)
 
 instance RedirectOf PageEditIdea where
-    redirectOf _ = "/ideas"
+    redirectOf _ = path $ TopTesting "/ideas"
 
 editIdea :: (ActionM action) => AUID Idea -> ServerT (FormH HTML (Html ()) ST) action
 editIdea ideaId =
