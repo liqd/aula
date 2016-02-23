@@ -6,11 +6,11 @@
 module Frontend.Page.CreateIdea
 where
 
-import Action (ActionM, persistent)
-import Frontend.Prelude
-
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+
+import Action (ActionM, persistent)
+import Frontend.Prelude
 
 ----------------------------------------------------------------------
 -- page

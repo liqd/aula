@@ -28,12 +28,13 @@ import Text.Digestive (Form)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
+import qualified Data.Set as Set
+import qualified Text.Digestive.Form as DF
+
 import Action
 import Api
 import Types
 
-import qualified Data.Set as Set
-import qualified Text.Digestive.Form as DF
 
 
 -- | This will generate the following snippet:
