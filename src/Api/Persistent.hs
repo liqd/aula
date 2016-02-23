@@ -13,7 +13,6 @@ module Api.Persistent
     , AulaLens
     , AulaGetter
     , mkRunPersist
-    , persistIO
 
     -- * generic
     , getDb
