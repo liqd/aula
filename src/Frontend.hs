@@ -12,10 +12,13 @@ where
 
 import Control.Monad.Trans.Except
 import Lucid
+import Network.Wai (Application)
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
+import Network.Wai.Application.Static (StaticSettings, ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp)
 import Servant
 import Servant.HTML.Lucid
 import Servant.Missing
+import System.FilePath (addTrailingPathSeparator)
 import Thentos.Prelude
 
 import Persistent
@@ -36,7 +39,8 @@ runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
     unNat persist genInitalTestDb -- FIXME: Remove Bootstrapping DB
-    runSettings settings . aulaTweaks $ serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
+    runSettings settings $
+      serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
@@ -53,14 +57,31 @@ type AulaTop =
 aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter runActionForceLogin (aulaMain :<|> aulaTesting)
-  :<|> (\req cont -> getSamplesPath >>= \path -> serveDirectory path req cont)
-  :<|> serveDirectory (Config.config ^. htmlStatic)
+  :<|> (\req cont -> getSamplesPath >>= \path ->
+          waiServeDirectory path req cont)
+  :<|> waiServeDirectory (Config.config ^. htmlStatic)
   where
     -- FIXME: Login shouldn't happen here
     runActionForceLogin = Nat $ \action -> runAction $ do
         Action.login adminUsernameHack
         action
+    waiServeDirectory :: FilePath -> Application
+    waiServeDirectory =
+      staticApp . aulaTweakStaticSettings . defaultFileServerSettings .
+        addTrailingPathSeparator
+    aulaTweakStaticSettings :: StaticSettings -> StaticSettings
+    aulaTweakStaticSettings s = s
+      { ssAddTrailingSlash = True
+      , ssGetMimeType = \file -> do
+          mime <- ssGetMimeType s file
+          -- wai's guess of the mime type is not good enough; it doesn't
+          -- report character encoding. So we tweak it here manually.
+          let tweakedMime "text/html" = "text/html;charset=utf8"
+              tweakedMime m = m
+          return $! tweakedMime mime
+      , ssRedirectToIndex = True
 
+      }
 
 type AulaMain =
        -- view all spaces
