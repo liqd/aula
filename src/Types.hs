@@ -27,6 +27,8 @@ import Servant.API (FromHttpApiData)
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
+import Test.QuickCheck (Arbitrary)
+
 ----------------------------------------------------------------------
 -- a small prelude
 
@@ -322,6 +324,11 @@ timestampFormat = "%F_%T_%q"
 
 timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
+
+
+-- | FIXME: should either go to the test suite or go away completely.
+class Monad m => GenArbitrary m where
+    genArbitrary :: Arbitrary a => m a
 
 
 ----------------------------------------------------------------------
