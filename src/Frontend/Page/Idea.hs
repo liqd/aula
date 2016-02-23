@@ -29,7 +29,7 @@ instance Page PageCreateIdea where
   isPrivatePage _ = True
 
 -- | 7. Edit idea
-data PageEditIdea = PageEditIdea (AUID Idea)
+data PageEditIdea = PageEditIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page PageEditIdea where
@@ -63,13 +63,13 @@ instance FormPageView PageCreateIdea where
 
     formAction _ = "/ideas/create"
 
-    makeForm _ = pure $
+    makeForm _ =
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: DF.choice categoryValues Nothing)
 
-    formPage v fa p = pure $ do
+    formPage v fa p = do
         semanticDiv p $ do
             h3_ "Create Idee"
             DF.form v fa $ do
@@ -79,17 +79,15 @@ instance FormPageView PageCreateIdea where
 instance FormPageView PageEditIdea where
     type FormPageResult PageEditIdea = ProtoIdea
 
-    formAction (PageEditIdea (AUID ideaId)) = "/ideas/edit/" <> cs (show ideaId)
+    formAction (PageEditIdea idea) = "/ideas/edit/" <> cs (show $ idea ^. _Id)
 
-    makeForm (PageEditIdea ideaId) = do
-        -- FIXME: Add action which fails if nothing is found.
-        Just idea <- persistent $ findIdea ideaId
-        return $ ProtoIdea
-            <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
-            <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
-            <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
+    makeForm (PageEditIdea idea) =
+        ProtoIdea
+        <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
+        <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
+        <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
 
-    formPage v fa p@(PageEditIdea _ideaId) = pure $ do
+    formPage v fa p@(PageEditIdea _ideaId) =
         semanticDiv p $ do
             h3_ "Diene Idee"
             DF.form v fa $ do
@@ -116,9 +114,11 @@ createIdea = redirectFormHandler (pure PageCreateIdea) (persistent . addIdea)
 instance RedirectOf PageEditIdea where
     redirectOf _ = "/ideas"
 
--- FIXME: Update the idea in the database.
 editIdea :: (ActionM action) => AUID Idea -> ServerT (FormH HTML (Html ()) ST) action
-editIdea idea = redirectFormHandler (pure $ PageEditIdea idea) (persistent . modifyIdea idea . newIdea)
+editIdea ideaId =
+    redirectFormHandler
+        (PageEditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
+        (persistent . modifyIdea ideaId . newIdea)
   where
     newIdea protoIdea =   (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
                         . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))

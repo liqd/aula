@@ -39,11 +39,11 @@ instance FormPageView PageHomeWithLoginPrompt where
 
     formAction _ = P.path P.Login
 
-    makeForm _ = pure $ LoginFormData
+    makeForm _ = LoginFormData
         <$> ("user" .: DF.text Nothing)
         <*> ("pass" .: DF.text Nothing)
 
-    formPage v fa p = pure $ do
+    formPage v fa p =
         semanticDiv p $ do
             div_ . DF.form v fa $ do
                 DF.inputText     "user" v >> br_ []

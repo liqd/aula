@@ -82,9 +82,9 @@ class FormPageView p where
     -- | The form action used in form generation
     formAction :: p -> ST
     -- | Generates a Html view from the given page
-    makeForm :: (ActionM m) => p -> m (DF.Form (Html ()) m (FormPageResult p))
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m, ActionM action) => View (HtmlT m ()) -> ST -> p -> action (HtmlT m ())
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
 -- | Defines some properties for pages
 class Page p where
@@ -227,26 +227,22 @@ instance ToHtml ListItemIdea where
 formRedirectH' :: forall page payload m htm html.
      (Monad m, MonadError ServantErr m, FormPageView page)
   => m page
-  -> (page -> m (Form html m payload))       -- ^ processor1
+  -> (page -> Form html m payload)           -- ^ processor1
   -> (page -> payload -> m ST)               -- ^ processor2
   -> (page -> View html -> ST -> m html)     -- ^ renderer
   -> ServerT (FormH htm html payload) m
 formRedirectH' getPage processor1 processor2 renderer = getH :<|> postH
   where
-    pageActionForm = do
+    getH = do
         page <- getPage
         let fa = formAction page
-        form <- processor1 page
-        return (page, fa, form)
-
-    getH = do
-        (page, fa, form) <- pageActionForm
-        v <- getForm fa form
+        v <- getForm fa (processor1 page)
         renderer page v fa
 
     postH env = do
-        (page, fa, form) <- pageActionForm
-        (v, mpayload) <- postForm fa form (\_ -> return $ return . runIdentity . env)
+        page <- getPage
+        let fa = formAction page
+        (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         case mpayload of
             Just payload -> processor2 page payload >>= redirect
             Nothing      -> renderer page v fa
@@ -263,7 +259,7 @@ redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
     p2 page result = processor result $> redirectOf page
     r page v fa = 
         let frame = if isPublicPage page then publicPageFrame else pageFrame frameUserHack in
-        frame <$> formPage v fa page
+        pure . frame $ formPage v fa page
 
 ----------------------------------------------------------------------
 -- HACKS

@@ -164,7 +164,7 @@ instance FormPageView PageCreateTopic where
 
     formAction _ = "/topics/create"
 
-    makeForm PageCreateTopic = pure $
+    makeForm PageCreateTopic =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
@@ -172,7 +172,7 @@ instance FormPageView PageCreateTopic where
         <*> pure SchoolSpace
         <*> pure []
 
-    formPage v fa p = pure $ do
+    formPage v fa p =
         semanticDiv p $ do
             h3_ "Create Topic"
             DF.form v fa $ do
@@ -210,10 +210,10 @@ instance FormPageView PageCreateTopicAddIdeas where
         "/topics/" <> cs (show topicId) <> "/ideas"
 
     makeForm (PageCreateTopicAddIdeas _ ideas) =
-        pure . fmap catMaybes . sequenceA $
+        fmap catMaybes . sequenceA $
         [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing) | idea <- ideas ]
 
-    formPage v fa p@(PageCreateTopicAddIdeas _ ideas) = pure $ do
+    formPage v fa p@(PageCreateTopicAddIdeas _ ideas) = do
         semanticDiv p $ do
             h3_ "Wählen Sie weitere Ideen aus"
             DF.form v fa $ do
