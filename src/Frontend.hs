@@ -65,10 +65,12 @@ aulaTop (Nat runAction) =
     runActionForceLogin = Nat $ \action -> runAction $ do
         Action.login adminUsernameHack
         action
+
     waiServeDirectory :: FilePath -> Application
     waiServeDirectory =
       staticApp . aulaTweakStaticSettings . defaultFileServerSettings .
         addTrailingPathSeparator
+
     aulaTweakStaticSettings :: StaticSettings -> StaticSettings
     aulaTweakStaticSettings s = s
       { ssAddTrailingSlash = True
@@ -80,7 +82,6 @@ aulaTop (Nat runAction) =
               tweakedMime m = m
           return $! tweakedMime mime
       , ssRedirectToIndex = True
-
       }
 
 type AulaMain =
