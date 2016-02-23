@@ -21,7 +21,7 @@ unregister-full:
 
 # only aware of aula sources
 sensei: .phony aula.unregister
-	cabal exec -- sensei -isrc -itests tests/Spec.hs $(SENSEI_ARGS)
+	cabal exec -- sensei -isrc -itests tests/Bla.hs $(SENSEI_ARGS)
 
 # aware of aula and thentos sources
 sensei-full: .phony unregister-full
