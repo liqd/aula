@@ -38,16 +38,18 @@ class HasPath p where
     relpth :: p -> UriPath
 
 data Top =
-    TopMain Main  -- (we don't do proper paths for /testing/)
+    TopMain Main
+  | TopTesting UriPath
   | TopSamples
   | TopStatic
 
 instance HasPath Top where relpth = top
 
 top :: Top -> UriPath
-top (TopMain p) = pth p
-top TopSamples  = "samples/"
-top TopStatic   = "static/"
+top (TopMain p)    = pth p
+top (TopTesting p) = "testing/" </> p
+top TopSamples     = "samples/"
+top TopStatic      = "static/"
 
 data Main =
     SpaceAll
