@@ -96,14 +96,20 @@ make click-dummies-refresh
 ```
 
 The html pages are created in `$AULA_SAMPLES/`, and can be browsed
-under `http://localhost:8080/samples/`.  You can either edit the html
-pages directly, or the source code in this repo under
-`src/Frontend/Page/*.hs`.  If you edit `src/...`, `$AULA_SAMPLES/*.html`
-will be overwritten.  If you want to keep changes you did to the
-generated html code, you can initialize a local git repo (`cd
-$AULA_SAMPLES && git init`) and commit your changes before editing
-the haskell sources.  If you do so, you can use `git diff` to make
-sure that the haskell code does what you expected.
+under `http://localhost:8080/samples/`.  You can do two things now:
+
+1. Edit the html pages directly.  If you want to keep or diff your
+   changes, you can initialize a local git repo (`cd $AULA_SAMPLES &&
+   git init`) and commit them there.
+
+2. Edit the source code in this repo under `src/Frontend/Page/*.hs`.
+   If you do this, `$AULA_SAMPLES/*.html` will be overwritten, so make
+   sure that all valuable changes you make there are under git control
+   and recorded apropriately.
+
+You can combine the two work-flows and edit first the html, then
+record, then edit the Haskell source code and use git to diff the
+generated html again the html you tweaked manually.
 
 Both `aula-server` and `click-dummies-refresh` go into a loop, so you
 need two terminals.  If you have two displays, you can move your
