@@ -34,6 +34,14 @@ instance Arbitrary PageIdeasOverview where
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
+instance Arbitrary PageTopicOverview where
+    arbitrary = oneof
+        [ PageTopicOverviewRefinementPhase' <$> arb
+        , PageTopicOverviewJuryPhase'       <$> arb
+        , PageTopicOverviewVotingPhase'     <$> arb
+        , PageTopicOverviewResultPhase'     <$> arb
+        ]
+
 instance Arbitrary PageTopicOverviewRefinementPhase where
     arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
 
@@ -48,6 +56,16 @@ instance Arbitrary PageTopicOverviewResultPhase where
 
 instance Arbitrary PageTopicOverviewDelegations where
     arbitrary = pure PageTopicOverviewDelegations
+
+instance Arbitrary PageIdeaDetail where
+    arbitrary = oneof
+        [ PageIdeaDetailNewIdeas'            <$> arb
+        , PageIdeaDetailRefinementPhase'     <$> arb
+        , PageIdeaDetailJuryPhase'           <$> arb
+        , PageIdeaDetailVotingPhase'         <$> arb
+        , PageIdeaDetailFeasibleNotFeasible' <$> arb
+        , PageIdeaDetailWinner'              <$> arb
+        ]
 
 instance Arbitrary PageIdeaDetailNewIdeas where
     arbitrary = PageIdeaDetailNewIdeas <$> arb
