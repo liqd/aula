@@ -12,7 +12,7 @@
 module Types
 where
 
-import Control.Lens (makeLenses, Lens')
+import Control.Lens (makeLenses, Lens', (^?), _Just)
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -77,7 +77,7 @@ data Idea = Idea
     , _ideaLikes      :: Set IdeaLike
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
     , _ideaVotes      :: Set IdeaVote
-    , _ideaFeasible   :: Maybe Feasible
+    , _ideaResult     :: Maybe IdeaResult
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -116,12 +116,15 @@ data IdeaVote = IdeaVote
 data IdeaVoteValue = Yes | No | Neutral
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
-data Feasible = Feasible
-    { _feasibleMeta   :: MetaInfo Feasible
-    , _feasibleValue  :: Bool
-    , _feasibleReason :: Document
+data IdeaResult = IdeaResult
+    { _ideaResultMeta   :: MetaInfo IdeaResult
+    , _ideaResultValue  :: IdeaResultValue
+    , _ideaResultReason :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+data IdeaResultValue = NotFeasible | Winning | NotEnoughVotes
+  deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 
 ----------------------------------------------------------------------
@@ -343,10 +346,11 @@ instance Binary DelegationContext
 instance Binary Document
 instance Binary Email
 instance Binary EncryptedPass
-instance Binary Feasible
 instance Binary Group
 instance Binary Idea
 instance Binary IdeaLike
+instance Binary IdeaResult
+instance Binary IdeaResultValue
 instance Binary IdeaSpace
 instance Binary IdeaVote
 instance Binary IdeaVoteValue
@@ -365,9 +369,9 @@ makeLenses ''DelegationContext
 makeLenses ''Document
 makeLenses ''Email
 makeLenses ''EncryptedPass
-makeLenses ''Feasible
 makeLenses ''Idea
 makeLenses ''IdeaLike
+makeLenses ''IdeaResult
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''MetaInfo
@@ -398,9 +402,15 @@ class HasMetaInfo a where
 
 instance HasMetaInfo CommentVote where metaInfo = commentVoteMeta
 instance HasMetaInfo Delegation where metaInfo = delegationMeta
-instance HasMetaInfo Feasible where metaInfo = feasibleMeta
 instance HasMetaInfo Idea where metaInfo = ideaMeta
 instance HasMetaInfo IdeaLike where metaInfo = likeMeta
+instance HasMetaInfo IdeaResult where metaInfo = ideaResultMeta
 instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
+
+notFeasibleIdea :: Idea -> Bool
+notFeasibleIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just NotFeasible
+
+winningIdea :: Idea -> Bool
+winningIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just Winning
