@@ -6,11 +6,13 @@
 module Frontend.Page.CreateIdea
 where
 
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
+
 import Action (ActionM, persistent)
 import Frontend.Prelude
 
-import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Frontend.Path as P
 
 ----------------------------------------------------------------------
 -- page
@@ -61,7 +63,8 @@ categoryValues = [ (CatRule,        "Regel")
 -- handlers
 
 instance RedirectOf PageCreateIdea where
-    redirectOf _ = "/ideas"
+    redirectOf _ = P.path $ P.TopTesting "ideas"
 
 createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createIdea = redirectFormHandler "/ideas/create" (pure PageCreateIdea) (persistent . addIdea)
+createIdea = redirectFormHandler (P.path $ P.TopTesting "ideas/create")
+                (pure PageCreateIdea) (persistent . addIdea)

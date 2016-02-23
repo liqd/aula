@@ -76,8 +76,8 @@ type AulaMain =
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegations" :> "edit" :> FormH HTML (Html ()) ()
-  :<|> "delegations" :> "view" :> GetH (Frame ST)
+  :<|> "delegation" :> "edit" :> FormH HTML (Html ()) ()
+  :<|> "delegation" :> "view" :> GetH (Frame ST)
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
@@ -96,8 +96,8 @@ aulaMain =
   :<|> aulaUser
   :<|> aulaAdmin
 
-  :<|> error "api not implemented: \"delegations\" :> \"edit\" :> FormH HTML (Html ()) ()"
-  :<|> error "api not implemented: \"delegations\" :> \"view\" :> GetH (Frame ST)"
+  :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormH HTML (Html ()) ()"
+  :<|> error "api not implemented: \"delegation\" :> \"view\" :> GetH (Frame ST)"
 
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
@@ -123,7 +123,7 @@ type AulaSpace =
        -- create new topic
   :<|> "topic" :> "create" :> FormH HTML (Html ()) ST
        -- create new idea inside topic
-  :<|> "topic" :> "idea" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormH HTML (Html ()) ST
 
 aulaSpace :: ServerT AulaSpace Action
 aulaSpace =
@@ -157,49 +157,45 @@ type AulaAdmin =
        -- groups and permissions
   :<|> "access" :> GetH (Frame ST)
        -- user creation and import
-  :<|> "user"   :> GetH (PageShow [Idea])
+  :<|> "user"   :> GetH (Frame ST)
        -- event log
-  :<|> "event"  :> GetH (PageShow [Idea])
+  :<|> "event"  :> GetH (Frame ST)
 
 aulaAdmin :: ServerT AulaAdmin Action
 aulaAdmin =
        error "api not implemented: \"params\" :> GetH (Frame ST)"
   :<|> error "api not implemented: \"access\" :> GetH (Frame ST)"
-  :<|> error "api not implemented: \"user\"   :> GetH (PageShow [Idea])"
-  :<|> error "api not implemented: \"event\"  :> GetH (PageShow [Idea])"
+  :<|> error "api not implemented: \"user\"   :> GetH (Frame ST)"
+  :<|> error "api not implemented: \"event\"  :> GetH (Frame ST)"
 
 
 type AulaTesting =
        GetH (Frame ST)
-  :<|> "spaces" :> GetH (Frame PageRoomsOverview)
-  :<|> "spaces" :> CreateRandom IdeaSpace
-  :<|> "login" :> FormH HTML (Html ()) ST
+
   :<|> "ideas" :> CreateRandom Idea
+  :<|> "space" :> CreateRandom IdeaSpace
+  :<|> "topic" :> CreateRandom Topic
+  :<|> "user"  :> CreateRandom User
+
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "users" :> CreateRandom User
-  :<|> "users" :> GetH (Frame (PageShow [User]))
-  :<|> "topics" :> CreateRandom Topic
+
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
   :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "imprint" :> GetH (Frame PageStaticImprint)
-  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
        return (PublicFrame "yihaah!")
-  :<|> (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
-  :<|> createRandomNoMeta dbSpaceSet
-  :<|> Page.login
+
   :<|> createRandom dbIdeaMap
+  :<|> createRandomNoMeta dbSpaceSet
+  :<|> createRandom dbTopicMap
+  :<|> createRandom dbUserMap
+
   :<|> (Frame frameUserHack . PageIdeasOverview SchoolSpace <$> Action.persistent getIdeas)
   :<|> Page.createIdea
-  :<|> createRandom dbUserMap
-  :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
-  :<|> createRandom dbTopicMap
+
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
   :<|> Page.pageTopicOverview
   :<|> Page.createTopic
-  :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
-  :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
