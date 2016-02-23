@@ -9,8 +9,8 @@ module Frontend.Path
     , Top(..)
     , Main(..)
     , Space(..)
-    , Frontend.Path.User(..)
-    , Admin(..)
+    , UserPs(..)
+    , AdminPs(..)
     )
 where
 
@@ -19,7 +19,7 @@ import Thentos.Types ((<//>))
 
 import qualified Lucid
 
-import Types
+import Types (AUID(AUID), User, Topic, Idea)
 
 
 type UriPath = ST
@@ -50,30 +50,30 @@ top TopSamples  = "samples/"
 top TopStatic   = "static/"
 
 data Main =
-    MainSpaceAll
-  | MainSpaceOne ST Space
-  | MainUserAll
-  | MainUserOne (AUID Types.User) Frontend.Path.User
-  | MainAdmin Admin
-  | MainDelegationEdit
-  | MainDelegationView
-  | MainImprint
-  | MainTerms
-  | MainLogin
+    SpaceAll
+  | SpaceOne ST Space
+  | UserAll
+  | UserOne (AUID User) UserPs
+  | Admin AdminPs
+  | DelegationEdit
+  | DelegationView
+  | Imprint
+  | Terms
+  | Login
 
 instance HasPath Main where relpth = main
 
 main :: Main -> UriPath
-main MainSpaceAll               = "space/"
-main (MainSpaceOne sid p)       = "space/" </> sid </> space p
-main MainUserAll                = "user/"
-main (MainUserOne (AUID uid) p) = "user/" </> cs (show uid) </> user p
-main (MainAdmin p)              = "admin/" </> admin p
-main MainDelegationEdit         = "deletagion/edit/"
-main MainDelegationView         = "deletagion/view/"
-main MainImprint                = "imprint/"
-main MainTerms                  = "terms/"
-main MainLogin                  = "login/"
+main SpaceAll               = "space/"
+main (SpaceOne sid p)       = "space/" </> sid </> space p
+main UserAll                = "user/"
+main (UserOne (AUID uid) p) = "user/" </> cs (show uid) </> user p
+main (Admin p)              = "admin/" </> admin p
+main DelegationEdit         = "deletagion/edit/"
+main DelegationView         = "deletagion/view/"
+main Imprint                = "imprint/"
+main Terms                  = "terms/"
+main Login                  = "login/"
 
 data Space =
     SpaceIdeaAll
@@ -97,23 +97,23 @@ space (SpaceTopicOneDelegations (AUID tid))  = "topic/" </> cs (show tid) </> "/
 space SpaceTopicCreate                       = "topic/create/"
 space (SpaceTopicIdeaCreate (AUID tid))      = "topic/" </> cs (show tid) </> "/idea/create/"
 
-data User =
+data UserPs =
     UserIdeas
   | UserDelegations
   | UserSettings
 
-user :: Frontend.Path.User -> UriPath
+user :: UserPs -> UriPath
 user UserIdeas       = "ideas/"
 user UserDelegations = "delegations/"
 user UserSettings    = "settings/"
 
-data Admin =
+data AdminPs =
     AdminParams
   | AdminAccess
   | AdminUser
   | AdminEvent
 
-admin :: Admin -> UriPath
+admin :: AdminPs -> UriPath
 admin AdminParams = "params/"
 admin AdminAccess = "access/"
 admin AdminUser   = "user/"
