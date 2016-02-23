@@ -59,6 +59,7 @@ library
     , time
     , transformers
     , wai
+    , wai-app-static
     , warp
   exposed-modules:
       Action
@@ -271,6 +272,7 @@ test-suite spec
     , time
     , transformers
     , wai
+    , wai-app-static
     , warp
     , aula
     , base >=4.8 && <4.9
