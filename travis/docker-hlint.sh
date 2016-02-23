@@ -1,6 +1,4 @@
-#!/bin/sh +e
+#!/bin/sh
 
 cd /root/aula
 make hlint
-
-exit 0
