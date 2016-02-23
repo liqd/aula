@@ -57,7 +57,7 @@ Now, to have a quick look at the pages, do
 To start sensei, in another terminal do
 
 - cabal install --enable-tests
-- make sensei-full
+- make sensei
 
 This will watch your files, and if anything changes, re-compile and
 run the test suite.
