@@ -146,8 +146,11 @@ instance Arbitrary IdeaVote where
 instance Arbitrary IdeaVoteValue where
     arbitrary = elements [minBound..]
 
-instance Arbitrary Feasible where
-    arbitrary = Feasible <$> arb <*> arb <*> arb
+instance Arbitrary IdeaResult where
+    arbitrary = IdeaResult <$> arb <*> arb <*> arb
+
+instance Arbitrary IdeaResultValue where
+    arbitrary = elements [minBound..]
 
 
 ----------------------------------------------------------------------

@@ -283,7 +283,7 @@ instance FromProto Idea where
         , _ideaLikes    = nil
         , _ideaQuorumOk = False
         , _ideaVotes    = nil
-        , _ideaFeasible = Nothing
+        , _ideaResult   = Nothing
         }
 
 instance FromProto Topic where
