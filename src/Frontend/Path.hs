@@ -12,18 +12,18 @@ import Types
 
 type UriPath = ST
 
+class HasPath p where
+    pth :: p -> UriPath
+
 data Top =
     TopMain Main  -- (we don't do proper paths for /testing/)
   | TopSamples
   | TopStatic
 
-top :: Top -> UriPath
-top = p
-  where
-    p :: Top -> UriPath
-    p (TopMain pth)    = main pth
-    p TopSamples       = "samples/"
-    p TopStatic        = "static/"
+instance HasPath Top where
+    pth (TopMain p) = pth p
+    pth TopSamples  = "samples/"
+    pth TopStatic   = "static/"
 
 data Main =
     MainSpaceAll
@@ -37,19 +37,17 @@ data Main =
   | MainTerms
   | MainLogin
 
-main :: Main -> UriPath
-main = p
-  where
-    p MainSpaceAll                 = "space/"
-    p (MainSpaceOne sid pth)       = "space/" <> sid <> "/" <> space pth
-    p MainUserAll                  = "user/"
-    p (MainUserOne (AUID uid) pth) = "user/" <> cs (show uid) <> "/" <> user pth
-    p MainAdmin                    = "admin/"
-    p MainDelegationEdit           = "deletagion/edit/"
-    p MainDelegationView           = "deletagion/view/"
-    p MainImprint                  = "imprint/"
-    p MainTerms                    = "terms/"
-    p MainLogin                    = "login/"
+instance HasPath Main where
+    pth MainSpaceAll               = "space/"
+    pth (MainSpaceOne sid p)       = "space/" <> sid <> "/" <> pth p
+    pth MainUserAll                = "user/"
+    pth (MainUserOne (AUID uid) p) = "user/" <> cs (show uid) <> "/" <> pth p
+    pth MainAdmin                  = "admin/"
+    pth MainDelegationEdit         = "deletagion/edit/"
+    pth MainDelegationView         = "deletagion/view/"
+    pth MainImprint                = "imprint/"
+    pth MainTerms                  = "terms/"
+    pth MainLogin                  = "login/"
 
 data Space =
     SpaceIdeaAll
@@ -62,30 +60,26 @@ data Space =
   | SpaceTopicCreate
   | SpaceTopicIdeaCreate (AUID Topic)
 
-space :: Space -> UriPath
-space = p
-  where
-    p SpaceIdeaAll                           = "idea/"
-    p (SpaceIdeaOneView (AUID iid))          = "idea/" <> cs (show iid) <> "/view/"
-    p (SpaceIdeaOneEdit (AUID iid))          = "idea/" <> cs (show iid) <> "/edit/"
-    p SpaceIdeaCreate                        = "idea/create/"
-    p SpaceTopicAll                          = "topic/"
-    p (SpaceTopicOneIdeas (AUID tid))        = "topic/" <> cs (show tid) <> "/ideas/"
-    p (SpaceTopicOneDelegations (AUID tid))  = "topic/" <> cs (show tid) <> "/delegations/"
-    p SpaceTopicCreate                       = "topic/create/"
-    p (SpaceTopicIdeaCreate (AUID tid))      = "topic/" <> cs (show tid) <> "/idea/create/"
+instance HasPath Space where
+    pth SpaceIdeaAll                           = "idea/"
+    pth (SpaceIdeaOneView (AUID iid))          = "idea/" <> cs (show iid) <> "/view/"
+    pth (SpaceIdeaOneEdit (AUID iid))          = "idea/" <> cs (show iid) <> "/edit/"
+    pth SpaceIdeaCreate                        = "idea/create/"
+    pth SpaceTopicAll                          = "topic/"
+    pth (SpaceTopicOneIdeas (AUID tid))        = "topic/" <> cs (show tid) <> "/ideas/"
+    pth (SpaceTopicOneDelegations (AUID tid))  = "topic/" <> cs (show tid) <> "/delegations/"
+    pth SpaceTopicCreate                       = "topic/create/"
+    pth (SpaceTopicIdeaCreate (AUID tid))      = "topic/" <> cs (show tid) <> "/idea/create/"
 
 data User =
     UserIdeas
   | UserDelegations
   | UserSettings
 
-user :: Frontend.Path.User -> UriPath
-user = p
-  where
-    p UserIdeas       = "ideas/"
-    p UserDelegations = "delegations/"
-    p UserSettings    = "settings/"
+instance HasPath Frontend.Path.User where
+    pth UserIdeas       = "ideas/"
+    pth UserDelegations = "delegations/"
+    pth UserSettings    = "settings/"
 
 data Admin =
     AdminParams
@@ -93,10 +87,8 @@ data Admin =
   | AdminUser
   | AdminEvent
 
-admin :: Admin -> UriPath
-admin = p
-  where
-    p AdminParams = "params/"
-    p AdminAccess = "access/"
-    p AdminUser   = "user/"
-    p AdminEvent  = "event/"
+instance HasPath Admin where
+    pth AdminParams = "params/"
+    pth AdminAccess = "access/"
+    pth AdminUser   = "user/"
+    pth AdminEvent  = "event/"
