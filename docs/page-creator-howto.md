@@ -9,6 +9,10 @@ A raw SVG file for the clickdummy is also available
 on request. Questions for the client can be asked
 on Taiga, as well.
 
+For a list of html5 elements as they are available in the Haskell
+code, see
+https://hackage.haskell.org/package/lucid-2.9.4/docs/Lucid-Html5.html.
+
 
 ## Improving pages under `samples/`
 
