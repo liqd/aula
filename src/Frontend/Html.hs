@@ -96,16 +96,6 @@ instance ToHtml PageIdeaDetailWinner where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageIdeaDetailWinner"
 
-
--- | 7. Edit idea
-data PageEditIdea = PageEditIdea
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageEditIdea where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageEditIdea"
-
-
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreateIdeas = PageUserProfileCreateIdeas
   deriving (Eq, Show, Read)

@@ -162,6 +162,8 @@ instance ToHtml PageCreateTopic where
 instance FormPageView PageCreateTopic where
     type FormPageResult PageCreateTopic = ProtoTopic
 
+    formAction _ = "/topics/create"
+
     makeForm PageCreateTopic =
         ProtoTopic
         <$> ("title" .: DF.text nil)
@@ -170,10 +172,10 @@ instance FormPageView PageCreateTopic where
         <*> pure SchoolSpace
         <*> pure []
 
-    formPage v formAction p = do
+    formPage v fa p =
         semanticDiv p $ do
             h3_ "Create Topic"
-            DF.form v formAction $ do
+            DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
                 DF.inputText     "image" v >> br_ []
@@ -186,7 +188,7 @@ instance RedirectOf PageCreateTopic where
     redirectOf _ = "/topics"
 
 createTopic :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createTopic = redirectFormHandler "/topics/create" (pure PageCreateTopic) (persistent . addTopic)
+createTopic = redirectFormHandler (pure PageCreateTopic) (persistent . addTopic)
 
 -- | 10.2 Create topic: Move ideas to topic
 data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas (AUID Topic) [Idea]
@@ -204,14 +206,17 @@ instance FormPageView PageCreateTopicAddIdeas where
     -- the ideas to be added to the topic.
     type FormPageResult PageCreateTopicAddIdeas = [AUID Idea]
 
+    formAction (PageCreateTopicAddIdeas topicId _) =
+        "/topics/" <> cs (show topicId) <> "/ideas"
+
     makeForm (PageCreateTopicAddIdeas _ ideas) =
         fmap catMaybes . sequenceA $
         [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing) | idea <- ideas ]
 
-    formPage v formAction p@(PageCreateTopicAddIdeas _ ideas) = do
+    formPage v fa p@(PageCreateTopicAddIdeas _ ideas) = do
         semanticDiv p $ do
             h3_ "Wählen Sie weitere Ideen aus"
-            DF.form v formAction $ do
+            DF.form v fa $ do
                 ul_ $ do
                     for_ ideas $ \idea ->
                         li_ $ do
@@ -227,8 +232,7 @@ instance RedirectOf PageCreateTopicAddIdeas where
     redirectOf (PageCreateTopicAddIdeas topicId _) = "/topics/" <> cs (show topicId) -- FIXME safe links
 
 formAddIdeasToTopic :: ActionM m => AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
-formAddIdeasToTopic topicId =
-    redirectFormHandler ("/topics/" <> cs (show topicId) <> "/ideas") getPage addIdeas
+formAddIdeasToTopic topicId = redirectFormHandler getPage addIdeas
   where
     getPage = PageCreateTopicAddIdeas topicId <$> persistent getWildIdeas
     addIdeas ideas = persistent $ moveIdeasToTopic ideas (Just topicId)

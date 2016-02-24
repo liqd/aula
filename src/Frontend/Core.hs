@@ -58,8 +58,10 @@ type GetH = Get '[HTML]
 -- | Render Form based Views
 class FormPageView p where
     type FormPageResult p :: *
+    -- | The form action used in form generation
+    formAction :: p -> ST
     -- | Generates a Html view from the given page
-    makeForm :: (ActionM m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -202,41 +204,41 @@ instance ToHtml ListItemIdea where
 -- * push this change towards Servant.Missing
 -- * keep a version here
 formRedirectH' :: forall page payload m htm html.
-     (Monad m, MonadError ServantErr m)
-  => ST                              -- ^ formAction
-  -> m page
+     (Monad m, MonadError ServantErr m, FormPageView page)
+  => m page
   -> (page -> Form html m payload)           -- ^ processor1
   -> (page -> payload -> m ST)               -- ^ processor2
   -> (page -> View html -> ST -> m html)     -- ^ renderer
   -> ServerT (FormH htm html payload) m
-formRedirectH' formAction getPage processor1 processor2 renderer = getH :<|> postH
+formRedirectH' getPage processor1 processor2 renderer = getH :<|> postH
   where
     getH = do
         page <- getPage
-        v <- getForm formAction (processor1 page)
-        renderer page v formAction
+        let fa = formAction page
+        v <- getForm fa (processor1 page)
+        renderer page v fa
 
     postH env = do
         page <- getPage
-        (v, mpayload) <- postForm formAction (processor1 page) (\_ -> return $ return . runIdentity . env)
+        let fa = formAction page
+        (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         case mpayload of
             Just payload -> processor2 page payload >>= redirect
-            Nothing      -> renderer page v formAction
+            Nothing      -> renderer page v fa
 
     redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
 
 redirectFormHandler
     :: (FormPageView p, Page p, RedirectOf p, ActionM m)
-    => ST                        -- ^ Form Action
-    -> m p                       -- ^ Page representation
+    => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
     -> ServerT (FormH HTML (Html ()) ST) m
-redirectFormHandler action getPage processor = formRedirectH' action getPage makeForm p2 r
+redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> redirectOf page
-    r page v formAction =
+    r page v fa = 
         let frame = if isPublicPage page then publicPageFrame else pageFrame frameUserHack in
-        pure . frame $ formPage v formAction page
+        pure . frame $ formPage v fa page
 
 ----------------------------------------------------------------------
 -- HACKS
