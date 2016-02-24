@@ -43,8 +43,8 @@ pageTopicPhase topic ideas = case topic ^. topicPhase of
     -- Maybe some buttons to hide?
     PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
 
-pageTopicOverview :: (ActionM action) => AUID Topic -> action (Frame PageTopicOverview)
-pageTopicOverview topicId = persistent $ do
+viewTopic :: ActionPersist m => AUID Topic -> m (Frame PageTopicOverview)
+viewTopic topicId = persistent $ do
     -- FIXME 404
     Just topic <- findTopic topicId
     ideas      <- findIdeasByTopic topic

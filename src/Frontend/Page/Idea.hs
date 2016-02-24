@@ -15,14 +15,14 @@ module Frontend.Page.Idea
   , PageIdeaDetailWinner(..)
   , PageCreateIdea(..)
   , PageEditIdea(..)
-  , pageIdeaDetail
+  , viewIdea
   , createIdea
   , editIdea
   , categoryValues
   )
 where
 
-import Action (ActionM, persistent)
+import Action (ActionM, ActionPersist, persistent)
 import Frontend.Page.Comment
 import Frontend.Path (Top(TopTesting), path)
 import Frontend.Prelude
@@ -72,8 +72,8 @@ pageIdeaDetailPhase idea = \case
     Just PhaseFinished       -> PageIdeaDetailVotingPhase'         . PageIdeaDetailVotingPhase         $ idea
 
 -- FIXME restrict to the given IdeaSpace
-pageIdeaDetail :: ActionM m => AUID Idea -> m (Frame PageIdeaDetail)
-pageIdeaDetail ideaId = persistent $ do
+viewIdea :: ActionPersist m => IdeaSpace -> AUID Idea -> m (Frame PageIdeaDetail)
+viewIdea _space ideaId = persistent $ do
     -- FIXME 404
     Just idea  <- findIdea ideaId
     phase <-
