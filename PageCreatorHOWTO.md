@@ -63,6 +63,21 @@ Then I have two immediate options:
 Both of these options are an improvement over faking values in the HTML files.
 
 
+## Editing `samples/*.hs` (the input file).
+
+The arbitrary data in the pages is often a bit chaotic.  If you want
+to fine-tune that without having to touch the generators in aula under
+`/src/Arbitrary.hs`, you can just edit the file with the name of your
+page and the ending `.hs`.
+
+If you do this, you will have to trigger sensei to refresh, because
+these files aren't watched.  You can trigger sensei either by touching
+any file in the aula repo, or by pressing `enter` in the sensei
+terminal.
+
+If you run into any issues with sensei, try to end (^D) and restart.
+
+
 ## Creating new pages under `samples/`
 
 TODO: details
