@@ -88,7 +88,7 @@ makeFrame p
   | otherwise      = Frame frameUserHack p
 
 instance (ToHtml body) => ToHtml (Frame body) where
-    toHtmlRaw          = toHtml
+    toHtmlRaw                = toHtml
     toHtml (Frame usr bdy)   = pageFrame usr (toHtml bdy)
     toHtml (PublicFrame bdy) = publicPageFrame (toHtml bdy)
 
