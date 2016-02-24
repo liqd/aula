@@ -201,7 +201,7 @@ data Phase =
   | PhaseJury          -- ^ 3. "Prüfungsphase"
   | PhaseVoting        -- ^ 4. "Abstimmungsphase"
   | PhaseResult        -- ^ 5. "Ergebnisphase"
-  | PhaseFinished      -- ^ 6. "Ergebnisphase"
+  | PhaseFinished      -- ^ 6. "Beendet"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 phaseName :: Phase -> ST
@@ -210,7 +210,7 @@ phaseName = \case
     PhaseJury       -> "Prüfungsphase"
     PhaseVoting     -> "Abstimmungsphase"
     PhaseResult     -> "Ergebnisphase"
-    PhaseFinished   -> "Ergebnisphase"
+    PhaseFinished   -> "Beendet"
 
 
 ----------------------------------------------------------------------
