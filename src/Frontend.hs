@@ -112,7 +112,7 @@ type AulaMain =
 
 aulaMain :: ServerT AulaMain Action
 aulaMain =
-       (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
+       Page.viewRooms
   :<|> error "api not implemented: \"space\" :> Capture \"space\" ST :> AulaSpace"
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
@@ -217,7 +217,7 @@ aulaTesting =
   :<|> createRandom dbTopicMap
   :<|> createRandom dbUserMap
 
-  :<|> (Frame frameUserHack . PageIdeasOverview SchoolSpace <$> Action.persistent getIdeas)
+  :<|> Page.viewIdeas SchoolSpace
   :<|> Page.createIdea
   :<|> Page.editIdea
 

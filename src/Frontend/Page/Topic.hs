@@ -234,8 +234,8 @@ instance Page PageCreateTopicAddIdeas where
 instance RedirectOf PageCreateTopicAddIdeas where
     redirectOf (PageCreateTopicAddIdeas topicId _) = "/topics/" <> cs (show topicId) -- FIXME safe links
 
-formAddIdeasToTopic :: ActionM m => AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
-formAddIdeasToTopic topicId = redirectFormHandler getPage addIdeas
+formAddIdeasToTopic :: ActionM m => IdeaSpace -> AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
+formAddIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
-    getPage = PageCreateTopicAddIdeas topicId <$> persistent getWildIdeas
+    getPage = PageCreateTopicAddIdeas topicId <$> persistent (findWildIdeasBySpace space)
     addIdeas ideas = persistent $ moveIdeasToTopic ideas (Just topicId)

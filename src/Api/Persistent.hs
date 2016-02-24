@@ -26,10 +26,12 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
-    , getWildIdeas
     , addIdea
     , modifyIdea
     , findIdea
+    , findIdeasByTopicId
+    , findIdeasByTopic
+    , findWildIdeasBySpace
     , getUsers
     , addUser
     , modifyUser
@@ -38,9 +40,8 @@ module Api.Persistent
     , modifyTopic
     , moveIdeasToTopic
     , findTopic
+    , findTopicsBySpace
     , findUserByLogin
-    , findIdeasByTopicId
-    , findIdeasByTopic
     , loginUser
     , logoutUser
     , dbIdeas
@@ -60,7 +61,6 @@ where
 
 import Data.Foldable (find, for_)
 import Data.Map (Map)
-import Data.Maybe
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -159,9 +159,6 @@ getSpaces = getDb dbSpaces
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
-getWildIdeas :: Persist [Idea]
-getWildIdeas = filter (isNothing . view ideaTopic) <$> getIdeas
-
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
 
@@ -211,11 +208,17 @@ findUserByLogin = findInBy dbUsers userLogin
 findTopic :: AUID Topic -> Persist (Maybe Topic)
 findTopic = findInById dbTopics
 
+findTopicsBySpace :: IdeaSpace -> Persist [Topic]
+findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
+
 findIdeasByTopicId :: AUID Topic -> Persist [Idea]
 findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
 
 findIdeasByTopic :: Topic -> Persist [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
+
+findWildIdeasBySpace :: IdeaSpace -> Persist [Idea]
+findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && idea ^. ideaTopic == Nothing)
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
