@@ -61,6 +61,7 @@ where
 
 import Data.Foldable (find, for_)
 import Data.Map (Map)
+import Data.Maybe (isNothing)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -218,7 +219,7 @@ findIdeasByTopic :: Topic -> Persist [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
 
 findWildIdeasBySpace :: IdeaSpace -> Persist [Idea]
-findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && idea ^. ideaTopic == Nothing)
+findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
