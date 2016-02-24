@@ -32,20 +32,23 @@ instance ToHtml PageTopicOverview where
       PageTopicOverviewVotingPhase'     p -> toHtml p
       PageTopicOverviewResultPhase'     p -> toHtml p
 
+pageTopicPhase :: Topic -> [Idea] -> PageTopicOverview
+pageTopicPhase topic ideas = case topic ^. topicPhase of
+    PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
+    PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
+    PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas
+    PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
+    -- FIXME: how do we display a topic in the finished phase?
+    -- Is this the same the result phase?
+    -- Maybe some buttons to hide?
+    PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
+
 pageTopicOverview :: (ActionM action) => AUID Topic -> action (Frame PageTopicOverview)
 pageTopicOverview topicId = persistent $ do
     -- FIXME 404
     Just topic <- findTopic topicId
     ideas      <- findIdeasByTopic topic
-    pure . Frame frameUserHack $ case topic ^. topicPhase of
-        PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
-        PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
-        PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas
-        PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
-        -- FIXME: how do we display a topic in the finished phase?
-        -- Is this the same the result phase?
-        -- Maybe some buttons to hide?
-        PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
+    pure . Frame frameUserHack $ pageTopicPhase topic ideas
 
 data TabTopicOverview
   = TabAllIdeas
