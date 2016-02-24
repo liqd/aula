@@ -53,7 +53,6 @@ module Api.Persistent
     , dbTopicMap
     , dbCurrentUser
     -- FIXME: Remove hack
-    , addDbEntity
     , bootstrapUser
     , adminUsernameHack
     )
@@ -230,16 +229,6 @@ logoutUser :: ST -> Persist ()
 logoutUser _login = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
--- HACK to make easy to emulate db savings from prototypes
--- FIXME: This is not part of the interface
-
--- | FIXME: Remove. Only used to add random generated entities.
-addDbEntity :: HasMetaInfo a => AulaLens (AMap a) -> a -> Persist a
-addDbEntity l pa = do
-    m <- nextMetaInfo
-    let a = pa & metaInfo .~ m
-    modifyDb l $ at (a ^. _Id) .~ Just a
-    return a
 
 nextId :: Persist (AUID a)
 nextId = do

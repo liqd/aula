@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -24,11 +25,11 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
-    :: ( Arbitrary a, Show a, Typeable a, HasMetaInfo a
+    :: ( Arbitrary (Proto a), Show a, FromProto a, Typeable a, HasMetaInfo a
        , ActionPersist m, GenArbitrary m)
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
-   x <- persistent . addDbEntity l =<< genArbitrary
+   x <- persistent . addDb l =<< genArbitrary
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
