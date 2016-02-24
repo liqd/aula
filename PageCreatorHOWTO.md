@@ -9,6 +9,7 @@ A raw SVG file for the clickdummy is also available
 on request. Questions for the client can be asked
 on Taiga, as well.
 
+
 ## Improving pages under `samples/`
 
 Let's say I want to improve page
@@ -61,6 +62,7 @@ Then I have two immediate options:
 
 Both of these options are an improvement over faking values in the HTML files.
 
+
 ## Creating new pages under `samples/`
 
 TODO: details
@@ -70,12 +72,13 @@ create a couple of empty files and a dummy `ToHtml` instance
 (the guys know where to put it) and a new, trivial page is ready
 for improvements, as described in the previous section.
 
+
 ## Creating fully functional pages under `/` or `testing/`
 
 Not intended for general consumption yet.
 
-related WIP notes:
 
+## A quick explanation of the idea of `Frontend.Page`
 
 ```
 19:55 < fisx_> before my routing table desaster branch,
