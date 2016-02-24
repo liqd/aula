@@ -27,10 +27,6 @@ instance Page PageHomeWithLoginPrompt where
 ----------------------------------------------------------------------
 -- templates
 
-instance ToHtml PageHomeWithLoginPrompt where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageHomeWithLoginPrompt"
-
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 

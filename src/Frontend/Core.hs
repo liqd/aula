@@ -47,7 +47,7 @@ import qualified Frontend.Path as P
 --       combinator
 --     * Later on when we write selenium suite, the semantic tags helps up to parse, identify and test
 --       elements on the page.
-semanticDiv :: forall m a. (Monad m, ToHtml a, Typeable a) => a -> HtmlT m () -> HtmlT m ()
+semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
 ----------------------------------------------------------------------
