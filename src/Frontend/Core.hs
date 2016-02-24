@@ -67,12 +67,7 @@ class FormPageView p where
 
 -- | Defines some properties for pages
 class Page p where
-    -- | Computes True if the Page is public (e.g login, impressum), otherwise False.
-    isPublicPage :: p -> Bool
-    isPublicPage = not . isPrivatePage
-    -- | Computes True if the Page is private otherwise False.
     isPrivatePage :: p -> Bool
-    isPrivatePage = not . isPublicPage
 
 -- | The page after submitting a form should be redirected
 class RedirectOf p where
@@ -84,8 +79,8 @@ data Frame body = Frame User body | PublicFrame body
 
 makeFrame :: Page p => p -> Frame p
 makeFrame p
-  | isPublicPage p = PublicFrame p
-  | otherwise      = Frame frameUserHack p
+  | isPrivatePage p = Frame frameUserHack p
+  | otherwise       = PublicFrame p
 
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw                = toHtml
@@ -236,8 +231,8 @@ redirectFormHandler
 redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> redirectOf page
-    r page v fa = 
-        let frame = if isPublicPage page then publicPageFrame else pageFrame frameUserHack in
+    r page v fa =
+        let frame = if isPrivatePage page then pageFrame frameUserHack else publicPageFrame in
         pure . frame $ formPage v fa page
 
 ----------------------------------------------------------------------
