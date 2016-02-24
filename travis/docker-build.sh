@@ -17,7 +17,7 @@ cabal build --ghc-options="$GHC_OPTIONS"
 
 # Test
 set +e
-run-cabal-test --show-details=never --ghc-options="$GHC_OPTIONS"
+run-cabal-test spec --show-details=never
 RESULT=`echo $?`
 cat dist/test/aula-*-tests.log
 
