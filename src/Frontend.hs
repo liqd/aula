@@ -223,4 +223,4 @@ aulaTesting =
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
   :<|> Page.pageTopicOverview
-  :<|> Page.createTopic
+  :<|> Page.createTopic SchoolSpace []
