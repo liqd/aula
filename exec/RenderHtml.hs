@@ -8,7 +8,7 @@
 module Main (main, spec) where
 
 import Control.Exception (assert, catch, SomeException(SomeException), evaluate)
-import Control.Monad (forM_, unless, when, void)
+import Control.Monad (forM_, unless, when)
 import Control.Monad.Identity (runIdentity)
 import Control.Lens ((^?), each, _Just)
 import Data.String.Conversions
@@ -169,23 +169,38 @@ refreshSamples :: IO ()
 refreshSamples = do
     putStrLn "refresh..."
 
-    -- check if tidy is available.  warns if not, but it'll still work!
-    withTidy :: Bool <- (== ExitSuccess) <$> system "which tidy >/dev/null"
-    unless withTidy $ do
-        hPutStrLn stderr "WARNING: tidy not in path.  will not generate pretty-printed pages."
-
     -- read *.hs
     hs <- filter ((== ".hs") . takeExtension) <$> getDirectoryContents "."
 
     -- write *.html
     forM_ hs $ \fn -> do
         let fn' = dropExtension fn <.> ".html-compact.html"
-            fn'' = dropExtension fn <.> ".html-tidy.html"
         ST.readFile fn >>= dynamicRender >>= ST.writeFile fn'
-        when withTidy . void . system $
-            "tidy -utf8 -indent < " <> show fn' <> " > " <> show fn'' <> " 2>/dev/null"
+        runTidyIfAvailable fn'
 
     putStrLn "done."
+
+
+-- | Call tidy if available; generate either pretty-printed html or an error message if the html is
+-- invalid.
+runTidyIfAvailable :: FilePath -> IO ()
+runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
+  where
+    fn'' = dropExtensions fn' <.> ".html-tidy.html"
+
+    withTidy :: IO Bool
+    withTidy = do
+        v <- (== ExitSuccess) <$> system "which tidy >/dev/null"
+        unless v $
+            hPutStrLn stderr "NOTE: tidy not in path.  will not generate pretty-printed pages."
+        return v
+
+    doTidy :: IO ()
+    doTidy = do
+        (exit, out, err) <- readFile fn' >>= readProcessWithExitCode "tidy" ["-utf8", "-indent"]
+        case exit of
+            ExitSuccess -> ST.writeFile fn' $ cs ("tidy-good\n\n" ++ out)
+            _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" ++ err ++ "\n\n</pre>\n"
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for
