@@ -84,42 +84,31 @@ makeFrame p
 
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw                = toHtml
-    toHtml (Frame usr bdy)   = pageFrame usr (toHtml bdy)
-    toHtml (PublicFrame bdy) = publicPageFrame (toHtml bdy)
+    toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
+    toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
 
--- | FIXME: share code better between 'pageFrame', 'pageFrame'', 'publicPageFrame'.
-publicPageFrame :: (Monad m) => HtmlT m a -> HtmlT m ()
-publicPageFrame bdy = do
-    head_ $ do
-        title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "screen.css"]
-    body_ $ do
-        publicHeaderMarkup >> bdy >> footerMarkup
-
-pageFrame :: (Monad m) => User -> HtmlT m a -> HtmlT m ()
+pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame = pageFrame' []
 
-pageFrame' :: (Monad m) => [HtmlT m a] -> User -> HtmlT m a -> HtmlT m ()
-pageFrame' extraHeaders usr bdy = do
+pageFrame' :: (Monad m) => [HtmlT m a] -> Maybe User -> HtmlT m a -> HtmlT m ()
+pageFrame' extraHeaders mUser bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "screen.css"]
         sequence_ extraHeaders
     body_ $ do
-        headerMarkup usr >> bdy >> footerMarkup
+        headerMarkup mUser >> bdy >> footerMarkup
 
-publicHeaderMarkup :: (Monad m) => HtmlT m ()
-publicHeaderMarkup = div_ $ do
-    span_ "aula"
-    span_ $ img_ [src_ "the_avatar"]
-    hr_ []
-
-headerMarkup :: (Monad m) => User -> HtmlT m ()
-headerMarkup usr = div_ $ do
+headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
+headerMarkup (Just usr) = div_ $ do
     span_ "aula"
     span_ $ a_ [P.href_ P.SpaceAll] "Ideenräume"
     span_ $ a_ [P.href_ P.DelegationView] "Beauftragungsnetzwerk"
     span_ (toHtml $ "Hi " <> (usr ^. userLogin))
+    span_ $ img_ [src_ "the_avatar"]
+    hr_ []
+headerMarkup Nothing = div_ $ do
+    span_ "aula"
     span_ $ img_ [src_ "the_avatar"]
     hr_ []
 
@@ -232,7 +221,9 @@ redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> redirectOf page
     r page v fa =
-        let frame = if isPrivatePage page then pageFrame frameUserHack else publicPageFrame in
+        let frame = if isPrivatePage page
+              then pageFrame (Just frameUserHack)
+              else pageFrame Nothing in
         pure . frame $ formPage v fa page
 
 ----------------------------------------------------------------------
