@@ -199,8 +199,8 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
     doTidy = do
         (exit, out, err) <- readFile fn' >>= readProcessWithExitCode "tidy" ["-utf8", "-indent"]
         case exit of
-            ExitSuccess -> ST.writeFile fn' $ cs ("tidy-good\n\n" ++ out)
-            _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" ++ err ++ "\n\n</pre>\n"
+            ExitSuccess -> ST.writeFile fn' $ cs ("tidy-good\n\n" <> out)
+            _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for
