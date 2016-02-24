@@ -224,5 +224,7 @@ dynamicRender s = do
         no :: IO (Maybe ST)
         no = return Nothing
 
+        -- if you want to auto-refresh the page:
+        -- >>> pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]]
         pf :: User -> a -> Html ()
-        pf user = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] (Just user) . toHtml'
+        pf user = pageFrame (Just user) . toHtml'
