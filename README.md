@@ -113,8 +113,17 @@ make click-dummies-recreate
 make aula-server
 ```
 
-Note: `AULA_SAMPLES` directory shouldn't be inside `aula`
-or `thentos` or otherwise bound by the docker.
+Note: `$AULA_SAMPLES` directory shouldn't be inside `aula` or
+`thentos`.  If it is, a sensei re-run will be triggered by its own
+changes to the html files, resulting in a very noisy loop.
+
+NOTE on docker: docker has a VOLUME under `/root/html-templates` that
+allows you to edit the html code from outside of docker, and still
+serve it from the inside.  If you set $AULA_SAMPLES to a directory of
+your choice outside docker, and to `/root/html-templates inside, the
+script ./docker/run.sh` will mount the outside directory into the
+inside one.
+
 To refresh the HTML from the same content (same texts and everything):
 
 ```shell
@@ -148,5 +157,6 @@ If you use docker, to be able to use more terminals, you can start
 a new shell with
 
 ```shell
+docker ps  # (to find the appropriate <docker hash>)
 docker exec -it "<docker hash>" bash
 ```
