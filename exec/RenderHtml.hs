@@ -29,7 +29,7 @@ import qualified Data.Text.IO as ST
 import Arbitrary ()
 import Config (getSamplesPath)
 import Frontend.Page
-import Types (readWith, User)
+import Types (readWith, User(_userLogin))
 
 
 -- | config section: add new page types here.
@@ -174,7 +174,8 @@ dynamicRender s = do
       where
         yes :: IO (Maybe ST)
         yes = do
-            user <- generate arbitrary
+            userArb <- generate arbitrary
+            let user = userArb {_userLogin = "Vorname"}
             Just <$> evaluate (cs . renderText . pf user . readWith proxy . cs $ s)
 
         no :: IO (Maybe ST)

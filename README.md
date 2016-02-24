@@ -114,6 +114,17 @@ make click-dummies-recreate
 make aula-server
 ```
 
+Note: `$AULA_SAMPLES` directory shouldn't be inside `aula` or
+`thentos`.  If it is, a sensei re-run will be triggered by its own
+changes to the html files, resulting in a very noisy loop.
+
+NOTE on docker: docker has a VOLUME under `/root/html-templates` that
+allows you to edit the html code from outside of docker, and still
+serve it from the inside.  If you set $AULA_SAMPLES to a directory of
+your choice outside docker, and to `/root/html-templates inside, the
+script ./docker/run.sh` will mount the outside directory into the
+inside one.
+
 To refresh the HTML from the same content (same texts and everything):
 
 ```shell
@@ -127,14 +138,14 @@ under `http://localhost:8080/samples/`.  You can do two things now:
    changes, you can initialize a local git repo (`cd $AULA_SAMPLES &&
    git init`) and commit them there.
 
-2. Edit the source code in this repo under `src/Frontend/Page/*.hs`.
+2. Edit source code in the original repo under `src/Frontend/Page/*.hs`.
    If you do this, `$AULA_SAMPLES/*.html` will be overwritten, so make
    sure that all valuable changes you make there are under git control
    and recorded apropriately.
 
 You can combine the two work-flows and edit first the html, then
 record, then edit the Haskell source code and use git to diff the
-generated html again the html you tweaked manually.
+generated html against the html you tweaked manually.
 
 Both `aula-server` and `click-dummies-refresh` go into a loop, so you
 need two terminals.  If you have two displays, you can move your
@@ -142,3 +153,11 @@ browser and the terminal with the refresh loop to one, and your source
 code editor to the other.  The browser will auto-refresh at any modification
 and you will never have to focus there, no matter whether you
 work on the haskell sources or on the html.
+
+If you use docker, to be able to use more terminals, you can start
+a new shell with
+
+```shell
+docker ps  # (to find the appropriate <docker hash>)
+docker exec -it "<docker hash>" bash
+```
