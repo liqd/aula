@@ -50,6 +50,7 @@ dependencies:
     - time
     - transformers
     - wai
+    - wai-app-static
     - warp
 
 library:
