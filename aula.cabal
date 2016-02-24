@@ -124,6 +124,7 @@ executable aula-import-users
     , time
     , transformers
     , wai
+    , wai-app-static
     , warp
     , aula
     , nonce
@@ -173,6 +174,7 @@ executable aula-html-dummies
     , time
     , transformers
     , wai
+    , wai-app-static
     , warp
     , aula
     , extra
@@ -223,6 +225,7 @@ executable aula-server
     , time
     , transformers
     , wai
+    , wai-app-static
     , warp
     , aula
   other-modules:
