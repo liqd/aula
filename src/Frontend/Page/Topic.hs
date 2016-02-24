@@ -43,8 +43,8 @@ pageTopicPhase topic ideas = case topic ^. topicPhase of
     -- Maybe some buttons to hide?
     PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
 
-pageTopicOverview :: (ActionM action) => AUID Topic -> action (Frame PageTopicOverview)
-pageTopicOverview topicId = persistent $ do
+viewTopic :: ActionPersist m => AUID Topic -> m (Frame PageTopicOverview)
+viewTopic topicId = persistent $ do
     -- FIXME 404
     Just topic <- findTopic topicId
     ideas      <- findIdeasByTopic topic
@@ -152,12 +152,12 @@ instance ToHtml PageTopicOverviewDelegations where
 
 
 -- | 10.1 Create topic: Create topic
-data PageCreateTopic = PageCreateTopic
+data PageCreateTopic = PageCreateTopic IdeaSpace [AUID Idea]
   deriving (Eq, Show, Read)
 
 instance ToHtml PageCreateTopic where
     toHtmlRaw = toHtml
-    toHtml p@PageCreateTopic = semanticDiv p $ do
+    toHtml p = semanticDiv p $ do
         p_ "The topic has been created." >> br_ []
         p_ "Fügen Sie weitere wilde ideen dem neuen Thema hinzu"
         a_ [id_ "add-ideas"] "+ Ideen auswählen"
@@ -167,13 +167,13 @@ instance FormPageView PageCreateTopic where
 
     formAction _ = "/topics/create"
 
-    makeForm PageCreateTopic =
+    makeForm (PageCreateTopic space ideas) =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
-        <*> pure SchoolSpace
-        <*> pure []
+        <*> pure space
+        <*> pure ideas
 
     formPage v fa p =
         semanticDiv p $ do
@@ -190,8 +190,8 @@ instance Page PageCreateTopic where
 instance RedirectOf PageCreateTopic where
     redirectOf _ = "/topics"
 
-createTopic :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createTopic = redirectFormHandler (pure PageCreateTopic) (persistent . addTopic)
+createTopic :: (ActionM action) => IdeaSpace -> [AUID Idea] -> ServerT (FormH HTML (Html ()) ST) action
+createTopic space ideas = redirectFormHandler (pure $ PageCreateTopic space ideas) (persistent . addTopic)
 
 -- | 10.2 Create topic: Move ideas to topic
 data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas (AUID Topic) [Idea]
@@ -234,8 +234,8 @@ instance Page PageCreateTopicAddIdeas where
 instance RedirectOf PageCreateTopicAddIdeas where
     redirectOf (PageCreateTopicAddIdeas topicId _) = "/topics/" <> cs (show topicId) -- FIXME safe links
 
-formAddIdeasToTopic :: ActionM m => AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
-formAddIdeasToTopic topicId = redirectFormHandler getPage addIdeas
+formAddIdeasToTopic :: ActionM m => IdeaSpace -> AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
+formAddIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
-    getPage = PageCreateTopicAddIdeas topicId <$> persistent getWildIdeas
+    getPage = PageCreateTopicAddIdeas topicId <$> persistent (findWildIdeasBySpace space)
     addIdeas ideas = persistent $ moveIdeasToTopic ideas (Just topicId)

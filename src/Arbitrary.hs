@@ -104,7 +104,7 @@ instance Arbitrary PageUserSettings where
     arbitrary = pure PageUserSettings
 
 instance Arbitrary PageCreateTopic where
-    arbitrary = pure PageCreateTopic
+    arbitrary = PageCreateTopic <$> arb <*> arb
 
 instance Arbitrary PageCreateTopicAddIdeas where
     arbitrary = PageCreateTopicAddIdeas <$> arb <*> arb

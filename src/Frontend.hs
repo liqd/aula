@@ -112,8 +112,8 @@ type AulaMain =
 
 aulaMain :: ServerT AulaMain Action
 aulaMain =
-       (Frame frameUserHack . PageRoomsOverview <$> Action.persistent getSpaces)
-  :<|> error "api not implemented: \"space\" :> Capture \"space\" ST :> AulaSpace"
+       Page.viewRooms
+  :<|> aulaSpace
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
   :<|> aulaUser
@@ -132,7 +132,7 @@ type AulaSpace =
        -- browse wild ideas in an idea space
        "idea" :> GetH (Frame PageIdeasOverview)
        -- view idea details (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame PageTopicOverview)
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame PageIdeaDetail)
        -- edit idea (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormH HTML (Html ()) Idea
        -- create wild idea
@@ -148,18 +148,21 @@ type AulaSpace =
        -- create new idea inside topic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormH HTML (Html ()) ST
 
-aulaSpace :: ServerT AulaSpace Action
-aulaSpace =
-       error "api not implemented: \"idea\"   :> GetH (Frame PageIdeasOverview)"
-  :<|> error "api not implemented: \"idea\"   :> Capture \"idea\" (AUID Idea) :> GetH (Frame PageTopicOverview)"
-  :<|> error "api not implemented: \"idea\"   :> Capture \"idea\" (AUID Idea) :> FormH HTML (Html ()) Idea"
-  :<|> error "api not implemented: \"idea\"   :> \"create\" :> FormH HTML (Html ()) ST"
+aulaSpace :: ST -> ServerT AulaSpace Action
+aulaSpace _spaceName =
+       Page.viewIdeas space
+  :<|> Page.viewIdea  space
+  :<|> Page.editIdea
+  :<|> Page.createIdea
 
-  :<|> error "api not implemented: \"topic\"  :> GetH (Frame PageIdeasInDiscussion)"
-  :<|> error "api not implemented: \"topic\"  :> Capture \"topic\" (AUID Topic) :> \"ideas\"       :> GetH (Frame PageTopicOverview)"
+  :<|> Page.viewTopics space
+  :<|> Page.viewTopic
   :<|> error "api not implemented: \"topic\"  :> Capture \"topic\" (AUID Topic) :> \"delegations\" :> GetH (Frame PageTopicOverview)"
-  :<|> error "api not implemented: \"topic\"  :> \"create\" :> FormH HTML (Html ()) ST"
+  :<|> Page.createTopic space []
   :<|> error "api not implemented: \"topic\"  :> \"idea\" :> \"create\" :> FormH HTML (Html ()) ST"
+
+  where
+    space = SchoolSpace -- FIXME
 
 
 type AulaUser =
@@ -195,18 +198,15 @@ aulaAdmin =
 type AulaTesting =
        GetH (Frame ST)
 
-  :<|> "ideas" :> CreateRandom Idea
+  :<|> "idea"  :> CreateRandom Idea
   :<|> "space" :> CreateRandom IdeaSpace
   :<|> "topic" :> CreateRandom Topic
   :<|> "user"  :> CreateRandom User
 
-  :<|> "ideas" :> GetH (Frame PageIdeasOverview)
-  :<|> "ideas" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "ideas" :> "edit" :> Capture "idea" (AUID Idea) :> FormH HTML (Html ()) ST
-
+  :<|> "ideas"  :> GetH (Frame (PageShow [Idea]))
+  :<|> "spaces" :> GetH (Frame (PageShow [IdeaSpace]))
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
-  :<|> "topics" :> Capture "topic" (AUID Topic) :> GetH (Frame PageTopicOverview)
-  :<|> "topics" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "users"  :> GetH (Frame (PageShow [User]))
 
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
@@ -217,10 +217,7 @@ aulaTesting =
   :<|> createRandom dbTopicMap
   :<|> createRandom dbUserMap
 
-  :<|> (Frame frameUserHack . PageIdeasOverview SchoolSpace <$> Action.persistent getIdeas)
-  :<|> Page.createIdea
-  :<|> Page.editIdea
-
-  :<|> (Frame frameUserHack . PageShow <$> Action.persistent getTopics)
-  :<|> Page.pageTopicOverview
-  :<|> Page.createTopic
+  :<|> (PublicFrame . PageShow <$> Action.persistent getIdeas)
+  :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
+  :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
+  :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)

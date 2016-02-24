@@ -26,10 +26,12 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
-    , getWildIdeas
     , addIdea
     , modifyIdea
     , findIdea
+    , findIdeasByTopicId
+    , findIdeasByTopic
+    , findWildIdeasBySpace
     , getUsers
     , addUser
     , modifyUser
@@ -38,9 +40,8 @@ module Api.Persistent
     , modifyTopic
     , moveIdeasToTopic
     , findTopic
+    , findTopicsBySpace
     , findUserByLogin
-    , findIdeasByTopicId
-    , findIdeasByTopic
     , loginUser
     , logoutUser
     , dbIdeas
@@ -52,7 +53,6 @@ module Api.Persistent
     , dbTopicMap
     , dbCurrentUser
     -- FIXME: Remove hack
-    , addDbEntity
     , bootstrapUser
     , adminUsernameHack
     )
@@ -60,7 +60,7 @@ where
 
 import Data.Foldable (find, for_)
 import Data.Map (Map)
-import Data.Maybe
+import Data.Maybe (isNothing)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Time.Clock (getCurrentTime)
@@ -159,9 +159,6 @@ getSpaces = getDb dbSpaces
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
-getWildIdeas :: Persist [Idea]
-getWildIdeas = filter (isNothing . view ideaTopic) <$> getIdeas
-
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
 
@@ -211,11 +208,17 @@ findUserByLogin = findInBy dbUsers userLogin
 findTopic :: AUID Topic -> Persist (Maybe Topic)
 findTopic = findInById dbTopics
 
+findTopicsBySpace :: IdeaSpace -> Persist [Topic]
+findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
+
 findIdeasByTopicId :: AUID Topic -> Persist [Idea]
 findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
 
 findIdeasByTopic :: Topic -> Persist [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
+
+findWildIdeasBySpace :: IdeaSpace -> Persist [Idea]
+findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
@@ -226,16 +229,6 @@ logoutUser :: ST -> Persist ()
 logoutUser _login = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
--- HACK to make easy to emulate db savings from prototypes
--- FIXME: This is not part of the interface
-
--- | FIXME: Remove. Only used to add random generated entities.
-addDbEntity :: HasMetaInfo a => AulaLens (AMap a) -> a -> Persist a
-addDbEntity l pa = do
-    m <- nextMetaInfo
-    let a = pa & metaInfo .~ m
-    modifyDb l $ at (a ^. _Id) .~ Just a
-    return a
 
 nextId :: Persist (AUID a)
 nextId = do

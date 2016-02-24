@@ -9,9 +9,13 @@ module Frontend.Page.Overview
     ( PageRoomsOverview(..)
     , PageIdeasOverview(..)
     , PageIdeasInDiscussion(..)
+    , viewRooms
+    , viewIdeas
+    , viewTopics
     )
 where
 
+import Action
 import Frontend.Path (Top(TopTesting), path)
 import Frontend.Prelude
 
@@ -36,6 +40,20 @@ data Tabs = Tabs ActiveTab IdeaSpace
 
 data ActiveTab = WildIdeas | Topics
   deriving (Eq, Show, Read)
+
+
+----------------------------------------------------------------------
+-- actions
+
+viewRooms :: ActionPersist m => m (Frame PageRoomsOverview)
+viewRooms = persistent $ Frame frameUserHack . PageRoomsOverview <$> getSpaces
+
+viewIdeas :: ActionPersist m => IdeaSpace -> m (Frame PageIdeasOverview)
+viewIdeas space = persistent $ Frame frameUserHack . PageIdeasOverview space <$> findWildIdeasBySpace space
+
+viewTopics :: ActionPersist m => IdeaSpace -> m (Frame PageIdeasInDiscussion)
+viewTopics space = persistent $
+  Frame frameUserHack . PageIdeasInDiscussion space <$> findTopicsBySpace space
 
 
 ----------------------------------------------------------------------
