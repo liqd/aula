@@ -122,8 +122,8 @@ recreateSamples = do
     putStrLn "done."
   where
     writeSample :: (Int, (TypeRep, String)) -> IO ()
-    writeSample (ix, (typRep, valueRepShow)) = do
-        let fn :: FilePath
+    writeSample (ix, (typRep, valueRepShow)) = writeFile (fn <.> "hs") valueRepShow
+      where fn :: FilePath
             fn = showNum ix <> "_" <> (tr <$> show typRep)
 
             showNum i | i < 999 = reverse . take 3 . reverse $ "000" <> show ix
@@ -131,9 +131,6 @@ recreateSamples = do
 
             tr ' ' = '_'
             tr  c  =  c
-
-        writeFile (fn <.> "hs")              valueRepShow
-        writeFile (fn <.> "hs" <.> "html") $ "<pre>" <> valueRepShow <> "</pre>"
 
 
 -- | Read existing samples and re-render the HTML.

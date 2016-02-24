@@ -161,3 +161,5 @@ a new shell with
 docker ps  # (to find the appropriate <docker hash>)
 docker exec -it "<docker hash>" bash
 ```
+
+For more info on this, check out `./docs/PageCreatorHOWTO.md`.
