@@ -1,5 +1,6 @@
 module Frontend.Prelude (module X) where
 
+import Api                        as X
 import Control.Monad.Trans.Except as X (ExceptT)
 import Lucid                      as X hiding (for_)
 import Servant                    as X

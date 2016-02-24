@@ -72,6 +72,7 @@ library
       Frontend.Core
       Frontend.Html
       Frontend.Page
+      Frontend.Page.Comment
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
@@ -303,6 +304,7 @@ test-suite spec
       Frontend.Core
       Frontend.Html
       Frontend.Page
+      Frontend.Page.Comment
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
