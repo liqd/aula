@@ -15,7 +15,7 @@ data PageStaticImprint = PageStaticImprint
   deriving (Eq, Show, Read)
 
 instance Page PageStaticImprint where
-    isPublicPage _ = True
+    isPrivatePage _ = False
 
 ----------------------------------------------------------------------
 -- template
@@ -40,7 +40,7 @@ data PageStaticTermsOfUse = PageStaticTermsOfUse
   deriving (Eq, Show, Read)
 
 instance Page PageStaticTermsOfUse where
-    isPublicPage _ = True
+    isPrivatePage _ = False
 
 ----------------------------------------------------------------------
 -- template

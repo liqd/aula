@@ -181,4 +181,4 @@ dynamicRender s = do
         no = return Nothing
 
         pf :: User -> a -> Html ()
-        pf user = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] user . toHtml
+        pf user = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] (Just user) . toHtml

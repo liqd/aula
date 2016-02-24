@@ -22,7 +22,7 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
-  isPublicPage _ = True
+  isPrivatePage _ = False
 
 ----------------------------------------------------------------------
 -- templates
