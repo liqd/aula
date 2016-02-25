@@ -105,7 +105,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
     span_ [class_ "site-logo"] "aula"
 
     case mUser of
-        Just usr -> do
+        Just _usr -> do
             ul_ [class_ "main-header-menu"] $ do
                 li_ $ a_ [P.href_ P.SpaceAll] "Ideenräume"
                 li_ $ a_ [P.href_ P.DelegationView] "Beauftragungsnetzwerk"
