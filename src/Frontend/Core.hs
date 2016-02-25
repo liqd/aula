@@ -18,7 +18,6 @@ import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid
-import Lucid.Html5
 import Lucid.Base
 import Servant
 import Servant.HTML.Lucid (HTML)
