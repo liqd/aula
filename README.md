@@ -169,5 +169,5 @@ For more info on this, check out `./docs/PageCreatorHOWTO.md`.
 SASS is used for styling, use the following command to compile the SASS
 to CSS
 ```shell
-sass --watch static/scss/imports.scss:static/css/all.css --style compressed
+sass --watch static-src/scss/imports.scss:static/css/all.css --style compressed
 ```
