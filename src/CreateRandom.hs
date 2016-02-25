@@ -52,3 +52,28 @@ genInitalTestDb = do
     topicIdea <- addIdea =<< genArbitrary
     _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
+
+frameUserHack :: User
+frameUserHack = User
+    { _userMeta      = frameUserMetaInfo
+    , _userLogin     = "VorNam"
+    , _userFirstName = "Vorname"
+    , _userLastName  = "Name"
+    , _userAvatar    = "https://avatar.com"
+    , _userGroups    = nil
+    , _userPassword  = EncryptedPass ""
+    , _userEmail     = Nothing
+    }
+  where
+    sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
+
+    frameUserMetaInfo :: MetaInfo User
+    frameUserMetaInfo= MetaInfo
+        { _metaId              = AUID 1
+        , _metaCreatedBy       = AUID 0
+        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
+        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
+        , _metaCreatedAt       = sometime
+        , _metaChangedBy       = AUID 0
+        , _metaChangedAt       = sometime
+        }

@@ -29,6 +29,7 @@ import qualified Data.Text.Lazy as LT
 
 import Action
 import Arbitrary ()
+import Data.UriPath
 import Frontend.Page
 import Persistent
 import Types
@@ -168,7 +169,7 @@ renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . failOnError $ do
-            v <- getForm (formAction page) (makeForm page)
+            v <- getForm (absoluteUriPath $ formAction page) (makeForm page)
             return . LT.length . renderText $ formPage v "formAction" page
         assert (len > 0)
 

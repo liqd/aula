@@ -15,7 +15,7 @@ module Frontend.Page.Idea
   )
 where
 
-import Action (ActionM, ActionPersist, persistent)
+import Action (ActionM, ActionPersist, ActionUserHandler, persistent)
 import Frontend.Page.Comment
 import Frontend.Prelude
 
@@ -174,19 +174,21 @@ ideaFormFields v = do
 -- handlers
 
 -- FIXME restrict to the given IdeaSpace
-viewIdea :: ActionPersist m => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
-viewIdea _space ideaId = persistent $ do
-    -- FIXME 404
-    Just idea  <- findIdea ideaId
-    phase <-
-        case idea ^. ideaTopic of
-            Nothing ->
-                pure Nothing
-            Just topicId -> do
-                -- FIXME 404
-                Just topic <- findTopic topicId
-                pure . Just $ topic ^. topicPhase
-    pure . makeFrame $ ViewIdea idea phase
+viewIdea :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
+viewIdea _space ideaId = do
+    persistent $ do
+        -- FIXME 404
+        Just idea  <- findIdea ideaId
+        ViewIdea idea <$>
+            -- phase
+            case idea ^. ideaTopic of
+                Nothing ->
+                    pure Nothing
+                Just topicId -> do
+                    -- FIXME 404
+                    Just topic <- findTopic topicId
+                    pure . Just $ topic ^. topicPhase
+    >>= makeFrame
 
 instance RedirectOf CreateIdea where
     redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas

@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -76,16 +78,20 @@ class RedirectOf p where
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body = Frame User body | PublicFrame body
+  deriving (Functor)
 
-makeFrame :: Page p => p -> Frame p
+makeFrame :: (ActionPersist m, ActionUserHandler m, Page p) => p -> m (Frame p)
 makeFrame p
-  | isPrivatePage p = Frame frameUserHack p
-  | otherwise       = PublicFrame p
+  | isPrivatePage p = flip Frame p <$> currentUser
+  | otherwise       = return $ PublicFrame p
 
 instance (ToHtml body) => ToHtml (Frame body) where
-    toHtmlRaw                = toHtml
-    toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
-    toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
+    toHtmlRaw = toHtml
+    toHtml = renderPageFrame toHtml
+
+renderPageFrame :: Monad m => (t -> HtmlT m a) -> Frame t -> HtmlT m ()
+renderPageFrame f (Frame usr bdy)   = pageFrame (Just usr) (f bdy)
+renderPageFrame f (PublicFrame bdy) = pageFrame Nothing (f bdy)
 
 pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame = pageFrame' []
@@ -230,36 +236,4 @@ redirectFormHandler
 redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> absoluteUriPath (redirectOf page)
-    r page v fa =
-        let frame = if isPrivatePage page
-              then pageFrame (Just frameUserHack)
-              else pageFrame Nothing in
-        pure . frame $ formPage v fa page
-
-----------------------------------------------------------------------
--- HACKS
-
-frameUserHack :: User
-frameUserHack = User
-    { _userMeta      = frameUserMetaInfo
-    , _userLogin     = "VorNam"
-    , _userFirstName = "Vorname"
-    , _userLastName  = "Name"
-    , _userAvatar    = "https://avatar.com"
-    , _userGroups    = nil
-    , _userPassword  = EncryptedPass ""
-    , _userEmail     = Nothing
-    }
-  where
-    sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
-
-    frameUserMetaInfo :: MetaInfo User
-    frameUserMetaInfo= MetaInfo
-        { _metaId              = AUID 1
-        , _metaCreatedBy       = AUID 0
-        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
-        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
-        , _metaCreatedAt       = sometime
-        , _metaChangedBy       = AUID 0
-        , _metaChangedAt       = sometime
-        }
+    r page v fa = renderPageFrame id . fmap (formPage v fa) <$> makeFrame page
