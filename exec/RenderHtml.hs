@@ -96,7 +96,7 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
 instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = unwrap2 $ do
         v <- unwrap1 $ getForm "" (makeForm p)
-        formPage v "formAction" p
+        formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
       where
         unwrap1 = return . runIdentity
         unwrap2 = HtmlT . return . runIdentity . runHtmlT
