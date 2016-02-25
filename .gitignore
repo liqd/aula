@@ -11,3 +11,4 @@ packages/
 .stack-work
 /dist
 .sass-cache/
+.fontcustom-manifest.json

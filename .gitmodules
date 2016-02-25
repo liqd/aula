@@ -1,3 +1,6 @@
 [submodule "submodules/Simple-Grid"]
 	path = submodules/Simple-Grid
 	url = https://github.com/ThisIsDallas/Simple-Grid.git
+[submodule "submodules/HTML5-Reset"]
+	path = submodules/HTML5-Reset
+	url = https://github.com/murtaugh/HTML5-Reset.git

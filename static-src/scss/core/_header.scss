@@ -1,0 +1,21 @@
+.main-header {
+    @include box-shadow(0 0 3px 0 rgba(0, 0, 0, 0.5));
+    @include clearfix;
+    @include rem(padding, 0 22px);
+    @include rem(height, $header-height);
+}
+
+.site-logo-icon:before {
+    @include rem(font-size, 47px);
+    color: $color-brand1;
+    line-height: $header-height;
+}
+
+.main-header-menu,
+.site-logo {
+    float: left;
+}
+
+.main-header-user {
+    float: right;
+}
