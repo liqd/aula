@@ -1,7 +1,7 @@
 {
 "version": 3,
 "mappings": "AACA,UASC,CARG,WAAW,CAAE,OAAO,CACpB,GAAG,CAAE,mDAAmD,CACxD,GAAG,CAAE,gTAAsF,CAI3F,WAAW,CAAE,MAAM,CACnB,UAAU,CAAE,MAAM,CAEtB,UASC,CARG,WAAW,CAAE,OAAO,CACpB,GAAG,CAAE,gDAAgD,CACrD,GAAG,CAAE,iSAAmF,CAIxF,WAAW,CAAE,GAAG,CAChB,UAAU,CAAE,MAAM,CCnBtB,IAAK,CACD,KAAK,CCOmB,OAAgB,CDNxC,WAAW,CCFa,0BAAK,CDKjC,iBAAuB,CACnB,WAAW,CCJa,GAAG,CDO/B,CAAE,CACE,KAAK,CCDmB,OAAa,CDErC,eAAe,CAAE,IAAI,CAErB,eAAiB,CACb,eAAe,CAAE,SAAS",
-"sources": ["../../static-src/scss/_fonts.scss","../../static-src/scss/_type.scss","../../static-src/scss/_variables.scss"],
+"sources": ["../../static-src/scss/core/_fonts.scss","../../static-src/scss/core/_type.scss","../../static-src/scss/core/_variables.scss"],
 "names": [],
 "file": "all.css"
 }
