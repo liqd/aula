@@ -1,7 +1,7 @@
 {
 "version": 3,
-"mappings": "",
-"sources": [],
+"mappings": "AAAA,UASC,CARG,WAAW,CAAE,OAAO,CACpB,GAAG,CAAE,mDAAmD,CACxD,GAAG,CAAE,gTAAsF,CAI3F,WAAW,CAAE,MAAM,CACnB,UAAU,CAAE,MAAM,CAEtB,UASC,CARG,WAAW,CAAE,WAAW,CACxB,GAAG,CAAE,gDAAgD,CACrD,GAAG,CAAE,iSAAmF,CAIxF,WAAW,CAAE,MAAM,CACnB,UAAU,CAAE,MAAM",
+"sources": ["../../static-src/scss/_fonts.scss"],
 "names": [],
 "file": "all.css"
 }
