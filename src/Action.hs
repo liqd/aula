@@ -46,6 +46,14 @@ import Test.QuickCheck (arbitrary, generate)
 ----------------------------------------------------------------------
 -- constraint types
 
+-- | User representation during an action
+-- FIXME: Figure out which information is needed here.
+data UserState
+    = UserLoggedOut
+    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
+
+makeLenses ''UserState
+
 class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
@@ -78,14 +86,14 @@ class Monad m => ActionUserHandler m where
     logout :: m ()
 
 instance ActionUserHandler Action where
-    login username = do
-        put $ UserLoggedIn username "session"
-        persistent $ loginUser username
+    login user = do
+        put $ UserLoggedIn user "session"
+        persistent $ loginUser user
 
     userState = get
 
     logout = do
-        gets _username >>= persistent . logoutUser
+        use username >>= persistent . logoutUser
         put UserLoggedOut
 
 class MonadError ActionExcept m => ActionError m
@@ -117,12 +125,6 @@ newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserSt
 --
 -- FIXME: Create a different type
 type ActionExcept = ServantErr
-
--- | User representation during an action
--- FIXME: Figure out which information is needed here.
-data UserState
-    = UserLoggedOut
-    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
 
 -- | Creates a natural transformation from Action to IO
 --
@@ -157,9 +159,8 @@ modifyCurrentUser f =
 loggedInUser :: (ActionUserHandler m) => m ST
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
-    UserLoggedIn username _session -> return username
+    UserLoggedIn user _session -> return user
 
 ----------------------------------------------------------------------
 -- Lens
 
-makeLenses ''UserState
