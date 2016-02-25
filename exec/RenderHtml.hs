@@ -75,31 +75,37 @@ pages f =
     ]
 
 
+-- | We write 'ToHtml' for pages that contain no forms, and 'FormPageView' for pages that do.  In
+-- this module, we need to render both into html for viewing only, and 'ToHtml'' is introduced for
+-- this.  We can instantiate wrapper types for 'ToHtml' instances and 'FormPageView', resp., and get
+-- a uniform way of rendering html for either.
 class ToHtml' p where
     toHtml' :: Monad m => p -> HtmlT m ()
 
+-- | A wrapper type to make all 'ToHtml' instances 'ToHtml'' instances.
 data ToHtmlDefault p = ToHtmlDefault p
   deriving (Eq, Ord, Show, Read)
 
-instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
-    arbitrary = ToHtmlDefault <$> arbitrary
+-- | A wrapper type to make all 'FormPageView' instances 'ToHtml'' instances.
+data ToHtmlForm p = ToHtmlForm p
+  deriving (Eq, Ord, Show, Read)
 
 instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
     toHtml' (ToHtmlDefault p) = toHtml p
 
-data ToHtmlForm p = ToHtmlForm p
-  deriving (Eq, Ord, Show, Read)
-
-instance Arbitrary p => Arbitrary (ToHtmlForm p) where
-    arbitrary = ToHtmlForm <$> arbitrary
-
 instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = unwrap2 $ do
         v <- unwrap1 $ getForm "" (makeForm p)
-        formPage v "formAction" p
+        formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
       where
         unwrap1 = return . runIdentity
         unwrap2 = HtmlT . return . runIdentity . runHtmlT
+
+instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
+    arbitrary = ToHtmlDefault <$> arbitrary
+
+instance Arbitrary p => Arbitrary (ToHtmlForm p) where
+    arbitrary = ToHtmlForm <$> arbitrary
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
