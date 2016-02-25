@@ -1,0 +1,41 @@
+/*
+  Icon Font: fontcustom
+*/
+
+@font-face {
+  font-family: "fontcustom";
+  src: url("./fontcustom_d9f984e29577d629364b19d640540624.eot");
+  src: url("./fontcustom_d9f984e29577d629364b19d640540624.eot?#iefix") format("embedded-opentype"),
+       url("./fontcustom_d9f984e29577d629364b19d640540624.woff") format("woff"),
+       url("./fontcustom_d9f984e29577d629364b19d640540624.ttf") format("truetype"),
+       url("./fontcustom_d9f984e29577d629364b19d640540624.svg#fontcustom") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: "fontcustom";
+    src: url("./fontcustom_d9f984e29577d629364b19d640540624.svg#fontcustom") format("svg");
+  }
+}
+
+[data-icon]:before { content: attr(data-icon); }
+
+[data-icon]:before,
+.icon-aula-logo:before {
+  display: inline-block;
+  font-family: "fontcustom";
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-decoration: inherit;
+  text-rendering: optimizeLegibility;
+  text-transform: none;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-smoothing: antialiased;
+}
+
+.icon-aula-logo:before { content: "\f100"; }
