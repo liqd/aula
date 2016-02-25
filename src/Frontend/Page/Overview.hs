@@ -69,7 +69,7 @@ instance ToHtml PageRoomsOverview where
 
         g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
         g SchoolSpace = div_ . p_ $ "Schule"
-        g (ClassSpace (SchoolClass n _)) = div_ . p_ $ "Klasse " <> toHtml n
+        g (ClassSpace c) = div_ . p_ $ "Klasse " <> c ^. className . html
             -- for the first school year, we can ignore the year.  (after that, we have different
             -- options.  one would be to only show the year if it is not the current one, or always show
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
@@ -123,5 +123,5 @@ instance ToHtml Tabs where
             "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
-        spaceDesc SchoolSpace     = "der Schule"
-        spaceDesc (ClassSpace (SchoolClass n _)) = "der Klasse " <> n
+        spaceDesc SchoolSpace    = "der Schule"
+        spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className

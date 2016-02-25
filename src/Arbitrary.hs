@@ -150,10 +150,10 @@ instance Arbitrary IdeaSpace where
     arbitrary = oneof [pure SchoolSpace, ClassSpace <$> arb]
 
 instance Arbitrary SchoolClass where
-    arbitrary = SchoolClass <$> name <*> year
+    arbitrary = schoolClass <$> year <*> name
       where
+        year = elements [2012..2020]
         name = elements [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
-        year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary ProtoTopic where
     arbitrary = ProtoTopic <$> arbPhrase <*> arb' <*> arb' <*> pure SchoolSpace <*> pure []

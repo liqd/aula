@@ -14,19 +14,21 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (makeLenses, Lens', (^?), _Just)
+import Control.Lens (makeLenses, Lens', (^.), (^?), _Just)
 import Control.Monad
 import Data.Binary
 import Data.Char
 import Data.Proxy (Proxy(Proxy))
 import Data.Set (Set)
+import Data.String
 import Data.String.Conversions
 import Data.Time
 import GHC.Generics
 import Lucid
-import Servant.API (FromHttpApiData)
+import Servant.API (FromHttpApiData(parseUrlPiece))
 import Text.Read (readMaybe)
 
+import qualified Data.Text as ST
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 
@@ -168,10 +170,13 @@ data IdeaSpace =
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass
-    { _className       :: ST  -- ^ e.g. "7a"
-    , _classSchoolYear :: ST  -- ^ e.g. "2015/16"
+    { _classSchoolYear :: Int -- ^ e.g. 2015
+    , _className       :: ST  -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+schoolClass :: Int -> ST -> SchoolClass
+schoolClass = SchoolClass
 
 -- | A 'Topic' is created inside an 'IdeaSpace'.  It is used as a container for a "wild idea" that
 -- has reached a quorum, plus more ideas that the moderator decides belong here.  'Topic's have
@@ -417,3 +422,25 @@ notFeasibleIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just NotF
 
 winningIdea :: Idea -> Bool
 winningIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just Winning
+
+instance HasUriPart IdeaSpace where
+    uriPart SchoolSpace    = "school"
+    uriPart (ClassSpace c) = fromString $ (show $ c ^. classSchoolYear) <> "-" <> (cs $ c ^. className)
+
+parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
+parseIdeaSpace s
+    | s == "school" = Right SchoolSpace
+    | otherwise     =
+        case ST.splitOn "-" s of
+            [year,name]
+                | not (ST.all isDigit year) -> err "Year should be only digits"
+                | otherwise                 -> Right . ClassSpace $ schoolClass (readST year) name
+            _:_:_:_                         -> err "Too many parts (two parts expected)"
+            _                               -> err "Too few parts (two parts expected)"
+  where
+    err msg = Left $ "Ill-formed idea space: " <> msg
+    readST :: Read a => ST -> a
+    readST = read . cs
+
+instance FromHttpApiData IdeaSpace where
+    parseUrlPiece = parseIdeaSpace
