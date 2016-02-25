@@ -155,14 +155,6 @@ run' (Free (ViewProposals g))    = do
     run' $ g ps
 
 
-instance Arbitrary (BehaviorF a) where
-    arbitrary = oneof
-        [ login <$> arbWord
-        , logout
-        , viewProposals
-        ]
-
-
 program :: Behavior ()
 program = do
     login "wef"
@@ -171,6 +163,30 @@ program = do
     addProposal (Proposal 14)
     delProposal (Proposal 1)
     logout
+
+
+
+{-
+
+ deliverable:
+
+1. test language.
+    + domain model
+    + dsl
+    + dump interpreter
+    - interpreter with invariants (pure)
+    - interpreter with invariatns (talking to the real server)
+
+2. translation of 'agenda s-1' into test language.
+    - write small properties as small programs in the DSL
+
+3. arbitrary instance for `Behavior ()`
+
+
+invariants can be implicit (in the interpreter) and explicit (in the DSL).
+
+
+-}
 
 
 
