@@ -25,7 +25,7 @@ import Data.Time
 import GHC.Generics
 import Lucid
 import Servant.API (FromHttpApiData)
-import Text.Digestive.Util (readMaybe)
+import Text.Read (readMaybe)
 
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
