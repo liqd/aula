@@ -35,7 +35,7 @@ instance FormPageView PageUserSettings where
     type FormPageResult PageUserSettings = UserSettingData
 
     formAction _ =
-        P.path . P.TopTesting $ P.path P.UserSettings
+        P.path P.UserSettings
 
     makeForm (PageUserSettings user) =
         UserSettingData
@@ -49,15 +49,21 @@ instance FormPageView PageUserSettings where
     formPage v fa p = do
         semanticDiv p $ do
             DF.form v fa $ do
+                h1_ "Einstellungen"
+                p_ "E-mailadresse (optional)"
                 DF.inputText "email" v >> br_ []
+                h3_ "Passwort andern"
+                p_ "aktualles Passwort"
                 DF.inputText "old-password" v >> br_ []
+                p_ "neues Passwort"
                 DF.inputText "new-password1" v >> br_ []
+                p_ "neues Passwort bestatigen"
                 DF.inputText "new-password2" v >> br_ []
                 DF.inputSubmit "ANDERUNGEN SPEICHERN"
 
 -- FIXME: Redirect to the right place
 instance RedirectOf PageUserSettings where
-    redirectOf _ = P.path $ P.TopTesting "/ideas"
+    redirectOf _ = P.path P.SpaceAll
 
 userSettings :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser

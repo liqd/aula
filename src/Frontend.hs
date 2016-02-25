@@ -171,13 +171,11 @@ aulaSpace _spaceName =
 type AulaUser =
        "ideas"       :> GetH (PageShow [Idea])
   :<|> "delegations" :> GetH (PageShow [Delegation])
-  :<|> "settings"    :> GetH (Frame ST)
 
 aulaUser :: AUID User -> ServerT AulaUser Action
 aulaUser _ =
        error "api not implemented: \"ideas\"       :> GetH (PageShow [Idea])"
   :<|> error "api not implemented: \"delegations\" :> GetH (PageShow [Delegation])"
-  :<|> error "api not implemented: \"settings\"    :> GetH (Frame ST)"
 
 
 type AulaAdmin =
@@ -211,8 +209,6 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
-  :<|> "user" :> "settings" :> FormH HTML (Html ()) ST
-
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
        return (PublicFrame "yihaah!")
@@ -226,5 +222,3 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
-
-  :<|> Page.userSettings
