@@ -44,7 +44,7 @@ instance Page ViewIdea where
   isPrivatePage _ = True
 
 -- | 6. Create idea
-data CreateIdea = CreateIdea IdeaSpace
+data CreateIdea = CreateIdea IdeaSpace (Maybe (AUID Topic))
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
@@ -118,7 +118,8 @@ instance ToHtml ViewIdea where
 instance FormPageView CreateIdea where
     type FormPageResult CreateIdea = ProtoIdea
 
-    formAction (CreateIdea space) = relPath $ U.Space space U.CreateIdea
+    formAction (CreateIdea space mtopicId) =
+        relPath $ U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
 
     makeForm _ =
         ProtoIdea
@@ -188,10 +189,10 @@ viewIdea _space ideaId = persistent $ do
     pure . makeFrame $ ViewIdea idea phase
 
 instance RedirectOf CreateIdea where
-    redirectOf (CreateIdea space) = relPath $ U.Space space U.ListIdeas
+    redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
 
-createIdea :: ActionM m => IdeaSpace -> ServerT (FormH HTML (Html ()) ST) m
-createIdea space = redirectFormHandler (pure $ CreateIdea space) (persistent . addIdea)
+createIdea :: ActionM m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormH HTML (Html ()) ST) m
+createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
 
 instance RedirectOf EditIdea where
     redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas

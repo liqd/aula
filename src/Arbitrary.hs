@@ -48,7 +48,7 @@ instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
     arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
 instance Arbitrary CreateIdea where
-    arbitrary = CreateIdea <$> arb
+    arbitrary = CreateIdea <$> arb <*> arb
 
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb

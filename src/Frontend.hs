@@ -161,7 +161,7 @@ aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea   space
   :<|> Page.editIdea   space
-  :<|> Page.createIdea space
+  :<|> Page.createIdea space Nothing
 
   :<|> Page.viewTopics  space
   :<|> Page.viewTopic   space TabAllIdeas
@@ -170,7 +170,7 @@ aulaSpace space =
   :<|> Page.viewTopic   space TabWinningIdeas
   :<|> Page.viewTopic   space TabDelegation
   :<|> Page.createTopic space []
-  :<|> error "api not implemented: \"topic\"  :> \"idea\" :> \"create\" :> FormH HTML (Html ()) ST"
+  :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
