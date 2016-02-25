@@ -429,7 +429,7 @@ winningIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just Winning
 
 instance HasUriPart IdeaSpace where
     uriPart SchoolSpace    = "school"
-    uriPart (ClassSpace c) = fromString $ (show $ c ^. classSchoolYear) <> "-" <> (cs $ c ^. className)
+    uriPart (ClassSpace c) = fromString $ show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
 parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
 parseIdeaSpace s

@@ -119,7 +119,7 @@ instance FormPageView CreateIdea where
     type FormPageResult CreateIdea = ProtoIdea
 
     formAction (CreateIdea space mtopicId) =
-        relPath $ U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
+        relPath . U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
 
     makeForm _ =
         ProtoIdea
