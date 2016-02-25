@@ -56,8 +56,6 @@ spec = do
         , H (arb :: Gen PageIdeaDetailMoveIdeaToTopic)
         , H (arb :: Gen PageIdeaDetailFeasibleNotFeasible)
         , H (arb :: Gen PageIdeaDetailWinner)
-        , H (arb :: Gen PageCreateIdea)
-        , H (arb :: Gen PageEditIdea)
         , H (arb :: Gen PageUserProfileCreateIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen PageUserSettings)
@@ -71,7 +69,6 @@ spec = do
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
-        , H (arb :: Gen PageHomeWithLoginPrompt)
         , H (PageIdea    <$> arb)
         , H (PageComment <$> arb)
         ]

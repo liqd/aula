@@ -8,12 +8,14 @@
 module Main (main, spec) where
 
 import Control.Exception (assert, catch, SomeException(SomeException), evaluate)
-import Control.Monad (forM_, unless, when, void)
+import Control.Monad (forM_, unless, when)
+import Control.Monad.Identity (runIdentity)
 import Control.Lens ((^?), each, _Just)
 import Data.String.Conversions
 import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import Lucid
+import Lucid.Base (HtmlT(HtmlT))
 import System.Directory
 import System.Directory.Extra
 import System.Exit
@@ -23,52 +25,81 @@ import System.Process
 import Test.Hspec
 import Test.QuickCheck
 import Text.Show.Pretty (ppShow)
+import Text.Digestive.View (getForm)
 
 import qualified Data.Text.IO as ST
 
 import Arbitrary ()
 import Config (getSamplesPath)
+import Frontend.Core
 import Frontend.Page
 import Types (readWith, User(_userLogin))
 
 
 -- | config section: add new page types here.
 pages :: forall b.
-    (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml a) => Proxy a -> b)
+    (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a) => Proxy a -> b)
     -> [b]
 pages f =
-    [ f (Proxy :: Proxy PageRoomsOverview)
-    , f (Proxy :: Proxy PageIdeasOverview)
-    , f (Proxy :: Proxy PageIdeasInDiscussion)
-    , f (Proxy :: Proxy PageTopicOverviewRefinementPhase)
-    , f (Proxy :: Proxy PageTopicOverviewJuryPhase)
-    , f (Proxy :: Proxy PageTopicOverviewVotingPhase)
-    , f (Proxy :: Proxy PageTopicOverviewResultPhase)
-    , f (Proxy :: Proxy PageTopicOverviewDelegations)
-    , f (Proxy :: Proxy PageIdeaDetailNewIdeas)
-    , f (Proxy :: Proxy PageIdeaDetailRefinementPhase)
-    , f (Proxy :: Proxy PageIdeaDetailJuryPhase)
-    , f (Proxy :: Proxy PageIdeaDetailVotingPhase)
-    , f (Proxy :: Proxy PageIdeaDetailMoveIdeaToTopic)
-    , f (Proxy :: Proxy PageIdeaDetailFeasibleNotFeasible)
-    , f (Proxy :: Proxy PageIdeaDetailWinner)
-    , f (Proxy :: Proxy PageCreateIdea)
-    , f (Proxy :: Proxy PageEditIdea)
-    , f (Proxy :: Proxy PageUserProfileCreateIdeas)
-    , f (Proxy :: Proxy PageUserProfileDelegatedVotes)
-    , f (Proxy :: Proxy PageUserSettings)
-    , f (Proxy :: Proxy PageCreateTopic)
-    , f (Proxy :: Proxy PageCreateTopicAddIdeas)
-    , f (Proxy :: Proxy PageAdminSettingsDurationsAndQuorum)
-    , f (Proxy :: Proxy PageAdminSettingsGroupsAndPermissions)
-    , f (Proxy :: Proxy PageAdminSettingsUserCreateAndImport)
-    , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
-    , f (Proxy :: Proxy PageDelegateVote)
-    , f (Proxy :: Proxy PageDelegationNetwork)
-    , f (Proxy :: Proxy PageStaticImprint)
-    , f (Proxy :: Proxy PageStaticTermsOfUse)
-    , f (Proxy :: Proxy PageHomeWithLoginPrompt)
+    [ f (Proxy :: Proxy (ToHtmlDefault PageRoomsOverview))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeasOverview))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeasInDiscussion))
+    , f (Proxy :: Proxy (ToHtmlDefault PageTopicOverviewRefinementPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageTopicOverviewJuryPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageTopicOverviewVotingPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageTopicOverviewResultPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageTopicOverviewDelegations))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailNewIdeas))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailRefinementPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailJuryPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailVotingPhase))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailMoveIdeaToTopic))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailFeasibleNotFeasible))
+    , f (Proxy :: Proxy (ToHtmlDefault PageIdeaDetailWinner))
+    , f (Proxy :: Proxy (ToHtmlForm PageCreateIdea))
+    , f (Proxy :: Proxy (ToHtmlForm PageEditIdea))
+    , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreateIdeas))
+    , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileDelegatedVotes))
+    , f (Proxy :: Proxy (ToHtmlDefault PageUserSettings))
+    , f (Proxy :: Proxy (ToHtmlDefault PageCreateTopic))
+    , f (Proxy :: Proxy (ToHtmlDefault PageCreateTopicAddIdeas))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsDurationsAndQuorum))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGroupsAndPermissions))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsUserCreateAndImport))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsEventsProtocol))
+    , f (Proxy :: Proxy (ToHtmlDefault PageDelegateVote))
+    , f (Proxy :: Proxy (ToHtmlDefault PageDelegationNetwork))
+    , f (Proxy :: Proxy (ToHtmlDefault PageStaticImprint))
+    , f (Proxy :: Proxy (ToHtmlDefault PageStaticTermsOfUse))
+    , f (Proxy :: Proxy (ToHtmlForm PageHomeWithLoginPrompt))
     ]
+
+
+class ToHtml' p where
+    toHtml' :: Monad m => p -> HtmlT m ()
+
+data ToHtmlDefault p = ToHtmlDefault p
+  deriving (Eq, Ord, Show, Read)
+
+instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
+    arbitrary = ToHtmlDefault <$> arbitrary
+
+instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
+    toHtml' (ToHtmlDefault p) = toHtml p
+
+data ToHtmlForm p = ToHtmlForm p
+  deriving (Eq, Ord, Show, Read)
+
+instance Arbitrary p => Arbitrary (ToHtmlForm p) where
+    arbitrary = ToHtmlForm <$> arbitrary
+
+instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
+    toHtml' (ToHtmlForm p) = unwrap2 $ do
+        v <- unwrap1 $ getForm "" (makeForm p)
+        formPage v "formAction" p
+      where
+        unwrap1 = return . runIdentity
+        unwrap2 = HtmlT . return . runIdentity . runHtmlT
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
@@ -97,11 +128,11 @@ run action = do
 samplePages :: IO [(TypeRep, String)]
 samplePages = sequence $ pages g
   where
-    g :: forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml a)
+    g :: forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a)
         => Proxy a -> IO (TypeRep, String)
     g Proxy = f <$> (generate arbitrary :: IO a)
 
-    f :: (Typeable a, Show a, ToHtml a) => a -> (TypeRep, String)
+    f :: (Typeable a, Show a, ToHtml' a) => a -> (TypeRep, String)
     f x = (typeOf x, terminatingShow x)
 
     terminatingShow :: (Show a) => a -> String
@@ -138,23 +169,38 @@ refreshSamples :: IO ()
 refreshSamples = do
     putStrLn "refresh..."
 
-    -- check if tidy is available.  warns if not, but it'll still work!
-    withTidy :: Bool <- (== ExitSuccess) <$> system "which tidy >/dev/null"
-    unless withTidy $ do
-        hPutStrLn stderr "WARNING: tidy not in path.  will not generate pretty-printed pages."
-
     -- read *.hs
     hs <- filter ((== ".hs") . takeExtension) <$> getDirectoryContents "."
 
     -- write *.html
     forM_ hs $ \fn -> do
         let fn' = dropExtension fn <.> ".html-compact.html"
-            fn'' = dropExtension fn <.> ".html-tidy.html"
         ST.readFile fn >>= dynamicRender >>= ST.writeFile fn'
-        when withTidy . void . system $
-            "tidy -utf8 -indent < " <> show fn' <> " > " <> show fn'' <> " 2>/dev/null"
+        runTidyIfAvailable fn'
 
     putStrLn "done."
+
+
+-- | Call tidy if available; generate either pretty-printed html or an error message if the html is
+-- invalid.
+runTidyIfAvailable :: FilePath -> IO ()
+runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
+  where
+    fn'' = dropExtensions fn' <.> ".html-tidy.html"
+
+    withTidy :: IO Bool
+    withTidy = do
+        v <- (== ExitSuccess) <$> system "which tidy >/dev/null"
+        unless v $
+            hPutStrLn stderr "NOTE: tidy not in path.  will not generate pretty-printed pages."
+        return v
+
+    doTidy :: IO ()
+    doTidy = do
+        (exit, out, err) <- readFile fn' >>= readProcessWithExitCode "tidy" ["-utf8", "-indent"]
+        case exit of
+            ExitSuccess -> ST.writeFile fn' $ cs ("tidy-good\n\n" <> out)
+            _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for
@@ -166,7 +212,7 @@ dynamicRender s = do
         Nothing -> error $ "dynamicRender: problem parsing the type of the following value." <>
                            "  recreate samples?\n\n" <> cs s <> "\n\n"
   where
-    g :: forall a. (Read a, ToHtml a) => Proxy a -> IO (Maybe ST)
+    g :: forall a. (Read a, ToHtml' a) => Proxy a -> IO (Maybe ST)
     g proxy = yes `catch` \(SomeException _) -> no
       where
         yes :: IO (Maybe ST)
@@ -178,5 +224,7 @@ dynamicRender s = do
         no :: IO (Maybe ST)
         no = return Nothing
 
+        -- if you want to auto-refresh the page:
+        -- >>> pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]]
         pf :: User -> a -> Html ()
-        pf user = pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]] (Just user) . toHtml
+        pf user = pageFrame (Just user) . toHtml'

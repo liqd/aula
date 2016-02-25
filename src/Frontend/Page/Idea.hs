@@ -213,16 +213,10 @@ data PageEditIdea = PageEditIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page PageEditIdea where
-  isPrivatePage _ = True 
+  isPrivatePage _ = True
 
 ----------------------------------------------------------------------
 -- templates
-
--- | The page is shown when the idea creation has happened.
-instance ToHtml PageCreateIdea where
-    toHtmlRaw = toHtml
-    toHtml p@PageCreateIdea = semanticDiv p $ do
-        p_ "The idea has been created."
 
 categoryValues :: IsString s => [(Category, s)]
 categoryValues = [ (CatRule,        "Regel")
@@ -276,11 +270,6 @@ instance FormPageView PageEditIdea where
                 DF.inputSubmit   "Sriechern"
                 button_ [value_ ""] "IDEE LOSCHEN"
                 button_ [value_ ""] "Abbrechen"
-
-instance ToHtml PageEditIdea where
-    toHtmlRaw = toHtml
-    toHtml p@PageEditIdea{} = do
-      semanticDiv p "PageEditIdea"
 
 
 ----------------------------------------------------------------------
