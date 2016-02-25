@@ -96,6 +96,7 @@ pageFrame' extraHeaders mUser bdy = do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "third-party/Simple-Grid/simplegrid.css"]
         link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "third-party/HTML5-Reset/assets/css/reset.css"]
+        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "icons/fontcustom.css"]
         link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "css/all.css"]
         sequence_ extraHeaders
     body_ $ do
