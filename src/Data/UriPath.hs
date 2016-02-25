@@ -43,6 +43,10 @@ infixl 7 </>
 (</>) :: UriPath -> UriPart -> UriPath
 DiffUriParts ps </> p = DiffUriParts (ps . (p :))
 
+instance IsString UriPath where
+    fromString s = DiffUriParts (ps ++)
+        where ps = SlashFreeUriPart <$> ST.splitOn "/" (cs s)
+
 relativeUriPath :: UriPath -> ST
 relativeUriPath u = ST.intercalate "/" . map cs $ u `appendUriParts` []
 
