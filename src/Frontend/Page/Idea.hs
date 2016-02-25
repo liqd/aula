@@ -187,14 +187,12 @@ viewIdea _space ideaId = persistent $ do
                 pure . Just $ topic ^. topicPhase
     pure . makeFrame $ ViewIdea idea phase
 
--- FIXME: Redirect to the right place
 instance RedirectOf CreateIdea where
     redirectOf (CreateIdea space) = relPath $ U.Space space U.ListIdeas
 
 createIdea :: ActionM m => IdeaSpace -> ServerT (FormH HTML (Html ()) ST) m
 createIdea space = redirectFormHandler (pure $ CreateIdea space) (persistent . addIdea)
 
--- FIXME: Redirect to the right place
 instance RedirectOf EditIdea where
     redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
 
