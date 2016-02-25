@@ -168,6 +168,16 @@ For more info on this, check out `./docs/PageCreatorHOWTO.md`.
 
 SASS is used for styling, use the following command to compile the SASS
 to CSS
+ 
+You need the sass compiler installed http://sass-lang.com/install
+
 ```shell
 sass --watch static-src/scss/imports.scss:static/css/all.css --style compressed
 ```
+
+### Creating icons
+
+You need fontcustom installed https://github.com/FontCustom/fontcustom
+
+1. Add your SVGs to static/icons. No strokes, fills only.
+2. run `fontcustom compile static/svg -o static/icons`
