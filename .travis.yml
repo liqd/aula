@@ -22,4 +22,5 @@ notifications:
     irc:
         channels:
             - "irc.freenode.net#thentos"
+        template: "%{branch}/%{author}: %{message}"
         on_pull_requests: true
