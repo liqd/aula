@@ -12,6 +12,7 @@ module Frontend.HtmlSpec where
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except
 import Data.List
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
@@ -58,7 +59,6 @@ spec = do
         , H (arb :: Gen PageIdeaDetailWinner)
         , H (arb :: Gen PageUserProfileCreateIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
-        , H (arb :: Gen PageUserSettings)
         , H (arb :: Gen PageCreateTopic)
         , H (arb :: Gen PageCreateTopicAddIdeas)
         , H (arb :: Gen PageAdminSettingsDurationsAndQuorum)
@@ -77,6 +77,7 @@ spec = do
         , F (arb :: Gen PageEditIdea)
         , F (arb :: Gen PageHomeWithLoginPrompt)
     --  , F (arb :: Gen PageCreateTopic) FIXME
+        , F (arb :: Gen PageUserSettings)
     --  , F (arb :: Gen PageCreateTopicAddIdeas) FIXME
         ]
     where
@@ -146,6 +147,14 @@ instance PayloadToEnv [AUID Idea] where
       where
         ideas' = [ "idea-" <> show i | i <- ideas ]
 
+instance PayloadToEnv UserSettingData where
+    payloadToEnv _ (UserSettingData email oldpass newpass1 newpass2) = \case
+        ["", "email"         ] -> pure [TextInput . fromMaybe "" $ fmap unEmail email]
+        ["", "old-password"  ] -> pure [TextInput $ fromMaybe "" oldpass]
+        ["", "new-password1" ] -> pure [TextInput $ fromMaybe "" newpass1]
+        ["", "new-password2" ] -> pure [TextInput $ fromMaybe "" newpass2]
+      where
+        unEmail (Email e) = e
 
 ----------------------------------------------------------------------
 -- machine room

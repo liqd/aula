@@ -56,6 +56,7 @@ data Main =
   | SpaceOne ST Space
   | UserAll
   | UserOne (AUID User) UserPs
+  | UserSettings
   | Admin AdminPs
   | DelegationEdit
   | DelegationView
@@ -70,6 +71,7 @@ main SpaceAll               = "space/"
 main (SpaceOne sid p)       = "space/" </> sid </> space p
 main UserAll                = "user/"
 main (UserOne (AUID uid) p) = "user/" </> cs (show uid) </> user p
+main UserSettings           = "user/settings/"
 main (Admin p)              = "admin/" </> admin p
 main DelegationEdit         = "delegation/edit/"
 main DelegationView         = "delegation/view/"
@@ -102,12 +104,10 @@ space (SpaceTopicIdeaCreate (AUID tid))      = "topic/" </> cs (show tid) </> "/
 data UserPs =
     UserIdeas
   | UserDelegations
-  | UserSettings
 
 user :: UserPs -> UriPath
 user UserIdeas       = "ideas/"
 user UserDelegations = "delegations/"
-user UserSettings    = "settings/"
 
 data AdminPs =
     AdminParams

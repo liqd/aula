@@ -60,7 +60,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlForm PageEditIdea))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreateIdeas))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileDelegatedVotes))
-    , f (Proxy :: Proxy (ToHtmlDefault PageUserSettings))
+    , f (Proxy :: Proxy (ToHtmlForm PageUserSettings))
     , f (Proxy :: Proxy (ToHtmlDefault PageCreateTopic))
     , f (Proxy :: Proxy (ToHtmlDefault PageCreateTopicAddIdeas))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsDurationsAndQuorum))

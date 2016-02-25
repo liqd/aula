@@ -20,6 +20,10 @@ module Action
     , Action
     , mkRunAction
 
+      -- * user handling
+    , currentUser
+    , modifyCurrentUser
+
       -- * user state
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
     )
@@ -34,13 +38,21 @@ import Data.String.Conversions (ST)
 import Persistent
 import Prelude hiding (log)
 import Servant
-import Types (GenArbitrary, genArbitrary)
+import Types
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
 
 ----------------------------------------------------------------------
 -- constraint types
+
+-- | User representation during an action
+-- FIXME: Figure out which information is needed here.
+data UserState
+    = UserLoggedOut
+    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
+
+makeLenses ''UserState
 
 class ( ActionLog m
       , ActionPersist m
@@ -68,16 +80,20 @@ instance ActionPersist Action where
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
     login  :: ST -> m ()
+    -- | Read the actual user state
+    userState :: m UserState
     -- | Make the user log out
     logout :: m ()
 
 instance ActionUserHandler Action where
-    login username = do
-        put $ UserLoggedIn username "session"
-        persistent $ loginUser username
+    login user = do
+        put $ UserLoggedIn user "session"
+        persistent $ loginUser user
+
+    userState = get
 
     logout = do
-        gets _username >>= persistent . logoutUser
+        use username >>= persistent . logoutUser
         put UserLoggedOut
 
 class MonadError ActionExcept m => ActionError m
@@ -110,12 +126,6 @@ newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserSt
 -- FIXME: Create a different type
 type ActionExcept = ServantErr
 
--- | User representation during an action
--- FIXME: Figure out which information is needed here.
-data UserState
-    = UserLoggedOut
-    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
-
 -- | Creates a natural transformation from Action to IO
 --
 -- FIXME:
@@ -129,6 +139,28 @@ mkRunAction persistNat = \s -> Nat (run s)
     runRWSTflip r s comp = runRWST comp r s
 
 ----------------------------------------------------------------------
+-- Action Combinators
+
+-- | Returns the current user
+currentUser :: (ActionPersist m, ActionUserHandler m) => m User
+currentUser =
+    loggedInUser
+    >>= persistent . findUserByLogin
+    >>= \ (Just user) -> return user
+
+-- | Modify the current user.
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
+modifyCurrentUser f =
+  currentUser >>= persistent . flip modifyUser f . (^. _Id)
+
+----------------------------------------------------------------------
+-- Action Helpers
+
+loggedInUser :: (ActionUserHandler m) => m ST
+loggedInUser = userState >>= \case
+    UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
+    UserLoggedIn user _session -> return user
+
+----------------------------------------------------------------------
 -- Lens
 
-makeLenses ''UserState

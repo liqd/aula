@@ -53,15 +53,6 @@ instance ToHtml PageUserProfileDelegatedVotes where
     toHtml p = semanticDiv p "PageUserProfileDelegatedVotes"
 
 
--- | 9. User settings
-data PageUserSettings = PageUserSettings
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageUserSettings where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageUserSettings"
-
-
 -- | 11.1 Admin settings: Durations & quorum
 data PageAdminSettingsDurationsAndQuorum =
     PageAdminSettingsDurationsAndQuorum

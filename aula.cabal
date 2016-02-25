@@ -78,6 +78,7 @@ library
       Frontend.Page.Overview
       Frontend.Page.Static
       Frontend.Page.Topic
+      Frontend.Page.User
       Frontend.Path
       Frontend.Prelude
       Persistent
@@ -313,6 +314,7 @@ test-suite spec
       Frontend.Page.Overview
       Frontend.Page.Static
       Frontend.Page.Topic
+      Frontend.Page.User
       Frontend.Path
       Frontend.Prelude
       Persistent
