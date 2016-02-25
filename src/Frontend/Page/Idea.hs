@@ -275,12 +275,14 @@ instance FormPageView PageEditIdea where
 ----------------------------------------------------------------------
 -- handlers
 
+-- FIXME: Redirect to the right place
 instance RedirectOf PageCreateIdea where
     redirectOf _ = path $ TopTesting "/ideas"
 
 createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 createIdea = redirectFormHandler (pure PageCreateIdea) (persistent . addIdea)
 
+-- FIXME: Redirect to the right place
 instance RedirectOf PageEditIdea where
     redirectOf _ = path $ TopTesting "/ideas"
 

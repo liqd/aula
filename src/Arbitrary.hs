@@ -101,7 +101,7 @@ instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = pure PageUserProfileDelegatedVotes
 
 instance Arbitrary PageUserSettings where
-    arbitrary = pure PageUserSettings
+    arbitrary = PageUserSettings <$> arb
 
 instance Arbitrary PageCreateTopic where
     arbitrary = PageCreateTopic <$> arb <*> arb
@@ -232,6 +232,14 @@ instance Arbitrary Email where
         tld        <- elements topLevelDomains
         return . Email . mconcat $ [localName, "@", domainName, ".", tld]
 
+instance Arbitrary UserSettingData where
+    arbitrary = UserSettingData
+        <$> arbitrary
+        <*> arbMaybe arbPhrase
+        <*> arbMaybe arbPhrase
+        <*> arbMaybe arbPhrase
+
+
 -- FIXME: instance Arbitrary Delegation
 
 -- FIXME: instance Arbitrary DelegationContext
@@ -260,6 +268,9 @@ arb = arbitrary
 
 arb' :: Arbitrary a => Gen a
 arb' = scale (`div` 3) arb
+
+arbMaybe :: Gen a -> Gen (Maybe a)
+arbMaybe g = oneof [pure Nothing, Just <$> g]
 
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb

@@ -20,6 +20,10 @@ module Action
     , Action
     , mkRunAction
 
+      -- * user handling
+    , currentUser
+    , modifyCurrentUser
+
       -- * user state
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
     )
@@ -34,7 +38,7 @@ import Data.String.Conversions (ST)
 import Persistent
 import Prelude hiding (log)
 import Servant
-import Types (GenArbitrary, genArbitrary)
+import Types
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -68,6 +72,8 @@ instance ActionPersist Action where
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
     login  :: ST -> m ()
+    -- | Read the actual user state
+    userState :: m UserState
     -- | Make the user log out
     logout :: m ()
 
@@ -75,6 +81,8 @@ instance ActionUserHandler Action where
     login username = do
         put $ UserLoggedIn username "session"
         persistent $ loginUser username
+
+    userState = get
 
     logout = do
         gets _username >>= persistent . logoutUser
@@ -127,6 +135,29 @@ mkRunAction persistNat = \s -> Nat (run s)
     run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
+
+----------------------------------------------------------------------
+-- Action Combinators
+
+-- | Returns the current user
+currentUser :: (ActionPersist m, ActionUserHandler m) => m User
+currentUser =
+    loggedInUser
+    >>= persistent . findUserByLogin
+    >>= \ (Just user) -> return user
+
+-- | Modify the current user.
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
+modifyCurrentUser f =
+  currentUser >>= persistent . flip modifyUser f . (^. _Id)
+
+----------------------------------------------------------------------
+-- Action Helpers
+
+loggedInUser :: (ActionUserHandler m) => m ST
+loggedInUser = userState >>= \case
+    UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
+    UserLoggedIn username _session -> return username
 
 ----------------------------------------------------------------------
 -- Lens

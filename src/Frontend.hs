@@ -95,6 +95,8 @@ type AulaMain =
   :<|> "user" :> GetH (Frame (PageShow [User]))
        -- enter user profile
   :<|> "user" :> Capture "user" (AUID User) :> AulaUser
+       -- user settings
+  :<|> "user" :> "settings" :> FormH HTML (Html ()) ()
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
@@ -117,6 +119,7 @@ aulaMain =
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
   :<|> aulaUser
+  :<|> Page.userSettings
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormH HTML (Html ()) ()"
@@ -208,6 +211,8 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
+  :<|> "user" :> "settings" :> FormH HTML (Html ()) ST
+
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
        return (PublicFrame "yihaah!")
@@ -221,3 +226,5 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
+
+  :<|> Page.userSettings
