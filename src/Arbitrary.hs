@@ -57,42 +57,17 @@ instance Arbitrary PageTopicOverviewResultPhase where
 instance Arbitrary PageTopicOverviewDelegations where
     arbitrary = pure PageTopicOverviewDelegations
 
-instance Arbitrary PageIdeaDetail where
-    arbitrary = oneof
-        [ PageIdeaDetailNewIdeas'            <$> arb
-        , PageIdeaDetailRefinementPhase'     <$> arb
-        , PageIdeaDetailJuryPhase'           <$> arb
-        , PageIdeaDetailVotingPhase'         <$> arb
-        , PageIdeaDetailFeasibleNotFeasible' <$> arb
-        , PageIdeaDetailWinner'              <$> arb
-        ]
-
-instance Arbitrary PageIdeaDetailNewIdeas where
-    arbitrary = PageIdeaDetailNewIdeas <$> arb
-
-instance Arbitrary PageIdeaDetailRefinementPhase where
-    arbitrary = PageIdeaDetailRefinementPhase <$> arb
-
-instance Arbitrary PageIdeaDetailJuryPhase where
-    arbitrary = PageIdeaDetailJuryPhase <$> arb
-
-instance Arbitrary PageIdeaDetailVotingPhase where
-    arbitrary = PageIdeaDetailVotingPhase <$> arb
+instance Arbitrary ViewIdea where
+    arbitrary = ViewIdea <$> arb <*> arb
 
 instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
     arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
-instance Arbitrary PageIdeaDetailFeasibleNotFeasible where
-    arbitrary = PageIdeaDetailFeasibleNotFeasible <$> arb
+instance Arbitrary CreateIdea where
+    arbitrary = pure CreateIdea
 
-instance Arbitrary PageIdeaDetailWinner where
-    arbitrary = PageIdeaDetailWinner <$> arb
-
-instance Arbitrary PageCreateIdea where
-    arbitrary = pure PageCreateIdea
-
-instance Arbitrary PageEditIdea where
-    arbitrary = PageEditIdea <$> arb
+instance Arbitrary EditIdea where
+    arbitrary = EditIdea <$> arb
 
 instance Arbitrary PageUserProfileCreateIdeas where
     arbitrary = pure PageUserProfileCreateIdeas
