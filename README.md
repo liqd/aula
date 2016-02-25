@@ -163,3 +163,11 @@ docker exec -it "<docker hash>" bash
 ```
 
 For more info on this, check out `./docs/PageCreatorHOWTO.md`.
+
+### SASS Hacking
+
+SASS is used for styling, use the following command to compile the SASS
+to CSS
+```shell
+sass --watch static-src/scss/imports.scss:static/css/all.css --style compressed
+```
