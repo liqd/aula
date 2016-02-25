@@ -7,14 +7,14 @@ before_install:
     - grep '\(MemTotal\|SwapTotal\)' /proc/meminfo
     - git show | head -1  # (for matching against commit hash given on the travis log web page)
     - docker pull fisx/aula
-    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-list-sandbox-packages.sh"
+    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/.travis/docker-list-sandbox-packages.sh"
 
 script:
-    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-hlint.sh"
-    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-build.sh"
+    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/.travis/docker-hlint.sh"
+    - docker run --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/.travis/docker-build.sh"
 
 after_script:
-    - docker run -e "TRAVIS=$TRAVIS" -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID" --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/travis/docker-coveralls.sh"
+    - docker run -e "TRAVIS=$TRAVIS" -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID" --rm -it -v `pwd`:/root/aula/ fisx/aula /bin/sh -c "/root/aula/.travis/docker-coveralls.sh"
 
 
 notifications:
