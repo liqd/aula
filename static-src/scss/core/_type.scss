@@ -1,4 +1,5 @@
 body {
+    @include rem-baseline;
     color: $color-text;
     font-family: $font-family-regular;
 }
