@@ -104,7 +104,8 @@ pageFrame' extraHeaders mUser bdy = do
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
-    span_ [class_ "site-logo"] "aula"
+    span_ [class_ "site-logo", title_ "aula"] $ do
+        i_ [class_ "icon-aula-logo site-logo-icon"] ""
 
     case mUser of
         Just _usr -> do
