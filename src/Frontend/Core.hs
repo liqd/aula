@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 
-{-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Frontend.Core
 where
@@ -95,29 +95,36 @@ pageFrame' extraHeaders mUser bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "screen.css"]
+        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "third-party/Simple-Grid/simplegrid.css"]
         sequence_ extraHeaders
     body_ $ do
         headerMarkup mUser >> bdy >> footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
-headerMarkup (Just usr) = div_ $ do
-    span_ "aula"
-    span_ $ a_ [P.href_ P.SpaceAll] "Ideenräume"
-    span_ $ a_ [P.href_ P.DelegationView] "Beauftragungsnetzwerk"
-    span_ (toHtml $ "Hi " <> (usr ^. userLogin))
-    span_ $ img_ [src_ "the_avatar"]
-    hr_ []
-headerMarkup Nothing = div_ $ do
-    span_ "aula"
-    span_ $ img_ [src_ "the_avatar"]
-    hr_ []
+headerMarkup mUser = header_ [class_ "main-header"] $ do
+    span_ [class_ "site-logo"] "aula"
+
+    case mUser of
+        Just _usr -> do
+            ul_ [class_ "main-header-menu"] $ do
+                li_ $ a_ [P.href_ P.SpaceAll] "Ideenräume"
+                li_ $ a_ [P.href_ P.DelegationView] "Beauftragungsnetzwerk"
+        Nothing -> nil
+
+    ul_ [class_ "main-header-user"] $ do
+        case mUser of
+            Just usr -> do
+                li_ (toHtml $ "Hi " <> (usr ^. userLogin))
+            Nothing -> nil
+        li_ $ img_ [src_ "the_avatar"]
+
 
 footerMarkup :: (Monad m) => HtmlT m ()
-footerMarkup = div_ $ do
-    hr_ []
-    span_ $ a_ [P.href_ P.Terms] "Nutzungsbedingungen"
-    span_ $ a_ [P.href_ P.Imprint] "Impressum"
-    span_ "Made with ♡ by Liqd"
+footerMarkup = footer_ [class_ "main-footer"] $ do
+    ul_ [class_ "main-footer-menu"] $ do
+        li_ $ a_ [P.href_ P.Terms] "Nutzungsbedingungen"
+        li_ $ a_ [P.href_ P.Imprint] "Impressum"
+    span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
