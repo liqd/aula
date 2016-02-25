@@ -43,17 +43,10 @@ spec = do
           H (arb :: Gen PageRoomsOverview)
         , H (arb :: Gen PageIdeasOverview)
         , H (arb :: Gen PageIdeasInDiscussion)
-        , H (arb :: Gen PageTopicOverview)
-        , H (arb :: Gen PageTopicOverviewRefinementPhase)
-        , H (arb :: Gen PageTopicOverviewJuryPhase)
-        , H (arb :: Gen PageTopicOverviewVotingPhase)
-        , H (arb :: Gen PageTopicOverviewResultPhase)
-        , H (arb :: Gen PageTopicOverviewDelegations)
+        , H (arb :: Gen ViewTopic)
         , H (arb :: Gen ViewIdea)
         , H (arb :: Gen PageUserProfileCreateIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
-        , H (arb :: Gen PageCreateTopic)
-        , H (arb :: Gen PageCreateTopicAddIdeas)
         , H (arb :: Gen PageAdminSettingsDurationsAndQuorum)
         , H (arb :: Gen PageAdminSettingsGroupsAndPermissions)
         , H (arb :: Gen PageAdminSettingsUserCreateAndImport)
@@ -68,9 +61,9 @@ spec = do
           F (arb :: Gen CreateIdea)
         , F (arb :: Gen EditIdea)
         , F (arb :: Gen PageHomeWithLoginPrompt)
-    --  , F (arb :: Gen PageCreateTopic) FIXME
+    --  , F (arb :: Gen CreateTopic) FIXME
         , F (arb :: Gen PageUserSettings)
-    --  , F (arb :: Gen PageCreateTopicAddIdeas) FIXME
+    --  , F (arb :: Gen MoveIdeasToTopic) FIXME
         ]
     where
         arb :: Arbitrary a => Gen a

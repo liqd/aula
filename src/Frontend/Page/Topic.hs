@@ -7,66 +7,60 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Topic
+    ( ViewTopic(..)
+    , ViewTopicTab(..)
+    , CreateTopic(..)
+    , MoveIdeasToTopic(..)
+    , viewTopic
+    , createTopic
+    , moveIdeasToTopic )
 where
 
 import Action (ActionM, ActionPersist(..))
-import Frontend.Prelude
+import Frontend.Prelude hiding (moveIdeasToTopic)
 
+import qualified Api.Persistent as Persistent
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 ----------------------------------------------------------------------
 -- types
 
-data TabTopicOverview
+data ViewTopicTab
   = TabAllIdeas
   | TabVotingIdeas
   | TabWinningIdeas
   | TabDelegation
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Enum, Bounded)
 
 -- | 4 Topic overview
-data PageTopicOverview
-  = PageTopicOverviewRefinementPhase' PageTopicOverviewRefinementPhase
-  | PageTopicOverviewJuryPhase'       PageTopicOverviewJuryPhase
-  | PageTopicOverviewVotingPhase'     PageTopicOverviewVotingPhase
-  | PageTopicOverviewResultPhase'     PageTopicOverviewResultPhase
+-- * 4.1 Topic overview: Refinement phase
+-- * 4.2 Topic overview: Jury (assessment) phase
+-- * 4.3 Topic overview: Voting phase
+-- * 4.4 Topic overview: Result phase
+-- * 4.5 Topic overview: Delegations
+data ViewTopic
+  = ViewTopicIdeas ViewTopicTab Topic [Idea]
+  | ViewTopicDelegations -- FIXME
   deriving (Eq, Show, Read)
 
-
--- | 4.1 Topic overview: Refinement phase
-data PageTopicOverviewRefinementPhase = PageTopicOverviewRefinementPhase Topic [Idea]
-  deriving (Eq, Show, Read)
-
--- | 4.2 Topic overview: Jury (assessment) phase
-data PageTopicOverviewJuryPhase = PageTopicOverviewJuryPhase Topic [Idea]
-  deriving (Eq, Show, Read)
-
--- | 4.3 Topic overview: Voting phase
-data PageTopicOverviewVotingPhase = PageTopicOverviewVotingPhase Topic [Idea]
-  deriving (Eq, Show, Read)
-
--- | 4.4 Topic overview: Result phase
-data PageTopicOverviewResultPhase = PageTopicOverviewResultPhase Topic [Idea]
-  deriving (Eq, Show, Read)
-
--- | 4.5 Topic overview: Delegations
-data PageTopicOverviewDelegations = PageTopicOverviewDelegations
-  deriving (Eq, Show, Read)
+instance Page ViewTopic where
+    isPrivatePage _ = True
 
 -- | 10.1 Create topic: Create topic
-data PageCreateTopic = PageCreateTopic IdeaSpace [AUID Idea]
+data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
   deriving (Eq, Show, Read)
 
-instance Page PageCreateTopic where
+instance Page CreateTopic where
     isPrivatePage _ = True
 
 -- | 10.2 Create topic: Move ideas to topic
-data PageCreateTopicAddIdeas = PageCreateTopicAddIdeas (AUID Topic) [Idea]
+data MoveIdeasToTopic = MoveIdeasToTopic (AUID Topic) [Idea]
   deriving (Eq, Show, Read)
 
-instance Page PageCreateTopicAddIdeas where
+instance Page MoveIdeasToTopic where
     isPrivatePage _ = True
+
 
 ----------------------------------------------------------------------
 -- templates
@@ -76,7 +70,7 @@ tabSelected curTab targetTab
     | curTab == targetTab = "tab-selected"
     | otherwise           = "tab-not-selected"
 
-tabLink :: Monad m => TabTopicOverview -> TabTopicOverview -> HtmlT m ()
+tabLink :: Monad m => ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink curTab targetTab =
   case targetTab of
     TabAllIdeas     -> a_ [id_ "tab-ideas",       attr] "Alle Ideen"
@@ -86,8 +80,14 @@ tabLink curTab targetTab =
   where
     attr = class_ $ tabSelected curTab targetTab
 
-pageTopicOverviewTemplate :: Monad m => TabTopicOverview -> Topic -> [Idea] -> HtmlT m ()
-pageTopicOverviewTemplate tab topic ideas = do
+-- FIXME: how do we display a topic in the finished phase?
+-- Is this the same the result phase?
+-- Maybe some buttons to hide?
+instance ToHtml ViewTopic where
+    toHtmlRaw = toHtml
+    toHtml p@ViewTopicDelegations = semanticDiv p "ViewTopicDelegations" -- FIXME
+    toHtml p@(ViewTopicIdeas tab topic ideas) = semanticDiv p $ do
+        -- assert tab /= TabDelegation
         div_ $ do
             div_ [id_ "navigation"] $ do
                 a_ [id_ "back-themes"] "<- Zu Allen Themen"
@@ -109,69 +109,22 @@ pageTopicOverviewTemplate tab topic ideas = do
             a_ [id_ "settings"] $ span_ [id_ "gear"] ":gear:"
             div_ [id_ "ideas"] . for_ ideas $ \idea ->
                 ListItemIdea (Just phase) idea ^. html
-    where
+      where
         phase = topic ^. topicPhase
 
-instance ToHtml PageTopicOverviewRefinementPhase where
-    toHtmlRaw = toHtml
-    toHtml p@(PageTopicOverviewRefinementPhase topic ideas) =
-        -- FIXME: assert topicPhase is PhaseRefinement
-        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
-
-instance ToHtml PageTopicOverviewJuryPhase where
-    toHtmlRaw = toHtml
-    toHtml p@(PageTopicOverviewJuryPhase topic ideas) =
-        -- FIXME: assert topicPhase is PhaseJury
-        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
-
-instance ToHtml PageTopicOverviewVotingPhase where
-    toHtmlRaw = toHtml
-    toHtml p@(PageTopicOverviewVotingPhase topic ideas) =
-        -- FIXME: assert topicPhase is PhaseVoting
-        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
-
-instance ToHtml PageTopicOverviewResultPhase where
-    toHtmlRaw = toHtml
-    toHtml p@(PageTopicOverviewResultPhase topic ideas) =
-        -- FIXME: assert topicPhase is PhaseResult
-        semanticDiv p $ pageTopicOverviewTemplate TabAllIdeas topic ideas
-
-instance ToHtml PageTopicOverviewDelegations where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageTopicOverviewDelegations"
-
-instance ToHtml PageTopicOverview where
-    toHtmlRaw = toHtml
-    toHtml = \case
-      PageTopicOverviewRefinementPhase' p -> toHtml p
-      PageTopicOverviewJuryPhase'       p -> toHtml p
-      PageTopicOverviewVotingPhase'     p -> toHtml p
-      PageTopicOverviewResultPhase'     p -> toHtml p
-
-pageTopicPhase :: Topic -> [Idea] -> PageTopicOverview
-pageTopicPhase topic ideas = case topic ^. topicPhase of
-    PhaseRefinement -> PageTopicOverviewRefinementPhase' $ PageTopicOverviewRefinementPhase topic ideas
-    PhaseJury       -> PageTopicOverviewJuryPhase'       $ PageTopicOverviewJuryPhase       topic ideas
-    PhaseVoting     -> PageTopicOverviewVotingPhase'     $ PageTopicOverviewVotingPhase     topic ideas
-    PhaseResult     -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
-    -- FIXME: how do we display a topic in the finished phase?
-    -- Is this the same the result phase?
-    -- Maybe some buttons to hide?
-    PhaseFinished   -> PageTopicOverviewResultPhase'     $ PageTopicOverviewResultPhase     topic ideas
-
-instance ToHtml PageCreateTopic where
+instance ToHtml CreateTopic where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p $ do
         p_ "The topic has been created." >> br_ []
         p_ "Fügen Sie weitere wilde ideen dem neuen Thema hinzu"
         a_ [id_ "add-ideas"] "+ Ideen auswählen"
 
-instance FormPageView PageCreateTopic where
-    type FormPageResult PageCreateTopic = ProtoTopic
+instance FormPageView CreateTopic where
+    type FormPageResult CreateTopic = ProtoTopic
 
     formAction _ = "/topics/create"
 
-    makeForm (PageCreateTopic space ideas) =
+    makeForm (CreateTopic space ideas) =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
@@ -188,23 +141,19 @@ instance FormPageView PageCreateTopic where
                 DF.inputText     "image" v >> br_ []
                 DF.inputSubmit   "Add Topic"
 
-instance ToHtml PageCreateTopicAddIdeas where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageCreateTopicAddIdeas"
-
-instance FormPageView PageCreateTopicAddIdeas where
+instance FormPageView MoveIdeasToTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
-    type FormPageResult PageCreateTopicAddIdeas = [AUID Idea]
+    type FormPageResult MoveIdeasToTopic = [AUID Idea]
 
-    formAction (PageCreateTopicAddIdeas topicId _) =
+    formAction (MoveIdeasToTopic topicId _) =
         "/topics/" <> cs (show topicId) <> "/ideas"
 
-    makeForm (PageCreateTopicAddIdeas _ ideas) =
+    makeForm (MoveIdeasToTopic _ ideas) =
         fmap catMaybes . sequenceA $
         [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing) | idea <- ideas ]
 
-    formPage v fa p@(PageCreateTopicAddIdeas _ ideas) = do
+    formPage v fa p@(MoveIdeasToTopic _ ideas) = do
         semanticDiv p $ do
             h3_ "Wählen Sie weitere Ideen aus"
             DF.form v fa $ do
@@ -222,28 +171,29 @@ ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 ----------------------------------------------------------------------
 -- redirects
 
-instance RedirectOf PageCreateTopic where
+instance RedirectOf CreateTopic where
     redirectOf _ = "/topics"
 
-instance RedirectOf PageCreateTopicAddIdeas where
-    redirectOf (PageCreateTopicAddIdeas topicId _) = "/topics/" <> cs (show topicId) -- FIXME safe links
+instance RedirectOf MoveIdeasToTopic where
+    redirectOf (MoveIdeasToTopic topicId _) = "/topics/" <> cs (show topicId) -- FIXME safe links
 
 
 ----------------------------------------------------------------------
 -- handlers
 
-viewTopic :: ActionPersist m => AUID Topic -> m (Frame PageTopicOverview)
-viewTopic topicId = persistent $ do
+viewTopic :: ActionPersist m => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
+viewTopic TabDelegation _ = pure . makeFrame $ ViewTopicDelegations -- FIXME
+viewTopic tab topicId = persistent $ do
     -- FIXME 404
     Just topic <- findTopic topicId
     ideas      <- findIdeasByTopic topic
-    pure . Frame frameUserHack $ pageTopicPhase topic ideas
+    pure . makeFrame $ ViewTopicIdeas tab topic ideas
 
 createTopic :: (ActionM action) => IdeaSpace -> [AUID Idea] -> ServerT (FormH HTML (Html ()) ST) action
-createTopic space ideas = redirectFormHandler (pure $ PageCreateTopic space ideas) (persistent . addTopic)
+createTopic space ideas = redirectFormHandler (pure $ CreateTopic space ideas) (persistent . addTopic)
 
-formAddIdeasToTopic :: ActionM m => IdeaSpace -> AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
-formAddIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
+moveIdeasToTopic :: ActionM m => IdeaSpace -> AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
+moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
-    getPage = PageCreateTopicAddIdeas topicId <$> persistent (findWildIdeasBySpace space)
-    addIdeas ideas = persistent $ moveIdeasToTopic ideas (Just topicId)
+    getPage = MoveIdeasToTopic topicId <$> persistent (findWildIdeasBySpace space)
+    addIdeas ideas = persistent $ Persistent.moveIdeasToTopic ideas (Just topicId)

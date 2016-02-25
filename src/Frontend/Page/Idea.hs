@@ -185,7 +185,7 @@ viewIdea _space ideaId = persistent $ do
                 -- FIXME 404
                 Just topic <- findTopic topicId
                 pure . Just $ topic ^. topicPhase
-    pure . Frame frameUserHack $ ViewIdea idea phase
+    pure . makeFrame $ ViewIdea idea phase
 
 -- FIXME: Redirect to the right place
 instance RedirectOf CreateIdea where

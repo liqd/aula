@@ -34,28 +34,12 @@ instance Arbitrary PageIdeasOverview where
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
-instance Arbitrary PageTopicOverview where
-    arbitrary = oneof
-        [ PageTopicOverviewRefinementPhase' <$> arb
-        , PageTopicOverviewJuryPhase'       <$> arb
-        , PageTopicOverviewVotingPhase'     <$> arb
-        , PageTopicOverviewResultPhase'     <$> arb
-        ]
+instance Arbitrary ViewTopicTab where
+    arbitrary = elements [minBound..]
 
-instance Arbitrary PageTopicOverviewRefinementPhase where
-    arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewJuryPhase where
-    arbitrary = PageTopicOverviewJuryPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewVotingPhase where
-    arbitrary = PageTopicOverviewVotingPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewResultPhase where
-    arbitrary = PageTopicOverviewResultPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewDelegations where
-    arbitrary = pure PageTopicOverviewDelegations
+instance Arbitrary ViewTopic where
+    arbitrary = oneof [ ViewTopicIdeas <$> arb <*> arb <*> arb
+                      , pure ViewTopicDelegations ]
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
@@ -78,11 +62,11 @@ instance Arbitrary PageUserProfileDelegatedVotes where
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
 
-instance Arbitrary PageCreateTopic where
-    arbitrary = PageCreateTopic <$> arb <*> arb
+instance Arbitrary CreateTopic where
+    arbitrary = CreateTopic <$> arb <*> arb
 
-instance Arbitrary PageCreateTopicAddIdeas where
-    arbitrary = PageCreateTopicAddIdeas <$> arb <*> arb
+instance Arbitrary MoveIdeasToTopic where
+    arbitrary = MoveIdeasToTopic <$> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurationsAndQuorum where
     arbitrary = pure PageAdminSettingsDurationsAndQuorum

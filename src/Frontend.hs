@@ -144,8 +144,8 @@ type AulaSpace =
        -- browse topics in an idea space
   :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"       :> GetH (Frame PageTopicOverview)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations" :> GetH (Frame PageTopicOverview)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"       :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations" :> GetH (Frame ViewTopic)
        -- create new topic
   :<|> "topic" :> "create" :> FormH HTML (Html ()) ST
        -- create new idea inside topic
@@ -159,8 +159,8 @@ aulaSpace _spaceName =
   :<|> Page.createIdea
 
   :<|> Page.viewTopics space
-  :<|> Page.viewTopic
-  :<|> error "api not implemented: \"topic\"  :> Capture \"topic\" (AUID Topic) :> \"delegations\" :> GetH (Frame PageTopicOverview)"
+  :<|> Page.viewTopic TabAllIdeas
+  :<|> Page.viewTopic TabDelegation
   :<|> Page.createTopic space []
   :<|> error "api not implemented: \"topic\"  :> \"idea\" :> \"create\" :> FormH HTML (Html ()) ST"
 
