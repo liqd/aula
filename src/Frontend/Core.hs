@@ -122,7 +122,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
 
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = footer_ [class_ "main-footer"] $ do
-    ul_ [class_ "main-footer-menu"] $do
+    ul_ [class_ "main-footer-menu"] $ do
         li_ $ a_ [P.href_ P.Terms] "Nutzungsbedingungen"
         li_ $ a_ [P.href_ P.Imprint] "Impressum"
     span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
