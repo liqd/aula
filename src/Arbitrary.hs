@@ -8,7 +8,14 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
 
-module Arbitrary (topLevelDomains, loremIpsum, generate, arbitrary) where
+module Arbitrary
+    ( topLevelDomains
+    , loremIpsum
+    , generate
+    , arbitrary
+    , arbWord
+    , arbPhrase
+    ) where
 
 import Control.Monad (replicateM)
 import Data.Char
