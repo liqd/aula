@@ -16,6 +16,7 @@ module Frontend.Core
     , PageShow(PageShow)
     , Beside(Beside)
     , Frame(Frame, PublicFrame), makeFrame, pageFrame, pageFrame'
+    , FormHandler
     , ListItemIdea(ListItemIdea)
     , FormPageView, FormPageResult
     , formAction, makeForm, formPage, formRedirectH', redirectFormHandler
@@ -77,6 +78,7 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 -- building blocks
 
 type GetH = Get '[HTML]
+type FormHandler a = FormH HTML (Html ()) a
 
 -- | Render Form based Views
 class FormPageView p where
@@ -252,7 +254,7 @@ redirectFormHandler
     :: (FormPageView p, Page p, RedirectOf p, ActionM m)
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
-    -> ServerT (FormH HTML (Html ()) ST) m
+    -> ServerT (FormHandler ST) m
 redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> absoluteUriPath (redirectOf page)
