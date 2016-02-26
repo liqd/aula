@@ -436,15 +436,12 @@ parseIdeaSpace s
     | s == "school" = Right SchoolSpace
     | otherwise     =
         case ST.splitOn "-" s of
-            [year,name]
-                | not (ST.all isDigit year) -> err "Year should be only digits"
-                | otherwise                 -> Right . ClassSpace $ schoolClass (readST year) name
-            _:_:_:_                         -> err "Too many parts (two parts expected)"
-            _                               -> err "Too few parts (two parts expected)"
+            [year, name] -> (\y -> ClassSpace $ schoolClass y name) <$> readYear year
+            _:_:_:_      -> err "Too many parts (two parts expected)"
+            _            -> err "Too few parts (two parts expected)"
   where
     err msg = Left $ "Ill-formed idea space: " <> msg
-    readST :: Read a => ST -> a
-    readST = read . cs
+    readYear = maybe (err "Year should be only digits") Right . readMaybe . cs
 
 instance FromHttpApiData IdeaSpace where
     parseUrlPiece = parseIdeaSpace
