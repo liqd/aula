@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -42,10 +43,6 @@ spec = describe "yeay" $ it "works" $ do
 
 
 -- domain model ("the nouns")
-
-
--- see also: a3/src/adhocracy_s1/adhocracy_s1/workflows/test_s1.py
-
 
 data Role =
       Employee
@@ -94,22 +91,21 @@ data Action = Read | Write | Create | Delete
 -- the dsl ("the action sentences")
 
 -- | UserName is implicit and will be added by the dumper.
--- rename BehaviorF -> Step
-data BehaviorF a where
-   Login          :: UserPass -> a -> BehaviorF a
-   Logout         :: a -> BehaviorF a
-   ViewProposals  :: ([Content] -> a) -> BehaviorF a
-   AddProposal    :: Content -> a -> BehaviorF a
-   DelProposal    :: Content -> a -> BehaviorF a
+-- rename Step -> Step
+data Step a where
+    Login          :: UserPass -> a -> Step a
+    Logout         :: a -> Step a
+    ViewProposals  :: ([Content] -> a) -> Step a
+    AddProposal    :: Content -> a -> Step a
+    DelProposal    :: Content -> a -> Step a
+  deriving Functor
 
-type Behavior = Free BehaviorF
+type Behavior = Free Step
 
-instance Functor BehaviorF where
-    fmap f (Login ps k)        = Login ps $ f k
-    fmap f (Logout k)          = Logout $ f k
-    fmap f (ViewProposals g)   = ViewProposals (f . g)
-    fmap f (AddProposal p k)   = AddProposal p $ f k
-    fmap f (DelProposal p k)   = DelProposal p $ f k
+-- this function can (1) make writing down simple programs more convenient; (2) make implicit things
+-- happen in the background, like collecting all the values occurring in bind.
+stepsToBehavior :: [Step ()] -> Behavior ()
+stepsToBehavior = _
 
 login :: UserPass -> Behavior ()
 login ps = liftF $ Login ps ()
@@ -167,7 +163,7 @@ program = do
     addProposal (Proposal 13)
     addProposal (Proposal 14)
     delProposal (Proposal 1)
-    invariantNotVisibleResource
+    -- invariantNotVisibleResource
     logout
 
 
@@ -216,3 +212,25 @@ invariants can be implicit (in the interpreter) and explicit (in the DSL).
 
 
 -- generate page map
+
+
+
+
+{-
+- we start with ADT for the programs: no monads, no bind.
+- smallcheck?
+- free monad is useful for trace/data collection.
+- make domain finite (just 3 ideas, 2 users, ...)
+
+next steps (aula):
+    - write domain model / dsl
+    - write interpreter based on wreq
+    - (later, before persistence layer) write interpreter for persistent.  test new implementation against old (old is spec)
+
+next steps (paas):
+    -
+-}
+
+
+
+-- see also: a3/src/adhocracy_s1/adhocracy_s1/workflows/test_s1.py
