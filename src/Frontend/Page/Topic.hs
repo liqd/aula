@@ -81,10 +81,10 @@ tabLink topic curTab targetTab =
   where
     space = topic ^. topicIdeaSpace
     go ident uri =
-        a_  [ id_ ident
-            , href_ . U.Space space . uri $ (topic ^. _Id)
-            , class_ $ tabSelected curTab targetTab
-            ]
+        a_ [ id_ ident
+           , href_ . U.Space space . uri $ (topic ^. _Id)
+           , class_ $ tabSelected curTab targetTab
+           ]
 
 
 -- FIXME: how do we display a topic in the finished phase?

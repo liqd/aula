@@ -27,7 +27,7 @@ instance HasPath Top where relPath = top
 
 top :: Top -> UriPath
 top (TopMain p)    = relPath p
-top (TopTesting p) = (nil </> "testing") <> p
+top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
 top (TopStatic p)  = nil </> "static" <> p
 
