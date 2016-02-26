@@ -43,13 +43,17 @@ spec = describe "yeay" $ it "works" $ do
 
 -- domain model ("the nouns")
 
+
+-- see also: a3/src/adhocracy_s1/adhocracy_s1/workflows/test_s1.py
+
+
 data Role =
       Employee
     | BoardMember
     | BoardAssitance
     | Analyst
     | TeamLead
-    | DivLead
+    | DivisionLead
   deriving (Eq, Ord, Show)
 
 data Phase =
@@ -155,13 +159,15 @@ run' (Free (ViewProposals g))    = do
     run' $ g ps
 
 
+
 program :: Behavior ()
 program = do
-    login "wef"
+    login "password"
     ps <- viewProposals
     addProposal (Proposal 13)
     addProposal (Proposal 14)
     delProposal (Proposal 1)
+    invariantNotVisibleResource
     logout
 
 
