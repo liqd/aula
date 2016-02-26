@@ -43,6 +43,7 @@ data Main =
   | Imprint
   | Terms
   | Login
+  | Logout
 
 instance HasPath Main where relPath p = main p nil
 
@@ -58,6 +59,7 @@ main DelegationView   root = root </> "delegation" </> "view"
 main Imprint          root = root </> "imprint"
 main Terms            root = root </> "terms"
 main Login            root = root </> "login"
+main Logout           root = root </> "logout"
 
 data Space =
     ListIdeas
