@@ -11,13 +11,10 @@ module Frontend
 where
 
 import Control.Monad.Trans.Except
-import Lucid
 import Network.Wai (Application)
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
 import Network.Wai.Application.Static (StaticSettings, ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp)
 import Servant
-import Servant.HTML.Lucid
-import Servant.Missing
 import System.FilePath (addTrailingPathSeparator)
 import Thentos.Prelude
 
@@ -96,12 +93,12 @@ type AulaMain =
        -- enter user profile
   :<|> "user" :> Capture "user" (AUID User) :> AulaUser
        -- user settings
-  :<|> "user" :> "settings" :> FormH HTML (Html ()) ()
+  :<|> "user" :> "settings" :> FormHandler ()
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegation" :> "edit" :> FormH HTML (Html ()) ()
+  :<|> "delegation" :> "edit" :> FormHandler ()
   :<|> "delegation" :> "view" :> GetH (Frame ST)
 
        -- static content
@@ -109,7 +106,7 @@ type AulaMain =
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
        -- login
-  :<|> "login" :> FormH HTML (Html ()) ST
+  :<|> "login" :> FormHandler ST
 
 
 aulaMain :: ServerT AulaMain Action
@@ -122,7 +119,7 @@ aulaMain =
   :<|> Page.userSettings
   :<|> aulaAdmin
 
-  :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormH HTML (Html ()) ()"
+  :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
   :<|> error "api not implemented: \"delegation\" :> \"view\" :> GetH (Frame ST)"
 
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
@@ -137,9 +134,9 @@ type AulaSpace =
        -- view idea details (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormH HTML (Html ()) Idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler Idea
        -- create wild idea
-  :<|> "idea" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "idea" :> "create" :> FormHandler ST
 
        -- browse topics in an idea space
   :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
@@ -150,11 +147,11 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
        -- create new topic
-  :<|> "topic" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "topic" :> "create" :> FormHandler ST
        -- create new idea inside topic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormH HTML (Html ()) ST
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormH HTML (Html ()) ST
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegation" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegation" :> "create" :> FormHandler ST
 
 aulaSpace :: IdeaSpace -> ServerT AulaSpace Action
 aulaSpace space =
