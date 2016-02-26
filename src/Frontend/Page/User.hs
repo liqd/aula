@@ -9,7 +9,7 @@ where
 import Action
 import Frontend.Prelude
 
-import qualified Frontend.Path as P
+import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -34,8 +34,7 @@ data UserSettingData = UserSettingData
 instance FormPageView PageUserSettings where
     type FormPageResult PageUserSettings = UserSettingData
 
-    formAction _ =
-        P.path P.UserSettings
+    formAction _ = relPath U.UserSettings
 
     makeForm (PageUserSettings user) =
         UserSettingData
@@ -63,7 +62,7 @@ instance FormPageView PageUserSettings where
 
 -- FIXME: Redirect to the right place
 instance RedirectOf PageUserSettings where
-    redirectOf _ = P.path P.SpaceAll
+    redirectOf _ = relPath U.ListSpaces
 
 userSettings :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser

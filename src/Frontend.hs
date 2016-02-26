@@ -89,7 +89,7 @@ type AulaMain =
        -- view all spaces
        "space" :> GetH (Frame PageRoomsOverview)
        -- enter one space
-  :<|> "space" :> Capture "space" ST :> AulaSpace
+  :<|> "space" :> Capture "space" IdeaSpace :> AulaSpace
 
        -- view all users
   :<|> "user" :> GetH (Frame (PageShow [User]))
@@ -135,7 +135,7 @@ type AulaSpace =
        -- browse wild ideas in an idea space
        "idea" :> GetH (Frame PageIdeasOverview)
        -- view idea details (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame PageIdeaDetail)
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormH HTML (Html ()) Idea
        -- create wild idea
@@ -144,28 +144,35 @@ type AulaSpace =
        -- browse topics in an idea space
   :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"       :> GetH (Frame PageTopicOverview)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations" :> GetH (Frame PageTopicOverview)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"              :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "all"     :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
        -- create new topic
   :<|> "topic" :> "create" :> FormH HTML (Html ()) ST
        -- create new idea inside topic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormH HTML (Html ()) ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormH HTML (Html ()) ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegation" :> "create" :> FormH HTML (Html ()) ST
 
-aulaSpace :: ST -> ServerT AulaSpace Action
-aulaSpace _spaceName =
-       Page.viewIdeas space
-  :<|> Page.viewIdea  space
-  :<|> Page.editIdea
-  :<|> Page.createIdea
+aulaSpace :: IdeaSpace -> ServerT AulaSpace Action
+aulaSpace space =
+       Page.viewIdeas  space
+  :<|> Page.viewIdea   space
+  :<|> Page.editIdea   space
+  :<|> Page.createIdea space Nothing
 
-  :<|> Page.viewTopics space
-  :<|> Page.viewTopic
-  :<|> error "api not implemented: \"topic\"  :> Capture \"topic\" (AUID Topic) :> \"delegations\" :> GetH (Frame PageTopicOverview)"
+  :<|> Page.viewTopics  space
+  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   space TabVotingIdeas
+  :<|> Page.viewTopic   space TabWinningIdeas
+  :<|> Page.viewTopic   space TabDelegation
   :<|> Page.createTopic space []
-  :<|> error "api not implemented: \"topic\"  :> \"idea\" :> \"create\" :> FormH HTML (Html ()) ST"
-
-  where
-    space = SchoolSpace -- FIXME
+  :<|> Page.createIdea  space . Just
+  :<|> Page.moveIdeasToTopic space
+  :<|> error "api not implemented: topic/:topic/delegation/create"
 
 
 type AulaUser =

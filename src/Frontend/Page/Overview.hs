@@ -16,9 +16,9 @@ module Frontend.Page.Overview
 where
 
 import Action
-import Frontend.Path (Top(TopTesting), path)
 import Frontend.Prelude
 
+import qualified Frontend.Path as U
 
 ----------------------------------------------------------------------
 -- pages
@@ -69,7 +69,7 @@ instance ToHtml PageRoomsOverview where
 
         g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
         g SchoolSpace = div_ . p_ $ "Schule"
-        g (ClassSpace (SchoolClass n _)) = div_ . p_ $ "Klasse " <> toHtml n
+        g (ClassSpace c) = div_ . p_ $ "Klasse " <> c ^. className . html
             -- for the first school year, we can ignore the year.  (after that, we have different
             -- options.  one would be to only show the year if it is not the current one, or always show
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
@@ -85,7 +85,7 @@ instance ToHtml PageIdeasOverview where
         h1_ "Was soll sich verändern?"
         p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
             <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        div_ $ button_ [onclick_ ("location.href='" <> path (TopTesting "/ideas/create") <> "'")] "+ Neue Idee" -- FIXME: should link to idea creation form
+        div_ $ button_ [onclick_ (U.Space space U.CreateIdea)] "+ Neue Idee"
         div_ $ do
             -- FIXME: these buttons should filter the ideas by category
             button_ "Regeln"
@@ -109,7 +109,7 @@ instance ToHtml PageIdeasInDiscussion where
             div_ . toHtml . show $ topic ^. topicPhase
             div_ . toHtml $ topic ^. topicTitle
             div_ . toHtml $ topic ^. topicDesc
-            a_ [href_ "FIXME: link to topic details"] "link"
+            a_ [href_ . U.Space space . U.ViewTopicIdeas $ topic ^. _Id] "view topic"
 
 instance Page PageIdeasInDiscussion where
     isPrivatePage _ = True
@@ -123,5 +123,5 @@ instance ToHtml Tabs where
             "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
-        spaceDesc SchoolSpace     = "der Schule"
-        spaceDesc (ClassSpace (SchoolClass n _)) = "der Klasse " <> n
+        spaceDesc SchoolSpace    = "der Schule"
+        spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className

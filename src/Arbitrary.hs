@@ -34,65 +34,24 @@ instance Arbitrary PageIdeasOverview where
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
-instance Arbitrary PageTopicOverview where
-    arbitrary = oneof
-        [ PageTopicOverviewRefinementPhase' <$> arb
-        , PageTopicOverviewJuryPhase'       <$> arb
-        , PageTopicOverviewVotingPhase'     <$> arb
-        , PageTopicOverviewResultPhase'     <$> arb
-        ]
+instance Arbitrary ViewTopicTab where
+    arbitrary = elements [minBound..]
 
-instance Arbitrary PageTopicOverviewRefinementPhase where
-    arbitrary = PageTopicOverviewRefinementPhase <$> arb <*> arb
+instance Arbitrary ViewTopic where
+    arbitrary = oneof [ ViewTopicIdeas <$> arb <*> arb <*> arb
+                      , pure ViewTopicDelegations ]
 
-instance Arbitrary PageTopicOverviewJuryPhase where
-    arbitrary = PageTopicOverviewJuryPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewVotingPhase where
-    arbitrary = PageTopicOverviewVotingPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewResultPhase where
-    arbitrary = PageTopicOverviewResultPhase <$> arb <*> arb
-
-instance Arbitrary PageTopicOverviewDelegations where
-    arbitrary = pure PageTopicOverviewDelegations
-
-instance Arbitrary PageIdeaDetail where
-    arbitrary = oneof
-        [ PageIdeaDetailNewIdeas'            <$> arb
-        , PageIdeaDetailRefinementPhase'     <$> arb
-        , PageIdeaDetailJuryPhase'           <$> arb
-        , PageIdeaDetailVotingPhase'         <$> arb
-        , PageIdeaDetailFeasibleNotFeasible' <$> arb
-        , PageIdeaDetailWinner'              <$> arb
-        ]
-
-instance Arbitrary PageIdeaDetailNewIdeas where
-    arbitrary = PageIdeaDetailNewIdeas <$> arb
-
-instance Arbitrary PageIdeaDetailRefinementPhase where
-    arbitrary = PageIdeaDetailRefinementPhase <$> arb
-
-instance Arbitrary PageIdeaDetailJuryPhase where
-    arbitrary = PageIdeaDetailJuryPhase <$> arb
-
-instance Arbitrary PageIdeaDetailVotingPhase where
-    arbitrary = PageIdeaDetailVotingPhase <$> arb
+instance Arbitrary ViewIdea where
+    arbitrary = ViewIdea <$> arb <*> arb
 
 instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
     arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
-instance Arbitrary PageIdeaDetailFeasibleNotFeasible where
-    arbitrary = PageIdeaDetailFeasibleNotFeasible <$> arb
+instance Arbitrary CreateIdea where
+    arbitrary = CreateIdea <$> arb <*> arb
 
-instance Arbitrary PageIdeaDetailWinner where
-    arbitrary = PageIdeaDetailWinner <$> arb
-
-instance Arbitrary PageCreateIdea where
-    arbitrary = pure PageCreateIdea
-
-instance Arbitrary PageEditIdea where
-    arbitrary = PageEditIdea <$> arb
+instance Arbitrary EditIdea where
+    arbitrary = EditIdea <$> arb
 
 instance Arbitrary PageUserProfileCreateIdeas where
     arbitrary = pure PageUserProfileCreateIdeas
@@ -103,11 +62,11 @@ instance Arbitrary PageUserProfileDelegatedVotes where
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
 
-instance Arbitrary PageCreateTopic where
-    arbitrary = PageCreateTopic <$> arb <*> arb
+instance Arbitrary CreateTopic where
+    arbitrary = CreateTopic <$> arb <*> arb
 
-instance Arbitrary PageCreateTopicAddIdeas where
-    arbitrary = PageCreateTopicAddIdeas <$> arb <*> arb
+instance Arbitrary MoveIdeasToTopic where
+    arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurationsAndQuorum where
     arbitrary = pure PageAdminSettingsDurationsAndQuorum
@@ -191,10 +150,10 @@ instance Arbitrary IdeaSpace where
     arbitrary = oneof [pure SchoolSpace, ClassSpace <$> arb]
 
 instance Arbitrary SchoolClass where
-    arbitrary = SchoolClass <$> name <*> year
+    arbitrary = schoolClass <$> year <*> name
       where
+        year = elements [2012..2020]
         name = elements [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
-        year = elements $ cs . show <$> [2012..2020 :: Int]
 
 instance Arbitrary ProtoTopic where
     arbitrary = ProtoTopic <$> arbPhrase <*> arb' <*> arb' <*> pure SchoolSpace <*> pure []
