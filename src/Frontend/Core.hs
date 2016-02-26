@@ -17,7 +17,8 @@ import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
-import Lucid
+import Data.UriPath (UriPath, absoluteUriPath, href_)
+import Lucid hiding (href_)
 import Lucid.Base
 import Servant
 import Servant.HTML.Lucid (HTML)
@@ -32,7 +33,6 @@ import qualified Text.Digestive.Form as DF
 import Action
 import Api
 import Types
-import Frontend.Path ((</>))
 
 import qualified Frontend.Path as P
 
@@ -59,7 +59,7 @@ type GetH = Get '[HTML]
 class FormPageView p where
     type FormPageResult p :: *
     -- | The form action used in form generation
-    formAction :: p -> ST
+    formAction :: p -> UriPath
     -- | Generates a Html view from the given page
     makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
@@ -72,7 +72,7 @@ class Page p where
 -- | The page after submitting a form should be redirected
 class RedirectOf p where
     -- | Calculates a redirect address from the given page
-    redirectOf :: p -> ST
+    redirectOf :: p -> UriPath
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body = Frame User body | PublicFrame body
@@ -94,10 +94,10 @@ pageFrame' :: (Monad m) => [HtmlT m a] -> Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame' extraHeaders mUser bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "third-party/Simple-Grid/simplegrid.css"]
-        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "third-party/HTML5-Reset/assets/css/reset.css"]
-        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "icons/fontcustom.css"]
-        link_ [rel_ "stylesheet", href_ $ P.path P.TopStatic </> "css/all.css"]
+        link_ [rel_ "stylesheet", href_ $ P.TopStatic "third-party/Simple-Grid/simplegrid.css"]
+        link_ [rel_ "stylesheet", href_ $ P.TopStatic "third-party/HTML5-Reset/assets/css/reset.css"]
+        link_ [rel_ "stylesheet", href_ $ P.TopStatic "icons/fontcustom.css"]
+        link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         sequence_ extraHeaders
     body_ $ do
         headerMarkup mUser >> bdy >> footerMarkup
@@ -110,8 +110,8 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
     case mUser of
         Just _usr -> do
             ul_ [class_ "main-header-menu"] $ do
-                li_ $ a_ [P.href_ P.SpaceAll] "Ideenräume"
-                li_ $ a_ [P.href_ P.DelegationView] "Beauftragungsnetzwerk"
+                li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
+                li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
         Nothing -> nil
 
     ul_ [class_ "main-header-user"] $ do
@@ -125,8 +125,8 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = footer_ [class_ "main-footer"] $ do
     ul_ [class_ "main-footer-menu"] $ do
-        li_ $ a_ [P.href_ P.Terms] "Nutzungsbedingungen"
-        li_ $ a_ [P.href_ P.Imprint] "Impressum"
+        li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
+        li_ $ a_ [href_ P.Imprint] "Impressum"
     span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
@@ -208,13 +208,13 @@ formRedirectH' getPage processor1 processor2 renderer = getH :<|> postH
   where
     getH = do
         page <- getPage
-        let fa = formAction page
+        let fa = absoluteUriPath $ formAction page
         v <- getForm fa (processor1 page)
         renderer page v fa
 
     postH env = do
         page <- getPage
-        let fa = formAction page
+        let fa = absoluteUriPath $ formAction page
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         case mpayload of
             Just payload -> processor2 page payload >>= redirect
@@ -229,7 +229,7 @@ redirectFormHandler
     -> ServerT (FormH HTML (Html ()) ST) m
 redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
-    p2 page result = processor result $> redirectOf page
+    p2 page result = processor result $> absoluteUriPath (redirectOf page)
     r page v fa =
         let frame = if isPrivatePage page
               then pageFrame (Just frameUserHack)

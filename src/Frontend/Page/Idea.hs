@@ -17,9 +17,9 @@ where
 
 import Action (ActionM, ActionPersist, persistent)
 import Frontend.Page.Comment
-import Frontend.Path (Top(TopTesting), path)
 import Frontend.Prelude
 
+import qualified Frontend.Path as U
 import qualified Data.Set as Set
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -44,7 +44,7 @@ instance Page ViewIdea where
   isPrivatePage _ = True
 
 -- | 6. Create idea
-data CreateIdea = CreateIdea
+data CreateIdea = CreateIdea IdeaSpace (Maybe (AUID Topic))
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
@@ -95,9 +95,9 @@ instance ToHtml ViewIdea where
 
         -- buttons
         when (phase == Just PhaseVoting) . div_ [id_ "voting"] $ do
-            button_ [value_ "yes"]     "dafür"
-            button_ [value_ "neutral"] "neutral"
-            button_ [value_ "no"]      "dagegen"
+            button_ [value_ "yes"]     "dafür"   -- FIXME
+            button_ [value_ "neutral"] "neutral" -- FIXME
+            button_ [value_ "no"]      "dagegen" -- FIXME
 
         -- article
         div_ [id_ "desc"] $ idea ^. ideaDesc . html
@@ -106,7 +106,7 @@ instance ToHtml ViewIdea where
         div_ [id_ "comments"] $ do
             hr_ []
             span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
-            span_ $ button_ [value_ "create_comment"] "Neuer Verbesserungsvorschlag"
+            span_ $ button_ [value_ "create_comment"] "Neuer Verbesserungsvorschlag" -- FIXME
             hr_ []
             for_ (idea ^. ideaComments) $ \c ->
                 PageComment c ^. html
@@ -118,7 +118,8 @@ instance ToHtml ViewIdea where
 instance FormPageView CreateIdea where
     type FormPageResult CreateIdea = ProtoIdea
 
-    formAction _ = path $ TopTesting "/ideas/create"
+    formAction (CreateIdea space mtopicId) =
+        relPath . U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
 
     makeForm _ =
         ProtoIdea
@@ -137,7 +138,7 @@ instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
 
     formAction (EditIdea idea) =
-        path . TopTesting $ "/ideas/edit/" <> cs (show . (\ (AUID i) -> i) $ idea ^. _Id)
+        relPath $ U.Space (idea ^. ideaSpace) (U.EditIdea (idea ^. _Id))
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -150,9 +151,9 @@ instance FormPageView EditIdea where
             h3_ "Diene Idee"
             DF.form v fa $ do
                 ideaFormFields v
-                DF.inputSubmit   "Sriechern"
-                button_ [value_ ""] "IDEE LOSCHEN"
-                button_ [value_ ""] "Abbrechen"
+                DF.inputSubmit   "Speichern"
+                button_ [value_ ""] "IDEE LOSCHEN" -- FIXME delete button
+                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this back?
 
 categoryValues :: IsString s => [(Category, s)]
 categoryValues = [ (CatRule,        "Regel")
@@ -187,19 +188,18 @@ viewIdea _space ideaId = persistent $ do
                 pure . Just $ topic ^. topicPhase
     pure . makeFrame $ ViewIdea idea phase
 
--- FIXME: Redirect to the right place
 instance RedirectOf CreateIdea where
-    redirectOf _ = path $ TopTesting "/ideas"
+    redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
 
-createIdea :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
-createIdea = redirectFormHandler (pure CreateIdea) (persistent . addIdea)
+createIdea :: ActionM m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormH HTML (Html ()) ST) m
+createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
 
--- FIXME: Redirect to the right place
 instance RedirectOf EditIdea where
-    redirectOf _ = path $ TopTesting "/ideas"
+    redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
 
-editIdea :: (ActionM action) => AUID Idea -> ServerT (FormH HTML (Html ()) ST) action
-editIdea ideaId =
+-- FIXME check _space
+editIdea :: ActionM m => IdeaSpace -> AUID Idea -> ServerT (FormH HTML (Html ()) ST) m
+editIdea _space ideaId =
     redirectFormHandler
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
         (persistent . modifyIdea ideaId . newIdea)

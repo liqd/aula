@@ -10,7 +10,7 @@ import Action (ActionM)
 import qualified Action
 import Frontend.Prelude
 
-import qualified Frontend.Path as P
+import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -33,7 +33,7 @@ data LoginFormData = LoginFormData ST ST
 instance FormPageView PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData
 
-    formAction _ = P.path P.Login
+    formAction _ = relPath U.Login
 
     makeForm _ = LoginFormData
         <$> ("user" .: DF.text Nothing)
@@ -52,7 +52,7 @@ instance FormPageView PageHomeWithLoginPrompt where
 -- handlers
 
 instance RedirectOf PageHomeWithLoginPrompt where
-    redirectOf _ = P.path P.SpaceAll
+    redirectOf _ = relPath U.ListSpaces
 
 login :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin
