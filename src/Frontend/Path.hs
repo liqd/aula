@@ -44,6 +44,7 @@ data Main =
   | Terms
   | Login
   | Logout
+  deriving Show
 
 instance HasPath Main where relPath p = main p nil
 
@@ -76,6 +77,7 @@ data Space =
   | CreateIdeaInTopic (AUID Topic)
   | CreateTopicDelegation (AUID Topic)
   | MoveIdeasToTopic (AUID Topic)
+  deriving Show
 
 space :: Space -> UriPath -> UriPath
 space ListIdeas                   root = root </> "idea"
@@ -96,6 +98,7 @@ space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "d
 data UserPs =
     UserIdeas
   | UserDelegations
+  deriving Show
 
 user :: UserPs -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
@@ -106,6 +109,7 @@ data AdminPs =
   | AdminAccess
   | AdminUser
   | AdminEvent
+  deriving Show
 
 admin :: AdminPs -> UriPath -> UriPath
 admin AdminParams = (</> "params")
