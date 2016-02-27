@@ -29,6 +29,8 @@ import Servant.Missing
 import System.FilePath (addTrailingPathSeparator)
 import Thentos.Prelude
 
+import qualified Data.ByteString.Builder as Builder
+
 import Persistent
 import Action (Action, mkRunAction, UserState(..))
 import Config
@@ -252,13 +254,20 @@ aulaTesting =
 catchAulaExcept :: (s ~ (ServerT api Action)) => Proxy api -> s -> s
 catchAulaExcept Proxy = undefined
 
+data Page404 = Page404
+
+instance ToHtml Page404 where
+    toHtmlRaw = toHtml
+    toHtml Page404 = div_ $ p_ "404"
+
 catch404 :: Middleware
 catch404 app req cont = app req $ \resp -> cont $ f resp
   where
     f :: Response -> Response
     f resp = if statusCode status /= 404
         then resp
-        else responseBuilder status headers ""
+        else responseBuilder status headers builder
       where
-        status = responseStatus resp
+        status  = responseStatus resp
         headers = responseHeaders resp
+        builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404

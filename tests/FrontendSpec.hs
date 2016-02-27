@@ -13,9 +13,10 @@ where
 
 import Control.Monad.Except (throwError)
 import Control.Monad.Error.Class (MonadError)
-import Data.String.Conversions (ST)
+import Data.String.Conversions (ST, cs)
+import Lucid (renderText, toHtml)
 import Test.Hspec (Spec, describe, context, it)
-import Test.Hspec.Wai (with, get, shouldRespondWith, pending)
+import Test.Hspec.Wai (with, get, shouldRespondWith, pending, ResponseMatcher(ResponseMatcher))
 import Servant
 import Network.Wai
 
@@ -51,7 +52,8 @@ spec = do
             it "sends an 404 response" $ do
                 get "/nosuchpath" `shouldRespondWith` 404
             it "bases http response on type `Page404`" $ do
-                pending
+                get "/nosuchpath" `shouldRespondWith`
+                    (ResponseMatcher 404 [] . Just . cs . renderText . toHtml $ PublicFrame Page404)
 
 
 type TestApi =
