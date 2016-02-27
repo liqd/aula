@@ -16,7 +16,7 @@ module Frontend.Page.Topic
     , moveIdeasToTopic )
 where
 
-import Action (ActionM, ActionPersist(..))
+import Action (ActionM, ActionPersist(..), ActionUserHandler)
 import Frontend.Prelude hiding (moveIdeasToTopic)
 
 import qualified Api.Persistent as Persistent
@@ -186,13 +186,12 @@ instance RedirectOf MoveIdeasToTopic where
 -- handlers
 
 -- FIXME check the 'space'
-viewTopic :: ActionPersist m => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic _space TabDelegation _ = pure . makeFrame $ ViewTopicDelegations -- FIXME
-viewTopic _space tab topicId = persistent $ do
+viewTopic :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
+viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
+viewTopic _space tab topicId = makeFrame =<< persistent (do
     -- FIXME 404
     Just topic <- findTopic topicId
-    ideas      <- findIdeasByTopic topic
-    pure . makeFrame $ ViewTopicIdeas tab topic ideas
+    ViewTopicIdeas tab topic <$> findIdeasByTopic topic)
 
 createTopic :: (ActionM action) => IdeaSpace -> [AUID Idea] -> ServerT (FormH HTML (Html ()) ST) action
 createTopic space ideas = redirectFormHandler (pure $ CreateTopic space ideas) (persistent . addTopic)

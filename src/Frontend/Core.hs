@@ -1,14 +1,31 @@
 {-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 
-{-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
+    ( GetH
+    , Page, isPrivatePage
+    , PageShow(PageShow)
+    , Beside(Beside)
+    , Frame(Frame, PublicFrame), makeFrame, pageFrame, pageFrame'
+    , ListItemIdea(ListItemIdea)
+    , FormPageView, FormPageResult
+    , formAction, makeForm, formPage, formRedirectH', redirectFormHandler
+    , RedirectOf, redirectOf
+    , AuthorWidget(AuthorWidget)
+    , CommentVotesWidget(VotesWidget)
+    , semanticDiv
+    , showed
+    , html
+    )
 where
 
 import Control.Lens
@@ -35,6 +52,12 @@ import Api
 import Types
 
 import qualified Frontend.Path as P
+
+
+-- | FIXME: Could this be a PR for lucid?
+instance (ToHtml (HtmlT Identity ())) where
+    toHtmlRaw = toHtml
+    toHtml = HtmlT . return . runIdentity . runHtmlT
 
 
 -- | This will generate the following snippet:
@@ -76,14 +99,15 @@ class RedirectOf p where
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body = Frame User body | PublicFrame body
+  deriving (Functor)
 
-makeFrame :: Page p => p -> Frame p
+makeFrame :: (ActionPersist m, ActionUserHandler m, Page p) => p -> m (Frame p)
 makeFrame p
-  | isPrivatePage p = Frame frameUserHack p
-  | otherwise       = PublicFrame p
+  | isPrivatePage p = flip Frame p <$> currentUser
+  | otherwise       = return $ PublicFrame p
 
 instance (ToHtml body) => ToHtml (Frame body) where
-    toHtmlRaw                = toHtml
+    toHtmlRaw = toHtml
     toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
     toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
 
@@ -152,6 +176,7 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
+-- | FIXME: find better name?
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
@@ -230,36 +255,4 @@ redirectFormHandler
 redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> absoluteUriPath (redirectOf page)
-    r page v fa =
-        let frame = if isPrivatePage page
-              then pageFrame (Just frameUserHack)
-              else pageFrame Nothing in
-        pure . frame $ formPage v fa page
-
-----------------------------------------------------------------------
--- HACKS
-
-frameUserHack :: User
-frameUserHack = User
-    { _userMeta      = frameUserMetaInfo
-    , _userLogin     = "VorNam"
-    , _userFirstName = "Vorname"
-    , _userLastName  = "Name"
-    , _userAvatar    = "https://avatar.com"
-    , _userGroups    = nil
-    , _userPassword  = EncryptedPass ""
-    , _userEmail     = Nothing
-    }
-  where
-    sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
-
-    frameUserMetaInfo :: MetaInfo User
-    frameUserMetaInfo= MetaInfo
-        { _metaId              = AUID 1
-        , _metaCreatedBy       = AUID 0
-        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
-        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
-        , _metaCreatedAt       = sometime
-        , _metaChangedBy       = AUID 0
-        , _metaChangedAt       = sometime
-        }
+    r page v fa = toHtml . fmap (formPage v fa) <$> makeFrame page

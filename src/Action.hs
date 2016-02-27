@@ -160,7 +160,3 @@ loggedInUser :: (ActionUserHandler m) => m ST
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
     UserLoggedIn user _session -> return user
-
-----------------------------------------------------------------------
--- Lens
-
