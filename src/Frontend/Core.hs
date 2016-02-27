@@ -136,6 +136,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
             ul_ [class_ "main-header-menu"] $ do
                 li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
                 li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+                li_ $ a_ [href_ P.Logout] "Logout"
         Nothing -> nil
 
     ul_ [class_ "main-header-user"] $ do

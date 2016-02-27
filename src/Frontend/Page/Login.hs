@@ -8,6 +8,7 @@ where
 
 import Action (ActionM)
 import qualified Action
+import qualified Frontend.Path as P
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
@@ -22,7 +23,13 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
-  isPrivatePage _ = False
+    isPrivatePage _ = False
+
+data PageLogout = PageLogout
+  deriving (Eq, Show, Read)
+
+instance Page PageLogout where
+    isPrivatePage _ = False
 
 ----------------------------------------------------------------------
 -- templates
@@ -48,6 +55,12 @@ instance FormPageView PageHomeWithLoginPrompt where
             div_ $ do
                 p_ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
 
+instance ToHtml PageLogout where
+    toHtmlRaw = toHtml
+    toHtml p@PageLogout = semanticDiv p $ do
+        p_ "Du bist ausgelogt."
+        button_ [onclick_ P.Login] "Login"
+
 ----------------------------------------------------------------------
 -- handlers
 
@@ -58,3 +71,6 @@ login :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
 login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login user
+
+logout :: (ActionM m) => m (Frame PageLogout)
+logout = Action.logout $> makeFrame PageLogout

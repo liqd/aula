@@ -110,6 +110,7 @@ type AulaMain =
 
        -- login
   :<|> "login" :> FormH HTML (Html ()) ST
+  :<|> "logout" :> GetH (Frame PageLogout)
 
 
 aulaMain :: ServerT AulaMain Action
@@ -129,6 +130,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
   :<|> Page.login
+  :<|> Page.logout
 
 
 type AulaSpace =

@@ -29,7 +29,7 @@ import qualified Data.Text.Lazy as LT
 
 import Action
 import Arbitrary ()
-import Data.UriPath
+import Data.UriPath (absoluteUriPath)
 import Frontend.Page
 import Persistent
 import Types
@@ -56,6 +56,7 @@ spec = do
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
+        , H (arb :: Gen PageLogout)
         , H (PageComment <$> arb)
         ]
     context "PageFormView" $ mapM_ testForm [

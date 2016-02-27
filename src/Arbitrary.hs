@@ -20,6 +20,7 @@ import Test.QuickCheck.Instances ()
 
 import Types
 import Frontend.Page
+import qualified Frontend.Path as P
 
 
 ----------------------------------------------------------------------
@@ -94,6 +95,9 @@ instance Arbitrary PageStaticTermsOfUse where
 
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = pure PageHomeWithLoginPrompt
+
+instance Arbitrary PageLogout where
+    arbitrary = pure PageLogout 
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
@@ -218,6 +222,53 @@ instance Arbitrary Document where
 
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
+
+----------------------------------------------------------------------
+-- path
+
+instance Arbitrary P.Main where
+    arbitrary = oneof
+        [ P.Space <$> arb <*> arb
+        , P.User <$> arb <*> arb
+        , P.Admin <$> arb
+        , elements
+            [ P.ListSpaces
+            , P.ListUsers
+            , P.UserSettings
+            , P.DelegationEdit
+            , P.DelegationView
+            , P.Imprint
+            , P.Terms
+            , P.Login
+            , P.Logout
+            ]
+        ]
+
+instance Arbitrary P.Space where
+    arbitrary = oneof
+        [ P.ViewIdea <$> arb
+        , P.EditIdea <$> arb
+        , P.ViewTopicIdeas <$> arb
+        , P.ViewTopicIdeasVoting <$> arb
+        , P.ViewTopicIdeasWinning <$> arb
+        , P.ViewTopicDelegations <$> arb
+        , P.EditTopic <$> arb
+        , P.CreateIdeaInTopic <$> arb
+        , P.CreateTopicDelegation <$> arb
+        , P.MoveIdeasToTopic <$> arb
+        , elements
+            [ P.ListIdeas
+            , P.CreateIdea
+            , P.ListTopics
+            , P.CreateTopic
+            ]
+        ]
+
+instance Arbitrary P.UserPs where
+    arbitrary = elements [P.UserIdeas, P.UserDelegations]
+
+instance Arbitrary P.AdminPs where
+    arbitrary = elements [P.AdminParams, P.AdminAccess, P.AdminUser, P.AdminEvent]
 
 ----------------------------------------------------------------------
 -- general-purpose helpers
