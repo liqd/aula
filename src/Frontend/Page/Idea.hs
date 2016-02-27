@@ -175,20 +175,18 @@ ideaFormFields v = do
 
 -- FIXME restrict to the given IdeaSpace
 viewIdea :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
-viewIdea _space ideaId = do
-    persistent $ do
-        -- FIXME 404
-        Just idea  <- findIdea ideaId
-        ViewIdea idea <$>
-            -- phase
-            case idea ^. ideaTopic of
-                Nothing ->
-                    pure Nothing
-                Just topicId -> do
-                    -- FIXME 404
-                    Just topic <- findTopic topicId
-                    pure . Just $ topic ^. topicPhase
-    >>= makeFrame
+viewIdea _space ideaId = makeFrame =<< persistent (do
+    -- FIXME 404
+    Just idea  <- findIdea ideaId
+    ViewIdea idea <$>
+        -- phase
+        case idea ^. ideaTopic of
+            Nothing ->
+                pure Nothing
+            Just topicId -> do
+                -- FIXME 404
+                Just topic <- findTopic topicId
+                pure . Just $ topic ^. topicPhase)
 
 instance RedirectOf CreateIdea where
     redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas

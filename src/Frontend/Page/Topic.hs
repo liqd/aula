@@ -188,12 +188,10 @@ instance RedirectOf MoveIdeasToTopic where
 -- FIXME check the 'space'
 viewTopic :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
 viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
-viewTopic _space tab topicId = do
-    persistent $ do
-        -- FIXME 404
-        Just topic <- findTopic topicId
-        ViewTopicIdeas tab topic <$> findIdeasByTopic topic
-    >>= makeFrame
+viewTopic _space tab topicId = makeFrame =<< persistent (do
+    -- FIXME 404
+    Just topic <- findTopic topicId
+    ViewTopicIdeas tab topic <$> findIdeasByTopic topic)
 
 createTopic :: (ActionM action) => IdeaSpace -> [AUID Idea] -> ServerT (FormH HTML (Html ()) ST) action
 createTopic space ideas = redirectFormHandler (pure $ CreateTopic space ideas) (persistent . addTopic)
