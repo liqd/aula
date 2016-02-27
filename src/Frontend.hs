@@ -13,9 +13,16 @@ where
 
 import Control.Monad.Trans.Except
 import Lucid
-import Network.Wai (Application, Middleware)
+import Network.HTTP.Types
+import Network.Wai
+    ( Application, Middleware, Response
+    , responseStatus, responseHeaders, responseBuilder
+    )
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
-import Network.Wai.Application.Static (StaticSettings, ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp)
+import Network.Wai.Application.Static
+    ( StaticSettings
+    , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
+    )
 import Servant
 import Servant.HTML.Lucid
 import Servant.Missing
@@ -246,4 +253,12 @@ catchAulaExcept :: (s ~ (ServerT api Action)) => Proxy api -> s -> s
 catchAulaExcept Proxy = undefined
 
 catch404 :: Middleware
-catch404 = undefined
+catch404 app req cont = app req $ \resp -> cont $ f resp
+  where
+    f :: Response -> Response
+    f resp = if statusCode status /= 404
+        then resp
+        else responseBuilder status headers ""
+      where
+        status = responseStatus resp
+        headers = responseHeaders resp
