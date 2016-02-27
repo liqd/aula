@@ -73,4 +73,4 @@ login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin
     makeUserLogin (LoginFormData user _pass) = Action.login user
 
 logout :: (ActionM m) => m (Frame PageLogout)
-logout = Action.logout $> makeFrame PageLogout
+logout = Action.logout >> makeFrame PageLogout
