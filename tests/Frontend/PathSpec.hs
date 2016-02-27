@@ -14,9 +14,9 @@ import Frontend.Path
 spec :: Spec
 spec = do
     describe "HasPath" $ do
-        it "absoluteUriPath is not empty and well defined" . property . forAll mainGen $ \path -> 
+        it "absoluteUriPath is not empty and well defined" . property . forAll mainGen $ \path ->
             T.length (absoluteUriPath $ relPath path) > 0
-        it "relativeUriPath is not empty and well defined" . property . forAll mainGen $ \path -> 
+        it "relativeUriPath is not empty and well defined" . property . forAll mainGen $ \path ->
             T.length (relativeUriPath $ relPath path) > 0
   where
     mainGen :: Gen Main
