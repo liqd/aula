@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -12,7 +13,7 @@ where
 
 import Control.Monad.Trans.Except
 import Lucid
-import Network.Wai (Application)
+import Network.Wai (Application, Middleware)
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
 import Network.Wai.Application.Static (StaticSettings, ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp)
 import Servant
@@ -38,9 +39,9 @@ runFrontend :: IO ()
 runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
+        proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitalTestDb -- FIXME: Remove Bootstrapping DB
-    runSettings settings $
-      serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
+    runSettings settings . catch404 . serve proxy . aulaTop $ action UserLoggedOut
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
@@ -57,11 +58,14 @@ type AulaTop =
 
 aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
-       enter runActionForceLogin (aulaMain :<|> aulaTesting)
+       enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (Config.config ^. htmlStatic)
   where
+    proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
+    proxy = Proxy
+
     -- FIXME: Login shouldn't happen here
     runActionForceLogin = Nat $ \action -> runAction $ do
         Action.login adminUsernameHack
@@ -231,3 +235,15 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
+
+
+----------------------------------------------------------------------
+-- error handling in servant / wai
+
+-- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
+-- type family.)
+catchAulaExcept :: (s ~ (ServerT api Action)) => Proxy api -> s -> s
+catchAulaExcept Proxy = undefined
+
+catch404 :: Middleware
+catch404 = undefined
