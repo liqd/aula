@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 
-{-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
     ( GetH
@@ -52,6 +52,12 @@ import Api
 import Types
 
 import qualified Frontend.Path as P
+
+
+-- | FIXME: Could this be a PR for lucid?
+instance (ToHtml (HtmlT Identity ())) where
+    toHtmlRaw = toHtml
+    toHtml = HtmlT . return . runIdentity . runHtmlT
 
 
 -- | This will generate the following snippet:
@@ -102,11 +108,8 @@ makeFrame p
 
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw = toHtml
-    toHtml = renderPageFrame toHtml
-
-renderPageFrame :: Monad m => (t -> HtmlT m a) -> Frame t -> HtmlT m ()
-renderPageFrame f (Frame usr bdy)   = pageFrame (Just usr) (f bdy)
-renderPageFrame f (PublicFrame bdy) = pageFrame Nothing (f bdy)
+    toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
+    toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
 
 pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame = pageFrame' []
@@ -252,4 +255,4 @@ redirectFormHandler
 redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
   where
     p2 page result = processor result $> absoluteUriPath (redirectOf page)
-    r page v fa = renderPageFrame id . fmap (formPage v fa) <$> makeFrame page
+    r page v fa = toHtml . fmap (formPage v fa) <$> makeFrame page
