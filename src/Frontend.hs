@@ -107,12 +107,12 @@ type AulaMain =
        -- enter user profile
   :<|> "user" :> Capture "user" (AUID User) :> AulaUser
        -- user settings
-  :<|> "user" :> "settings" :> FormHandler ()
+  :<|> "user" :> "settings" :> FormHandler PageUserSettings ()
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegation" :> "edit" :> FormHandler ()
+  :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote () --FIXME: Correct page type
   :<|> "delegation" :> "view" :> GetH (Frame ST)
 
        -- static content
@@ -120,7 +120,7 @@ type AulaMain =
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
        -- login
-  :<|> "login" :> FormHandler ST
+  :<|> "login" :> FormHandler PageHomeWithLoginPrompt ST
   :<|> "logout" :> GetH (Frame PageLogout)
 
 
@@ -150,9 +150,9 @@ type AulaSpace =
        -- view idea details (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler Idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea Idea
        -- create wild idea
-  :<|> "idea" :> "create" :> FormHandler ST
+  :<|> "idea" :> "create" :> FormHandler CreateIdea ST
 
        -- browse topics in an idea space
   :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
@@ -163,11 +163,12 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
        -- create new topic
-  :<|> "topic" :> "create" :> FormHandler ST
+  :<|> "topic" :> "create" :> FormHandler CreateTopic ST
        -- create new idea inside topic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler ST
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler ST
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegation" :> "create" :> FormHandler ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic ST
+  :<|> "topic" :> Capture "topic" (AUID Topic)
+               :> "delegation" :> "create" :> FormHandler PageDelegateVote ST --FIXME: Change Type
 
 aulaSpace :: IdeaSpace -> ServerT AulaSpace Action
 aulaSpace space =
