@@ -11,6 +11,21 @@
 {-# OPTIONS_GHC -Wall #-}
 
 module Frontend.Core
+    ( GetH
+    , Page, isPrivatePage
+    , PageShow(PageShow)
+    , Beside(Beside)
+    , Frame(Frame, PublicFrame), makeFrame, pageFrame, pageFrame'
+    , ListItemIdea(ListItemIdea)
+    , FormPageView, FormPageResult
+    , formAction, makeForm, formPage, formRedirectH', redirectFormHandler
+    , RedirectOf, redirectOf
+    , AuthorWidget(AuthorWidget)
+    , CommentVotesWidget(VotesWidget)
+    , semanticDiv
+    , showed
+    , html
+    )
 where
 
 import Control.Lens
@@ -158,6 +173,7 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
+-- | FIXME: find better name?
 newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
