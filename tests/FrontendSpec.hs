@@ -42,9 +42,9 @@ spec = do
                 it "redirects to the indicated uri." $ do
                     pending
 
-        context "on `error`"                               $ handles500
-        context "on `throw 303`"                           $ handles303
-        context "on all other `throw Action.ActionExcept`" $ handles500
+        context "on `error`"                               handles500
+        context "on `throw 303`"                           handles303
+        context "on all other `throw Action.ActionExcept`" handles500
 
     describe "catch404" . with testApp404 $ do
         context "when routing table has no matching entry" $ do
