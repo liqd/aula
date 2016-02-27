@@ -12,8 +12,10 @@ module Frontend.Core
 where
 
 import Control.Lens
+import Control.Monad (void)
 import Control.Monad.Except (MonadError, throwError)
 import Data.Functor (($>))
+import Data.Maybe (maybe)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
@@ -54,6 +56,14 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 -- building blocks
 
 type GetH = Get '[HTML]
+type FormHandler a = FormH HTML (Html ()) a
+--type FormHandler a = FormH HTML FormHtml a
+
+newtype FormHtml = FormHtml (forall m . HtmlT m ())
+
+instance ToHtml FormHtml where
+    toHtml = toHtmlRaw
+    toHtmlRaw (FormHtml h) = h
 
 -- | Render Form based Views
 class FormPageView p where
@@ -61,7 +71,7 @@ class FormPageView p where
     -- | The form action used in form generation
     formAction :: p -> UriPath
     -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    makeForm :: (Monad m, Monad h) => p -> DF.Form (HtmlT h ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -191,50 +201,36 @@ instance ToHtml ListItemIdea where
                 if s == 1 then "Verbesserungsvorschlag" else "Verbesserungsvorschlaege"
             -- TODO: show how many votes are in and how many are required
 
--- FIXME: this is a temporary situation where we want to wait a conclusion on:
--- https://github.com/haskell-servant/servant/pull/391
--- before either:
--- * discarding formRedirectH' and use formRedirectH and before
--- * push this change towards Servant.Missing
--- * keep a version here
-formRedirectH' :: forall page payload m htm html.
-     (Monad m, MonadError ServantErr m, FormPageView page)
-  => m page
-  -> (page -> Form html m payload)           -- ^ processor1
-  -> (page -> payload -> m ST)               -- ^ processor2
-  -> (page -> View html -> ST -> m html)     -- ^ renderer
-  -> ServerT (FormH htm html payload) m
-formRedirectH' getPage processor1 processor2 renderer = getH :<|> postH
-  where
-    getH = do
-        page <- getPage
-        let fa = absoluteUriPath $ formAction page
-        v <- getForm fa (processor1 page)
-        renderer page v fa
-
-    postH env = do
-        page <- getPage
-        let fa = absoluteUriPath $ formAction page
-        (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
-        case mpayload of
-            Just payload -> processor2 page payload >>= redirect
-            Nothing      -> renderer page v fa
-
-    redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
-
 redirectFormHandler
     :: (FormPageView p, Page p, RedirectOf p, ActionM m)
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
-    -> ServerT (FormH HTML (Html ()) ST) m
-redirectFormHandler getPage processor = formRedirectH' getPage makeForm p2 r
+    -> ServerT (FormHandler ST) m
+redirectFormHandler getPage processor = getH :<|> postH
   where
-    p2 page result = processor result $> absoluteUriPath (redirectOf page)
-    r page v fa =
-        let frame = if isPrivatePage page
-              then pageFrame (Just frameUserHack)
-              else pageFrame Nothing in
-        pure . frame $ formPage v fa page
+    getH = do
+        page <- getPage
+        let fa = absoluteUriPath $ formAction page
+        v <- getForm fa (makeForm page)
+        pure $ formPage v fa page
+
+{-
+ghc: panic! (the 'impossible' happened)
+  (GHC version 7.10.3 for x86_64-unknown-linux):
+        No skolem info: m_a1hDB[sk]
+
+Please report this as a GHC bug:  http://www.haskell.org/ghc/reportabug
+-}
+    -- postH :: _ -- GHC BUG
+    postH env = do
+        page <- getPage
+        let fa = absoluteUriPath $ formAction page
+        (v, mpayload) <- postForm fa (makeForm page) (\_ -> return $ return . runIdentity . env)
+        case mpayload of
+            Just payload -> (void $ processor payload) >> redirect (absoluteUriPath (redirectOf page))
+            Nothing      -> (pure $ formPage v fa page)
+
+    redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
 
 ----------------------------------------------------------------------
 -- HACKS

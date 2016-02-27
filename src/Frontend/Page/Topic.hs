@@ -194,10 +194,10 @@ viewTopic _space tab topicId = persistent $ do
     ideas      <- findIdeasByTopic topic
     pure . makeFrame $ ViewTopicIdeas tab topic ideas
 
-createTopic :: (ActionM action) => IdeaSpace -> [AUID Idea] -> ServerT (FormH HTML (Html ()) ST) action
+createTopic :: (ActionM action) => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler ST) action
 createTopic space ideas = redirectFormHandler (pure $ CreateTopic space ideas) (persistent . addTopic)
 
-moveIdeasToTopic :: ActionM m => IdeaSpace -> AUID Topic -> ServerT (FormH HTML (Html ()) ST) m
+moveIdeasToTopic :: ActionM m => IdeaSpace -> AUID Topic -> ServerT (FormHandler ST) m
 moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
     getPage = MoveIdeasToTopic space topicId <$> persistent (findWildIdeasBySpace space)

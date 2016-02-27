@@ -54,7 +54,7 @@ instance FormPageView PageHomeWithLoginPrompt where
 instance RedirectOf PageHomeWithLoginPrompt where
     redirectOf _ = relPath U.ListSpaces
 
-login :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
+login :: (ActionM action) => ServerT (FormHandler ST) action
 login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login user
