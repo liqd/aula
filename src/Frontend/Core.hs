@@ -254,7 +254,7 @@ formRedirectH' getPage processor1 processor2 renderer = getH :<|> postH
 data FormPage p = FormPage p (Html ())
 
 instance Page p => Page (FormPage p) where
-    isPrivatePage (FormPage p _h) = isPrivatePage p 
+    isPrivatePage (FormPage p _h) = isPrivatePage p
 
 instance ToHtml (FormPage p) where
     toHtmlRaw = toHtml
