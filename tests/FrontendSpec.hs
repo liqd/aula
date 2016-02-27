@@ -33,6 +33,7 @@ spec = do
                 it "writes error message to stdout" $ do
                     pending
                 it "sends an apologetic 500 http response" $ do
+                    pending
                     get "/error" `shouldRespondWith` 500
                 it "bases http response on type `Page500`" $ do
                     pending

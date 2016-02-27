@@ -251,8 +251,17 @@ aulaTesting =
 
 -- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
 -- type family.)
-catchAulaExcept :: (s ~ (ServerT api Action)) => Proxy api -> s -> s
-catchAulaExcept Proxy = undefined
+catchAulaExcept :: (m a ~ (ServerT api Action)) => Proxy api -> m a -> m a
+catchAulaExcept Proxy = id
+-- FIXME: not implemented.  pseudo-code:
+--
+--   ... = (`catchError` actionExceptHandler)
+--  where
+--    actionExceptHandler :: ActionExcept -> s
+--    actionExceptHandler = undefined
+--
+-- -- (async exceptions (`error` and all) should be caught inside module "Action" and exposed as
+-- -- `err500` here.)
 
 data Page404 = Page404
 
