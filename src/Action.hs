@@ -15,6 +15,7 @@ module Action
     , ActionPersist(persistent)
     , ActionUserHandler(login, logout)
     , ActionError
+    , ActionExcept
 
       -- * concrete monad type (abstract)
     , Action

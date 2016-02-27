@@ -95,6 +95,7 @@ tests:
       - binary >= 0.7.5 && <0.8
       - digestive-functors >= 0.8 && <0.9
       - hspec
+      - hspec-wai
       - lens
       - lucid
       - mtl

@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -12,14 +13,23 @@ where
 
 import Control.Monad.Trans.Except
 import Lucid
-import Network.Wai (Application)
+import Network.HTTP.Types
+import Network.Wai
+    ( Application, Middleware, Response
+    , responseStatus, responseHeaders, responseBuilder
+    )
 import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
-import Network.Wai.Application.Static (StaticSettings, ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp)
+import Network.Wai.Application.Static
+    ( StaticSettings
+    , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
+    )
 import Servant
 import Servant.HTML.Lucid
 import Servant.Missing
 import System.FilePath (addTrailingPathSeparator)
 import Thentos.Prelude
+
+import qualified Data.ByteString.Builder as Builder
 
 import Persistent
 import Action (Action, mkRunAction, UserState(..))
@@ -38,9 +48,9 @@ runFrontend :: IO ()
 runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
+        proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitalTestDb -- FIXME: Remove Bootstrapping DB
-    runSettings settings $
-      serve (Proxy :: Proxy AulaTop) (aulaTop (action UserLoggedOut))
+    runSettings settings . catch404 . serve proxy . aulaTop $ action UserLoggedOut
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)
              . setPort (Config.config ^. listenerPort)
@@ -57,11 +67,14 @@ type AulaTop =
 
 aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
-       enter runActionForceLogin (aulaMain :<|> aulaTesting)
+       enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (Config.config ^. htmlStatic)
   where
+    proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
+    proxy = Proxy
+
     -- FIXME: Login shouldn't happen here
     runActionForceLogin = Nat $ \action -> runAction $ do
         Action.login adminUsernameHack
@@ -231,3 +244,39 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
+
+
+----------------------------------------------------------------------
+-- error handling in servant / wai
+
+-- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
+-- type family.)
+catchAulaExcept :: (m a ~ (ServerT api Action)) => Proxy api -> m a -> m a
+catchAulaExcept Proxy = id
+-- FIXME: not implemented.  pseudo-code:
+--
+--   ... = (`catchError` actionExceptHandler)
+--  where
+--    actionExceptHandler :: ActionExcept -> s
+--    actionExceptHandler = undefined
+--
+-- -- (async exceptions (`error` and all) should be caught inside module "Action" and exposed as
+-- -- `err500` here.)
+
+data Page404 = Page404
+
+instance ToHtml Page404 where
+    toHtmlRaw = toHtml
+    toHtml Page404 = div_ $ p_ "404"
+
+catch404 :: Middleware
+catch404 app req cont = app req $ \resp -> cont $ f resp
+  where
+    f :: Response -> Response
+    f resp = if statusCode status /= 404
+        then resp
+        else responseBuilder status headers builder
+      where
+        status  = responseStatus resp
+        headers = responseHeaders resp
+        builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404
