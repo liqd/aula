@@ -126,7 +126,7 @@ type AulaMain =
 
 aulaMain :: ServerT AulaMain Action
 aulaMain =
-       (makeFrame =<< Page.viewRooms)
+       Page.viewRooms
   :<|> aulaSpace
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
@@ -172,17 +172,17 @@ type AulaSpace =
 
 aulaSpace :: IdeaSpace -> ServerT AulaSpace Action
 aulaSpace space =
-       (makeFrame =<< Page.viewIdeas space)
-  :<|> (makeFrame <=< Page.viewIdea  space)
+       Page.viewIdeas  space
+  :<|> Page.viewIdea   space
   :<|> Page.editIdea   space
   :<|> Page.createIdea space Nothing
 
-  :<|> (makeFrame =<< Page.viewTopics space)
-  :<|> (makeFrame <=< Page.viewTopic  space TabAllIdeas)
-  :<|> (makeFrame <=< Page.viewTopic  space TabAllIdeas)
-  :<|> (makeFrame <=< Page.viewTopic  space TabVotingIdeas)
-  :<|> (makeFrame <=< Page.viewTopic  space TabWinningIdeas)
-  :<|> (makeFrame <=< Page.viewTopic  space TabDelegation)
+  :<|> Page.viewTopics  space
+  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   space TabVotingIdeas
+  :<|> Page.viewTopic   space TabWinningIdeas
+  :<|> Page.viewTopic   space TabDelegation
   :<|> Page.createTopic space []
   :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
