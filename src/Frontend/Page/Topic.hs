@@ -117,7 +117,7 @@ instance ToHtml ViewTopic where
         div_ $ do
             a_ [id_ "settings"{-, href_ U.UserSettings FIXME USER??? -}] $ span_ [id_ "gear"] ":gear:"
             div_ [id_ "ideas"] . for_ ideas $ \idea ->
-                ListItemIdea (Just phase) idea ^. html
+                ListItemIdea True (Just phase) idea ^. html
       where
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
