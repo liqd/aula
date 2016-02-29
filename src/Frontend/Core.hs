@@ -251,6 +251,8 @@ redirectFormHandler getPage processor = getH :<|> postH
 
     redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
 
+    -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
+    -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result = processor result $> absoluteUriPath (redirectOf page)
     renderer page v fa = FormPage page . toHtml . fmap (formPage v fa) <$> makeFrame page
