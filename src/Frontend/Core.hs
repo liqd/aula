@@ -129,7 +129,7 @@ pageFrame' extraHeaders mUser bdy = do
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
     span_ [class_ "site-logo", title_ "aula"] $ do
-        i_ [class_ "icon-aula-logo site-logo-icon"] ""
+        i_ [class_ "icon-aula site-logo-icon"] ""
 
     case mUser of
         Just _usr -> do
@@ -148,11 +148,14 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
-footerMarkup = footer_ [class_ "main-footer"] $ do
-    ul_ [class_ "main-footer-menu"] $ do
-        li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-        li_ $ a_ [href_ P.Imprint] "Impressum"
-    span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
+footerMarkup = do
+    footer_ [class_ "main-footer"] $ do
+        ul_ [class_ "main-footer-menu"] $ do
+            li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
+            li_ $ a_ [href_ P.Imprint] "Impressum"
+        span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
+    script_ [src_ "third-party/modernizr-custom.js"]
+
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
