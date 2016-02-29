@@ -56,12 +56,12 @@ import qualified Frontend.Path as P
 
 
 -- | FIXME: Could this be a PR for lucid?
-instance (ToHtml (HtmlT Identity ())) where
+instance ToHtml (HtmlT Identity ()) where
     toHtmlRaw = toHtml
     toHtml = HtmlT . return . runIdentity . runHtmlT
 
 -- | FIXME: Could this be a PR for lucid?
-instance (ToHtml ()) where
+instance ToHtml () where
     toHtmlRaw = toHtml
     toHtml = nil
 
