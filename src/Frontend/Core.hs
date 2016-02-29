@@ -26,11 +26,12 @@ module Frontend.Core
     , semanticDiv
     , showed
     , html
+    , redirect
     )
 where
 
 import Control.Lens
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError, throwError)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
@@ -58,6 +59,11 @@ import qualified Frontend.Path as P
 instance (ToHtml (HtmlT Identity ())) where
     toHtmlRaw = toHtml
     toHtml = HtmlT . return . runIdentity . runHtmlT
+
+-- | FIXME: Could this be a PR for lucid?
+instance (ToHtml ()) where
+    toHtmlRaw = toHtml
+    toHtml = nil
 
 
 -- | This will generate the following snippet:
@@ -249,10 +255,12 @@ redirectFormHandler getPage processor = getH :<|> postH
             Just payload -> processor2 page payload >>= redirect
             Nothing      -> renderer page v fa
 
-    redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
-
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result = processor result $> absoluteUriPath (redirectOf page)
     renderer page v fa = FormPage page . toHtml . fmap (formPage v fa) <$> makeFrame page
+
+
+redirect :: (MonadError ActionExcept m) => ST -> m a
+redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
