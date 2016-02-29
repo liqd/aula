@@ -121,6 +121,8 @@ instance FormPageView CreateIdea where
     formAction (CreateIdea space mtopicId) =
         relPath . U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
 
+    redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
+
     makeForm _ =
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
@@ -137,8 +139,8 @@ instance FormPageView CreateIdea where
 instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) =
-        relPath $ U.Space (idea ^. ideaSpace) (U.EditIdea (idea ^. _Id))
+    formAction (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) (U.EditIdea (idea ^. _Id))
+    redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -188,14 +190,8 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
                 Just topic <- findTopic topicId
                 pure . Just $ topic ^. topicPhase)
 
-instance RedirectOf CreateIdea where
-    redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
-
 createIdea :: ActionM m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea ST) m
 createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
-
-instance RedirectOf EditIdea where
-    redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
 
 -- FIXME check _space
 editIdea :: ActionM m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea ST) m

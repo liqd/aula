@@ -41,6 +41,7 @@ instance FormPageView PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData
 
     formAction _ = relPath U.Login
+    redirectOf _ = relPath U.ListSpaces
 
     makeForm _ = LoginFormData
         <$> ("user" .: DF.text Nothing)
@@ -63,9 +64,6 @@ instance ToHtml PageLogout where
 
 ----------------------------------------------------------------------
 -- handlers
-
-instance RedirectOf PageHomeWithLoginPrompt where
-    redirectOf _ = relPath U.ListSpaces
 
 login :: (ActionM action) => ServerT (FormHandler PageHomeWithLoginPrompt ST) action
 login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin

@@ -19,8 +19,7 @@ module Frontend.Core
     , FormHandler
     , ListItemIdea(ListItemIdea)
     , FormPageView, FormPageResult
-    , formAction, makeForm, formPage, redirectFormHandler
-    , RedirectOf, redirectOf
+    , formAction, redirectOf, makeForm, formPage, redirectFormHandler
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
@@ -84,6 +83,8 @@ class FormPageView p where
     type FormPageResult p :: *
     -- | The form action used in form generation
     formAction :: p -> UriPath
+    -- | Calculates a redirect address from the given page
+    redirectOf :: p -> UriPath
     -- | Generates a Html view from the given page
     makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
@@ -92,11 +93,6 @@ class FormPageView p where
 -- | Defines some properties for pages
 class Page p where
     isPrivatePage :: p -> Bool
-
--- | The page after submitting a form should be redirected
-class RedirectOf p where
-    -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body = Frame User body | PublicFrame body
@@ -229,7 +225,7 @@ instance ToHtml (FormPage p) where
     toHtml (FormPage _p h) = toHtml h
 
 redirectFormHandler
-    :: (FormPageView p, Page p, RedirectOf p, ActionM m)
+    :: (FormPageView p, Page p, ActionM m)
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
     -> ServerT (FormHandler p ST) m
