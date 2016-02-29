@@ -67,8 +67,10 @@ instance ToHtml PageRoomsOverview where
         f rs@(_:_) = forM_ rs g
 
         g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
-        g SchoolSpace = div_ . p_ $ "Schule"
-        g (ClassSpace c) = div_ . p_ $ "Klasse " <> c ^. className . html
+        g ispace = div_ . a_ [href_ $ U.Space ispace U.ListIdeas] $ h ispace
+
+        h SchoolSpace = "Schule"
+        h (ClassSpace c) = "Klasse " <> c ^. className . html
             -- for the first school year, we can ignore the year.  (after that, we have different
             -- options.  one would be to only show the year if it is not the current one, or always show
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
