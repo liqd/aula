@@ -25,4 +25,4 @@ import Transaction()
 import Types()
 
 spec :: Spec
-spec = return ()
+spec = describe "check types of all modules" . it "works" $ True `shouldBe` True
