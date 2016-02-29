@@ -127,6 +127,7 @@ instance FormPageView CreateTopic where
     type FormPageResult CreateTopic = ProtoTopic
 
     formAction (CreateTopic space _) = relPath $ U.Space space U.CreateTopic
+    redirectOf (CreateTopic space _) = relPath $ U.Space space U.ListTopics
 
     makeForm (CreateTopic space ideas) =
         ProtoTopic
@@ -150,8 +151,8 @@ instance FormPageView MoveIdeasToTopic where
     -- the ideas to be added to the topic.
     type FormPageResult MoveIdeasToTopic = [AUID Idea]
 
-    formAction (MoveIdeasToTopic space topicId _) =
-        relPath . U.Space space $ U.ViewTopicIdeas topicId
+    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
+    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
 
     makeForm (MoveIdeasToTopic _ _ ideas) =
         fmap catMaybes . sequenceA $
@@ -171,15 +172,6 @@ instance FormPageView MoveIdeasToTopic where
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
-
-----------------------------------------------------------------------
--- redirects
-
-instance RedirectOf CreateTopic where
-    redirectOf (CreateTopic space _) = relPath $ U.Space space U.ListTopics
-
-instance RedirectOf MoveIdeasToTopic where
-    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
 
 
 ----------------------------------------------------------------------

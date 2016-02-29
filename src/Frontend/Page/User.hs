@@ -35,6 +35,7 @@ instance FormPageView PageUserSettings where
     type FormPageResult PageUserSettings = UserSettingData
 
     formAction _ = relPath U.UserSettings
+    redirectOf _ = relPath U.ListSpaces  -- FIXME: Redirect to the right place
 
     makeForm (PageUserSettings user) =
         UserSettingData
@@ -60,9 +61,6 @@ instance FormPageView PageUserSettings where
                 DF.inputText "new-password2" v >> br_ []
                 DF.inputSubmit "ANDERUNGEN SPEICHERN"
 
--- FIXME: Redirect to the right place
-instance RedirectOf PageUserSettings where
-    redirectOf _ = relPath U.ListSpaces
 
 userSettings :: (ActionM action) => ServerT (FormHandler PageUserSettings ST) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
