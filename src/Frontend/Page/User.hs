@@ -120,6 +120,12 @@ instance ToHtml PageUserProfileCreatedIdeas where
         div_ [id_ "ideas"] . for_ ideas $ \idea ->
             ListItemIdea False Nothing idea ^. html
 
+-- | List all the created ideas for the given user.
+-- Using join . persistent $ do ... return $ makeFrame will
+-- go only once to the database and query everything in one round,
+-- that ensures data consistency, as other persistent computations
+-- can interleave if the compute partial results in more than
+-- one round. Same applies here like STM and IO.
 createdIdeas :: (ActionPersist m, ActionUserHandler m) => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = join . persistent $ do
     -- FIXME: 404
