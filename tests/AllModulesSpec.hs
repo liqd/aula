@@ -1,7 +1,7 @@
 module AllModulesSpec
 where
 
-import Test.Hspec (Spec)
+import Test.Hspec (Spec, describe, it, shouldBe)
 
 import Action()
 import Api()
