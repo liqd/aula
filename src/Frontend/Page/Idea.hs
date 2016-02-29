@@ -191,14 +191,14 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
 instance RedirectOf CreateIdea where
     redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
 
-createIdea :: ActionM m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormH HTML (Html ()) ST) m
+createIdea :: ActionM m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea ST) m
 createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
 
 instance RedirectOf EditIdea where
     redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
 
 -- FIXME check _space
-editIdea :: ActionM m => IdeaSpace -> AUID Idea -> ServerT (FormH HTML (Html ()) ST) m
+editIdea :: ActionM m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea ST) m
 editIdea _space ideaId =
     redirectFormHandler
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))

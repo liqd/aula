@@ -64,7 +64,7 @@ instance FormPageView PageUserSettings where
 instance RedirectOf PageUserSettings where
     redirectOf _ = relPath U.ListSpaces
 
-userSettings :: (ActionM action) => ServerT (FormH HTML (Html ()) ST) action
+userSettings :: (ActionM action) => ServerT (FormHandler PageUserSettings ST) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
     -- FIXME: Set the password
