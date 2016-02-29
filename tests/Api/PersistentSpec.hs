@@ -131,13 +131,13 @@ spec = do
                 it ("can add " <> showIdeaSpace ispace) $ \(Nat rp) -> do
                     let getL = liftIO . rp $ getSpaces
                         addS = liftIO . rp $ addIdeaSpace ispace
-                    before  <- getL
+                    bef     <- getL
                     existed <- addS
-                    after   <- getL
-                    length before `shouldBe` if existed
-                            then length after - 1
-                            else length after
-                    (ispace `elem` after) `shouldBe` True
+                    aft     <- getL
+                    length bef `shouldBe` if existed
+                            then length aft - 1
+                            else length aft
+                    (ispace `elem` aft) `shouldBe` True
 
         context "on empty database"   . before mkEmpty $ do
             test SchoolSpace
