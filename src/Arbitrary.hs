@@ -69,14 +69,19 @@ instance Arbitrary CreateTopic where
 instance Arbitrary MoveIdeasToTopic where
     arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
 
-instance Arbitrary PageAdminSettingsDurationsAndQuorum where
-    arbitrary = pure PageAdminSettingsDurationsAndQuorum
+instance Arbitrary PageAdminSettingsDurations where
+    arbitrary = pure PageAdminSettingsDurations
+
+instance Arbitrary PageAdminSettingsQuorum where
+    arbitrary = pure PageAdminSettingsQuorum
 
 instance Arbitrary PageAdminSettingsGroupsAndPermissions where
     arbitrary = pure PageAdminSettingsGroupsAndPermissions
 
+{-
 instance Arbitrary PageAdminSettingsUserCreateAndImport where
     arbitrary = pure PageAdminSettingsUserCreateAndImport
+-}
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = pure PageAdminSettingsEventsProtocol
