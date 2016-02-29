@@ -18,7 +18,8 @@ import Data.UriPath
 import Types (AUID, User, Topic, Idea, IdeaSpace, nil)
 
 data Top =
-    TopMain Main
+    Top
+  | TopMain Main
   | TopTesting UriPath
   | TopSamples
   | TopStatic UriPath
@@ -26,6 +27,7 @@ data Top =
 instance HasPath Top where relPath = top
 
 top :: Top -> UriPath
+top Top            = nil
 top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"

@@ -61,6 +61,7 @@ type AulaTop =
        (AulaMain :<|> "testing" :> AulaTesting)
   :<|> "samples" :> Raw
   :<|> "static"  :> Raw
+  :<|> GetH (Frame ())
 
 
 aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
@@ -69,6 +70,7 @@ aulaTop (Nat runAction) =
   :<|> (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (Config.config ^. htmlStatic)
+  :<|> redirect "/space"
   where
     proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
     proxy = Proxy
