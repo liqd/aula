@@ -120,10 +120,12 @@ instance ToHtml PageUserProfileCreatedIdeas where
         div_ [id_ "ideas"] . for_ ideas $ \idea ->
             ListItemIdea False Nothing idea ^. html
 
-createdIdeas :: (ActionPersist m, ActionUserHandler m) => m (Frame PageUserProfileCreatedIdeas)
-createdIdeas = do
-    user <- currentUser
-    makeFrame =<< PageUserProfileCreatedIdeas user <$> persistent (findIdeasByUserId (user ^. _Id))
+createdIdeas :: (ActionPersist m, ActionUserHandler m) => AUID User -> m (Frame PageUserProfileCreatedIdeas)
+createdIdeas userId = join . persistent $ do
+    -- FIXME: 404
+    Just user <- findInById dbUsers userId
+    ideas <- findIdeasByUserId userId
+    return $ makeFrame (PageUserProfileCreatedIdeas user ideas)
 
 -- * User Profile: Delegated Votes
 
@@ -142,7 +144,8 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ $ do
             p_ "FIXME: Delegated votes"
 
-delegatedVotes :: (ActionPersist m, ActionUserHandler m) => m (Frame PageUserProfileDelegatedVotes)
-delegatedVotes = do
-    user <- currentUser
-    makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes
+delegatedVotes :: (ActionPersist m, ActionUserHandler m) => AUID User -> m (Frame PageUserProfileDelegatedVotes)
+delegatedVotes userId = join . persistent $ do
+    -- FIXME: 404
+    Just user <- findInById dbUsers userId
+    return $ makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes
