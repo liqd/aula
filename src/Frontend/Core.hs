@@ -252,6 +252,5 @@ redirectFormHandler getPage processor = getH :<|> postH
     redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
 
     processor1 = makeForm
-
     processor2 page result = processor result $> absoluteUriPath (redirectOf page)
     renderer page v fa = FormPage page . toHtml . fmap (formPage v fa) <$> makeFrame page
