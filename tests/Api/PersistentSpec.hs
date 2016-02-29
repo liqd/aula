@@ -14,8 +14,8 @@ import Servant.Server
 import Test.Hspec
 import Test.QuickCheck
 
-import CreateRandom
 import Api.Persistent
+import CreateRandom
 import Types
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
@@ -124,6 +124,25 @@ spec = do
     findInBySpec "findTopic" getTopics findTopic _Id changeAUID
     let getIdeasWithTopic = filter (isJust . view ideaTopic) <$> getIdeas
     findAllInBySpec "findIdeasByTopicId" getIdeasWithTopic findIdeasByTopicId (ideaTopic . _Just) changeAUID
+
+    describe "addIdeaSpace" $ do
+        let test :: IdeaSpace -> SpecWith (Persist :~> IO)
+            test ispace = do
+                it ("can add " <> showIdeaSpace ispace) $ \(Nat rp) -> do
+                    let getL = liftIO . rp $ getSpaces
+                        addS = liftIO . rp $ addIdeaSpace ispace
+                    before <- getL
+                    addS
+                    after <- getL
+                    length before `shouldBe` length after - 1
+                    (ispace `elem` after) `shouldBe` True
+
+        context "on empty database"   . before mkEmpty $ do
+            test SchoolSpace
+            test (ClassSpace (SchoolClass 2016 "7a"))
+        context "on initial database" . before mkInitial $ do
+            test SchoolSpace
+            test (ClassSpace (SchoolClass 2016 "7a"))
 
     describe "loginUser" $ do
         let t rp login predicate = do

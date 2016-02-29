@@ -26,6 +26,7 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
+    , addIdeaSpace
     , addIdea
     , modifyIdea
     , findIdea
@@ -158,6 +159,9 @@ getSpaces = getDb dbSpaces
 
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
+
+addIdeaSpace :: IdeaSpace -> Persist ()
+addIdeaSpace ispace = modifyDb dbSpaceSet $ Set.insert ispace
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
