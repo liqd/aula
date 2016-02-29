@@ -47,7 +47,7 @@ runFrontend = do
     persist <- mkRunPersist
     let action = mkRunAction persist
         proxy  = Proxy :: Proxy AulaTop
-    unNat persist genInitalTestDb -- FIXME: Remove Bootstrapping DB
+    unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
     runSettings settings . catch404 . serve proxy . aulaTop $ action UserLoggedOut
   where
     settings = setHost (fromString $ Config.config ^. listenerInterface)

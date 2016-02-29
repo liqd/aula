@@ -45,8 +45,8 @@ createRandomNoMeta l = do
                                      `Beside` PageShow x))
 
 -- | generate one arbitrary item of each type (idea, user, ...)
-genInitalTestDb :: Persist ()
-genInitalTestDb = do
+genInitialTestDb :: Persist ()
+genInitialTestDb = do
     _firstUser <- bootstrapUser =<< genArbitrary
     _wildIdea <- addIdea =<< genArbitrary
     topicIdea <- addIdea =<< genArbitrary
