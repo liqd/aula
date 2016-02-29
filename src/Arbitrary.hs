@@ -238,13 +238,14 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 instance Arbitrary P.Main where
     arbitrary = oneof
         [ P.Space <$> arb <*> arb
-        , P.User <$> arb
+        , P.User <$> arb <*> arb
         , P.Admin <$> arb
         , elements
             [ P.ListSpaces
             , P.ListUsers
             , P.DelegationEdit
             , P.DelegationView
+            , P.UserSettings
             , P.Imprint
             , P.Terms
             , P.Login
@@ -273,7 +274,7 @@ instance Arbitrary P.Space where
         ]
 
 instance Arbitrary P.UserPs where
-    arbitrary = elements [P.UserIdeas, P.UserDelegations, P.UserSettings]
+    arbitrary = elements [P.UserIdeas, P.UserDelegations]
 
 instance Arbitrary P.AdminPs where
     arbitrary = elements [P.AdminParams, P.AdminAccess, P.AdminUser, P.AdminEvent]

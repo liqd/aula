@@ -55,7 +55,7 @@ data UserSettingData = UserSettingData
 instance FormPageView PageUserSettings where
     type FormPageResult PageUserSettings = UserSettingData
 
-    formAction _ = relPath (U.User U.UserSettings)
+    formAction _ = relPath U.UserSettings
 
     makeForm (PageUserSettings user) =
         UserSettingData
@@ -111,7 +111,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
         -- Tab selection
         div_ $ do
              ul_ [] $ do
-                li_ $ a_ [href_ (P.User P.UserDelegations)] "Erhaltene Stimmen"
+                li_ $ a_ [href_ (P.User (user ^. _Id) P.UserDelegations)] "Erhaltene Stimmen"
                 li_ $ span_ "Erstellte Ideen"
         -- Settings button
         div_ $ do
@@ -142,7 +142,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ $ do
              ul_ [] $ do
                 li_ $ span_ "Erhaltene Stimmen"
-                li_ $ a_ [href_ (P.User P.UserIdeas)] "Erstellte Ideen"
+                li_ $ a_ [href_ (P.User (user ^. _Id) P.UserIdeas)] "Erstellte Ideen"
         -- School / Class select buttons
         div_ $ do
             button_ [value_ ""] "Schulweit"

@@ -15,7 +15,7 @@ where
 import Thentos.Prelude
 import Data.UriPath
 
-import Types (AUID, Topic, Idea, IdeaSpace, nil)
+import Types (AUID, Idea, IdeaSpace, User, Topic, nil)
 
 data Top =
     TopMain Main
@@ -35,7 +35,8 @@ data Main =
     ListSpaces
   | Space IdeaSpace Space
   | ListUsers
-  | User UserPs
+  | User (AUID User) UserPs
+  | UserSettings
   | Admin AdminPs
   | DelegationEdit
   | DelegationView
@@ -51,7 +52,8 @@ main :: Main -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
 main ListUsers        root = root </> "user"
-main (User p)         root = user  p (root </> "user")
+main (User uid p)     root = user  p (root </> "user" </> uriPart uid)
+main UserSettings     root = root </> "user" </> "settings"
 main (Admin p)        root = admin p (root </> "admin")
 main DelegationEdit   root = root </> "delegation" </> "edit"
 main DelegationView   root = root </> "delegation" </> "view"
@@ -96,13 +98,11 @@ space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "d
 data UserPs =
     UserIdeas
   | UserDelegations
-  | UserSettings
   deriving Show
 
 user :: UserPs -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
-user UserSettings    = (</> "settings")
 
 data AdminPs =
     AdminParams
