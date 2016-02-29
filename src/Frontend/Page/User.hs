@@ -92,8 +92,8 @@ userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
     changeUser (UserSettingData email _oldPass _newPass1 _newPass2) = do
         modifyCurrentUser (maybe id (\ e -> userEmail .~ Just e) email)
 
-userDiv :: (Monad m) => User -> HtmlT m ()
-userDiv _user =
+userHeaderDiv :: (Monad m) => User -> HtmlT m ()
+userHeaderDiv _user =
     div_ $ do
         "Avatar" >> br_ []
         "Username" >> br_ []
@@ -107,7 +107,7 @@ userDiv _user =
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
     toHtml p@(PageUserProfileCreatedIdeas user ideas) = semanticDiv p $ do
-        userDiv user
+        userHeaderDiv user
         -- Tab selection
         div_ $ do
              ul_ [] $ do
@@ -130,7 +130,7 @@ createdIdeas = do
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
     toHtml p@(PageUserProfileDelegatedVotes user _delegation) = semanticDiv p $ do
-        userDiv user
+        userHeaderDiv user
         div_ $ do
              ul_ [] $ do
                 li_ $ span_ "Erhaltene Stimmen"
