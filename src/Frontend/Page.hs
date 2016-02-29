@@ -147,7 +147,7 @@ type instance Reachable ViewTopic ViewTopic = () -- ausarbeitungphase (4.1 Topic
 
 type instance Reachable ViewTopic MoveIdeasToTopic = () -- Bearbiten (10.2 Edit Topic: Refinement)
 type instance Reachable ViewTopic CreateIdea = () -- Neue idee (6. Create Idea: Refinement phase)
-type instance Reachable ViewTopic PageDelegateVote = ()-- Stimme beauftragen (12. Delegate Vote: Ausarbeitungphase)
+type instance Reachable ViewTopic PageDelegateVote = () -- Stimme beauftragen (12. Delegate Vote: Ausarbeitungphase)
 -- type instance Reachable ViewTopic ViewTopic = () -- beauftragen stimmen (4.1 Topic Overview: Refinemnt phase 2) !!!
 type instance Reachable ViewTopic ViewIdea = () -- Title der idee (5.2 Idea Detail Page: Refinement phase)
 type instance Reachable ViewTopic PageUserProfileDelegatedVotes = () -- Avatar, VorNam (8.2 User Profile: Delegated Votes)
