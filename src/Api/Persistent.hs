@@ -160,8 +160,13 @@ getSpaces = getDb dbSpaces
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
-addIdeaSpace :: IdeaSpace -> Persist ()
-addIdeaSpace ispace = modifyDb dbSpaceSet $ Set.insert ispace
+-- | If idea space already exists, return 'False'.  Otherwise, create it and return 'True'.
+addIdeaSpace :: IdeaSpace -> Persist Bool
+addIdeaSpace ispace = do
+    exists <- (ispace `elem`) <$> getSpaces
+    if exists
+        then return False
+        else modifyDb dbSpaceSet (Set.insert ispace) >> return True
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
