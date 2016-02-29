@@ -27,22 +27,33 @@ module Action
 
       -- * user state
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
+
+      -- * extras
+    , ActionTempCsvFiles(popTempCsvFile)
     )
 where
 
+import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Control.Monad.RWS.Lazy
+import Data.Char (ord)
+import Data.Functor.Infix ((<$$>))
 import Data.String.Conversions (ST)
 import Persistent
 import Prelude hiding (log)
 import Servant
 import Types
 
+import qualified Data.Csv as Csv
+import qualified Data.Vector as V
+import qualified Data.ByteString.Lazy as LBS
+
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
+
 
 ----------------------------------------------------------------------
 -- constraint types
@@ -104,6 +115,7 @@ instance ActionError Action
 instance GenArbitrary Action where
     genArbitrary = Action . liftIO $ generate arbitrary
 
+
 ----------------------------------------------------------------------
 -- concrete monad type; user state
 
@@ -161,3 +173,18 @@ loggedInUser :: (ActionUserHandler m) => m ST
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
     UserLoggedIn user _session -> return user
+
+
+----------------------------------------------------------------------
+-- csv temp files
+
+class ActionTempCsvFiles m where
+    popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])
+
+instance ActionTempCsvFiles Action where
+    popTempCsvFile filePath = Action . liftIO . (`catch` exceptToLeft) $
+        V.toList <$$> decodeCsv <$> LBS.readFile filePath
+      where
+        exceptToLeft (SomeException e) = return . Left . show $ e
+        decodeCsv = Csv.decodeWith opts Csv.HasHeader
+        opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }

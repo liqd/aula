@@ -12,7 +12,7 @@ module Frontend
 where
 
 import Control.Monad.Trans.Except
-import Lucid
+import Lucid hiding (href_)
 import Network.HTTP.Types
 import Network.Wai
     ( Application, Middleware, Response
@@ -29,11 +29,11 @@ import Thentos.Prelude
 
 import qualified Data.ByteString.Builder as Builder
 
-import Persistent
 import Action (Action, mkRunAction, UserState(..))
 import Config
 import CreateRandom
 import Frontend.Page as Page
+import Persistent
 import Types
 
 import qualified Action
@@ -232,6 +232,8 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
+  :<|> "file-upload" :> FormHandler BatchCreateUsers ST
+
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
        return (PublicFrame "yihaah!")
@@ -245,6 +247,8 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
+
+  :<|> batchCreateUsers
 
 
 ----------------------------------------------------------------------

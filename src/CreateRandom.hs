@@ -72,7 +72,7 @@ frameUserHack = User
     sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
 
     frameUserMetaInfo :: MetaInfo User
-    frameUserMetaInfo= MetaInfo
+    frameUserMetaInfo = MetaInfo
         { _metaId              = AUID 1
         , _metaCreatedBy       = AUID 0
         , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'

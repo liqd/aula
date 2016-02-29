@@ -61,6 +61,7 @@ library
     , wai
     , wai-app-static
     , warp
+    , vector
   exposed-modules:
       Action
       Api
@@ -75,6 +76,7 @@ library
       Frontend.Page
       Frontend.Page.Comment
       Frontend.Page.Delegation
+      Frontend.Page.FileUpload
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
@@ -130,9 +132,9 @@ executable aula-import-users
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
     , nonce
-    , vector
   other-modules:
       Aula
       RenderHtml
@@ -180,6 +182,7 @@ executable aula-html-dummies
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
     , extra
     , fsnotify
@@ -231,6 +234,7 @@ executable aula-server
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
   other-modules:
       ImportUsers
@@ -281,6 +285,7 @@ test-suite spec
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
@@ -315,6 +320,7 @@ test-suite spec
       Frontend.Page
       Frontend.Page.Comment
       Frontend.Page.Delegation
+      Frontend.Page.FileUpload
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview

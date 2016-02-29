@@ -52,6 +52,7 @@ dependencies:
     - wai
     - wai-app-static
     - warp
+    - vector
 
 library:
   source-dirs: src
@@ -81,7 +82,6 @@ executables:
     dependencies:
       - aula
       - nonce
-      - vector
 
 tests:
   spec:
