@@ -105,9 +105,8 @@ type AulaMain =
        -- view all users
   :<|> "user" :> GetH (Frame (PageShow [User]))
        -- enter user profile
-  :<|> "user" :> Capture "user" (AUID User) :> AulaUser
-       -- user settings
-  :<|> "user" :> "settings" :> FormHandler PageUserSettings ()
+
+  :<|> "user" :> AulaUser
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
@@ -131,7 +130,6 @@ aulaMain =
 
   :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
   :<|> aulaUser
-  :<|> Page.userSettings
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
@@ -190,13 +188,15 @@ aulaSpace space =
 
 
 type AulaUser =
-       "ideas"       :> GetH (PageShow [Idea])
-  :<|> "delegations" :> GetH (PageShow [Delegation])
+       "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
+  :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
+  :<|> "settings"    :> FormHandler PageUserSettings ST
 
-aulaUser :: AUID User -> ServerT AulaUser Action
-aulaUser _ =
-       error "api not implemented: \"ideas\"       :> GetH (PageShow [Idea])"
-  :<|> error "api not implemented: \"delegations\" :> GetH (PageShow [Delegation])"
+aulaUser :: ServerT AulaUser Action
+aulaUser =
+       Page.createdIdeas
+  :<|> Page.delegatedVotes
+  :<|> Page.userSettings
 
 
 type AulaAdmin =
