@@ -82,12 +82,3 @@ data PageDelegateVote = PageDelegateVote
 instance ToHtml PageDelegateVote where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageDelegateVote"
-
-
--- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageDelegationNetwork where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageDelegationNetwork"

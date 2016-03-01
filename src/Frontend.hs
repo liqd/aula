@@ -115,7 +115,7 @@ type AulaMain =
 
        -- delegation network
   :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote () --FIXME: Correct page type
-  :<|> "delegation" :> "view" :> GetH (Frame ST)
+  :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
@@ -137,7 +137,7 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> error "api not implemented: \"delegation\" :> \"view\" :> GetH (Frame ST)"
+  :<|> Page.viewDelegationNetwork
 
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
