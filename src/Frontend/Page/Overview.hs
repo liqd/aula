@@ -106,7 +106,7 @@ instance ToHtml PageIdeasInDiscussion where
         toHtml $ Tabs Topics space
         forM_ topics $ \topic -> do
             hr_ []
-            img_ [src_ "FIXME", alt_ "FIXME"]
+            img_ [src_ $ U.TopStatic "FIXME", alt_ "FIXME"]
             div_ . toHtml . show $ topic ^. topicPhase
             div_ . toHtml $ topic ^. topicTitle
             div_ . toHtml $ topic ^. topicDesc

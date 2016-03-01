@@ -33,10 +33,10 @@ import Control.Lens
 import Control.Monad.Except (MonadError, throwError)
 import Data.Functor (($>))
 import Data.Set (Set)
+import Data.String (fromString)
 import Data.String.Conversions
 import Data.Typeable
-import Data.UriPath (UriPath, absoluteUriPath, href_)
-import Lucid hiding (href_)
+import Lucid hiding (href_, script_, src_)
 import Lucid.Base
 import Servant
 import Servant.HTML.Lucid (HTML)
@@ -49,6 +49,7 @@ import qualified Text.Digestive.Form as DF
 
 import Action
 import Api
+import Data.UriPath (UriPath, absoluteUriPath, script_, href_, src_)
 import Types
 
 import qualified Frontend.Path as P
@@ -132,7 +133,7 @@ pageFrame' extraHeaders mUser bdy = do
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
     span_ [class_ "site-logo", title_ "aula"] $ do
-        i_ [class_ "icon-aula-logo site-logo-icon"] ""
+        i_ [class_ "icon-aula site-logo-icon"] ""
 
     case mUser of
         Just _usr -> do
@@ -147,15 +148,18 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
             Just usr -> do
                 li_ (toHtml $ "Hi " <> (usr ^. userLogin))
             Nothing -> nil
-        li_ $ img_ [src_ "the_avatar"]
+        li_ $ img_ [src_ $ P.TopStatic "the_avatar"]
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
-footerMarkup = footer_ [class_ "main-footer"] $ do
-    ul_ [class_ "main-footer-menu"] $ do
-        li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-        li_ $ a_ [href_ P.Imprint] "Impressum"
-    span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
+footerMarkup = do
+    footer_ [class_ "main-footer"] $ do
+        ul_ [class_ "main-footer-menu"] $ do
+            li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
+            li_ $ a_ [href_ P.Imprint] "Impressum"
+        span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
+    script_ [src_ $ P.TopStatic "third-party/modernizr-custom.js"]
+
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
@@ -196,7 +200,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         "["
-        img_ [src_ $ mi ^. metaCreatedByAvatar]
+        img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
         mi ^. metaCreatedByLogin . html
         "]"
 
@@ -209,7 +213,7 @@ instance ToHtml ListItemIdea where
     toHtml p@(ListItemIdea _linkToUserProfile _phase idea) = semanticDiv p $ do
         -- FIXME use the phase
         span_ $ do
-            img_ [src_ "some_avatar"]
+            img_ [src_ $ P.TopStatic "some_avatar"]
         span_ $ do
             span_ $ idea ^. ideaTitle . html
             span_ $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . html
