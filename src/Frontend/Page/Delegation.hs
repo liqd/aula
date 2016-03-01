@@ -30,9 +30,12 @@ instance Page PageDelegationNetwork where
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
     toHtml p@PageDelegationNetwork = semanticDiv p $ do
-        hr_ []
-        br_ []
-        hr_ []
+        let bigHr = do
+              hr_ []
+              br_ []
+              hr_ []
+
+        bigHr
 
         let levels = div_ $ do
                 br_ []
@@ -79,9 +82,7 @@ instance ToHtml PageDelegationNetwork where
                                              "Sophia", "Sofia", "Amelie", "Lisa", "Leni", "Julia", "Alina"]
                     td_ $ img_ [src_ $ U.TopStatic "pagemap.png", width_ "800"]
 
-        hr_ []
-        br_ []
-        hr_ []
+        bigHr
 
 viewDelegationNetwork :: (ActionM m) => m (Frame PageDelegationNetwork)
 viewDelegationNetwork = makeFrame PageDelegationNetwork
