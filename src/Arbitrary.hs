@@ -8,7 +8,7 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
 
-module Arbitrary (topLevelDomains, loremIpsum, generate, arbitrary) where
+module Arbitrary (topLevelDomains, loremIpsum, generate, arbitrary, arbName) where
 
 import Control.Monad (replicateM)
 import Data.Char
@@ -389,6 +389,24 @@ loremIpsum = ST.unlines <$>
 
 loremIpsumDict :: [ST]
 loremIpsumDict = nub . sort . mconcat $ ST.words <$> loremIpsum
+
+-- source: http://www.eltern.de/
+arbName :: Gen ST
+arbName = elements
+    [ "Hannah", "Hanna", "Leonie", "Leoni", "Lea", "Leah", "Lena",
+      "Mia", "Anna", "Emilie", "Emily", "Lara", "Laura", "Sarah",
+      "Sara", "Emma", "Lilli", "Lilly", "Lili", "Marie", "Lina",
+      "Maja", "Maya", "Johanna", "Sophie", "Sofie", "Nele", "Neele",
+      "Sophia", "Sofia", "Amelie", "Lisa", "Leni", "Julia", "Alina",
+      "Clara", "Klara", "Charlotte", "Luisa", "Louisa", "Jana", "Zoe",
+      "Zoé", "Emilia", "Paula", "Finja", "Finnja", "Jasmin", "Yasmin",
+      "Chiara", "Kiara", "Katharina", "Catharina", "Katarina",
+      "Josefine", "Josephine", "Lucy", "Lucie", "Angelina", "Annika",
+      "Melina", "Jule", "Pia", "Emely", "Emelie", "Emmely", "Celina",
+      "Amy", "Isabel", "Isabell", "Isabelle", "Vanessa", "Victoria",
+      "Viktoria", "Fiona", "Nina", "Antonia", "Celine", "Franziska",
+      "Ida", "Stella", "Greta", "Pauline", "Maria", "Marlene",
+      "Eileen", "Aileen", "Ayleen", "Aylin" ]
 
 arbWord :: Gen ST
 arbWord = ST.filter isAlpha <$> elements loremIpsumDict
