@@ -66,11 +66,6 @@ instance Page MoveIdeasToTopic where
 ----------------------------------------------------------------------
 -- templates
 
-tabSelected :: Eq tab => tab -> tab -> ST
-tabSelected curTab targetTab
-    | curTab == targetTab = "tab-selected"
-    | otherwise           = "tab-not-selected"
-
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of

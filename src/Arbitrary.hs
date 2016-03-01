@@ -70,7 +70,7 @@ instance Arbitrary MoveIdeasToTopic where
     arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurations where
-    arbitrary = pure PageAdminSettingsDurations
+    arbitrary = PageAdminSettingsDurations <$> arb
 
 instance Arbitrary PageAdminSettingsQuorum where
     arbitrary = pure PageAdminSettingsQuorum
@@ -216,6 +216,11 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
+----------------------------------------------------------------------
+-- admin
+
+instance Arbitrary Durations where
+    arbitrary = Durations <$> arb <*> arb
 
 -- FIXME: instance Arbitrary Delegation
 
@@ -279,10 +284,16 @@ instance Arbitrary P.Space where
         ]
 
 instance Arbitrary P.UserPs where
-    arbitrary = elements [P.UserIdeas, P.UserDelegations]
+    arbitrary = elements [ P.UserIdeas, P.UserDelegations]
 
 instance Arbitrary P.AdminPs where
-    arbitrary = elements [P.AdminParams, P.AdminAccess, P.AdminUser, P.AdminEvent]
+    arbitrary = elements
+        [ P.AdminDuration
+        , P.AdminQuorum
+        , P.AdminAccess
+        , P.AdminUser
+        , P.AdminEvent
+        ]
 
 ----------------------------------------------------------------------
 -- general-purpose helpers

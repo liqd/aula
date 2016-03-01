@@ -107,14 +107,16 @@ user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
 
 data AdminPs =
-    AdminParams
+    AdminDuration
+  | AdminQuorum
   | AdminAccess
   | AdminUser
   | AdminEvent
   deriving Show
 
 admin :: AdminPs -> UriPath -> UriPath
-admin AdminParams = (</> "params")
+admin AdminDuration = (</> "duration")
+admin AdminQuorum = (</> "quorum")
 admin AdminAccess = (</> "access")
 admin AdminUser   = (</> "user")
 admin AdminEvent  = (</> "event")

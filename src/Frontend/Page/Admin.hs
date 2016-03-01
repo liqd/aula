@@ -2,22 +2,30 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-{-# OPTIONS_GHC -Werror #-}
+-- {-# OPTIONS_GHC -Werror #-}
 
 module Frontend.Page.Admin
 where
 
+import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
+
+import qualified Frontend.Path as P
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 ----------------------------------------------------------------------
 -- types
 
 -- | 11.1 Admin settings: Durations
 data PageAdminSettingsDurations =
-    PageAdminSettingsDurations
+    PageAdminSettingsDurations Durations
   deriving (Eq, Show, Read)
 
--- | 11.2 Admin settings: Durations
+instance Page PageAdminSettingsDurations where
+    isPrivatePage _ = True
+
+-- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
     PageAdminSettingsQuorum
   deriving (Eq, Show, Read)
@@ -27,37 +35,227 @@ data PageAdminSettingsGroupsAndPermissions =
     PageAdminSettingsGroupsAndPermissions
   deriving (Eq, Show, Read)
 
-{-
 -- | 11.3 Admin settings: User creation & user import
 data PageAdminSettingsUserCreateAndImport =
     PageAdminSettingsUserCreateAndImport
   deriving (Eq, Show, Read)
-
-instance ToHtml PageAdminSettingsUserCreateAndImport where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsUserCreateAndImport"
--}
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol
   deriving (Eq, Show, Read)
 
+data PermissionContext
+    = PermUser
+    | PermClass
+  deriving (Eq, Show)
+
+data Tab
+    = TabDurations
+    | TabQuorum
+    | TabGroupsAndPermissions PermissionContext
+    | TabEventsProtocol
+  deriving (Eq, Show)
+
+class ToTab t where
+    toTab :: t -> Tab
+
+-- | Elaboration and Voting phase durations
+data Durations = Durations
+    { elaborationPhase :: Int -- Days
+    , votingPhase :: Int -- Days
+    }
+  deriving (Eq, Show, Read)
+
+----------------------------------------------------------------------
+-- constants
+
+defaultElaborationPeriod, defaultVoringPeriod :: Int
+defaultElaborationPeriod = 21
+defaultVoringPeriod = 21
+
+----------------------------------------------------------------------
+-- tabs
+
+-- | 11.1 Admin settings: Durations
+instance ToTab PageAdminSettingsDurations where
+    toTab _ = TabDurations
+
+-- | 11.2 Admin settings: Quorum
+instance ToTab PageAdminSettingsQuorum where
+    toTab _ = TabQuorum
+
+-- | 11.3 Admin settings: Manage groups & permissions
+instance ToTab PageAdminSettingsGroupsAndPermissions where
+    toTab _ = TabGroupsAndPermissions PermUser -- FIXME: Real permission context
+
+-- | 11.4 Admin settings: Events protocol
+instance ToTab PageAdminSettingsEventsProtocol where
+    toTab _ = TabEventsProtocol
+
 ----------------------------------------------------------------------
 -- templates
 
-instance ToHtml PageAdminSettingsDurations where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsDurations"
+-- * Duration
 
-instance ToHtml PageAdminSettingsQuorum where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsQuorum"
+{-
+-- | Render Form based Views
+class FormPageView p where
+    type FormPageResult p :: *
+    -- | The form action used in form generation
+    formAction :: p -> UriPath
+    -- | Calculates a redirect address from the given page
+    redirectOf :: p -> UriPath
+    -- | Generates a Html view from the given page
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+-}
 
-instance ToHtml PageAdminSettingsGroupsAndPermissions where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsGroupsAndPermissions"
+adminFrame :: (Monad m, ToTab tab) => tab -> HtmlT m () -> HtmlT m ()
+adminFrame t bdy = do
+    div_ [id_ "tabs"] . ul_ [] $ do
+        li_ [] $ tabLink tab TabDurations
+        li_ [] $ tabLink tab TabQuorum
+        li_ [] $ tabLink tab (TabGroupsAndPermissions PermUser)
+        li_ [] $ tabLink tab TabEventsProtocol
+    div_ bdy
+  where
+    tab = toTab t
 
-instance ToHtml PageAdminSettingsEventsProtocol where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsEventsProtocol"
+tabLink :: Monad m => Tab -> Tab -> HtmlT m ()
+tabLink curTab targetTab =
+  case targetTab of
+    TabDurations -> go "tab-duration"    P.AdminDuration "Dauer der Phasen"
+    TabQuorum    -> go "tab-qourum"      P.AdminQuorum   "Quorum"
+    TabGroupsAndPermissions PermUser  -> go "tab-groups-perms-user"  P.AdminAccess "Gruppen & Nutzer: Nutzer" -- FIXME
+    TabGroupsAndPermissions PermClass -> go "tab-groups-perms-class" P.AdminAccess "Gruppen & Nutzer: Klasse" -- FIXME
+    TabEventsProtocol -> go "tab-events" P.AdminEvent    "Beauftragen Stimmen"
+  where
+    go ident uri =
+        a_ [ id_ ident
+           , href_ $ P.Admin uri
+           , class_ $ tabSelected curTab targetTab
+           ]
+
+instance FormPageView PageAdminSettingsDurations where
+    type FormPageResult PageAdminSettingsDurations = Durations
+
+    -- | The form action used in form generation
+    formAction _ = relPath $ P.Admin P.AdminDuration
+
+    -- | Calculates a redirect address from the given page
+    -- FIXME: Do we redirecto to the same page???
+    redirectOf _ = relPath $ P.Admin P.AdminDuration
+
+    -- | Generates a Html view from the given page
+    makeForm (PageAdminSettingsDurations dur) =
+        Durations
+        <$> ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
+        <*> ("vote-duration" .: readPeriod defaultVoringPeriod (votingPhase dur))
+      where
+        readPeriod d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
+
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    -- formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+    formPage v fa p = adminFrame p $ do
+        semanticDiv p $ do
+            DF.form v fa $ do
+                div_ $ do
+                    "Wie viele Tage soll die Ausarbaitungphase dauern?" >> br_ []
+                    DF.inputText "elab-duration" v >> br_ []
+                div_ $ do
+                    "Wie viele Tage soll die Abstimmungphase dauren?" >> br_ []
+                    DF.inputText "vote-duration" v >> br_ []
+                DF.inputSubmit "AENDERUNGEN SPIECHERN"
+
+adminDurations :: (ActionM m) => ServerT (FormHandler PageAdminSettingsDurations ST) m
+adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) saveDurations
+  where
+    saveDurations :: ActionM m => Durations -> m ()
+    saveDurations (Durations elab vote) = persistent $ do
+        modifyDb dbElabDuration (const elab)
+        modifyDb dbVoteDuration (const vote)
+
+    durations :: ActionM m => m Durations
+    durations = persistent $
+        Durations <$> getDb dbElabDuration
+                  <*> getDb dbVoteDuration
+
+-- * Qourom
+
+{-
+-- | Render Form based Views
+class FormPageView p where
+    type FormPageResult p :: *
+    -- | The form action used in form generation
+    formAction :: p -> UriPath
+    -- | Calculates a redirect address from the given page
+    redirectOf :: p -> UriPath
+    -- | Generates a Html view from the given page
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+-}
+
+adminQourum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
+adminQourum = undefined
+
+-- * Groups and permisisons
+
+{-
+-- | Render Form based Views
+class FormPageView p where
+    type FormPageResult p :: *
+    -- | The form action used in form generation
+    formAction :: p -> UriPath
+    -- | Calculates a redirect address from the given page
+    redirectOf :: p -> UriPath
+    -- | Generates a Html view from the given page
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+-}
+
+adminSettingsGroupsAndPermissions
+    :: ActionM m => ServerT (FormHandler PageAdminSettingsGroupsAndPermissions ST) m
+adminSettingsGroupsAndPermissions = undefined
+
+-- * User create and import
+
+{-
+-- | Render Form based Views
+class FormPageView p where
+    type FormPageResult p :: *
+    -- | The form action used in form generation
+    formAction :: p -> UriPath
+    -- | Calculates a redirect address from the given page
+    redirectOf :: p -> UriPath
+    -- | Generates a Html view from the given page
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+-}
+
+adminSettingsUserCreateAndImport
+    :: (ActionM m) => ServerT (FormHandler PageAdminSettingsUserCreateAndImport ST) m
+adminSettingsUserCreateAndImport = undefined
+
+-- * Events protocol
+
+{-
+-- | Render Form based Views
+class FormPageView p where
+    type FormPageResult p :: *
+    -- | The form action used in form generation
+    formAction :: p -> UriPath
+    -- | Calculates a redirect address from the given page
+    redirectOf :: p -> UriPath
+    -- | Generates a Html view from the given page
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    -- | Generates a Html snippet from the given view, form action, and the @p@ page
+    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+-}
+
+adminEventsProtocol :: ActionM m => ServerT (FormHandler PageAdminSettingsEventsProtocol ST) m
+adminEventsProtocol = undefined
