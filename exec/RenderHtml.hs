@@ -54,7 +54,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlForm    CreateTopic))
     , f (Proxy :: Proxy (ToHtmlForm    MoveIdeasToTopic))
     , f (Proxy :: Proxy (ToHtmlForm PageAdminSettingsDurations))
---    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsQuorum))
+    , f (Proxy :: Proxy (ToHtmlForm PageAdminSettingsQuorum))
 --    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGroupsAndPermissions))
 --    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsUserCreateAndImport))
 --    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsEventsProtocol))

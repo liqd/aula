@@ -56,6 +56,8 @@ module Api.Persistent
     , dbCurrentUser
     , dbElabDuration
     , dbVoteDuration
+    , dbSchoolQuorum
+    , dbClassQuorum
     -- FIXME: Remove hack
     , bootstrapUser
     , adminUsernameHack
@@ -93,6 +95,8 @@ data AulaData = AulaData
     , _dbCurrentUser :: Maybe (AUID User)
     , _dbElabDuration :: Int
     , _dbVoteDuration :: Int
+    , _dbSchoolQuorum :: Int
+    , _dbClassQuorum :: Int
     , _dbLastId      :: Integer
     }
   deriving (Eq, Show, Read)
@@ -115,7 +119,7 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil Nothing 21 21 0
+emptyAulaData = AulaData nil nil nil nil Nothing 21 21 30 3 0
 
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
   deriving (Functor, Applicative, Monad)

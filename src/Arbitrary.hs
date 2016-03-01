@@ -73,7 +73,7 @@ instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
 
 instance Arbitrary PageAdminSettingsQuorum where
-    arbitrary = pure PageAdminSettingsQuorum
+    arbitrary = PageAdminSettingsQuorum <$> arb
 
 instance Arbitrary PageAdminSettingsGroupsAndPermissions where
     arbitrary = pure PageAdminSettingsGroupsAndPermissions
@@ -221,6 +221,9 @@ instance Arbitrary UserSettingData where
 
 instance Arbitrary Durations where
     arbitrary = Durations <$> arb <*> arb
+
+instance Arbitrary Quorums where
+    arbitrary = Quorums <$> arb <*> arb
 
 -- FIXME: instance Arbitrary Delegation
 

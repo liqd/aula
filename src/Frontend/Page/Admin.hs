@@ -10,7 +10,7 @@ where
 import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
 
-import qualified Frontend.Path as P
+import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -27,8 +27,11 @@ instance Page PageAdminSettingsDurations where
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
-    PageAdminSettingsQuorum
+    PageAdminSettingsQuorum Quorums
   deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsQuorum where
+    isPrivatePage _ = True
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data PageAdminSettingsGroupsAndPermissions =
@@ -45,6 +48,33 @@ data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol
   deriving (Eq, Show, Read)
 
+-- | Elaboration and Voting phase durations
+data Durations = Durations
+    { elaborationPhase :: Int -- Days
+    , votingPhase :: Int -- Days
+    }
+  deriving (Eq, Show, Read)
+
+data Quorums = Quorums
+    { schoolQuorumPercentage :: Int
+    , classQuorumPercentage  :: Int
+    }
+  deriving (Eq, Show, Read)
+
+----------------------------------------------------------------------
+-- constants
+
+defaultElaborationPeriod, defaultVoringPeriod :: Int
+defaultElaborationPeriod = 21
+defaultVoringPeriod = 21
+
+defaultSchoolQuorum, defaultClassQuorum :: Int
+defaultSchoolQuorum = 30
+defaultClassQuorum = 3
+
+----------------------------------------------------------------------
+-- tabs
+
 data PermissionContext
     = PermUser
     | PermClass
@@ -59,23 +89,6 @@ data Tab
 
 class ToTab t where
     toTab :: t -> Tab
-
--- | Elaboration and Voting phase durations
-data Durations = Durations
-    { elaborationPhase :: Int -- Days
-    , votingPhase :: Int -- Days
-    }
-  deriving (Eq, Show, Read)
-
-----------------------------------------------------------------------
--- constants
-
-defaultElaborationPeriod, defaultVoringPeriod :: Int
-defaultElaborationPeriod = 21
-defaultVoringPeriod = 21
-
-----------------------------------------------------------------------
--- tabs
 
 -- | 11.1 Admin settings: Durations
 instance ToTab PageAdminSettingsDurations where
@@ -118,6 +131,7 @@ adminFrame t bdy = do
         li_ [] $ tabLink tab TabDurations
         li_ [] $ tabLink tab TabQuorum
         li_ [] $ tabLink tab (TabGroupsAndPermissions PermUser)
+        li_ [] $ tabLink tab (TabGroupsAndPermissions PermClass)
         li_ [] $ tabLink tab TabEventsProtocol
     div_ bdy
   where
@@ -126,15 +140,15 @@ adminFrame t bdy = do
 tabLink :: Monad m => Tab -> Tab -> HtmlT m ()
 tabLink curTab targetTab =
   case targetTab of
-    TabDurations -> go "tab-duration"    P.AdminDuration "Dauer der Phasen"
-    TabQuorum    -> go "tab-qourum"      P.AdminQuorum   "Quorum"
-    TabGroupsAndPermissions PermUser  -> go "tab-groups-perms-user"  P.AdminAccess "Gruppen & Nutzer: Nutzer" -- FIXME
-    TabGroupsAndPermissions PermClass -> go "tab-groups-perms-class" P.AdminAccess "Gruppen & Nutzer: Klasse" -- FIXME
-    TabEventsProtocol -> go "tab-events" P.AdminEvent    "Beauftragen Stimmen"
+    TabDurations -> go "tab-duration"    U.AdminDuration "Dauer der Phasen"
+    TabQuorum    -> go "tab-qourum"      U.AdminQuorum   "Quorum"
+    TabGroupsAndPermissions PermUser  -> go "tab-groups-perms-user"  U.AdminAccess "Gruppen & Nutzer: Nutzer" -- FIXME
+    TabGroupsAndPermissions PermClass -> go "tab-groups-perms-class" U.AdminAccess "Gruppen & Nutzer: Klasse" -- FIXME
+    TabEventsProtocol -> go "tab-events" U.AdminEvent    "Beauftragen Stimmen"
   where
     go ident uri =
         a_ [ id_ ident
-           , href_ $ P.Admin uri
+           , href_ $ U.Admin uri
            , class_ $ tabSelected curTab targetTab
            ]
 
@@ -142,11 +156,11 @@ instance FormPageView PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations
 
     -- | The form action used in form generation
-    formAction _ = relPath $ P.Admin P.AdminDuration
+    formAction _ = relPath $ U.Admin U.AdminDuration
 
     -- | Calculates a redirect address from the given page
     -- FIXME: Do we redirecto to the same page???
-    redirectOf _ = relPath $ P.Admin P.AdminDuration
+    redirectOf _ = relPath $ U.Admin U.AdminDuration
 
     -- | Generates a Html view from the given page
     makeForm (PageAdminSettingsDurations dur) =
@@ -163,10 +177,10 @@ instance FormPageView PageAdminSettingsDurations where
             DF.form v fa $ do
                 div_ $ do
                     "Wie viele Tage soll die Ausarbaitungphase dauern?" >> br_ []
-                    DF.inputText "elab-duration" v >> br_ []
+                    DF.inputText "elab-duration" v >> "Tage" >> br_ []
                 div_ $ do
                     "Wie viele Tage soll die Abstimmungphase dauren?" >> br_ []
-                    DF.inputText "vote-duration" v >> br_ []
+                    DF.inputText "vote-duration" v >> "Tage" >> br_ []
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminDurations :: (ActionM m) => ServerT (FormHandler PageAdminSettingsDurations ST) m
@@ -184,22 +198,41 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
 
 -- * Qourom
 
-{-
--- | Render Form based Views
-class FormPageView p where
-    type FormPageResult p :: *
-    -- | The form action used in form generation
-    formAction :: p -> UriPath
-    -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
-    -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
--}
+instance FormPageView PageAdminSettingsQuorum where
+    type FormPageResult PageAdminSettingsQuorum = Quorums
+
+    formAction _ = relPath $ U.Admin U.AdminQuorum
+
+    redirectOf _ = relPath $ U.Admin U.AdminQuorum
+
+    makeForm (PageAdminSettingsQuorum q) =
+        Quorums
+        <$> ("school-quorum" .: readPercentage defaultSchoolQuorum (schoolQuorumPercentage q))
+        <*> ("class-quorum"  .: readPercentage defaultClassQuorum (classQuorumPercentage q))
+      where
+        readPercentage d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
+
+    formPage v fa p = adminFrame p $ do
+        semanticDiv p $ do
+            DF.form v fa $ do
+                div_ $ do
+                    "Wie hoch soll das Quorum schulweit sein?" >> br_ []
+                    DF.inputText "school-quorum" v >> "% aller Schulerinnen der Schule" >> br_ []
+                div_ $ do
+                    "Wie hoch soll das Quorum klassenweit sein?" >> br_ []
+                    DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
+                DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQourum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
-adminQourum = undefined
+adminQourum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
+  where
+    saveQuorum (Quorums school clss) = persistent $ do
+        modifyDb dbSchoolQuorum (const school)
+        modifyDb dbClassQuorum (const clss)
+
+    quorum = persistent $
+        Quorums <$> getDb dbSchoolQuorum
+                <*> getDb dbClassQuorum
 
 -- * Groups and permisisons
 

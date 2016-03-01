@@ -68,6 +68,7 @@ spec = do
         , F (arb :: Gen PageUserSettings)
     --  , F (arb :: Gen MoveIdeasToTopic) FIXME
         , F (arb :: Gen PageAdminSettingsDurations)
+        , F (arb :: Gen PageAdminSettingsQuorum)
         ]
     where
         arb :: Arbitrary a => Gen a
@@ -149,6 +150,11 @@ instance PayloadToEnv Durations where
     payloadToEnv _ (Durations elab vote) = \case
         ["", "elab-duration"] -> pure [TextInput (cs $ show elab)]
         ["", "vote-duration"] -> pure [TextInput (cs $ show vote)]
+
+instance PayloadToEnv Quorums where
+    payloadToEnv _ (Quorums school clss) = \case
+        ["", "school-quorum"] -> pure [TextInput (cs $ show school)]
+        ["", "class-quorum"]  -> pure [TextInput (cs $ show clss)]
 
 ----------------------------------------------------------------------
 -- machine room
