@@ -47,10 +47,10 @@ createRandomNoMeta l = do
 -- | generate one arbitrary item of each type (idea, user, ...)
 genInitialTestDb :: Persist ()
 genInitialTestDb = do
-    True <- addIdeaSpace SchoolSpace
-    True <- addIdeaSpace $ ClassSpace (SchoolClass 2016 "7a")
-    True <- addIdeaSpace $ ClassSpace (SchoolClass 2016 "7b")
-    True <- addIdeaSpace $ ClassSpace (SchoolClass 2016 "8a")
+    addIdeaSpaceIfNotExists SchoolSpace
+    addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
+    addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
+    addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
     _firstUser <- bootstrapUser =<< genArbitrary
     _wildIdea <- addIdea =<< genArbitrary
     topicIdea <- addIdea =<< genArbitrary

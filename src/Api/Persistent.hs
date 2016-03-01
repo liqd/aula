@@ -26,7 +26,7 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
-    , addIdeaSpace
+    , addIdeaSpaceIfNotExists
     , addIdea
     , modifyIdea
     , findIdea
@@ -59,6 +59,7 @@ module Api.Persistent
     )
 where
 
+import Control.Monad (unless)
 import Data.Foldable (find, for_)
 import Data.Map (Map)
 import Data.Maybe (isNothing)
@@ -160,13 +161,11 @@ getSpaces = getDb dbSpaces
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
 
--- | If idea space already exists, return 'False'.  Otherwise, create it and return 'True'.
-addIdeaSpace :: IdeaSpace -> Persist Bool
-addIdeaSpace ispace = do
+-- | If idea space already exists, do nothing.  Otherwise, create it.
+addIdeaSpaceIfNotExists :: IdeaSpace -> Persist ()
+addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
-    if exists
-        then return False
-        else modifyDb dbSpaceSet (Set.insert ispace) >> return True
+    unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
