@@ -26,6 +26,7 @@ module Api.Persistent
 
     , getSpaces
     , getIdeas
+    , addIdeaSpaceIfNotExists
     , addIdea
     , modifyIdea
     , findIdea
@@ -59,17 +60,17 @@ module Api.Persistent
     )
 where
 
+import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, modifyTVar')
+import Control.Lens
+import Control.Monad (join, unless)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Data.Foldable (find, for_)
 import Data.Map (Map)
 import Data.Maybe (isNothing)
 import Data.Set (Set)
-import Data.String.Conversions
+import Data.String.Conversions (ST)
 import Data.Time.Clock (getCurrentTime)
-import Control.Concurrent.STM
-import Control.Monad (join)
-import Control.Monad.Trans.Reader
-import Control.Lens
-import Control.Monad.IO.Class
 import Servant.Server ((:~>)(Nat))
 
 import Types
@@ -159,6 +160,12 @@ getSpaces = getDb dbSpaces
 
 getIdeas :: Persist [Idea]
 getIdeas = getDb dbIdeas
+
+-- | If idea space already exists, do nothing.  Otherwise, create it.
+addIdeaSpaceIfNotExists :: IdeaSpace -> Persist ()
+addIdeaSpaceIfNotExists ispace = do
+    exists <- (ispace `elem`) <$> getSpaces
+    unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
 addIdea :: Proto Idea -> Persist Idea
 addIdea = addDb dbIdeaMap
