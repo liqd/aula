@@ -35,24 +35,6 @@ instance ToHtml PageIdeaDetailMoveIdeaToTopic where
     toHtml p = semanticDiv p "PageIdeaDetailMoveIdeaToTopic"
 
 
--- | 8.1 User profile: Created ideas
-data PageUserProfileCreateIdeas = PageUserProfileCreateIdeas
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageUserProfileCreateIdeas where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageUserProfileCreateIdeas"
-
-
--- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageUserProfileDelegatedVotes where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageUserProfileDelegatedVotes"
-
-
 -- | 11.1 Admin settings: Durations & quorum
 data PageAdminSettingsDurationsAndQuorum =
     PageAdminSettingsDurationsAndQuorum

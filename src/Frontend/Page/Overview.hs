@@ -93,7 +93,7 @@ instance ToHtml PageIdeasOverview where
             button_ "Zeit"
             button_ "Umgebung"
         div_ [id_ "ideas"] . for_ ideas $ \idea ->
-            ListItemIdea Nothing idea ^. html
+            ListItemIdea True Nothing idea ^. html
 
 instance Page PageIdeasOverview where
     isPrivatePage _ = True

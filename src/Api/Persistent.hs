@@ -31,6 +31,7 @@ module Api.Persistent
     , findIdea
     , findIdeasByTopicId
     , findIdeasByTopic
+    , findIdeasByUserId
     , findWildIdeasBySpace
     , getUsers
     , addUser
@@ -164,6 +165,9 @@ addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> Persist (Maybe Idea)
 findIdea = findInById dbIdeas
+
+findIdeasByUserId :: AUID User -> Persist [Idea]
+findIdeasByUserId user = findAllIn dbIdeas (\i -> i ^. createdBy == user)
 
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> Persist ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)

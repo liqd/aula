@@ -15,7 +15,7 @@ where
 import Thentos.Prelude
 import Data.UriPath
 
-import Types (AUID, User, Topic, Idea, IdeaSpace, nil)
+import Types (AUID, Idea, IdeaSpace, User, Topic, nil)
 
 data Top =
     Top

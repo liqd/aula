@@ -201,12 +201,12 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
         "]"
 
 
-data ListItemIdea = ListItemIdea (Maybe Phase) Idea
+data ListItemIdea = ListItemIdea Bool (Maybe Phase) Idea
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea _phase idea) = semanticDiv p $ do
+    toHtml p@(ListItemIdea _linkToUserProfile _phase idea) = semanticDiv p $ do
         -- FIXME use the phase
         span_ $ do
             img_ [src_ "some_avatar"]

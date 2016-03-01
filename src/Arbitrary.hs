@@ -54,11 +54,11 @@ instance Arbitrary CreateIdea where
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
 
-instance Arbitrary PageUserProfileCreateIdeas where
-    arbitrary = pure PageUserProfileCreateIdeas
+instance Arbitrary PageUserProfileCreatedIdeas where
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
-    arbitrary = pure PageUserProfileDelegatedVotes
+    arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
 
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
@@ -133,6 +133,15 @@ instance Arbitrary IdeaResult where
 instance Arbitrary IdeaResultValue where
     arbitrary = elements [minBound..]
 
+instance Arbitrary DelegationContext where
+    arbitrary = oneof
+        [ DelCtxIdeaSpace <$> arb
+        , DelCtxTopic <$> arb
+        , DelCtxIdea <$> arb
+        ]
+
+instance Arbitrary Delegation where
+    arbitrary = Delegation <$> arb <*> arb <*> arb <*> arb
 
 ----------------------------------------------------------------------
 -- comment
@@ -234,9 +243,9 @@ instance Arbitrary P.Main where
         , elements
             [ P.ListSpaces
             , P.ListUsers
-            , P.UserSettings
             , P.DelegationEdit
             , P.DelegationView
+            , P.UserSettings
             , P.Imprint
             , P.Terms
             , P.Login

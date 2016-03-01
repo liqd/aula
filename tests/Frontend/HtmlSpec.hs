@@ -46,7 +46,7 @@ spec = do
         , H (arb :: Gen PageIdeasInDiscussion)
         , H (arb :: Gen ViewTopic)
         , H (arb :: Gen ViewIdea)
-        , H (arb :: Gen PageUserProfileCreateIdeas)
+        , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen PageAdminSettingsDurationsAndQuorum)
         , H (arb :: Gen PageAdminSettingsGroupsAndPermissions)
