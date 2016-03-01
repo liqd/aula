@@ -126,26 +126,23 @@ spec = do
     findAllInBySpec "findIdeasByTopicId" getIdeasWithTopic findIdeasByTopicId (ideaTopic . _Just) changeAUID
 
     describe "addIdeaSpace" $ do
-        let test :: IdeaSpace -> SpecWith (Persist :~> IO)
-            test ispace = do
+        let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> IO)
+            test upd ispace = do
                 it ("can add " <> showIdeaSpace ispace) $ \(Nat rp) -> do
                     let getL = liftIO . rp $ getSpaces
                         addS = liftIO . rp $ addIdeaSpaceIfNotExists ispace
                     bef <- getL
                     addS
                     aft <- getL
-                    let existed = ispace `elem` bef
-                    length bef `shouldBe` if existed
-                            then length aft
-                            else length aft - 1
+                    upd (length bef) `shouldBe` length aft
                     (ispace `elem` aft) `shouldBe` True
 
         context "on empty database" . before mkEmpty $ do
-            test SchoolSpace
-            test (ClassSpace (SchoolClass 2016 "7a"))
+            test (+1) SchoolSpace
+            test (+1) (ClassSpace (SchoolClass 2016 "7a"))
         context "on initial database" . before mkInitial $ do
-            test SchoolSpace
-            test (ClassSpace (SchoolClass 2016 "7a"))
+            test id SchoolSpace
+            test id (ClassSpace (SchoolClass 2016 "7a"))
 
     describe "loginUser" $ do
         let t rp login predicate = do
