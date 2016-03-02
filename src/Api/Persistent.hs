@@ -191,7 +191,7 @@ modifyTopic = modifyAMap dbTopicMap
 getUsers :: Persist [User]
 getUsers = getDb dbUsers
 
-addUser :: User -> Persist User
+addUser :: Proto User -> Persist User
 addUser = addDb dbUserMap
 
 getTopics :: Persist [Topic]
