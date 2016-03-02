@@ -158,8 +158,7 @@ If you use docker, to be able to use more terminals, you can start
 a new shell with
 
 ```shell
-docker ps  # (to find the appropriate <docker hash>)
-docker exec -it "<docker hash>" bash
+docker exec -it `docker ps -q --filter="ancestor=fisx/aula"` bash
 ```
 
 For more info on this, check out `./docs/PageCreatorHOWTO.md`.
