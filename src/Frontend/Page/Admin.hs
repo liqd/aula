@@ -10,6 +10,7 @@ where
 import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
 
+import qualified Data.UriPath as U (onclick_)
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -45,8 +46,11 @@ data PageAdminSettingsUserCreateAndImport =
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
-    PageAdminSettingsEventsProtocol
+    PageAdminSettingsEventsProtocol [IdeaSpace]
   deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsEventsProtocol where
+    isPrivatePage _ = True
 
 -- | Elaboration and Voting phase durations
 data Durations = Durations
@@ -276,19 +280,28 @@ adminSettingsUserCreateAndImport = undefined
 
 -- * Events protocol
 
-{-
--- | Render Form based Views
-class FormPageView p where
-    type FormPageResult p :: *
-    -- | The form action used in form generation
-    formAction :: p -> UriPath
-    -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
-    -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
--}
+instance ToHtml PageAdminSettingsEventsProtocol where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = semanticDiv p $ do
+        div_ $ do
+            p_ "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
+            -- FIXME: Clientside JavaScript. Change the download button link
+            -- If the value of the selection is changes.
+            select_ [name_ "idea"] . forM_ ideaSpaces $ \idea ->
+                option_ [value_ (makeValue idea)] (makeText idea)
+        div_ $ do
+            p_ "Event-Protokoll"
+            -- FIXME: Link to the correct page.
+            button_ [U.onclick_ U.ListSpaces] "DOWNLOAD"
+            p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
+      where
+        makeValue :: IdeaSpace -> ST
+        makeValue SchoolSpace = "idea-schoolspace"
+        makeValue (ClassSpace (SchoolClass year name))
+            = cs $ mconcat ["idea-class-", show year, "-", show name]
 
-adminEventsProtocol :: ActionM m => ServerT (FormHandler PageAdminSettingsEventsProtocol ST) m
-adminEventsProtocol = undefined
+        makeText SchoolSpace = "Schule"
+        makeText (ClassSpace (SchoolClass _year name)) = toHtml name
+
+adminEventsProtocol :: ActionM m => m (Frame PageAdminSettingsEventsProtocol)
+adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> persistent getSpaces)

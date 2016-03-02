@@ -84,7 +84,7 @@ instance Arbitrary PageAdminSettingsUserCreateAndImport where
 -}
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
-    arbitrary = pure PageAdminSettingsEventsProtocol
+    arbitrary = PageAdminSettingsEventsProtocol <$> arb
 
 instance Arbitrary PageDelegateVote where
     arbitrary = pure PageDelegateVote

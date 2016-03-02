@@ -52,7 +52,7 @@ spec = do
 --        , H (arb :: Gen PageAdminSettingsQuorum)
 --        , H (arb :: Gen PageAdminSettingsGroupsAndPermissions)
 --        , H (arb :: Gen PageAdminSettingsUserCreateAndImport)
---        , H (arb :: Gen PageAdminSettingsEventsProtocol)
+        , H (arb :: Gen PageAdminSettingsEventsProtocol)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)

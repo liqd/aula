@@ -211,7 +211,7 @@ type AulaAdmin =
        -- user creation and import
   :<|> "user"   :> FormHandler PageAdminSettingsUserCreateAndImport ST
        -- event log
-  :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol ST
+  :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
 
 aulaAdmin :: ServerT AulaAdmin Action
