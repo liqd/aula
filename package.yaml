@@ -75,14 +75,6 @@ executables:
       - fsnotify
       - hspec
 
-  aula-import-users:
-    main: ImportUsers.hs
-    source-dirs: exec
-    other-modules:
-    dependencies:
-      - aula
-      - nonce
-
 tests:
   spec:
     main: Spec.hs
