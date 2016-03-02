@@ -12,3 +12,4 @@ packages/
 /dist
 .sass-cache/
 .fontcustom-manifest.json
+/pwd.log

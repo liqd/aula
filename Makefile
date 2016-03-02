@@ -48,3 +48,7 @@ hlint:
 
 ghci-no-type-errors:
 	cabal exec -- ghci $(FULL_SOURCES) -fdefer-type-errors
+
+seito-docker-hack:
+	pwd > pwd.log
+	docker exec -it `docker ps -q --filter="ancestor=fisx/aula"` /root/aula/docker/make-seito.sh

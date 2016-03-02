@@ -158,8 +158,7 @@ If you use docker, to be able to use more terminals, you can start
 a new shell with
 
 ```shell
-docker ps  # (to find the appropriate <docker hash>)
-docker exec -it "<docker hash>" bash
+docker exec -it `docker ps -q --filter="ancestor=fisx/aula"` bash
 ```
 
 For more info on this, check out `./docs/PageCreatorHOWTO.md`.
@@ -168,7 +167,7 @@ For more info on this, check out `./docs/PageCreatorHOWTO.md`.
 
 SASS is used for styling, use the following command to compile the SASS
 to CSS
- 
+
 You need the sass compiler installed http://sass-lang.com/install
 
 ```shell
