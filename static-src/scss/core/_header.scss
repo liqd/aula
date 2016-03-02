@@ -128,13 +128,14 @@ $arrow-width: 6px;
 .pop-menu-list-item {
     @include rem(font-size, $font-size-small);
     border-bottom: 1px solid $color-grey-mid;
-    line-height: 1;
+    line-height: 1.4;
 
     a {
         @include rem(padding, 5px 10px);
         color: $color-text;
         display: block;
         text-decoration: none;
+        white-space: nowrap;
 
         &:hover, &:focus {
             color: $color-link;
