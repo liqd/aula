@@ -90,13 +90,12 @@ $arrow-width: 6px;
 .pop-menu-list {
     min-width: 105px;
     box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.05);
-    transition: visibility 0.3s;
+    transition: opacity 0.3s;
     border-radius: 3px;
     opacity: 0;
     position: absolute;
     background: #fff;
     border: 1px solid $color-grey-mid;
-    visibility: invisible;
     z-index: 1;
 
     >:after, >:before {
