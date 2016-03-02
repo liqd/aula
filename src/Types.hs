@@ -32,6 +32,7 @@ import Text.Read (readMaybe)
 import qualified Data.Text as ST
 import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
+import qualified Generics.SOP as SOP
 
 import Test.QuickCheck (Arbitrary)
 
@@ -90,6 +91,8 @@ data Idea = Idea
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic Idea
+
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
@@ -97,6 +100,8 @@ data ProtoIdea = ProtoIdea
     , _protoIdeaCategory   :: Category
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoIdea
 
 type instance Proto Idea = ProtoIdea
 
@@ -109,11 +114,15 @@ data Category =
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
+instance SOP.Generic Category
+
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
     { _likeMeta  :: MetaInfo IdeaLike
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaLike
 
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote', which doesn't have neutral.
 data IdeaVote = IdeaVote
@@ -122,8 +131,12 @@ data IdeaVote = IdeaVote
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic IdeaVote
+
 data IdeaVoteValue = Yes | No | Neutral
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
+
+instance SOP.Generic IdeaVoteValue
 
 data IdeaResult = IdeaResult
     { _ideaResultMeta   :: MetaInfo IdeaResult
@@ -132,9 +145,12 @@ data IdeaResult = IdeaResult
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic IdeaResult
+
 data IdeaResultValue = NotFeasible | Winning | NotEnoughVotes
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
+instance SOP.Generic IdeaResultValue
 
 ----------------------------------------------------------------------
 -- comment
@@ -151,6 +167,8 @@ data Comment = Comment
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic Comment
+
 -- | "Stimme" for "Verbesserungsvorschlag"
 data CommentVote = CommentVote
     { _commentVoteMeta  :: MetaInfo CommentVote
@@ -158,9 +176,12 @@ data CommentVote = CommentVote
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic CommentVote
+
 data UpDown = Up | Down
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
+instance SOP.Generic UpDown
 
 ----------------------------------------------------------------------
 -- idea space, topic, phase
@@ -170,6 +191,8 @@ data IdeaSpace =
     SchoolSpace
   | ClassSpace SchoolClass
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaSpace
 
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
@@ -195,6 +218,8 @@ data Topic = Topic
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic Topic
+
 data ProtoTopic = ProtoTopic
     { _protoTopicTitle     :: ST
     , _protoTopicDesc      :: Document
@@ -203,6 +228,8 @@ data ProtoTopic = ProtoTopic
     , _protoTopicIdeas     :: [AUID Idea]
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoTopic
 
 type instance Proto Topic = ProtoTopic
 
@@ -215,6 +242,8 @@ data Phase =
   | PhaseResult        -- ^ 5. "Ergebnisphase"
   | PhaseFinished      -- ^ 6. "Beendet"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
@@ -241,6 +270,8 @@ data User = User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic User
+
 -- FIXME: Temporary hack to be able to save users.
 type instance Proto User = User
 
@@ -255,9 +286,13 @@ data Group =
   | Admin
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic Group
+
 -- | FIXME: import Crypto.Scrypt (EncryptedPass)
 newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EncryptedPass
 
 -- | FIXME: replace with structured email type.
 newtype Email = Email ST
@@ -272,12 +307,15 @@ data Delegation = Delegation
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic Delegation
+
 data DelegationContext =
     DelCtxIdeaSpace IdeaSpace
   | DelCtxTopic (AUID Topic)
   | DelCtxIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic DelegationContext
 
 ----------------------------------------------------------------------
 -- aula-specific helper types
@@ -300,6 +338,8 @@ data MetaInfo a = MetaInfo
     , _metaChangedAt       :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic a => SOP.Generic (MetaInfo a)
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }

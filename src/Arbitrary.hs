@@ -17,11 +17,15 @@ module Arbitrary
     , arbName
     ) where
 
+import Control.Applicative ((<**>))
+import Control.Lens (set)
 import Control.Monad (replicateM)
 import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
+import Generics.SOP (Generic)
+import Generics.SOP.Arbitrary (garbitrary)
 import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
 import Test.QuickCheck.Instances ()
 
@@ -125,60 +129,57 @@ instance Arbitrary LoginFormData where
 -- idea
 
 instance Arbitrary ProtoIdea where
-    arbitrary = ProtoIdea <$> arbWord <*> arb <*> arb
+    arbitrary =
+        garbitrary
+        <**> (set protoIdeaTitle <$> arbWord)
 
 instance Arbitrary Idea where
-    arbitrary = Idea <$> arb <*> arbPhrase <*> arb'
-                     <*> arb' <*> arb' <*> arb'
-                     <*> arb' <*> arb' <*> arb'
-                     <*> arb' <*> arb'
+    arbitrary =
+        scaleDown garbitrary
+        <**> (set ideaTitle <$> arbPhrase)
 
 instance Arbitrary Category where
-    arbitrary = elements [minBound..]
+    arbitrary = garbitrary
 
 instance Arbitrary IdeaLike where
-    arbitrary = IdeaLike <$> arb
+    arbitrary = garbitrary
 
 instance Arbitrary IdeaVote where
-    arbitrary = IdeaVote <$> arb <*> arb
+    arbitrary = garbitrary
 
 instance Arbitrary IdeaVoteValue where
-    arbitrary = elements [minBound..]
+    arbitrary = garbitrary
 
 instance Arbitrary IdeaResult where
-    arbitrary = IdeaResult <$> arb <*> arb <*> arb
+    arbitrary = garbitrary
 
 instance Arbitrary IdeaResultValue where
-    arbitrary = elements [minBound..]
+    arbitrary = garbitrary
 
 instance Arbitrary DelegationContext where
-    arbitrary = oneof
-        [ DelCtxIdeaSpace <$> arb
-        , DelCtxTopic <$> arb
-        , DelCtxIdea <$> arb
-        ]
+    arbitrary = garbitrary
 
 instance Arbitrary Delegation where
-    arbitrary = Delegation <$> arb <*> arb <*> arb <*> arb
+    arbitrary = garbitrary
 
 ----------------------------------------------------------------------
 -- comment
 
 instance Arbitrary Comment where
-    arbitrary = Comment <$> arb <*> arb <*> arb' <*> arb'
+    arbitrary = garbitrary
 
 instance Arbitrary CommentVote where
-    arbitrary = CommentVote <$> arb <*> arb
+    arbitrary = garbitrary
 
 instance Arbitrary UpDown where
-    arbitrary = elements [minBound..]
+    arbitrary = garbitrary
 
 
 ----------------------------------------------------------------------
 -- idea space, topic, phase
 
 instance Arbitrary IdeaSpace where
-    arbitrary = oneof [pure SchoolSpace, ClassSpace <$> arb]
+    arbitrary = garbitrary
 
 instance Arbitrary SchoolClass where
     arbitrary = schoolClass <$> year <*> name
@@ -187,33 +188,35 @@ instance Arbitrary SchoolClass where
         name = elements [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
 
 instance Arbitrary ProtoTopic where
-    arbitrary = ProtoTopic <$> arbPhrase <*> arb' <*> arb' <*> pure SchoolSpace <*> pure []
+    arbitrary =
+        scaleDown garbitrary
+        <**> (set protoTopicTitle <$> arbPhrase)
+        <**> (set protoTopicIdeaSpace <$> pure SchoolSpace)
+        <**> (set protoTopicIdeas <$> pure [])
 
 instance Arbitrary Topic where
-    arbitrary = Topic <$> arb <*> arbPhrase <*> arb' <*> arb' <*> arb' <*> arb'
+    arbitrary =
+        scaleDown garbitrary
+        <**> (set topicDesc . Markdown <$> arbPhrase)
 
 instance Arbitrary Phase where
-    arbitrary = elements [minBound..]
+    arbitrary = garbitrary
 
 
 ----------------------------------------------------------------------
 -- user
 
 instance Arbitrary User where
-    arbitrary = User <$> arb <*> arbWord <*> arbWord <*> arb <*> arb <*> arb <*> arb <*> arb
+    arbitrary =
+        garbitrary
+        <**> (set userFirstName <$> arbWord)
+        <**> (set userLastName <$> arbWord)
 
 instance Arbitrary Group where
-    arbitrary = oneof
-        [ Student <$> arb
-        , ClassGuest <$> arb
-        , pure SchoolGuest
-        , pure Moderator
-        , pure Principal
-        , pure Admin
-        ]
+    arbitrary = garbitrary
 
 instance Arbitrary EncryptedPass where
-    arbitrary = EncryptedPass <$> arb
+    arbitrary = garbitrary
 
 instance Arbitrary Email where
     arbitrary = do
@@ -252,8 +255,11 @@ instance Arbitrary PermissionContext where
 instance Arbitrary (AUID a) where
     arbitrary = AUID <$> arb
 
-instance Arbitrary (MetaInfo a) where
-    arbitrary = MetaInfo <$> arb <*> arb <*> arbWord <*> arbPhrase <*> arb <*> arb <*> arb
+instance Generic a => Arbitrary (MetaInfo a) where
+    arbitrary =
+        garbitrary
+        <**> (set metaCreatedByLogin <$> arbWord)
+        <**> (set metaCreatedByAvatar <$> arbPhrase)
 
 instance Arbitrary Document where
     arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
@@ -265,65 +271,25 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- path
 
 instance Arbitrary P.Main where
-    arbitrary = oneof
-        [ P.Space <$> arb <*> arb
-        , P.User <$> arb <*> arb
-        , P.Admin <$> arb
-        , elements
-            [ P.ListSpaces
-            , P.ListUsers
-            , P.DelegationEdit
-            , P.DelegationView
-            , P.UserSettings
-            , P.Imprint
-            , P.Terms
-            , P.Login
-            , P.Logout
-            ]
-        ]
+    arbitrary = garbitrary
 
 instance Arbitrary P.Space where
-    arbitrary = oneof
-        [ P.ViewIdea <$> arb
-        , P.EditIdea <$> arb
-        , P.ViewTopicIdeas <$> arb
-        , P.ViewTopicIdeasVoting <$> arb
-        , P.ViewTopicIdeasWinning <$> arb
-        , P.ViewTopicDelegations <$> arb
-        , P.EditTopic <$> arb
-        , P.CreateIdeaInTopic <$> arb
-        , P.CreateTopicDelegation <$> arb
-        , P.MoveIdeasToTopic <$> arb
-        , elements
-            [ P.ListIdeas
-            , P.CreateIdea
-            , P.ListTopics
-            , P.CreateTopic
-            ]
-        ]
+    arbitrary = garbitrary
 
 instance Arbitrary P.UserPs where
-    arbitrary = elements [P.UserIdeas, P.UserDelegations]
+    arbitrary = garbitrary
 
 instance Arbitrary P.AdminPs where
-    arbitrary = oneof
-        [ elements
-            [ P.AdminDuration
-            , P.AdminQuorum
-            , P.AdminUser
-            , P.AdminEvent
-            ]
-        , P.AdminAccess <$> arb
-        ]
+    arbitrary = garbitrary
 
 ----------------------------------------------------------------------
 -- general-purpose helpers
 
+scaleDown :: Gen a -> Gen a
+scaleDown = scale (`div` 3)
+
 arb :: Arbitrary a => Gen a
 arb = arbitrary
-
-arb' :: Arbitrary a => Gen a
-arb' = scale (`div` 3) arb
 
 arbMaybe :: Gen a -> Gen (Maybe a)
 arbMaybe g = oneof [pure Nothing, Just <$> g]
