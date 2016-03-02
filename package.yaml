@@ -17,7 +17,7 @@ ghc-options: -Wall
 
 dependencies:
     - base >=4.8 && <4.9
-    - thentos-core
+    - thentos-core >=0.3.0
     - aeson
     - binary
     - bytestring

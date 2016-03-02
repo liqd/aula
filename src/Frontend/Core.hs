@@ -30,7 +30,8 @@ module Frontend.Core
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except.Missing (finally)
+import Control.Monad.Except (MonadError)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String (fromString)
@@ -40,11 +41,12 @@ import Lucid hiding (href_, script_, src_)
 import Lucid.Base
 import Servant
 import Servant.HTML.Lucid (HTML)
-import Servant.Missing (FormH)
+import Servant.Missing (FormH, getFormDataEnv)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
+import qualified Servant.Missing
 import qualified Text.Digestive.Form as DF
 
 import Action
@@ -234,6 +236,8 @@ instance ToHtml (FormPage p) where
     toHtmlRaw = toHtml
     toHtml (FormPage _p h) = toHtml h
 
+-- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
+-- move parts of it there?)
 redirectFormHandler
     :: (FormPageView p, Page p, ActionM m)
     => m p                       -- ^ Page representation
@@ -247,13 +251,15 @@ redirectFormHandler getPage processor = getH :<|> postH
         v <- getForm fa (processor1 page)
         renderer page v fa
 
-    postH env = do
+    postH formData = do
         page <- getPage
         let fa = absoluteUriPath $ formAction page
+            env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
-        case mpayload of
+        (case mpayload of
             Just payload -> processor2 page payload >>= redirect
-            Nothing      -> renderer page v fa
+            Nothing      -> renderer page v fa)
+            `finally` cleanupTempCsvFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
@@ -263,4 +269,4 @@ redirectFormHandler getPage processor = getH :<|> postH
 
 
 redirect :: (MonadError ActionExcept m) => ST -> m a
-redirect uri = throwError $ err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+redirect = Servant.Missing.redirect

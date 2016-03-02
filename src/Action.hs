@@ -29,7 +29,7 @@ module Action
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
 
       -- * extras
-    , ActionTempCsvFiles(popTempCsvFile)
+    , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles)
     )
 where
 
@@ -45,6 +45,7 @@ import Data.String.Conversions (ST)
 import Persistent
 import Prelude hiding (log)
 import Servant
+import Servant.Missing
 import Types
 
 import qualified Data.Csv as Csv
@@ -70,6 +71,7 @@ class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
+      , ActionTempCsvFiles m
       ) => ActionM m
 
 instance ActionM Action
@@ -180,6 +182,7 @@ loggedInUser = userState >>= \case
 
 class ActionTempCsvFiles m where
     popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])
+    cleanupTempCsvFiles :: FormData -> m ()
 
 instance ActionTempCsvFiles Action where
     popTempCsvFile filePath = Action . liftIO . (`catch` exceptToLeft) $
@@ -188,3 +191,5 @@ instance ActionTempCsvFiles Action where
         exceptToLeft (SomeException e) = return . Left . show $ e
         decodeCsv = Csv.decodeWith opts Csv.HasHeader
         opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
+
+    cleanupTempCsvFiles = Action . liftIO . releaseFormTempFiles

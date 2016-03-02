@@ -26,7 +26,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -97,7 +97,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -148,7 +148,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -198,7 +198,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
