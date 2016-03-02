@@ -82,6 +82,7 @@ defaultClassQuorum = 3
 data PermissionContext
     = PermUser
     | PermClass
+    | PermUnknown
   deriving (Eq, Show)
 
 data Tab
@@ -115,39 +116,32 @@ instance ToTab PageAdminSettingsEventsProtocol where
 
 -- * Duration
 
-{-
--- | Render Form based Views
-class FormPageView p where
-    type FormPageResult p :: *
-    -- | The form action used in form generation
-    formAction :: p -> UriPath
-    -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
-    -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
--}
-
 adminFrame :: (Monad m, ToTab tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
     div_ [id_ "tabs"] . ul_ [] $ do
         li_ [] $ tabLink tab TabDurations
         li_ [] $ tabLink tab TabQuorum
-        li_ [] $ tabLink tab (TabGroupsAndPermissions PermUser)
-        li_ [] $ tabLink tab (TabGroupsAndPermissions PermClass)
+        if isPermissionsTab tab
+            then do
+                li_ [] $ tabLink tab (TabGroupsAndPermissions PermUser)
+                li_ [] $ tabLink tab (TabGroupsAndPermissions PermClass)
+            else do
+                li_ [] $ tabLink tab (TabGroupsAndPermissions PermUnknown)
         li_ [] $ tabLink tab TabEventsProtocol
     div_ bdy
   where
     tab = toTab t
+    isPermissionsTab (TabGroupsAndPermissions _) = True
+    isPermissionsTab _ = False
 
 tabLink :: Monad m => Tab -> Tab -> HtmlT m ()
 tabLink curTab targetTab =
   case targetTab of
     TabDurations -> go "tab-duration"    U.AdminDuration "Dauer der Phasen"
     TabQuorum    -> go "tab-qourum"      U.AdminQuorum   "Quorum"
-    TabGroupsAndPermissions PermUser  -> go "tab-groups-perms-user"  U.AdminAccess "Gruppen & Nutzer: Nutzer" -- FIXME
-    TabGroupsAndPermissions PermClass -> go "tab-groups-perms-class" U.AdminAccess "Gruppen & Nutzer: Klasse" -- FIXME
+    TabGroupsAndPermissions PermUnknown -> go "tab-groups-perms"     U.AdminAccess "Gruppen & Nutzer"
+    TabGroupsAndPermissions PermUser  -> go "tab-groups-perms-user"  U.AdminAccess "Nutzer" -- FIXME
+    TabGroupsAndPermissions PermClass -> go "tab-groups-perms-class" U.AdminAccess "Klasse" -- FIXME
     TabEventsProtocol -> go "tab-events" U.AdminEvent    "Beauftragen Stimmen"
   where
     go ident uri =
@@ -256,7 +250,7 @@ class FormPageView p where
 
 adminSettingsGroupsAndPermissions
     :: ActionM m => ServerT (FormHandler PageAdminSettingsGroupsAndPermissions ST) m
-adminSettingsGroupsAndPermissions = undefined
+adminSettingsGroupsAndPermissions = error "adminSettingsGroupsAndPermissions"
 
 -- * User create and import
 
@@ -276,13 +270,13 @@ class FormPageView p where
 
 adminSettingsUserCreateAndImport
     :: (ActionM m) => ServerT (FormHandler PageAdminSettingsUserCreateAndImport ST) m
-adminSettingsUserCreateAndImport = undefined
+adminSettingsUserCreateAndImport = error "adminSettingsUserCreateAndImport"
 
 -- * Events protocol
 
 instance ToHtml PageAdminSettingsEventsProtocol where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = semanticDiv p $ do
+    toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = adminFrame p . semanticDiv p $ do
         div_ $ do
             p_ "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
             -- FIXME: Clientside JavaScript. Change the download button link
