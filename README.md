@@ -167,7 +167,7 @@ For more info on this, check out `./docs/PageCreatorHOWTO.md`.
 
 SASS is used for styling, use the following command to compile the SASS
 to CSS
- 
+
 You need the sass compiler installed http://sass-lang.com/install
 
 ```shell
