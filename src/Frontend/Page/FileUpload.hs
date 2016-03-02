@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -75,4 +74,4 @@ batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
             Left msg -> throwError $
                 err500 { errBody = "parsing upload FAILED: "    <> cs msg }
             Right records -> throwError $
-                err500 { errBody = "parsing upload SUCCEEDED: " <> (cs $ show (schoolcl, records)) }
+                err500 { errBody = "parsing upload SUCCEEDED: " <> cs (show (schoolcl, records)) }
