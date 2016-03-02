@@ -20,11 +20,12 @@
 
 .main-header-user {
     float: right;
+    cursor: pointer;
 }
 
 .main-header-menu,
 .main-header-user {
-    li {
+    > li {
         @include rem(margin-right, 25px);
 
         a {
@@ -78,6 +79,12 @@ $arrow-width: 6px;
             }
         }
     }
+
+    .m-open & {
+        .pop-menu-list {
+            opacity: 1;
+        }
+    }
 }
 
 .pop-menu-list {
@@ -121,6 +128,7 @@ $arrow-width: 6px;
 .pop-menu-list-item {
     @include rem(font-size, $font-size-small);
     border-bottom: 1px solid $color-grey-mid;
+    line-height: 1;
 
     a {
         @include rem(padding, 5px 10px);
