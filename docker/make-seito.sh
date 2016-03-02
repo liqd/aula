@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This is called from Makefile rule `seito-docker-hack`.
+
 # NOTES:
 # - not sure why i have to do this, but it helped
 # - the mkdir-rmdir-dance creates the entire hierarchy of directories
