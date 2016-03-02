@@ -76,7 +76,10 @@ instance Arbitrary PageAdminSettingsQuorum where
     arbitrary = PageAdminSettingsQuorum <$> arb
 
 instance Arbitrary PageAdminSettingsGroupsAndPermissions where
-    arbitrary = pure PageAdminSettingsGroupsAndPermissions
+    arbitrary = oneof
+        [ PageAdminSettingsGPUsers <$> arb
+        , PageAdminSettingsGPClasses <$> arb
+        ]
 
 {-
 instance Arbitrary PageAdminSettingsUserCreateAndImport where
@@ -225,6 +228,9 @@ instance Arbitrary Durations where
 instance Arbitrary Quorums where
     arbitrary = Quorums <$> arb <*> arb
 
+instance Arbitrary PermissionContext where
+    arbitrary = elements [PermUser, PermClass]
+
 -- FIXME: instance Arbitrary Delegation
 
 -- FIXME: instance Arbitrary DelegationContext
@@ -290,12 +296,14 @@ instance Arbitrary P.UserPs where
     arbitrary = elements [ P.UserIdeas, P.UserDelegations]
 
 instance Arbitrary P.AdminPs where
-    arbitrary = elements
-        [ P.AdminDuration
-        , P.AdminQuorum
-        , P.AdminAccess
-        , P.AdminUser
-        , P.AdminEvent
+    arbitrary = oneof
+        [ elements
+            [ P.AdminDuration
+            , P.AdminQuorum
+            , P.AdminUser
+            , P.AdminEvent
+            ]
+        , P.AdminAccess <$> arb
         ]
 
 ----------------------------------------------------------------------

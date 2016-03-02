@@ -2,15 +2,17 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- {-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror #-}
 
 module Frontend.Page.Admin
 where
 
+import Data.Maybe (mapMaybe)
+
 import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
 
-import qualified Data.UriPath as U (onclick_)
+import qualified Data.UriPath as U (href_, onclick_)
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -35,9 +37,13 @@ instance Page PageAdminSettingsQuorum where
     isPrivatePage _ = True
 
 -- | 11.3 Admin settings: Manage groups & permissions
-data PageAdminSettingsGroupsAndPermissions =
-    PageAdminSettingsGroupsAndPermissions
+data PageAdminSettingsGroupsAndPermissions
+  = PageAdminSettingsGPUsers   [User]
+  | PageAdminSettingsGPClasses [SchoolClass]
   deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGroupsAndPermissions where
+    isPrivatePage _ = True
 
 -- | 11.3 Admin settings: User creation & user import
 data PageAdminSettingsUserCreateAndImport =
@@ -79,16 +85,10 @@ defaultClassQuorum = 3
 ----------------------------------------------------------------------
 -- tabs
 
-data PermissionContext
-    = PermUser
-    | PermClass
-    | PermUnknown
-  deriving (Eq, Show)
-
 data Tab
     = TabDurations
     | TabQuorum
-    | TabGroupsAndPermissions PermissionContext
+    | TabGroupsAndPermissions (Maybe PermissionContext)
     | TabEventsProtocol
   deriving (Eq, Show)
 
@@ -105,7 +105,8 @@ instance ToTab PageAdminSettingsQuorum where
 
 -- | 11.3 Admin settings: Manage groups & permissions
 instance ToTab PageAdminSettingsGroupsAndPermissions where
-    toTab _ = TabGroupsAndPermissions PermUser -- FIXME: Real permission context
+    toTab (PageAdminSettingsGPUsers _users) = TabGroupsAndPermissions (Just PermUser)
+    toTab (PageAdminSettingsGPClasses _classes) = TabGroupsAndPermissions (Just PermClass)
 
 -- | 11.4 Admin settings: Events protocol
 instance ToTab PageAdminSettingsEventsProtocol where
@@ -123,10 +124,11 @@ adminFrame t bdy = do
         li_ [] $ tabLink tab TabQuorum
         if isPermissionsTab tab
             then do
-                li_ [] $ tabLink tab (TabGroupsAndPermissions PermUser)
-                li_ [] $ tabLink tab (TabGroupsAndPermissions PermClass)
+                li_ [] $ span_ "Gruppen & Nutzer"
+                li_ [] $ tabLink tab (TabGroupsAndPermissions (Just PermUser))
+                li_ [] $ tabLink tab (TabGroupsAndPermissions (Just PermClass))
             else do
-                li_ [] $ tabLink tab (TabGroupsAndPermissions PermUnknown)
+                li_ [] $ tabLink tab (TabGroupsAndPermissions Nothing)
         li_ [] $ tabLink tab TabEventsProtocol
     div_ bdy
   where
@@ -139,9 +141,9 @@ tabLink curTab targetTab =
   case targetTab of
     TabDurations -> go "tab-duration"    U.AdminDuration "Dauer der Phasen"
     TabQuorum    -> go "tab-qourum"      U.AdminQuorum   "Quorum"
-    TabGroupsAndPermissions PermUnknown -> go "tab-groups-perms"     U.AdminAccess "Gruppen & Nutzer"
-    TabGroupsAndPermissions PermUser  -> go "tab-groups-perms-user"  U.AdminAccess "Nutzer" -- FIXME
-    TabGroupsAndPermissions PermClass -> go "tab-groups-perms-class" U.AdminAccess "Klasse" -- FIXME
+    TabGroupsAndPermissions Nothing          -> go "tab-groups-perms"       (U.AdminAccess PermUser)  "Gruppen & Nutzer"
+    TabGroupsAndPermissions (Just PermUser)  -> go "tab-groups-perms-user"  (U.AdminAccess PermUser)  "Nutzer"
+    TabGroupsAndPermissions (Just PermClass) -> go "tab-groups-perms-class" (U.AdminAccess PermClass) "Klasse"
     TabEventsProtocol -> go "tab-events" U.AdminEvent    "Beauftragen Stimmen"
   where
     go ident uri =
@@ -234,39 +236,58 @@ adminQourum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
 
 -- * Groups and permisisons
 
-{-
--- | Render Form based Views
-class FormPageView p where
-    type FormPageResult p :: *
-    -- | The form action used in form generation
-    formAction :: p -> UriPath
-    -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
-    -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
--}
+instance ToHtml PageAdminSettingsGroupsAndPermissions where
+    toHtml = toHtmlRaw
+
+    toHtmlRaw p@(PageAdminSettingsGPUsers users) =
+        adminFrame p . semanticDiv p $ do
+            table_ $ do
+                thead_ . tr_ $ do
+                    th_ "Avarar"
+                    th_ "NAME"
+                    th_ "KLASSE"
+                    th_ "ROLE SELECTION"
+                    th_ $ button_ [U.onclick_ U.ListSpaces] "NUTZER ANLEGEN"
+                    th_ $ input_ [value_ "Nutzersuche"]
+                -- FIXME: Make the table fetch some users with AJAX
+                tbody_ . forM_ users $ \user -> tr_ $ do
+                    td_ $ img_ [src_ $ user ^. userAvatar]
+                    td_ . toHtml $ user ^. userLogin
+                    td_ "Klasse ????" -- FIXME: Fetch the user's class if exists
+                    td_ "Role ???" -- FIXME: Fetch the user's role
+                    td_ "" -- THIS SHOULD LEFT EMPTY
+                    td_ $ a_ [U.href_ U.ListSpaces] "bearbeiten"
+
+    toHtmlRaw p@(PageAdminSettingsGPClasses classes) =
+        adminFrame p . semanticDiv p $ do
+            button_ [U.onclick_ U.ListSpaces] "KLASSE ANLEGEN"
+            table_ $ do
+                thead_ . tr_ $ do
+                    th_ "KLASSE"
+                    th_ $ button_ [U.onclick_ U.ListSpaces] "KLASSE ANLEGEN"
+                    th_ $ input_ [value_ "Klassensuche"]
+                tbody_ . forM_ classes $ \clss -> tr_ $ do
+                    th_ . toHtml $ clss ^. className
+                    th_ ""
+                    th_ $ a_ [U.href_ U.ListSpaces] "bearbeiten"
+
 
 adminSettingsGroupsAndPermissions
-    :: ActionM m => ServerT (FormHandler PageAdminSettingsGroupsAndPermissions ST) m
-adminSettingsGroupsAndPermissions = error "adminSettingsGroupsAndPermissions"
+    :: ActionM m => PermissionContext -> m (Frame PageAdminSettingsGroupsAndPermissions)
+
+adminSettingsGroupsAndPermissions PermUser =
+    -- FIXME: Fetch limited number of users.
+    makeFrame =<< PageAdminSettingsGPUsers <$> persistent getUsers
+
+adminSettingsGroupsAndPermissions PermClass =
+    -- FIXME: Store the classes in different table?
+    makeFrame =<< PageAdminSettingsGPClasses . mapMaybe toClass <$> persistent getSpaces
+  where
+    toClass (ClassSpace clss) = Just clss
+    toClass _                 = Nothing
+
 
 -- * User create and import
-
-{-
--- | Render Form based Views
-class FormPageView p where
-    type FormPageResult p :: *
-    -- | The form action used in form generation
-    formAction :: p -> UriPath
-    -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
-    -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
--}
 
 adminSettingsUserCreateAndImport
     :: (ActionM m) => ServerT (FormHandler PageAdminSettingsUserCreateAndImport ST) m

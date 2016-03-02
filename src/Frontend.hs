@@ -207,7 +207,7 @@ type AulaAdmin =
        -- quorum
   :<|> "quorum" :> FormHandler PageAdminSettingsQuorum ST
        -- groups and permissions
-  :<|> "access" :> FormHandler PageAdminSettingsGroupsAndPermissions ST
+  :<|> "access" :> Capture "context" PermissionContext :> GetH (Frame PageAdminSettingsGroupsAndPermissions)
        -- user creation and import
   :<|> "user"   :> FormHandler PageAdminSettingsUserCreateAndImport ST
        -- event log
