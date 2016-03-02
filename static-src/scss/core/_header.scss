@@ -5,17 +5,135 @@
     @include rem(height, $header-height);
 }
 
-.site-logo-icon:before {
-    @include rem(font-size, 47px);
-    color: $color-brand1;
-    line-height: $header-height;
-}
-
 .main-header-menu,
+.main-header-menu li,
 .site-logo {
     float: left;
 }
 
+.site-logo {
+    @include rem(height, $header-height);
+    @include rem(margin-right, 40px);
+    @include rem(width, 127px);
+    @include svg(aula-logo, no-repeat left center, contain);
+}
+
 .main-header-user {
     float: right;
+}
+
+.main-header-menu,
+.main-header-user {
+    li {
+        @include rem(margin-right, 25px);
+
+        a {
+            color: $color-text;
+            display: block;
+            font-weight: bold;
+            line-height: $header-height;
+
+            &.m-selected, &:focus, &:hover {
+                color: $color-link;
+                text-decoration: none;
+            }
+        }
+    }
+}
+
+$avatar-size: 40px;
+
+.user-avatar {
+    @include rem(border-radius, 20px);
+    @include rem(height, $avatar-size);
+    @include rem(margin-right, 12px);
+    @include rem(margin-top, (($header-height - $avatar-size) / 2));
+    @include rem(width, $avatar-size);
+    background: $color-grey-mid;
+    float: right;
+}
+
+$arrow-width: 6px;
+
+.pop-menu {
+    cursor: pointer;
+    display: inline-block;
+    line-height: $header-height;
+    outline: 0;
+    position: relative;
+
+    & {
+        float: right;
+
+        .pop-menu-list {
+            right: -$arrow-width - 2px;
+
+            >:after, >:before {
+                @include rem(right, $arrow-width + 3px);
+                left: auto;
+            }
+
+            >:before {
+                @include rem(margin, 0 -1px 0);
+            }
+        }
+    }
+}
+
+.pop-menu-list {
+    min-width: 105px;
+    box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.05);
+    transition: visibility 0.3s;
+    border-radius: 3px;
+    opacity: 0;
+    position: absolute;
+    background: #fff;
+    border: 1px solid $color-grey-mid;
+    visibility: invisible;
+    z-index: 1;
+
+    >:after, >:before {
+        @include rem(left, $arrow-width + 3px);
+        bottom: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+    }
+
+    >:after {
+        @include rem(border-width, $arrow-width);
+        @include rem(margin-left, -$arrow-width);
+        border-color: rgba(255, 255, 255, 0);
+        border-bottom-color: #fff;
+    }
+
+    >:before {
+        @include rem(border-width, $arrow-width + 1px);
+        @include rem(margin, 0 0 0 (-$arrow-width - 1px));
+        border-color: rgba(229, 229, 229, 0);
+        border-bottom-color: $color-grey-mid;
+    }
+}
+
+.pop-menu-list-item {
+    @include rem(font-size, $font-size-small);
+    border-bottom: 1px solid $color-grey-mid;
+
+    a {
+        @include rem(padding, 5px 10px);
+        color: $color-text;
+        display: block;
+        text-decoration: none;
+
+        &:hover, &:focus {
+            color: $color-link;
+        }
+    }
+}
+
+.pop-menu-list-icon {
+    @include rem(margin-right, 5px);
 }

@@ -12,6 +12,16 @@
     }
 }
 
+//(aula-logo, no-repeat left center, contain);
+@mixin svg($name, $bg-properties: no-repeat, $bg-size: initial) {
+    background: url(../images/#{$name}.png) $bg-properties;
+    background-size: $bg-size;
+
+    .svginline & {
+        background-image: url(../svg/#{$name}.svg);
+    }
+}
+
 $rem-baseline: $font-size-normal !default;
 $rem: true !default;
 $rem-px-only: false !default;

@@ -132,23 +132,39 @@ pageFrame' extraHeaders mUser bdy = do
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
-    span_ [class_ "site-logo", title_ "aula"] $ do
-        i_ [class_ "icon-aula site-logo-icon"] ""
-
+    a_ [class_ "site-logo", title_ "aula", href_ P.ListSpaces] nil
+-- TODO: wait for PR#137 then change to P.top
     case mUser of
         Just _usr -> do
             ul_ [class_ "main-header-menu"] $ do
                 li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
                 li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
-                li_ $ a_ [href_ P.Logout] "Logout"
         Nothing -> nil
 
-    ul_ [class_ "main-header-user"] $ do
+-- TODO: please add class m-selected to currently selected menu item
+    div_ [class_ "main-header-user"] $ do
         case mUser of
             Just usr -> do
-                li_ (toHtml $ "Hi " <> (usr ^. userLogin))
+                div_ [class_ "pop-menu"] $ do
+                        "Hi " <> (usr ^. userLogin . html)
+                        ul_ [class_ "pop-menu-list"] $ do
+-- TODO: Fix URLs
+                            li_ $ a_ [class_ "pop-menu-list-item pop-menu-list-item-view", href_ P.ListSpaces] $ do
+                                i_ [class_ "pop-menu-list-icon"] nil
+                                "Profil anzeigen"
+                            li_ $ a_ [class_ "pop-menu-list-item pop-menu-list-item-settings", href_ P.ListSpaces] $ do
+                                i_ [class_ "pop-menu-list-icon"] nil
+                                "Einstellung"
+                            li_ $ a_ [class_ "pop-menu-list-item pop-menu-list-item-process", href_ P.ListSpaces] $ do
+                                i_ [class_ "pop-menu-list-icon"] nil
+                                "Prozessverwaltung"
+                            li_ $ a_ [class_ "pop-menu-list-item pop-menu-list-item-logout", href_ P.Logout] $ do
+                                i_ [class_ "pop-menu-list-icon"] nil
+                                "Logout"
+
             Nothing -> nil
-        li_ $ img_ [src_ $ P.TopStatic "the_avatar"]
+        div_ [class_ "user-avatar"] nil
+-- TODO: if statement - if image exists then make it a child of this div
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
@@ -159,6 +175,7 @@ footerMarkup = do
             li_ $ a_ [href_ P.Imprint] "Impressum"
         span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
     script_ [src_ $ P.TopStatic "third-party/modernizr-custom.js"]
+    script_ [src_ $ P.TopStatic "js/custom.js"]
 
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
