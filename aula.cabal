@@ -247,11 +247,12 @@ test-suite spec
     , servant-server
     , string-conversions
     , text
-    , transformers
+    , wreq
   other-modules:
       AllModulesSpec
       Api.PersistentSpec
       Frontend.HtmlSpec
+      Frontend.Page.FileUploadSpec
       Frontend.PathSpec
       FrontendSpec
       TypesSpec

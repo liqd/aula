@@ -95,4 +95,4 @@ tests:
       - servant-server
       - string-conversions
       - text
-      - transformers
+      - wreq
