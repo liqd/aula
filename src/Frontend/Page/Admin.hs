@@ -160,26 +160,21 @@ tabLink curTab targetTab =
 instance FormPageView PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations
 
-    -- | The form action used in form generation
     formAction _ = relPath $ U.Admin U.AdminDuration
 
-    -- | Calculates a redirect address from the given page
-    -- FIXME: Do we redirecto to the same page???
+    -- FIXME: Do we redirect to the same page???
     redirectOf _ = relPath $ U.Admin U.AdminDuration
 
-    -- | Generates a Html view from the given page
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
             ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
-            (("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur)))
+            ("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur))
       where
         mkDurations e v =
             Durations <$> (DurationDays <$> e) <*> (DurationDays <$> v)
         readPeriod (DurationDays d) (DurationDays v) =
             fromMaybe d . readMaybe <$> DF.string (Just (show v))
 
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    -- formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
