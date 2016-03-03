@@ -17,7 +17,7 @@ ghc-options: -Wall
 
 dependencies:
     - base >=4.8 && <4.9
-    - thentos-core
+    - thentos-core >=0.3.0
     - aeson
     - binary
     - bytestring
@@ -52,6 +52,7 @@ dependencies:
     - wai
     - wai-app-static
     - warp
+    - vector
 
 library:
   source-dirs: src
@@ -74,15 +75,6 @@ executables:
       - fsnotify
       - hspec
 
-  aula-import-users:
-    main: ImportUsers.hs
-    source-dirs: exec
-    other-modules:
-    dependencies:
-      - aula
-      - nonce
-      - vector
-
 tests:
   spec:
     main: Spec.hs
@@ -103,4 +95,4 @@ tests:
       - servant-server
       - string-conversions
       - text
-      - transformers
+      - wreq

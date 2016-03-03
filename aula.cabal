@@ -26,7 +26,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -61,6 +61,7 @@ library
     , wai
     , wai-app-static
     , warp
+    , vector
   exposed-modules:
       Action
       Api
@@ -75,6 +76,7 @@ library
       Frontend.Page
       Frontend.Page.Comment
       Frontend.Page.Delegation
+      Frontend.Page.FileUpload
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
@@ -88,56 +90,6 @@ library
       Types
   default-language: Haskell2010
 
-executable aula-import-users
-  main-is: ImportUsers.hs
-  hs-source-dirs:
-      exec
-  ghc-options: -Wall
-  build-depends:
-      base >=4.8 && <4.9
-    , thentos-core
-    , aeson
-    , binary
-    , bytestring
-    , case-insensitive
-    , cassava
-    , containers
-    , cookie
-    , digestive-functors
-    , digestive-functors-lucid
-    , directory
-    , filepath
-    , functor-infix
-    , http-types
-    , lens
-    , lucid
-    , mtl
-    , postgresql-simple
-    , pretty-show
-    , process
-    , QuickCheck
-    , quickcheck-instances
-    , safecopy
-    , scrypt
-    , servant
-    , servant-lucid
-    , servant-server
-    , stm
-    , string-conversions
-    , text
-    , time
-    , transformers
-    , wai
-    , wai-app-static
-    , warp
-    , aula
-    , nonce
-    , vector
-  other-modules:
-      Aula
-      RenderHtml
-  default-language: Haskell2010
-
 executable aula-html-dummies
   main-is: RenderHtml.hs
   hs-source-dirs:
@@ -145,7 +97,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -180,13 +132,13 @@ executable aula-html-dummies
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
     , extra
     , fsnotify
     , hspec
   other-modules:
       Aula
-      ImportUsers
   default-language: Haskell2010
 
 executable aula-server
@@ -196,7 +148,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -231,9 +183,9 @@ executable aula-server
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
   other-modules:
-      ImportUsers
       RenderHtml
   default-language: Haskell2010
 
@@ -246,7 +198,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core
+    , thentos-core >=0.3.0
     , aeson
     , binary
     , bytestring
@@ -281,6 +233,7 @@ test-suite spec
     , wai
     , wai-app-static
     , warp
+    , vector
     , aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
@@ -294,11 +247,12 @@ test-suite spec
     , servant-server
     , string-conversions
     , text
-    , transformers
+    , wreq
   other-modules:
       AllModulesSpec
       Api.PersistentSpec
       Frontend.HtmlSpec
+      Frontend.Page.FileUploadSpec
       Frontend.PathSpec
       FrontendSpec
       TypesSpec
@@ -315,6 +269,7 @@ test-suite spec
       Frontend.Page
       Frontend.Page.Comment
       Frontend.Page.Delegation
+      Frontend.Page.FileUpload
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
