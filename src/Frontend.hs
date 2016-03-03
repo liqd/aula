@@ -217,7 +217,7 @@ type AulaAdmin =
 aulaAdmin :: ServerT AulaAdmin Action
 aulaAdmin =
        Page.adminDurations
-  :<|> Page.adminQourum
+  :<|> Page.adminQuorum
   :<|> Page.adminSettingsGroupsAndPermissions
   :<|> Page.adminSettingsUserCreateAndImport
   :<|> Page.adminEventsProtocol

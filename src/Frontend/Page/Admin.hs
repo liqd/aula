@@ -180,7 +180,7 @@ instance FormPageView PageAdminSettingsDurations where
         semanticDiv p $ do
             DF.form v fa $ do
                 div_ $ do
-                    "Wie viele Tage soll die Ausarbaitungphase dauern?" >> br_ []
+                    "Wie viele Tage soll die Ausarbeitungphase dauern?" >> br_ []
                     DF.inputText "elab-duration" v >> "Tage" >> br_ []
                 div_ $ do
                     "Wie viele Tage soll die Abstimmungphase dauren?" >> br_ []
@@ -200,7 +200,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
         Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
 
--- * Qourom
+-- * Quorom
 
 instance FormPageView PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
@@ -226,8 +226,8 @@ instance FormPageView PageAdminSettingsQuorum where
                     DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
-adminQourum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
-adminQourum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
+adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
+adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
   where
     saveQuorum (Quorums school clss) = persistent $ do
         modifyDb dbSchoolQuorum (const school)
