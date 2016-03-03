@@ -260,9 +260,9 @@ phaseName = \case
 -- | FIXME: introduce newtypes 'UserLogin', 'UserFirstName', 'UserLastName'?
 data User = User
     { _userMeta      :: MetaInfo User
-    , _userLogin     :: ST
-    , _userFirstName :: ST
-    , _userLastName  :: ST
+    , _userLogin     :: UserLogin
+    , _userFirstName :: UserFirstName
+    , _userLastName  :: UserLastName
     , _userAvatar    :: URL
     , _userGroups    :: [Group]  -- ^ (could be a set)
     , _userPassword  :: UserPass
@@ -271,6 +271,15 @@ data User = User
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic User
+
+newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+
+newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+
+newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
 
 -- FIXME: Temporary hack to be able to save users.
 type instance Proto User = User
@@ -332,7 +341,7 @@ instance HasUriPart (AUID a) where
 data MetaInfo a = MetaInfo
     { _metaId              :: AUID a
     , _metaCreatedBy       :: AUID User
-    , _metaCreatedByLogin  :: ST
+    , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
@@ -441,6 +450,9 @@ instance Binary SchoolClass
 instance Binary Topic
 instance Binary UpDown
 instance Binary User
+instance Binary UserLogin
+instance Binary UserFirstName
+instance Binary UserLastName
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -463,6 +475,9 @@ makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
+makeLenses ''UserLogin
+makeLenses ''UserFirstName
+makeLenses ''UserLastName
 
 class HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
@@ -470,7 +485,7 @@ class HasMetaInfo a where
     _Id             = metaInfo . metaId
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy
-    createdByLogin  :: Lens' a ST
+    createdByLogin  :: Lens' a UserLogin
     createdByLogin  = metaInfo . metaCreatedByLogin
     createdByAvatar :: Lens' a URL
     createdByAvatar = metaInfo . metaCreatedByAvatar

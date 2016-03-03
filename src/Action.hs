@@ -62,7 +62,7 @@ import Test.QuickCheck (arbitrary, generate)
 -- FIXME: Figure out which information is needed here.
 data UserState
     = UserLoggedOut
-    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
+    | UserLoggedIn { _username :: UserLogin, _sessionCookie :: ST }
 
 makeLenses ''UserState
 
@@ -92,7 +92,7 @@ instance ActionPersist Action where
 
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
-    login  :: ST -> m ()
+    login  :: UserLogin -> m ()
     -- | Read the actual user state
     userState :: m UserState
     -- | Make the user log out
@@ -106,7 +106,7 @@ instance ActionUserHandler Action where
     userState = get
 
     logout = do
-        use username >>= persistent . logoutUser
+        persistent logoutUser
         put UserLoggedOut
 
 class MonadError ActionExcept m => ActionError m
@@ -170,7 +170,7 @@ modifyCurrentUser f =
 ----------------------------------------------------------------------
 -- Action Helpers
 
-loggedInUser :: (ActionUserHandler m) => m ST
+loggedInUser :: (ActionUserHandler m) => m UserLogin
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
     UserLoggedIn user _session -> return user

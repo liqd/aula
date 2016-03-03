@@ -73,7 +73,6 @@ import Data.Foldable (find, for_)
 import Data.Map (Map)
 import Data.Maybe (isNothing)
 import Data.Set (Set)
-import Data.String.Conversions (ST)
 import Data.Time.Clock (getCurrentTime)
 import Servant.Server ((:~>)(Nat))
 
@@ -221,7 +220,7 @@ addTopic pt = do
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
-findUserByLogin :: ST -> Persist (Maybe User)
+findUserByLogin :: UserLogin -> Persist (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
 findTopic :: AUID Topic -> Persist (Maybe Topic)
@@ -241,11 +240,11 @@ findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == sp
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
-loginUser :: ST -> Persist ()
+loginUser :: UserLogin -> Persist ()
 loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
 
-logoutUser :: ST -> Persist ()
-logoutUser _login = modifyDb dbCurrentUser $ const Nothing
+logoutUser :: Persist ()
+logoutUser = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
 
@@ -260,8 +259,8 @@ currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 instance FromProto User where
     fromProto u _ = u
 
-adminUsernameHack :: ST
-adminUsernameHack = "admin"
+adminUsernameHack :: UserLogin
+adminUsernameHack = UserLogin "admin"
 
 -- | Add the first user to an empty database.  AUID is set to 0.
 --
