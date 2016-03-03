@@ -155,7 +155,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                                 "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"] $ a_ [href_ P.ListSpaces] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
-                                "Einstellung"
+                                "Einstellungen"
                             li_ [class_ "pop-menu-list-item"] $ a_ [href_ P.ListSpaces] $ do
                                 i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                 "Prozessverwaltung"
