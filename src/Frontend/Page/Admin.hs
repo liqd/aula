@@ -250,7 +250,7 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
                     th_ $ input_ [value_ "Nutzersuche"]
                 -- FIXME: Make the table fetch some users with AJAX
                 tbody_ . forM_ users $ \user -> tr_ $ do
-                    td_ $ img_ [src_ $ user ^. userAvatar]
+                    td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin
                     td_ "Klasse ????" -- FIXME: Fetch the user's class if exists
                     td_ "Role ???" -- FIXME: Fetch the user's role
