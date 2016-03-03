@@ -132,8 +132,7 @@ pageFrame' extraHeaders mUser bdy = do
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
-    a_ [class_ "site-logo", title_ "aula", href_ P.ListSpaces] nil
--- TODO: wait for PR#137 then change to P.top
+    a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
     case mUser of
         Just _usr -> do
             ul_ [class_ "main-header-menu"] $ do
