@@ -75,9 +75,9 @@ data Quorums = Quorums
 ----------------------------------------------------------------------
 -- constants
 
-defaultElaborationPeriod, defaultVoringPeriod :: DurationDays
+defaultElaborationPeriod, defaultVotingPeriod :: DurationDays
 defaultElaborationPeriod = 21
-defaultVoringPeriod = 21
+defaultVotingPeriod = 21
 
 defaultSchoolQuorum, defaultClassQuorum :: Int
 defaultSchoolQuorum = 30
@@ -171,7 +171,7 @@ instance FormPageView PageAdminSettingsDurations where
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
             ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
-            (("vote-duration" .: readPeriod defaultVoringPeriod (votingPhase dur)))
+            (("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur)))
       where
         mkDurations e v =
             Durations <$> (DurationDays <$> e) <*> (DurationDays <$> v)
@@ -250,12 +250,12 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
         adminFrame p . semanticDiv p $ do
             table_ $ do
                 thead_ . tr_ $ do
-                    th_ "Avarar"
+                    th_ "AVATAR"
                     th_ "NAME"
                     th_ "KLASSE"
                     th_ "ROLE SELECTION"
                     th_ $ button_ [onclick_ U.ListSpaces] "NUTZER ANLEGEN"
-                    th_ $ input_ [value_ "Nutzersuche"]
+                    th_ $ input_ [value_ "NUTZERSUCHE"]
                 -- FIXME: Make the table fetch some users with AJAX
                 tbody_ . forM_ users $ \user -> tr_ $ do
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
