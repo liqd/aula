@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -10,10 +11,10 @@ where
 import Lucid hiding (href_)
 import Servant
 import Thentos.Prelude
--- import Thentos.Types (parseUserEmail, fromUserEmail)
+import Thentos.Types (parseUserEmail, fromUserEmail)
 
--- import qualified Data.Csv as Csv
--- import qualified Data.Text as ST
+import qualified Data.Csv as Csv
+import qualified Data.Text as ST
 import qualified Text.Digestive as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -58,7 +59,43 @@ instance FormPageView BatchCreateUsers where
 theOnlySchoolYearHack :: Int
 theOnlySchoolYearHack = 2016
 
-type CsvUserRecord = [SBS]
+data CsvUserRecord = CsvUserRecord
+    { _csvUserRecordFirst       :: ST
+    , _csvUserRecordLast        :: ST
+    , _csvUserRecordEmail       :: Maybe ST
+    , _csvUserRecordNick        :: Maybe ST
+    }
+  deriving (Eq, Show)
+
+instance Csv.FromRecord CsvUserRecord where
+    parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
+        <$> parseName 50 1
+        <*> parseName 50 2
+        <*> parseMEmail 3
+        <*> pure (parseMNick 4)
+      where
+        parseName :: (Monad m) => Int -> Int -> m ST
+        parseName maxLength i
+            | length v < i + 1
+                = fail $ "user record too short: " <> show v
+            | ST.length (v !! i) > maxLength
+                = fail $ "user record with overly long column " <> show i <> ": " <> show v
+            | otherwise
+                = pure $ v !! i
+
+        parseMEmail :: (Monad m) => Int -> m (Maybe ST)
+        parseMEmail i
+            | length v < i + 1 = pure Nothing
+            | v !! i == ""     = pure Nothing
+            | otherwise        = case parseUserEmail $ v !! i of
+                Nothing    -> fail $ "user record with bad email address: " <> show v
+                Just email -> pure . Just $ fromUserEmail email
+
+        parseMNick :: Int -> Maybe ST
+        parseMNick i
+            | length v < i + 1 = Nothing
+            | v !! i == ""     = Nothing
+            | otherwise        = Just $ v !! i
 
 batchCreateUsers :: forall m. (ActionTempCsvFiles m, ActionM m)
       => ServerT (FormHandler BatchCreateUsers ST) m
