@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -31,6 +32,7 @@ module Action
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
 
+    , mkNick
     , generateRandomPassphrase
     )
 where
@@ -52,6 +54,8 @@ import Types
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
+import qualified Data.Set as Set
+import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 -- FIXME: Remove. It is scaffolding to generate random data
@@ -203,6 +207,22 @@ decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
 
 ----------------------------------------------------------------------
 -- misc
+
+mkNick :: UserFirstName -> UserLastName -> Action UserLogin
+mkNick (UserFirstName firstn) (UserLastName lastn) = pick (gen firstn lastn)
+  where
+    pick :: [ST] -> Action UserLogin
+    pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< persistent (findUserByLogin l)
+    pick []                    = error "impossible.  (well, unlikely...)"
+
+    gen :: ST -> ST -> [ST]
+    gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise
+
+    mutate :: ST -> ST -> ST
+    mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
+
+    noise :: [ST]
+    noise = Set.toList . Set.fromList $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'b']))
 
 generateRandomPassphrase :: Action UserPass
 generateRandomPassphrase = Action . liftIO $
