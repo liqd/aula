@@ -10,7 +10,7 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Types
-    (module Types
+    ( module Types
     , readMaybe)
 where
 
@@ -50,6 +50,9 @@ readWith Proxy = read
 
 justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
+
+newtype DurationDays = DurationDays { fromDurationDays :: Int }
+  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
 
 
 ----------------------------------------------------------------------
@@ -345,6 +348,31 @@ timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 class Monad m => GenArbitrary m where
     genArbitrary :: Arbitrary a => m a
 
+----------------------------------------------------------------------
+-- admin pages
+
+data PermissionContext
+    = PermUser
+    | PermClass
+  deriving (Eq, Show, Read)
+
+pContextToUriStr :: PermissionContext -> ST
+pContextToUriStr PermUser  = "perm-user"
+pContextToUriStr PermClass = "perm-class"
+
+uriStrToPContext :: ST -> Maybe PermissionContext
+uriStrToPContext "perm-user"  = Just PermUser
+uriStrToPContext "perm-class" = Just PermClass
+uriStrToPContext _            = Nothing
+
+instance FromHttpApiData PermissionContext where
+    parseUrlPiece x =
+        maybe (Left "No parse")
+              Right
+              $ uriStrToPContext (cs x)
+
+instance HasUriPart PermissionContext where
+    uriPart = uriPart . pContextToUriStr
 
 ----------------------------------------------------------------------
 -- boilerplate: binary, lens (alpha order)

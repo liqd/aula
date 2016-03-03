@@ -24,6 +24,7 @@ module Frontend.Core
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
     , showed
+    , tabSelected
     , html
     , redirect
     )
@@ -156,7 +157,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                             li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
-                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ $ P.Admin P.AdminDuration] $ do
                                 i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                 "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Logout] $ do
@@ -178,6 +179,11 @@ footerMarkup = do
     script_ [src_ $ P.TopStatic "third-party/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
+
+tabSelected :: Eq tab => tab -> tab -> ST
+tabSelected curTab targetTab
+    | curTab == targetTab = "tab-selected"
+    | otherwise           = "tab-not-selected"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml

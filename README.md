@@ -13,7 +13,7 @@ in a shell:
 
 ```shell
 # install docker
-docker pull fisx/aula
+docker pull quay.io/liqd/aula
 git clone https://github.com/liqd/aula
 git clone --recursive https://github.com/liqd/thentos
 cd aula

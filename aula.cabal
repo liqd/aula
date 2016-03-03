@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.8.0.
+-- This file has been generated from package.yaml by hpack version 0.10.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -61,7 +61,7 @@ library
     , wai
     , wai-app-static
     , warp
-    , vector
+    , vector ==0.10.12.3
   exposed-modules:
       Action
       Api
@@ -74,6 +74,7 @@ library
       Frontend.Core
       Frontend.Html
       Frontend.Page
+      Frontend.Page.Admin
       Frontend.Page.Comment
       Frontend.Page.Delegation
       Frontend.Page.FileUpload
@@ -88,57 +89,6 @@ library
       Persistent
       Transaction
       Types
-  default-language: Haskell2010
-
-executable aula-html-dummies
-  main-is: RenderHtml.hs
-  hs-source-dirs:
-      exec
-  ghc-options: -Wall
-  build-depends:
-      base >=4.8 && <4.9
-    , thentos-core >=0.3.0
-    , aeson
-    , binary
-    , bytestring
-    , case-insensitive
-    , cassava
-    , containers
-    , cookie
-    , digestive-functors
-    , digestive-functors-lucid
-    , directory
-    , filepath
-    , functor-infix
-    , http-types
-    , lens
-    , lucid
-    , mtl
-    , postgresql-simple
-    , pretty-show
-    , process
-    , QuickCheck
-    , quickcheck-instances
-    , safecopy
-    , scrypt
-    , servant
-    , servant-lucid
-    , servant-server
-    , stm
-    , string-conversions
-    , text
-    , time
-    , transformers
-    , wai
-    , wai-app-static
-    , warp
-    , vector
-    , aula
-    , extra
-    , fsnotify
-    , hspec
-  other-modules:
-      Aula
   default-language: Haskell2010
 
 executable aula-server
@@ -183,10 +133,61 @@ executable aula-server
     , wai
     , wai-app-static
     , warp
-    , vector
+    , vector ==0.10.12.3
     , aula
   other-modules:
       RenderHtml
+  default-language: Haskell2010
+
+executable aula-html-dummies
+  main-is: RenderHtml.hs
+  hs-source-dirs:
+      exec
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <4.9
+    , thentos-core >=0.3.0
+    , aeson
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava
+    , containers
+    , cookie
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , filepath
+    , functor-infix
+    , http-types
+    , lens
+    , lucid
+    , mtl
+    , postgresql-simple
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , safecopy
+    , scrypt
+    , servant
+    , servant-lucid
+    , servant-server
+    , stm
+    , string-conversions
+    , text
+    , time
+    , transformers
+    , wai
+    , wai-app-static
+    , warp
+    , vector ==0.10.12.3
+    , aula
+    , extra
+    , fsnotify
+    , hspec
+  other-modules:
+      Aula
   default-language: Haskell2010
 
 test-suite spec
@@ -233,7 +234,7 @@ test-suite spec
     , wai
     , wai-app-static
     , warp
-    , vector
+    , vector ==0.10.12.3
     , aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
@@ -267,6 +268,7 @@ test-suite spec
       Frontend.Core
       Frontend.Html
       Frontend.Page
+      Frontend.Page.Admin
       Frontend.Page.Comment
       Frontend.Page.Delegation
       Frontend.Page.FileUpload

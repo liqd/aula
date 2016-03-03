@@ -6,6 +6,7 @@ where
 import Frontend.Core as P
 import Frontend.Html as P
 
+import Frontend.Page.Admin      as P
 import Frontend.Page.Comment    as P
 import Frontend.Page.Delegation as P
 import Frontend.Page.FileUpload as P

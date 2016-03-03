@@ -54,6 +54,10 @@ module Api.Persistent
     , dbUserMap
     , dbTopicMap
     , dbCurrentUser
+    , dbElaborationDuration
+    , dbVoteDuration
+    , dbSchoolQuorum
+    , dbClassQuorum
     -- FIXME: Remove hack
     , bootstrapUser
     , adminUsernameHack
@@ -84,12 +88,16 @@ import Test.QuickCheck (generate, arbitrary)
 type AMap a = Map (AUID a) a
 
 data AulaData = AulaData
-    { _dbSpaceSet    :: Set IdeaSpace
-    , _dbIdeaMap     :: AMap Idea
-    , _dbUserMap     :: AMap User
-    , _dbTopicMap    :: AMap Topic
-    , _dbCurrentUser :: Maybe (AUID User)
-    , _dbLastId      :: Integer
+    { _dbSpaceSet            :: Set IdeaSpace
+    , _dbIdeaMap             :: AMap Idea
+    , _dbUserMap             :: AMap User
+    , _dbTopicMap            :: AMap Topic
+    , _dbCurrentUser         :: Maybe (AUID User)
+    , _dbElaborationDuration :: DurationDays
+    , _dbVoteDuration        :: DurationDays
+    , _dbSchoolQuorum        :: Int
+    , _dbClassQuorum         :: Int
+    , _dbLastId              :: Integer
     }
   deriving (Eq, Show, Read)
 
@@ -111,7 +119,7 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil Nothing 0
+emptyAulaData = AulaData nil nil nil nil Nothing 21 21 30 3 0
 
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
   deriving (Functor, Applicative, Monad)

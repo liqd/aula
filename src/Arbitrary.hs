@@ -8,7 +8,14 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
 
-module Arbitrary (topLevelDomains, loremIpsum, generate, arbitrary, arbName) where
+module Arbitrary
+    ( topLevelDomains
+    , loremIpsum
+    , generate
+    , arbitrary
+    , arb
+    , arbName
+    ) where
 
 import Control.Monad (replicateM)
 import Data.Char
@@ -22,6 +29,9 @@ import Types
 import Frontend.Page
 import qualified Frontend.Path as P
 
+
+instance Arbitrary DurationDays where
+    arbitrary = DurationDays <$> arb
 
 ----------------------------------------------------------------------
 -- pages
@@ -69,17 +79,25 @@ instance Arbitrary CreateTopic where
 instance Arbitrary MoveIdeasToTopic where
     arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
 
-instance Arbitrary PageAdminSettingsDurationsAndQuorum where
-    arbitrary = pure PageAdminSettingsDurationsAndQuorum
+instance Arbitrary PageAdminSettingsDurations where
+    arbitrary = PageAdminSettingsDurations <$> arb
+
+instance Arbitrary PageAdminSettingsQuorum where
+    arbitrary = PageAdminSettingsQuorum <$> arb
 
 instance Arbitrary PageAdminSettingsGroupsAndPermissions where
-    arbitrary = pure PageAdminSettingsGroupsAndPermissions
+    arbitrary = oneof
+        [ PageAdminSettingsGPUsers <$> arb
+        , PageAdminSettingsGPClasses <$> arb
+        ]
 
+{-
 instance Arbitrary PageAdminSettingsUserCreateAndImport where
     arbitrary = pure PageAdminSettingsUserCreateAndImport
+-}
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
-    arbitrary = pure PageAdminSettingsEventsProtocol
+    arbitrary = PageAdminSettingsEventsProtocol <$> arb
 
 instance Arbitrary PageDelegateVote where
     arbitrary = pure PageDelegateVote
@@ -211,6 +229,17 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
+----------------------------------------------------------------------
+-- admin
+
+instance Arbitrary Durations where
+    arbitrary = Durations <$> arb <*> arb
+
+instance Arbitrary Quorums where
+    arbitrary = Quorums <$> arb <*> arb
+
+instance Arbitrary PermissionContext where
+    arbitrary = elements [PermUser, PermClass]
 
 -- FIXME: instance Arbitrary Delegation
 
@@ -277,7 +306,15 @@ instance Arbitrary P.UserPs where
     arbitrary = elements [P.UserIdeas, P.UserDelegations]
 
 instance Arbitrary P.AdminPs where
-    arbitrary = elements [P.AdminParams, P.AdminAccess, P.AdminUser, P.AdminEvent]
+    arbitrary = oneof
+        [ elements
+            [ P.AdminDuration
+            , P.AdminQuorum
+            , P.AdminUser
+            , P.AdminEvent
+            ]
+        , P.AdminAccess <$> arb
+        ]
 
 ----------------------------------------------------------------------
 -- general-purpose helpers

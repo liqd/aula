@@ -52,7 +52,7 @@ dependencies:
     - wai
     - wai-app-static
     - warp
-    - vector
+    - vector ==0.10.12.3
 
 library:
   source-dirs: src
