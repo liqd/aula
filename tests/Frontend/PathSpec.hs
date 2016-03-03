@@ -9,7 +9,7 @@ import Data.String.Conversions (cs)
 import Data.Typeable (Typeable, typeOf)
 import Servant.API (FromHttpApiData(parseUrlPiece))
 import Test.Hspec (Spec, describe, it)
-import Test.QuickCheck (Arbitrary, Gen, forAll, property)
+import Test.QuickCheck (Gen, forAll, property)
 import qualified Data.Text as ST
 
 import Arbitrary
@@ -35,8 +35,6 @@ spec = do
     mainGen :: Gen Main
     mainGen = arbitrary
 
-    arb :: Arbitrary a => Gen a
-    arb = arbitrary
 
 -- * UriPath and FromHttpApiData correspondence
 
