@@ -29,7 +29,7 @@ module Action
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
 
       -- * extras
-    , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles)
+    , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
     )
 where
 
@@ -40,8 +40,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Control.Monad.RWS.Lazy
 import Data.Char (ord)
-import Data.Functor.Infix ((<$$>))
-import Data.String.Conversions (ST)
+import Data.String.Conversions (ST, LBS)
 import Persistent
 import Prelude hiding (log)
 import Servant
@@ -185,11 +184,13 @@ class ActionTempCsvFiles m where
     cleanupTempCsvFiles :: FormData -> m ()
 
 instance ActionTempCsvFiles Action where
-    popTempCsvFile filePath = Action . liftIO . (`catch` exceptToLeft) $
-        V.toList <$$> decodeCsv <$> LBS.readFile filePath
+    popTempCsvFile = Action . liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
-        decodeCsv = Csv.decodeWith opts Csv.HasHeader
-        opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
 
     cleanupTempCsvFiles = Action . liftIO . releaseFormTempFiles
+
+decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
+decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
+  where
+    opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
