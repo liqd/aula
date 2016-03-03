@@ -139,7 +139,7 @@ instance PayloadToEnv UserSettingData where
         ["", "new-password1" ] -> pure [TextInput $ fromMaybe "" newpass1]
         ["", "new-password2" ] -> pure [TextInput $ fromMaybe "" newpass2]
       where
-        unEmail (Email e) = e
+        unEmail (UserEmail e) = e
 
 instance PayloadToEnv Durations where
     payloadToEnv _ (Durations elab vote) = \case

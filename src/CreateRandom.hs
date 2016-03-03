@@ -65,7 +65,7 @@ frameUserHack = User
     , _userLastName  = "Name"
     , _userAvatar    = "https://avatar.com"
     , _userGroups    = nil
-    , _userPassword  = EncryptedPass ""
+    , _userPassword  = UserPassInitial ""
     , _userEmail     = Nothing
     }
   where

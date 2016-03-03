@@ -215,15 +215,15 @@ instance Arbitrary User where
 instance Arbitrary Group where
     arbitrary = garbitrary
 
-instance Arbitrary EncryptedPass where
+instance Arbitrary UserPass where
     arbitrary = garbitrary
 
-instance Arbitrary Email where
+instance Arbitrary UserEmail where
     arbitrary = do
         localName  <- arbWord
         domainName <- arbWord
         tld        <- elements topLevelDomains
-        return . Email . mconcat $ [localName, "@", domainName, ".", tld]
+        return . UserEmail . mconcat $ [localName, "@", domainName, ".", tld]
 
 instance Arbitrary UserSettingData where
     arbitrary = UserSettingData

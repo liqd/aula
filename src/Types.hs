@@ -265,8 +265,8 @@ data User = User
     , _userLastName  :: ST
     , _userAvatar    :: URL
     , _userGroups    :: [Group]  -- ^ (could be a set)
-    , _userPassword  :: EncryptedPass
-    , _userEmail     :: Maybe Email
+    , _userPassword  :: UserPass
+    , _userEmail     :: Maybe UserEmail
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -288,14 +288,15 @@ data Group =
 
 instance SOP.Generic Group
 
--- | FIXME: import Crypto.Scrypt (EncryptedPass)
-newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
+data UserPass =
+    UserPassInitial   ST
+  | UserPassEncrypted SBS  -- FIXME: use "Crypto.Scrypt.EncryptedPass"
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic EncryptedPass
+instance SOP.Generic UserPass
 
 -- | FIXME: replace with structured email type.
-newtype Email = Email ST
+newtype UserEmail = UserEmail ST
     deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"
@@ -424,8 +425,8 @@ instance Binary CommentVote
 instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
-instance Binary Email
-instance Binary EncryptedPass
+instance Binary UserPass
+instance Binary UserEmail
 instance Binary Group
 instance Binary Idea
 instance Binary IdeaLike
@@ -447,8 +448,8 @@ makeLenses ''CommentVote
 makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''Document
-makeLenses ''Email
-makeLenses ''EncryptedPass
+makeLenses ''UserPass
+makeLenses ''UserEmail
 makeLenses ''Idea
 makeLenses ''IdeaLike
 makeLenses ''IdeaResult

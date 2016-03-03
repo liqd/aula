@@ -23,7 +23,7 @@ createDB conn = do
     schema <- readFile schemaFile
     void $ execute_ conn (fromString schema)
 
-createUser :: Connection -> ByteString -> Text -> Maybe Email -> IO ()
+createUser :: Connection -> ByteString -> Text -> Maybe UserEmail -> IO ()
 createUser conn pw name email =
     -- TODO: make up password
     void $ execute conn "INSERT INTO users (name, email, password) VALUES (?, ?, ?)" (name, email, pw)
