@@ -10,7 +10,7 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Types
-    (module Types
+    ( module Types
     , readMaybe)
 where
 

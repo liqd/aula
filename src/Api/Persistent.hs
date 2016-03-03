@@ -88,16 +88,16 @@ import Test.QuickCheck (generate, arbitrary)
 type AMap a = Map (AUID a) a
 
 data AulaData = AulaData
-    { _dbSpaceSet    :: Set IdeaSpace
-    , _dbIdeaMap     :: AMap Idea
-    , _dbUserMap     :: AMap User
-    , _dbTopicMap    :: AMap Topic
-    , _dbCurrentUser :: Maybe (AUID User)
-    , _dbElabDuration :: Int
-    , _dbVoteDuration :: Int
-    , _dbSchoolQuorum :: Int
-    , _dbClassQuorum :: Int
-    , _dbLastId      :: Integer
+    { _dbSpaceSet            :: Set IdeaSpace
+    , _dbIdeaMap             :: AMap Idea
+    , _dbUserMap             :: AMap User
+    , _dbTopicMap            :: AMap Topic
+    , _dbCurrentUser         :: Maybe (AUID User)
+    , _dbElabDuration        :: Int
+    , _dbVoteDuration        :: Int
+    , _dbSchoolQuorum        :: Int
+    , _dbClassQuorum         :: Int
+    , _dbLastId              :: Integer
     }
   deriving (Eq, Show, Read)
 

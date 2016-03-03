@@ -293,7 +293,7 @@ instance Arbitrary P.Space where
         ]
 
 instance Arbitrary P.UserPs where
-    arbitrary = elements [ P.UserIdeas, P.UserDelegations]
+    arbitrary = elements [P.UserIdeas, P.UserDelegations]
 
 instance Arbitrary P.AdminPs where
     arbitrary = oneof

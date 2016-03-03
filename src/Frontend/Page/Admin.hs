@@ -9,12 +9,14 @@ where
 
 import Data.Maybe (mapMaybe)
 
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
+
 import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
-import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.Lucid.Html5 as DF
+
 
 ----------------------------------------------------------------------
 -- types
