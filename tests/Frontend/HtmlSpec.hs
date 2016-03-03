@@ -143,8 +143,8 @@ instance PayloadToEnv UserSettingData where
 
 instance PayloadToEnv Durations where
     payloadToEnv _ (Durations elab vote) = \case
-        ["", "elab-duration"] -> pure [TextInput (cs $ show elab)]
-        ["", "vote-duration"] -> pure [TextInput (cs $ show vote)]
+        ["", "elab-duration"] -> pure [TextInput (cs . show . fromDurationDays $ elab)]
+        ["", "vote-duration"] -> pure [TextInput (cs . show . fromDurationDays $ vote)]
 
 instance PayloadToEnv Quorums where
     payloadToEnv _ (Quorums school clss) = \case
