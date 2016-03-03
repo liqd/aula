@@ -1,6 +1,7 @@
 #!/bin/sh
 
-cd /root/aula
+/liqd/aula/.travis/docker-link-stack-workdir.sh
 
-cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-cabal exec -- ghc-pkg list
+cd /liqd/aula
+
+stack exec -- ghc-pkg list
