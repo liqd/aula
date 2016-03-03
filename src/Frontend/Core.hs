@@ -150,16 +150,16 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                         "Hi " <> (usr ^. userLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
 -- TODO: Fix URLs
-                            li_ [class_ "pop-menu-list-item"] $ a_ [href_ P.ListSpaces] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
-                            li_ [class_ "pop-menu-list-item"] $ a_ [href_ P.ListSpaces] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
-                            li_ [class_ "pop-menu-list-item"] $ a_ [href_ P.ListSpaces] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
                                 i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                 "Prozessverwaltung"
-                            li_ [class_ "pop-menu-list-item"] $ a_ [href_ P.Logout] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
                                 "Logout"
 
