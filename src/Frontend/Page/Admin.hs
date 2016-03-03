@@ -75,9 +75,9 @@ data Quorums = Quorums
 ----------------------------------------------------------------------
 -- constants
 
-defaultElaborationPeriod, defaultVoringPeriod :: DurationDays
+defaultElaborationPeriod, defaultVotingPeriod :: DurationDays
 defaultElaborationPeriod = 21
-defaultVoringPeriod = 21
+defaultVotingPeriod = 21
 
 defaultSchoolQuorum, defaultClassQuorum :: Int
 defaultSchoolQuorum = 30
@@ -171,7 +171,7 @@ instance FormPageView PageAdminSettingsDurations where
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
             ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
-            (("vote-duration" .: readPeriod defaultVoringPeriod (votingPhase dur)))
+            (("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur)))
       where
         mkDurations e v =
             Durations <$> (DurationDays <$> e) <*> (DurationDays <$> v)
