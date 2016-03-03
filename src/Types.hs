@@ -51,6 +51,9 @@ readWith Proxy = read
 justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
 
+newtype DurationDays = DurationDays { fromDurationDays :: Int }
+  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
+
 
 ----------------------------------------------------------------------
 -- prototypes for types

@@ -54,7 +54,7 @@ module Api.Persistent
     , dbUserMap
     , dbTopicMap
     , dbCurrentUser
-    , dbElabDuration
+    , dbElaborationDuration
     , dbVoteDuration
     , dbSchoolQuorum
     , dbClassQuorum
@@ -93,8 +93,8 @@ data AulaData = AulaData
     , _dbUserMap             :: AMap User
     , _dbTopicMap            :: AMap Topic
     , _dbCurrentUser         :: Maybe (AUID User)
-    , _dbElabDuration        :: Int
-    , _dbVoteDuration        :: Int
+    , _dbElaborationDuration :: DurationDays
+    , _dbVoteDuration        :: DurationDays
     , _dbSchoolQuorum        :: Int
     , _dbClassQuorum         :: Int
     , _dbLastId              :: Integer

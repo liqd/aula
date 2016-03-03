@@ -61,8 +61,8 @@ instance Page PageAdminSettingsEventsProtocol where
 
 -- | Elaboration and Voting phase durations
 data Durations = Durations
-    { elaborationPhase :: Int -- Days
-    , votingPhase :: Int -- Days
+    { elaborationPhase :: DurationDays
+    , votingPhase      :: DurationDays
     }
   deriving (Eq, Show, Read)
 
@@ -75,7 +75,7 @@ data Quorums = Quorums
 ----------------------------------------------------------------------
 -- constants
 
-defaultElaborationPeriod, defaultVoringPeriod :: Int
+defaultElaborationPeriod, defaultVoringPeriod :: DurationDays
 defaultElaborationPeriod = 21
 defaultVoringPeriod = 21
 
@@ -165,11 +165,14 @@ instance FormPageView PageAdminSettingsDurations where
 
     -- | Generates a Html view from the given page
     makeForm (PageAdminSettingsDurations dur) =
-        Durations
-        <$> ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
-        <*> ("vote-duration" .: readPeriod defaultVoringPeriod (votingPhase dur))
+        mkDurations
+            ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
+            (("vote-duration" .: readPeriod defaultVoringPeriod (votingPhase dur)))
       where
-        readPeriod d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
+        mkDurations e v =
+            Durations <$> (DurationDays <$> e) <*> (DurationDays <$> v)
+        readPeriod (DurationDays d) (DurationDays v) =
+            fromMaybe d . readMaybe <$> DF.string (Just (show v))
 
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     -- formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
@@ -189,12 +192,12 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
   where
     saveDurations :: ActionM m => Durations -> m ()
     saveDurations (Durations elab vote) = persistent $ do
-        modifyDb dbElabDuration (const elab)
-        modifyDb dbVoteDuration (const vote)
+        modifyDb dbElaborationDuration (const elab)
+        modifyDb dbVoteDuration        (const vote)
 
     durations :: ActionM m => m Durations
     durations = persistent $
-        Durations <$> getDb dbElabDuration
+        Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
 
 -- * Qourom
@@ -203,7 +206,6 @@ instance FormPageView PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
 
     formAction _ = relPath $ U.Admin U.AdminQuorum
-
     redirectOf _ = relPath $ U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =

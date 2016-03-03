@@ -23,6 +23,9 @@ import Frontend.Page
 import qualified Frontend.Path as P
 
 
+instance Arbitrary DurationDays where
+    arbitrary = DurationDays <$> arb
+
 ----------------------------------------------------------------------
 -- pages
 
