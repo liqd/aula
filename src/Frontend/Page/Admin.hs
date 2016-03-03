@@ -140,12 +140,16 @@ adminFrame t bdy = do
 tabLink :: Monad m => Tab -> Tab -> HtmlT m ()
 tabLink curTab targetTab =
   case targetTab of
-    TabDurations -> go "tab-duration"    U.AdminDuration "Dauer der Phasen"
-    TabQuorum    -> go "tab-qourum"      U.AdminQuorum   "Quorum"
-    TabGroupsAndPermissions Nothing          -> go "tab-groups-perms"       (U.AdminAccess PermUser)  "Gruppen & Nutzer"
-    TabGroupsAndPermissions (Just PermUser)  -> go "tab-groups-perms-user"  (U.AdminAccess PermUser)  "Nutzer"
-    TabGroupsAndPermissions (Just PermClass) -> go "tab-groups-perms-class" (U.AdminAccess PermClass) "Klasse"
-    TabEventsProtocol -> go "tab-events" U.AdminEvent    "Beauftragen Stimmen"
+    TabDurations -> go "tab-duration"           U.AdminDuration "Dauer der Phasen"
+    TabQuorum    -> go "tab-qourum"             U.AdminQuorum "Quorum"
+    TabGroupsAndPermissions Nothing
+                 -> go "tab-groups-perms"       (U.AdminAccess PermUser) "Gruppen & Nutzer"
+    TabGroupsAndPermissions (Just PermUser)
+                 -> go "tab-groups-perms-user"  (U.AdminAccess PermUser) "Nutzer"
+    TabGroupsAndPermissions (Just PermClass)
+                 -> go "tab-groups-perms-class" (U.AdminAccess PermClass) "Klasse"
+    TabEventsProtocol
+                 -> go "tab-events"             U.AdminEvent "Beauftragen Stimmen"
   where
     go ident uri =
         a_ [ id_ ident
