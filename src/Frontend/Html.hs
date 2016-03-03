@@ -35,46 +35,6 @@ instance ToHtml PageIdeaDetailMoveIdeaToTopic where
     toHtml p = semanticDiv p "PageIdeaDetailMoveIdeaToTopic"
 
 
--- | 11.1 Admin settings: Durations & quorum
-data PageAdminSettingsDurationsAndQuorum =
-    PageAdminSettingsDurationsAndQuorum
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageAdminSettingsDurationsAndQuorum where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsDurationsAndQuorum"
-
-
--- | 11.2 Admin settings: Manage groups & permissions
-data PageAdminSettingsGroupsAndPermissions =
-    PageAdminSettingsGroupsAndPermissions
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageAdminSettingsGroupsAndPermissions where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsGroupsAndPermissions"
-
-
--- | 11.3 Admin settings: User creation & user import
-data PageAdminSettingsUserCreateAndImport =
-    PageAdminSettingsUserCreateAndImport
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageAdminSettingsUserCreateAndImport where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsUserCreateAndImport"
-
-
--- | 11.4 Admin settings: Events protocol
-data PageAdminSettingsEventsProtocol =
-    PageAdminSettingsEventsProtocol
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageAdminSettingsEventsProtocol where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageAdminSettingsEventsProtocol"
-
-
 -- | 12. Delegate vote
 data PageDelegateVote = PageDelegateVote
   deriving (Eq, Show, Read)

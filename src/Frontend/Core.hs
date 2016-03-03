@@ -24,6 +24,7 @@ module Frontend.Core
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
     , showed
+    , tabSelected
     , html
     , redirect
     )
@@ -142,6 +143,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
             ul_ [class_ "main-header-menu"] $ do
                 li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
                 li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+                li_ $ a_ [href_ $ P.Admin P.AdminDuration] "Prozessverwaltung"
                 li_ $ a_ [href_ P.Logout] "Logout"
         Nothing -> nil
 
@@ -162,6 +164,11 @@ footerMarkup = do
         span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
     script_ [src_ $ P.TopStatic "third-party/modernizr-custom.js"]
 
+
+tabSelected :: Eq tab => tab -> tab -> ST
+tabSelected curTab targetTab
+    | curTab == targetTab = "tab-selected"
+    | otherwise           = "tab-not-selected"
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml

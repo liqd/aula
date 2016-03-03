@@ -15,7 +15,7 @@ where
 import Thentos.Prelude
 import Data.UriPath
 
-import Types (AUID, Idea, IdeaSpace, User, Topic, nil)
+import Types (AUID, Idea, IdeaSpace, User, Topic, nil, PermissionContext)
 
 data Top =
     Top
@@ -107,14 +107,16 @@ user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
 
 data AdminPs =
-    AdminParams
-  | AdminAccess
+    AdminDuration
+  | AdminQuorum
+  | AdminAccess PermissionContext
   | AdminUser
   | AdminEvent
   deriving Show
 
 admin :: AdminPs -> UriPath -> UriPath
-admin AdminParams = (</> "params")
-admin AdminAccess = (</> "access")
-admin AdminUser   = (</> "user")
-admin AdminEvent  = (</> "event")
+admin AdminDuration     path = path </> "duration"
+admin AdminQuorum       path = path </> "quorum"
+admin (AdminAccess ctx) path = path </> "access" </> uriPart ctx
+admin AdminUser         path = path </> "user"
+admin AdminEvent        path = path </> "event"

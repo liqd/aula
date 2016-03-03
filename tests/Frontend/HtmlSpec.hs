@@ -48,9 +48,8 @@ spec = do
         , H (arb :: Gen ViewIdea)
         , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
-        , H (arb :: Gen PageAdminSettingsDurationsAndQuorum)
         , H (arb :: Gen PageAdminSettingsGroupsAndPermissions)
-        , H (arb :: Gen PageAdminSettingsUserCreateAndImport)
+--        , H (arb :: Gen PageAdminSettingsUserCreateAndImport)
         , H (arb :: Gen PageAdminSettingsEventsProtocol)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
@@ -66,6 +65,8 @@ spec = do
     --  , F (arb :: Gen CreateTopic) FIXME
         , F (arb :: Gen PageUserSettings)
     --  , F (arb :: Gen MoveIdeasToTopic) FIXME
+        , F (arb :: Gen PageAdminSettingsDurations)
+        , F (arb :: Gen PageAdminSettingsQuorum)
         ]
     where
         arb :: Arbitrary a => Gen a
@@ -142,6 +143,16 @@ instance PayloadToEnv UserSettingData where
         ["", "new-password2" ] -> pure [TextInput $ fromMaybe "" newpass2]
       where
         unEmail (Email e) = e
+
+instance PayloadToEnv Durations where
+    payloadToEnv _ (Durations elab vote) = \case
+        ["", "elab-duration"] -> pure [TextInput (cs $ show elab)]
+        ["", "vote-duration"] -> pure [TextInput (cs $ show vote)]
+
+instance PayloadToEnv Quorums where
+    payloadToEnv _ (Quorums school clss) = \case
+        ["", "school-quorum"] -> pure [TextInput (cs $ show school)]
+        ["", "class-quorum"]  -> pure [TextInput (cs $ show clss)]
 
 ----------------------------------------------------------------------
 -- machine room

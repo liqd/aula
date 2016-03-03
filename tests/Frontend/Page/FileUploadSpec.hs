@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
 
--- {-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.FileUploadSpec
 where
@@ -11,20 +11,12 @@ where
 import Control.Concurrent (forkIO, killThread)
 import Control.Exception
 import Control.Lens
-import Control.Monad.Error.Class (MonadError)
-import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.String.Conversions (ST, cs, (<>))
-import Lucid (renderText, toHtml)
-import Network.Wai
-import Servant
-import Test.Hspec  -- (Spec, describe, context, it)
+import Test.Hspec (Spec, describe, it, around, pendingWith)
 import Network.Wreq
 
-import Action
 import Frontend
-import Frontend.Core
-import Api.Persistent
 import Config
 
 

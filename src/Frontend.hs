@@ -202,22 +202,25 @@ aulaUser user =
 
 
 type AulaAdmin =
-       -- durations and quorum
-       "params" :> GetH (Frame ST)
+       -- durations
+       "duration" :> FormHandler PageAdminSettingsDurations ST
+       -- quorum
+  :<|> "quorum" :> FormHandler PageAdminSettingsQuorum ST
        -- groups and permissions
-  :<|> "access" :> GetH (Frame ST)
+  :<|> "access" :> Capture "context" PermissionContext :> GetH (Frame PageAdminSettingsGroupsAndPermissions)
        -- user creation and import
-  :<|> "user"   :> GetH (Frame ST)
+  :<|> "user"   :> FormHandler PageAdminSettingsUserCreateAndImport ST
        -- event log
-  :<|> "event"  :> GetH (Frame ST)
+  :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
+
 
 aulaAdmin :: ServerT AulaAdmin Action
 aulaAdmin =
-       error "api not implemented: \"params\" :> GetH (Frame ST)"
-  :<|> error "api not implemented: \"access\" :> GetH (Frame ST)"
-  :<|> error "api not implemented: \"user\"   :> GetH (Frame ST)"
-  :<|> error "api not implemented: \"event\"  :> GetH (Frame ST)"
-
+       Page.adminDurations
+  :<|> Page.adminQuorum
+  :<|> Page.adminSettingsGroupsAndPermissions
+  :<|> Page.adminSettingsUserCreateAndImport
+  :<|> Page.adminEventsProtocol
 
 type AulaTesting =
        GetH (Frame ST)
