@@ -12,7 +12,6 @@ import Data.Maybe (mapMaybe)
 import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
 
-import qualified Data.UriPath as U (href_, onclick_)
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -247,7 +246,7 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
                     th_ "NAME"
                     th_ "KLASSE"
                     th_ "ROLE SELECTION"
-                    th_ $ button_ [U.onclick_ U.ListSpaces] "NUTZER ANLEGEN"
+                    th_ $ button_ [onclick_ U.ListSpaces] "NUTZER ANLEGEN"
                     th_ $ input_ [value_ "Nutzersuche"]
                 -- FIXME: Make the table fetch some users with AJAX
                 tbody_ . forM_ users $ \user -> tr_ $ do
@@ -256,20 +255,20 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
                     td_ "Klasse ????" -- FIXME: Fetch the user's class if exists
                     td_ "Role ???" -- FIXME: Fetch the user's role
                     td_ "" -- THIS SHOULD LEFT EMPTY
-                    td_ $ a_ [U.href_ U.ListSpaces] "bearbeiten"
+                    td_ $ a_ [href_ U.ListSpaces] "bearbeiten"
 
     toHtmlRaw p@(PageAdminSettingsGPClasses classes) =
         adminFrame p . semanticDiv p $ do
-            button_ [U.onclick_ U.ListSpaces] "KLASSE ANLEGEN"
+            button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
             table_ $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [U.onclick_ U.ListSpaces] "KLASSE ANLEGEN"
+                    th_ $ button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
                     th_ $ input_ [value_ "Klassensuche"]
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     th_ . toHtml $ clss ^. className
                     th_ ""
-                    th_ $ a_ [U.href_ U.ListSpaces] "bearbeiten"
+                    th_ $ a_ [href_ U.ListSpaces] "bearbeiten"
 
 
 adminSettingsGroupsAndPermissions
@@ -307,7 +306,7 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         div_ $ do
             p_ "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [U.onclick_ U.ListSpaces] "DOWNLOAD"
+            button_ [onclick_ U.ListSpaces] "DOWNLOAD"
             p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
