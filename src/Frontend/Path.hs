@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -12,8 +13,11 @@ module Frontend.Path
     )
 where
 
+import GHC.Generics
 import Thentos.Prelude
 import Data.UriPath
+
+import qualified Generics.SOP as SOP
 
 import Types (AUID, Idea, IdeaSpace, User, Topic, nil, PermissionContext)
 
@@ -23,6 +27,9 @@ data Top =
   | TopTesting UriPath
   | TopSamples
   | TopStatic UriPath
+  deriving Generic
+
+instance SOP.Generic Top
 
 instance HasPath Top where relPath = top
 
@@ -46,7 +53,9 @@ data Main =
   | Terms
   | Login
   | Logout
-  deriving Show
+  deriving (Generic, Show)
+
+instance SOP.Generic Main
 
 instance HasPath Main where relPath p = main p nil
 
@@ -79,7 +88,9 @@ data Space =
   | CreateIdeaInTopic (AUID Topic)
   | CreateTopicDelegation (AUID Topic)
   | MoveIdeasToTopic (AUID Topic)
-  deriving Show
+  deriving (Generic, Show)
+
+instance SOP.Generic Space
 
 space :: Space -> UriPath -> UriPath
 space ListIdeas                   root = root </> "idea"
@@ -100,7 +111,9 @@ space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "d
 data UserPs =
     UserIdeas
   | UserDelegations
-  deriving Show
+  deriving (Generic, Show)
+
+instance SOP.Generic UserPs
 
 user :: UserPs -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
@@ -112,7 +125,9 @@ data AdminPs =
   | AdminAccess PermissionContext
   | AdminUser
   | AdminEvent
-  deriving Show
+  deriving (Generic, Show)
+
+instance SOP.Generic AdminPs
 
 admin :: AdminPs -> UriPath -> UriPath
 admin AdminDuration     path = path </> "duration"

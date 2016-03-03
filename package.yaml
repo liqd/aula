@@ -19,6 +19,7 @@ dependencies:
     - base >=4.8 && <4.9
     - thentos-core >=0.3.0
     - aeson
+    - basic-sop
     - binary
     - bytestring
     - case-insensitive
@@ -30,6 +31,7 @@ dependencies:
     - directory
     - filepath
     - functor-infix
+    - generics-sop
     - http-types
     - lens
     - lucid

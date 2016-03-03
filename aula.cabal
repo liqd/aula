@@ -28,6 +28,7 @@ library
       base >=4.8 && <4.9
     , thentos-core >=0.3.0
     , aeson
+    , basic-sop
     , binary
     , bytestring
     , case-insensitive
@@ -39,6 +40,7 @@ library
     , directory
     , filepath
     , functor-infix
+    , generics-sop
     , http-types
     , lens
     , lucid
@@ -100,6 +102,7 @@ executable aula-server
       base >=4.8 && <4.9
     , thentos-core >=0.3.0
     , aeson
+    , basic-sop
     , binary
     , bytestring
     , case-insensitive
@@ -111,6 +114,7 @@ executable aula-server
     , directory
     , filepath
     , functor-infix
+    , generics-sop
     , http-types
     , lens
     , lucid
@@ -148,6 +152,7 @@ executable aula-html-dummies
       base >=4.8 && <4.9
     , thentos-core >=0.3.0
     , aeson
+    , basic-sop
     , binary
     , bytestring
     , case-insensitive
@@ -159,6 +164,7 @@ executable aula-html-dummies
     , directory
     , filepath
     , functor-infix
+    , generics-sop
     , http-types
     , lens
     , lucid
@@ -201,6 +207,7 @@ test-suite spec
       base >=4.8 && <4.9
     , thentos-core >=0.3.0
     , aeson
+    , basic-sop
     , binary
     , bytestring
     , case-insensitive
@@ -212,6 +219,7 @@ test-suite spec
     , directory
     , filepath
     , functor-infix
+    , generics-sop
     , http-types
     , lens
     , lucid
