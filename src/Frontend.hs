@@ -236,6 +236,7 @@ type AulaTesting =
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
   :<|> "file-upload" :> FormHandler BatchCreateUsers ST
+  :<|> "random-password" :> GetH (PageShow UserPass)
 
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
@@ -252,6 +253,7 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
 
   :<|> batchCreateUsers
+  :<|> (PageShow <$> Action.generateRandomPassphrase)
 
 
 ----------------------------------------------------------------------

@@ -30,6 +30,8 @@ module Action
 
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
+
+    , generateRandomPassphrase
     )
 where
 
@@ -37,19 +39,20 @@ import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Control.Monad.RWS.Lazy
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
-import Data.String.Conversions (ST, LBS)
+import Data.Elocrypt (mkPassword)
+import Data.String.Conversions (ST, LBS, cs)
 import Persistent
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
 import Types
 
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
-import qualified Data.ByteString.Lazy as LBS
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -152,6 +155,7 @@ mkRunAction persistNat = \s -> Nat (run s)
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
 
+
 ----------------------------------------------------------------------
 -- Action Combinators
 
@@ -166,6 +170,7 @@ currentUser =
 modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
+
 
 ----------------------------------------------------------------------
 -- Action Helpers
@@ -194,3 +199,11 @@ decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
+
+
+----------------------------------------------------------------------
+-- misc
+
+generateRandomPassphrase :: Action UserPass
+generateRandomPassphrase = Action . liftIO $
+    UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
