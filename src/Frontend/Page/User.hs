@@ -60,12 +60,11 @@ instance FormPageView PageUserSettings where
 
     makeForm (PageUserSettings user) =
         UserSettingData
-        <$> ("email"         .: (fmap UserEmail <$> DF.optionalText (fmap unEmail $ user ^. userEmail)))
+        <$> ("email"         .: (fmap UserEmail <$> DF.optionalText
+                                        (fmap fromUserEmail $ user ^. userEmail)))
         <*> ("old-password"  .: DF.optionalText Nothing)
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
-        where
-            unEmail (UserEmail e) = e
 
     formPage v fa p = do
         semanticDiv p $ do

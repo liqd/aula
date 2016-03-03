@@ -296,7 +296,7 @@ data UserPass =
 instance SOP.Generic UserPass
 
 -- | FIXME: replace with structured email type.
-newtype UserEmail = UserEmail ST
+newtype UserEmail = UserEmail { fromUserEmail :: ST }
     deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"

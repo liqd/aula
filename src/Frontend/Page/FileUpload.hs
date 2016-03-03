@@ -11,12 +11,12 @@ where
 import Lucid hiding (href_)
 import Servant
 import Thentos.Prelude
-import Thentos.Types (parseUserEmail, fromUserEmail)
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
 import qualified Text.Digestive as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Thentos.Types
 
 import Action
 import Data.UriPath
@@ -87,9 +87,9 @@ instance Csv.FromRecord CsvUserRecord where
         parseMEmail i
             | length v < i + 1 = pure Nothing
             | v !! i == ""     = pure Nothing
-            | otherwise        = case parseUserEmail $ v !! i of
+            | otherwise        = case Thentos.Types.parseUserEmail $ v !! i of
                 Nothing    -> fail $ "user record with bad email address: " <> show v
-                Just email -> pure . Just $ fromUserEmail email
+                Just email -> pure . Just $ Thentos.Types.fromUserEmail email
 
         parseMNick :: Int -> Maybe ST
         parseMNick i
