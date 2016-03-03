@@ -171,7 +171,7 @@ instance FormPageView PageAdminSettingsDurations where
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
             ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
-            (("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur)))
+            ("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur))
       where
         mkDurations e v =
             Durations <$> (DurationDays <$> e) <*> (DurationDays <$> v)
