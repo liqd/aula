@@ -69,10 +69,10 @@ data CsvUserRecord = CsvUserRecord
 
 instance Csv.FromRecord CsvUserRecord where
     parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
-        <$> parseName 50 1
-        <*> parseName 50 2
-        <*> parseMEmail 3
-        <*> pure (parseMNick 4)
+        <$> parseName 50 0
+        <*> parseName 50 1
+        <*> parseMEmail 2
+        <*> pure (parseMNick 3)
       where
         parseName :: (Monad m) => Int -> Int -> m ST
         parseName maxLength i
