@@ -1,9 +1,8 @@
 SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
-
 HLINT=$(EXEC) hlint
-
 FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
+AULA_IMAGE=quay.io/liqd/aula
 
 .phony:
 
@@ -55,4 +54,4 @@ ghci-no-type-errors:
 
 seito-docker-hack:
 	pwd > pwd.log
-	docker exec -it `docker ps -q --filter="ancestor=fisx/aula"` /liqd/aula/docker/make-seito.sh
+	docker exec -it `docker ps -q --filter="ancestor=$(AULA_IMAGE)"` /liqd/aula/docker/make-seito.sh
