@@ -9,7 +9,6 @@ before_install:
     - grep '\(MemTotal\|SwapTotal\)' /proc/meminfo
     - git show | head -1  # (for matching against commit hash given on the travis log web page)
     - docker pull $AULA_IMAGE
-    - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-list-sandbox-packages.sh"
 
 script:
     - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-hlint.sh"
