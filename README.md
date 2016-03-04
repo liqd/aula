@@ -19,17 +19,13 @@ git clone --recursive https://github.com/liqd/thentos
 cd aula
 ./docker/run.sh
 # now you are inside the container.
-cd /root/thentos
-cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-cd /root/aula
-cabal sandbox init --sandbox=/liqd/thentos/.cabal-sandbox
-cabal install --enable-tests
+stack install --fast --allow-different-user aula
 ```
 
 Now, to have a quick look at the pages, do
 
 ```shell
-cabal run aula-server
+make aula-server
 ```
 
 then point your browser to localhost:8080
@@ -38,7 +34,7 @@ Note: when you want to `git pull`, do this outside of docker,
 just as `git clone` was performed outside. Otherwise, paths may be wrong.
 
 
-## Getting started (without docker)
+## Getting started (without docker, without stack)
 
 https://github.com/hspec/sensei is a tool for rapid re-compilation and
 testing.  If you want to use it, follow these steps:
@@ -65,42 +61,43 @@ cabal sandbox init --sandbox=../thentos/.cabal-sandbox
 Now, to have a quick look at the pages, do
 
 ```shell
-cabal run aula-server
+make aula-server
 ```
 
 then point your browser to localhost:8080
 
 
-## Using sensei for file-watch testing during development
+## Using sensei for file-watch testing during development (with docker)
 
-[This section assumes you run without docker, but with
-`./docker/run.sh` you should be able to do the same thing in the
-docker setting as well.]
-
-To start sensei, in another terminal do
+To start sensei, open a new terminal window and do this:
 
 ```shell
-cabal install --enable-tests
+./docker/run.sh
+# now you are inside the container.
 make sensei
 ```
 
 This will watch your files, and if anything changes, re-compile and
 run the test suite.
 
+If you are already running a docker container in another terminal, but
+want to keep that terminal open to do other things, you can connect to
+that container with a new shell:
+
+```shell
+./docker/run.sh --connect
+# now you are inside the container.
+make sensei
+```
+
 You can use seito (same git repo, different executable) to pull the
 last error report into your IDE to get pointed to the source code
 locations.
 
-Background: sensei does not support multi-package development as such,
+Internal detail: sensei does not support multi-package development as such,
 so we simply add the source files of all packages we want to use to
 the source paths with a long list of `-i`s.  This way, any change in
 any of `thentos-*` or `aula` will trigger a re-run.
-
-Note: if compilation speed is an issue, you can modify thentos-install.hs,
-commenting out thentos-adhocracy and adding --disable-optimization
-(and --disable-library-profiling, if you have profiling on by default,
-but don't want to use prof stack traces for this project)
-to some of the runCabal invocations.
 
 
 ## HTML hacking
@@ -110,24 +107,33 @@ for work on HTML / css):
 
 ```shell
 export AULA_SAMPLES=$HOME/aula-samples/
+./docker/run.sh  # do not use --connect here!
+# now you are inside the container.
 make click-dummies-recreate
 make aula-server
 ```
 
-Note: `$AULA_SAMPLES` directory shouldn't be inside `aula` or
-`thentos`.  If it is, a sensei re-run will be triggered by its own
+NOTE: `$AULA_SAMPLES` directory shouldn't be inside the `aula` or
+`thentos` repos.  If it is, a sensei re-run will be triggered by its own
 changes to the html files, resulting in a very noisy loop.
 
-NOTE on docker: docker has a VOLUME under `/root/html-templates` that
+NOTE: docker has a VOLUME under `/root/html-templates` that
 allows you to edit the html code from outside of docker, and still
 serve it from the inside.  If you set $AULA_SAMPLES to a directory of
 your choice outside docker, and to `/root/html-templates inside, the
 script ./docker/run.sh` will mount the outside directory into the
 inside one.
 
-To refresh the HTML from the same content (same texts and everything):
+NOTE: This only works if you do not call `./docker/run.sh` without
+`--connect`.  (If you have a docker container running elsewhere,
+consider shutting it down first, and later connecting to the one
+running here.)
+
+To refresh the HTML from the same content (same texts and everything),
+open a new terminal window and do this:
 
 ```shell
+./docker/run.sh --connect
 make click-dummies-refresh
 ```
 
@@ -154,14 +160,8 @@ code editor to the other.  The browser will auto-refresh at any modification
 and you will never have to focus there, no matter whether you
 work on the haskell sources or on the html.
 
-If you use docker, to be able to use more terminals, you can start
-a new shell with
+For more info on this, check out `./docs/page-creator-howto.md`.
 
-```shell
-./docker/run.sh --connect
-```
-
-For more info on this, check out `./docs/PageCreatorHOWTO.md`.
 
 ### SASS Hacking
 
