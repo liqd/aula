@@ -1,6 +1,7 @@
-EXEC="stack exec"
+SHELL=/bin/bash
+EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 
-HLINT="$(EXEC) hlint"
+HLINT=$(EXEC) hlint
 
 FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
 
@@ -17,40 +18,40 @@ FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/..
 # of the problem are always welcome.)
 
 %.unregister:
-	-$(EXEC) -- ghc-pkg unregister $*
+	-$(EXEC) ghc-pkg unregister $*
 
 unregister-full:
 	make thentos-adhocracy.unregister thentos-tests.unregister thentos-core.unregister aula.unregister
 
 # only aware of aula sources
 sensei: .phony aula.unregister
-	$(EXEC) -- sensei -isrc -itests tests/Spec.hs $(SENSEI_ARGS)
+	$(EXEC) sensei -isrc -itests tests/Spec.hs $(SENSEI_ARGS)
 
 # aware of aula and thentos sources
 sensei-full: .phony unregister-full
-	$(EXEC) -- sensei $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_ARGS)
+	$(EXEC) sensei $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_ARGS)
 
 seito: .phony
 	sleep 0.2 && seito
 
 aula-server: .phony
-	$(EXEC) -- runhaskell $(FULL_SOURCES) ./exec/Aula.hs
+	$(EXEC) runhaskell $(FULL_SOURCES) ./exec/Aula.hs
 
 click-dummies-recreate: .phony
-	$(EXEC) -- runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs
+	$(EXEC) runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs
 
 click-dummies-refresh: .phony aula.unregister
-	$(EXEC) -- sensei $(FULL_SOURCES) ./exec/RenderHtml.hs
+	$(EXEC) sensei $(FULL_SOURCES) ./exec/RenderHtml.hs
 
 test-repl:
-	$(EXEC) -- ghci $(FULL_SOURCES)
+	$(EXEC) ghci $(FULL_SOURCES)
 
 hlint:
 	$(HLINT) --version
 	find src exec tests -name '*.hs' | xargs $(HLINT)
 
 ghci-no-type-errors:
-	$(EXEC) -- ghci $(FULL_SOURCES) -fdefer-type-errors
+	$(EXEC) ghci $(FULL_SOURCES) -fdefer-type-errors
 
 seito-docker-hack:
 	pwd > pwd.log
