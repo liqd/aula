@@ -43,6 +43,8 @@ extra-deps:
 - hspec-core-2.2.2
 - hspec-discover-2.2.2
 - hspec-expectations-0.7.2
+- basic-sop-0.2.0.0
+- generics-sop-0.2.1.0
 
 # Override default flag values for local packages and extra-deps
 flags: {}
