@@ -39,6 +39,10 @@ extra-deps:
 - http-accept-0.2
 # for servant*
 - control-monad-omega-0.3.1
+- hspec-2.2.2
+- hspec-core-2.2.2
+- hspec-discover-2.2.2
+- hspec-expectations-0.7.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}
