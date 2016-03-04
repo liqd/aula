@@ -41,35 +41,35 @@ instance Arbitrary DurationDays where
 -- pages
 
 instance Arbitrary PageRoomsOverview where
-    arbitrary = PageRoomsOverview <$> arbitrary
+    arbitrary = scaleDown $ PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb
+    arbitrary = scaleDown $ PageIdeasOverview <$> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
-    arbitrary = PageIdeasInDiscussion <$> arb <*> arb
+    arbitrary = scaleDown $ PageIdeasInDiscussion <$> arb <*> arb
 
 instance Arbitrary ViewTopicTab where
     arbitrary = elements [minBound..]
 
 instance Arbitrary ViewTopic where
-    arbitrary = oneof [ ViewTopicIdeas <$> arb <*> arb <*> arb
+    arbitrary = oneof [ scaleDown $ ViewTopicIdeas <$> arb <*> arb <*> arb
                       , pure ViewTopicDelegations ]
 
 instance Arbitrary ViewIdea where
-    arbitrary = ViewIdea <$> arb <*> arb
+    arbitrary = scaleDown $ ViewIdea <$> arb <*> arb
 
 instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
     arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
 instance Arbitrary CreateIdea where
-    arbitrary = CreateIdea <$> arb <*> arb
+    arbitrary = scaleDown $ CreateIdea <$> arb <*> arb
 
 instance Arbitrary EditIdea where
-    arbitrary = EditIdea <$> arb
+    arbitrary = scaleDown $ EditIdea <$> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
+    arbitrary = scaleDown $ PageUserProfileCreatedIdeas <$> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
@@ -81,7 +81,7 @@ instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb
 
 instance Arbitrary MoveIdeasToTopic where
-    arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
+    arbitrary = scaleDown $ MoveIdeasToTopic <$> arb <*> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
