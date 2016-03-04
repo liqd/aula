@@ -13,10 +13,9 @@ import Control.Concurrent (forkIO, killThread)
 import Control.Exception
 import Control.Lens
 import Control.Monad (forM_)
-import Control.Monad.IO.Class (liftIO)
 import Data.String.Conversions (ST, LBS, cs, (<>))
 import Network.Wreq
-import Test.Hspec (Spec, describe, it, around, pendingWith, shouldBe)
+import Test.Hspec (Spec, describe, it, around, shouldBe, shouldContain)
 
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
@@ -55,15 +54,13 @@ spec = describe "file upload" $ do
             opts :: Options
             opts = defaults
 
-        it "works" $ \uri -> do
-            pendingWith "only partially implemented."
-
-            -- the response will be a 500 saying "SUCCESS!" and mirroring the parsed csv file back into
-            -- the browser.  what we actually want to test is that the response is a 303 and that the
-            -- database will contain the data we posted.
-
+        it "posts users successfully; users will appear under /user" $ \uri -> do
+            -- pendingWith "only partially implemented."
             r <- postWith opts (cs uri <> "/testing/file-upload") [classPart, filePart]
-            liftIO $ print r
+            (r ^. responseStatus . statusCode) `shouldBe` 200
+            s <- get (cs uri <> "/user")
+            (s ^. responseStatus . statusCode) `shouldBe` 200
+            (cs $ s ^. responseBody :: String) `shouldContain` "_fromUserLastName = &quot;Kuhn&quot"
 
     describe "csv file parser" $ do
         let ts :: [(String, [LBS])]
