@@ -158,7 +158,7 @@ If you use docker, to be able to use more terminals, you can start
 a new shell with
 
 ```shell
-docker exec -it `docker ps -q --filter="ancestor=fisx/aula"` bash
+./docker/run.sh --connect
 ```
 
 For more info on this, check out `./docs/PageCreatorHOWTO.md`.
