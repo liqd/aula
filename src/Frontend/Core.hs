@@ -148,7 +148,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
         case mUser of
             Just usr -> do
                 div_ [class_ "pop-menu"] $ do
-                        "Hi " <> (usr ^. userLogin . html)
+                        "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
 -- TODO: Fix URLs
                             li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
@@ -225,7 +225,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         "["
         img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
-        mi ^. metaCreatedByLogin . html
+        mi ^. metaCreatedByLogin . fromUserLogin . html
         "]"
 
 
@@ -240,7 +240,7 @@ instance ToHtml ListItemIdea where
             img_ [src_ $ P.TopStatic "some_avatar"]
         span_ $ do
             span_ $ idea ^. ideaTitle . html
-            span_ $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . html
+            span_ $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
         span_ $ do
             span_ $ do
                 let s = Set.size (idea ^. ideaComments)

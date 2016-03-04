@@ -29,6 +29,7 @@ dependencies:
     - digestive-functors
     - digestive-functors-lucid
     - directory
+    - elocrypt >=0.4.1 && <0.5
     - filepath
     - functor-infix
     - generics-sop

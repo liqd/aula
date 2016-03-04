@@ -260,20 +260,40 @@ phaseName = \case
 -- | FIXME: introduce newtypes 'UserLogin', 'UserFirstName', 'UserLastName'?
 data User = User
     { _userMeta      :: MetaInfo User
-    , _userLogin     :: ST
-    , _userFirstName :: ST
-    , _userLastName  :: ST
-    , _userAvatar    :: URL
-    , _userGroups    :: [Group]  -- ^ (could be a set)
-    , _userPassword  :: EncryptedPass
-    , _userEmail     :: Maybe Email
+    , _userLogin     :: UserLogin
+    , _userFirstName :: UserFirstName
+    , _userLastName  :: UserLastName
+    , _userAvatar    :: URL  -- FIXME UriPath?  Maybe?
+    , _userGroups    :: [Group]  -- FIXME make a set.  rename group to role.
+    , _userPassword  :: UserPass
+    , _userEmail     :: Maybe UserEmail
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic User
 
--- FIXME: Temporary hack to be able to save users.
-type instance Proto User = User
+newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+
+newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+
+newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+
+type instance Proto User = ProtoUser
+
+data ProtoUser = ProtoUser
+    { _protoUserLogin     :: Maybe UserLogin
+    , _protoUserFirstName :: UserFirstName
+    , _protoUserLastName  :: UserLastName
+    , _protoUserGroups    :: [Group]
+    , _protoUserPassword  :: Maybe UserPass
+    , _protoUserEmail     :: Maybe UserEmail
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoUser
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -288,14 +308,15 @@ data Group =
 
 instance SOP.Generic Group
 
--- | FIXME: import Crypto.Scrypt (EncryptedPass)
-newtype EncryptedPass = EncryptedPass { fromEncryptedPass :: SBS }
+data UserPass =
+    UserPassInitial   ST
+  | UserPassEncrypted SBS  -- FIXME: use "Crypto.Scrypt.EncryptedPass"
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic EncryptedPass
+instance SOP.Generic UserPass
 
 -- | FIXME: replace with structured email type.
-newtype Email = Email ST
+newtype UserEmail = UserEmail { fromUserEmail :: ST }
     deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
 
 -- | "Beauftragung"
@@ -328,10 +349,20 @@ newtype AUID a = AUID Integer
 instance HasUriPart (AUID a) where
     uriPart (AUID s) = fromString . show $ s
 
+-- | General information on objects stored in the DB.
+--
+-- Some of these fields, like login name and avatar url of creator, are redundant.  The reason to
+-- keep them here is that it makes it easy to keep large 'Page*' types containing many nested
+-- objects, and still allowing all these objects to be rendered purely only based on the information
+-- they contain.
+--
+-- If this is becoming too much in the future and we want to keep objects around without all this
+-- inlined information, we should consider making objects polymorphic in the concrete meta info
+-- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
 data MetaInfo a = MetaInfo
     { _metaId              :: AUID a
     , _metaCreatedBy       :: AUID User
-    , _metaCreatedByLogin  :: ST
+    , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
@@ -424,8 +455,8 @@ instance Binary CommentVote
 instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
-instance Binary Email
-instance Binary EncryptedPass
+instance Binary UserPass
+instance Binary UserEmail
 instance Binary Group
 instance Binary Idea
 instance Binary IdeaLike
@@ -440,6 +471,9 @@ instance Binary SchoolClass
 instance Binary Topic
 instance Binary UpDown
 instance Binary User
+instance Binary UserLogin
+instance Binary UserFirstName
+instance Binary UserLastName
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -447,8 +481,8 @@ makeLenses ''CommentVote
 makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''Document
-makeLenses ''Email
-makeLenses ''EncryptedPass
+makeLenses ''UserPass
+makeLenses ''UserEmail
 makeLenses ''Idea
 makeLenses ''IdeaLike
 makeLenses ''IdeaResult
@@ -462,6 +496,10 @@ makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
+makeLenses ''UserLogin
+makeLenses ''UserFirstName
+makeLenses ''UserLastName
+makeLenses ''ProtoUser
 
 class HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
@@ -469,7 +507,7 @@ class HasMetaInfo a where
     _Id             = metaInfo . metaId
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy
-    createdByLogin  :: Lens' a ST
+    createdByLogin  :: Lens' a UserLogin
     createdByLogin  = metaInfo . metaCreatedByLogin
     createdByAvatar :: Lens' a URL
     createdByAvatar = metaInfo . metaCreatedByAvatar

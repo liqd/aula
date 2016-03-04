@@ -207,23 +207,32 @@ instance Arbitrary Phase where
 -- user
 
 instance Arbitrary User where
-    arbitrary =
-        garbitrary
-        <**> (set userFirstName <$> arbWord)
-        <**> (set userLastName <$> arbWord)
+    arbitrary = garbitrary
+
+instance Arbitrary ProtoUser where
+    arbitrary = garbitrary
+
+instance Arbitrary UserLogin where
+    arbitrary = UserLogin <$> arbWord
+
+instance Arbitrary UserFirstName where
+    arbitrary = UserFirstName <$> arbWord
+
+instance Arbitrary UserLastName where
+    arbitrary = UserLastName <$> arbWord
 
 instance Arbitrary Group where
     arbitrary = garbitrary
 
-instance Arbitrary EncryptedPass where
+instance Arbitrary UserPass where
     arbitrary = garbitrary
 
-instance Arbitrary Email where
+instance Arbitrary UserEmail where
     arbitrary = do
         localName  <- arbWord
         domainName <- arbWord
         tld        <- elements topLevelDomains
-        return . Email . mconcat $ [localName, "@", domainName, ".", tld]
+        return . UserEmail . mconcat $ [localName, "@", domainName, ".", tld]
 
 instance Arbitrary UserSettingData where
     arbitrary = UserSettingData
@@ -253,13 +262,10 @@ instance Arbitrary PermissionContext where
 -- aula-specific helpers
 
 instance Arbitrary (AUID a) where
-    arbitrary = AUID <$> arb
+    arbitrary = AUID . abs <$> arb
 
 instance Generic a => Arbitrary (MetaInfo a) where
-    arbitrary =
-        garbitrary
-        <**> (set metaCreatedByLogin <$> arbWord)
-        <**> (set metaCreatedByAvatar <$> arbPhrase)
+    arbitrary = garbitrary
 
 instance Arbitrary Document where
     arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb

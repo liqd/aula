@@ -51,12 +51,17 @@ genInitialTestDb = do
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
-    _firstUser <- bootstrapUser =<< genArbitrary
+    protoU <- genArbitrary
+    firstUser <- addFirstUser ( (protoUserLogin .~ Just (UserLogin "admin"))
+                              . (protoUserPassword .~ Just (UserPassInitial "pssst"))
+                              $ protoU )
+    loginUser $ firstUser ^. userLogin
     _wildIdea <- addIdea =<< genArbitrary
     topicIdea <- addIdea =<< genArbitrary
     _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
 
+-- FIXME
 frameUserHack :: User
 frameUserHack = User
     { _userMeta      = frameUserMetaInfo
@@ -65,7 +70,7 @@ frameUserHack = User
     , _userLastName  = "Name"
     , _userAvatar    = "https://avatar.com"
     , _userGroups    = nil
-    , _userPassword  = EncryptedPass ""
+    , _userPassword  = UserPassInitial ""
     , _userEmail     = Nothing
     }
   where

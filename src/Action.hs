@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ViewPatterns               #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -29,7 +30,7 @@ module Action
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
 
       -- * extras
-    , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles)
+    , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
     )
 where
 
@@ -37,20 +38,19 @@ import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Control.Monad.RWS.Lazy
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
-import Data.Functor.Infix ((<$$>))
-import Data.String.Conversions (ST)
+import Data.String.Conversions (ST, LBS)
 import Persistent
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
 import Types
 
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
-import qualified Data.ByteString.Lazy as LBS
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -63,7 +63,7 @@ import Test.QuickCheck (arbitrary, generate)
 -- FIXME: Figure out which information is needed here.
 data UserState
     = UserLoggedOut
-    | UserLoggedIn { _username :: ST, _sessionCookie :: ST }
+    | UserLoggedIn { _username :: UserLogin, _sessionCookie :: ST }
 
 makeLenses ''UserState
 
@@ -93,7 +93,7 @@ instance ActionPersist Action where
 
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
-    login  :: ST -> m ()
+    login  :: UserLogin -> m ()
     -- | Read the actual user state
     userState :: m UserState
     -- | Make the user log out
@@ -107,7 +107,7 @@ instance ActionUserHandler Action where
     userState = get
 
     logout = do
-        use username >>= persistent . logoutUser
+        currentUser >>= persistent . logoutUser . view userLogin
         put UserLoggedOut
 
 class MonadError ActionExcept m => ActionError m
@@ -153,6 +153,7 @@ mkRunAction persistNat = \s -> Nat (run s)
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
 
+
 ----------------------------------------------------------------------
 -- Action Combinators
 
@@ -168,10 +169,11 @@ modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) ->
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
 
+
 ----------------------------------------------------------------------
 -- Action Helpers
 
-loggedInUser :: (ActionUserHandler m) => m ST
+loggedInUser :: (ActionUserHandler m) => m UserLogin
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
     UserLoggedIn user _session -> return user
@@ -185,11 +187,13 @@ class ActionTempCsvFiles m where
     cleanupTempCsvFiles :: FormData -> m ()
 
 instance ActionTempCsvFiles Action where
-    popTempCsvFile filePath = Action . liftIO . (`catch` exceptToLeft) $
-        V.toList <$$> decodeCsv <$> LBS.readFile filePath
+    popTempCsvFile = Action . liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
-        decodeCsv = Csv.decodeWith opts Csv.HasHeader
-        opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
 
     cleanupTempCsvFiles = Action . liftIO . releaseFormTempFiles
+
+decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
+decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
+  where
+    opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }

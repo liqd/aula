@@ -228,7 +228,6 @@ type AulaTesting =
   :<|> "idea"  :> CreateRandom Idea
   :<|> "space" :> CreateRandom IdeaSpace
   :<|> "topic" :> CreateRandom Topic
-  :<|> "user"  :> CreateRandom User
 
   :<|> "ideas"  :> GetH (Frame (PageShow [Idea]))
   :<|> "spaces" :> GetH (Frame (PageShow [IdeaSpace]))
@@ -236,6 +235,7 @@ type AulaTesting =
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
   :<|> "file-upload" :> FormHandler BatchCreateUsers ST
+  :<|> "random-password" :> GetH (PageShow UserPass)
 
 aulaTesting :: ServerT AulaTesting Action
 aulaTesting =
@@ -244,7 +244,6 @@ aulaTesting =
   :<|> createRandom dbIdeaMap
   :<|> createRandomNoMeta dbSpaceSet
   :<|> createRandom dbTopicMap
-  :<|> createRandom dbUserMap
 
   :<|> (PublicFrame . PageShow <$> Action.persistent getIdeas)
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
@@ -252,6 +251,7 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
 
   :<|> batchCreateUsers
+  :<|> (PageShow <$> Action.persistent mkRandomPassword)
 
 
 ----------------------------------------------------------------------

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -11,13 +12,17 @@ where
 import Control.Concurrent (forkIO, killThread)
 import Control.Exception
 import Control.Lens
-import Control.Monad.IO.Class (liftIO)
-import Data.String.Conversions (ST, cs, (<>))
-import Test.Hspec (Spec, describe, it, around, pendingWith)
+import Control.Monad (forM_)
+import Data.String.Conversions (ST, LBS, cs, (<>))
 import Network.Wreq
+import Test.Hspec (Spec, describe, it, around, shouldBe, shouldContain)
 
-import Frontend
+import qualified Data.ByteString.Lazy.Char8 as LBS
+
+import Action
 import Config
+import Frontend
+import Frontend.Page.FileUpload
 
 
 withServer :: (ST -> IO a) -> IO a
@@ -31,29 +36,62 @@ withServer action = bracket
     -- uri = "http://localhost:8081"
 
 spec :: Spec
-spec = describe "file upload" . around withServer $ do
-    let classPart :: Part
-        classPart = partString "/testing/file-upload.classname" "7a"
+spec = describe "file upload" $ do
+    describe "http" . around withServer $ do
+        let classPart :: Part
+            classPart = partString "/testing/file-upload.classname" "7a"
 
-        filePart :: Part
-        filePart = (partFileName .~ Just "x.csv") . (partContentType .~ Just "text/csv") $ p
-          where
-            p = partString "/testing/file-upload.file" $ unlines
-                    [ "Vorname;Nachname;email;Login-Name"
-                    , "Hein;Blöd;bloed@example.org"
-                    , "Heidi;Schmumel;br@example.org;mup"
-                    , "Jens;Kuhn;jens@example.org"
-                    ]
+            filePart :: Part
+            filePart = (partFileName .~ Just "x.csv") . (partContentType .~ Just "text/csv") $ p
+              where
+                p = partString "/testing/file-upload.file" $ unlines
+                        [ "Vorname;Nachname;email;Login-Name"
+                        , "Hein;Blöd;bloed@example.org"
+                        , "Heidi;Schmumel;br@example.org;mup"
+                        , "Jens;Kuhn;jens@example.org"
+                        ]
 
-        opts :: Options
-        opts = defaults
+            opts :: Options
+            opts = defaults
 
-    it "works" $ \uri -> do
-        pendingWith "only partially implemented."
+        it "posts users successfully; users will appear under /user" $ \uri -> do
+            -- pendingWith "only partially implemented."
+            r <- postWith opts (cs uri <> "/testing/file-upload") [classPart, filePart]
+            (r ^. responseStatus . statusCode) `shouldBe` 200
+            s <- get (cs uri <> "/user")
+            (s ^. responseStatus . statusCode) `shouldBe` 200
+            (cs $ s ^. responseBody :: String) `shouldContain` "_fromUserLastName = &quot;Kuhn&quot"
 
-        -- the response will be a 500 saying "SUCCESS!" and mirroring the parsed csv file back into
-        -- the browser.  what we actually want to test is that the response is a 303 and that the
-        -- database will contain the data we posted.
+    describe "csv file parser" $ do
+        let ts :: [(String, [LBS])]
+            ts = [ ("empty file",
+                    "Vorname;Nachname;email;Login-Name" :
+                    [])
+                 , ("first and last name only",
+                    "Vorname;Nachname;email;Login-Name" :
+                    "Hein;Blöd" :
+                    [])
+                 , ("names and email",
+                    "Vorname;Nachname;email;Login-Name" :
+                    "Hein;Blöd;bloed@example.org" :
+                    [])
+                 , ("names, email, nick",
+                    "Vorname;Nachname;email;Login-Name" :
+                    "Hein;Blöd;bloed@example.org;nick" :
+                    [])
+                 , ("names and nick",
+                    "Vorname;Nachname;email;Login-Name" :
+                    "Hein;Blöd;;nick" :
+                    [])
+                 , ("multiple records",
+                    "Vorname;Nachname;email;Login-Name" :
+                    "Hein;Blöd;bloed@example.org" :
+                    "Heidi;Schmumel;br@example.org;mup" :
+                    "Jens;Kuhn;jens@example.org" :
+                    "Jens2;Kuhn2;;ock" :
+                    [])
+                 ]
 
-        r <- postWith opts (cs uri <> "/testing/file-upload") [classPart, filePart]
-        liftIO $ print r
+        forM_ ts $ \(label, file) -> it label $ do
+            let v :: Either String [CsvUserRecord] = decodeCsv $ LBS.unlines file
+            length <$> v `shouldBe` Right (length file - 1)

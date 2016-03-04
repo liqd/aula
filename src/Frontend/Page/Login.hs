@@ -68,7 +68,7 @@ instance ToHtml PageLogout where
 login :: (ActionM action) => ServerT (FormHandler PageHomeWithLoginPrompt ST) action
 login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin
   where
-    makeUserLogin (LoginFormData user _pass) = Action.login user
+    makeUserLogin (LoginFormData user _pass) = Action.login $ UserLogin user
 
 logout :: (ActionM m) => m (Frame PageLogout)
 logout = Action.logout >> makeFrame PageLogout

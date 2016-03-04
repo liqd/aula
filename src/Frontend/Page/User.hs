@@ -45,7 +45,7 @@ instance Page PageUserProfileDelegatedVotes where
 -- * User Settings
 
 data UserSettingData = UserSettingData
-    { profileEmail    :: Maybe Email
+    { profileEmail    :: Maybe UserEmail
     , profileOldPass  :: Maybe ST
     , profileNewPass1 :: Maybe ST
     , profileNewPass2 :: Maybe ST
@@ -60,12 +60,11 @@ instance FormPageView PageUserSettings where
 
     makeForm (PageUserSettings user) =
         UserSettingData
-        <$> ("email"         .: (fmap Email <$> DF.optionalText (fmap unEmail $ user ^. userEmail)))
+        <$> ("email"         .: (fmap UserEmail <$> DF.optionalText
+                                        (fmap fromUserEmail $ user ^. userEmail)))
         <*> ("old-password"  .: DF.optionalText Nothing)
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
-        where
-            unEmail (Email e) = e
 
     formPage v fa p = do
         semanticDiv p $ do
