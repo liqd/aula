@@ -1,6 +1,9 @@
 #!/bin/sh
 
-cd /root/aula
+/liqd/aula/.travis/docker-link-stack-workdir.sh
+
+# FIXME: Coverage does not work
+cd /liqd/aula
 
 echo $TRAVIS
 echo $TRAVIS_JOB_ID
