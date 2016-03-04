@@ -329,7 +329,7 @@ mkUserLogin protoUser = pick (gen firstn lastn)
     mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
 
     noise :: [ST]
-    noise = Set.toList . Set.fromList $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'b']))
+    noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
 
 mkRandomPassword :: Persist UserPass
 mkRandomPassword = persistIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
