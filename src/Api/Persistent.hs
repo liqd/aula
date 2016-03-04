@@ -364,15 +364,16 @@ instance FromProto Topic where
 
 -- | So far `newMetaInfo` is only used by `nextMetaInfo`.
 newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
-newMetaInfo u i = do
+newMetaInfo uid oid = do
     now <- Timestamp <$> persistIO getCurrentTime
+    -- Just user <- findUser uid  -- FIXME: need exceptions; need to make test suite smarter
     return MetaInfo
-        { _metaId              = i
-        , _metaCreatedBy       = u
-        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
-        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
+        { _metaId              = oid
+        , _metaCreatedBy       = uid
+        , _metaCreatedByLogin  = nil  -- FIXME: user ^. userLogin
+        , _metaCreatedByAvatar = nil  -- FIXME: user ^. userAvatar
         , _metaCreatedAt       = now
-        , _metaChangedBy       = u
+        , _metaChangedBy       = uid
         , _metaChangedAt       = now
         }
 

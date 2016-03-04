@@ -263,8 +263,8 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: URL
-    , _userGroups    :: [Group]  -- ^ (could be a set)
+    , _userAvatar    :: URL  -- FIXME UriPath?  Maybe?
+    , _userGroups    :: [Group]  -- FIXME make a set.  rename group to role.
     , _userPassword  :: UserPass
     , _userEmail     :: Maybe UserEmail
     }
