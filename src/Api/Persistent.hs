@@ -250,8 +250,8 @@ findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == sp
 loginUser :: UserLogin -> Persist ()
 loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
 
-logoutUser :: Persist ()
-logoutUser = modifyDb dbCurrentUser $ const Nothing
+logoutUser :: UserLogin -> Persist ()
+logoutUser _userLogin = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
 

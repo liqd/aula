@@ -107,7 +107,7 @@ instance ActionUserHandler Action where
     userState = get
 
     logout = do
-        persistent logoutUser
+        currentUser >>= persistent . logoutUser . view userLogin
         put UserLoggedOut
 
 class MonadError ActionExcept m => ActionError m
