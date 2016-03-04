@@ -53,16 +53,16 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlForm    PageUserSettings))
     , f (Proxy :: Proxy (ToHtmlForm    CreateTopic))
     , f (Proxy :: Proxy (ToHtmlForm    MoveIdeasToTopic))
-    , f (Proxy :: Proxy (ToHtmlForm PageAdminSettingsDurations))
-    , f (Proxy :: Proxy (ToHtmlForm PageAdminSettingsQuorum))
+    , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsDurations))
+    , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsQuorum))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGroupsAndPermissions))
---    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsUserCreateAndImport))
+--    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsUserCreateAndImport))  -- FIXME
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsEventsProtocol))
     , f (Proxy :: Proxy (ToHtmlDefault PageDelegateVote))
     , f (Proxy :: Proxy (ToHtmlDefault PageDelegationNetwork))
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticImprint))
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticTermsOfUse))
-    , f (Proxy :: Proxy (ToHtmlForm PageHomeWithLoginPrompt))
+    , f (Proxy :: Proxy (ToHtmlForm    PageHomeWithLoginPrompt))
     ]
 
 
@@ -127,7 +127,7 @@ samplePages = sequence $ pages g
   where
     g :: forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a)
         => Proxy a -> IO (TypeRep, String)
-    g Proxy = f <$> (generate arbitrary :: IO a)
+    g Proxy = f <$> (generate (scale (`div` 3) arbitrary) :: IO a)
 
     f :: (Typeable a, Show a, ToHtml' a) => a -> (TypeRep, String)
     f x = (typeOf x, terminatingShow x)
