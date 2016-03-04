@@ -281,8 +281,19 @@ newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
 newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
 
--- FIXME: Temporary hack to be able to save users.
-type instance Proto User = User
+type instance Proto User = ProtoUser
+
+data ProtoUser = ProtoUser
+    { _protoUserLogin     :: Maybe UserLogin
+    , _protoUserFirstName :: UserFirstName
+    , _protoUserLastName  :: UserLastName
+    , _protoUserGroups    :: [Group]
+    , _protoUserPassword  :: Maybe UserPass
+    , _protoUserEmail     :: Maybe UserEmail
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoUser
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -478,6 +489,7 @@ makeLenses ''User
 makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
+makeLenses ''ProtoUser
 
 class HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)

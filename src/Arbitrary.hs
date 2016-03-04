@@ -209,6 +209,9 @@ instance Arbitrary Phase where
 instance Arbitrary User where
     arbitrary = garbitrary
 
+instance Arbitrary ProtoUser where
+    arbitrary = garbitrary
+
 instance Arbitrary UserLogin where
     arbitrary = UserLogin <$> arbWord
 

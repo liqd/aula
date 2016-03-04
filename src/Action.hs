@@ -31,9 +31,6 @@ module Action
 
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
-
-    , mkNick
-    , generateRandomPassphrase
     )
 where
 
@@ -44,8 +41,7 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
-import Data.Elocrypt (mkPassword)
-import Data.String.Conversions (ST, LBS, cs)
+import Data.String.Conversions (ST, LBS)
 import Persistent
 import Prelude hiding (log)
 import Servant
@@ -54,8 +50,6 @@ import Types
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
-import qualified Data.Set as Set
-import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 -- FIXME: Remove. It is scaffolding to generate random data
@@ -203,27 +197,3 @@ decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
-
-
-----------------------------------------------------------------------
--- misc
-
-mkNick :: UserFirstName -> UserLastName -> Action UserLogin
-mkNick (UserFirstName firstn) (UserLastName lastn) = pick (gen firstn lastn)
-  where
-    pick :: [ST] -> Action UserLogin
-    pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< persistent (findUserByLogin l)
-    pick []                    = error "impossible.  (well, unlikely...)"
-
-    gen :: ST -> ST -> [ST]
-    gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise
-
-    mutate :: ST -> ST -> ST
-    mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
-
-    noise :: [ST]
-    noise = Set.toList . Set.fromList $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'b']))
-
-generateRandomPassphrase :: Action UserPass
-generateRandomPassphrase = Action . liftIO $
-    UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]

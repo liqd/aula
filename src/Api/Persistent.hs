@@ -4,6 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeOperators               #-}
+{-# LANGUAGE ViewPatterns                #-}
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
@@ -34,8 +35,12 @@ module Api.Persistent
     , findIdeasByTopic
     , findIdeasByUserId
     , findWildIdeasBySpace
+    , findUser
     , getUsers
     , addUser
+    , addFirstUser
+    , mkUserLogin
+    , mkRandomPassword
     , modifyUser
     , getTopics
     , addTopic
@@ -58,20 +63,20 @@ module Api.Persistent
     , dbVoteDuration
     , dbSchoolQuorum
     , dbClassQuorum
-    -- FIXME: Remove hack
-    , bootstrapUser
     , adminUsernameHack
     )
 where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, modifyTVar')
 import Control.Lens
-import Control.Monad (join, unless)
+import Control.Monad (join, unless, replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
+import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.Map (Map)
-import Data.Maybe (isNothing)
+import Data.Maybe (fromMaybe, isNothing)
+import Data.String.Conversions (ST, cs, (<>))
 import Data.Set (Set)
 import Data.Time.Clock (getCurrentTime)
 import Servant.Server ((:~>)(Nat))
@@ -80,6 +85,7 @@ import Types
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.Text as ST
 
 -- FIXME: Remove
 import Test.QuickCheck (generate, arbitrary)
@@ -195,11 +201,11 @@ modifyUser = modifyAMap dbUserMap
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> Persist ()
 modifyTopic = modifyAMap dbTopicMap
 
+findUser :: AUID User -> Persist (Maybe User)
+findUser = findInById dbUsers
+
 getUsers :: Persist [User]
 getUsers = getDb dbUsers
-
-addUser :: Proto User -> Persist User
-addUser = addDb dbUserMap
 
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
@@ -256,31 +262,80 @@ nextId = do
 currentUser :: Persist (AUID User)
 currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
-instance FromProto User where
-    fromProto u _ = u
+addUser :: Proto User -> Persist User
+addUser proto = do
+    metainfo  <- nextMetaInfo
+    uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
+    uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
+    let user = User
+          { _userMeta      = metainfo
+          , _userLogin     = uLogin
+          , _userFirstName = proto ^. protoUserFirstName
+          , _userLastName  = proto ^. protoUserLastName
+          , _userAvatar    = "http://no.avatar/"
+          , _userGroups    = proto ^. protoUserGroups
+          , _userPassword  = uPassword
+          , _userEmail     = proto ^. protoUserEmail
+          }
+    modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
+    return user
+
+-- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
+-- name and password must be 'Just' in the proto user.
+addFirstUser :: Proto User -> Persist User
+addFirstUser proto = do
+    now <- Timestamp <$> persistIO getCurrentTime
+    let uid = AUID 0
+        oid = AUID 0
+        uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
+        uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
+        metainfo = MetaInfo
+            { _metaId              = oid
+            , _metaCreatedBy       = uid
+            , _metaCreatedByLogin  = uLogin
+            , _metaCreatedByAvatar = "http://no.avatar/"
+            , _metaCreatedAt       = now
+            , _metaChangedBy       = uid
+            , _metaChangedAt       = now
+            }
+        user = User
+          { _userMeta      = metainfo
+          , _userLogin     = uLogin
+          , _userFirstName = proto ^. protoUserFirstName
+          , _userLastName  = proto ^. protoUserLastName
+          , _userAvatar    = "http://no.avatar/"
+          , _userGroups    = proto ^. protoUserGroups
+          , _userPassword  = uPassword
+          , _userEmail     = proto ^. protoUserEmail
+          }
+
+    modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
+    return user
+
+mkUserLogin :: ProtoUser -> Persist UserLogin
+mkUserLogin protoUser = pick (gen firstn lastn)
+  where
+    firstn :: ST = protoUser ^. protoUserFirstName . fromUserFirstName
+    lastn  :: ST = protoUser ^. protoUserLastName  . fromUserLastName
+
+    pick :: [ST] -> Persist UserLogin
+    pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< findUserByLogin l
+    pick []                    = error "impossible.  (well, unlikely.)"
+
+    gen :: ST -> ST -> [ST]
+    gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise
+
+    mutate :: ST -> ST -> ST
+    mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
+
+    noise :: [ST]
+    noise = Set.toList . Set.fromList $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'b']))
+
+mkRandomPassword :: Persist UserPass
+mkRandomPassword = persistIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 adminUsernameHack :: UserLogin
 adminUsernameHack = UserLogin "admin"
-
--- | Add the first user to an empty database.  AUID is set to 0.
---
--- FIXME: we can pick a valid AUID, or we can make sure that the database is completely empty.
--- either way, we will probably need something like this function in production to create the first
--- user, and it shouldn't be possible to use it to corrupt the 'Persist' state.
-bootstrapUser :: Proto User -> Persist User
-bootstrapUser protoUser = forceLogin uid >> addUser (tweak protoUser)
-  where
-    uid :: Integer
-    uid = 0
-
-    forceLogin :: Integer -> Persist ()
-    forceLogin x = modifyDb dbCurrentUser (const (Just (AUID x)))
-
-    tweak :: User -> User  -- FIXME: see FIXME in 'Api.Persistent.newMetaInfo'
-    tweak user = (userMeta . metaId .~ AUID 0)
-               . (userMeta . metaCreatedByLogin .~ (user ^. userLogin))
-               . (userLogin .~ adminUsernameHack)
-               $ user
 
 instance FromProto Idea where
     fromProto i m = Idea
