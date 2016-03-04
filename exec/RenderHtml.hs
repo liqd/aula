@@ -127,7 +127,7 @@ samplePages = sequence $ pages g
   where
     g :: forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a)
         => Proxy a -> IO (TypeRep, String)
-    g Proxy = f <$> (generate arbitrary :: IO a)
+    g Proxy = f <$> (generate (scale (`div` 3) arbitrary) :: IO a)
 
     f :: (Typeable a, Show a, ToHtml' a) => a -> (TypeRep, String)
     f x = (typeOf x, terminatingShow x)
