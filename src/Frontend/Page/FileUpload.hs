@@ -63,7 +63,7 @@ data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: ST
     , _csvUserRecordLast        :: ST
     , _csvUserRecordEmail       :: Maybe ST
-    , _csvUserRecordNick        :: Maybe ST
+    , _csvUserRecordLogin       :: Maybe ST
     }
   deriving (Eq, Show)
 
@@ -72,7 +72,7 @@ instance Csv.FromRecord CsvUserRecord where
         <$> parseName 50 0
         <*> parseName 50 1
         <*> parseMEmail 2
-        <*> pure (parseMNick 3)
+        <*> pure (parseMLogin 3)
       where
         parseName :: (Monad m) => Int -> Int -> m ST
         parseName maxLength i
@@ -91,8 +91,8 @@ instance Csv.FromRecord CsvUserRecord where
                 Nothing    -> fail $ "user record with bad email address: " <> show v
                 Just email -> pure . Just $ Thentos.Types.fromUserEmail email
 
-        parseMNick :: Int -> Maybe ST
-        parseMNick i
+        parseMLogin :: Int -> Maybe ST
+        parseMLogin i
             | length v < i + 1 = Nothing
             | v !! i == ""     = Nothing
             | otherwise        = Just $ v !! i
