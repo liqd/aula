@@ -349,6 +349,16 @@ newtype AUID a = AUID Integer
 instance HasUriPart (AUID a) where
     uriPart (AUID s) = fromString . show $ s
 
+-- | General information on objects stored in the DB.
+--
+-- Some of these fields, like login name and avatar url of creator, are redundant.  The reason to
+-- keep them here is that it makes it easy to keep large 'Page*' types containing many nested
+-- objects, and still allowing all these objects to be rendered purely only based on the information
+-- they contain.
+--
+-- If this is becoming too much in the future and we want to keep objects around without all this
+-- inlined information, we should consider making objects polymorphic in the concrete meta info
+-- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
 data MetaInfo a = MetaInfo
     { _metaId              :: AUID a
     , _metaCreatedBy       :: AUID User
