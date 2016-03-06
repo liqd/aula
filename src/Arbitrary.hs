@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -24,14 +25,25 @@ import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
-import Generics.SOP (Generic)
-import Generics.SOP.Arbitrary (garbitrary)
+import Generics.SOP
 import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
 import Test.QuickCheck.Instances ()
 
 import Types
 import Frontend.Page
+
 import qualified Frontend.Path as P
+
+
+-- | FIXME: push this upstream to basic-sop.
+garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary = to <$> (hsequence =<< elements subs)
+  where
+    subs :: [SOP Gen (Code a)]
+    subs = apInjs_POP (hcpure p (scale (\s -> max 0 (s - 10)) arbitrary))
+
+    p :: Proxy Arbitrary
+    p = Proxy
 
 
 instance Arbitrary DurationDays where
