@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -24,14 +25,25 @@ import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
-import Generics.SOP (Generic)
-import Generics.SOP.Arbitrary (garbitrary)
+import Generics.SOP
 import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
 import Test.QuickCheck.Instances ()
 
 import Types
 import Frontend.Page
+
 import qualified Frontend.Path as P
+
+
+-- | FIXME: push this upstream to basic-sop.
+garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary = to <$> (hsequence =<< elements subs)
+  where
+    subs :: [SOP Gen (Code a)]
+    subs = apInjs_POP (hcpure p (scale (\s -> max 0 (s - 10)) arbitrary))
+
+    p :: Proxy Arbitrary
+    p = Proxy
 
 
 instance Arbitrary DurationDays where
@@ -41,35 +53,35 @@ instance Arbitrary DurationDays where
 -- pages
 
 instance Arbitrary PageRoomsOverview where
-    arbitrary = scaleDown $ PageRoomsOverview <$> arb
+    arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = scaleDown $ PageIdeasOverview <$> arb <*> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
-    arbitrary = scaleDown $ PageIdeasInDiscussion <$> arb <*> arb
+    arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
 instance Arbitrary ViewTopicTab where
     arbitrary = elements [minBound..]
 
 instance Arbitrary ViewTopic where
-    arbitrary = oneof [ scaleDown $ ViewTopicIdeas <$> arb <*> arb <*> arb
+    arbitrary = oneof [ ViewTopicIdeas <$> arb <*> arb <*> arb
                       , pure ViewTopicDelegations ]
 
 instance Arbitrary ViewIdea where
-    arbitrary = scaleDown $ ViewIdea <$> arb <*> arb
+    arbitrary = ViewIdea <$> arb <*> arb
 
 instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
     arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
 instance Arbitrary CreateIdea where
-    arbitrary = scaleDown $ CreateIdea <$> arb <*> arb
+    arbitrary = CreateIdea <$> arb <*> arb
 
 instance Arbitrary EditIdea where
-    arbitrary = scaleDown $ EditIdea <$> arb
+    arbitrary = EditIdea <$> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = scaleDown $ PageUserProfileCreatedIdeas <$> arb <*> arb
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
@@ -81,7 +93,7 @@ instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb
 
 instance Arbitrary MoveIdeasToTopic where
-    arbitrary = scaleDown $ MoveIdeasToTopic <$> arb <*> arb <*> arb
+    arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
