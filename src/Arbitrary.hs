@@ -53,7 +53,7 @@ instance Arbitrary DurationDays where
 -- pages
 
 instance Arbitrary PageRoomsOverview where
-    arbitrary = PageRoomsOverview <$> arbitrary
+    arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
     arbitrary = PageIdeasOverview <$> arb <*> arb
