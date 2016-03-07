@@ -263,6 +263,15 @@ instance ToHtml (FormPage p) where
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)
+--
+-- Note on lazy io when uploading files: the 'FormPageResult' is required to be in 'NFData'.  It is
+-- the responsibility of 'redirectFormHandler' to only close the files once they have been
+-- completely read and parsed.  This has the obvious implications on resource consumption.
+--
+-- Note that since we read (or write to) files eagerly and close them in obviously safe
+-- places (e.g., a parent thread of all potentially file-opening threads, after they all
+-- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
+-- the `resourcet` engine and it's use pattern.
 redirectFormHandler
     :: (FormPageView p, Page p, ActionM m, NFData (FormPageResult p))
     => m p                       -- ^ Page representation
