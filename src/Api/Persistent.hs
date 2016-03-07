@@ -261,8 +261,7 @@ nextId = do
     AUID <$> getDb dbLastId
 
 currentUser :: Persist (AUID User)
--- currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
-currentUser = fromMaybe (AUID 0) <$> getDb dbCurrentUser
+currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
 addUser :: Proto User -> Persist User
 addUser proto = do
