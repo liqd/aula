@@ -2,7 +2,7 @@
     @include box-shadow(0 0 3px 0 rgba(0, 0, 0, 0.5));
     @include clearfix;
     @include rem(padding, 0 22px);
-    @include rem(height, $header-height);
+    @include rem(height, $main-menu-height);
 }
 
 .main-header-menu,
@@ -12,7 +12,7 @@
 }
 
 .site-logo {
-    @include rem(height, $header-height);
+    @include rem(height, $main-menu-height);
     @include rem(margin-right, 40px);
     @include rem(width, 127px);
     @include svg(aula-logo);
@@ -27,21 +27,7 @@
 
 .main-header-menu,
 .main-header-user {
-    > li {
-        @include rem(margin-right, 25px);
-
-        a {
-            color: $color-text;
-            display: block;
-            font-weight: bold;
-            line-height: $header-height;
-
-            &.m-selected, &:focus, &:hover {
-                color: $color-link;
-                text-decoration: none;
-            }
-        }
-    }
+    @extend %main-menu;
 }
 
 $avatar-size: 40px;
@@ -50,7 +36,7 @@ $avatar-size: 40px;
     @include rem(border-radius, 20px);
     @include rem(height, $avatar-size);
     @include rem(margin-right, 12px);
-    @include rem(margin-top, (($header-height - $avatar-size) / 2));
+    @include rem(margin-top, (($main-menu-height - $avatar-size) / 2));
     @include rem(width, $avatar-size);
     background: $color-grey-mid;
     float: right;
@@ -61,7 +47,7 @@ $arrow-width: 6px;
 .pop-menu {
     cursor: pointer;
     display: inline-block;
-    line-height: $header-height;
+    line-height: $main-menu-height;
     outline: 0;
     position: relative;
 

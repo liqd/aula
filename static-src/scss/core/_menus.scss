@@ -1,0 +1,17 @@
+%main-menu {
+    > li {
+        @include rem(margin-right, 25px);
+
+        a {
+            color: $color-text;
+            display: block;
+            font-weight: bold;
+            line-height: $main-menu-height;
+
+            &.m-selected, &:focus, &:hover {
+                color: $color-link;
+                text-decoration: none;
+            }
+        }
+    }
+}
