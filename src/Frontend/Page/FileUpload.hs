@@ -108,7 +108,7 @@ batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
         let schoolcl = SchoolClass theOnlySchoolYearHack clname
         eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
         case eCsv of
-            Left msg      -> throwError $ err500 { errBody = "parsing upload FAILED: " <> cs msg }
+            Left msg      -> throwError $ err500 { errBody = "csv parsing FAILED: " <> cs msg }
             Right records -> mapM_ (p schoolcl) records
 
     p :: SchoolClass -> CsvUserRecord -> m ()
