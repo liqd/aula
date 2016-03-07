@@ -3,8 +3,6 @@
 module Frontend.Page (module P)
 where
 
-import Frontend.Html as P
-
 import Frontend.Page.Admin      as P
 import Frontend.Page.Comment    as P
 import Frontend.Page.Delegation as P
