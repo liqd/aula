@@ -83,7 +83,7 @@ instance ToHtml PageRoomsOverview where
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
 
         showIdeaSpaceCategory SchoolSpace    = "school"
-        showIdeaSpaceCategory (ClassSpace c) = "class"
+        showIdeaSpaceCategory (ClassSpace _) = "class"
 
 instance Page PageRoomsOverview where
     isPrivatePage _ = True
