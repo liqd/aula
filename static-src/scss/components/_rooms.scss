@@ -1,0 +1,27 @@
+.item-room {
+    @include rem(margin-bottom, 40px);
+    box-shadow: 0 0 2px 0 rgba(77, 77, 77, 0.5);
+
+    .item-room-image {
+        @include rem(height, 120px);
+        background-color: $color-grey-mid;
+        background-repeat: no-repeat;
+        background-position: center center;
+        display: block;
+    }
+
+    .item-room-title {
+        @include rem(padding, 22px);
+        @include rem(font-size, $font-size-xlarge);
+        background: #fff;
+        color: $color-text;
+    }
+
+    &.is-school .item-room-image {
+        @include svg(school_teaser);
+    }
+
+    &.is-class .item-room-image {
+        @include svg(class_teaser);
+    }
+}
