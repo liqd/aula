@@ -39,9 +39,9 @@ inputSelect_ :: [Lucid.Attribute] -> ST -> DF.View (Lucid.HtmlT m ()) -> Monad m
 inputSelect_ attrs ref vw = select_
     ([ id_   ref'
      , name_ ref'
-     ] ++ attrs)
-      $ forM_ choices $ \(i, c, sel) -> option_
-          ([value_ (value i)] ++ (DF.ifSingleton sel $ selected_ "selected")) c
+     ] <> attrs)
+      . forM_ choices $ \(i, c, sel) -> option_
+          ([value_ (value i)] <> DF.ifSingleton sel (selected_ "selected")) c
   where
     ref'    = DF.absoluteRef ref vw
     value i = ref' `mappend` "." `mappend` i
@@ -54,7 +54,7 @@ inputText_ attrs ref vw = Lucid.input_ $
     , Lucid.id_      ref'
     , Lucid.name_    ref'
     , Lucid.value_ $ DF.fieldInputText ref vw
-    ] ++ attrs
+    ] <> attrs
   where
     ref' = DF.absoluteRef ref vw
 
@@ -64,7 +64,7 @@ inputPassword_ attrs ref vw = input_ $
     , id_      ref'
     , name_    ref'
     , value_ $ DF.fieldInputText ref vw
-    ] ++ attrs
+    ] <> attrs
   where
     ref' = DF.absoluteRef ref vw
 
@@ -72,7 +72,7 @@ inputSubmit_ :: [Lucid.Attribute] -> ST -> Monad m => Lucid.HtmlT m ()
 inputSubmit_ attrs value = input_ $
     [ type_  "submit"
     , value_ value
-    ] ++ attrs
+    ] <> attrs
 
 src_ :: HasPath p => p -> Lucid.Attribute
 src_ = Lucid.src_ . absoluteUriPath . relPath
