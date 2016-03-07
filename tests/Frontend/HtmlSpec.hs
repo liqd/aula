@@ -74,15 +74,6 @@ spec = do
 ----------------------------------------------------------------------
 -- translate form data back to form input
 
-instance PayloadToEnv ProtoIdea where
-    payloadToEnv view (ProtoIdea t (Markdown d) c _is) = \case
-        ["", "title"]         -> pure [TextInput t]
-        ["", "idea-text"]     -> pure [TextInput d]
-        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
-        [""] -> pure [] -- FIXME: Why? We have a pure field which shouldn't be there.
-        bad -> error $ "instance PayloadToEnv ProtoIdea: " <> show bad
-      -- FIXME: reduce boilerplate?
-
 -- | Translate a 'Category' value into the select string for the form 'Env'.
 --
 -- FIXME: this function should be more general.
@@ -112,6 +103,23 @@ selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> v
     showCategoryValue :: IsString s => Category -> s
     showCategoryValue ((`lookup` categoryValues) -> Just v) = v
 
+-- | When context dependent data is constructed via forms with the @pure@ combinator
+-- in the form description, in the digestive functors libarary an empty path will
+-- be generated. Which is not an issue here. The 'contextDependentForm' function
+-- guards against that.
+-- E.g
+-- ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
+conextDependentForm [""] _ = pure []
+conextDependentForm path f = f path
+
+instance PayloadToEnv ProtoIdea where
+    payloadToEnv view (ProtoIdea t (Markdown d) c _is) path = conextDependentForm path $ \case
+        ["", "title"]         -> pure [TextInput t]
+        ["", "idea-text"]     -> pure [TextInput d]
+        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
+        bad -> error $ "instance PayloadToEnv ProtoIdea: " <> show bad
+      -- FIXME: reduce boilerplate?
+
 instance PayloadToEnv LoginFormData where
     payloadToEnv _ (LoginFormData name pass) = \case
         ["", "user"] -> pure [TextInput name]
@@ -119,17 +127,16 @@ instance PayloadToEnv LoginFormData where
         bad -> error $ "instance PayloadToEnv LoginFormData: " <> show bad
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnv _ (ProtoTopic title (Markdown desc) image _ _) = \case
-        ["", "title"] -> pure [TextInput title]
-        ["", "desc"]  -> pure [TextInput desc]
-        ["", "image"] -> pure [TextInput image]
-        [""]          -> pure [] -- FIXME: why?
-        bad -> error $ "instance PayloadToEnv ProtoTopic: " <> show bad
+    payloadToEnv _ (ProtoTopic title (Markdown desc) image _ _) path =
+        conextDependentForm path $ \case
+            ["", "title"] -> pure [TextInput title]
+            ["", "desc"]  -> pure [TextInput desc]
+            ["", "image"] -> pure [TextInput image]
+            bad -> error $ "instance PayloadToEnv ProtoTopic: " <> show bad
 
 instance PayloadToEnv [AUID Idea] where
-    payloadToEnv _ ideas = \case
+    payloadToEnv _ ideas path = conextDependentForm path $ \case
         ["", s] | "idea-" `isPrefixOf` (cs s :: String) -> pure [TextInput (if cs s `elem` ideas' then "on" else "off")]
-        [""]                                            -> pure [] -- FIXME: why?
         bad -> error $ "instance PayloadToEnv [AUID Idea]: " <> show bad
       where
         ideas' = [ "idea-" <> show i | i <- ideas ]
