@@ -103,7 +103,7 @@ batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
-        throwError $ err500 { errBody = "uploaded failed: no file!" }
+        throwError $ err500 { errBody = "upload FAILED: no file!" }
     q (BatchCreateUsersFormData clname (Just file)) = do
         let schoolcl = SchoolClass theOnlySchoolYearHack clname
         eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
