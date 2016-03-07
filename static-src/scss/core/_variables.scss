@@ -2,16 +2,23 @@ $font-family-regular:       Cabin, helvetica, sans-serif;
 
 $font-weight-bold:          700;
 
+$font-size-jumbo:           40px;
 $font-size-xlarge:          26px;
 $font-size-normal:          16px;
 $font-size-small:           14px;
 
 
 $color-grey-dark:           #535353;
-$color-grey-mid:            #e4e4e4;
+$color-grey-mid:            #898989;
+$color-grey-light:          #e4e4e4;
 $color-brand1:              #69970b; // Green
 
 $color-text:                $color-grey-dark;
+$color-text-muted:          $color-grey-mid;
 $color-link:                $color-brand1;
 
 $header-height:             57px;
+
+$input-height:              50px;
+
+$mobile-breakpoint:         768px;

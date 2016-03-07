@@ -53,10 +53,12 @@ instance FormPageView PageHomeWithLoginPrompt where
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
                 div_ [class_ "login-register-form"] . DF.form v fa $ do
                     DF.inputText     "user" v
+-- TODO: Add placeholder="Dein Benutzername"
                     DF.inputPassword "pass" v
+-- TODO: Add placeholder="Dein Passwort"
                     DF.inputSubmit   "Login"
-                div_ $ do
-                    p_ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
+-- TODO: Add class="btn-cta"
+                    p_ [class_ "text-muted login-register-form-notice"] "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
 
 instance ToHtml PageLogout where
     toHtmlRaw = toHtml

@@ -1,0 +1,9 @@
+.login-register-form {
+    width: 60%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.login-register-form-notice {
+    @include rem(margin-top, 80px);
+}

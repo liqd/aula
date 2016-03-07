@@ -16,3 +16,13 @@ a {
         text-decoration: underline;
     }
 }
+
+.main-heading {
+    @include rem(margin-bottom, 45px);
+    font-size: $font-size-jumbo;
+    text-align: center;
+}
+
+.text-muted {
+    color: $color-text-muted;
+}
