@@ -34,7 +34,7 @@ $avatar-size: 40px;
     @include rem(margin-right, 12px);
     @include rem(margin-top, (($main-menu-height - $avatar-size) / 2));
     @include rem(width, $avatar-size);
-    background: $color-grey-mid;
+    background: $color-grey-light;
     float: right;
 }
 
@@ -79,7 +79,7 @@ $arrow-width: 6px;
     opacity: 0;
     position: absolute;
     background: #fff;
-    border: 1px solid $color-grey-mid;
+    border: 1px solid $color-grey-light;
     z-index: 1;
 
     >:after, >:before {
@@ -104,13 +104,13 @@ $arrow-width: 6px;
         @include rem(border-width, $arrow-width + 1px);
         @include rem(margin, 0 0 0 (-$arrow-width - 1px));
         border-color: rgba(229, 229, 229, 0);
-        border-bottom-color: $color-grey-mid;
+        border-bottom-color: $color-grey-light;
     }
 }
 
 .pop-menu-list-item {
     @include rem(font-size, $font-size-small);
-    border-bottom: 1px solid $color-grey-mid;
+    border-bottom: 1px solid $color-grey-light;
     line-height: 1.4;
 
     a {

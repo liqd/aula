@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.9.0.
+-- This file has been generated from package.yaml by hpack version 0.9.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -89,6 +89,7 @@ library
       Frontend.Page.User
       Frontend.Path
       Frontend.Prelude
+      Lucid.Missing
       Persistent
       Transaction
       Types
@@ -292,6 +293,7 @@ test-suite spec
       Frontend.Page.User
       Frontend.Path
       Frontend.Prelude
+      Lucid.Missing
       Persistent
       Transaction
       Types
