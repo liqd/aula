@@ -49,12 +49,14 @@ instance FormPageView PageHomeWithLoginPrompt where
 
     formPage v fa p =
         semanticDiv p $ do
-            div_ . DF.form v fa $ do
-                DF.inputText     "user" v >> br_ []
-                DF.inputPassword "pass" v >> br_ []
-                DF.inputSubmit   "Login"
-            div_ $ do
-                p_ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
+            div_ [class_ "container container-main"] $ do
+                h1_ [class_ "main-heading"] "Willkommen bei Aula"
+                div_ [class_ "login-register-form"] . DF.form v fa $ do
+                    DF.inputText     "user" v
+                    DF.inputPassword "pass" v
+                    DF.inputSubmit   "Login"
+                div_ $ do
+                    p_ "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
 
 instance ToHtml PageLogout where
     toHtmlRaw = toHtml
