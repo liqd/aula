@@ -541,6 +541,10 @@ showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
 showIdeaSpace (ClassSpace c) = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
+showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
+showIdeaSpaceCategory SchoolSpace    = "school"
+showIdeaSpaceCategory (ClassSpace _) = "class"
+
 parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
 parseIdeaSpace s
     | s == "school" = Right SchoolSpace
