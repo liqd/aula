@@ -1,0 +1,13 @@
+.main-footer {
+    @extend %main-menu-container;
+    background: $color-grey-mid;
+}
+
+.main-footer-menu {
+    @extend %main-menu;
+}
+
+.main-footer-blurb {
+    float: right;
+    line-height: $main-menu-height;
+}

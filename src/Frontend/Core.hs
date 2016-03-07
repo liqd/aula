@@ -134,7 +134,9 @@ pageFrame' extraHeaders mUser bdy = do
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         sequence_ extraHeaders
     body_ $ do
-        headerMarkup mUser >> bdy >> footerMarkup
+        _ <- div_ [class_ "page-wrapper"] $ do
+            headerMarkup mUser >> bdy
+        footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
@@ -179,7 +181,7 @@ footerMarkup = do
             li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
             li_ $ a_ [href_ P.Imprint] "Impressum"
         span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
-    script_ [src_ $ P.TopStatic "third-party/modernizr-custom.js"]
+    script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
 
