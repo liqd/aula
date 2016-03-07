@@ -55,7 +55,8 @@ instance FormPageView PageHomeWithLoginPrompt where
                     inputText_     [placeholder_ "Dein Benutzername"] "user" v
                     inputPassword_ [placeholder_ "Dein Passwort"] "pass" v
                     inputSubmit_   [class_ "btn-cta"] "Login"
-                    p_ [class_ "text-muted login-register-form-notice"] "Solltest du dein Passwort nich mehr kennen, melde dich bitte bei den Admins euer Schule."
+                    p_ [class_ "text-muted login-register-form-notice"]
+                        "Solltest du dein Passwort nicht mehr kennen, melde dich bitte bei den Admins euer Schule."
 
 instance ToHtml PageLogout where
     toHtmlRaw = toHtml
