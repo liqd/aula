@@ -17,8 +17,4 @@ textarea {
     font-family: $font-family-regular;
     line-height: $input-height;
     width: 100%;
-
-    @media screen and (max-width: $mobile-breakpoint) {
-        width: 100%;
-    }
 }

@@ -49,9 +49,9 @@ instance FormPageView PageHomeWithLoginPrompt where
 
     formPage v fa p =
         semanticDiv p $ do
-            div_ [class_ "container container-main"] $ do
+            div_ [class_ "login-register-form"] $ do
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
-                div_ [class_ "login-register-form"] . DF.form v fa $ do
+                div_ . DF.form v fa $ do
                     DF.inputText     "user" v
 -- TODO: Add placeholder="Dein Benutzername"
                     DF.inputPassword "pass" v
