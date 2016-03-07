@@ -81,8 +81,7 @@ data Idea = Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category
-    , _ideaSpace      :: IdeaSpace
-    , _ideaTopic      :: Maybe (AUID Topic)
+    , _ideaLocation   :: Either IdeaSpace (AUID Topic)
     , _ideaComments   :: Set Comment
     , _ideaLikes      :: Set IdeaLike
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
