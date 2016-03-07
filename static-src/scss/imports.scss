@@ -1,8 +1,10 @@
 @import "core/_variables";
 @import "core/_mixins";
 
+@import "core/_menus";
 @import "core/_container";
 @import "core/_fonts";
 @import "core/_type";
-@import "core/_header";
+@import "core/_header";;
+@import "core/_footer";;
 @import "components/_rooms";
