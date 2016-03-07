@@ -261,7 +261,8 @@ nextId = do
     AUID <$> getDb dbLastId
 
 currentUser :: Persist (AUID User)
-currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
+-- currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
+currentUser = fromMaybe (AUID 0) <$> getDb dbCurrentUser
 
 addUser :: Proto User -> Persist User
 addUser proto = do
@@ -344,7 +345,7 @@ instance FromProto Idea where
         , _ideaTitle    = i ^. protoIdeaTitle
         , _ideaDesc     = i ^. protoIdeaDesc
         , _ideaCategory = i ^. protoIdeaCategory
-        , _ideaSpace    = SchoolSpace
+        , _ideaSpace    = i ^. protoIdeaIdeaSpace
         , _ideaTopic    = Nothing
         , _ideaComments = nil
         , _ideaLikes    = nil

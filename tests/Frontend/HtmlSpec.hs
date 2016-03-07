@@ -9,6 +9,7 @@
 
 module Frontend.HtmlSpec where
 
+import Control.Lens ((^.), set)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except
 import Data.List
@@ -62,9 +63,9 @@ spec = do
           F (arb :: Gen CreateIdea)
         , F (arb :: Gen EditIdea)
         , F (arb :: Gen PageHomeWithLoginPrompt)
-    --  , F (arb :: Gen CreateTopic) FIXME
+        , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
-    --  , F (arb :: Gen MoveIdeasToTopic) FIXME
+        , F (arb :: Gen MoveIdeasToTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
         ]
@@ -74,10 +75,11 @@ spec = do
 -- translate form data back to form input
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnv view (ProtoIdea t (Markdown d) c) = \case
+    payloadToEnv view (ProtoIdea t (Markdown d) c _is) = \case
         ["", "title"]         -> pure [TextInput t]
         ["", "idea-text"]     -> pure [TextInput d]
         ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
+        [""] -> pure [] -- FIXME: Why? We have a pure field which shouldn't be there.
         bad -> error $ "instance PayloadToEnv ProtoIdea: " <> show bad
       -- FIXME: reduce boilerplate?
 
@@ -167,6 +169,7 @@ data FormGen where
     F :: ( r ~ FormPageResult m
          , Show m, Typeable m, FormPageView m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
+         , ArbFormPageResult m
          ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
@@ -218,8 +221,37 @@ postToForm (F g) = do
     where
         run' = run . failOnError
 
-arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
-arbFormPageResult _ = arbitrary
+class FormPageView p => ArbFormPageResult p where
+    arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
+
+instance ArbFormPageResult CreateIdea where
+    arbFormPageResult (CreateIdea space _) = set protoIdeaIdeaSpace space <$> arbitrary
+
+instance ArbFormPageResult EditIdea where
+    arbFormPageResult (EditIdea idea) = set protoIdeaIdeaSpace (idea ^. ideaSpace) <$> arbitrary
+
+instance ArbFormPageResult PageAdminSettingsQuorum where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult PageAdminSettingsDurations where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult PageUserSettings where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult PageHomeWithLoginPrompt where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult CreateTopic where
+    arbFormPageResult (CreateTopic space ideas) =
+            set protoTopicIdeaSpace space
+          . set protoTopicIdeas ideas
+        <$> arbitrary
+
+instance ArbFormPageResult MoveIdeasToTopic where
+    arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
+        -- FIXME: Generate a sublist from the given ideas
+        pure $ map (^. _Id) ideas
 
 class PayloadToEnv a where
     payloadToEnv :: View (Html ()) -> a -> Env Action
