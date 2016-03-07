@@ -1,17 +1,15 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE TypeFamilies          #-}
+
 module Data.UriPath
     ( UriPart
     , UriPath
     , (</>)
     , absoluteUriPath
     , relativeUriPath
-    , script_
-    , src_
-    , href_
-    , onclick_
     , HasPath(..)
     , HasUriPart(..))
     where
@@ -20,8 +18,6 @@ import Thentos.Prelude
 import Data.String.Conversions
 
 import qualified Data.Text as ST
-import qualified Lucid
-import qualified Lucid.Base as Lucid
 
 newtype UriPart = SlashFreeUriPart { fromUriPart :: ST }
 
@@ -55,20 +51,6 @@ relativeUriPath u = ST.intercalate "/" . map cs $ u `appendUriParts` []
 
 absoluteUriPath :: UriPath -> ST
 absoluteUriPath u = "/" <> relativeUriPath u
-
--- | FIXME: slightly out of place here.  should probably go to Ludic.Missing.  see also
--- https://github.com/chrisdone/lucid/issues/30
-script_ :: (Monad m) => [Lucid.Attribute] -> Lucid.HtmlT m ()
-script_ attrs = Lucid.termRawWith "script" attrs mempty
-
-src_ :: HasPath p => p -> Lucid.Attribute
-src_ = Lucid.src_ . absoluteUriPath . relPath
-
-href_ :: HasPath p => p -> Lucid.Attribute
-href_ = Lucid.href_ . absoluteUriPath . relPath
-
-onclick_ :: HasPath p => p -> Lucid.Attribute
-onclick_ p = Lucid.onclick_ ("location.href='" <> absoluteUriPath (relPath p) <> "'")
 
 class HasPath p where
     relPath :: p -> UriPath
