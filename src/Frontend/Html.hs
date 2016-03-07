@@ -33,12 +33,3 @@ data PageIdeaDetailMoveIdeaToTopic = PageIdeaDetailMoveIdeaToTopic
 instance ToHtml PageIdeaDetailMoveIdeaToTopic where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageIdeaDetailMoveIdeaToTopic"
-
-
--- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageDelegateVote where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageDelegateVote"
