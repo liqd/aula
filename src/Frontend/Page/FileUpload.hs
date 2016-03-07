@@ -60,17 +60,17 @@ theOnlySchoolYearHack :: Int
 theOnlySchoolYearHack = 2016
 
 data CsvUserRecord = CsvUserRecord
-    { _csvUserRecordFirst       :: ST
-    , _csvUserRecordLast        :: ST
-    , _csvUserRecordEmail       :: Maybe ST
-    , _csvUserRecordLogin       :: Maybe ST
+    { _csvUserRecordFirst       :: UserFirstName
+    , _csvUserRecordLast        :: UserLastName
+    , _csvUserRecordEmail       :: Maybe UserEmail
+    , _csvUserRecordLogin       :: Maybe UserLogin
     }
   deriving (Eq, Show)
 
 instance Csv.FromRecord CsvUserRecord where
     parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
-        <$> parseName 50 0
-        <*> parseName 50 1
+        <$> (UserFirstName <$> parseName 50 0)
+        <*> (UserLastName <$> parseName 50 1)
         <*> parseMEmail 2
         <*> pure (parseMLogin 3)
       where
@@ -83,19 +83,19 @@ instance Csv.FromRecord CsvUserRecord where
             | otherwise
                 = pure $ v !! i
 
-        parseMEmail :: (Monad m) => Int -> m (Maybe ST)
+        parseMEmail :: (Monad m) => Int -> m (Maybe UserEmail)
         parseMEmail i
             | length v < i + 1 = pure Nothing
             | v !! i == ""     = pure Nothing
             | otherwise        = case Thentos.Types.parseUserEmail $ v !! i of
                 Nothing    -> fail $ "user record with bad email address: " <> show v
-                Just email -> pure . Just $ Thentos.Types.fromUserEmail email
+                Just email -> pure . Just . UserEmail $ Thentos.Types.fromUserEmail email
 
-        parseMLogin :: Int -> Maybe ST
+        parseMLogin :: Int -> Maybe UserLogin
         parseMLogin i
             | length v < i + 1 = Nothing
             | v !! i == ""     = Nothing
-            | otherwise        = Just $ v !! i
+            | otherwise        = Just . UserLogin $ v !! i
 
 batchCreateUsers :: forall m. (ActionTempCsvFiles m, ActionM m)
       => ServerT (FormHandler BatchCreateUsers ST) m
@@ -103,22 +103,23 @@ batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
-        throwError $ err500 { errBody = "uploaded failed: no file!" }
+        throwError $ err500 { errBody = "upload FAILED: no file!" }  -- FIXME: status code?
     q (BatchCreateUsersFormData clname (Just file)) = do
         let schoolcl = SchoolClass theOnlySchoolYearHack clname
         eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
         case eCsv of
-            Left msg      -> throwError $ err500 { errBody = "parsing upload FAILED: " <> cs msg }
+            Left msg      -> throwError $ err500 { errBody = "csv parsing FAILED: " <> cs msg }
+                                             -- FIXME: status code?
             Right records -> mapM_ (p schoolcl) records
 
     p :: SchoolClass -> CsvUserRecord -> m ()
     p  schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = Action.persistent $ do
         addIdeaSpaceIfNotExists $ ClassSpace schoolcl
         void . addUser $ ProtoUser
-            { _protoUserLogin     = UserLogin <$> mLogin
-            , _protoUserFirstName = UserFirstName firstName
-            , _protoUserLastName  = UserLastName lastName
+            { _protoUserLogin     = mLogin
+            , _protoUserFirstName = firstName
+            , _protoUserLastName  = lastName
             , _protoUserGroups    = [Student schoolcl]
             , _protoUserPassword  = Nothing
-            , _protoUserEmail     = UserEmail <$> mEmail
+            , _protoUserEmail     = mEmail
             }

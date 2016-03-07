@@ -80,6 +80,8 @@ instance ToHtml () where
 --       combinator
 --     * Later on when we write selenium suite, the semantic tags helps up to parse, identify and test
 --       elements on the page.
+--
+-- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
@@ -263,6 +265,15 @@ instance ToHtml (FormPage p) where
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)
+--
+-- Note on file upload: The 'processor' argument is responsible for reading all file contents before
+-- returning a WHNF from 'popTempCsvFile'.  'cleanupTempCsvFiles' will be called from within this
+-- function as a 'processor' finalizer, so be weary of lazy IO!
+--
+-- Note that since we read (or write to) files eagerly and close them in obviously safe
+-- places (e.g., a parent thread of all potentially file-opening threads, after they all
+-- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
+-- the `resourcet` engine and it's use pattern.
 redirectFormHandler
     :: (FormPageView p, Page p, ActionM m)
     => m p                       -- ^ Page representation
