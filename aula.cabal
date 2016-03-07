@@ -35,6 +35,7 @@ library
     , cassava
     , containers
     , cookie
+    , deepseq
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -111,6 +112,7 @@ executable aula-server
     , cassava
     , containers
     , cookie
+    , deepseq
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -162,6 +164,7 @@ executable aula-html-dummies
     , cassava
     , containers
     , cookie
+    , deepseq
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -218,6 +221,7 @@ test-suite spec
     , cassava
     , containers
     , cookie
+    , deepseq
     , digestive-functors
     , digestive-functors-lucid
     , directory

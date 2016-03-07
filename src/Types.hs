@@ -14,8 +14,10 @@ module Types
     , readMaybe)
 where
 
+import Control.DeepSeq
 import Control.Lens (makeLenses, Lens', (^.), (^?), _Just)
 import Control.Monad
+import Generics.SOP.NFData (grnf)
 import Data.Binary
 import Data.Char
 import Data.Proxy (Proxy(Proxy))
@@ -53,7 +55,10 @@ justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
-  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
+  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
+
+instance SOP.Generic DurationDays
+instance NFData DurationDays where rnf = grnf
 
 
 ----------------------------------------------------------------------
@@ -92,6 +97,7 @@ data Idea = Idea
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Idea
+instance NFData Idea where rnf = grnf
 
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
@@ -103,6 +109,7 @@ data ProtoIdea = ProtoIdea
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoIdea
+instance NFData ProtoIdea where rnf = grnf
 
 type instance Proto Idea = ProtoIdea
 
@@ -116,6 +123,7 @@ data Category =
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 instance SOP.Generic Category
+instance NFData Category where rnf = grnf
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
@@ -124,6 +132,7 @@ data IdeaLike = IdeaLike
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaLike
+instance NFData IdeaLike where rnf = grnf
 
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote', which doesn't have neutral.
 data IdeaVote = IdeaVote
@@ -133,11 +142,13 @@ data IdeaVote = IdeaVote
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVote
+instance NFData IdeaVote where rnf = grnf
 
 data IdeaVoteValue = Yes | No | Neutral
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 instance SOP.Generic IdeaVoteValue
+instance NFData IdeaVoteValue where rnf = grnf
 
 data IdeaResult = IdeaResult
     { _ideaResultMeta   :: MetaInfo IdeaResult
@@ -147,11 +158,13 @@ data IdeaResult = IdeaResult
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaResult
+instance NFData IdeaResult where rnf = grnf
 
 data IdeaResultValue = NotFeasible | Winning | NotEnoughVotes
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 instance SOP.Generic IdeaResultValue
+instance NFData IdeaResultValue where rnf = grnf
 
 ----------------------------------------------------------------------
 -- comment
@@ -169,6 +182,7 @@ data Comment = Comment
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Comment
+instance NFData Comment where rnf = grnf
 
 -- | "Stimme" for "Verbesserungsvorschlag"
 data CommentVote = CommentVote
@@ -178,11 +192,13 @@ data CommentVote = CommentVote
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CommentVote
+instance NFData CommentVote where rnf = grnf
 
 data UpDown = Up | Down
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance SOP.Generic UpDown
+instance NFData UpDown where rnf = grnf
 
 ----------------------------------------------------------------------
 -- idea space, topic, phase
@@ -194,6 +210,7 @@ data IdeaSpace =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaSpace
+instance NFData IdeaSpace where rnf = grnf
 
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
@@ -202,6 +219,9 @@ data SchoolClass = SchoolClass
     , _className       :: ST  -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic SchoolClass
+instance NFData SchoolClass where rnf = grnf
 
 schoolClass :: Int -> ST -> SchoolClass
 schoolClass = SchoolClass
@@ -220,6 +240,7 @@ data Topic = Topic
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Topic
+instance NFData Topic where rnf = grnf
 
 data ProtoTopic = ProtoTopic
     { _protoTopicTitle     :: ST
@@ -231,6 +252,7 @@ data ProtoTopic = ProtoTopic
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoTopic
+instance NFData ProtoTopic where rnf = grnf
 
 type instance Proto Topic = ProtoTopic
 
@@ -245,6 +267,7 @@ data Phase =
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 instance SOP.Generic Phase
+instance NFData Phase where rnf = grnf
 
 phaseName :: Phase -> ST
 phaseName = \case
@@ -272,6 +295,7 @@ data User = User
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic User
+instance NFData User where rnf = grnf
 
 newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
@@ -281,6 +305,15 @@ newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
 
 newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+
+instance SOP.Generic UserLogin
+instance NFData UserLogin where rnf = grnf
+
+instance SOP.Generic UserFirstName
+instance NFData UserFirstName where rnf = grnf
+
+instance SOP.Generic UserLastName
+instance NFData UserLastName where rnf = grnf
 
 type instance Proto User = ProtoUser
 
@@ -295,6 +328,7 @@ data ProtoUser = ProtoUser
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
+instance NFData ProtoUser where rnf = grnf
 
 -- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachres have trust each other and can cover for each other.)
@@ -308,6 +342,7 @@ data Group =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Group
+instance NFData Group where rnf = grnf
 
 data UserPass =
     UserPassInitial   ST
@@ -315,10 +350,14 @@ data UserPass =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserPass
+instance NFData UserPass where rnf = grnf
 
 -- | FIXME: replace with structured email type.
 newtype UserEmail = UserEmail { fromUserEmail :: ST }
     deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
+
+instance SOP.Generic UserEmail
+instance NFData UserEmail where rnf = grnf
 
 -- | "Beauftragung"
 data Delegation = Delegation
@@ -330,6 +369,7 @@ data Delegation = Delegation
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Delegation
+instance NFData Delegation where rnf = grnf
 
 data DelegationContext =
     DelCtxIdeaSpace IdeaSpace
@@ -338,6 +378,7 @@ data DelegationContext =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationContext
+instance NFData DelegationContext where rnf = grnf
 
 ----------------------------------------------------------------------
 -- aula-specific helper types
@@ -346,6 +387,9 @@ instance SOP.Generic DelegationContext
 -- only and will probably be generated by sql `serial` type.
 newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData)
+
+instance SOP.Generic a => SOP.Generic (AUID a)
+instance (SOP.Generic a, NFData a) => NFData (AUID a) where rnf = grnf
 
 instance HasUriPart (AUID a) where
     uriPart (AUID s) = fromString . show $ s
@@ -372,10 +416,14 @@ data MetaInfo a = MetaInfo
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic a => SOP.Generic (MetaInfo a)
+instance (SOP.Generic a, NFData a) => NFData (MetaInfo a) where rnf = grnf
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic Document
+instance NFData Document where rnf = grnf
 
 instance ToHtml Document where
     toHtml    = div_ . p_ . toHtml    . fromMarkdown
@@ -390,6 +438,9 @@ type URL = ST
 
 newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
+
+instance SOP.Generic Timestamp
+instance NFData Timestamp where rnf = grnf
 
 instance Binary Timestamp where
     put = put . renderTimestamp
@@ -540,6 +591,10 @@ instance HasUriPart IdeaSpace where
 showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
 showIdeaSpace (ClassSpace c) = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
+
+showIdeaSpaceCategory :: IsString s => IdeaSpace -> s  -- FIXME: wait for the-cliff PR and refactor the local function out of there.
+showIdeaSpaceCategory SchoolSpace    = "school"
+showIdeaSpaceCategory (ClassSpace _) = "class"
 
 parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
 parseIdeaSpace s
