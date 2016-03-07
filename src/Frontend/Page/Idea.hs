@@ -123,11 +123,12 @@ instance FormPageView CreateIdea where
 
     redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
 
-    makeForm _ =
+    makeForm (CreateIdea space _) =
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: DF.choice categoryValues Nothing)
+        <*> pure space
 
     formPage v fa p = do
         semanticDiv p $ do
@@ -147,6 +148,7 @@ instance FormPageView EditIdea where
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
+        <*> pure (idea ^. ideaSpace)
 
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do

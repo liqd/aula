@@ -98,6 +98,7 @@ data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
     , _protoIdeaDesc       :: Document
     , _protoIdeaCategory   :: Category
+    , _protoIdeaIdeaSpace  :: IdeaSpace
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

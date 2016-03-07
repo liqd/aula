@@ -41,17 +41,25 @@ getDbSpec name getXs = do
                 xs <- rp getXs
                 length xs `shouldNotBe` 0
 
-addDbSpec :: (Foldable f, Arbitrary proto) => String -> Persist (f a) -> (proto -> Persist a) -> Spec
-addDbSpec name getXs addX =
+addDbSpecProp :: (Foldable f, Arbitrary proto) =>
+                 String -> Persist (f a) -> (proto -> Persist a) -> (proto -> a -> Expectation) ->
+                 Spec
+addDbSpecProp name getXs addX propX =
     describe name $ do
         let t = it "adds one" $ \(Nat rp) -> do
                     before' <- liftIO $ length <$> rp getXs
-                    liftIO $ generate arbitrary >>= rp . addX
+                    p <- liftIO $ generate arbitrary
+                    r <- liftIO . rp $ addX p
                     after' <- liftIO $ length <$> rp getXs
                     after' `shouldBe` before' + 1
+                    propX p r
 
         context "on empty database" . before mkEmpty $ t
         context "on initial database" . before mkInitial $ t
+
+addDbSpec :: (Foldable f, Arbitrary proto) =>
+             String -> Persist (f a) -> (proto -> Persist a) -> Spec
+addDbSpec name getXs addX = addDbSpecProp name getXs addX (\_ _ -> passes)
 
 findInBySpec :: (Eq a, Show a, Arbitrary k) =>
                 String -> Persist [a] -> (k -> Persist (Maybe a)) ->
@@ -169,3 +177,20 @@ spec = do
                     it "will indeed log you in (yeay)" $ \(Nat rp) -> do
                         user:_ <- liftIO $ rp getUsers
                         t rp (user ^. userLogin) isJust
+
+    regression
+
+-- * Regression suite
+
+regression :: Spec
+regression = describe "regression" $ do
+    describe "IdeaSpace in proto idea and saved idea should be the same" $
+        addDbSpecProp
+            "addIdea" getIdeas addIdea
+            (\p i -> i ^. ideaSpace `shouldBe` p ^. protoIdeaIdeaSpace)
+
+----------------------------------------------------------------------
+-- Expectations
+
+passes :: Expectation
+passes = return ()
