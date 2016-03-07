@@ -37,7 +37,7 @@ instance ToHtml PageDelegationNetwork where
 
         bigHr
 
-        let levels = div_ $ do
+        let delegationLevels = div_ $ do
                 br_ []
                 "  Ebene  "
                 select_ [name_ "level"] $ do
@@ -75,7 +75,7 @@ instance ToHtml PageDelegationNetwork where
                     th_ "[weggeblendete schüler]"
                     th_ "[das netzwerk]"
                 tr_ $ do
-                    td_ levels
+                    td_ delegationLevels
                     td_ . ul_ $ li_ `mapM_` ["Hannah", "Hanna", "Leonie", "Leoni", "Lea", "Leah", "Lena"]
                     td_ . ul_ $ li_ `mapM_` ["Sara", "Emma", "Lilli", "Lilly", "Lili", "Marie", "Lina",
                                              "Maja", "Maya", "Johanna", "Sophie", "Sofie", "Nele", "Neele",
