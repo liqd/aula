@@ -26,6 +26,7 @@ dependencies:
     - cassava
     - containers
     - cookie
+    - deepseq
     - digestive-functors
     - digestive-functors-lucid
     - directory
