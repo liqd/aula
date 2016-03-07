@@ -21,15 +21,3 @@ where
 import Lucid
 
 import Frontend.Core
-
-
-----------------------------------------------------------------------
--- pages
-
--- | 5.5 Idea detail page: Move idea to topic
-data PageIdeaDetailMoveIdeaToTopic = PageIdeaDetailMoveIdeaToTopic
-    deriving (Eq, Show, Read)
-
-instance ToHtml PageIdeaDetailMoveIdeaToTopic where
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageIdeaDetailMoveIdeaToTopic"
