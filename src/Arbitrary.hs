@@ -36,6 +36,7 @@ import qualified Frontend.Path as P
 
 
 -- | FIXME: push this upstream to basic-sop.
+-- See also: https://github.com/well-typed/basic-sop/pull/1
 garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
 garbitrary = to <$> (hsequence =<< elements subs)
   where

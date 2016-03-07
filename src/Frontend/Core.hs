@@ -80,6 +80,8 @@ instance ToHtml () where
 --       combinator
 --     * Later on when we write selenium suite, the semantic tags helps up to parse, identify and test
 --       elements on the page.
+--
+-- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
