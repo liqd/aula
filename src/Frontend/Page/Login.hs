@@ -1,17 +1,21 @@
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
 module Frontend.Page.Login
 where
 
+import Control.DeepSeq
 import Action (ActionM)
 import qualified Action
 import qualified Frontend.Path as P
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
+import qualified Generics.SOP as SOP
+import qualified Generics.SOP.NFData as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -35,7 +39,10 @@ instance Page PageLogout where
 -- templates
 
 data LoginFormData = LoginFormData ST ST
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
+
+instance SOP.Generic LoginFormData
+instance NFData LoginFormData where rnf = SOP.grnf
 
 instance FormPageView PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData

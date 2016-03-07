@@ -1,14 +1,18 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
 module Frontend.Page.Admin
 where
 
+import Control.DeepSeq
 import Data.Maybe (mapMaybe)
 
+import qualified Generics.SOP as SOP
+import qualified Generics.SOP.NFData as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -64,13 +68,20 @@ data Durations = Durations
     { elaborationPhase :: DurationDays
     , votingPhase      :: DurationDays
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Durations
+instance NFData Durations where rnf = SOP.grnf
 
 data Quorums = Quorums
     { schoolQuorumPercentage :: Int
     , classQuorumPercentage  :: Int
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic Quorums
+instance NFData Quorums where rnf = SOP.grnf
+
 
 ----------------------------------------------------------------------
 -- constants
@@ -82,6 +93,7 @@ defaultVotingPeriod = 21
 defaultSchoolQuorum, defaultClassQuorum :: Int
 defaultSchoolQuorum = 30
 defaultClassQuorum = 3
+
 
 ----------------------------------------------------------------------
 -- tabs

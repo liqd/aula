@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -6,11 +7,14 @@
 module Frontend.Page.User
 where
 
+import Control.DeepSeq
 import Action
 import qualified Frontend.Path as P
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
+import qualified Generics.SOP as SOP
+import qualified Generics.SOP.NFData as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -50,7 +54,10 @@ data UserSettingData = UserSettingData
     , profileNewPass1 :: Maybe ST
     , profileNewPass2 :: Maybe ST
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Generic)
+
+instance SOP.Generic UserSettingData
+instance NFData UserSettingData where rnf = SOP.grnf
 
 instance FormPageView PageUserSettings where
     type FormPageResult PageUserSettings = UserSettingData

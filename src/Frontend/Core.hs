@@ -30,6 +30,7 @@ module Frontend.Core
     )
 where
 
+import Control.DeepSeq (NFData, deepseq)
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
@@ -263,7 +264,7 @@ instance ToHtml (FormPage p) where
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)
 redirectFormHandler
-    :: (FormPageView p, Page p, ActionM m)
+    :: (FormPageView p, Page p, ActionM m, NFData (FormPageResult p))
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
     -> ServerT (FormHandler p ST) m
@@ -281,7 +282,7 @@ redirectFormHandler getPage processor = getH :<|> postH
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
-            Just payload -> processor2 page payload >>= redirect
+            Just payload -> payload `deepseq` processor2 page payload >>= redirect
             Nothing      -> renderer page v fa)
             `finally` cleanupTempCsvFiles formData
 

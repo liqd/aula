@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
@@ -8,12 +9,15 @@
 module Frontend.Page.FileUpload
 where
 
+import Control.DeepSeq
 import Lucid hiding (href_)
 import Servant
 import Thentos.Prelude
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
+import qualified Generics.SOP.NFData as SOP
 import qualified Text.Digestive as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Thentos.Types
@@ -31,7 +35,10 @@ instance Page BatchCreateUsers where
     isPrivatePage _ = True
 
 data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance SOP.Generic BatchCreateUsersFormData
+instance NFData BatchCreateUsersFormData where rnf = SOP.grnf
 
 instance FormPageView BatchCreateUsers where
     type FormPageResult BatchCreateUsers = BatchCreateUsersFormData
