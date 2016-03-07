@@ -103,7 +103,7 @@ selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> v
     showCategoryValue :: IsString s => Category -> s
     showCategoryValue ((`lookup` categoryValues) -> Just v) = v
 
--- | When context dependent data is constructed via forms with the @pure@ combinator
+-- | When context dependent data is constructed via forms with the 'pure' combinator
 -- in the form description, in the digestive functors libarary an empty path will
 -- be generated. Which is not an issue here. The 'contextDependentForm' function
 -- guards against that.
@@ -228,6 +228,11 @@ postToForm (F g) = do
     where
         run' = run . failOnError
 
+-- | Arbitrary test data generation for the 'FormPageResult' type.
+--
+-- In some cases the arbitrary data generation depends on the 'Page' context
+-- and the 'FormPageResult' has to compute data from the context.
+-- The 'ArbFormPageResult' typeclass in closely connected to the 'conextDependentForm' function.
 class FormPageView p => ArbFormPageResult p where
     arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 
