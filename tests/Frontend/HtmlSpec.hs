@@ -103,62 +103,64 @@ selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> v
     showCategoryValue :: IsString s => Category -> s
     showCategoryValue ((`lookup` categoryValues) -> Just v) = v
 
+-- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
+class PayloadToEnv a where
+    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action [FormInput]
+
 -- | When context dependent data is constructed via forms with the 'pure' combinator
 -- in the form description, in the digestive functors libarary an empty path will
--- be generated. Which is not an issue here. The 'contextDependentForm' function
--- guards against that.
--- E.g
--- ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
-conextDependentForm [""] _ = pure []
-conextDependentForm path f = f path
+-- be generated. Which is not an issue here. This functions guards against that with
+-- the @[""]@ case.
+--
+-- Example:
+--
+-- >>> ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
+payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env Action
+payloadToEnv _ _ [""]       = pure []
+payloadToEnv v a ["", path] = payloadToEnvMapping v a path
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnv view (ProtoIdea t (Markdown d) c _is) path = conextDependentForm path $ \case
-        ["", "title"]         -> pure [TextInput t]
-        ["", "idea-text"]     -> pure [TextInput d]
-        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
-        bad -> error $ "instance PayloadToEnv ProtoIdea: " <> show bad
-      -- FIXME: reduce boilerplate?
+    payloadToEnvMapping view (ProtoIdea t (Markdown d) c _is) = \case
+        "title"         -> pure [TextInput t]
+        "idea-text"     -> pure [TextInput d]
+        "idea-category" -> pure [TextInput $ selectCategoryValue "idea-category" view c]
 
 instance PayloadToEnv LoginFormData where
-    payloadToEnv _ (LoginFormData name pass) = \case
-        ["", "user"] -> pure [TextInput name]
-        ["", "pass"] -> pure [TextInput pass]
-        bad -> error $ "instance PayloadToEnv LoginFormData: " <> show bad
+    payloadToEnvMapping _ (LoginFormData name pass) = \case
+        "user" -> pure [TextInput name]
+        "pass" -> pure [TextInput pass]
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnv _ (ProtoTopic title (Markdown desc) image _ _) path =
-        conextDependentForm path $ \case
-            ["", "title"] -> pure [TextInput title]
-            ["", "desc"]  -> pure [TextInput desc]
-            ["", "image"] -> pure [TextInput image]
-            bad -> error $ "instance PayloadToEnv ProtoTopic: " <> show bad
+    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ _) = \case
+        "title" -> pure [TextInput title]
+        "desc"  -> pure [TextInput desc]
+        "image" -> pure [TextInput image]
 
 instance PayloadToEnv [AUID Idea] where
-    payloadToEnv _ ideas path = conextDependentForm path $ \case
-        ["", s] | "idea-" `isPrefixOf` (cs s :: String) -> pure [TextInput (if cs s `elem` ideas' then "on" else "off")]
-        bad -> error $ "instance PayloadToEnv [AUID Idea]: " <> show bad
+    payloadToEnvMapping _ iids (cs -> path)
+        | "idea-" `isPrefixOf` path = pure [TextInput onOrOff]
       where
-        ideas' = [ "idea-" <> show i | i <- ideas ]
+        onOrOff = if path `elem` (("idea-" <>) . show <$> iids)
+            then "on"
+            else "off"
 
 instance PayloadToEnv UserSettingData where
-    payloadToEnv _ (UserSettingData email oldpass newpass1 newpass2) = \case
-        ["", "email"         ] -> pure [TextInput . fromMaybe "" $ fmap unEmail email]
-        ["", "old-password"  ] -> pure [TextInput $ fromMaybe "" oldpass]
-        ["", "new-password1" ] -> pure [TextInput $ fromMaybe "" newpass1]
-        ["", "new-password2" ] -> pure [TextInput $ fromMaybe "" newpass2]
-      where
-        unEmail (UserEmail e) = e
+    payloadToEnvMapping _ (UserSettingData email oldpass newpass1 newpass2) = \case
+        "email"         -> pure [TextInput . fromMaybe "" $ fromUserEmail <$> email]
+        "old-password"  -> pure [TextInput $ fromMaybe "" oldpass]
+        "new-password1" -> pure [TextInput $ fromMaybe "" newpass1]
+        "new-password2" -> pure [TextInput $ fromMaybe "" newpass2]
 
 instance PayloadToEnv Durations where
-    payloadToEnv _ (Durations elab vote) = \case
-        ["", "elab-duration"] -> pure [TextInput (cs . show . fromDurationDays $ elab)]
-        ["", "vote-duration"] -> pure [TextInput (cs . show . fromDurationDays $ vote)]
+    payloadToEnvMapping _ (Durations elab vote) = \case
+        "elab-duration" -> pure [TextInput (cs . show . fromDurationDays $ elab)]
+        "vote-duration" -> pure [TextInput (cs . show . fromDurationDays $ vote)]
 
 instance PayloadToEnv Quorums where
-    payloadToEnv _ (Quorums school clss) = \case
-        ["", "school-quorum"] -> pure [TextInput (cs $ show school)]
-        ["", "class-quorum"]  -> pure [TextInput (cs $ show clss)]
+    payloadToEnvMapping _ (Quorums school clss) = \case
+        "school-quorum" -> pure [TextInput (cs $ show school)]
+        "class-quorum"  -> pure [TextInput (cs $ show clss)]
+
 
 ----------------------------------------------------------------------
 -- machine room
@@ -266,6 +268,3 @@ instance ArbFormPageResult MoveIdeasToTopic where
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
         pure $ map (^. _Id) ideas
-
-class PayloadToEnv a where
-    payloadToEnv :: View (Html ()) -> a -> Env Action
