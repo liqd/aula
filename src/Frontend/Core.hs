@@ -52,7 +52,8 @@ import qualified Text.Digestive.Form as DF
 
 import Action
 import Api
-import Data.UriPath (UriPath, absoluteUriPath, script_, href_, src_)
+import Data.UriPath (UriPath, absoluteUriPath)
+import Lucid.Missing (script_, href_, src_)
 import Types
 
 import qualified Frontend.Path as P

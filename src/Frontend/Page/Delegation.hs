@@ -11,11 +11,10 @@ module Frontend.Page.Delegation
 where
 
 import Prelude
-import Lucid hiding (src_)
 
 import Action
-import Data.UriPath (src_)
 import Frontend.Core
+import Frontend.Prelude
 
 import qualified Frontend.Path as U
 
