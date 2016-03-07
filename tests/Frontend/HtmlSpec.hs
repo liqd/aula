@@ -234,7 +234,6 @@ postToForm (F g) = do
 --
 -- In some cases the arbitrary data generation depends on the 'Page' context
 -- and the 'FormPageResult' has to compute data from the context.
--- The 'ArbFormPageResult' typeclass in closely connected to the 'conextDependentForm' function.
 class FormPageView p => ArbFormPageResult p where
     arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 
