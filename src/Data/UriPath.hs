@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE TypeFamilies          #-}
+
 module Data.UriPath
     ( UriPart
     , UriPath
@@ -9,6 +11,9 @@ module Data.UriPath
     , absoluteUriPath
     , relativeUriPath
     , script_
+    , inputText_
+    , inputPassword_
+    , inputSubmit_
     , src_
     , href_
     , onclick_
@@ -22,6 +27,9 @@ import Data.String.Conversions
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Lucid.Base as Lucid
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.View as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 newtype UriPart = SlashFreeUriPart { fromUriPart :: ST }
 
@@ -60,6 +68,18 @@ absoluteUriPath u = "/" <> relativeUriPath u
 -- https://github.com/chrisdone/lucid/issues/30
 script_ :: (Monad m) => [Lucid.Attribute] -> Lucid.HtmlT m ()
 script_ attrs = Lucid.termRawWith "script" attrs mempty
+
+-- | FIXME: clearly out of place.  See 'script_' above.
+inputText_ :: [Lucid.Attribute] -> ST -> DF.View v -> Monad m => Lucid.HtmlT m ()
+inputText_ = undefined
+
+-- | FIXME: clearly out of place.  See 'script_' above.
+inputPassword_ :: [Lucid.Attribute] -> ST -> DF.View v -> Monad m => Lucid.HtmlT m ()
+inputPassword_ = undefined
+
+-- | FIXME: clearly out of place.  See 'script_' above.
+inputSubmit_ :: [Lucid.Attribute] -> ST -> Monad m => Lucid.HtmlT m ()
+inputSubmit_ = undefined
 
 src_ :: HasPath p => p -> Lucid.Attribute
 src_ = Lucid.src_ . absoluteUriPath . relPath
