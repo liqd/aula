@@ -3,7 +3,6 @@
 module Frontend.Page (module P)
 where
 
-import Frontend.Core as P
 import Frontend.Html as P
 
 import Frontend.Page.Admin      as P

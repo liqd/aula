@@ -30,6 +30,7 @@ import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, ar
 import Test.QuickCheck.Instances ()
 
 import Types
+import Frontend.Core
 import Frontend.Page
 
 import qualified Frontend.Path as P

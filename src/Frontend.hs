@@ -32,6 +32,7 @@ import qualified Data.ByteString.Builder as Builder
 import Action (Action, mkRunAction, UserState(..))
 import Config
 import CreateRandom
+import Frontend.Core
 import Frontend.Page as Page
 import Persistent
 import Types
