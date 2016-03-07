@@ -18,11 +18,6 @@ import Thentos.Prelude
 import Data.String.Conversions
 
 import qualified Data.Text as ST
-import qualified Lucid
-import qualified Lucid.Base as Lucid
-import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.View as DF
-import qualified Text.Digestive.Lucid.Html5 as DF
 
 newtype UriPart = SlashFreeUriPart { fromUriPart :: ST }
 
