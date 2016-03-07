@@ -131,7 +131,9 @@ pageFrame' extraHeaders mUser bdy = do
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         sequence_ extraHeaders
     body_ $ do
-        headerMarkup mUser >> bdy >> footerMarkup
+        _ <- div_ [class_ "page-wrapper"] $ do
+            headerMarkup mUser >> bdy
+        footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do

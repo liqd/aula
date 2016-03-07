@@ -1,3 +1,18 @@
+body, html {
+    height: 100%;
+}
+
+.page-wrapper {
+    min-height: 100%;
+    margin-bottom: -$main-menu-height;
+
+    &:after {
+        content: "";
+        display: block;
+        height: $main-menu-height;
+    }
+}
+
 .container {
     margin: 0 auto;
     max-width: 1164px;
