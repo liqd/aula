@@ -263,6 +263,8 @@ instance ArbFormPageResult CreateTopic where
 instance ArbFormPageResult MoveIdeasToTopic where
     arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
         -- FIXME: Generate a sublist from the given ideas
+        -- Ideas should be a set which contains only once one idea. And the random
+        -- result generation should select from those ideas only.
         pure $ map (^. _Id) ideas
 
 class PayloadToEnv a where
