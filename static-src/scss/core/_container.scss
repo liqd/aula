@@ -1,0 +1,15 @@
+.container {
+    margin: 0 auto;
+    max-width: 1164px;
+    padding: 0 20px;
+
+    @media screen and (max-width: 768px) {
+        margin: 0;
+        max-width: 768px;
+        width: 100%;
+    }
+
+    &.container-main {
+        @include rem(padding, 40px 0);
+    }
+}

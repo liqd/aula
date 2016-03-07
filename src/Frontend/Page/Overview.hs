@@ -60,20 +60,30 @@ viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> fin
 
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ f spaces
+    toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
+        div_ [class_ "container container-main"] $ do
+            f spaces
       where
         f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
         f []       = p_ "Keine Ideenräume"
         f rs@(_:_) = forM_ rs g
 
         g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
-        g ispace = div_ . a_ [href_ $ U.Space ispace U.ListIdeas] $ h ispace
+        g ispace = div_ [class_ "col-1-3"] $ do
+            div_ [class_ ("item-room is-" <> showIdeaSpaceCategory ispace)] $ do
+                a_ [href_ $ U.Space ispace U.ListIdeas] $ do
+                    span_ [class_ "item-room-image"] nil
+                    h2_ [class_ "item-room-title"] $ h ispace
+
 
         h SchoolSpace = "Schule"
         h (ClassSpace c) = "Klasse " <> c ^. className . html
             -- for the first school year, we can ignore the year.  (after that, we have different
             -- options.  one would be to only show the year if it is not the current one, or always show
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
+
+        showIdeaSpaceCategory SchoolSpace    = "school"
+        showIdeaSpaceCategory (ClassSpace _) = "class"
 
 instance Page PageRoomsOverview where
     isPrivatePage _ = True

@@ -15,7 +15,9 @@
     @include rem(height, $header-height);
     @include rem(margin-right, 40px);
     @include rem(width, 127px);
-    @include svg(aula-logo, no-repeat left center, contain);
+    @include svg(aula-logo);
+    background-position: left-center;
+    background-size: contain;
 }
 
 .main-header-user {

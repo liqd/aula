@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="195px" height="83px" viewBox="0 0 195 83" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 3.6 (26304) - http://www.bohemiancoding.com/sketch -->
+    <title>Group 6</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Klickdummy-Moderator" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="1.-Rooms-overview-" transform="translate(-91.000000, -136.000000)">
+            <g id="Group-7" transform="translate(43.000000, 108.000000)">
+                <g id="Group-6" transform="translate(48.000000, 28.000000)">
+                    <rect id="Rectangle-677" fill="#F6A623" x="5.90909091" y="32.5045045" width="185.397727" height="49.4954955"></rect>
+                    <g id="Group-5">
+                        <g id="Group-4">
+                            <g id="Group-3">
+                                <rect id="Rectangle-678" fill="#D98E12" x="5.90909091" y="32.5045045" width="185.397727" height="3.69369369"></rect>
+                                <path d="M7.38636364,0 L187.613636,0 L195,32.5045045 L0,32.5045045 L7.38636364,0 Z" id="Rectangle-679" fill="#8B572A"></path>
+                                <path d="M68.6931818,28.8108108 L97.8162259,8.12612613 L127.784091,28.8108108 L127.784091,43.5855856 L68.6931818,43.5855856 L68.6931818,28.8108108 Z" id="Rectangle-679" fill="#F6A623"></path>
+                                <path d="M68.6931818,34.7207207 L68.6931818,82 L67.2159091,82 L67.2159091,34.7207207 L68.6931818,34.7207207 L68.6931818,34.7207207 Z" id="Rectangle-678" fill="#D98E12"></path>
+                                <path d="M129.261364,34.7207207 L129.261364,82 L127.784091,82 L127.784091,34.7207207 L129.261364,34.7207207 L129.261364,34.7207207 Z" id="Rectangle-678" fill="#D98E12"></path>
+                                <ellipse id="Oval-135" stroke="#BA7E1B" stroke-width="3" fill="#FFFFFF" cx="97.8693182" cy="30.6576577" rx="9.23295455" ry="9.23423423"></ellipse>
+                                <rect id="Rectangle-682" fill="#BA7E1B" x="92.3295455" y="30.2882883" width="6.64772727" height="1.47747748" rx="100"></rect>
+                                <path d="M98.2386364,25.1171171 C98.646574,25.1171171 98.9772727,25.4468246 98.9772727,25.854042 L98.9772727,31.0288409 C98.9772727,31.4358333 98.649418,31.7657658 98.2386364,31.7657658 L98.2386364,31.7657658 C97.8306988,31.7657658 97.5,31.4360582 97.5,31.0288409 L97.5,25.854042 C97.5,25.4470496 97.8278547,25.1171171 98.2386364,25.1171171 L98.2386364,25.1171171 L98.2386364,25.1171171 Z" id="Rectangle-682" fill="#BA7E1B"></path>
+                                <g id="Group-2" transform="translate(14.772727, 45.063063)" stroke="#FFFFFF">
+                                    <g id="Group" transform="translate(24.375000, 16.990991)">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                    <g id="Group" transform="translate(0.000000, 16.990991)">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                    <g id="Group">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                    <g id="Group" transform="translate(24.375000, 0.000000)">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                </g>
+                                <g id="Group-2" transform="translate(138.863636, 45.801802)" stroke="#FFFFFF">
+                                    <g id="Group" transform="translate(24.375000, 16.990991)">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                    <g id="Group" transform="translate(0.000000, 16.990991)">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                    <g id="Group">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                    <g id="Group" transform="translate(24.375000, 0.000000)">
+                                        <rect id="Rectangle-689" fill="#E3E3F0" x="0" y="0" width="18.4659091" height="11.0810811"></rect>
+                                        <path d="M9.23295455,0.369369369 L9.23295455,10.7117117" id="Line" stroke-linecap="square"></path>
+                                        <path d="M0.369318182,5.54054054 L18.0965909,5.54054054" id="Line" stroke-linecap="square"></path>
+                                    </g>
+                                </g>
+                                <rect id="Rectangle-684" fill="#8B572A" x="84.9431818" y="54.6666667" width="27.3295455" height="27.3333333"></rect>
+                                <rect id="Rectangle-685" fill="#FFFFFF" x="87.8977273" y="59.8378378" width="8.125" height="11.0810811"></rect>
+                                <rect id="Rectangle-685" fill="#FFFFFF" x="101.931818" y="59.8378378" width="8.125" height="11.0810811"></rect>
+                                <path d="M98.4825342,2.16337187 L132.737905,26.3684348 L129.772254,30.6044102 L95.2840909,6.45219165 L98.4825342,2.16337187 L98.4825342,2.16337187 Z" id="Rectangle-680" fill="#532F0F"></path>
+                                <path d="M98.4835261,2.1480416 L64.2613636,26.3684348 L67.2270145,30.6044102 L101.715177,6.45219165 L98.4835261,2.1480416 L98.4835261,2.1480416 Z" id="Rectangle-680" fill="#532F0F"></path>
+                                <path d="M69.0513195,29.4994105 L98.5823475,13.2338119 L127.916815,29.4510751 L98.484067,8.68604175 L69.0513195,29.4994105 Z" id="Path-164" fill="#D98E12"></path>
+                                <path d="M98.6079545,55.036036 L98.6079545,81.6716391" id="Line" stroke="#532F0F" stroke-linecap="square"></path>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

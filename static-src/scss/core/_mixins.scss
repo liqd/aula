@@ -13,9 +13,9 @@
 }
 
 //(aula-logo, no-repeat left center, contain);
-@mixin svg($name, $bg-properties: no-repeat, $bg-size: initial) {
-    background: url(../images/#{$name}.png) $bg-properties;
-    background-size: $bg-size;
+@mixin svg($name) {
+    background-image: url(../images/#{$name}.png);
+    background-repeat: no-repeat;
 
     .svginline & {
         background-image: url(../svg/#{$name}.svg);
