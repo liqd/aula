@@ -14,4 +14,15 @@
             }
         }
     }
+
+    &, > li {
+        float: left;
+    }
+}
+
+%main-menu-container {
+    @include clearfix;
+    @include rem(padding, 0 22px);
+    @include rem(height, $main-menu-height);
+    width: 100%;
 }

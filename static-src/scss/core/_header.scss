@@ -1,12 +1,8 @@
 .main-header {
+    @extend %main-menu-container;
     @include box-shadow(0 0 3px 0 rgba(0, 0, 0, 0.5));
-    @include clearfix;
-    @include rem(padding, 0 22px);
-    @include rem(height, $main-menu-height);
 }
 
-.main-header-menu,
-.main-header-menu li,
 .site-logo {
     float: left;
 }
