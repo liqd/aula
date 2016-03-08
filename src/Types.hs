@@ -420,22 +420,35 @@ timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 class Monad m => GenArbitrary m where
     genArbitrary :: Arbitrary a => m a
 
+
 ----------------------------------------------------------------------
 -- admin pages
 
+-- FIXME: rename this.  it's not just about permissions, but also about links and menu items.
+-- (also, it's weird that we are not using PermissionContext as a capture in the routing table in
+-- Frontend any more, but still in Frontend.Path to construct safe uris.  Not a real problem, but
+-- perhaps we can resolve this assymetry somehow if we think about it more?)
 data PermissionContext
-    = PermUser
-    | PermClass
-  deriving (Eq, Show, Read)
+    = PermUserView
+    | PermUserCreate
+    | PermClassView
+    | PermClassCreate
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic PermissionContext
 
 pContextToUriStr :: PermissionContext -> ST
-pContextToUriStr PermUser  = "perm-user"
-pContextToUriStr PermClass = "perm-class"
+pContextToUriStr PermUserView    = "perm-user-view"
+pContextToUriStr PermUserCreate  = "perm-user-create"
+pContextToUriStr PermClassView   = "perm-class-view"
+pContextToUriStr PermClassCreate = "perm-class-create"
 
 uriStrToPContext :: ST -> Maybe PermissionContext
-uriStrToPContext "perm-user"  = Just PermUser
-uriStrToPContext "perm-class" = Just PermClass
-uriStrToPContext _            = Nothing
+uriStrToPContext "perm-user-view"    = Just PermUserView
+uriStrToPContext "perm-user-create"  = Just PermUserCreate
+uriStrToPContext "perm-class-view"   = Just PermClassView
+uriStrToPContext "perm-class-create" = Just PermClassCreate
+uriStrToPContext _                   = Nothing
 
 instance FromHttpApiData PermissionContext where
     parseUrlPiece x =
@@ -445,6 +458,7 @@ instance FromHttpApiData PermissionContext where
 
 instance HasUriPart PermissionContext where
     uriPart = uriPart . pContextToUriStr
+
 
 ----------------------------------------------------------------------
 -- boilerplate: binary, lens (alpha order)

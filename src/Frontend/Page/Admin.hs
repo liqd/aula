@@ -1,6 +1,7 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -11,6 +12,7 @@ import Data.Maybe (mapMaybe)
 
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Generics.SOP as SOP
 
 import Action (ActionM, ActionPersist(..))
 import Frontend.Prelude
@@ -38,18 +40,29 @@ instance Page PageAdminSettingsQuorum where
     isPrivatePage _ = True
 
 -- | 11.3 Admin settings: Manage groups & permissions
-data PageAdminSettingsGroupsAndPermissions
-  = PageAdminSettingsGPUsers   [User]
-  | PageAdminSettingsGPClasses [SchoolClass]
+data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGroupsAndPermissions where
+instance Page PageAdminSettingsGaPUsersView where
     isPrivatePage _ = True
 
--- | 11.3 Admin settings: User creation & user import
-data PageAdminSettingsUserCreateAndImport =
-    PageAdminSettingsUserCreateAndImport
+data PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreate
   deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPUsersCreate where
+    isPrivatePage _ = True
+
+data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPClassesView where
+    isPrivatePage _ = True
+
+data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPClassesCreate where
+    isPrivatePage _ = True
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
@@ -64,13 +77,18 @@ data Durations = Durations
     { elaborationPhase :: DurationDays
     , votingPhase      :: DurationDays
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Durations
 
 data Quorums = Quorums
     { schoolQuorumPercentage :: Int
     , classQuorumPercentage  :: Int
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Quorums
+
 
 ----------------------------------------------------------------------
 -- constants
@@ -83,79 +101,101 @@ defaultSchoolQuorum, defaultClassQuorum :: Int
 defaultSchoolQuorum = 30
 defaultClassQuorum = 3
 
+
 ----------------------------------------------------------------------
 -- tabs
 
-data Tab
-    = TabDurations
-    | TabQuorum
-    | TabGroupsAndPermissions (Maybe PermissionContext)
-    | TabEventsProtocol
+data MenuItem
+    = MenuItemDurations
+    | MenuItemQuorum
+    | MenuItemGroupsAndPermissions (Maybe PermissionContext)
+    | MenuItemEventsProtocol
   deriving (Eq, Show)
 
-class ToTab t where
-    toTab :: t -> Tab
+class ToMenuItem t where
+    toMenuItem :: t -> MenuItem
 
 -- | 11.1 Admin settings: Durations
-instance ToTab PageAdminSettingsDurations where
-    toTab _ = TabDurations
+instance ToMenuItem PageAdminSettingsDurations where
+    toMenuItem _ = MenuItemDurations
 
 -- | 11.2 Admin settings: Quorum
-instance ToTab PageAdminSettingsQuorum where
-    toTab _ = TabQuorum
+instance ToMenuItem PageAdminSettingsQuorum where
+    toMenuItem _ = MenuItemQuorum
 
 -- | 11.3 Admin settings: Manage groups & permissions
-instance ToTab PageAdminSettingsGroupsAndPermissions where
-    toTab (PageAdminSettingsGPUsers _users) = TabGroupsAndPermissions (Just PermUser)
-    toTab (PageAdminSettingsGPClasses _classes) = TabGroupsAndPermissions (Just PermClass)
+instance ToMenuItem PageAdminSettingsGaPUsersView where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+
+instance ToMenuItem PageAdminSettingsGaPUsersCreate where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserCreate)
+
+instance ToMenuItem PageAdminSettingsGaPClassesView where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+
+instance ToMenuItem PageAdminSettingsGaPClassesCreate where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassCreate)
 
 -- | 11.4 Admin settings: Events protocol
-instance ToTab PageAdminSettingsEventsProtocol where
-    toTab _ = TabEventsProtocol
+instance ToMenuItem PageAdminSettingsEventsProtocol where
+    toMenuItem _ = MenuItemEventsProtocol
+
 
 ----------------------------------------------------------------------
 -- templates
 
 -- * Duration
 
-adminFrame :: (Monad m, ToTab tab) => tab -> HtmlT m () -> HtmlT m ()
+adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
     div_ [id_ "tabs"] . ul_ [] $ do
-        li_ [] $ tabLink tab TabDurations
-        li_ [] $ tabLink tab TabQuorum
-        if isPermissionsTab tab
+        li_ [] $ tabLink tab MenuItemDurations
+        li_ [] $ tabLink tab MenuItemQuorum
+        if isPermissionsMenuItem tab
             then do
                 li_ [] $ span_ "Gruppen & Nutzer"
-                li_ [] $ tabLink tab (TabGroupsAndPermissions (Just PermUser))
-                li_ [] $ tabLink tab (TabGroupsAndPermissions (Just PermClass))
+                li_ [] $ tabLink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                li_ [] $ tabLink tab (MenuItemGroupsAndPermissions (Just PermClassView))
             else do
-                li_ [] $ tabLink tab (TabGroupsAndPermissions Nothing)
-        li_ [] $ tabLink tab TabEventsProtocol
+                li_ [] $ tabLink tab (MenuItemGroupsAndPermissions Nothing)
+        li_ [] $ tabLink tab MenuItemEventsProtocol
     div_ bdy
   where
-    tab = toTab t
-    isPermissionsTab (TabGroupsAndPermissions _) = True
-    isPermissionsTab _ = False
+    tab = toMenuItem t
+    isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
+    isPermissionsMenuItem _ = False
 
-tabLink :: Monad m => Tab -> Tab -> HtmlT m ()
-tabLink curTab targetTab =
-  case targetTab of
-    TabDurations -> go "tab-duration"           U.AdminDuration "Dauer der Phasen"
-    TabQuorum    -> go "tab-qourum"             U.AdminQuorum "Quorum"
-    TabGroupsAndPermissions Nothing
-                 -> go "tab-groups-perms"       (U.AdminAccess PermUser) "Gruppen & Nutzer"
-    TabGroupsAndPermissions (Just PermUser)
-                 -> go "tab-groups-perms-user"  (U.AdminAccess PermUser) "Nutzer"
-    TabGroupsAndPermissions (Just PermClass)
-                 -> go "tab-groups-perms-class" (U.AdminAccess PermClass) "Klasse"
-    TabEventsProtocol
-                 -> go "tab-events"             U.AdminEvent "Beauftragen Stimmen"
-  where
-    go ident uri =
+data TabLink = TabLink ST U.AdminPs ST
+  deriving (Show)
+
+tabLink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
+tabLink curMenuItem targetMenuItem = case tabLink' curMenuItem targetMenuItem of
+    TabLink ident uri body ->
         a_ [ id_ ident
            , href_ $ U.Admin uri
-           , class_ $ tabSelected curTab targetTab
+           , class_ $ tabSelected curMenuItem targetMenuItem
            ]
+          $ toHtml body
+
+tabLink' :: MenuItem -> MenuItem -> TabLink
+tabLink' curMenuItem targetMenuItem =
+  case targetMenuItem of
+    MenuItemDurations
+        -> TabLink "tab-duration" U.AdminDuration "Dauer der Phasen"
+    MenuItemQuorum
+        -> TabLink "tab-qourum" U.AdminQuorum "Quorum"
+    MenuItemGroupsAndPermissions (Just PermUserView)
+        -> TabLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
+    MenuItemGroupsAndPermissions (Just PermUserCreate)
+        -> TabLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
+    MenuItemGroupsAndPermissions (Just PermClassView)
+        -> TabLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
+    MenuItemGroupsAndPermissions (Just PermClassCreate)
+        -> TabLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
+    MenuItemGroupsAndPermissions Nothing
+        -> TabLink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
+    MenuItemEventsProtocol
+        -> TabLink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
 
 instance FormPageView PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations
@@ -236,12 +276,12 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
         Quorums <$> getDb dbSchoolQuorum
                 <*> getDb dbClassQuorum
 
+
 -- * Groups and permisisons
 
-instance ToHtml PageAdminSettingsGroupsAndPermissions where
+instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
-
-    toHtmlRaw p@(PageAdminSettingsGPUsers users) =
+    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
         adminFrame p . semanticDiv p $ do
             table_ $ do
                 thead_ . tr_ $ do
@@ -249,9 +289,8 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
                     th_ "NAME"
                     th_ "KLASSE"
                     th_ "ROLE SELECTION"
-                    th_ $ button_ [onclick_ U.ListSpaces] "NUTZER ANLEGEN"
+                    th_ $ button_ [onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
                     th_ $ input_ [value_ "NUTZERSUCHE"]
-                -- FIXME: Make the table fetch some users with AJAX
                 tbody_ . forM_ users $ \user -> tr_ $ do
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
@@ -260,7 +299,17 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
                     td_ "" -- THIS SHOULD LEFT EMPTY
                     td_ $ a_ [href_ U.ListSpaces] "bearbeiten"
 
-    toHtmlRaw p@(PageAdminSettingsGPClasses classes) =
+
+instance ToHtml PageAdminSettingsGaPUsersCreate where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@PageAdminSettingsGaPUsersCreate =
+        adminFrame p . semanticDiv p $ do
+            toHtml (show p)
+
+
+instance ToHtml PageAdminSettingsGaPClassesView where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
         adminFrame p . semanticDiv p $ do
             button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
             table_ $ do
@@ -274,26 +323,34 @@ instance ToHtml PageAdminSettingsGroupsAndPermissions where
                     th_ $ a_ [href_ U.ListSpaces] "bearbeiten"
 
 
-adminSettingsGroupsAndPermissions
-    :: ActionM m => PermissionContext -> m (Frame PageAdminSettingsGroupsAndPermissions)
+instance ToHtml PageAdminSettingsGaPClassesCreate where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@PageAdminSettingsGaPClassesCreate =
+        adminFrame p . semanticDiv p $ do
+            toHtml (show p)
 
-adminSettingsGroupsAndPermissions PermUser =
-    -- FIXME: Fetch limited number of users.
-    makeFrame =<< PageAdminSettingsGPUsers <$> persistent getUsers
 
-adminSettingsGroupsAndPermissions PermClass =
-    -- FIXME: Store the classes in different table?
-    makeFrame =<< PageAdminSettingsGPClasses . mapMaybe toClass <$> persistent getSpaces
+-- FIXME: Fetch limited number of users ("pagination").
+
+adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
+adminSettingsGaPUsersView =
+    makeFrame =<< PageAdminSettingsGaPUsersView <$> persistent getUsers
+
+adminSettingsGaPUsersCreate :: ActionM m => m (Frame PageAdminSettingsGaPUsersCreate)
+adminSettingsGaPUsersCreate =
+    makeFrame PageAdminSettingsGaPUsersCreate
+
+adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClassesView)
+adminSettingsGaPClassesView =
+    makeFrame =<< PageAdminSettingsGaPClassesView . mapMaybe toClass <$> persistent getSpaces
   where
     toClass (ClassSpace clss) = Just clss
     toClass _                 = Nothing
 
+adminSettingsGaPClassesCreate :: ActionM m => m (Frame PageAdminSettingsGaPClassesCreate)
+adminSettingsGaPClassesCreate =
+    makeFrame PageAdminSettingsGaPClassesCreate
 
--- * User create and import
-
-adminSettingsUserCreateAndImport
-    :: (ActionM m) => ServerT (FormHandler PageAdminSettingsUserCreateAndImport ST) m
-adminSettingsUserCreateAndImport = error "adminSettingsUserCreateAndImport"
 
 -- * Events protocol
 
