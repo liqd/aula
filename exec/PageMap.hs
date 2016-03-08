@@ -26,7 +26,7 @@ import qualified Language.Dot.Syntax as Dot
 
 main :: IO ()
 main = do
-    ws :: [[ST]] <- ST.words <$$> ST.lines <$> ST.readFile "src/Frontend/Page.hs"
+    ws :: [[ST]] <- ST.words <$$> ST.lines <$> ST.readFile "src/Frontend/PageMap.hs"
     let dot :: [Dot] = nub . sort . join $ readDot <$> ws
         dotfile = "static/pagemap.dot"
         pngfile = "static/pagemap.png"
