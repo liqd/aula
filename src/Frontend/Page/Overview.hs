@@ -92,19 +92,21 @@ instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageIdeasOverview space ideas) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
-        p_ "WILDE IDEEN"
-        h1_ "Was soll sich verändern?"
-        p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
-            <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        div_ $ button_ [onclick_ (U.Space space U.CreateIdea)] "+ Neue Idee"
-        div_ $ do
-            -- FIXME: these buttons should filter the ideas by category
-            button_ "Regeln"
-            button_ "Ausstattung"
-            button_ "Unterricht"
-            button_ "Zeit"
-            button_ "Umgebung"
-        div_ [id_ "ideas"] . for_ ideas $ \idea ->
+        header_ [class_ "process-header"] $ do
+            h1_ [class_ "main-heading"] $ do
+                span_ "WILDE IDEEN"
+                "Was soll sich verändern?"
+            p_ [class_ "sub-header"] $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
+                <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
+            button_ [onclick_ (U.Space space U.CreateIdea), class_ "btn-cta"] "+ Neue Idee"
+            ul_ [class_ "icons-list"] $ do
+                -- FIXME: these buttons should filter the ideas by category
+                li_ [class_ "icon-rules"] "Regeln"
+                li_ [class_ "icon-equipment"] "Ausstattung"
+                li_ [class_ "icon-teaching"] "Unterricht"
+                li_ [class_ "icon-time"] "Zeit"
+                li_ [class_ "icon-environment"] "Umgebung"
+        div_ [class_ "wild-ideas-list"] . for_ ideas $ \idea ->
             ListItemIdea True Nothing idea ^. html
 
 instance Page PageIdeasOverview where
@@ -127,12 +129,18 @@ instance Page PageIdeasInDiscussion where
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml
-    toHtml (Tabs activeTab space) = div_ $ do
-        span_ [class_ "active" | activeTab == WildIdeas] $ do
+    toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
+        -- li_ [class_ ("tab-item " . isActiveTab "WildIdeas")] $ do
+        li_ [class_ "tab-item "] $ do
             "Wilde Ideen " >> toHtml (spaceDesc space)
-        span_ [class_ "active" | activeTab == Topics] $ do
+        -- li_ [class_ ("tab-item " . isActiveTab "Topics")] $ do
+        li_ [class_ "tab-item "] $ do
             "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
         spaceDesc SchoolSpace    = "der Schule"
         spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className
+
+        -- function isActiveTab(thisTab) {
+        --    return (thisTab == isActiveTab) ? "m-active" : "";
+        --}
