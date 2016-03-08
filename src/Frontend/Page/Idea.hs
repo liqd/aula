@@ -140,15 +140,15 @@ instance FormPageView CreateIdea where
 instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) (U.EditIdea (idea ^. _Id))
-    redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
+    formAction (EditIdea locationPath idea) = relPath . locationPath $ U.EditIdea (idea ^. _Id)
+    redirectOf (EditIdea locationPath idea) = relPath . locationPath $ U.ListIdeas
 
-    makeForm (EditIdea idea) =
+    makeForm (EditIdea _ idea) =
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
-        <*> pure (idea ^. ideaSpace)
+        <*> pure (idea ^. ideaLocation)  -- what is happening here?
 
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
