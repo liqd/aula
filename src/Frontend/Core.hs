@@ -148,7 +148,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                 li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
         Nothing -> nil
 
-    -- TODO: please add class m-selected to currently selected menu item
+    -- FIXME: please add class m-selected to currently selected menu item
     div_ [class_ "main-header-user"] $ do
         case mUser of
             Just usr -> do
@@ -268,7 +268,7 @@ instance ToHtml ListItemIdea where
                               ]
                             nil
       where
-        -- TODO: extract these from the idea.
+        -- FIXME: extract these from the idea.
         numGivenVotes     = cs $ show (24  :: Int) :: ST
         numParticipants   = cs $ show (600 :: Int) :: ST
         percentageOfVotes = cs $ show (67  :: Int) :: ST

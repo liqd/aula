@@ -100,7 +100,7 @@ instance ToHtml PageIdeasOverview where
             button_ [onclick_ (U.Space space U.CreateIdea), class_ "btn-cta"] "+ Neue Idee"
         div_ [class_ "icon-list"] $ do
             ul_ $ do
-                -- TODO: these buttons should filter the ideas by category
+                -- FIXME: these buttons should filter the ideas by category
                 li_ [class_ "icon-rules"] $ do
                     a_ [href_ U.Broken] "Regeln"
                 li_ [class_ "icon-equipment"] $ do
