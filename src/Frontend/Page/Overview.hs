@@ -130,17 +130,11 @@ instance Page PageIdeasInDiscussion where
 instance ToHtml Tabs where
     toHtmlRaw = toHtml
     toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
-        -- li_ [class_ ("tab-item " . isActiveTab "WildIdeas")] $ do
-        li_ [class_ "tab-item "] $ do
+        li_ ([class_ " tab-item"] <> [class_ "m-active" | activeTab == WildIdeas]) $ do
             "Wilde Ideen " >> toHtml (spaceDesc space)
-        -- li_ [class_ ("tab-item " . isActiveTab "Topics")] $ do
-        li_ [class_ "tab-item "] $ do
+        li_ ([class_ " tab-item"] <> [class_ "m-active" | activeTab == Topics]) $ do
             "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
         spaceDesc SchoolSpace    = "der Schule"
         spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className
-
-        -- function isActiveTab(thisTab) {
-        --    return (thisTab == isActiveTab) ? "m-active" : "";
-        --}
