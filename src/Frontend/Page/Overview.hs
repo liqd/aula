@@ -19,6 +19,7 @@ import Action
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
+import qualified Data.Text as ST
 
 ----------------------------------------------------------------------
 -- pages
@@ -99,17 +100,17 @@ instance ToHtml PageIdeasOverview where
             button_ [onclick_ (U.Space space U.CreateIdea), class_ "btn-cta"] "+ Neue Idee"
         div_ [class_ "icon-list"] $ do
             ul_ $ do
-            -- FIXME: these buttons should filter the ideas by category
+                -- TODO: these buttons should filter the ideas by category
                 li_ [class_ "icon-rules"] $ do
-                    a_ [href_ U.Top] "Regeln"
+                    a_ [href_ U.Broken] "Regeln"
                 li_ [class_ "icon-equipment"] $ do
-                    a_ [href_ U.Top] "Ausstattung"
+                    a_ [href_ U.Broken] "Ausstattung"
                 li_ [class_ "icon-teaching"] $ do
-                    a_ [href_ U.Top] "Unterricht"
+                    a_ [href_ U.Broken] "Unterricht"
                 li_ [class_ "icon-time"] $ do
-                    a_ [href_ U.Top] "Zeit"
+                    a_ [href_ U.Broken] "Zeit"
                 li_ [class_ "icon-environment"] $ do
-                    a_ [href_ U.Top] "Umgebung"
+                    a_ [href_ U.Broken] "Umgebung"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "ideas-list"] . for_ ideas $ \idea ->
@@ -135,13 +136,14 @@ instance Page PageIdeasInDiscussion where
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml
--- FIXME: Should these be links ?
     toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
-        li_ ([class_ " tab-item tab-item-wild-ideas"] <> [class_ "m-active" | activeTab == WildIdeas]) $ do
-            a_ [href_ U.Top] $ do
+        li_ [class_ . ST.unwords $
+             "tab-item tab-item-wild-ideas" : ["m-active" | activeTab == WildIdeas]] $ do
+            a_ [href_ U.Broken] $ do
                 "Wilde Ideen " >> toHtml (spaceDesc space)
-        li_ ([class_ " tab-item tab-item-topics"] <> [class_ "m-active" | activeTab == Topics]) $ do
-            a_ [href_ U.Top] $ do
+        li_ [class_ . ST.unwords $
+             "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
+            a_ [href_ U.Broken] $ do
                 "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST

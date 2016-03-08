@@ -23,7 +23,7 @@ import Types (AUID, Idea, IdeaSpace, User, Topic, nil, PermissionContext)
 
 data Top =
     Top
-  | Broken
+  | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
   | TopMain Main
   | TopTesting UriPath
   | TopSamples
