@@ -34,7 +34,6 @@ import Data.UriPath
 script_ :: (Monad m) => [Lucid.Attribute] -> Lucid.HtmlT m ()
 script_ attrs = Lucid.termRawWith "script" attrs mempty
 
--- | TODO: clearly out of place.  See 'script_' above.
 inputSelect_ :: [Lucid.Attribute] -> ST -> DF.View (Lucid.HtmlT m ()) -> Monad m => Lucid.HtmlT m ()
 inputSelect_ attrs ref vw = select_
     ([ id_   ref'
@@ -47,7 +46,6 @@ inputSelect_ attrs ref vw = select_
     value i = ref' `mappend` "." `mappend` i
     choices = DF.fieldInputChoice ref vw
 
--- FIXME: push upstream to digestive-functors-lucid.
 inputText_ :: [Lucid.Attribute] -> ST -> DF.View v -> Monad m => Lucid.HtmlT m ()
 inputText_ attrs ref vw = Lucid.input_ $
     [ Lucid.type_    "text"
