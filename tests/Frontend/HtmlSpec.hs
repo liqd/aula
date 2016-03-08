@@ -31,6 +31,7 @@ import qualified Data.Text.Lazy as LT
 import Action
 import Arbitrary (arb)
 import Data.UriPath (absoluteUriPath)
+import Frontend.Core
 import Frontend.Page
 import Persistent
 import Types

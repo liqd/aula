@@ -30,6 +30,7 @@ import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, ar
 import Test.QuickCheck.Instances ()
 
 import Types
+import Frontend.Core
 import Frontend.Page
 
 import qualified Frontend.Path as P
@@ -71,9 +72,6 @@ instance Arbitrary ViewTopic where
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
-
-instance Arbitrary PageIdeaDetailMoveIdeaToTopic where
-    arbitrary = pure PageIdeaDetailMoveIdeaToTopic
 
 instance Arbitrary CreateIdea where
     arbitrary = CreateIdea <$> arb <*> arb
