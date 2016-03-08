@@ -32,6 +32,7 @@ import qualified Data.ByteString.Builder as Builder
 import Action (Action, mkRunAction, UserState(..))
 import Config
 import CreateRandom
+import Frontend.Core
 import Frontend.Page as Page
 import Persistent
 import Types
@@ -207,9 +208,10 @@ type AulaAdmin =
        -- quorum
   :<|> "quorum" :> FormHandler PageAdminSettingsQuorum ST
        -- groups and permissions
-  :<|> "access" :> Capture "context" PermissionContext :> GetH (Frame PageAdminSettingsGroupsAndPermissions)
-       -- user creation and import
-  :<|> "user"   :> FormHandler PageAdminSettingsUserCreateAndImport ST
+  :<|> "access" :> "perm-user-view"    :> GetH (Frame PageAdminSettingsGaPUsersView)
+  :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
+  :<|> "access" :> "perm-class-view"   :> GetH (Frame PageAdminSettingsGaPClassesView)
+  :<|> "access" :> "perm-class-create" :> GetH (Frame PageAdminSettingsGaPClassesCreate)
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
@@ -218,8 +220,10 @@ aulaAdmin :: ServerT AulaAdmin Action
 aulaAdmin =
        Page.adminDurations
   :<|> Page.adminQuorum
-  :<|> Page.adminSettingsGroupsAndPermissions
-  :<|> Page.adminSettingsUserCreateAndImport
+  :<|> Page.adminSettingsGaPUsersView
+  :<|> Page.adminSettingsGaPUsersCreate
+  :<|> Page.adminSettingsGaPClassesView
+  :<|> Page.adminSettingsGaPClassesCreate
   :<|> Page.adminEventsProtocol
 
 type AulaTesting =

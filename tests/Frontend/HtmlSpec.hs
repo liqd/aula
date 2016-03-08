@@ -31,6 +31,7 @@ import qualified Data.Text.Lazy as LT
 import Action
 import Arbitrary (arb)
 import Data.UriPath (absoluteUriPath)
+import Frontend.Core
 import Frontend.Page
 import Persistent
 import Types
@@ -49,8 +50,10 @@ spec = do
         , H (arb :: Gen ViewIdea)
         , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
-        , H (arb :: Gen PageAdminSettingsGroupsAndPermissions)
---        , H (arb :: Gen PageAdminSettingsUserCreateAndImport)
+        , H (arb :: Gen PageAdminSettingsGaPUsersView)
+        , H (arb :: Gen PageAdminSettingsGaPUsersCreate)
+        , H (arb :: Gen PageAdminSettingsGaPClassesView)
+        , H (arb :: Gen PageAdminSettingsGaPClassesCreate)
         , H (arb :: Gen PageAdminSettingsEventsProtocol)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)

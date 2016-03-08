@@ -75,7 +75,6 @@ library
       Data.UriPath
       Frontend
       Frontend.Core
-      Frontend.Html
       Frontend.Page
       Frontend.Page.Admin
       Frontend.Page.Comment
@@ -279,7 +278,6 @@ test-suite spec
       Data.UriPath
       Frontend
       Frontend.Core
-      Frontend.Html
       Frontend.Page
       Frontend.Page.Admin
       Frontend.Page.Comment
