@@ -169,7 +169,7 @@ data Menulink = Menulink ST U.AdminPs ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
-menulink curMenuItem targetMenuItem = case menulink' curMenuItem targetMenuItem of
+menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of
     Menulink ident uri body ->
         a_ [ id_ ident
            , href_ $ U.Admin uri
@@ -177,8 +177,8 @@ menulink curMenuItem targetMenuItem = case menulink' curMenuItem targetMenuItem 
            ]
           $ toHtml body
 
-menulink' :: MenuItem -> MenuItem -> Menulink
-menulink' curMenuItem targetMenuItem =
+menulink' :: MenuItem -> Menulink
+menulink' targetMenuItem =
   case targetMenuItem of
     MenuItemDurations
         -> Menulink "tab-duration" U.AdminDuration "Dauer der Phasen"
