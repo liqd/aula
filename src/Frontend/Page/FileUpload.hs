@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
@@ -14,6 +15,7 @@ import Thentos.Prelude
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 import qualified Text.Digestive as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Thentos.Types
@@ -26,12 +28,15 @@ import qualified Frontend.Path as U
 
 
 data BatchCreateUsers = BatchCreateUsers
+  deriving (Eq, Show)
 
 instance Page BatchCreateUsers where
     isPrivatePage _ = True
 
 data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
-  deriving (Show)
+  deriving (Eq, Show, Generic)
+
+instance SOP.Generic BatchCreateUsersFormData
 
 instance FormPageView BatchCreateUsers where
     type FormPageResult BatchCreateUsers = BatchCreateUsersFormData
