@@ -70,7 +70,7 @@ module Persistent.Api
 where
 
 import Control.Lens
-import Control.Monad (join, unless, replicateM)
+import Control.Monad (unless, replicateM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
@@ -344,20 +344,19 @@ instance FromProto Topic where
         , _topicPhase     = PhaseRefinement
         }
 
--- | So far `newMetaInfo` is only used by `nextMetaInfo`.
-newMetaInfo :: PersistM m => AUID User -> AUID a -> m (MetaInfo a)
-newMetaInfo uid oid = do
-    now <- Timestamp <$> liftIO getCurrentTime
-    -- Just user <- findUser uid  -- FIXME: need exceptions; need to make test suite smarter
-    return MetaInfo
-        { _metaId              = oid
-        , _metaCreatedBy       = uid
-        , _metaCreatedByLogin  = nil  -- FIXME: user ^. userLogin
-        , _metaCreatedByAvatar = nil  -- FIXME: user ^. userAvatar
-        , _metaCreatedAt       = now
-        , _metaChangedBy       = uid
-        , _metaChangedAt       = now
-        }
+-- | So far `mkMetaInfo` is only used by `nextMetaInfo`.
+mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
+mkMetaInfo user now oid = MetaInfo
+    { _metaId              = oid
+    , _metaCreatedBy       = user ^. _Id
+    , _metaCreatedByLogin  = user ^. userLogin
+    , _metaCreatedByAvatar = user ^. userAvatar
+    , _metaCreatedAt       = now
+    , _metaChangedBy       = user ^. _Id
+    , _metaChangedAt       = now
+    }
 
 nextMetaInfo :: PersistM m => m (MetaInfo a)
-nextMetaInfo = join $ newMetaInfo <$> currentUser <*> nextId
+nextMetaInfo = mkMetaInfo <$> (currentUser >>= fmap (fromMaybe (error "no current user")) . findUser)
+                          <*> liftIO (Timestamp <$> getCurrentTime)
+                          <*> nextId
