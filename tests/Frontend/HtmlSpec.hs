@@ -9,6 +9,7 @@
 
 module Frontend.HtmlSpec where
 
+import Control.Lens ((^.), set)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except
 import Data.List
@@ -62,9 +63,9 @@ spec = do
           F (arb :: Gen CreateIdea)
         , F (arb :: Gen EditIdea)
         , F (arb :: Gen PageHomeWithLoginPrompt)
-    --  , F (arb :: Gen CreateTopic) FIXME
+        , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
-    --  , F (arb :: Gen MoveIdeasToTopic) FIXME
+        , F (arb :: Gen MoveIdeasToTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
         ]
@@ -72,14 +73,6 @@ spec = do
 
 ----------------------------------------------------------------------
 -- translate form data back to form input
-
-instance PayloadToEnv ProtoIdea where
-    payloadToEnv view (ProtoIdea t (Markdown d) c) = \case
-        ["", "title"]         -> pure [TextInput t]
-        ["", "idea-text"]     -> pure [TextInput d]
-        ["", "idea-category"] -> pure [TextInput $ selectCategoryValue "idea-category" view c]
-        bad -> error $ "instance PayloadToEnv ProtoIdea: " <> show bad
-      -- FIXME: reduce boilerplate?
 
 -- | Translate a 'Category' value into the select string for the form 'Env'.
 --
@@ -110,46 +103,64 @@ selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> v
     showCategoryValue :: IsString s => Category -> s
     showCategoryValue ((`lookup` categoryValues) -> Just v) = v
 
+-- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
+class PayloadToEnv a where
+    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action [FormInput]
+
+-- | When context dependent data is constructed via forms with the 'pure' combinator
+-- in the form description, in the digestive functors libarary an empty path will
+-- be generated. Which is not an issue here. This functions guards against that with
+-- the @[""]@ case.
+--
+-- Example:
+--
+-- >>> ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
+payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env Action
+payloadToEnv _ _ [""]       = pure []
+payloadToEnv v a ["", path] = payloadToEnvMapping v a path
+
+instance PayloadToEnv ProtoIdea where
+    payloadToEnvMapping view (ProtoIdea t (Markdown d) c _is) = \case
+        "title"         -> pure [TextInput t]
+        "idea-text"     -> pure [TextInput d]
+        "idea-category" -> pure [TextInput $ selectCategoryValue "idea-category" view c]
+
 instance PayloadToEnv LoginFormData where
-    payloadToEnv _ (LoginFormData name pass) = \case
-        ["", "user"] -> pure [TextInput name]
-        ["", "pass"] -> pure [TextInput pass]
-        bad -> error $ "instance PayloadToEnv LoginFormData: " <> show bad
+    payloadToEnvMapping _ (LoginFormData name pass) = \case
+        "user" -> pure [TextInput name]
+        "pass" -> pure [TextInput pass]
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnv _ (ProtoTopic title (Markdown desc) image _ _) = \case
-        ["", "title"] -> pure [TextInput title]
-        ["", "desc"]  -> pure [TextInput desc]
-        ["", "image"] -> pure [TextInput image]
-        [""]          -> pure [] -- FIXME: why?
-        bad -> error $ "instance PayloadToEnv ProtoTopic: " <> show bad
+    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ _) = \case
+        "title" -> pure [TextInput title]
+        "desc"  -> pure [TextInput desc]
+        "image" -> pure [TextInput image]
 
 instance PayloadToEnv [AUID Idea] where
-    payloadToEnv _ ideas = \case
-        ["", s] | "idea-" `isPrefixOf` (cs s :: String) -> pure [TextInput (if cs s `elem` ideas' then "on" else "off")]
-        [""]                                            -> pure [] -- FIXME: why?
-        bad -> error $ "instance PayloadToEnv [AUID Idea]: " <> show bad
+    payloadToEnvMapping _ iids (cs -> path)
+        | "idea-" `isPrefixOf` path = pure [TextInput onOrOff]
       where
-        ideas' = [ "idea-" <> show i | i <- ideas ]
+        onOrOff = if path `elem` (("idea-" <>) . show <$> iids)
+            then "on"
+            else "off"
 
 instance PayloadToEnv UserSettingData where
-    payloadToEnv _ (UserSettingData email oldpass newpass1 newpass2) = \case
-        ["", "email"         ] -> pure [TextInput . fromMaybe "" $ fmap unEmail email]
-        ["", "old-password"  ] -> pure [TextInput $ fromMaybe "" oldpass]
-        ["", "new-password1" ] -> pure [TextInput $ fromMaybe "" newpass1]
-        ["", "new-password2" ] -> pure [TextInput $ fromMaybe "" newpass2]
-      where
-        unEmail (UserEmail e) = e
+    payloadToEnvMapping _ (UserSettingData email oldpass newpass1 newpass2) = \case
+        "email"         -> pure [TextInput . fromMaybe "" $ fromUserEmail <$> email]
+        "old-password"  -> pure [TextInput $ fromMaybe "" oldpass]
+        "new-password1" -> pure [TextInput $ fromMaybe "" newpass1]
+        "new-password2" -> pure [TextInput $ fromMaybe "" newpass2]
 
 instance PayloadToEnv Durations where
-    payloadToEnv _ (Durations elab vote) = \case
-        ["", "elab-duration"] -> pure [TextInput (cs . show . fromDurationDays $ elab)]
-        ["", "vote-duration"] -> pure [TextInput (cs . show . fromDurationDays $ vote)]
+    payloadToEnvMapping _ (Durations elab vote) = \case
+        "elab-duration" -> pure [TextInput (cs . show . fromDurationDays $ elab)]
+        "vote-duration" -> pure [TextInput (cs . show . fromDurationDays $ vote)]
 
 instance PayloadToEnv Quorums where
-    payloadToEnv _ (Quorums school clss) = \case
-        ["", "school-quorum"] -> pure [TextInput (cs $ show school)]
-        ["", "class-quorum"]  -> pure [TextInput (cs $ show clss)]
+    payloadToEnvMapping _ (Quorums school clss) = \case
+        "school-quorum" -> pure [TextInput (cs $ show school)]
+        "class-quorum"  -> pure [TextInput (cs $ show clss)]
+
 
 ----------------------------------------------------------------------
 -- machine room
@@ -167,6 +178,7 @@ data FormGen where
     F :: ( r ~ FormPageResult m
          , Show m, Typeable m, FormPageView m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
+         , ArbFormPageResult m
          ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
@@ -218,8 +230,40 @@ postToForm (F g) = do
     where
         run' = run . failOnError
 
-arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
-arbFormPageResult _ = arbitrary
+-- | Arbitrary test data generation for the 'FormPageResult' type.
+--
+-- In some cases the arbitrary data generation depends on the 'Page' context
+-- and the 'FormPageResult' has to compute data from the context.
+class FormPageView p => ArbFormPageResult p where
+    arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 
-class PayloadToEnv a where
-    payloadToEnv :: View (Html ()) -> a -> Env Action
+instance ArbFormPageResult CreateIdea where
+    arbFormPageResult (CreateIdea space _) = set protoIdeaIdeaSpace space <$> arbitrary
+
+instance ArbFormPageResult EditIdea where
+    arbFormPageResult (EditIdea idea) = set protoIdeaIdeaSpace (idea ^. ideaSpace) <$> arbitrary
+
+instance ArbFormPageResult PageAdminSettingsQuorum where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult PageAdminSettingsDurations where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult PageUserSettings where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult PageHomeWithLoginPrompt where
+    arbFormPageResult _ = arbitrary
+
+instance ArbFormPageResult CreateTopic where
+    arbFormPageResult (CreateTopic space ideas) =
+            set protoTopicIdeaSpace space
+          . set protoTopicIdeas ideas
+        <$> arbitrary
+
+instance ArbFormPageResult MoveIdeasToTopic where
+    arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
+        -- FIXME: Generate a sublist from the given ideas
+        -- Ideas should be a set which contains only once one idea. And the random
+        -- result generation should select from those ideas only.
+        pure $ map (^. _Id) ideas

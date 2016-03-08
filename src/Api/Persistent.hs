@@ -344,7 +344,7 @@ instance FromProto Idea where
         , _ideaTitle    = i ^. protoIdeaTitle
         , _ideaDesc     = i ^. protoIdeaDesc
         , _ideaCategory = i ^. protoIdeaCategory
-        , _ideaSpace    = SchoolSpace
+        , _ideaSpace    = i ^. protoIdeaIdeaSpace
         , _ideaTopic    = Nothing
         , _ideaComments = nil
         , _ideaLikes    = nil

@@ -18,7 +18,7 @@ body, html {
     max-width: 1164px;
     padding: 0 20px;
 
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: $tablet-breakpoint) {
         margin: 0;
         max-width: 768px;
         width: 100%;

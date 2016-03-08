@@ -4,7 +4,7 @@
 
     .item-room-image {
         @include rem(height, 120px);
-        background-color: $color-grey-mid;
+        background-color: $color-grey-light;
         background-repeat: no-repeat;
         background-position: center center;
         display: block;
