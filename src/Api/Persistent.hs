@@ -214,7 +214,7 @@ getTopics = getDb dbTopics
 moveIdeasToLocation :: [AUID Idea] -> Either IdeaSpace (AUID Topic) -> Persist ()
 moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
-        modifyIdea ideaId $ ideaLocation .~ location
+        modifyIdea ideaId $ ideaLocation . fromIdeaLocation .~ location
 
 addTopic :: Proto Topic -> Persist Topic
 addTopic pt = do
@@ -237,13 +237,13 @@ findTopicsBySpace :: IdeaSpace -> Persist [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> Persist [Idea]
-findIdeasByTopicId = findAllInBy dbIdeas ideaLocation . Right
+findIdeasByTopicId = findAllInBy dbIdeas ideaLocation . IdeaLocation . Right
 
 findIdeasByTopic :: Topic -> Persist [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
 
 findWildIdeasBySpace :: IdeaSpace -> Persist [Idea]
-findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaLocation == Left space)
+findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaLocation == IdeaLocation (Left space))
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
@@ -344,7 +344,7 @@ instance FromProto Idea where
         , _ideaTitle    = i ^. protoIdeaTitle
         , _ideaDesc     = i ^. protoIdeaDesc
         , _ideaCategory = i ^. protoIdeaCategory
-        , _ideaLocation = Left $ i ^. protoIdeaIdeaSpace
+        , _ideaLocation = IdeaLocation . Left $ i ^. protoIdeaIdeaSpace
         , _ideaComments = nil
         , _ideaLikes    = nil
         , _ideaQuorumOk = False

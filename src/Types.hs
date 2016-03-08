@@ -81,7 +81,7 @@ data Idea = Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category
-    , _ideaLocation   :: Either IdeaSpace (AUID Topic)
+    , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Set Comment
     , _ideaLikes      :: Set IdeaLike
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
@@ -91,6 +91,11 @@ data Idea = Idea
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Idea
+
+newtype IdeaLocation = IdeaLocation { _fromIdeaLocation :: Either IdeaSpace (AUID Topic) }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaLocation
 
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
@@ -473,6 +478,7 @@ instance Binary UserPass
 instance Binary UserEmail
 instance Binary Group
 instance Binary Idea
+instance Binary IdeaLocation
 instance Binary IdeaLike
 instance Binary IdeaResult
 instance Binary IdeaResultValue
@@ -498,6 +504,7 @@ makeLenses ''Document
 makeLenses ''UserPass
 makeLenses ''UserEmail
 makeLenses ''Idea
+makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
 makeLenses ''IdeaResult
 makeLenses ''IdeaSpace
