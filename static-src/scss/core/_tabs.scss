@@ -1,0 +1,49 @@
+.tabs {
+    box-shadow: rgba(0,0,0,0.2) 2px 2px 2px 0;
+    float: left;
+    width: 100%;
+
+    .tab-item {
+        float: left;
+        width: 50%;
+
+        a {
+            background-color: $color-grey-light;
+            background-position: 20px bottom;
+            background-repeat: no-repeat;
+            background-blend-mode: multiply;
+            display: block;
+            color: $color-text;
+            font-weight: bold;
+            line-height: $tab-height;
+            text-align: center;
+        }
+
+        &.m-active a {
+            background-color: $color-brand1;
+            color: #fff;
+            position: relative;
+
+            &:after {
+                @include rem(border-left, $tab-triangle-size solid transparent);
+                @include rem(border-right, $tab-triangle-size solid transparent);
+                @include rem(border-top, $tab-triangle-size solid $color-brand1);
+                @include rem(bottom, -$tab-triangle-size);
+                @include rem(margin-left, -($tab-triangle-size/2));
+                content: "";
+                height: 0;
+                left: 50%;
+                position: absolute;
+                width: 0;
+            }
+        }
+
+        &.tab-item-wild-ideas a {
+            @include svg(icon_bulb_grey);
+        }
+
+        &.tab-item-topics a {
+            @include svg(badge_aufdemtisch);
+        }
+    }
+}
