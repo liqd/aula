@@ -45,7 +45,7 @@ module Api.Persistent
     , getTopics
     , addTopic
     , modifyTopic
-    , moveIdeasToTopic
+    , moveIdeasToLocation
     , findTopic
     , findTopicsBySpace
     , findUserByLogin
@@ -76,7 +76,7 @@ import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Map (Map)
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Set (Set)
 import Data.Time.Clock (getCurrentTime)
@@ -211,10 +211,10 @@ getUsers = getDb dbUsers
 getTopics :: Persist [Topic]
 getTopics = getDb dbTopics
 
-moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> Persist ()
-moveIdeasToTopic ideaIds topicId =
+moveIdeasToLocation :: [AUID Idea] -> Either IdeaSpace (AUID Topic) -> Persist ()
+moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
-        modifyIdea ideaId $ ideaTopic .~ topicId
+        modifyIdea ideaId $ ideaLocation . fromIdeaLocation .~ location
 
 addTopic :: Proto Topic -> Persist Topic
 addTopic pt = do
@@ -224,7 +224,7 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
+    moveIdeasToLocation (pt ^. protoTopicIdeas) (Right $ t ^. _Id)
     return t
 
 findUserByLogin :: UserLogin -> Persist (Maybe User)
@@ -237,13 +237,13 @@ findTopicsBySpace :: IdeaSpace -> Persist [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> Persist [Idea]
-findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
+findIdeasByTopicId = findAllInBy dbIdeas ideaLocation . IdeaLocation . Right
 
 findIdeasByTopic :: Topic -> Persist [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
 
 findWildIdeasBySpace :: IdeaSpace -> Persist [Idea]
-findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
+findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaLocation == IdeaLocation (Left space))
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
@@ -344,8 +344,7 @@ instance FromProto Idea where
         , _ideaTitle    = i ^. protoIdeaTitle
         , _ideaDesc     = i ^. protoIdeaDesc
         , _ideaCategory = i ^. protoIdeaCategory
-        , _ideaSpace    = i ^. protoIdeaIdeaSpace
-        , _ideaTopic    = Nothing
+        , _ideaLocation = IdeaLocation . Left $ i ^. protoIdeaIdeaSpace
         , _ideaComments = nil
         , _ideaLikes    = nil
         , _ideaQuorumOk = False
