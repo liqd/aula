@@ -61,7 +61,7 @@ viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> fin
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
-        div_ [class_ "container container-main"] $ do
+        div_ [class_ "grid container-main"] $ do
             f spaces
       where
         f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
@@ -103,8 +103,9 @@ instance ToHtml PageIdeasOverview where
                 li_ [class_ "icon-teaching"] "Unterricht"
                 li_ [class_ "icon-time"] "Zeit"
                 li_ [class_ "icon-environment"] "Umgebung"
-        div_ [class_ "wild-ideas-list"] . for_ ideas $ \idea ->
-            ListItemIdea True Nothing idea ^. html
+        div_ [class_ "grid"] $ do
+            div_ [class_ "ideas-list"] . for_ ideas $ \idea ->
+                ListItemIdea True Nothing idea ^. html
 
 instance Page PageIdeasOverview where
     isPrivatePage _ = True
