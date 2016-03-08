@@ -149,53 +149,53 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
     div_ [id_ "tabs"] . ul_ [] $ do
-        li_ [] $ tabLink tab MenuItemDurations
-        li_ [] $ tabLink tab MenuItemQuorum
+        li_ [] $ menulink tab MenuItemDurations
+        li_ [] $ menulink tab MenuItemQuorum
         if isPermissionsMenuItem tab
             then do
                 li_ [] $ span_ "Gruppen & Nutzer"
-                li_ [] $ tabLink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                li_ [] $ tabLink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
             else do
-                li_ [] $ tabLink tab (MenuItemGroupsAndPermissions Nothing)
-        li_ [] $ tabLink tab MenuItemEventsProtocol
+                li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+        li_ [] $ menulink tab MenuItemEventsProtocol
     div_ bdy
   where
     tab = toMenuItem t
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
     isPermissionsMenuItem _ = False
 
-data TabLink = TabLink ST U.AdminPs ST
+data Menulink = Menulink ST U.AdminPs ST
   deriving (Show)
 
-tabLink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
-tabLink curMenuItem targetMenuItem = case tabLink' curMenuItem targetMenuItem of
-    TabLink ident uri body ->
+menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
+menulink curMenuItem targetMenuItem = case menulink' curMenuItem targetMenuItem of
+    Menulink ident uri body ->
         a_ [ id_ ident
            , href_ $ U.Admin uri
            , class_ $ tabSelected curMenuItem targetMenuItem
            ]
           $ toHtml body
 
-tabLink' :: MenuItem -> MenuItem -> TabLink
-tabLink' curMenuItem targetMenuItem =
+menulink' :: MenuItem -> MenuItem -> Menulink
+menulink' curMenuItem targetMenuItem =
   case targetMenuItem of
     MenuItemDurations
-        -> TabLink "tab-duration" U.AdminDuration "Dauer der Phasen"
+        -> Menulink "tab-duration" U.AdminDuration "Dauer der Phasen"
     MenuItemQuorum
-        -> TabLink "tab-qourum" U.AdminQuorum "Quorum"
+        -> Menulink "tab-qourum" U.AdminQuorum "Quorum"
     MenuItemGroupsAndPermissions (Just PermUserView)
-        -> TabLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
+        -> Menulink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
     MenuItemGroupsAndPermissions (Just PermUserCreate)
-        -> TabLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
+        -> Menulink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
     MenuItemGroupsAndPermissions (Just PermClassView)
-        -> TabLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
+        -> Menulink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
     MenuItemGroupsAndPermissions (Just PermClassCreate)
-        -> TabLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
+        -> Menulink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
     MenuItemGroupsAndPermissions Nothing
-        -> TabLink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
+        -> Menulink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
     MenuItemEventsProtocol
-        -> TabLink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
+        -> Menulink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
 
 instance FormPageView PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations
