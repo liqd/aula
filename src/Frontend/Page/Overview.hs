@@ -93,8 +93,9 @@ instance ToHtml PageIdeasOverview where
             h1_ [class_ "main-heading"] $ do
                 span_ "WILDE IDEEN"
                 "Was soll sich verändern?"
-            p_ [class_ "sub-header"] $ span_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
-                <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
+            p_ [class_ "sub-header"] . span_ $
+                "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
+                "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             button_ [onclick_ (U.Space space U.CreateIdea), class_ "btn-cta"] "+ Neue Idee"
         div_ [class_ "icon-list"] $ do
             ul_ $ do
