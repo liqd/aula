@@ -41,8 +41,14 @@ type instance Reachable PageIdeasOverview CreateIdea = () -- Neue Idee (Create I
 type instance Reachable PageIdeasOverview ViewIdea   = () -- Titel einer Idee (Idea detail page: New Ideas)
 
 
+-- * 3. Ideas in Discussion
+
+-- TODO
+
 
 -- * 4. Topic Overview
+
+-- TODO
 
 -- type instance Reachable ViewTopic = ()
 
@@ -72,6 +78,10 @@ type instance Reachable ViewTopic PageUserProfileDelegatedVotes = () -- Avatar, 
 -- ...
 
 
+-- * 5 Idea detail pages:
+
+-- TODO
+
 -- * 5.1 Idea detail pages: New Ideas
 
 type instance Reachable ViewIdea EditIdea = () -- bearbieten (7. Edit idea)
@@ -90,8 +100,9 @@ type instance Reachable ViewIdea PageDelegateVote = () -- Stimme beauftragen (12
 -- * 5.7 Idea detail page: Winner
 
 
-
 -- * 6. Create Idea
+
+-- TODO
 
 -- On the create dummy it is an overlay
 -- type instance Reachable CreateIdea PageLogout = ()
@@ -102,15 +113,31 @@ type instance Reachable CreateIdea PageIdeasOverview = () -- X, Cancel, Idee ver
 -- type instance Reachable CreateIdea IdeeErsteltLayout = () -- Idee veroffentlichen ???
 
 
+-- * 7. Create Idea
 
+-- TODO
+
+
+-- * 8 User Profile
 
 -- * 8.1 User Profile: Created Ideas
+
+-- TODO
 
 -- type instance Reachable PageUserProfileCreateIdeas = ()
 
 -- type instance Reachable PageUserProfileCreateIdeas PageUserProfileDelegatedVotes = () -- Erhaltene Stimmen
 -- type instance Reachable PageUserProfileCreateIdeas ViewIdea = () -- Titel einer Idee (5.1 Idea Detail Page: New Ideas)
 
+
+-- * 9 User Settings
+
+-- TODO
+
+
+-- * 10 Create Topic
+
+-- TODO
 
 
 -- * 11. Admin pages
@@ -211,6 +238,26 @@ type instance Reachable PageAdminSettingsEventsProtocol PageAdminSettingsEventsP
 type instance Reachable PageAdminSettingsEventsProtocol PageAdminSettingsEventsProtocol = ()
 
 
+-- * 12. Delegate Votes
+
+-- FIXME
+
+
+-- * 13. Delegation Network
+
+-- FIXME
+
+
+-- * 14. Static Page: Imprint
+
+-- TODO
+
+
+-- * 12. Static Page: Terms of use
+
+-- TODO
+
+
 -- * 16. Home With Login Prompt
 
 type instance Reachable PageHomeWithLoginPrompt PageStaticImprint    = () -- Imprint
@@ -221,13 +268,13 @@ type instance Reachable PageHomeWithLoginPrompt PageRoomsOverview    = ()
 
 
 ----------------------------------------------------------------------
--- Questions
+-- FIXME
 
 {-
 
- * Who is going to create classes and how?
- * Can classes be changed during the semester?
- * Why are there two "ergebnisphase" on Topics Overview?
- * Why are there two "ausarbeitungphase" on Topics Overview?
+- Who is going to create classes and how?
+- Can classes be changed during the semester?
+- Why are there two "ergebnisphase" on Topics Overview?
+- Why are there two "ausarbeitungphase" on Topics Overview?
 
 -}
