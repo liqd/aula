@@ -165,37 +165,37 @@ adminFrame t bdy = do
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
     isPermissionsMenuItem _ = False
 
-data Menulink = Menulink ST U.AdminPs ST
+data MenuLink = MenuLink ST U.AdminPs ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
 menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of
-    Menulink ident uri body ->
+    MenuLink ident uri body ->
         a_ [ id_ ident
            , href_ $ U.Admin uri
            , class_ $ tabSelected curMenuItem targetMenuItem
            ]
           $ toHtml body
 
-menulink' :: MenuItem -> Menulink
+menulink' :: MenuItem -> MenuLink
 menulink' targetMenuItem =
   case targetMenuItem of
     MenuItemDurations
-        -> Menulink "tab-duration" U.AdminDuration "Dauer der Phasen"
+        -> MenuLink "tab-duration" U.AdminDuration "Dauer der Phasen"
     MenuItemQuorum
-        -> Menulink "tab-qourum" U.AdminQuorum "Quorum"
+        -> MenuLink "tab-qourum" U.AdminQuorum "Quorum"
     MenuItemGroupsAndPermissions (Just PermUserView)
-        -> Menulink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
+        -> MenuLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
     MenuItemGroupsAndPermissions (Just PermUserCreate)
-        -> Menulink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
+        -> MenuLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
     MenuItemGroupsAndPermissions (Just PermClassView)
-        -> Menulink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
+        -> MenuLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
     MenuItemGroupsAndPermissions (Just PermClassCreate)
-        -> Menulink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
+        -> MenuLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
     MenuItemGroupsAndPermissions Nothing
-        -> Menulink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
+        -> MenuLink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
     MenuItemEventsProtocol
-        -> Menulink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
+        -> MenuLink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
 
 instance FormPageView PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations
