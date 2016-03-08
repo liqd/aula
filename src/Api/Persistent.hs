@@ -13,6 +13,7 @@ module Api.Persistent
     , AMap
     , AulaLens
     , AulaGetter
+    , AulaSetter
     , mkRunPersist
 
     -- * generic
@@ -111,6 +112,7 @@ makeLenses ''AulaData
 
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
+type AulaSetter a = Setter' AulaData a
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -145,10 +147,10 @@ mkRunPersist = do
 getDb :: AulaGetter a -> Persist a
 getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
 
-modifyDb :: AulaLens a -> (a -> a) -> Persist ()
+modifyDb :: AulaSetter a -> (a -> a) -> Persist ()
 modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
 
-addDb :: (HasMetaInfo a, FromProto a) => AulaLens (AMap a) -> Proto a -> Persist a
+addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> Persist a
 addDb l pa = do
     a  <- fromProto pa <$> nextMetaInfo
     modifyDb l $ at (a ^. _Id) .~ Just a
