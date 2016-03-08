@@ -239,7 +239,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
         Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
 
--- * Quorom
+-- * Quorum
 
 instance FormPageView PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
