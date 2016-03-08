@@ -16,3 +16,7 @@ body, html {
 .container-main {
     @include rem(padding, 40px 0);
 }
+
+.m-shadow {
+    background-color: $color-grey-lighter;
+}

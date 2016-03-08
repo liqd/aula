@@ -6,11 +6,13 @@ $font-size-jumbo:           40px;
 $font-size-xlarge:          26px;
 $font-size-normal:          16px;
 $font-size-small:           14px;
+$font-size-smaller:         12px;
 
 
 $color-grey-dark:           #535353;
 $color-grey-mid:            #898989;
 $color-grey-light:          #e4e4e4;
+$color-grey-lighter:        #f6f6f6;
 $color-brand1:              #69970b; // Green
 
 $color-text:                $color-grey-dark;
@@ -27,3 +29,9 @@ $desktop-breakpoint:        992px;
 $button-cta-height:         25px;
 $button-cta-base-color:     $color-brand1;
 $button-cta-hover-color:    $color-grey-dark;
+
+$tab-height:                50px;
+$tab-triangle-size:         5px;
+
+$user-avatar-size:          40px;
+$thumbnail-size:            53px;

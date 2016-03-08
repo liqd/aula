@@ -23,6 +23,7 @@ import Types (AUID, Idea, IdeaSpace, User, Topic, nil, PermissionContext)
 
 data Top =
     Top
+  | Broken
   | TopMain Main
   | TopTesting UriPath
   | TopSamples
@@ -35,6 +36,7 @@ instance HasPath Top where relPath = top
 
 top :: Top -> UriPath
 top Top            = nil
+top Broken         = nil
 top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
