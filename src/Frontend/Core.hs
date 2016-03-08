@@ -148,18 +148,17 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                 li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
         Nothing -> nil
 
--- TODO: please add class m-selected to currently selected menu item
+    -- TODO: please add class m-selected to currently selected menu item
     div_ [class_ "main-header-user"] $ do
         case mUser of
             Just usr -> do
                 div_ [class_ "pop-menu"] $ do
                         "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
--- TODO: Fix URLs
-                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Broken] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
-                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.ListSpaces] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Broken] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
                             li_ [class_ "pop-menu-list-item"] . a_ [href_ $ P.Admin P.AdminDuration] $ do
@@ -170,8 +169,10 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                                 "Logout"
 
             Nothing -> nil
-        div_ [class_ "user-avatar"] nil
--- TODO: if statement - if image exists then make it a child of this div
+        div_ [class_ "user-avatar"] $ do
+            nil
+            -- FIXME if avatar is available, replace empty body with this:
+            -- img_ [src_ $ P.TopStatic "some_avatar"] nil
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
