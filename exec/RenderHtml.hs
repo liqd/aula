@@ -55,8 +55,10 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlForm    MoveIdeasToTopic))
     , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsDurations))
     , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsQuorum))
-    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGroupsAndPermissions))
---    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsUserCreateAndImport))  -- FIXME
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPUsersView))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPUsersCreate))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPClassesView))
+    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPClassesCreate))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsEventsProtocol))
     , f (Proxy :: Proxy (ToHtmlDefault PageDelegateVote))
     , f (Proxy :: Proxy (ToHtmlDefault PageDelegationNetwork))
