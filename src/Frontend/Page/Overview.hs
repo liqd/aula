@@ -19,6 +19,7 @@ import Action
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
+import qualified Data.Text as ST
 
 ----------------------------------------------------------------------
 -- pages
@@ -61,7 +62,7 @@ viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> fin
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
-        div_ [class_ "container container-main"] $ do
+        div_ [class_ "grid container-main"] $ do
             f spaces
       where
         f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
@@ -89,20 +90,31 @@ instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageIdeasOverview space ideas) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
-        p_ "WILDE IDEEN"
-        h1_ "Was soll sich verändern?"
-        p_ $ "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst fuer die "
-            <> "Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-        div_ $ button_ [onclick_ (U.Space space U.CreateIdea)] "+ Neue Idee"
-        div_ $ do
-            -- FIXME: these buttons should filter the ideas by category
-            button_ "Regeln"
-            button_ "Ausstattung"
-            button_ "Unterricht"
-            button_ "Zeit"
-            button_ "Umgebung"
-        div_ [id_ "ideas"] . for_ ideas $ \idea ->
-            ListItemIdea True Nothing idea ^. html
+        header_ [class_ "ideas-header"] $ do
+            h1_ [class_ "main-heading"] $ do
+                span_ "WILDE IDEEN"
+                "Was soll sich verändern?"
+            p_ [class_ "sub-header"] . span_ $
+                "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
+                "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
+            button_ [onclick_ (U.Space space U.CreateIdea), class_ "btn-cta"] "+ Neue Idee"
+        div_ [class_ "icon-list"] $ do
+            ul_ $ do
+                -- FIXME: these buttons should filter the ideas by category
+                li_ [class_ "icon-rules"] $ do
+                    a_ [href_ U.Broken] "Regeln"
+                li_ [class_ "icon-equipment"] $ do
+                    a_ [href_ U.Broken] "Ausstattung"
+                li_ [class_ "icon-teaching"] $ do
+                    a_ [href_ U.Broken] "Unterricht"
+                li_ [class_ "icon-time"] $ do
+                    a_ [href_ U.Broken] "Zeit"
+                li_ [class_ "icon-environment"] $ do
+                    a_ [href_ U.Broken] "Umgebung"
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                div_ [class_ "ideas-list"] . for_ ideas $ \idea ->
+                    ListItemIdea True Nothing idea ^. html
 
 instance Page PageIdeasOverview where
     isPrivatePage _ = True
@@ -124,11 +136,15 @@ instance Page PageIdeasInDiscussion where
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml
-    toHtml (Tabs activeTab space) = div_ $ do
-        span_ [class_ "active" | activeTab == WildIdeas] $ do
-            "Wilde Ideen " >> toHtml (spaceDesc space)
-        span_ [class_ "active" | activeTab == Topics] $ do
-            "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
+    toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
+        li_ [class_ . ST.unwords $
+             "tab-item tab-item-wild-ideas" : ["m-active" | activeTab == WildIdeas]] $ do
+            a_ [href_ U.Broken] $ do
+                "Wilde Ideen " >> toHtml (spaceDesc space)
+        li_ [class_ . ST.unwords $
+             "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
+            a_ [href_ U.Broken] $ do
+                "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
         spaceDesc SchoolSpace    = "der Schule"

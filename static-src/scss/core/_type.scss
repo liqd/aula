@@ -20,7 +20,16 @@ a {
 .main-heading {
     @include rem(margin-bottom, 45px);
     font-size: $font-size-jumbo;
+    font-weight: normal;
     text-align: center;
+
+    span {
+        @include rem(margin-bottom, 15px);
+        color: $color-text-muted;
+        display: block;
+        font-size: $font-size-small;
+        text-transform: uppercase;
+    }
 }
 
 .text-muted {

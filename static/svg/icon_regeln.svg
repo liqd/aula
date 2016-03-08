@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="43px" height="44px" viewBox="0 0 43 44" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 3.6.1 (26313) - http://www.bohemiancoding.com/sketch -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Klickdummy-Moderator" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="2.-Ideas-overview" transform="translate(-298.000000, -420.000000)">
+            <g id="Group" transform="translate(298.000000, 420.000000)">
+                <rect id="Rectangle-92" fill="#69970B" x="13.8923077" y="33.3333333" width="29.1076923" height="10.6666667"></rect>
+                <rect id="Rectangle-92" fill="#8CB734" x="0" y="26.6666667" width="29.1076923" height="6.66666667" rx="100"></rect>
+                <path d="M20.5076923,0 C22.3344803,3.38176876e-16 23.8153846,1.49497191 23.8153846,3.33634752 L23.8153846,25.9969858 C23.8153846,27.8395997 22.3307632,29.3333333 20.5076923,29.3333333 L20.5076923,29.3333333 C18.6809043,29.3333333 17.2,27.8383614 17.2,25.9969858 L17.2,3.33634752 C17.2,1.49373366 18.6846214,-3.37488754e-16 20.5076923,0 L20.5076923,0 L20.5076923,0 Z" id="Rectangle-92" fill="#8CB734"></path>
+                <rect id="Rectangle-97" fill="#8CB735" x="28.4461538" y="14.6666667" width="7.27692308" height="16.6666667" rx="100"></rect>
+                <rect id="Rectangle-97" fill="#8CB735" x="35.7230769" y="14.6666667" width="7.27692308" height="16.6666667" rx="100"></rect>
+                <rect id="Rectangle-97" fill="#8CB735" x="21.8307692" y="14.6666667" width="7.27692308" height="16.6666667" rx="100"></rect>
+                <rect id="Rectangle-98" fill="#8CB735" x="19.1846154" y="23.3333333" width="23.8153846" height="10"></rect>
+            </g>
+        </g>
+    </g>
+</svg>

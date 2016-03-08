@@ -1,0 +1,79 @@
+.ideas-list-item {
+    overflow: hidden;
+}
+
+.ideas-header {
+    @include rem(padding, 60px 0 35px);
+    background:     url(/static/images/header_wild_ideas_left.png) no-repeat left top,
+                    url(/static/images/header_wild_ideas_right.png) no-repeat right top;
+    clear: left;
+    overflow: hidden;
+    text-align: center;
+
+    .main-heading {
+        @include rem(margin-bottom, 16px);
+    }
+
+    .sub-header {
+        @include rem(margin-bottom, 33px);
+        display: block;
+
+        span {
+            display: inline-block;
+            max-width: 617px;
+        }
+    }
+}
+
+.ideas-list-img-container {
+    @include make_rounded_thumbnail($thumbnail-size);
+    @include rem(margin-right, 27px);
+    float: left;
+    width: $thumbnail-size;
+}
+
+.ideas-list-item {
+    @include rem(margin-bottom, 15px);
+    @include rem(padding, 25px 27px);
+    background-color: #fff;
+    border-bottom: 1px solid $color-grey-lighter;
+    overflow: hidden;
+
+    > a {
+        color: $color-text;
+        display: block;
+        overflow: hidden;
+
+        &:hover, &:focus {
+            color: $color-link;
+        }
+    }
+}
+
+.ideas-list-title {
+    @include rem(font-size, $font-size-xlarge);
+    margin-top: -2px;
+    font-weight: 400;
+
+
+    .ideas-list-author {
+        display: block;
+        font-size: $font-size-normal;
+    }
+}
+
+$progress-bar-height: 5px;
+
+.progress-bar {
+    background-color: $color-grey-lighter;
+    border-radius: ($progress-bar-height/2);
+
+    &, .progress-bar-progress {
+        display: block;
+    }
+
+    .progress-bar-progress {
+        background-color: $color-brand1;
+        height: $progress-bar-height;
+    }
+}

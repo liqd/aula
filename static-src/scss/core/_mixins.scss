@@ -17,9 +17,16 @@
     background-image: url(../images/#{$name}.png);
     background-repeat: no-repeat;
 
-    .svginline & {
+    .inlinesvg & {
         background-image: url(../svg/#{$name}.svg);
     }
+}
+
+@mixin make_rounded_thumbnail($size) {
+    @include rem(border-radius, ($size/2));
+    @include rem(height, $size);
+    @include rem(width, $size);
+    background: $color-grey-light;
 }
 
 $rem-baseline: $font-size-normal !default;

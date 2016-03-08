@@ -90,7 +90,6 @@ library
       Frontend.Prelude
       Lucid.Missing
       Persistent
-      Transaction
       Types
   default-language: Haskell2010
 
@@ -293,6 +292,5 @@ test-suite spec
       Frontend.Prelude
       Lucid.Missing
       Persistent
-      Transaction
       Types
   default-language: Haskell2010

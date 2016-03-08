@@ -27,7 +27,6 @@ import Frontend.Path ()
 import Frontend.Prelude ()
 import Lucid.Missing ()
 import Persistent ()
-import Transaction ()
 import Types ()
 
 spec :: Spec

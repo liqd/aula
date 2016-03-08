@@ -1,0 +1,65 @@
+.icon-list {
+    @include rem(padding, 24px 0);
+    background: $color-grey-lighter;
+    text-align: center;
+
+    ul, li {
+        display: inline-block;
+    }
+
+    ul {
+        margin: 0 auto;
+
+        li {
+            @include rem(font-size, $font-size-small);
+            @include rem(margin-right, 30px);
+            @include rem(min-width, 63px);
+            background-repeat: no-repeat;
+            background-position: center top;
+            text-align: center;
+
+            a {
+                @include rem(padding-top, 60px);
+                color: $color-brand1;
+                display: block;
+            }
+
+            &.icon-rules {
+                @include svg(icon_regeln);
+            }
+
+            &.icon-equipment {
+                @include svg(icon_ausstattung);
+            }
+
+            &.icon-teaching {
+                @include svg(icon_unterricht);
+            }
+
+            &.icon-time {
+                @include svg(icon_zeit);
+            }
+
+            &.icon-environment {
+                @include svg(icon_umgebung);
+            }
+
+            &:last-child {
+                margin-right: 0;
+            }
+        }
+    }
+}
+
+.meta-list {
+    @include rem(font-size, $font-size-small);
+    color: $color-text-muted;
+
+    .meta-list-item {
+        @include rem(margin-bottom, 10px);
+    }
+
+    .meta-list-icon {
+        @include rem(margin-right, 15px);
+    }
+}

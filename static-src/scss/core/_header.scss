@@ -26,15 +26,10 @@
     @extend %main-menu;
 }
 
-$avatar-size: 40px;
-
 .user-avatar {
-    @include rem(border-radius, 20px);
-    @include rem(height, $avatar-size);
+    @include make_rounded_thumbnail($user-avatar-size);
     @include rem(margin-right, 12px);
-    @include rem(margin-top, (($main-menu-height - $avatar-size) / 2));
-    @include rem(width, $avatar-size);
-    background: $color-grey-light;
+    @include rem(margin-top, (($main-menu-height - $user-avatar-size) / 2));
     float: right;
 }
 
