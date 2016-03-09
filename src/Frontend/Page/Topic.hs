@@ -20,7 +20,7 @@ module Frontend.Page.Topic
 where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUser)
-import Frontend.Prelude hiding (moveIdeasToTopic)
+import Frontend.Prelude hiding (moveIdeasToLocation)
 
 import qualified Persistent
 import qualified Frontend.Path as U
@@ -203,7 +203,7 @@ moveIdeasToTopic :: ActionM r m => IdeaSpace -> AUID Topic -> ServerT (FormHandl
 moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
     getPage = MoveIdeasToTopic space topicId <$> persistent (findWildIdeasBySpace space)
-    addIdeas ideas = persistent $ Persistent.moveIdeasToTopic ideas (Just topicId)
+    addIdeas ideas = persistent $ Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 editTopic :: ActionM r m => IdeaSpace -> AUID Topic -> m (Frame EditTopic)
 editTopic _ _ = makeFrame EditTopic

@@ -99,7 +99,7 @@ instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
 
 instance Arbitrary CreateIdea where
-    arbitrary = CreateIdea <$> arb <*> arb
+    arbitrary = CreateIdea <$> arb
 
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
@@ -246,6 +246,9 @@ instance Arbitrary Topic where
         <**> (set topicDesc . Markdown <$> arbPhrase)
 
 instance Arbitrary Phase where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaLocation where
     arbitrary = garbitrary
 
 

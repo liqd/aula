@@ -175,9 +175,9 @@ type AulaSpace =
 aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
        Page.viewIdeas  space
-  :<|> Page.viewIdea   space
-  :<|> Page.editIdea   space
-  :<|> Page.createIdea space Nothing
+  :<|> Page.viewIdea
+  :<|> Page.editIdea
+  :<|> Page.createIdea (IdeaLocationSpace space)
 
   :<|> Page.viewTopics  space
   :<|> Page.viewTopic   space TabAllIdeas
@@ -186,7 +186,7 @@ aulaSpace space =
   :<|> Page.viewTopic   space TabWinningIdeas
   :<|> Page.viewTopic   space TabDelegation
   :<|> Page.createTopic space []
-  :<|> Page.createIdea  space . Just
+  :<|> Page.createIdea . IdeaLocationTopic space
   :<|> Page.moveIdeasToTopic space
   :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
   :<|> error "api not implemented: topic/:topic/delegation/create"

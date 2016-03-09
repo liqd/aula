@@ -19,6 +19,7 @@ import Persistent.Implementation.STM
 import CreateRandom
 import Types
 
+
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: IO (Persist :~> IO)
 mkInitial = do
@@ -165,7 +166,8 @@ regression = describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp
             "addIdea" getIdeas (addIdea frameUserHack)
-            (\p i -> i ^. ideaSpace `shouldBe` p ^. protoIdeaIdeaSpace)
+            (\p i -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
+
 
 ----------------------------------------------------------------------
 -- Expectations
