@@ -41,7 +41,7 @@ type instance Reachable PageIdeasOverview CreateIdea = () -- Neue Idee (Create I
 type instance Reachable PageIdeasOverview ViewIdea   = () -- Titel einer Idee (Idea detail page: New Ideas)
 
 
--- * 3. Ideas in Discussion
+-- * 3. Ideas in discussion (Topics overview)
 
 -- TODO
 
@@ -247,23 +247,23 @@ type instance Reachable PageAdminSettingsEventsProtocol PageAdminSettingsEventsP
 
 -- FIXME
 
-
 -- * 14. Static Page: Imprint
 
--- TODO
-
+type instance Reachable PageStaticImprint PageStaticImprint       = ()
+type instance Reachable PageStaticImprint PageStaticTermsOfUse    = ()
+type instance Reachable PageStaticImprint PageHomeWithLoginPrompt = ()
 
 -- * 12. Static Page: Terms of use
 
--- TODO
-
+type instance Reachable PageStaticTermsOfUse PageStaticTermsOfUse    = ()
+type instance Reachable PageStaticTermsOfUse PageStaticImprint       = ()
+type instance Reachable PageStaticTermsOfUse PageHomeWithLoginPrompt = ()
 
 -- * 16. Home With Login Prompt
 
 type instance Reachable PageHomeWithLoginPrompt PageStaticImprint    = () -- Imprint
 type instance Reachable PageHomeWithLoginPrompt PageStaticTermsOfUse = () -- Terms of use
 type instance Reachable PageHomeWithLoginPrompt PageRoomsOverview    = ()
-
 
 
 
