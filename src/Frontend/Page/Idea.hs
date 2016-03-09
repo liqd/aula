@@ -210,14 +210,14 @@ instance FormPageView EditIdea where
 
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
-            h3_ "Diene Idee"
+            h3_ "Deine Idee"
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
                 DF.inputSelect   "idea-category" v >> br_ []
                 DF.inputSubmit   "Speichern"
-                button_ [value_ ""] "IDEE LOSCHEN" -- FIXME delete button
-                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this back?
+                button_ [value_ ""] "Idee löschen" -- FIXME delete button
+                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
 
 categoryValues :: IsString s => [(Category, s)]
 categoryValues = [ (CatRule,        "Regel")
@@ -243,7 +243,7 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
             Nothing ->
                 pure Nothing
             Just topicId -> do
-                -- FIXME 404
+                -- (failure to match the following can only be caused by an inconsistent state)
                 Just topic <- findTopic topicId
                 pure . Just $ topic ^. topicPhase)
 
@@ -259,6 +259,6 @@ editIdea _space ideaId =
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
         (persistent . modifyIdea ideaId . newIdea)
   where
-    newIdea protoIdea =   (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
-                        . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
-                        . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
+                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
+                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))

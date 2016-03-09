@@ -272,7 +272,7 @@ catchAulaExcept Proxy = id
 --   ... = (`catchError` actionExceptHandler)
 --  where
 --    actionExceptHandler :: ActionExcept -> s
---    actionExceptHandler = undefined
+--    actionExceptHandler = _
 --
 -- -- (async exceptions (`error` and all) should be caught inside module "Action" and exposed as
 -- -- `err500` here.)
