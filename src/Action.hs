@@ -77,7 +77,7 @@ class ( ActionLog m
       , ActionTempCsvFiles m
       ) => ActionM r m
 
-instance MonadPersist r => ActionM r (Action r)
+instance PersistM r => ActionM r (Action r)
 
 class Monad m => ActionLog m where
     -- | Log events
@@ -86,20 +86,20 @@ class Monad m => ActionLog m where
 instance ActionLog (Action r) where
     logEvent = Action . liftIO . print
 
-class (MonadPersist r, Monad m) => ActionPersist r m | m -> r where
+class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
     -- FIXME: Rename atomically, and only call on
     -- complex computations.
     persistent :: r a -> m a
 
-instance MonadPersist r => ActionPersist r (Action r) where
+instance PersistM r => ActionPersist r (Action r) where
     persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
 
 instance MonadIO (Action r) where
     liftIO = Action . liftIO
 
-instance MonadPersist r => MonadPersist (Action r) where
+instance PersistM r => PersistM (Action r) where
     -- getDb :: AulaGetter a -> m a
     getDb = persistent . getDb
     -- modifyDb :: AulaSetter a -> (a -> a) -> m ()
@@ -113,7 +113,7 @@ class Monad m => ActionUserHandler m where
     -- | Make the user log out
     logout :: m ()
 
-instance MonadPersist r => ActionUserHandler (Action r) where
+instance PersistM r => ActionUserHandler (Action r) where
     login user = do
         put $ UserLoggedIn user "session"
         persistent $ loginUser user

@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Api.Persistent
-    ( MonadPersist
+    ( PersistM
     , AMap
     , AulaLens
     , AulaGetter
@@ -124,82 +124,82 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil Nothing 21 21 30 3 0
 
--- FIXME move enough specialized calls to IO in MonadPersist to remove MonadIO
-class MonadIO m => MonadPersist m where
+-- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
+class MonadIO m => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
 
-addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> MonadPersist m => m a
+addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> PersistM m => m a
 addDb l pa = do
     a  <- fromProto pa <$> nextMetaInfo
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
-findIn :: AulaGetter [a] -> (a -> Bool) -> MonadPersist m => m (Maybe a)
+findIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m (Maybe a)
 findIn l p = find p <$> getDb l
 
-findAllIn :: AulaGetter [a] -> (a -> Bool) -> MonadPersist m => m [a]
+findAllIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m [a]
 findAllIn l p = filter p <$> getDb l
 
-findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> MonadPersist m => m (Maybe a)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m (Maybe a)
 findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
-findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> MonadPersist m => m [a]
+findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> MonadPersist m => m (Maybe a)
+findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> PersistM m => m (Maybe a)
 findInById l = findInBy l _Id
 
-getSpaces :: MonadPersist m => m [IdeaSpace]
+getSpaces :: PersistM m => m [IdeaSpace]
 getSpaces = getDb dbSpaces
 
-getIdeas :: MonadPersist m => m [Idea]
+getIdeas :: PersistM m => m [Idea]
 getIdeas = getDb dbIdeas
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
-addIdeaSpaceIfNotExists :: IdeaSpace -> MonadPersist m => m ()
+addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
 addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: Proto Idea -> MonadPersist m => m Idea
+addIdea :: Proto Idea -> PersistM m => m Idea
 addIdea = addDb dbIdeaMap
 
-findIdea :: AUID Idea -> MonadPersist m => m (Maybe Idea)
+findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
 findIdea = findInById dbIdeas
 
-findIdeasByUserId :: AUID User -> MonadPersist m => m [Idea]
+findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId user = findAllIn dbIdeas (\i -> i ^. createdBy == user)
 
-modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> MonadPersist m => m ()
+modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
-modifyIdea :: AUID Idea -> (Idea -> Idea) -> MonadPersist m => m ()
+modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> MonadPersist m => m ()
+modifyUser :: AUID User -> (User -> User) -> PersistM m => m ()
 modifyUser = modifyAMap dbUserMap
 
-modifyTopic :: AUID Topic -> (Topic -> Topic) -> MonadPersist m => m ()
+modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> MonadPersist m => m (Maybe User)
+findUser :: AUID User -> PersistM m => m (Maybe User)
 findUser = findInById dbUsers
 
-getUsers :: MonadPersist m => m [User]
+getUsers :: PersistM m => m [User]
 getUsers = getDb dbUsers
 
---addUser :: Proto User -> MonadPersist m => m User
+--addUser :: Proto User -> PersistM m => m User
 --addUser = addDb dbUserMap
 
-getTopics :: MonadPersist m => m [Topic]
+getTopics :: PersistM m => m [Topic]
 getTopics = getDb dbTopics
 
-moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> MonadPersist m => m ()
+moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> PersistM m => m ()
 moveIdeasToTopic ideaIds topicId =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaTopic .~ topicId
 
-addTopic :: Proto Topic -> MonadPersist m => m Topic
+addTopic :: Proto Topic -> PersistM m => m Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
@@ -210,43 +210,43 @@ addTopic pt = do
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
-findUserByLogin :: UserLogin -> MonadPersist m => m (Maybe User)
+findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
-findTopic :: AUID Topic -> MonadPersist m => m (Maybe Topic)
+findTopic :: AUID Topic -> PersistM m => m (Maybe Topic)
 findTopic = findInById dbTopics
 
-findTopicsBySpace :: IdeaSpace -> MonadPersist m => m [Topic]
+findTopicsBySpace :: IdeaSpace -> PersistM m => m [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
-findIdeasByTopicId :: AUID Topic -> MonadPersist m => m [Idea]
+findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
 findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
 
-findIdeasByTopic :: Topic -> MonadPersist m => m [Idea]
+findIdeasByTopic :: Topic -> PersistM m => m [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
 
-findWildIdeasBySpace :: IdeaSpace -> MonadPersist m => m [Idea]
+findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
-loginUser :: UserLogin -> MonadPersist m => m ()
+loginUser :: UserLogin -> PersistM m => m ()
 loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
 
-logoutUser :: UserLogin -> MonadPersist m => m ()
+logoutUser :: UserLogin -> PersistM m => m ()
 logoutUser _userLogin = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
 
-nextId :: MonadPersist m => m (AUID a)
+nextId :: PersistM m => m (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
-currentUser :: MonadPersist m => m (AUID User)
+currentUser :: PersistM m => m (AUID User)
 currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
-addUser :: Proto User -> MonadPersist m => m User
+addUser :: Proto User -> PersistM m => m User
 addUser proto = do
     metainfo  <- nextMetaInfo
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
@@ -266,7 +266,7 @@ addUser proto = do
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
-addFirstUser :: Proto User -> MonadPersist m => m User
+addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
     now <- Timestamp <$> liftIO getCurrentTime
     let uid = AUID 0
@@ -296,13 +296,13 @@ addFirstUser proto = do
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
-mkUserLogin :: ProtoUser -> MonadPersist m => m UserLogin
+mkUserLogin :: ProtoUser -> PersistM m => m UserLogin
 mkUserLogin protoUser = pick (gen firstn lastn)
   where
     firstn :: ST = protoUser ^. protoUserFirstName . fromUserFirstName
     lastn  :: ST = protoUser ^. protoUserLastName  . fromUserLastName
 
-    pick :: [ST] -> MonadPersist m => m UserLogin
+    pick :: [ST] -> PersistM m => m UserLogin
     pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< findUserByLogin l
     pick []                    = error "impossible.  (well, unlikely.)"
 
@@ -315,7 +315,7 @@ mkUserLogin protoUser = pick (gen firstn lastn)
     noise :: [ST]
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
 
-mkRandomPassword :: MonadPersist m => m UserPass
+mkRandomPassword :: PersistM m => m UserPass
 mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 adminUsernameHack :: UserLogin
@@ -347,7 +347,7 @@ instance FromProto Topic where
         }
 
 -- | So far `newMetaInfo` is only used by `nextMetaInfo`.
-newMetaInfo :: MonadPersist m => AUID User -> AUID a -> m (MetaInfo a)
+newMetaInfo :: PersistM m => AUID User -> AUID a -> m (MetaInfo a)
 newMetaInfo uid oid = do
     now <- Timestamp <$> liftIO getCurrentTime
     -- Just user <- findUser uid  -- FIXME: need exceptions; need to make test suite smarter
@@ -361,5 +361,5 @@ newMetaInfo uid oid = do
         , _metaChangedAt       = now
         }
 
-nextMetaInfo :: MonadPersist m => m (MetaInfo a)
+nextMetaInfo :: PersistM m => m (MetaInfo a)
 nextMetaInfo = join $ newMetaInfo <$> currentUser <*> nextId

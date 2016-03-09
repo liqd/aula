@@ -45,7 +45,7 @@ createRandomNoMeta l = do
                                      `Beside` PageShow x))
 
 -- | generate one arbitrary item of each type (idea, user, ...)
-genInitialTestDb :: (MonadPersist m, GenArbitrary m) => m ()
+genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
 genInitialTestDb = do
     addIdeaSpaceIfNotExists SchoolSpace
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")

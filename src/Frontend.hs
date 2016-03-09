@@ -127,7 +127,7 @@ type AulaMain =
   :<|> "logout" :> GetH (Frame PageLogout)
 
 
-aulaMain :: MonadPersist r => ServerT AulaMain (Action r)
+aulaMain :: PersistM r => ServerT AulaMain (Action r)
 aulaMain =
        Page.viewRooms
   :<|> aulaSpace
@@ -173,7 +173,7 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote ST --FIXME: Change Type
 
-aulaSpace :: MonadPersist r => IdeaSpace -> ServerT AulaSpace (Action r)
+aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea   space
@@ -196,7 +196,7 @@ type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
 
-aulaUser :: MonadPersist r => AUID User -> ServerT AulaUser (Action r)
+aulaUser :: PersistM r => AUID User -> ServerT AulaUser (Action r)
 aulaUser user =
        Page.createdIdeas   user
   :<|> Page.delegatedVotes user
@@ -216,7 +216,7 @@ type AulaAdmin =
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
 
-aulaAdmin :: MonadPersist r => ServerT AulaAdmin (Action r)
+aulaAdmin :: PersistM r => ServerT AulaAdmin (Action r)
 aulaAdmin =
        Page.adminDurations
   :<|> Page.adminQuorum
@@ -241,7 +241,7 @@ type AulaTesting =
   :<|> "file-upload" :> FormHandler BatchCreateUsers ST
   :<|> "random-password" :> GetH (PageShow UserPass)
 
-aulaTesting :: (GenArbitrary r, MonadPersist r) => ServerT AulaTesting (Action r)
+aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
 aulaTesting =
        return (PublicFrame "yihaah!")
 

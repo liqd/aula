@@ -42,6 +42,6 @@ mkRunPersist = do
 instance MonadIO Persist where
     liftIO = persistIO
 
-instance MonadPersist Persist where
+instance PersistM Persist where
     getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
     modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
