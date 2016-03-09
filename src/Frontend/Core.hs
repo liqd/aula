@@ -111,7 +111,8 @@ class Page p where
 data Frame body = Frame User body | PublicFrame body
   deriving (Functor)
 
-makeFrame :: (ActionPersist m, ActionUserHandler m, Page p) => p -> m (Frame p)
+makeFrame :: (ActionPersist r m, ActionUserHandler m, Page p)
+          => p -> m (Frame p)
 makeFrame p
   | isPrivatePage p = flip Frame p <$> currentUser
   | otherwise       = return $ PublicFrame p

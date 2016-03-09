@@ -178,7 +178,7 @@ ideaFormFields v = do
 -- handlers
 
 -- FIXME restrict to the given IdeaSpace
-viewIdea :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
+viewIdea :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
 viewIdea _space ideaId = makeFrame =<< persistent (do
     -- FIXME 404
     Just idea  <- findIdea ideaId

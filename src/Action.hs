@@ -1,9 +1,11 @@
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ViewPatterns               #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -67,8 +69,12 @@ data UserState
 
 makeLenses ''UserState
 
+-- TODO: here @ActionPersist Persist@ is hardwired, so either
+-- parameterize ActionM by the persistance implementation
+-- or remove ActionPersist from ActionM and add by hand elsewhere
+-- (messy and lots of places need to be touched).
 class ( ActionLog m
-      , ActionPersist m
+      , ActionPersist Persist m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
@@ -83,14 +89,14 @@ class Monad m => ActionLog m where
 instance ActionLog Action where
     logEvent = Action . liftIO . print
 
-class Monad m => ActionPersist m where
+class (MonadPersist r, Monad m) => ActionPersist r m | m -> r where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
     -- FIXME: Rename atomically, and only call on
     -- complex computations.
-    persistent :: Persist a -> m a
+    persistent :: r a -> m a
 
-instance ActionPersist Action where
+instance ActionPersist Persist Action where
     persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
 
 instance MonadIO Action where
@@ -169,14 +175,14 @@ mkRunAction persistNat = \s -> Nat (run s)
 -- Action Combinators
 
 -- | Returns the current user
-currentUser :: (ActionPersist m, ActionUserHandler m) => m User
+currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
 currentUser =
     loggedInUser
     >>= persistent . findUserByLogin
     >>= \ (Just user) -> return user
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
+modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) -> m ()
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
 

@@ -173,7 +173,7 @@ ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 -- handlers
 
 -- FIXME check the 'space'
-viewTopic :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
+viewTopic :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
 viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
 viewTopic _space tab topicId = makeFrame =<< persistent (do
     -- FIXME 404
