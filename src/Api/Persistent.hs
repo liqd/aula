@@ -9,15 +9,15 @@
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Api.Persistent
-    ( Persist
-    , MonadPersist
+    ( MonadPersist
     , AMap
     , AulaLens
     , AulaGetter
     , AulaSetter
-    , mkRunPersist
 
-    -- * generic
+    , AulaData
+    , emptyAulaData
+
     , getDb
     , addDb
     , modifyDb
@@ -69,11 +69,9 @@ module Api.Persistent
     )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, modifyTVar')
 import Control.Lens
 import Control.Monad (join, unless, replicateM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
@@ -82,16 +80,12 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Set (Set)
 import Data.Time.Clock (getCurrentTime)
-import Servant.Server ((:~>)(Nat))
 
 import Types
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as ST
-
--- FIXME: Remove
-import Test.QuickCheck (generate, arbitrary)
 
 type AMap a = Map (AUID a) a
 
@@ -130,32 +124,10 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil Nothing 21 21 30 3 0
 
-newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
-  deriving (Functor, Applicative, Monad)
-
-persistIO :: IO a -> Persist a
-persistIO = Persist . liftIO
-
-instance GenArbitrary Persist where
-    genArbitrary = persistIO $ generate arbitrary
-
-mkRunPersist :: IO (Persist :~> IO)
-mkRunPersist = do
-    tvar <- newTVarIO emptyAulaData
-    let run (Persist c) = c `runReaderT` tvar
-    return $ Nat run
-
 -- FIXME move enough specialized calls to IO in MonadPersist to remove MonadIO
 class MonadIO m => MonadPersist m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
-
-instance MonadIO Persist where
-    liftIO = persistIO
-
-instance MonadPersist Persist where
-    getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
-    modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
 
 addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> MonadPersist m => m a
 addDb l pa = do

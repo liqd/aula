@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.9.1.
+-- This file has been generated from package.yaml by hpack version 0.10.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -69,6 +69,7 @@ library
       Action
       Api
       Api.Persistent
+      Api.PersistentImplementation
       Arbitrary
       Config
       CreateRandom
@@ -91,57 +92,6 @@ library
       Lucid.Missing
       Persistent
       Types
-  default-language: Haskell2010
-
-executable aula-server
-  main-is: Aula.hs
-  hs-source-dirs:
-      exec
-  ghc-options: -Wall
-  build-depends:
-      base >=4.8 && <4.9
-    , thentos-core >=0.3.0
-    , aeson
-    , basic-sop
-    , binary
-    , bytestring
-    , case-insensitive
-    , cassava
-    , containers
-    , cookie
-    , digestive-functors
-    , digestive-functors-lucid
-    , directory
-    , elocrypt >=0.4.1 && <0.5
-    , filepath
-    , functor-infix
-    , generics-sop
-    , http-types
-    , lens
-    , lucid
-    , mtl
-    , postgresql-simple
-    , pretty-show
-    , process
-    , QuickCheck
-    , quickcheck-instances
-    , safecopy
-    , scrypt
-    , servant
-    , servant-lucid
-    , servant-server
-    , stm
-    , string-conversions
-    , text
-    , time
-    , transformers
-    , wai
-    , wai-app-static
-    , warp
-    , vector ==0.10.12.3
-    , aula
-  other-modules:
-      RenderHtml
   default-language: Haskell2010
 
 executable aula-html-dummies
@@ -196,6 +146,57 @@ executable aula-html-dummies
     , hspec
   other-modules:
       Aula
+  default-language: Haskell2010
+
+executable aula-server
+  main-is: Aula.hs
+  hs-source-dirs:
+      exec
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <4.9
+    , thentos-core >=0.3.0
+    , aeson
+    , basic-sop
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava
+    , containers
+    , cookie
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , elocrypt >=0.4.1 && <0.5
+    , filepath
+    , functor-infix
+    , generics-sop
+    , http-types
+    , lens
+    , lucid
+    , mtl
+    , postgresql-simple
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , safecopy
+    , scrypt
+    , servant
+    , servant-lucid
+    , servant-server
+    , stm
+    , string-conversions
+    , text
+    , time
+    , transformers
+    , wai
+    , wai-app-static
+    , warp
+    , vector ==0.10.12.3
+    , aula
+  other-modules:
+      RenderHtml
   default-language: Haskell2010
 
 test-suite spec
@@ -271,6 +272,7 @@ test-suite spec
       Action
       Api
       Api.Persistent
+      Api.PersistentImplementation
       Arbitrary
       Config
       CreateRandom

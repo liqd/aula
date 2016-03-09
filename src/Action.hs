@@ -45,6 +45,7 @@ import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
 import Data.String.Conversions (ST, LBS)
 import Persistent
+import Api.PersistentImplementation
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
