@@ -43,23 +43,15 @@ type instance Reachable PageIdeasOverview ViewIdea   = () -- Titel einer Idee (I
 
 -- * 3. Ideas in discussion (Topics overview)
 
--- TODO
+type instance Reachable PageIdeasInDiscussion PageIdeasOverview = () -- Wildee ideen der Klasse 7a
+type instance Reachable PageIdeasInDiscussion ViewTopic = ()
+-- ^^
+-- ausarbeitungphase (4.1 Topic Overview: refinement phase)
+-- prufungphase (4.2 Topic Overview: assignment phase)
+-- ergebnishphase (4.4 Topic Overview: Result phase)
+-- abstimmungphase (4.3 Topic Overview: Voting phase)
 
-
--- * 4. Topic Overview
-
--- TODO
-
--- type instance Reachable ViewTopic = ()
-
-type instance Reachable ViewTopic ViewIdea = () -- Wilde Ideen der Klasse 7a (5.1 Idea detail pages)
-type instance Reachable ViewTopic ViewTopic = () -- ausarbeitungphase (4.1 Topic Overview: refinement phase)
--- type instance Reachable ViewTopic = ()-- prufungphase (4.2 Topic Overview: assignment phase)
--- type instance Reachable ViewTopic = ()-- ergebnishphase (4.4 Topic Overview: Result phase)
--- type instance Reachable ViewTopic = ()-- abstimmungphase (4.3 Topic Overview: Voting phase)
--- ergennishphase ??? (duplicated) (4.4 Topic Overview: Result phase 3)
--- ausarbeitungphase ??? (duplicated) (4.1 Topic Overview: refinement phase)
-
+-- * 4. Topic overview
 
 -- * 4.1 Topic overview: Refinement phase
 
@@ -276,5 +268,6 @@ type instance Reachable PageHomeWithLoginPrompt PageRoomsOverview    = ()
 - Can classes be changed during the semester?
 - Why are there two "ergebnisphase" on Topics Overview?
 - Why are there two "ausarbeitungphase" on Topics Overview?
+- Rename PageIdeasInDiscussion to TopicOverview
 
 -}
