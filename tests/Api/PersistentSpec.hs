@@ -15,6 +15,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Api.Persistent
+import Api.PersistentImplementation
 import CreateRandom
 import Types
 

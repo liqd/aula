@@ -33,7 +33,7 @@ import Arbitrary (arb)
 import Data.UriPath (absoluteUriPath)
 import Frontend.Core
 import Frontend.Page
-import Persistent
+import qualified Api.PersistentImplementation as PersistentImplementation
 import Types
 
 
@@ -198,7 +198,7 @@ renderForm (F g) =
         assert (len > 0)
 
 runAction :: Action a -> ExceptT ServantErr IO a
-runAction action = do rp <- liftIO mkRunPersist
+runAction action = do rp <- liftIO PersistentImplementation.mkRunPersist
                       unNat (mkRunAction rp UserLoggedOut) action
 
 failOnError :: Action a -> IO a

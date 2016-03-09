@@ -266,9 +266,9 @@ addUser proto = do
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
-addFirstUser :: Proto User -> Persist User
+addFirstUser :: Proto User -> MonadPersist m => m User
 addFirstUser proto = do
-    now <- Timestamp <$> persistIO getCurrentTime
+    now <- Timestamp <$> liftIO getCurrentTime
     let uid = AUID 0
         oid = AUID 0
         uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)

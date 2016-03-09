@@ -38,6 +38,7 @@ import Persistent
 import Types
 
 import qualified Action
+import qualified Api.PersistentImplementation as PersistentImplementation
 
 
 ----------------------------------------------------------------------
@@ -45,7 +46,7 @@ import qualified Action
 
 runFrontend :: Config.Config -> IO ()
 runFrontend cfg = do
-    persist <- mkRunPersist
+    persist <- PersistentImplementation.mkRunPersist
     let action = mkRunAction persist
         proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
