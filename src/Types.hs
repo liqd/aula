@@ -81,8 +81,7 @@ data Idea = Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
-    , _ideaSpace      :: IdeaSpace
-    , _ideaTopic      :: Maybe (AUID Topic)
+    , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Set Comment
     , _ideaLikes      :: Set IdeaLike
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
@@ -93,12 +92,20 @@ data Idea = Idea
 
 instance SOP.Generic Idea
 
+-- | Invariant: for all @LocationTopic space tid@: idea space of topic with id 'tid' is 'space'.
+data IdeaLocation =
+      IdeaLocationSpace IdeaSpace
+    | IdeaLocationTopic IdeaSpace (AUID Topic)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaLocation
+
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
     , _protoIdeaDesc       :: Document
     , _protoIdeaCategory   :: Category
-    , _protoIdeaIdeaSpace  :: IdeaSpace
+    , _protoIdeaLocation   :: IdeaLocation
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -491,6 +498,7 @@ instance Binary UserPass
 instance Binary UserEmail
 instance Binary Group
 instance Binary Idea
+instance Binary IdeaLocation
 instance Binary IdeaLike
 instance Binary IdeaResult
 instance Binary IdeaResultValue
@@ -516,6 +524,7 @@ makeLenses ''Document
 makeLenses ''UserPass
 makeLenses ''UserEmail
 makeLenses ''Idea
+makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
 makeLenses ''IdeaResult
 makeLenses ''IdeaSpace
