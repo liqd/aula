@@ -136,7 +136,8 @@ instance FormPageView CreateIdea where
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Create Idee"
                     DF.form v fa $ do
-                        label_ [id_ ".title"] "Wie soll deine Idee heißen?" $ do
+                        label_ [id_ ".title"] $ do
+                            "Wie soll deine Idee heißen?"
                             DF.inputText        "title" v
                         DF.inputTextArea    Nothing Nothing "idea-text" v
                         DF.inputSubmit      "Add Idea"
