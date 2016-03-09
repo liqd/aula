@@ -41,7 +41,6 @@ import Types
 import qualified Action
 import qualified Persistent.Implementation.STM
 
-
 ----------------------------------------------------------------------
 -- driver
 
@@ -66,6 +65,8 @@ type AulaTop =
   :<|> "static"  :> Raw
   :<|> GetH (Frame ())
 
+aulaTop' :: Server AulaTop
+aulaTop' = undefined
 
 aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =

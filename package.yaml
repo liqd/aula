@@ -97,6 +97,7 @@ tests:
       - lucid
       - mtl
       - QuickCheck >= 2.8 && <2.9
+      - servant-mock
       - servant-server
       - string-conversions
       - text

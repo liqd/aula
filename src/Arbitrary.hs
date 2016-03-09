@@ -336,6 +336,24 @@ instance Arbitrary P.AdminPs where
     arbitrary = garbitrary
 
 ----------------------------------------------------------------------
+-- servant-mock
+
+instance Arbitrary a => Arbitrary (FormPage a) where
+    arbitrary = FormPage <$> arb <*> pure (return ()) 
+
+instance Arbitrary a => Arbitrary (Frame a) where
+    arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ] 
+
+instance Arbitrary a => Arbitrary (Frame' a)where
+    arbitrary = oneof [ Frame' <$> arb <*> pure (pure ()) <*> arb, PublicFrame' (pure ()) <$> arb ]
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
+    arbitrary = Beside <$> arb <*> arb
+
+instance Arbitrary BatchCreateUsers where
+    arbitrary = pure BatchCreateUsers
+
+----------------------------------------------------------------------
 -- general-purpose helpers
 
 scaleDown :: Gen a -> Gen a
