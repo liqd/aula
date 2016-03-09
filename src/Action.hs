@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -81,13 +82,13 @@ class ( ActionLog m
       , ActionTempCsvFiles m
       ) => ActionM m
 
-instance ActionM Action
+instance ActionM (Action Persist)
 
 class Monad m => ActionLog m where
     -- | Log events
     logEvent :: ST -> m ()
 
-instance ActionLog Action where
+instance ActionLog (Action r) where
     logEvent = Action . liftIO . print
 
 class (MonadPersist r, Monad m) => ActionPersist r m | m -> r where
@@ -97,13 +98,13 @@ class (MonadPersist r, Monad m) => ActionPersist r m | m -> r where
     -- complex computations.
     persistent :: r a -> m a
 
-instance ActionPersist Persist Action where
+instance MonadPersist r => ActionPersist r (Action r) where
     persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
 
-instance MonadIO Action where
+instance MonadIO (Action r) where
     liftIO = Action . liftIO
 
-instance MonadPersist Action where
+instance MonadPersist r => MonadPersist (Action r) where
     -- getDb :: AulaGetter a -> m a
     getDb = persistent . getDb
     -- modifyDb :: AulaSetter a -> (a -> a) -> m ()
@@ -117,7 +118,7 @@ class Monad m => ActionUserHandler m where
     -- | Make the user log out
     logout :: m ()
 
-instance ActionUserHandler Action where
+instance MonadPersist r => ActionUserHandler (Action r) where
     login user = do
         put $ UserLoggedIn user "session"
         persistent $ loginUser user
@@ -130,9 +131,9 @@ instance ActionUserHandler Action where
 
 class MonadError ActionExcept m => ActionError m
 
-instance ActionError Action
+instance ActionError (Action r)
 
-instance GenArbitrary Action where
+instance GenArbitrary r => GenArbitrary (Action r) where
     genArbitrary = Action . liftIO $ generate arbitrary
 
 
@@ -145,12 +146,12 @@ instance GenArbitrary Action where
 -- - Figure out the exact stack we need to use here.
 -- - Store the actual session data, userid etc.
 -- - We should decide on exact userstate and handle everything here.
-newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserState IO) a)
+newtype Action r a = Action (ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) a)
     deriving ( Functor
              , Applicative
              , Monad
              , MonadError ActionExcept
-             , MonadReader (Persist :~> IO)
+             , MonadReader (r :~> IO)
              , MonadState UserState
              )
 
@@ -164,7 +165,7 @@ type ActionExcept = ServantErr
 -- FIXME:
 -- - The ability to change the state is missing.
 -- - The state should be available after run.
-mkRunAction :: (Persist :~> IO) -> UserState -> (Action :~> ExceptT ServantErr IO)
+mkRunAction :: (r :~> IO) -> UserState -> (Action r :~> ExceptT ServantErr IO)
 mkRunAction persistNat = \s -> Nat (run s)
   where
     run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
@@ -204,7 +205,7 @@ class ActionTempCsvFiles m where
     popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])
     cleanupTempCsvFiles :: FormData -> m ()
 
-instance ActionTempCsvFiles Action where
+instance ActionTempCsvFiles (Action r) where
     popTempCsvFile = Action . liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
