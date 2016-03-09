@@ -10,6 +10,8 @@ module Frontend.Path
     , Space(..)
     , UserPs(..)
     , AdminPs(..)
+    , IdeaPath(..)
+    , IdeaMode(..)
     )
 where
 
@@ -19,7 +21,7 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types (AUID, Idea, IdeaSpace, User, Topic, nil, PermissionContext)
+import Types (AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext)
 
 data Top =
     Top
@@ -137,3 +139,31 @@ admin AdminQuorum         path = path </> "quorum"
 admin (AdminAccess ctx)   path = path </> "access" </> uriPart ctx
 admin (AdminEditUser uid) path = path </> "user" </> uriPart uid </> "edit"
 admin AdminEvent          path = path </> "event"
+
+
+data IdeaPath = IdeaPath IdeaLocation IdeaMode
+  deriving (Eq, Ord, Show, Read, Generic)
+
+data IdeaMode =
+      IdeaModeList
+    | IdeaModeCreate
+    | IdeaModeView (AUID Idea)
+    | IdeaModeEdit (AUID Idea)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance HasPath IdeaPath
+  where
+    relPath (IdeaPath loc mode) = f loc mode
+      where
+        f (IdeaLocationSpace space)     = relPath . Space space . g
+        f (IdeaLocationTopic space tid) = relPath . Space space . h tid
+
+        g IdeaModeList       = ListIdeas
+        g IdeaModeCreate     = CreateIdea
+        g (IdeaModeView iid) = ViewIdea iid
+        g (IdeaModeEdit iid) = EditIdea iid
+
+        h tid IdeaModeList       = ViewTopicIdeas tid
+        h tid IdeaModeCreate     = CreateIdeaInTopic tid
+        h tid (IdeaModeView idd) = error "HasPath IdeaPath"  -- TODO
+        h tid (IdeaModeEdit iid) = error "HasPath IdeaPath"  -- TODO
