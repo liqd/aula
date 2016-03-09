@@ -38,7 +38,6 @@ import Persistent
 import Types
 
 import qualified Action
-import Api.PersistentImplementation (Persist)
 import qualified Api.PersistentImplementation as PersistentImplementation
 
 ----------------------------------------------------------------------
@@ -66,7 +65,7 @@ type AulaTop =
   :<|> GetH (Frame ())
 
 
-aulaTop :: (Action Persist :~> ExceptT ServantErr IO) -> Server AulaTop
+aulaTop :: (Action PersistentImplementation.Persist :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
@@ -128,7 +127,7 @@ type AulaMain =
   :<|> "logout" :> GetH (Frame PageLogout)
 
 
-aulaMain :: ServerT AulaMain (Action Persist)
+aulaMain :: MonadPersist r => ServerT AulaMain (Action r)
 aulaMain =
        Page.viewRooms
   :<|> aulaSpace
@@ -174,7 +173,7 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote ST --FIXME: Change Type
 
-aulaSpace :: IdeaSpace -> ServerT AulaSpace (Action Persist)
+aulaSpace :: MonadPersist r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea   space
@@ -197,7 +196,7 @@ type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
 
-aulaUser :: AUID User -> ServerT AulaUser (Action Persist)
+aulaUser :: MonadPersist r => AUID User -> ServerT AulaUser (Action r)
 aulaUser user =
        Page.createdIdeas   user
   :<|> Page.delegatedVotes user
@@ -217,7 +216,7 @@ type AulaAdmin =
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
 
-aulaAdmin :: ServerT AulaAdmin (Action Persist)
+aulaAdmin :: MonadPersist r => ServerT AulaAdmin (Action r)
 aulaAdmin =
        Page.adminDurations
   :<|> Page.adminQuorum
@@ -242,7 +241,7 @@ type AulaTesting =
   :<|> "file-upload" :> FormHandler BatchCreateUsers ST
   :<|> "random-password" :> GetH (PageShow UserPass)
 
-aulaTesting :: ServerT AulaTesting (Action Persist)
+aulaTesting :: (GenArbitrary r, MonadPersist r) => ServerT AulaTesting (Action r)
 aulaTesting =
        return (PublicFrame "yihaah!")
 
@@ -264,7 +263,7 @@ aulaTesting =
 
 -- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
 -- type family.)
-catchAulaExcept :: (m a ~ (ServerT api (Action Persist)))
+catchAulaExcept :: (m a ~ (ServerT api (Action PersistentImplementation.Persist)))
                 => Proxy api -> m a -> m a
 catchAulaExcept Proxy = id
 -- FIXME: not implemented.  pseudo-code:

@@ -82,7 +82,7 @@ instance FormPageView PageUserSettings where
                 DF.inputSubmit "ANDERUNGEN SPEICHERN"
 
 
-userSettings :: (ActionM action) => ServerT (FormHandler PageUserSettings ST) action
+userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings ST) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
     -- FIXME: Set the password

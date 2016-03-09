@@ -46,7 +46,6 @@ import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
 import Data.String.Conversions (ST, LBS)
 import Persistent
-import Api.PersistentImplementation
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
@@ -71,18 +70,14 @@ data UserState
 
 makeLenses ''UserState
 
--- TODO: here @ActionPersist Persist@ is hardwired, so either
--- parameterize ActionM by the persistance implementation
--- or remove ActionPersist from ActionM and add by hand elsewhere
--- (messy and lots of places need to be touched).
 class ( ActionLog m
-      , ActionPersist Persist m
+      , ActionPersist r m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
-      ) => ActionM m
+      ) => ActionM r m
 
-instance ActionM (Action Persist)
+instance MonadPersist r => ActionM r (Action r)
 
 class Monad m => ActionLog m where
     -- | Log events

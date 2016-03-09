@@ -42,9 +42,12 @@ getDbSpec name getXs = do
                 xs <- rp getXs
                 length xs `shouldNotBe` 0
 
-addDbSpecProp :: (Foldable f, Arbitrary proto) =>
-                 String -> Persist (f a) -> (proto -> Persist a) -> (proto -> a -> Expectation) ->
-                 Spec
+addDbSpecProp :: (Foldable f, Arbitrary proto)
+              => String
+              -> Persist (f a)
+              -> (proto -> Persist a)
+              -> (proto -> a -> Expectation)
+              -> Spec
 addDbSpecProp name getXs addX propX =
     describe name $ do
         let t = it "adds one" $ \(Nat rp) -> do

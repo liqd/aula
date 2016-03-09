@@ -296,7 +296,7 @@ instance ToHtml (FormPage p) where
 -- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
 -- the `resourcet` engine and it's use pattern.
 redirectFormHandler
-    :: (FormPageView p, Page p, ActionM m)
+    :: (FormPageView p, Page p, ActionM r m)
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
     -> ServerT (FormHandler p ST) m
