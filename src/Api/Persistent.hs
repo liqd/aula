@@ -10,6 +10,7 @@
 
 module Api.Persistent
     ( Persist
+    , MonadPersist
     , AMap
     , AulaLens
     , AulaGetter
@@ -71,7 +72,7 @@ where
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, modifyTVar')
 import Control.Lens
 import Control.Monad (join, unless, replicateM)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
@@ -149,6 +150,9 @@ class MonadIO m => MonadPersist m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
 
+instance MonadIO Persist where
+    liftIO = persistIO
+
 instance MonadPersist Persist where
     getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
     modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
@@ -197,7 +201,6 @@ findIdeasByUserId user = findAllIn dbIdeas (\i -> i ^. createdBy == user)
 
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> MonadPersist m => m ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
-
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> MonadPersist m => m ()
 modifyIdea = modifyAMap dbIdeaMap
 
@@ -213,11 +216,8 @@ findUser = findInById dbUsers
 getUsers :: MonadPersist m => m [User]
 getUsers = getDb dbUsers
 
-<<<<<<< Updated upstream
-getTopics :: Persist [Topic]
-
-addUser :: Proto User -> MonadPersist m => m User
-addUser = addDb dbUserMap
+--addUser :: Proto User -> MonadPersist m => m User
+--addUser = addDb dbUserMap
 
 getTopics :: MonadPersist m => m [Topic]
 getTopics = getDb dbTopics
@@ -274,7 +274,7 @@ nextId = do
 currentUser :: MonadPersist m => m (AUID User)
 currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
-addUser :: Proto User -> Persist User
+addUser :: Proto User -> MonadPersist m => m User
 addUser proto = do
     metainfo  <- nextMetaInfo
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
@@ -324,13 +324,13 @@ addFirstUser proto = do
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
-mkUserLogin :: ProtoUser -> Persist UserLogin
+mkUserLogin :: ProtoUser -> MonadPersist m => m UserLogin
 mkUserLogin protoUser = pick (gen firstn lastn)
   where
     firstn :: ST = protoUser ^. protoUserFirstName . fromUserFirstName
     lastn  :: ST = protoUser ^. protoUserLastName  . fromUserLastName
 
-    pick :: [ST] -> Persist UserLogin
+    pick :: [ST] -> MonadPersist m => m UserLogin
     pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< findUserByLogin l
     pick []                    = error "impossible.  (well, unlikely.)"
 
@@ -344,7 +344,7 @@ mkUserLogin protoUser = pick (gen firstn lastn)
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
 
 mkRandomPassword :: MonadPersist m => m UserPass
-mkRandomPassword = persistIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 adminUsernameHack :: UserLogin
 adminUsernameHack = UserLogin "admin"
@@ -377,7 +377,7 @@ instance FromProto Topic where
 -- | So far `newMetaInfo` is only used by `nextMetaInfo`.
 newMetaInfo :: MonadPersist m => AUID User -> AUID a -> m (MetaInfo a)
 newMetaInfo uid oid = do
-    now <- Timestamp <$> persistIO getCurrentTime
+    now <- Timestamp <$> liftIO getCurrentTime
     -- Just user <- findUser uid  -- FIXME: need exceptions; need to make test suite smarter
     return MetaInfo
         { _metaId              = oid

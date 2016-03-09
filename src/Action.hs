@@ -86,10 +86,21 @@ instance ActionLog Action where
 class Monad m => ActionPersist m where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
+    -- FIXME: Rename atomically, and only call on
+    -- complex computations.
     persistent :: Persist a -> m a
 
 instance ActionPersist Action where
     persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
+
+instance MonadIO Action where
+    liftIO = Action . liftIO
+
+instance MonadPersist Action where
+    -- getDb :: AulaGetter a -> m a
+    getDb = persistent . getDb
+    -- modifyDb :: AulaSetter a -> (a -> a) -> m ()
+    modifyDb setter = persistent . modifyDb setter
 
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
