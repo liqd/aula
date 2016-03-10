@@ -19,7 +19,7 @@ where
 import Action (ActionM, ActionPersist(..), ActionUserHandler)
 import Frontend.Prelude hiding (moveIdeasToTopic)
 
-import qualified Api.Persistent as Persistent
+import qualified Persistent
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF

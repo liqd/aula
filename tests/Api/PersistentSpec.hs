@@ -14,8 +14,8 @@ import Servant.Server
 import Test.Hspec
 import Test.QuickCheck
 
-import Api.Persistent
-import Api.PersistentImplementation
+import Persistent
+import Persistent.Implementation.STM
 import CreateRandom
 import Types
 

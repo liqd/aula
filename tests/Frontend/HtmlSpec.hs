@@ -33,7 +33,7 @@ import Arbitrary (arb)
 import Data.UriPath (absoluteUriPath)
 import Frontend.Core
 import Frontend.Page
-import qualified Api.PersistentImplementation as PersistentImplementation
+import qualified Persistent.Implementation.STM
 import Types
 
 
@@ -197,11 +197,11 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v "formAction" page
         assert (len > 0)
 
-runAction :: Action PersistentImplementation.Persist a -> ExceptT ServantErr IO a
-runAction action = do rp <- liftIO PersistentImplementation.mkRunPersist
+runAction :: Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
+runAction action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
                       unNat (mkRunAction rp UserLoggedOut) action
 
-failOnError :: Action PersistentImplementation.Persist a -> IO a
+failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
 failOnError = fmap (either (error . show) id) . runExceptT . runAction
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.

@@ -23,8 +23,7 @@ import Network.Wai
 import Action
 import Frontend
 import Frontend.Core
-import qualified Api.PersistentImplementation as PersistentImplementation
-
+import qualified Persistent.Implementation.STM
 
 spec :: Spec
 spec = do
@@ -70,7 +69,7 @@ testApi =
 
 testAppAulaExcept :: IO Application
 testAppAulaExcept = do
-    action <- ($ UserLoggedOut) . mkRunAction <$> PersistentImplementation.mkRunPersist
+    action <- ($ UserLoggedOut) . mkRunAction <$> Persistent.Implementation.STM.mkRunPersist
     let proxy :: Proxy TestApi
         proxy = Proxy
     return $ serve (Proxy :: Proxy TestApi) (enter action $ catchAulaExcept proxy testApi)

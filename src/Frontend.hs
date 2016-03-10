@@ -38,14 +38,14 @@ import Persistent
 import Types
 
 import qualified Action
-import qualified Api.PersistentImplementation as PersistentImplementation
+import qualified Persistent.Implementation.STM
 
 ----------------------------------------------------------------------
 -- driver
 
 runFrontend :: Config.Config -> IO ()
 runFrontend cfg = do
-    persist <- PersistentImplementation.mkRunPersist
+    persist <- Persistent.Implementation.STM.mkRunPersist
     let action = mkRunAction persist
         proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
@@ -65,7 +65,7 @@ type AulaTop =
   :<|> GetH (Frame ())
 
 
-aulaTop :: (Action PersistentImplementation.Persist :~> ExceptT ServantErr IO) -> Server AulaTop
+aulaTop :: (Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
@@ -263,7 +263,7 @@ aulaTesting =
 
 -- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
 -- type family.)
-catchAulaExcept :: (m a ~ (ServerT api (Action PersistentImplementation.Persist)))
+catchAulaExcept :: (m a ~ (ServerT api (Action Persistent.Implementation.STM.Persist)))
                 => Proxy api -> m a -> m a
 catchAulaExcept Proxy = id
 -- FIXME: not implemented.  pseudo-code:

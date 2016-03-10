@@ -6,7 +6,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
-module Api.PersistentImplementation
+module Persistent.Implementation.STM
     ( Persist
     , mkRunPersist
     )
@@ -19,7 +19,7 @@ import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
 import Types
-import Api.Persistent
+import Persistent.Api
 
 -- FIXME: Remove
 import Test.QuickCheck (generate, arbitrary)

@@ -68,8 +68,6 @@ library
   exposed-modules:
       Action
       Api
-      Api.Persistent
-      Api.PersistentImplementation
       Arbitrary
       Config
       CreateRandom
@@ -91,6 +89,8 @@ library
       Frontend.Prelude
       Lucid.Missing
       Persistent
+      Persistent.Api
+      Persistent.Implementation.STM
       Types
   default-language: Haskell2010
 
@@ -271,8 +271,6 @@ test-suite spec
       TypesSpec
       Action
       Api
-      Api.Persistent
-      Api.PersistentImplementation
       Arbitrary
       Config
       CreateRandom
@@ -294,5 +292,7 @@ test-suite spec
       Frontend.Prelude
       Lucid.Missing
       Persistent
+      Persistent.Api
+      Persistent.Implementation.STM
       Types
   default-language: Haskell2010

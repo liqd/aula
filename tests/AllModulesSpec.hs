@@ -5,7 +5,6 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 
 import Action ()
 import Api ()
-import Api.Persistent ()
 import Arbitrary ()
 import Config ()
 import CreateRandom ()
