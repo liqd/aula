@@ -2,7 +2,7 @@
 
 -- | Placeholder module for separate DSL and other
 -- high level combinators.
-module Persistent (module Api.Persistent)
+module Persistent (module Persistent.Api)
 where
 
-import Api.Persistent
+import Persistent.Api

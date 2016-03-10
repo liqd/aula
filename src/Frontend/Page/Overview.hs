@@ -46,13 +46,13 @@ data ActiveTab = WildIdeas | Topics
 ----------------------------------------------------------------------
 -- actions
 
-viewRooms :: (ActionPersist m, ActionUserHandler m) => m (Frame PageRoomsOverview)
+viewRooms :: (ActionPersist r m, ActionUserHandler m) => m (Frame PageRoomsOverview)
 viewRooms = makeFrame =<< persistent (PageRoomsOverview <$> getSpaces)
 
-viewIdeas :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasOverview)
+viewIdeas :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasOverview)
 viewIdeas space = makeFrame =<< persistent (PageIdeasOverview space <$> findWildIdeasBySpace space)
 
-viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasInDiscussion)
+viewTopics :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasInDiscussion)
 viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> findTopicsBySpace space)
 
 

@@ -111,7 +111,8 @@ class Page p where
 data Frame body = Frame User body | PublicFrame body
   deriving (Functor)
 
-makeFrame :: (ActionPersist m, ActionUserHandler m, Page p) => p -> m (Frame p)
+makeFrame :: (ActionPersist r m, ActionUserHandler m, Page p)
+          => p -> m (Frame p)
 makeFrame p
   | isPrivatePage p = flip Frame p <$> currentUser
   | otherwise       = return $ PublicFrame p
@@ -295,7 +296,7 @@ instance ToHtml (FormPage p) where
 -- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
 -- the `resourcet` engine and it's use pattern.
 redirectFormHandler
-    :: (FormPageView p, Page p, ActionM m)
+    :: (FormPageView p, Page p, ActionM r m)
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
     -> ServerT (FormHandler p ST) m

@@ -1,9 +1,12 @@
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ViewPatterns               #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -68,28 +71,44 @@ data UserState
 makeLenses ''UserState
 
 class ( ActionLog m
-      , ActionPersist m
+      , ActionPersist r m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
-      ) => ActionM m
+      ) => ActionM r m
 
-instance ActionM Action
+instance PersistM r => ActionM r (Action r)
 
 class Monad m => ActionLog m where
     -- | Log events
     logEvent :: ST -> m ()
 
-instance ActionLog Action where
+instance ActionLog (Action r) where
     logEvent = Action . liftIO . print
 
-class Monad m => ActionPersist m where
+-- | A monad that can include actions changing a persistent state.
+--
+-- @r@ is determined by @m@, because @m@ is intended to be the program's
+-- action monad, so @r@ is just the persistent implementation chosen
+-- to be used in the action monad.
+class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
-    persistent :: Persist a -> m a
+    -- FIXME: Rename atomically, and only call on
+    -- complex computations.
+    persistent :: r a -> m a
 
-instance ActionPersist Action where
+instance PersistM r => ActionPersist r (Action r) where
     persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
+
+instance MonadIO (Action r) where
+    liftIO = Action . liftIO
+
+instance PersistM r => PersistM (Action r) where
+    -- getDb :: AulaGetter a -> m a
+    getDb = persistent . getDb
+    -- modifyDb :: AulaSetter a -> (a -> a) -> m ()
+    modifyDb setter = persistent . modifyDb setter
 
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
@@ -99,7 +118,7 @@ class Monad m => ActionUserHandler m where
     -- | Make the user log out
     logout :: m ()
 
-instance ActionUserHandler Action where
+instance PersistM r => ActionUserHandler (Action r) where
     login user = do
         put $ UserLoggedIn user "session"
         persistent $ loginUser user
@@ -112,9 +131,9 @@ instance ActionUserHandler Action where
 
 class MonadError ActionExcept m => ActionError m
 
-instance ActionError Action
+instance ActionError (Action r)
 
-instance GenArbitrary Action where
+instance GenArbitrary r => GenArbitrary (Action r) where
     genArbitrary = Action . liftIO $ generate arbitrary
 
 
@@ -127,12 +146,16 @@ instance GenArbitrary Action where
 -- - Figure out the exact stack we need to use here.
 -- - Store the actual session data, userid etc.
 -- - We should decide on exact userstate and handle everything here.
-newtype Action a = Action (ExceptT ActionExcept (RWST (Persist :~> IO) () UserState IO) a)
+--
+-- FUTUREWORK: Move action implementation to another module and hide behind
+-- an API, similarly as it's done with persistent implementation,
+-- to reveal and mark (and possibly fix) where the implementation is hardwired.
+newtype Action r a = Action (ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) a)
     deriving ( Functor
              , Applicative
              , Monad
              , MonadError ActionExcept
-             , MonadReader (Persist :~> IO)
+             , MonadReader (r :~> IO)
              , MonadState UserState
              )
 
@@ -146,7 +169,7 @@ type ActionExcept = ServantErr
 -- FIXME:
 -- - The ability to change the state is missing.
 -- - The state should be available after run.
-mkRunAction :: (Persist :~> IO) -> UserState -> (Action :~> ExceptT ServantErr IO)
+mkRunAction :: (r :~> IO) -> UserState -> (Action r :~> ExceptT ServantErr IO)
 mkRunAction persistNat = \s -> Nat (run s)
   where
     run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
@@ -158,14 +181,14 @@ mkRunAction persistNat = \s -> Nat (run s)
 -- Action Combinators
 
 -- | Returns the current user
-currentUser :: (ActionPersist m, ActionUserHandler m) => m User
+currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
 currentUser =
     loggedInUser
     >>= persistent . findUserByLogin
     >>= \ (Just user) -> return user
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
+modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) -> m ()
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
 
@@ -186,7 +209,7 @@ class ActionTempCsvFiles m where
     popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])
     cleanupTempCsvFiles :: FormData -> m ()
 
-instance ActionTempCsvFiles Action where
+instance ActionTempCsvFiles (Action r) where
     popTempCsvFile = Action . liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e

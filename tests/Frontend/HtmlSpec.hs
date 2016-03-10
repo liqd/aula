@@ -33,7 +33,7 @@ import Arbitrary (arb)
 import Data.UriPath (absoluteUriPath)
 import Frontend.Core
 import Frontend.Page
-import Persistent
+import qualified Persistent.Implementation.STM
 import Types
 
 
@@ -108,7 +108,7 @@ selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> v
 
 -- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
 class PayloadToEnv a where
-    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action [FormInput]
+    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action r [FormInput]
 
 -- | When context dependent data is constructed via forms with the 'pure' combinator
 -- in the form description, in the digestive functors libarary an empty path will
@@ -118,7 +118,7 @@ class PayloadToEnv a where
 -- Example:
 --
 -- >>> ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
-payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env Action
+payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env (Action r)
 payloadToEnv _ _ [""]       = pure []
 payloadToEnv v a ["", path] = payloadToEnvMapping v a path
 
@@ -197,11 +197,17 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v "formAction" page
         assert (len > 0)
 
-runAction :: Action a -> ExceptT ServantErr IO a
-runAction action = do rp <- liftIO mkRunPersist
+-- | Run the given action for testing.
+--
+-- FUTUREWORK: Abstraction leaks in tests are not dangerous and they don't
+-- infect other code, so they are left alone for now, though in the long run,
+-- abstraction would improve test code as well (separation of concerns
+-- via abstraction).
+runAction :: Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
+runAction action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
                       unNat (mkRunAction rp UserLoggedOut) action
 
-failOnError :: Action a -> IO a
+failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
 failOnError = fmap (either (error . show) id) . runExceptT . runAction
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
