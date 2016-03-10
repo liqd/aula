@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -66,7 +67,7 @@ type AulaTop =
   :<|> GetH (Frame ())
 
 
-aulaTop :: (Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO) -> Server AulaTop
+aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
@@ -264,7 +265,7 @@ aulaTesting =
 
 -- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
 -- type family.)
-catchAulaExcept :: (m a ~ (ServerT api (Action Persistent.Implementation.STM.Persist)))
+catchAulaExcept :: (m a ~ (ServerT api (Action r)))
                 => Proxy api -> m a -> m a
 catchAulaExcept Proxy = id
 -- FIXME: not implemented.  pseudo-code:
