@@ -11,6 +11,7 @@ module Lucid.Missing
     , inputText_
     , inputSelect_
     , inputPassword_
+    , inputHidden_
     , inputSubmit_
     , src_
     , href_
@@ -59,6 +60,16 @@ inputText_ attrs ref vw = Lucid.input_ $
 inputPassword_ :: [Lucid.Attribute] -> ST -> DF.View v -> Monad m => Lucid.HtmlT m ()
 inputPassword_ attrs ref vw = input_ $
     [ type_    "password"
+    , id_      ref'
+    , name_    ref'
+    , value_ $ DF.fieldInputText ref vw
+    ] <> attrs
+  where
+    ref' = DF.absoluteRef ref vw
+
+inputHidden_ :: [Lucid.Attribute] -> ST -> DF.View v -> Monad m => Lucid.HtmlT m ()
+inputHidden_ attrs ref vw = input_ $
+    [ type_    "hidden"
     , id_      ref'
     , name_    ref'
     , value_ $ DF.fieldInputText ref vw
