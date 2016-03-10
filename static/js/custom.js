@@ -17,3 +17,7 @@ var menu = document.getElementsByClassName("pop-menu-list")[0];
 menu.onmouseleave = function() {
     toggleMenu();
 }
+
+//JS detection
+body = document.getElementsByTagName("body")[0];
+body.className = body.className.replace("no-js", "");
