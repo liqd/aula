@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -38,6 +39,7 @@ import Persistent
 import Types
 
 import qualified Action
+import qualified Persistent.Implementation.STM
 
 
 ----------------------------------------------------------------------
@@ -45,7 +47,7 @@ import qualified Action
 
 runFrontend :: Config.Config -> IO ()
 runFrontend cfg = do
-    persist <- mkRunPersist
+    persist <- Persistent.Implementation.STM.mkRunPersist
     let action = mkRunAction persist
         proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
@@ -65,7 +67,7 @@ type AulaTop =
   :<|> GetH (Frame ())
 
 
-aulaTop :: (Action :~> ExceptT ServantErr IO) -> Server AulaTop
+aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
@@ -127,7 +129,7 @@ type AulaMain =
   :<|> "logout" :> GetH (Frame PageLogout)
 
 
-aulaMain :: ServerT AulaMain Action
+aulaMain :: PersistM r => ServerT AulaMain (Action r)
 aulaMain =
        Page.viewRooms
   :<|> aulaSpace
@@ -173,7 +175,7 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote ST --FIXME: Change Type
 
-aulaSpace :: IdeaSpace -> ServerT AulaSpace Action
+aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea   space
@@ -196,7 +198,7 @@ type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
 
-aulaUser :: AUID User -> ServerT AulaUser Action
+aulaUser :: PersistM r => AUID User -> ServerT AulaUser (Action r)
 aulaUser user =
        Page.createdIdeas   user
   :<|> Page.delegatedVotes user
@@ -216,7 +218,7 @@ type AulaAdmin =
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
 
-aulaAdmin :: ServerT AulaAdmin Action
+aulaAdmin :: PersistM r => ServerT AulaAdmin (Action r)
 aulaAdmin =
        Page.adminDurations
   :<|> Page.adminQuorum
@@ -241,7 +243,7 @@ type AulaTesting =
   :<|> "file-upload" :> FormHandler BatchCreateUsers ST
   :<|> "random-password" :> GetH (PageShow UserPass)
 
-aulaTesting :: ServerT AulaTesting Action
+aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
 aulaTesting =
        return (PublicFrame "yihaah!")
 
@@ -263,7 +265,8 @@ aulaTesting =
 
 -- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
 -- type family.)
-catchAulaExcept :: (m a ~ (ServerT api Action)) => Proxy api -> m a -> m a
+catchAulaExcept :: (m a ~ (ServerT api (Action r)))
+                => Proxy api -> m a -> m a
 catchAulaExcept Proxy = id
 -- FIXME: not implemented.  pseudo-code:
 --

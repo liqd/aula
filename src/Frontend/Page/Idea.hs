@@ -207,7 +207,7 @@ ideaFormFields v = do
 -- handlers
 
 -- FIXME restrict to the given IdeaSpace
-viewIdea :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
+viewIdea :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
 viewIdea _space ideaId = makeFrame =<< persistent (do
     -- FIXME 404
     Just idea  <- findIdea ideaId
@@ -221,11 +221,11 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
                 Just topic <- findTopic topicId
                 pure . Just $ topic ^. topicPhase)
 
-createIdea :: ActionM m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea ST) m
+createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea ST) m
 createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
 
 -- FIXME check _space
-editIdea :: ActionM m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea ST) m
+editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea ST) m
 editIdea _space ideaId =
     redirectFormHandler
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))

@@ -26,7 +26,7 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
     :: ( Arbitrary (Proto a), Show a, FromProto a, Typeable a, HasMetaInfo a
-       , ActionPersist m, GenArbitrary m)
+       , ActionPersist r m, GenArbitrary m)
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
    x <- persistent . addDb l =<< genArbitrary
@@ -36,7 +36,7 @@ createRandom l = do
 -- | Create random entities that have no 'MetaInfo'.  (Currently only 'Set' elements.)
 createRandomNoMeta
     :: ( Arbitrary a, Ord a, Show a, Typeable a
-       , ActionPersist m, GenArbitrary m)
+       , ActionPersist r m, GenArbitrary m)
     => AulaLens (Set a) -> m (Frame (ST `Beside` PageShow a))
 createRandomNoMeta l = do
    x <- genArbitrary
@@ -45,7 +45,7 @@ createRandomNoMeta l = do
                                      `Beside` PageShow x))
 
 -- | generate one arbitrary item of each type (idea, user, ...)
-genInitialTestDb :: Persist ()
+genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
 genInitialTestDb = do
     addIdeaSpaceIfNotExists SchoolSpace
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")

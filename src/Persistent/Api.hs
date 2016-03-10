@@ -8,14 +8,16 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
-module Api.Persistent
-    ( Persist
+module Persistent.Api
+    ( PersistM
     , AMap
     , AulaLens
     , AulaGetter
-    , mkRunPersist
+    , AulaSetter
 
-    -- * generic
+    , AulaData
+    , emptyAulaData
+
     , getDb
     , addDb
     , modifyDb
@@ -67,11 +69,9 @@ module Api.Persistent
     )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, modifyTVar')
 import Control.Lens
 import Control.Monad (join, unless, replicateM)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
@@ -80,16 +80,12 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Set (Set)
 import Data.Time.Clock (getCurrentTime)
-import Servant.Server ((:~>)(Nat))
 
 import Types
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as ST
-
--- FIXME: Remove
-import Test.QuickCheck (generate, arbitrary)
 
 type AMap a = Map (AUID a) a
 
@@ -111,6 +107,7 @@ makeLenses ''AulaData
 
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
+type AulaSetter a = Setter' AulaData a
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -127,96 +124,80 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil Nothing 21 21 30 3 0
 
-newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
-  deriving (Functor, Applicative, Monad)
+-- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
+class MonadIO m => PersistM m where
+    getDb :: AulaGetter a -> m a
+    modifyDb :: AulaSetter a -> (a -> a) -> m ()
 
-persistIO :: IO a -> Persist a
-persistIO = Persist . liftIO
-
-instance GenArbitrary Persist where
-    genArbitrary = persistIO $ generate arbitrary
-
-mkRunPersist :: IO (Persist :~> IO)
-mkRunPersist = do
-    tvar <- newTVarIO emptyAulaData
-    let run (Persist c) = c `runReaderT` tvar
-    return $ Nat run
-
-getDb :: AulaGetter a -> Persist a
-getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
-
-modifyDb :: AulaLens a -> (a -> a) -> Persist ()
-modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
-
-addDb :: (HasMetaInfo a, FromProto a) => AulaLens (AMap a) -> Proto a -> Persist a
+addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> PersistM m => m a
 addDb l pa = do
     a  <- fromProto pa <$> nextMetaInfo
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
-findIn :: AulaGetter [a] -> (a -> Bool) -> Persist (Maybe a)
+findIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m (Maybe a)
 findIn l p = find p <$> getDb l
 
-findAllIn :: AulaGetter [a] -> (a -> Bool) -> Persist [a]
+findAllIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m [a]
 findAllIn l p = filter p <$> getDb l
 
-findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Persist (Maybe a)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m (Maybe a)
 findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
-findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Persist [a]
+findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> Persist (Maybe a)
+findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> PersistM m => m (Maybe a)
 findInById l = findInBy l _Id
 
-getSpaces :: Persist [IdeaSpace]
+getSpaces :: PersistM m => m [IdeaSpace]
 getSpaces = getDb dbSpaces
 
-getIdeas :: Persist [Idea]
+getIdeas :: PersistM m => m [Idea]
 getIdeas = getDb dbIdeas
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
-addIdeaSpaceIfNotExists :: IdeaSpace -> Persist ()
+addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
 addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: Proto Idea -> Persist Idea
+addIdea :: Proto Idea -> PersistM m => m Idea
 addIdea = addDb dbIdeaMap
 
-findIdea :: AUID Idea -> Persist (Maybe Idea)
+findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
 findIdea = findInById dbIdeas
 
-findIdeasByUserId :: AUID User -> Persist [Idea]
+findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId user = findAllIn dbIdeas (\i -> i ^. createdBy == user)
 
-modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> Persist ()
+modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
 
-modifyIdea :: AUID Idea -> (Idea -> Idea) -> Persist ()
+modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> Persist ()
+modifyUser :: AUID User -> (User -> User) -> PersistM m => m ()
 modifyUser = modifyAMap dbUserMap
 
-modifyTopic :: AUID Topic -> (Topic -> Topic) -> Persist ()
+modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> Persist (Maybe User)
+findUser :: AUID User -> PersistM m => m (Maybe User)
 findUser = findInById dbUsers
 
-getUsers :: Persist [User]
+getUsers :: PersistM m => m [User]
 getUsers = getDb dbUsers
 
-getTopics :: Persist [Topic]
+getTopics :: PersistM m => m [Topic]
 getTopics = getDb dbTopics
 
-moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> Persist ()
+moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> PersistM m => m ()
 moveIdeasToTopic ideaIds topicId =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaTopic .~ topicId
 
-addTopic :: Proto Topic -> Persist Topic
+addTopic :: Proto Topic -> PersistM m => m Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
@@ -227,43 +208,43 @@ addTopic pt = do
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
-findUserByLogin :: UserLogin -> Persist (Maybe User)
+findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
-findTopic :: AUID Topic -> Persist (Maybe Topic)
+findTopic :: AUID Topic -> PersistM m => m (Maybe Topic)
 findTopic = findInById dbTopics
 
-findTopicsBySpace :: IdeaSpace -> Persist [Topic]
+findTopicsBySpace :: IdeaSpace -> PersistM m => m [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
-findIdeasByTopicId :: AUID Topic -> Persist [Idea]
+findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
 findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
 
-findIdeasByTopic :: Topic -> Persist [Idea]
+findIdeasByTopic :: Topic -> PersistM m => m [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
 
-findWildIdeasBySpace :: IdeaSpace -> Persist [Idea]
+findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
 
 -- | FIXME: anyone can login
 -- | FIXME: every login changes all other logins
-loginUser :: UserLogin -> Persist ()
+loginUser :: UserLogin -> PersistM m => m ()
 loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
 
-logoutUser :: UserLogin -> Persist ()
+logoutUser :: UserLogin -> PersistM m => m ()
 logoutUser _userLogin = modifyDb dbCurrentUser $ const Nothing
 
 -------------------------------------------------------------------
 
-nextId :: Persist (AUID a)
+nextId :: PersistM m => m (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
-currentUser :: Persist (AUID User)
+currentUser :: PersistM m => m (AUID User)
 currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
 
-addUser :: Proto User -> Persist User
+addUser :: Proto User -> PersistM m => m User
 addUser proto = do
     metainfo  <- nextMetaInfo
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
@@ -283,9 +264,9 @@ addUser proto = do
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
-addFirstUser :: Proto User -> Persist User
+addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
-    now <- Timestamp <$> persistIO getCurrentTime
+    now <- Timestamp <$> liftIO getCurrentTime
     let uid = AUID 0
         oid = AUID 0
         uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
@@ -313,13 +294,13 @@ addFirstUser proto = do
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
-mkUserLogin :: ProtoUser -> Persist UserLogin
+mkUserLogin :: ProtoUser -> PersistM m => m UserLogin
 mkUserLogin protoUser = pick (gen firstn lastn)
   where
     firstn :: ST = protoUser ^. protoUserFirstName . fromUserFirstName
     lastn  :: ST = protoUser ^. protoUserLastName  . fromUserLastName
 
-    pick :: [ST] -> Persist UserLogin
+    pick :: [ST] -> PersistM m => m UserLogin
     pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< findUserByLogin l
     pick []                    = error "impossible.  (well, unlikely.)"
 
@@ -332,8 +313,8 @@ mkUserLogin protoUser = pick (gen firstn lastn)
     noise :: [ST]
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
 
-mkRandomPassword :: Persist UserPass
-mkRandomPassword = persistIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+mkRandomPassword :: PersistM m => m UserPass
+mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 adminUsernameHack :: UserLogin
 adminUsernameHack = UserLogin "admin"
@@ -364,9 +345,9 @@ instance FromProto Topic where
         }
 
 -- | So far `newMetaInfo` is only used by `nextMetaInfo`.
-newMetaInfo :: AUID User -> AUID a -> Persist (MetaInfo a)
+newMetaInfo :: PersistM m => AUID User -> AUID a -> m (MetaInfo a)
 newMetaInfo uid oid = do
-    now <- Timestamp <$> persistIO getCurrentTime
+    now <- Timestamp <$> liftIO getCurrentTime
     -- Just user <- findUser uid  -- FIXME: need exceptions; need to make test suite smarter
     return MetaInfo
         { _metaId              = oid
@@ -378,5 +359,5 @@ newMetaInfo uid oid = do
         , _metaChangedAt       = now
         }
 
-nextMetaInfo :: Persist (MetaInfo a)
+nextMetaInfo :: PersistM m => m (MetaInfo a)
 nextMetaInfo = join $ newMetaInfo <$> currentUser <*> nextId

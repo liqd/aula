@@ -226,15 +226,15 @@ instance FormPageView PageAdminSettingsDurations where
                     DF.inputText "vote-duration" v >> "Tage" >> br_ []
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
-adminDurations :: (ActionM m) => ServerT (FormHandler PageAdminSettingsDurations ST) m
+adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations ST) m
 adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) saveDurations
   where
-    saveDurations :: ActionM m => Durations -> m ()
+    saveDurations :: ActionM r m => Durations -> m ()
     saveDurations (Durations elab vote) = persistent $ do
         modifyDb dbElaborationDuration (const elab)
         modifyDb dbVoteDuration        (const vote)
 
-    durations :: ActionM m => m Durations
+    durations :: ActionM r m => m Durations
     durations = persistent $
         Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
@@ -265,7 +265,7 @@ instance FormPageView PageAdminSettingsQuorum where
                     DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
-adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
+adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
 adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
   where
     saveQuorum (Quorums school clss) = persistent $ do
@@ -332,22 +332,22 @@ instance ToHtml PageAdminSettingsGaPClassesCreate where
 
 -- FIXME: Fetch limited number of users ("pagination").
 
-adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
+adminSettingsGaPUsersView :: ActionM r m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
     makeFrame =<< PageAdminSettingsGaPUsersView <$> persistent getUsers
 
-adminSettingsGaPUsersCreate :: ActionM m => m (Frame PageAdminSettingsGaPUsersCreate)
+adminSettingsGaPUsersCreate :: ActionM r m => m (Frame PageAdminSettingsGaPUsersCreate)
 adminSettingsGaPUsersCreate =
     makeFrame PageAdminSettingsGaPUsersCreate
 
-adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClassesView)
+adminSettingsGaPClassesView :: ActionM r m => m (Frame PageAdminSettingsGaPClassesView)
 adminSettingsGaPClassesView =
     makeFrame =<< PageAdminSettingsGaPClassesView . mapMaybe toClass <$> persistent getSpaces
   where
     toClass (ClassSpace clss) = Just clss
     toClass _                 = Nothing
 
-adminSettingsGaPClassesCreate :: ActionM m => m (Frame PageAdminSettingsGaPClassesCreate)
+adminSettingsGaPClassesCreate :: ActionM r m => m (Frame PageAdminSettingsGaPClassesCreate)
 adminSettingsGaPClassesCreate =
     makeFrame PageAdminSettingsGaPClassesCreate
 
@@ -377,5 +377,5 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         makeText SchoolSpace = "Schule"
         makeText (ClassSpace (SchoolClass _year name)) = toHtml name
 
-adminEventsProtocol :: ActionM m => m (Frame PageAdminSettingsEventsProtocol)
+adminEventsProtocol :: ActionM r m => m (Frame PageAdminSettingsEventsProtocol)
 adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> persistent getSpaces)

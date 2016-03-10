@@ -46,13 +46,13 @@ data ActiveTab = WildIdeas | Topics
 ----------------------------------------------------------------------
 -- actions
 
-viewRooms :: (ActionPersist m, ActionUserHandler m) => m (Frame PageRoomsOverview)
+viewRooms :: (ActionPersist r m, ActionUserHandler m) => m (Frame PageRoomsOverview)
 viewRooms = makeFrame =<< persistent (PageRoomsOverview <$> getSpaces)
 
-viewIdeas :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasOverview)
+viewIdeas :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasOverview)
 viewIdeas space = makeFrame =<< persistent (PageIdeasOverview space <$> findWildIdeasBySpace space)
 
-viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasInDiscussion)
+viewTopics :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> m (Frame PageIdeasInDiscussion)
 viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> findTopicsBySpace space)
 
 
@@ -123,6 +123,12 @@ instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
     toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
+
+        -- WARNING: This button is not in the design. But it should be here for
+        -- user experience reasons.
+        -- FIXME: This button should de displayed only for Teachers.
+        button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
+
         forM_ topics $ \topic -> do
             hr_ []
             img_ [src_ $ U.TopStatic "FIXME", alt_ "FIXME"]
@@ -139,11 +145,11 @@ instance ToHtml Tabs where
     toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
         li_ [class_ . ST.unwords $
              "tab-item tab-item-wild-ideas" : ["m-active" | activeTab == WildIdeas]] $ do
-            a_ [href_ U.Broken] $ do
+            a_ [href_ $ U.Space space U.ListIdeas] $ do
                 "Wilde Ideen " >> toHtml (spaceDesc space)
         li_ [class_ . ST.unwords $
              "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
-            a_ [href_ U.Broken] $ do
+            a_ [href_ $ U.Space space U.ListTopics] $ do
                 "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
