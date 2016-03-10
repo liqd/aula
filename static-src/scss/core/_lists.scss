@@ -3,6 +3,11 @@
     background: $color-grey-lighter;
     text-align: center;
 
+    &.m-inline {
+        background: none;
+        text-align: left;
+    }
+
     ul, li {
         display: inline-block;
     }
@@ -18,10 +23,18 @@
             background-position: center top;
             text-align: center;
 
-            a {
+            > a, > span {
                 @include rem(padding-top, 60px);
+                background: #fff;
                 color: $color-brand1;
+                cursor: pointer;
                 display: block;
+                opacity: 0.4;
+
+                &:hover, &:focus, &.m-active {
+                    background: none;
+                    opacity: 1;
+                }
             }
 
             &.icon-rules {

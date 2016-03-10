@@ -129,12 +129,9 @@ pageFrame' :: (Monad m) => [HtmlT m a] -> Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame' extraHeaders mUser bdy = do
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.TopStatic "third-party/Simple-Grid/simplegrid.css"]
-        link_ [rel_ "stylesheet", href_ $ P.TopStatic "third-party/HTML5-Reset/assets/css/reset.css"]
-        link_ [rel_ "stylesheet", href_ $ P.TopStatic "icons/fontcustom.css"]
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         sequence_ extraHeaders
-    body_ $ do
+    body_ [class_ "no-js"] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser >> bdy
         footerMarkup

@@ -17,4 +17,13 @@ textarea {
     font-family: $font-family-regular;
     line-height: $input-height;
     width: 100%;
+
+    &.m-small {
+        @extend .col-6-12;
+    }
+}
+
+.label-text {
+    @include rem(padding-bottom, 9px);
+    display: block;
 }

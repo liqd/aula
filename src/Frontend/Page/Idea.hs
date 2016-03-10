@@ -132,10 +132,39 @@ instance FormPageView CreateIdea where
 
     formPage v fa p = do
         semanticDiv p $ do
-            h3_ "Create Idee"
-            DF.form v fa $ do
-                ideaFormFields v
-                DF.inputSubmit   "Add Idea"
+            div_ [class_ "grid container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Idee erstellen"
+                    DF.form v fa $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
+                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                                "title" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
+                        -- FIXME I want a placeholder here too
+                        -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
+                            DF.inputTextArea Nothing Nothing "idea-text" v
+                        label_ $ do
+                            span_ [class_ "label-text"]
+                                "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
+                            div_ [class_ "category-radios"] $ do
+                                DF.inputRadio True "idea-category" v
+                            div_ [class_ "icon-list m-inline category-image-select"] $ do
+                                ul_ $ do
+                                    -- FIXME: select a category for the newly created idea.  this
+                                    -- needs to be tested.  see also: static/js/custom.js.
+                                    li_ [class_ "icon-rules"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
+                                    li_ [class_ "icon-equipment"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
+                                    li_ [class_ "icon-teaching"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
+                                    li_ [class_ "icon-time"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
+                                    li_ [class_ "icon-environment"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
+                        DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
 
 instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
@@ -154,7 +183,9 @@ instance FormPageView EditIdea where
         semanticDiv p $ do
             h3_ "Diene Idee"
             DF.form v fa $ do
-                ideaFormFields v
+                DF.inputText     "title" v >> br_ []
+                DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
+                DF.inputSelect   "idea-category" v >> br_ []
                 DF.inputSubmit   "Speichern"
                 button_ [value_ ""] "IDEE LOSCHEN" -- FIXME delete button
                 button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this back?
@@ -166,12 +197,6 @@ categoryValues = [ (CatRule,        "Regel")
                  , (CatTime,        "Zeit")
                  , (CatEnvironment, "Umgebung")
                  ]
-
-ideaFormFields :: Monad m => View (HtmlT m ()) -> HtmlT m ()
-ideaFormFields v = do
-    DF.inputText     "title" v >> br_ []
-    DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
-    DF.inputSelect   "idea-category" v >> br_ []
 
 
 ----------------------------------------------------------------------

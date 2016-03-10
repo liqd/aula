@@ -77,3 +77,22 @@ $progress-bar-height: 5px;
         height: $progress-bar-height;
     }
 }
+
+.no-js {
+    .category-image-select {
+        display: none;
+    }
+
+    .category-radios {
+        position: static;
+    }
+}
+
+.category-image-select {
+    display: block;
+}
+
+.category-radios {
+    position: absolute;
+    left: -999999px;
+}
