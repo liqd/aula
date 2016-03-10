@@ -148,7 +148,7 @@ instance FormPageView CreateIdea where
                         label_ $ do
                             span_ [class_ "label-text"]
                                 "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            -- FIXME DF.inputHidden "category" v
+                            DF.inputRadio True "idea-category" v
                         DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
 
 instance FormPageView EditIdea where
