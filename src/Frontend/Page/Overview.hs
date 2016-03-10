@@ -145,11 +145,11 @@ instance ToHtml Tabs where
     toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
         li_ [class_ . ST.unwords $
              "tab-item tab-item-wild-ideas" : ["m-active" | activeTab == WildIdeas]] $ do
-            a_ [href_ U.Broken] $ do
+            a_ [href_ $ U.Space space U.ListIdeas] $ do
                 "Wilde Ideen " >> toHtml (spaceDesc space)
         li_ [class_ . ST.unwords $
              "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
-            a_ [href_ U.Broken] $ do
+            a_ [href_ $ U.Space space U.ListTopics] $ do
                 "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc :: IdeaSpace -> ST
