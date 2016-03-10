@@ -145,10 +145,24 @@ instance FormPageView CreateIdea where
                         -- FIXME I want a placeholder here too
                         -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
                             DF.inputTextArea Nothing Nothing "idea-text" v
-                        label_ $ do
+                        label_    $ do
                             span_ [class_ "label-text"]
                                 "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            DF.inputRadio True "idea-category" v
+                            div_ [class_ "category-radios"] $ do
+                                DF.inputRadio True "idea-category" v
+                            div_ [class_ "icon-list m-inline category-image-select"] $ do
+                                ul_ $ do
+                                    -- FIXME: these buttons should filter the ideas by category
+                                    li_ [class_ "icon-rules"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
+                                    li_ [class_ "icon-equipment"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
+                                    li_ [class_ "icon-teaching"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
+                                    li_ [class_ "icon-time"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
+                                    li_ [class_ "icon-environment"] $ do
+                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
                         DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
 
 instance FormPageView EditIdea where
