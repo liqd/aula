@@ -136,10 +136,20 @@ instance FormPageView CreateIdea where
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Create Idee"
                     DF.form v fa $ do
-                        label_ [id_ ".title"] "Wie soll deine Idee heißen?" $ do
-                            DF.inputText        "title" v
-                        DF.inputTextArea    Nothing Nothing "idea-text" v
-                        DF.inputSubmit      "Add Idea"
+                        label_ $ do
+                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
+                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                                "title" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
+                        -- FIXME I want a placeholder here too
+                        -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
+                            DF.inputTextArea Nothing Nothing "idea-text" v
+                        label_ $ do
+                            span_ [class_ "label-text"]
+                                "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
+                            -- FIXME DF.inputHidden "category" v
+                        DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
 
 instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
