@@ -125,7 +125,7 @@ instance ToHtml PageIdeasInDiscussion where
         toHtml $ Tabs Topics space
 
         -- WARNING: This button is not in the design. But there should be here for
-        -- User Experience reasoons.
+        -- user experience reasons.
         -- FIXME: This button should de displayed only for Teachers.
         button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
 
