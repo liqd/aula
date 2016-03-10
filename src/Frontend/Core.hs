@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 
-{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
+-- {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
     ( GetH
@@ -53,11 +53,11 @@ import qualified Text.Digestive.Form as DF
 import Action
 import Api
 import Data.UriPath (UriPath, absoluteUriPath)
+import Frontend.Path (Top)
 import Lucid.Missing (script_, href_, src_)
 import Types
 
 import qualified Frontend.Path as P
-
 
 -- | FIXME: Could this be a PR for lucid?
 instance ToHtml (HtmlT Identity ()) where
@@ -105,7 +105,11 @@ class FormPageView p where
 
 -- | Defines some properties for pages
 class Page p where
+    type PagePath p :: *
+    type PagePath p = Proxy p
+
     isPrivatePage :: p -> Bool
+    pathOf :: PagePath p -> Top
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body = Frame User body | PublicFrame body

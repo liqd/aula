@@ -30,6 +30,7 @@ data PageAdminSettingsDurations =
 
 instance Page PageAdminSettingsDurations where
     isPrivatePage _ = True
+    -- pathOf _ = U.Top
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =

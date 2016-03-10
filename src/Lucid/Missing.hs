@@ -29,7 +29,6 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Data.UriPath
 
-
 -- | See also https://github.com/chrisdone/lucid/issues/30
 script_ :: (Monad m) => [Lucid.Attribute] -> Lucid.HtmlT m ()
 script_ attrs = Lucid.termRawWith "script" attrs mempty
@@ -77,7 +76,7 @@ inputSubmit_ attrs value = input_ $
 src_ :: HasPath p => p -> Lucid.Attribute
 src_ = Lucid.src_ . absoluteUriPath . relPath
 
-href_ :: HasPath p => p -> Lucid.Attribute
+href_ :: (HasPath p) => p -> Lucid.Attribute
 href_ = Lucid.href_ . absoluteUriPath . relPath
 
 onclick_ :: HasPath p => p -> Lucid.Attribute

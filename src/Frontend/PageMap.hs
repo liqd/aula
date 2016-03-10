@@ -5,15 +5,26 @@
 module Frontend.PageMap
 where
 
+import Data.Proxy
+
 import Frontend.Page
 
-
-type family Reachable from to :: *
+type family Reachable from to :: * where
+    Reachable a (Proxy b) = Reachable a b
+    Reachable (Proxy a) b = Reachable a b
+    Reachable PageRoomsOverview PageRoomsOverview = () -- Aula icon, Ideenraume
+    Reachable PageRoomsOverview PageUserProfileDelegatedVotes = () -- Profil anzeigen
+    Reachable PageRoomsOverview PageUserSettings              = () -- Einstellungen
+    Reachable PageRoomsOverview PageAdminSettingsDurations    = () -- Prozessverwaltung
+    Reachable PageRoomsOverview PageLogout                    = () -- Logout
+    Reachable a b = ()
 
 -- Mapped from click-dummy: https://marvelapp.com/ehhb43
 -- FIXME: Header, Menu, Footer are on every page, but we just map it for PageRoomsOverview.
 -- FIXME: move page map to separate module?
-
+{-
+type instance Reachable a (Proxy b) = Reachable a b
+type instance Reachable (Proxy a) b = Reachable a b
 
 -- * 1. Rooms Overview
 
@@ -44,7 +55,7 @@ type instance Reachable PageIdeasOverview ViewIdea   = () -- Titel einer Idee (I
 -- * 3. Ideas in discussion (Topics overview)
 
 type instance Reachable PageIdeasInDiscussion PageIdeasOverview = () -- Wildee ideen der Klasse 7a
-type instance Reachable PageIdeasInDiscussion ViewTopic = ()
+type instance Reachable PageIdeasInDiscussion ViewTopic         = ()
 -- ^^
 -- ausarbeitungphase (4.1 Topic Overview: refinement phase)
 -- prufungphase (4.2 Topic Overview: assignment phase)
@@ -55,12 +66,32 @@ type instance Reachable PageIdeasInDiscussion ViewTopic = ()
 
 -- * 4.1 Topic overview: Refinement phase
 
+-- zu allen themen
+type instance Reachable ViewTopic PageIdeasInDiscussion = ()
+-- bearbiten -> 10.2 Edit topic refinement 
+type instance Reachable ViewTopic MoveIdeasToTopic = ()
+-- nuee idee (create idea overlay)
+type instance Reachable ViewTopic CreateIdea = ()
+-- stimme beauftragen
+type instance Reachable ViewTopic PageDelegateVote = ()
+-- beuftrage stimmen ???
+type instance Reachable ViewTopic ViewTopic = ()
+-- grind my settings gears???
+-- ????
+-- avatar -> 8.2 User Profile delegated votes
+-- vornac -> 8.2 User Profile delegated votes
+type instance Reachable ViewTopic PageUserProfileDelegatedVotes = ()
+-- titel einer idee -> 5.2 Ideas Detail Page: Refinement phase
+type instance Reachable ViewTopic ViewIdea = ()
+
+{-
 type instance Reachable ViewTopic MoveIdeasToTopic = () -- Bearbiten (10.2 Edit Topic: Refinement)
 type instance Reachable ViewTopic CreateIdea = () -- Neue idee (6. Create Idea: Refinement phase)
 type instance Reachable ViewTopic PageDelegateVote = () -- Stimme beauftragen (12. Delegate Vote: Ausarbeitungphase)
 -- type instance Reachable ViewTopic ViewTopic = () -- beauftragen stimmen (4.1 Topic Overview: Refinemnt phase 2) !!!
 type instance Reachable ViewTopic ViewIdea = () -- Title der idee (5.2 Idea Detail Page: Refinement phase)
 type instance Reachable ViewTopic PageUserProfileDelegatedVotes = () -- Avatar, VorNam (8.2 User Profile: Delegated Votes)
+-}
 
 -- * 4.2 Topic overview: Jury (assessment) phase
 -- * 4.3 Topic overview: Voting phase
@@ -257,6 +288,8 @@ type instance Reachable PageHomeWithLoginPrompt PageStaticImprint    = () -- Imp
 type instance Reachable PageHomeWithLoginPrompt PageStaticTermsOfUse = () -- Terms of use
 type instance Reachable PageHomeWithLoginPrompt PageRoomsOverview    = ()
 
+-}
+
 
 
 ----------------------------------------------------------------------
@@ -269,5 +302,6 @@ type instance Reachable PageHomeWithLoginPrompt PageRoomsOverview    = ()
 - Why are there two "ergebnisphase" on Topics Overview?
 - Why are there two "ausarbeitungphase" on Topics Overview?
 - Rename PageIdeasInDiscussion to TopicOverview
+- 4.1 View Topic: Refinement page: settings button
 
 -}
