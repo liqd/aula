@@ -86,6 +86,11 @@ class Monad m => ActionLog m where
 instance ActionLog (Action r) where
     logEvent = Action . liftIO . print
 
+-- | A monad that can include actions changing a persistent state.
+--
+-- @r@ is determined by @m@, because @m@ is intended to be the program's
+-- action monad, so @r@ is just the persistent implementation chosen
+-- to be used in the action monad.
 class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
@@ -141,6 +146,10 @@ instance GenArbitrary r => GenArbitrary (Action r) where
 -- - Figure out the exact stack we need to use here.
 -- - Store the actual session data, userid etc.
 -- - We should decide on exact userstate and handle everything here.
+--
+-- FUTUREWORK: Move action implementation to another module and hide behind
+-- an API, similarly as it's done with persistent implementation,
+-- to reveal and mark (and possibly fix) where the implementation is hardwired.
 newtype Action r a = Action (ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) a)
     deriving ( Functor
              , Applicative

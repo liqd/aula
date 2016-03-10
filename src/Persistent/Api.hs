@@ -173,6 +173,7 @@ findIdeasByUserId user = findAllIn dbIdeas (\i -> i ^. createdBy == user)
 
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
+
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap dbIdeaMap
 
@@ -187,9 +188,6 @@ findUser = findInById dbUsers
 
 getUsers :: PersistM m => m [User]
 getUsers = getDb dbUsers
-
---addUser :: Proto User -> PersistM m => m User
---addUser = addDb dbUserMap
 
 getTopics :: PersistM m => m [Topic]
 getTopics = getDb dbTopics

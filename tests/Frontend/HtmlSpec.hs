@@ -197,6 +197,12 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v "formAction" page
         assert (len > 0)
 
+-- | Run the given action for testing.
+--
+-- FUTUREWORK: Abstraction leaks in tests are not dangerous and they don't
+-- infect other code, so they are left alone for now, though in the long run,
+-- abstraction would improve test code as well (separation of concerns
+-- via abstraction).
 runAction :: Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
 runAction action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
                       unNat (mkRunAction rp UserLoggedOut) action
