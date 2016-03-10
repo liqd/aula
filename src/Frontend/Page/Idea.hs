@@ -182,7 +182,9 @@ instance FormPageView EditIdea where
         semanticDiv p $ do
             h3_ "Diene Idee"
             DF.form v fa $ do
-                ideaFormFields v
+                DF.inputText     "title" v >> br_ []
+                DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
+                DF.inputSelect   "idea-category" v >> br_ []
                 DF.inputSubmit   "Speichern"
                 button_ [value_ ""] "IDEE LOSCHEN" -- FIXME delete button
                 button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this back?
@@ -194,12 +196,6 @@ categoryValues = [ (CatRule,        "Regel")
                  , (CatTime,        "Zeit")
                  , (CatEnvironment, "Umgebung")
                  ]
-
-ideaFormFields :: Monad m => View (HtmlT m ()) -> HtmlT m ()
-ideaFormFields v = do
-    DF.inputText     "title" v >> br_ []
-    DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
-    DF.inputSelect   "idea-category" v >> br_ []
 
 
 ----------------------------------------------------------------------
