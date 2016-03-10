@@ -134,7 +134,7 @@ instance FormPageView CreateIdea where
         semanticDiv p $ do
             div_ [class_ "grid container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Create Idee"
+                    h1_ [class_ "main-heading"] "Idee erstellen"
                     DF.form v fa $ do
                         label_ $ do
                             span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
@@ -145,14 +145,15 @@ instance FormPageView CreateIdea where
                         -- FIXME I want a placeholder here too
                         -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
                             DF.inputTextArea Nothing Nothing "idea-text" v
-                        label_    $ do
+                        label_ $ do
                             span_ [class_ "label-text"]
                                 "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
                             div_ [class_ "category-radios"] $ do
                                 DF.inputRadio True "idea-category" v
                             div_ [class_ "icon-list m-inline category-image-select"] $ do
                                 ul_ $ do
-                                    -- FIXME: these buttons should filter the ideas by category
+                                    -- FIXME: select a category for the newly created idea.  this
+                                    -- needs to be tested.  see also: static/js/custom.js.
                                     li_ [class_ "icon-rules"] $ do
                                         span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
                                     li_ [class_ "icon-equipment"] $ do
