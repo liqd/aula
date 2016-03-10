@@ -3,7 +3,7 @@
 set -e
 cd `dirname $0`
 export NEW_VERSION="$1"
-export ONLY_RUN_ON_BRANCH="2016-03-10-mf-make-release-script"
+export ONLY_RUN_ON_BRANCH="master"
 
 test -z "$NEW_VERSION" \
     && ( echo "Please provide a version number to move to."; exit 1 )
