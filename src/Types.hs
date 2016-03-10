@@ -80,7 +80,7 @@ data Idea = Idea
     { _ideaMeta       :: MetaInfo Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
-    , _ideaCategory   :: Category
+    , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
     , _ideaSpace      :: IdeaSpace
     , _ideaTopic      :: Maybe (AUID Topic)
     , _ideaComments   :: Set Comment
