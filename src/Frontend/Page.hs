@@ -1,7 +1,8 @@
+{-# LANGUAGE TypeFamilies #-}
+
 {-# OPTIONS_GHC -Werror -Wall #-}
 
-module Frontend.Page (module P)
-where
+module Frontend.Page (module P) where
 
 import Frontend.Page.Admin      as P
 import Frontend.Page.Comment    as P

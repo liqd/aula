@@ -78,6 +78,14 @@ executables:
       - fsnotify
       - hspec
 
+  aula-page-map:
+    main: PageMap.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - language-dot
+      - functor-infix
+
 tests:
   spec:
     main: Spec.hs
