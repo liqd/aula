@@ -124,7 +124,7 @@ instance ToHtml PageIdeasInDiscussion where
     toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
-        -- WARNING: This button is not in the design. But there should be here for
+        -- WARNING: This button is not in the design. But it should be here for
         -- user experience reasons.
         -- FIXME: This button should de displayed only for Teachers.
         button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
