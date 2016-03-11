@@ -30,6 +30,8 @@ import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude hiding ((<.>), (</>))
 
+import qualified Frontend.Path as U
+
 
 -- | config section: add new page types here.
 pages :: forall b.
@@ -221,4 +223,10 @@ dynamicRender s = do
         -- if you want to auto-refresh the page:
         -- >>> pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]]
         pf :: User -> a -> Html ()
-        pf user = pageFrame (Just user) . toHtml'
+        pf user = pageFrame' hdrs (Just user) . toHtml'
+
+        hdrs :: Html ()
+        hdrs = do
+            script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+            script_ [src_ $ U.TopStatic "d3-aula.js"]
+            link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
