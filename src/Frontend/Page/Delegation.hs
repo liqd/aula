@@ -75,6 +75,7 @@ instance ToHtml PageDelegationNetwork where
                     option_ [selected_ "selected"] "Idee '9'"
 
         div_ $ do
+
             br_ []
             table_ $ do
                 tr_ $ do
@@ -88,9 +89,15 @@ instance ToHtml PageDelegationNetwork where
                     td_ . ul_ $ li_ `mapM_` ["Sara", "Emma", "Lilli", "Lilly", "Lili", "Marie", "Lina",
                                              "Maja", "Maya", "Johanna", "Sophie", "Sofie", "Nele", "Neele",
                                              "Sophia", "Sofia", "Amelie", "Lisa", "Leni", "Julia", "Alina"]
-                    td_ $ img_ [src_ $ U.TopStatic "pagemap.png", width_ "800"]
+                    td_ $ span_ [id_ "d3"] nil
 
         bigHr
 
-viewDelegationNetwork :: ActionM r m => m (Frame PageDelegationNetwork)
-viewDelegationNetwork = makeFrame PageDelegationNetwork
+viewDelegationNetwork :: ActionM r m => m (Frame' PageDelegationNetwork)
+viewDelegationNetwork = makeFrame' hdrs PageDelegationNetwork
+  where
+    hdrs :: Html ()
+    hdrs = do
+        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+        script_ [src_ $ U.TopStatic "d3-aula.js"]
+        link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]

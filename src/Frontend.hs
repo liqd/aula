@@ -118,7 +118,8 @@ type AulaMain =
 
        -- delegation network
   :<|> "delegation" :> "edit" :> FormHandlerT PageDelegateVote () --FIXME: Correct page type
-  :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
+  :<|> "delegation" :> "view" :> GetH (Frame' PageDelegationNetwork)
+
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)

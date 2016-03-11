@@ -4,3 +4,6 @@
 [submodule "submodules/HTML5-Reset"]
 	path = submodules/HTML5-Reset
 	url = https://github.com/murtaugh/HTML5-Reset.git
+[submodule "submodules/d3"]
+	path = submodules/d3
+	url = https://github.com/mbostock/d3

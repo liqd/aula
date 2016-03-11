@@ -66,6 +66,7 @@ module Persistent.Api
     , dbSchoolQuorum
     , dbClassQuorum
     , adminUsernameHack
+    , addDelegation
     )
 where
 
@@ -94,6 +95,7 @@ data AulaData = AulaData
     , _dbIdeaMap             :: AMap Idea
     , _dbUserMap             :: AMap User
     , _dbTopicMap            :: AMap Topic
+    , _dbDelegationMap       :: AMap Delegation
     , _dbCurrentUser         :: Maybe (AUID User)
     , _dbElaborationDuration :: DurationDays
     , _dbVoteDuration        :: DurationDays
@@ -122,7 +124,7 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil Nothing 21 21 30 3 0
+emptyAulaData = AulaData nil nil nil nil nil Nothing 21 21 30 3 0
 
 -- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
 class MonadIO m => PersistM m where
@@ -207,6 +209,9 @@ addTopic pt = do
     -- - Make it fail hard
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
+
+addDelegation :: Proto Delegation -> PersistM m => m Delegation
+addDelegation = addDb dbDelegationMap
 
 findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -343,6 +348,9 @@ instance FromProto Topic where
         , _topicIdeaSpace = t ^. protoTopicIdeaSpace
         , _topicPhase     = PhaseRefinement
         }
+
+instance FromProto Delegation where
+    fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
 -- | So far `mkMetaInfo` is only used by `nextMetaInfo`.
 mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
