@@ -7,14 +7,10 @@
 
 module Main (main, spec) where
 
-import Control.Exception (assert, catch, SomeException(SomeException), evaluate)
-import Control.Monad (forM_, unless, when)
-import Control.Monad.Identity (runIdentity)
-import Control.Lens ((^?), each, _Just)
+import Control.Exception (assert, SomeException(SomeException), evaluate)
 import Data.String.Conversions
-import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
+import Data.Typeable (TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import Lucid
 import Lucid.Base (HtmlT(HtmlT))
 import System.Directory
 import System.Directory.Extra
@@ -24,7 +20,6 @@ import System.IO hiding (utf8)
 import System.Process
 import Test.Hspec
 import Test.QuickCheck
-import Text.Show.Pretty (ppShow)
 import Text.Digestive.View (getForm)
 
 import qualified Data.Text.IO as ST
@@ -33,7 +28,7 @@ import Arbitrary ()
 import Config (getSamplesPath)
 import Frontend.Core
 import Frontend.Page
-import Types (readWith, User(_userLogin))
+import Frontend.Prelude hiding ((<.>), (</>))
 
 
 -- | config section: add new page types here.
@@ -152,12 +147,12 @@ recreateSamples = do
     putStrLn "done."
   where
     writeSample :: (Int, (TypeRep, String)) -> IO ()
-    writeSample (ix, (typRep, valueRepShow)) = writeFile (fn <.> "hs") valueRepShow
+    writeSample (i, (typRep, valueRepShow)) = writeFile (fn <.> "hs") valueRepShow
       where fn :: FilePath
-            fn = showNum ix <> "_" <> (tr <$> show typRep)
+            fn = showNum <> "_" <> (tr <$> show typRep)
 
-            showNum i | i < 999 = reverse . take 3 . reverse $ "000" <> show ix
-                      | otherwise = assert False $ error "recreateSamples: impossible."
+            showNum | i < 999 = reverse . take 3 . reverse $ "000" <> show i
+                    | otherwise = assert False $ error "recreateSamples: impossible."
 
             tr ' ' = '_'
             tr  c  =  c
