@@ -103,7 +103,7 @@ instance Csv.FromRecord CsvUserRecord where
             | otherwise        = Just . UserLogin $ v !! i
 
 batchCreateUsers :: forall r m. (ActionTempCsvFiles m, ActionM r m)
-                 => ServerT (FormHandler BatchCreateUsers ST) m
+                 => ServerT (FormHandler BatchCreateUsers) m
 batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
   where
     q :: BatchCreateUsersFormData -> m ()
