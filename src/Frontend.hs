@@ -50,7 +50,7 @@ runFrontend cfg = do
     persist <- Persistent.Implementation.STM.mkRunPersist
     let action = mkRunAction persist
         proxy  = Proxy :: Proxy AulaTop
-    unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+    void {-TODO-} $ runExceptT $ unNat (action UserLoggedOut) genInitialTestDb -- FIXME: Remove Bootstrapping DB
     runSettings settings . catch404 . serve proxy . aulaTop $ action UserLoggedOut
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)

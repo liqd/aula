@@ -218,7 +218,7 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
                 pure . Just $ topic ^. topicPhase)
 
 createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea) m
-createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
+createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) addIdea
 
 -- FIXME check _space
 editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea) m

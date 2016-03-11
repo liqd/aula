@@ -156,21 +156,23 @@ spec = do
             test id SchoolSpace
             test id (ClassSpace (SchoolClass 2016 "7a"))
 
-    describe "loginUser" $ do
-        let t rp login predicate = do
+-- TODO: move these to ActionSpec (create?) or somewhere
+{-
+    describe "login" $ do
+        let t rp uLogin predicate = do
                 result <- liftIO . rp $ do
-                    loginUser login
-                    getDb dbCurrentUser
+                    login uLogin
+                    userState
                 result `shouldSatisfy` predicate
 
         context "on empty database" . before mkEmpty $ do
-            it "will not log you in" $ \(Nat rp) -> t rp "nope" isNothing
+            it "will not log you in" $ \(Nat rp) -> t rp "nope" (== UserLoggedOut)
 
         context "on initial database" . before mkInitial $ do
             context "if user does not exist" $ do
                 it "will not log you in" $ \(Nat rp) -> do
                     user:_ <- liftIO $ rp getUsers
-                    t rp ("not" <> (user ^. userLogin)) isNothing
+                    t rp ("not" <> (user ^. userLogin)) (== UserLoggedOut)
 
             context "if user does exist" $ do
                 context "if password is wrong" $ do
@@ -180,8 +182,8 @@ spec = do
                 context "if password is correct" $ do
                     it "will indeed log you in (yeay)" $ \(Nat rp) -> do
                         user:_ <- liftIO $ rp getUsers
-                        t rp (user ^. userLogin) isJust
-
+                        t rp (user ^. userLogin) (/= UserLoggedOut)
+-}
     regression
 
 -- * Regression suite
