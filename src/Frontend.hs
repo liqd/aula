@@ -112,12 +112,12 @@ type AulaMain =
        -- enter user profile
 
   :<|> "user" :> Capture "user" (AUID User) :> AulaUser
-  :<|> "user" :> "settings" :> FormHandler PageUserSettings ST
+  :<|> "user" :> "settings" :> FormHandler PageUserSettings
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote () --FIXME: Correct page type
+  :<|> "delegation" :> "edit" :> FormHandlerT PageDelegateVote () --FIXME: Correct page type
   :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
 
        -- static content
@@ -125,7 +125,7 @@ type AulaMain =
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
        -- login
-  :<|> "login" :> FormHandler PageHomeWithLoginPrompt ST
+  :<|> "login" :> FormHandler PageHomeWithLoginPrompt
   :<|> "logout" :> GetH (Frame PageLogout)
 
 
@@ -155,9 +155,9 @@ type AulaSpace =
        -- view idea details (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea Idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandlerT EditIdea Idea
        -- create wild idea
-  :<|> "idea" :> "create" :> FormHandler CreateIdea ST
+  :<|> "idea" :> "create" :> FormHandler CreateIdea
 
        -- browse topics in an idea space
   :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
@@ -168,12 +168,12 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
        -- create new topic
-  :<|> "topic" :> "create" :> FormHandler CreateTopic ST
+  :<|> "topic" :> "create" :> FormHandler CreateTopic
        -- create new idea inside topic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea ST
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic ST
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
   :<|> "topic" :> Capture "topic" (AUID Topic)
-               :> "delegation" :> "create" :> FormHandler PageDelegateVote ST --FIXME: Change Type
+               :> "delegation" :> "create" :> FormHandler PageDelegateVote --FIXME: Change Type
 
 aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
@@ -206,9 +206,9 @@ aulaUser user =
 
 type AulaAdmin =
        -- durations
-       "duration" :> FormHandler PageAdminSettingsDurations ST
+       "duration" :> FormHandler PageAdminSettingsDurations
        -- quorum
-  :<|> "quorum" :> FormHandler PageAdminSettingsQuorum ST
+  :<|> "quorum" :> FormHandler PageAdminSettingsQuorum
        -- groups and permissions
   :<|> "access" :> "perm-user-view"    :> GetH (Frame PageAdminSettingsGaPUsersView)
   :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
@@ -240,7 +240,7 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
-  :<|> "file-upload" :> FormHandler BatchCreateUsers ST
+  :<|> "file-upload" :> FormHandler BatchCreateUsers
   :<|> "random-password" :> GetH (PageShow UserPass)
 
 aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
