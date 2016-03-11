@@ -104,12 +104,6 @@ instance PersistM r => ActionPersist r (Action r) where
 instance MonadIO (Action r) where
     liftIO = Action . liftIO
 
-instance PersistM r => PersistM (Action r) where
-    -- getDb :: AulaGetter a -> m a
-    getDb = persistent . getDb
-    -- modifyDb :: AulaSetter a -> (a -> a) -> m ()
-    modifyDb setter = persistent . modifyDb setter
-
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
     login  :: UserLogin -> m ()
