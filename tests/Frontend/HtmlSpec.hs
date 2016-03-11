@@ -78,10 +78,10 @@ spec = do
 ----------------------------------------------------------------------
 -- translate form data back to form input
 
--- | Translate a 'Category' value into the select string for the form 'Env'.
+-- | Translate a value into the select string for the form 'Env'.
 --
--- FIXME: this function should be more general.
 -- FIXME: none of this is very elegant.  can we improve on it?
+-- FIXME: this function does not work for complex ADTs. E.g: 'SchoolClass Int String'
 --
 -- Text fields in forms are nice because the values in the form 'Env' contains simply the text
 -- itself, as it ends up in the parsed form playload.  Selections (pull-down menus) are trickier,
@@ -96,7 +96,6 @@ spec = do
 -- Since the item descriptions are available only as 'Html', not as text, and 'Html' doesn't have
 -- 'Eq', we need to apply another trick and transform both the category value and the item
 -- description to 'LT'.
--- TODO: Rewrite the comment above ^^
 selectValue :: Eq a => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> ST
 selectValue ref v xs x = case find test choices of Just (i, _, _) -> value i
   where
