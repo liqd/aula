@@ -331,6 +331,18 @@ data Delegation = Delegation
 
 instance SOP.Generic Delegation
 
+type instance Proto Delegation = ProtoDelegation
+
+-- | "Beauftragung"
+data ProtoDelegation = ProtoDelegation
+    { _protoDelegationContext :: DelegationContext
+    , _protoDelegationFrom    :: AUID User
+    , _protoDelegationTo      :: AUID User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoDelegation
+
 data DelegationContext =
     DelCtxIdeaSpace IdeaSpace
   | DelCtxTopic (AUID Topic)
@@ -338,6 +350,12 @@ data DelegationContext =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationContext
+
+data DelegationNetwork = DelegationNetwork [User] [Delegation]
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic DelegationNetwork
+
 
 ----------------------------------------------------------------------
 -- aula-specific helper types
