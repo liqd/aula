@@ -305,9 +305,9 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
                     td_ "Klasse ????" -- FIXME: Fetch the user's class if exists
-                    td_ "Role ???" -- FIXME: Fetch the user's role
+                    td_ "Rolle ???" -- FIXME: Fetch the user's role
                     td_ "" -- THIS SHOULD LEFT EMPTY
-                    td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
+                    td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
@@ -353,8 +353,8 @@ data EditUser = EditUser
 instance SOP.Generic EditUser
 
 roleValues :: IsString s => [(Role, s)]
-roleValues = [ (RoleStudent, "Sculer")
-             , (RoleGuest, "Gueste :)")
+roleValues = [ (RoleStudent, "Schüler")
+             , (RoleGuest, "Gast")
              ]
 
 instance FormPageView PageAdminSettingsGaPUsersEdit where
@@ -386,9 +386,9 @@ instance FormPageView PageAdminSettingsGaPUsersEdit where
                     "Klasse"
                     DF.inputSelect   "user-class" v >> br_ []
                 div_ $ do
-                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Passwort Zurucksetzen" >> br_ []
-                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Nutzer loschen" >> br_ []
-                DF.inputSubmit "AENDERUNGEN SPIECHERN"
+                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Passwort zurücksetzen" >> br_ []
+                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
+                DF.inputSubmit "Änderungen speichern"
 
 -- FIXME: Fetch limited number of users ("pagination").
 
@@ -413,7 +413,7 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
     editUserPage = persistent $
         PageAdminSettingsGaPUsersEdit
-        <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling
+        <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
         <*> getSchoolClasses
 
     editUser (EditUser role clss) = do
@@ -433,6 +433,7 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
     toClass (ClassSpace clss) = Just clss
     toClass _                 = Nothing
 
+
 -- * Events protocol
 
 instance ToHtml PageAdminSettingsEventsProtocol where
@@ -447,7 +448,7 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         div_ $ do
             p_ "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [onclick_ U.Broken] "DOWNLOAD"
+            button_ [onclick_ U.Broken] "Download"
             p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
