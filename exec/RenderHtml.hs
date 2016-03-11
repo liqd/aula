@@ -22,9 +22,11 @@ import Test.Hspec
 import Test.QuickCheck
 import Text.Digestive.View (getForm)
 
+import qualified Data.Aeson.Encode.Pretty as Aeson
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.IO as ST
 
-import Arbitrary ()
+import Arbitrary
 import Config (getSamplesPath)
 import Frontend.Core
 import Frontend.Page
@@ -108,7 +110,10 @@ main = run $ recreateSamples >> refreshSamples
 
 -- | hspec test case: for the sensei loop
 spec :: Spec
-spec = describe "refresh html samples" . it "works" . run $ refreshSamples
+spec = do
+    describe "refresh html samples" . it "works" . run $ refreshSamples
+    describe "render sample delegation graph" . it "works" . run $  -- TODO: not sure this should stay here.
+        fishDelegationNetworkIO >>= LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty
 
 
 -- | set locale, target directory.  create target directory if missing.

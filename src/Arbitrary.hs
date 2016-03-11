@@ -16,8 +16,11 @@ module Arbitrary
     , arbitrary
     , arb
     , arbName
+    , fishDelegationNetworkIO
+    , fishDelegationNetworkAction
     ) where
 
+import Control.Monad.Trans.Except (runExceptT)
 import Control.Applicative ((<**>))
 import Control.Lens (set)
 import Control.Monad (replicateM)
@@ -28,12 +31,24 @@ import Data.Text as ST
 import Generics.SOP
 import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
 import Test.QuickCheck.Instances ()
+import Servant
+import System.FilePath (takeBaseName)
+import System.IO.Unsafe (unsafePerformIO)
 
-import Types
+import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Encode.Pretty as Aeson
+import qualified Data.ByteString.Lazy as LBS
+import qualified Generics.Generic.Aeson as Aeson
+
+import Action
 import Frontend.Core
 import Frontend.Page
+import Frontend.Prelude ((.~), ppShow, view, join)
+import Persistent
+import Types
 
 import qualified Frontend.Path as P
+import qualified Persistent.Implementation.STM
 
 
 -- | FIXME: push this upstream to basic-sop.
@@ -451,3 +466,272 @@ instance Arbitrary Paragraph where
 
 topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
+
+
+----------------------------------------------------------------------
+-- arbitrary (but plausible) delegation graphs
+
+fishAvatars :: [URL]
+fishAvatars =
+    [ "characiformes/alestidae/thumbnails/alestopetersius_caudalis.gif"
+    , "characiformes/alestidae/thumbnails/arnoldichthys_spilopterus.gif"
+    , "characiformes/characidae/thumbnails/aphyocharax_anisitsi.gif"
+    , "characiformes/characidae/thumbnails/astyanax_jordani.gif"
+    , "pisces/characiformes/thumnails/anostomus_anostomus.gif"
+    , "cyprinodontiformes/anablepidae/thumbnails/anableps_anableps.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/aphyosemion_australe_gold1.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/aphyosemion_striatum.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/aplocheilus_panchax_thai.gif"
+    , "labroidei/cichlasomatinae/thumbnails/amphilophus_citrinellus_m.gif"
+    , "labroidei/pseudocrenilabrinae/thumnails/altolamprologus_calvus.gif"
+    , "labroidei/pseudocrenilabrinae/thumnails/altolamprologus_compressice.gif"
+    , "labroidei/pseudocrenilabrinae/thumnails/anomalochromis_thomasi.gif"
+    , "labroidei/pseudocrenilabrinae/thumnails/aulonocara_baenschi_red.gif"
+    , "labroidei/pseudocrenilabrinae/thumnails/aulonocara_jacobfreibergi.gif"
+    , "labroidei/pseudocrenilabrinae/thumnails/aulonocara_marmelade_cat.gif"
+    , "perciformes/labroidei/thumbnails/apistogramma_agassizii.gif"
+    , "perciformes/labroidei/thumbnails/apistogramma_borellii_norm.gif"
+    , "perciformes/labroidei/thumbnails/apistogramma_cacatuoides.gif"
+    , "perciformes/labroidei/thumbnails/apistogramma_nijsseni.gif"
+    , "perciformes/labroidei/thumbnails/astronotus_ocellatus.gif"
+    , "siluriformes/doradidae/thumbnails/agamyxis_pectinifrons.gif"
+    , "siluriformes/loricarridae/thumbnails/ancistrus_dolichoterus.gif"
+    , "siluriformes/loricarridae/thumbnails/ancistrus_sp.gif"
+    , "atheriniformes/atherinoidei/thumnails/bedotia_geayi.gif"
+    , "atheriniformes/atherinoidei/thumnails/glossolepis_incisus.gif"
+    , "atheriniformes/atherinoidei/thumnails/iriatherina_werneri.gif"
+    , "atheriniformes/atherinoidei/thumnails/melanotaenia_boesemani.gif"
+    , "atheriniformes/atherinoidei/thumnails/melanotaenia_herbertaxelrod.gif"
+    , "atheriniformes/atherinoidei/thumnails/melanotaenia_maccullochi.gif"
+    , "atheriniformes/atherinoidei/thumnails/melanotaenia_praecox.gif"
+    , "atheriniformes/atherinoidei/thumnails/pseudomugil_gertrudae.gif"
+    , "atheriniformes/atherinoidei/thumnails/pseudomugil_signifer.gif"
+    , "channiformes/thumbnails/channa_bleheri.gif"
+    , "characiformes/alestidae/thumbnails/brycinus_longipinnis.gif"
+    , "characiformes/alestidae/thumbnails/phenacogrammus_interuptus.gif"
+    , "characiformes/characidae/thumbnails/boehlkea_fredcochui.gif"
+    , "characiformes/characidae/thumbnails/gymnocorymbus_ternetzi.gif"
+    , "characiformes/characidae/thumbnails/hasemania_nana.gif"
+    , "characiformes/characidae/thumbnails/hemigrammus_bleheri.gif"
+    , "characiformes/characidae/thumbnails/hemigrammus_erythrozonus.gif"
+    , "characiformes/characidae/thumbnails/hemigrammus_pulcher.gif"
+    , "characiformes/characidae/thumbnails/hemigrammus_rhodostomus.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_eques.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_erythrostigm.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_flammeus.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_herbertaxelrodi.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_megalopterus.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_pulchripinni.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_rosaceus_wf.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_roseus.gif"
+    , "characiformes/characidae/thumbnails/hyphessobrycon_sweglesi.gif"
+    , "characiformes/characidae/thumbnails/inpaichthys_kerri.gif"
+    , "characiformes/characidae/thumbnails/meonkhausia_sanctae_filomen.gif"
+    , "characiformes/characidae/thumbnails/moenkhausia_pittieri.gif"
+    , "characiformes/characidae/thumbnails/nematobrycon_palmeri.gif"
+    , "characiformes/characidae/thumbnails/paracheirodon_axelrodi.gif"
+    , "characiformes/characidae/thumbnails/paracheirodon_innesi.gif"
+    , "characiformes/characidae/thumbnails/paracheirodon_simulans.gif"
+    , "characiformes/characidae/thumbnails/pristella_maxillaris.gif"
+    , "characiformes/characidae/thumbnails/pygocentrus_nattereri.gif"
+    , "characiformes/characidae/thumbnails/thayeria_boehlkei.gif"
+    , "characiformes/thumnails/carnegiella_strigata.gif"
+    , "characiformes/thumnails/chilodus_punctatus.gif"
+    , "characiformes/thumnails/copella_arnoldi.gif"
+    , "characiformes/thumnails/leoprinus_fasciatus.gif"
+    , "characiformes/thumnails/nannostomus_trifasciatus.gif"
+    , "characiformes/thumnails/nannostromus_beckfordi.gif"
+    , "characiformes/thumnails/nannostromus_eques.gif"
+    , "cypriniformes/cobitoidei/thumnails/botia_horea.gif"
+    , "cypriniformes/cobitoidei/thumnails/botia_lohachata.gif"
+    , "cypriniformes/cobitoidei/thumnails/botia_macracanthus.gif"
+    , "cypriniformes/cobitoidei/thumnails/botia_sidthimunki.gif"
+    , "cypriniformes/cobitoidei/thumnails/cobitis_taenia_taenia.gif"
+    , "cypriniformes/cobitoidei/thumnails/gyrinocheilus_aymonieri.gif"
+    , "cypriniformes/cobitoidei/thumnails/pangio_kuhli.gif"
+    , "cypriniformes/cyprinidae/thumbnails/balantiocheilos_melanopteru.gif"
+    , "cypriniformes/cyprinidae/thumbnails/boraras_maculatus.gif"
+    , "cypriniformes/cyprinidae/thumbnails/carassius_auratus_gold.gif"
+    , "cypriniformes/cyprinidae/thumbnails/crossocheilos_siamensis.gif"
+    , "cypriniformes/cyprinidae/thumbnails/danio_aequipinnatus.gif"
+    , "cypriniformes/cyprinidae/thumbnails/danio_albolineatus.gif"
+    , "cypriniformes/cyprinidae/thumbnails/danio_frankei.gif"
+    , "cypriniformes/cyprinidae/thumbnails/danio_rerio_schleier.gif"
+    , "cypriniformes/cyprinidae/thumbnails/epalzeorhynchos_bicolor.gif"
+    , "cypriniformes/cyprinidae/thumbnails/epalzeorhynchos_frenatum_nor.gif"
+    , "cypriniformes/cyprinidae/thumbnails/garra_cambodgiensis.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_anchisporus.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_conchonius.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_cumingi.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_lateristriga.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_pentazona.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_semifasciolatus_w.gif"
+    , "cypriniformes/cyprinidae/thumbnails/puntius_titteya.gif"
+    , "cypriniformes/cyprinidae/thumbnails/rhodeus_sericeus.gif"
+    , "cypriniformes/cyprinidae/thumbnails/tanichthys_albonubes.gif"
+    , "cypriniformes/cyprinidae/thumbnails/trigonostigma_heteromorpha.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/callopanchax_occidentalis.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/epiplatys_dageti.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/Fd_gardneri_gardneri.gif"
+    , "cyprinodontiformes/cyprinodontidae/thumnails/rivulus_agilae.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/limia_nigrofasciata.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/poecilia_reticulata.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/poecilia_salvatoris.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/poecilia_sphenops_black.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/poecilia_velifera.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/poecilia_wingei.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/xiphophorus_helleri.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/xiphophorus_maculatus_koral.gif"
+    , "cyprinodontiformes/poeciliidae/thumnails/xiphophorus_variatus.gif"
+    , "gasterosteiformes/thumbnails/gasterosteus_aculeatus.gif"
+    , "osteoglossiformes/thumnails/pantodon_buchholzi.gif"
+    , "perciformes/anabantoidei/thumnails/betta_splendens_rot.gif"
+    , "perciformes/anabantoidei/thumnails/cosalia_fasciata.gif"
+    , "perciformes/anabantoidei/thumnails/cosalia_labiosa.gif"
+    , "perciformes/anabantoidei/thumnails/cosalia_lalia_wild.gif"
+    , "perciformes/anabantoidei/thumnails/helostoma_temmimkii.gif"
+    , "perciformes/anabantoidei/thumnails/macropodus_opercularis.gif"
+    , "perciformes/anabantoidei/thumnails/sphaerichthys_osphromenoide.gif"
+    , "perciformes/anabantoidei/thumnails/trichogaster_leeri.gif"
+    , "perciformes/anabantoidei/thumnails/trichogaster_trichopterus.gif"
+    , "perciformes/anabantoidei/thumnails/trichopsis_pumila.gif"
+    , "perciformes/gobioidei/thumbnails/periophthalmus_koelreteri.gif"
+    , "perciformes/gobioidei/thumbnails/tateurndina_ocellicauda.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/archocentrus_nigrofasciatus.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/astronotus_nicarauense.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/cichlasoma_meeki.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/cichlasoma_octofasciatum.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/cleithracara_maronii.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/herotilapia_multispinosa.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/laetacara_curviceps.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/mesonauta_festivus.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/nannacara_anomala.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/pterophyllum_scalare_wild.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/symphysodon_aequifasciatus_rt.gif"
+    , "perciformes/labroidei/cichlasomatinae/thumbnails/symphysodon_discus.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/chalinochromis_brichardi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/cyphotilapia_frontosa.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/cyprichromis_leptosoma.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/cyrtocara_morii.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/dimidiochromis_compressice2.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/haplochromis_sp_red_shoulde.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/haplochromis_thickskin.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/hemichromis_letourneuxi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/julidochromis_dickfeldi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/julidochromis_marlieri.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/labidochromis_caeruleus.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/labidochromis_hongi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/lamprologus_ocellatus.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/melanochromis_auratus_m.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/melanochromis_johanni.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/melanochromis_maingano.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/neolamprologus_brevis.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/neolamprologus_brichardi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/neolamprologus_longior.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/neolamprologus_sexfasciatus.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/pelviachromis_pulcher.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/pelviachromis_taeniatus_nig.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/placidochromis_electra.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/pseudocrenilabrus_multicolo.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/pseudotropheus_hajomaylandi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/pseudotropheus_lombardoi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/pseudotropheus_zebra_bb.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/sciaenochromis_ahli.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/steatocranus_casuarius.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/tropheus_dubiosi.gif"
+    , "perciformes/labroidei/pseudocrenilabrinae/thumnails/tropheus_moorii_kachese.gif"
+    , "perciformes/labroidei/thumbnails/dicrossus_filamentosus.gif"
+    , "perciformes/labroidei/thumbnails/microgeophagus_altispinosus.gif"
+    , "perciformes/labroidei/thumbnails/microgeophagus_ramirezi.gif"
+    , "perciformes/percoidei/thumbnails/gymnocephalus_cernuus.gif"
+    , "perciformes/percoidei/thumbnails/monodactylus_argentus.gif"
+    , "perciformes/percoidei/thumbnails/parambessis_ranga.gif"
+    , "perciformes/percoidei/thumbnails/toxotes_jaculatrix.gif"
+    , "perciformes/thumnails/monocirrhus_polyacanthus.gif"
+    , "perciformes/thumnails/scatophagus_argus.gif"
+    , "polypteriformes/thumnails/erpetoichthys_calabaricus.gif"
+    , "scorpaeniformes/thumbnails/cottus_gobio.gif"
+    , "siluriformes/callichthyidae/thumbnails/brochis_splendens.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_adolfoi.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_aeneus.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_paleatus.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_panda.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_pygmaeus.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_sterbai.gif"
+    , "siluriformes/callichthyidae/thumbnails/corydoras_trilineatus.gif"
+    , "siluriformes/doradidae/thumbnails/platydoras_costatus.gif"
+    , "siluriformes/loricarridae/thumbnails/hypancistrus_zebra.gif"
+    , "siluriformes/loricarridae/thumbnails/hypostomus_plecostomus.gif"
+    , "siluriformes/loricarridae/thumbnails/hypostomus_punctatus.gif"
+    , "siluriformes/loricarridae/thumbnails/otocinclus_affinis.gif"
+    , "siluriformes/loricarridae/thumbnails/peckolita_vittata.gif"
+    , "siluriformes/loricarridae/thumbnails/rineloricaria_fallax.gif"
+    , "siluriformes/loricarridae/thumbnails/sturisoma_aureum.gif"
+    , "siluriformes/loricarridae/thumbnails/sturisoma_festivum.gif"
+    , "siluriformes/loricarridae/thumbnails/sturisoma_panamense.gif"
+    , "siluriformes/mochokidae/thumbnails/synodontis_multipunctatus.gif"
+    , "siluriformes/mochokidae/thumbnails/synodontis_nigriventis.gif"
+    , "siluriformes/mochokidae/thumbnails/synodontis_ocellifer.gif"
+    , "siluriformes/thumnails/kryptopterus_bicirrhis.gif"
+    , "siluriformes/thumnails/pimelodus_pictus.gif"
+    , "tetraodontiformes/thumnails/tetraodon_biocellatus.gif"
+    , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
+    ]
+
+mkFishUser :: (GenArbitrary m, PersistM m, ActionM r m) => URL -> m User
+mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
+        let first_last = cs . takeBaseName . cs $ avatar
+            (fn, ln) = case ST.findIndex (== '_') first_last of
+                Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
+                Just i -> ( UserFirstName $ ST.take i first_last
+                          , UserLastName  $ ST.drop (i+1) first_last
+                          )
+        role <- Student <$> genArbitrary
+        (userAvatar .~ avatar) <$> addUser (ProtoUser Nothing fn ln [role] Nothing Nothing)
+
+instance Arbitrary DelegationNetwork where
+    arbitrary = pure $ unsafePerformIO fishDelegationNetworkIO
+
+fishDelegationNetworkIO :: IO DelegationNetwork
+fishDelegationNetworkIO = do
+    persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
+    pr . addFirstUser $ ProtoUser
+        (Just "admin") (UserFirstName "admin") (UserLastName "admin")
+        [Admin] (Just (UserPassInitial "admin")) Nothing
+
+    let (Nat ac) = mkRunAction persist UserLoggedOut
+    either (error . ppShow) id <$> runExceptT
+        (ac (loginUser "admin" >> fishDelegationNetworkAction))
+
+fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
+fishDelegationNetworkAction = do
+    users <- mkFishUser `mapM` fishAvatars
+    let contexts = DelCtxIdeaSpace <$> (SchoolSpace : (ClassSpace <$> schoolClasses))
+          where
+            schoolClasses = f <$> join (view userGroups <$> users)
+            f (Student cl) = cl
+            -- FIXME: DelCtxTopic (AUID Topic) | DelCtxIdea (AUID Idea)
+
+        mkdel = do
+            u1  <- genArbitrary
+            u2  <- genArbitrary
+            ctx <- genArbitrary
+            addDelegation (ProtoDelegation u1 u2 ctx)
+
+    DelegationNetwork users <$> replicateM 500 mkdel
+
+instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Group where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON (MetaInfo a) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserEmail where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""
+instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
