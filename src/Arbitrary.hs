@@ -20,10 +20,11 @@ module Arbitrary
     , fishDelegationNetworkIO
     , fishDelegationNetworkAction
     , D3DN(..)
+    , breakCycles
     ) where
 
 import Control.Applicative ((<**>))
-import Control.Lens (set, (^.), view, _1)
+import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
@@ -39,8 +40,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
 import Test.QuickCheck.Instances ()
 
-import qualified Data.Aeson.Encode.Pretty as Aeson
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Vector as V
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -689,13 +688,13 @@ fishAvatars =
 mkFishUser :: (GenArbitrary m, PersistM m, ActionM r m) => URL -> m User
 mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
         let first_last = cs . takeBaseName . cs $ avatar
-            (fn, ln) = case ST.findIndex (== '_') first_last of
+            (fnam, lnam) = case ST.findIndex (== '_') first_last of
                 Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
                 Just i -> ( UserFirstName $ ST.take i first_last
                           , UserLastName  $ ST.drop (i+1) first_last
                           )
         role <- Student <$> genArbitrary
-        (userAvatar .~ avatar) <$> addUser (ProtoUser Nothing fn ln [role] Nothing Nothing)
+        (userAvatar .~ avatar) <$> addUser (ProtoUser Nothing fnam lnam [role] Nothing Nothing)
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure $ unsafePerformIO fishDelegationNetworkIO
@@ -703,7 +702,7 @@ instance Arbitrary DelegationNetwork where
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
     persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
-    pr . addFirstUser $ ProtoUser
+    _ <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         [Admin] (Just (UserPassInitial "admin")) Nothing
 
@@ -714,13 +713,7 @@ fishDelegationNetworkIO = do
 fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
 fishDelegationNetworkAction = do
     users <- mkFishUser `mapM` fishAvatars
-    let contexts = DelCtxIdeaSpace <$> (SchoolSpace : (ClassSpace <$> schoolClasses))
-          where
-            schoolClasses = f <$> join (view userGroups <$> users)
-            f (Student cl) = cl
-            -- FIXME: DelCtxTopic (AUID Topic) | DelCtxIdea (AUID Idea)
-
-        -- invariants:
+    let -- invariants:
         -- - u1 and u2 are in the same class or ctx is school.
         -- - no cycles  -- FIXME: not implemented!
         mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
@@ -731,7 +724,7 @@ fishDelegationNetworkAction = do
                              [Student cl] -> ctx == DelCtxIdeaSpace (ClassSpace cl)
                              _            -> False
 
-                users' = List.filter fltr $ users
+                users' = List.filter fltr users
 
             if List.null users'
                 then pure []
@@ -809,6 +802,7 @@ instance Aeson.ToJSON D3DN where
             ]
 
         renderCtx (Delegation _ (DelCtxIdeaSpace s) _ _) = showIdeaSpace s
+        renderCtx _ = error "instance Aeson.ToJSON D3DN where: context type not implemented."
 
 
         -- (there is weirdly much app logic going on in here.  move elsewhere?  do we care?)
