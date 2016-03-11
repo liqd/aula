@@ -271,11 +271,11 @@ test-suite spec
     , wreq
   other-modules:
       AllModulesSpec
-      Api.PersistentSpec
-      Frontend.HtmlSpec
+      Frontend.CoreSpec
       Frontend.Page.FileUploadSpec
       Frontend.PathSpec
       FrontendSpec
+      Persistent.ApiSpec
       TypesSpec
       Action
       Api

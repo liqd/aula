@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeOperators      #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Api.PersistentSpec where
+module Persistent.ApiSpec where
 
 import Arbitrary ()
 import Control.Lens

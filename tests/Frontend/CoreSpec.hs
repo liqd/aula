@@ -7,7 +7,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures -fno-warn-incomplete-patterns #-}
 
-module Frontend.HtmlSpec where
+module Frontend.CoreSpec where
 
 import Control.Lens ((^.), set)
 import Control.Monad.IO.Class (liftIO)

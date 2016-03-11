@@ -95,7 +95,7 @@ for you at https://tree.taiga.io/project/evpa-aula/us/20.
 Then create or extend a type definition for this page
 (such as `PageRoomsOverview` above; the guys know where to put it),
 add it to `/src/Arbitrary.hs`, `exec/RenderHtml.hs`
-and `tests/Frontend/HtmlSpec.hs`, create a dummy `ToHtml` instance
+and `tests/Frontend/CoreSpec.hs`, create a dummy `ToHtml` instance
 (and/or other instances; ask around) and fight down any type errors.
 At this point the page should get listed at <http://localhost:8080/samples>.
 The page is trivial, but ready for further improvement, as described
