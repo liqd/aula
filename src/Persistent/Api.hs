@@ -207,8 +207,8 @@ addTopic cUser pt = do
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
-addDelegation :: Proto Delegation -> PersistM m => m Delegation
-addDelegation = addDb dbDelegationMap
+addDelegation :: User -> Proto Delegation -> PersistM m => m Delegation
+addDelegation cUser = addDb cUser dbDelegationMap
 
 findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
