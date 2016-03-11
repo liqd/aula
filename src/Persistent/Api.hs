@@ -10,7 +10,6 @@
 
 module Persistent.Api
     ( PersistM
-    , HasCurrentUser (..)
     , AMap
     , AulaLens
     , AulaGetter
@@ -52,6 +51,8 @@ module Persistent.Api
     , findTopic
     , findTopicsBySpace
     , findUserByLogin
+    , loginUser
+    , logoutUser
     , dbIdeas
     , dbUsers
     , dbTopics
@@ -59,6 +60,7 @@ module Persistent.Api
     , dbIdeaMap
     , dbUserMap
     , dbTopicMap
+    , dbCurrentUser
     , dbElaborationDuration
     , dbVoteDuration
     , dbSchoolQuorum
@@ -94,6 +96,7 @@ data AulaData = AulaData
     , _dbUserMap             :: AMap User
     , _dbTopicMap            :: AMap Topic
     , _dbDelegationMap       :: AMap Delegation
+    , _dbCurrentUser         :: Maybe (AUID User)
     , _dbElaborationDuration :: DurationDays
     , _dbVoteDuration        :: DurationDays
     , _dbSchoolQuorum        :: Int
@@ -121,20 +124,16 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
-
-class Monad m => HasCurrentUser m where
-    currentUID :: m (AUID User)
+emptyAulaData = AulaData nil nil nil nil nil Nothing 21 21 30 3 0
 
 -- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
 class MonadIO m => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
 
-addDb :: (HasMetaInfo a, FromProto a, HasCurrentUser m)
-      => AulaSetter (AMap a) -> Proto a -> PersistM m => m a
+addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> PersistM m => m a
 addDb l pa = do
-    a  <- currentUID >>= fmap (fromProto pa) . nextMetaInfo
+    a  <- fromProto pa <$> nextMetaInfo
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
@@ -165,7 +164,7 @@ addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: HasCurrentUser m => Proto Idea -> PersistM m => m Idea
+addIdea :: Proto Idea -> PersistM m => m Idea
 addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
@@ -200,7 +199,7 @@ moveIdeasToTopic ideaIds topicId =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaTopic .~ topicId
 
-addTopic :: HasCurrentUser m => Proto Topic -> PersistM m => m Topic
+addTopic :: Proto Topic -> PersistM m => m Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
@@ -232,6 +231,14 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
 
+-- | FIXME: anyone can login
+-- | FIXME: every login changes all other logins
+loginUser :: UserLogin -> PersistM m => m ()
+loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
+
+logoutUser :: UserLogin -> PersistM m => m ()
+logoutUser _userLogin = modifyDb dbCurrentUser $ const Nothing
+
 -------------------------------------------------------------------
 
 nextId :: PersistM m => m (AUID a)
@@ -239,9 +246,12 @@ nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
-addUser :: HasCurrentUser m => Proto User -> PersistM m => m User
+currentUser :: PersistM m => m (AUID User)
+currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
+
+addUser :: Proto User -> PersistM m => m User
 addUser proto = do
-    metainfo  <- currentUID >>= nextMetaInfo
+    metainfo  <- nextMetaInfo
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
     let user = User
@@ -354,9 +364,7 @@ mkMetaInfo user now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
--- TODO:
-nextMetaInfo :: PersistM m => AUID User -> m (MetaInfo a)
-nextMetaInfo cUser =
-  mkMetaInfo <$> (fromMaybe (error "no current user") <$> findUser cUser)
-             <*> liftIO (Timestamp <$> getCurrentTime)
-             <*> nextId
+nextMetaInfo :: PersistM m => m (MetaInfo a)
+nextMetaInfo = mkMetaInfo <$> (currentUser >>= fmap (fromMaybe (error "no current user")) . findUser)
+                          <*> liftIO (Timestamp <$> getCurrentTime)
+                          <*> nextId

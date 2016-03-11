@@ -17,7 +17,7 @@ module Action
       ActionM
     , ActionLog(logEvent)
     , ActionPersist(persistent)
-    , ActionUserHandler(login, userState, logout)
+    , ActionUserHandler(login, logout)
     , ActionError
     , ActionExcept
 
@@ -37,7 +37,6 @@ module Action
     )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, writeTVar)
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
@@ -46,17 +45,15 @@ import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
 import Data.String.Conversions (ST, LBS)
+import Persistent
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
-import System.IO.Unsafe (unsafePerformIO)
+import Types
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
-
-import Persistent
-import Types
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -70,15 +67,12 @@ import Test.QuickCheck (arbitrary, generate)
 data UserState
     = UserLoggedOut
     | UserLoggedIn { _username :: UserLogin, _sessionCookie :: ST }
-  deriving (Show, Eq)
 
 makeLenses ''UserState
 
 class ( ActionLog m
       , ActionPersist r m
-      , PersistM m
       , ActionUserHandler m
-      , HasCurrentUser m
       , ActionError m
       , ActionTempCsvFiles m
       ) => ActionM r m
@@ -125,30 +119,15 @@ class Monad m => ActionUserHandler m where
     logout :: m ()
 
 instance PersistM r => ActionUserHandler (Action r) where
-    login uLogin = do
-        put $ UserLoggedIn uLogin "session"
-        muser <- persistent $ findUserByLogin uLogin
-        case muser of
-          Nothing ->
-            error $ "ActionUserHandler.login: no such user" <> show uLogin
-          Just user ->
-            liftIO $ atomically $ writeTVar fakeCookieTVar (Just $ view _Id user)
+    login user = do
+        put $ UserLoggedIn user "session"
+        persistent $ loginUser user
 
     userState = get
 
     logout = do
-        liftIO $ atomically $ writeTVar fakeCookieTVar Nothing
+        currentUser >>= persistent . logoutUser . view userLogin
         put UserLoggedOut
-
-instance PersistM r => HasCurrentUser (Action r) where
-    currentUID = do
-        uLogin <- use username
-        muser <- persistent $ findUserByLogin uLogin
-        case muser of
-          Nothing ->
-            error $ "HasCurrentUser.Action: no such user" <> show uLogin
-          Just user ->
-            return $! view _Id user
 
 class MonadError ActionExcept m => ActionError m
 
@@ -160,14 +139,6 @@ instance GenArbitrary r => GenArbitrary (Action r) where
 
 ----------------------------------------------------------------------
 -- concrete monad type; user state
-
--- FIXME: Until we have cookies, we get the logged-in user from this TVar.
--- When we support cookies, we will obtain tokens from them and look up
--- session from the token in the persistent DB. We will also work
--- with thentos sessions, not just plain users.
-fakeCookieTVar :: TVar (Maybe (AUID User))
-{-# NOINLINE fakeCookieTVar #-}
-fakeCookieTVar = unsafePerformIO (newTVarIO Nothing)
 
 -- | The actions a user can perform.
 --

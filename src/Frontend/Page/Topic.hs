@@ -181,7 +181,7 @@ viewTopic _space tab topicId = makeFrame =<< persistent (do
     ViewTopicIdeas tab topic <$> findIdeasByTopic topic)
 
 createTopic :: (ActionM r action) => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) action
-createTopic space ideas = redirectFormHandler (pure $ CreateTopic space ideas) addTopic
+createTopic space ideas = redirectFormHandler (pure $ CreateTopic space ideas) (persistent . addTopic)
 
 moveIdeasToTopic :: ActionM r m => IdeaSpace -> AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
 moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
