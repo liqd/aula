@@ -18,26 +18,30 @@ module Arbitrary
     , arbName
     , fishDelegationNetworkIO
     , fishDelegationNetworkAction
+    , D3DN(..)
     ) where
 
-import Control.Monad.Trans.Except (runExceptT)
 import Control.Applicative ((<**>))
-import Control.Lens (set)
+import Control.Lens (set, (^.))
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
+import Control.Monad.Trans.Except (runExceptT)
+import Data.Aeson as Aeson
 import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
 import Generics.SOP
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
-import Test.QuickCheck.Instances ()
 import Servant
 import System.FilePath (takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
+import Test.QuickCheck.Instances ()
 
-import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Vector as V
+import qualified Data.Map as Map
 import qualified Generics.Generic.Aeson as Aeson
 
 import Action
@@ -712,13 +716,27 @@ fishDelegationNetworkAction = do
             f (Student cl) = cl
             -- FIXME: DelCtxTopic (AUID Topic) | DelCtxIdea (AUID Idea)
 
+        -- invariants:
+        -- - u1 and u2 are in the same class or ctx is school.
+        -- - no cycles  -- FIXME: not implemented!
+        mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
         mkdel = do
-            u1  <- genArbitrary
-            u2  <- genArbitrary
-            ctx <- genArbitrary
-            addDelegation (ProtoDelegation u1 u2 ctx)
+            ctx :: DelegationContext <- liftIO . generate $ arbitrary
+            let fltr u = ctx == DelCtxIdeaSpace SchoolSpace
+                      || case u ^. userGroups of
+                             [Student cl] -> ctx == DelCtxIdeaSpace (ClassSpace cl)
+                             _            -> False
 
-    DelegationNetwork users <$> replicateM 500 mkdel
+                users' = List.filter fltr $ users
+
+            if List.null users'
+                then pure []
+                else do
+                    u1  <- liftIO . generate $ elements users'
+                    u2  <- liftIO . generate $ elements users'
+                    (:[]) <$> addDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+
+    DelegationNetwork users . join <$> replicateM 500 mkdel
 
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
@@ -735,3 +753,50 @@ instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""
 instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
+
+newtype D3DN = D3DN DelegationNetwork
+
+instance Aeson.ToJSON D3DN where
+    toJSON (D3DN (DelegationNetwork nodes links)) = result
+      where
+        result = object
+            [ "nodes" .= array (renderNode <$> nodes)
+            , "links" .= array (renderLink <$> links)
+            , "ctxs"  .= array (List.sort . nub $ renderCtx <$> links)
+            ]
+
+        renderNode n = object
+            [ "name"   .= (n ^. userLogin . fromUserLogin)
+            , "avatar" .= (n ^. userAvatar)
+            , "power"  .= getPower n links
+            ]
+
+        renderLink d@(Delegation _ _ u1 u2) = object
+            [ "source"  .= nodeId u1
+            , "target"  .= nodeId u2
+            , "context" .= toJSON (renderCtx d)
+            ]
+
+        renderCtx (Delegation _ (DelCtxIdeaSpace s) _ _) = showIdeaSpace s
+
+
+        -- (there is weirdly much app logic going on in here.  move elsewhere?  do we care?)
+
+        -- the d3 edges refer to nodes by list position, not name.  this function gives you the list
+        -- position.
+        nodeId :: AUID User -> Aeson.Value
+        nodeId uid = toJSON . (\(Just pos) -> pos) $ Map.lookup uid m
+          where
+            m :: Map.Map (AUID User) Int
+            m = Map.unions $ List.zipWith f nodes [0..]
+
+            f :: User -> Int -> Map.Map (AUID User) Int
+            f u = Map.singleton (u ^. _Id)
+
+        array :: ToJSON v => [v] -> Aeson.Value
+        array = Array . V.fromList . fmap toJSON
+
+        getPower :: User -> [Delegation] -> Aeson.Value
+        getPower u = toJSON . List.length
+                   . List.filter (== (u ^. _Id))
+                   . fmap (view delegationTo)

@@ -113,7 +113,7 @@ spec :: Spec
 spec = do
     describe "refresh html samples" . it "works" . run $ refreshSamples
     describe "render sample delegation graph" . it "works" . run $  -- TODO: not sure this should stay here.
-        fishDelegationNetworkIO >>= LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty
+        fishDelegationNetworkIO >>= LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty . D3DN
 
 
 -- | set locale, target directory.  create target directory if missing.
