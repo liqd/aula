@@ -7,14 +7,10 @@
 
 module Main (main, spec) where
 
-import Control.Exception (assert, catch, SomeException(SomeException), evaluate)
-import Control.Monad (forM_, unless, when)
-import Control.Monad.Identity (runIdentity)
-import Control.Lens ((^?), each, _Just)
+import Control.Exception (assert, SomeException(SomeException), evaluate)
 import Data.String.Conversions
-import Data.Typeable (Typeable, Proxy(Proxy), TypeRep, typeOf)
+import Data.Typeable (TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import Lucid
 import Lucid.Base (HtmlT(HtmlT))
 import System.Directory
 import System.Directory.Extra
@@ -24,16 +20,19 @@ import System.IO hiding (utf8)
 import System.Process
 import Test.Hspec
 import Test.QuickCheck
-import Text.Show.Pretty (ppShow)
 import Text.Digestive.View (getForm)
 
+import qualified Data.Aeson.Encode.Pretty as Aeson
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.IO as ST
 
-import Arbitrary ()
+import Arbitrary
 import Config (getSamplesPath)
 import Frontend.Core
 import Frontend.Page
-import Types (readWith, User(_userLogin))
+import Frontend.Prelude hiding ((<.>), (</>))
+
+import qualified Frontend.Path as U
 
 
 -- | config section: add new page types here.
@@ -111,7 +110,10 @@ main = run $ recreateSamples >> refreshSamples
 
 -- | hspec test case: for the sensei loop
 spec :: Spec
-spec = describe "refresh html samples" . it "works" . run $ refreshSamples
+spec = do
+    describe "refresh html samples" . it "works" . run $ refreshSamples
+    describe "render sample delegation graph" . it "works" . run $  -- TODO: not sure this should stay here.
+        fishDelegationNetworkIO >>= LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty . D3DN
 
 
 -- | set locale, target directory.  create target directory if missing.
@@ -152,12 +154,12 @@ recreateSamples = do
     putStrLn "done."
   where
     writeSample :: (Int, (TypeRep, String)) -> IO ()
-    writeSample (ix, (typRep, valueRepShow)) = writeFile (fn <.> "hs") valueRepShow
+    writeSample (i, (typRep, valueRepShow)) = writeFile (fn <.> "hs") valueRepShow
       where fn :: FilePath
-            fn = showNum ix <> "_" <> (tr <$> show typRep)
+            fn = showNum <> "_" <> (tr <$> show typRep)
 
-            showNum i | i < 999 = reverse . take 3 . reverse $ "000" <> show ix
-                      | otherwise = assert False $ error "recreateSamples: impossible."
+            showNum | i < 999 = reverse . take 3 . reverse $ "000" <> show i
+                    | otherwise = assert False $ error "recreateSamples: impossible."
 
             tr ' ' = '_'
             tr  c  =  c
@@ -226,4 +228,10 @@ dynamicRender s = do
         -- if you want to auto-refresh the page:
         -- >>> pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]]
         pf :: User -> a -> Html ()
-        pf user = pageFrame (Just user) . toHtml'
+        pf user = pageFrame' hdrs (Just user) . toHtml'
+
+        hdrs :: Html ()
+        hdrs = do
+            script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+            script_ [src_ $ U.TopStatic "d3-aula.js"]
+            link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]

@@ -217,11 +217,11 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
                 Just topic <- findTopic topicId
                 pure . Just $ topic ^. topicPhase)
 
-createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea ST) m
+createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea) m
 createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
 
 -- FIXME check _space
-editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea ST) m
+editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea _space ideaId =
     redirectFormHandler
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))

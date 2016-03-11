@@ -236,7 +236,7 @@ instance FormPageView PageAdminSettingsDurations where
                     DF.inputText "vote-duration" v >> "Tage" >> br_ []
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
-adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations ST) m
+adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations) m
 adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) saveDurations
   where
     saveDurations :: ActionM r m => Durations -> m ()
@@ -275,7 +275,7 @@ instance FormPageView PageAdminSettingsQuorum where
                     DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
-adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum ST) m
+adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
 adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
   where
     saveQuorum (Quorums school clss) = persistent $ do

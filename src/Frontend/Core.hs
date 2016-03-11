@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE ViewPatterns         #-}
 
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
@@ -15,8 +16,9 @@ module Frontend.Core
     , Page, isPrivatePage
     , PageShow(PageShow)
     , Beside(Beside)
-    , Frame(Frame, PublicFrame), makeFrame, pageFrame, pageFrame'
-    , FormHandler
+    , Frame(Frame, PublicFrame), makeFrame, pageFrame
+    , Frame'(Frame', PublicFrame'), makeFrame', pageFrame'
+    , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
     , FormPageView, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler
@@ -89,7 +91,8 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 -- building blocks
 
 type GetH = Get '[HTML]
-type FormHandler p a = FormH HTML (FormPage p) a
+type FormHandlerT p a = FormH HTML (FormPage p) a
+type FormHandler p = FormHandlerT p ST
 
 -- | Render Form based Views
 class FormPageView p where
@@ -111,26 +114,40 @@ class Page p where
 data Frame body = Frame User body | PublicFrame body
   deriving (Functor)
 
+data Frame' body = Frame' User (Html ()) body | PublicFrame' (Html ()) body
+  deriving (Functor)
+
 makeFrame :: (ActionPersist r m, ActionUserHandler m, Page p)
           => p -> m (Frame p)
 makeFrame p
   | isPrivatePage p = flip Frame p <$> currentUser
   | otherwise       = return $ PublicFrame p
 
+makeFrame' :: (ActionPersist r m, ActionUserHandler m, Page p)
+          => Html () -> p -> m (Frame' p)
+makeFrame' hdrs p
+  | isPrivatePage p = (\u -> Frame' u hdrs p) <$> currentUser
+  | otherwise       = return $ PublicFrame' hdrs p
+
 instance (ToHtml body) => ToHtml (Frame body) where
     toHtmlRaw = toHtml
     toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
     toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
 
-pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame = pageFrame' []
+instance (ToHtml body) => ToHtml (Frame' body) where
+    toHtmlRaw = toHtml
+    toHtml (Frame' usr hdrs bdy)   = pageFrame' hdrs (Just usr) (toHtml bdy)
+    toHtml (PublicFrame' hdrs bdy) = pageFrame' hdrs Nothing (toHtml bdy)
 
-pageFrame' :: (Monad m) => [HtmlT m a] -> Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame' extraHeaders mUser bdy = do
+pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
+pageFrame = pageFrame' nil
+
+pageFrame' :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
+pageFrame' (HtmlT . return . runIdentity . runHtmlT -> hdrs) mUser bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
-        sequence_ extraHeaders
+        hdrs
     body_ [class_ "no-js"] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser >> bdy
@@ -296,7 +313,7 @@ redirectFormHandler
     :: (FormPageView p, Page p, ActionM r m)
     => m p                       -- ^ Page representation
     -> (FormPageResult p -> m a) -- ^ Processor for the form result
-    -> ServerT (FormHandler p ST) m
+    -> ServerT (FormHandler p) m
 redirectFormHandler getPage processor = getH :<|> postH
   where
     getH = do

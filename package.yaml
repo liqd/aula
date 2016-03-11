@@ -19,6 +19,8 @@ dependencies:
     - base >=4.8 && <4.9
     - thentos-core >=0.3.0
     - aeson
+    - aeson-pretty
+    - generic-aeson
     - basic-sop
     - binary
     - bytestring
