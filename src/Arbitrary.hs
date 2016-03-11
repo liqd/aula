@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
@@ -22,7 +23,7 @@ module Arbitrary
     ) where
 
 import Control.Applicative ((<**>))
-import Control.Lens (set, (^.))
+import Control.Lens (set, (^.), view, _1)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
@@ -42,6 +43,9 @@ import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Vector as V
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Graph as Graph
+import qualified Data.Tree as Tree
 import qualified Generics.Generic.Aeson as Aeson
 
 import Action
@@ -737,6 +741,33 @@ fishDelegationNetworkAction = do
                     (:[]) <$> addDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . join <$> replicateM 500 mkdel
+
+-- (NOTE: we only want to break cycles inside each context.  cyclical paths travelling through
+-- different contexts are not really cycles.)
+breakCycles :: [Delegation] -> [Delegation]
+breakCycles ds = List.filter good ds
+  where
+    es = [mkEdge d | d <- ds]
+    ns = (fst <$> es) <> (snd <$> es)
+
+    mkEdge :: Delegation -> Graph.Edge
+    mkEdge d = (fromIntegral $ d ^. delegationFrom, fromIntegral $ d ^. delegationTo)
+
+    forestEdges :: Tree.Forest Graph.Vertex -> [Graph.Edge]
+    forestEdges [] = []
+    forestEdges (Tree.Node x xs : ys) = ((x,) . Tree.rootLabel <$> xs) <> forestEdges (xs <> ys)
+
+    g :: Graph.Graph
+    g = Graph.buildG (List.minimum ns, List.maximum ns) es
+
+    g' :: Tree.Forest Graph.Vertex
+    g' = Graph.dfs g ns
+
+    es' :: [Graph.Edge]
+    es' = forestEdges g'
+
+    good :: Delegation -> Bool
+    good = (`Set.member` Set.fromList es') . mkEdge
 
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
