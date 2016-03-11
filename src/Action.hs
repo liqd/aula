@@ -164,7 +164,7 @@ newtype Action r a = Action (ExceptT ActionExcept (RWST (r :~> IO) () UserState 
 -- FIXME: Create a different type
 type ActionExcept = ServantErr
 
--- | Creates a natural transformation from Action to IO
+-- | Creates a natural transformation from Action to the servant handler monad.
 --
 -- FIXME:
 -- - The ability to change the state is missing.
