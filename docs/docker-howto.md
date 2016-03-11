@@ -9,87 +9,131 @@ This document collects the lessons learned with using docker, and is
 our shot at docker best practices.
 
 
-##
+## Post-mortem
 
-- docker failure process.
-  - revert?  (how?)
-  - ..
-  - post mortem.  what was the problem.
-    lessons learned from docker:
-       - breaking travis is bad.
-          - we need an robust way to roll back.
-             - there may be such a thing.
-                - the question is, is it really worth it?
-                Yes.
-                  what do we get for that?
-                docker vs. stack: is there a way to shrink .stack-work, ~/.stack?
-                aula build depends on thentos build, which takes an hour to build with stack from scratch.
+This is the description and analysis of a problem that cost us more
+than 1 day to fix, so we decided it may be interesting to others.
 
+We are running two repositories that are developed in parallel and are
+provided by the same docker image: thentos and aula.  When we upgraded
+both repos with downwards-incompatible changes, we ended up with a
+diamond dependency:
 
-## Postmortem
-
-We changed the thentos-core dependency for aula.
-We introduce the change in a feature-branch.
-
-Double dependency of vector, we decided not to fix in the cabal file. Use stack instead.
-
-- We wanted to resolve two problems at once
-  - Migrate docker build process from cabal to stack
-  - Fix the docker image for travis
-
-
-sequence of events:
-- thentos-core 0.3
+- bumped thentos-core to 0.3
 - docker image update to thentos-core-0.3
 - new docker image breaks aula master build, which still depends on thentos-core-0.2
 - aula feature branch merged to master, now aula depends on thentos-0.3
-- vector library double dependency
-- the travis build is broken
-- decision to migrate to stack
-- unforeseen issues during the migration
-- slow feedback loop
-- every try was done in quay.io instead of local docker builds
-- desaster!
+- vector library double dependency, breaking the travis build
+
+At this point, we made the mistake of not adding a `==` constraint the
+resp. cabal files, but switching the docker image from cabal to stack.
 
 
-## other sources on what we are doing here.
+## Lessons lerned
 
-we use quay.io because they have build machines.  and those are faster than travis, and using travis to build docker images is a misuse of the ci system.
-...
-
-
-
-## lessons
-
-- build locally (`docker build` rather than `git push `).
-- if something is broken, try the easiest thing that makes things work again.  (fix dep in cabal file rather than introducing stack).
-
-
-- always merge aula
-
-[these steps only if we make downwards-incompatible changes to thentos.]
-1. push thentos
-2. build docker image locally
-3. test aula on local docker image
-4. push docker image to quay.io
-5. push aula
-6. push aula-docker
+1. Never try to solve more than one problem at once!  If something is
+   broken, try the easiest thing that makes things work again!
+2. Use https://quay.io/.  They have build machines, and those are
+   faster than travis.  Anyway travis is intended for integration
+   testing, not for docker image compilation.
+3. Build locally (`docker build` rather than `git push`).  This can be
+   faster, but more importantly it contains any breakage to your
+   machine and doesn't affect others in the team.
 
 
-[better idea.]
-make the docker file smarter: it should look up the thentos version aula wants, and check out the corresponding tag in the thentos repo before building anything.
-- add `RUN cd .../thentos && git checkout `cat .../aula-docker/thentos-release.txt` && .. -` to Dockerfile
-- or, much easier: just use git to move the thentos git submodule to the release tag we want to have.  then quay.io will use that version.  this is the solution we should use!
+## Processes
+
+### The idea
+
+- freeze version of thentos-core dependency in aula repo.
+- have release versions for every docker image update.
+- if something goes wrong, revert thentos and aula to last working
+  release, pull the matching docker image, and resume from there.
 
 
-### recovery
+### upgrade
 
-Let's assume we broke something (much less likely if we follow the thoughts outlined above).  How do we get back to a stable combination of thentos, aula, aula-docker?
+You've just made changes to both thentos and aula, and neither of the
+new versions works with the old version of the other.  So you need to
+upgrade both concurrently in docker.
 
-- revert master on repos aula-docker, aula, thentos to a state X before everything broke.
-- build aula-docker locally and docker-push it to quay.io with the 'latest' tag.
+1. push thentos feature branch, wait for travis, merge, ./misc/bump-version.sh
+1. move submodules in aula-docker to new thentos master, aula feature branch
+1. build docker image locally
+1. test aula on local docker image
+1. push docker image to quay.io
+1. push aula feature branch, wait for travis, merge, ./make-version.sh
+1. move submodule in aula-docker to new aula master
+1. push aula-docker
+
+FIXME: we should probably provide some of the shell commands to do all
+that?
 
 
-two related problems here:
-    - travis is going bad.  what to do?  (solution: tag quay.io builds and pick a stable tag in .travis.yml)
-    - a developer uses docker locally with thentos and aula paths and wants to revert to a working state and continue developing from there.  (solution: ?  probably related?  oh, it's simple!  "only build docker images from aula tags, not from master HEAD."  then we can revert to that tag.  same with thentos.)
+### revert (travis)
+
+If there is an issue with the latest combination of thentos, aula,
+aula-docker, travis could fail to build aula.
+
+- visit https://quay.io/repository/liqd/aula?tab=builds.
+- select the commit hash of a build that is known to work.
+- in the aula repo on the feature branch that has the issue, change `.travis.yml` as follows:
+
+```
+env:
+    - AULA_IMAGE=quay.io/liqd/aula@<working-commit-hash> AULA_SOURCE=/liqd/aula
+```
+
+
+
+TODO: it doesn't work!  also, on quay.io, there is a build id, and i
+don't think that's the commit hash, because there is also a commit
+hash in the fine print.
+
+```
+$ docker pull quay.io/liqd/aula@3fd1ea45
+Error parsing reference: "quay.io/liqd/aula@3fd1ea45" is not a valid repository/tag
+```
+
+
+
+it may also help to rebase the feature branch (still in the aula repo)
+into the past, onto a working release tag, or temporarily revert some
+of the changes you work on.
+
+
+### revert (developer)
+
+You have found out that there is an issue with the latest combination
+of thentos, aula, aula-docker, and you need to get an older, working
+combination back.
+
+- visit https://quay.io/repository/liqd/aula?tab=builds
+- select the commit hash of a build that is known to work, say DOCKER_HASH
+- `git clone https://github.com/liqd/aula-docker -b $DOCKER_HASH`
+- `cd aula && git status && cd ../thentos && git status`
+- let's call the commit hashes you have found THENTOS_HASH and AULA_HASH
+
+Now you can set everything up the way it worked on quay.io.
+
+TODO: not tested.
+
+```shell
+docker pull quay.io/liqd/aula@$DOCKER_HASH
+cd .../thentos && git fetch && git checkout $THENTOS_HASH
+cd .../aula && git fetch && git checkout $AULA_HASH
+```
+
+
+## Other ideas (probably not relevant for us, but fun)
+
+If you are not fond of excessive git submodule necromancy or if it
+doesn't apply because you get other git repos from elsewhere, you can
+configure the required versions in resp. one-line config files and
+modify the `Dockerfile` to move those repos to those versions:
+
+```shell
+RUN cd .../thentos && \
+    git checkout `cat .../aula-docker/thentos-release-tag.txt` && \
+    ...
+```
