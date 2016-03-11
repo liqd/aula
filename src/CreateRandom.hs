@@ -26,10 +26,11 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
     :: ( Arbitrary (Proto a), Show a, FromProto a, Typeable a, HasMetaInfo a
-       , ActionPersist r m, GenArbitrary m)
+       , ActionUserHandler m, ActionPersist r m, GenArbitrary m)
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
-   x <- persistent . addDb l =<< genArbitrary
+   cUser <- currentUser
+   x <- persistent . addDb cUser l =<< genArbitrary
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
@@ -44,7 +45,9 @@ createRandomNoMeta l = do
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
--- | generate one arbitrary item of each type (idea, user, ...)
+-- | Generate one arbitrary item of each type (idea, user, ...)
+--
+-- Note that no user is getting logged in by this code.
 genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
 genInitialTestDb = do
     addIdeaSpaceIfNotExists SchoolSpace
@@ -55,10 +58,9 @@ genInitialTestDb = do
     firstUser <- addFirstUser ( (protoUserLogin .~ Just (UserLogin "admin"))
                               . (protoUserPassword .~ Just (UserPassInitial "pssst"))
                               $ protoU )
-    loginUser $ firstUser ^. userLogin
-    _wildIdea <- addIdea =<< genArbitrary
-    topicIdea <- addIdea =<< genArbitrary
-    _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+    _wildIdea <- addIdea firstUser =<< genArbitrary
+    topicIdea <- addIdea firstUser =<< genArbitrary
+    _topic <- addTopic firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
 
 -- FIXME

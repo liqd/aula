@@ -124,13 +124,13 @@ changeAUID (AUID i) = AUID (succ i)
 spec :: Spec
 spec = do
     getDbSpec "getIdeas" getIdeas
-    addDbSpec "addIdea"  getIdeas addIdea
+    addDbSpec "addIdea"  getIdeas (addIdea frameUserHack)
 
     getDbSpec "getUsers" getUsers
-    addDbSpec "addUsers" getUsers addUser
+    addDbSpec "addUsers" getUsers (addUser frameUserHack)
 
     getDbSpec "getTopics" getTopics
-    addDbSpec "addTopics" getTopics addTopic
+    addDbSpec "addTopics" getTopics (addTopic frameUserHack)
 
     findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec "findTopic" getTopics findTopic _Id changeAUID
@@ -156,21 +156,25 @@ spec = do
             test id SchoolSpace
             test id (ClassSpace (SchoolClass 2016 "7a"))
 
-    describe "loginUser" $ do
-        let t rp login predicate = do
+-- FIXME: move these to ActionSpec or FrontendSpec or somewhere,
+-- but somehow import mkEmpty and mkInitial from here.
+-- Probably parameterize initialization of frontend by the initial DB.
+{-
+    describe "login" $ do
+        let t rp uLogin predicate = do
                 result <- liftIO . rp $ do
-                    loginUser login
-                    getDb dbCurrentUser
+                    login uLogin
+                    userState
                 result `shouldSatisfy` predicate
 
         context "on empty database" . before mkEmpty $ do
-            it "will not log you in" $ \(Nat rp) -> t rp "nope" isNothing
+            it "will not log you in" $ \(Nat rp) -> t rp "nope" (== UserLoggedOut)
 
         context "on initial database" . before mkInitial $ do
             context "if user does not exist" $ do
                 it "will not log you in" $ \(Nat rp) -> do
                     user:_ <- liftIO $ rp getUsers
-                    t rp ("not" <> (user ^. userLogin)) isNothing
+                    t rp ("not" <> (user ^. userLogin)) (== UserLoggedOut)
 
             context "if user does exist" $ do
                 context "if password is wrong" $ do
@@ -180,8 +184,8 @@ spec = do
                 context "if password is correct" $ do
                     it "will indeed log you in (yeay)" $ \(Nat rp) -> do
                         user:_ <- liftIO $ rp getUsers
-                        t rp (user ^. userLogin) isJust
-
+                        t rp (user ^. userLogin) (/= UserLoggedOut)
+-}
     regression
 
 -- * Regression suite
@@ -190,7 +194,7 @@ regression :: Spec
 regression = describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp
-            "addIdea" getIdeas addIdea
+            "addIdea" getIdeas (addIdea frameUserHack)
             (\p i -> i ^. ideaSpace `shouldBe` p ^. protoIdeaIdeaSpace)
 
 ----------------------------------------------------------------------
