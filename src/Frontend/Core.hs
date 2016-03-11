@@ -131,7 +131,7 @@ pageFrame' extraHeaders mUser bdy = do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         sequence_ extraHeaders
-    body_ $ do
+    body_ [class_ "no-js"] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser >> bdy
         footerMarkup
