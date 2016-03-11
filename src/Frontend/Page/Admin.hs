@@ -417,15 +417,15 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
         <*> getSchoolClasses
 
     editUser (EditUser role clss) = do
-        let isForClass (Student clss')    = clss == clss'
-            isForClass (ClassGuest clss') = clss == clss'
-            isForClass _                  = False
+        let isSelectedClass (Student clss')    = clss == clss'
+            isSelectedClass (ClassGuest clss') = clss == clss'
+            isSelectedClass _                  = False
 
         let addGroup gs = case role of
                 RoleStudent -> Student clss : gs
                 RoleGuest   -> ClassGuest clss : gs
 
-        persistent $ modifyUser uid (userGroups %~ addGroup . filter (not . isForClass))
+        persistent $ modifyUser uid (userGroups %~ addGroup . filter (not . isSelectedClass))
 
 getSchoolClasses :: PersistM m => m [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
