@@ -316,21 +316,19 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
         adminFrame p . semanticDiv p $ do
             toHtml (show p)
 
--- TODO: Introduce "U.Broken"
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
         adminFrame p . semanticDiv p $ do
-            button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
             table_ $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
+                    th_ $ button_ [onclick_ U.Broken] "KLASSE ANLEGEN"
                     th_ $ input_ [value_ "Klassensuche"]
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     th_ . toHtml $ clss ^. className
                     th_ ""
-                    th_ $ a_ [href_ U.ListSpaces] "bearbeiten"
+                    th_ $ a_ [href_ U.Broken] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPClassesCreate where
@@ -449,7 +447,7 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         div_ $ do
             p_ "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [onclick_ U.ListSpaces] "DOWNLOAD"
+            button_ [onclick_ U.Broken] "DOWNLOAD"
             p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
