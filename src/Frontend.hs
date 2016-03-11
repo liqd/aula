@@ -214,6 +214,7 @@ type AulaAdmin =
   :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
   :<|> "access" :> "perm-class-view"   :> GetH (Frame PageAdminSettingsGaPClassesView)
   :<|> "access" :> "perm-class-create" :> GetH (Frame PageAdminSettingsGaPClassesCreate)
+  :<|> "user" :> Capture "user" (AUID User) :> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit ST
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
@@ -226,6 +227,7 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPUsersCreate
   :<|> Page.adminSettingsGaPClassesView
   :<|> Page.adminSettingsGaPClassesCreate
+  :<|> Page.adminSettingsGaPUserEdit
   :<|> Page.adminEventsProtocol
 
 type AulaTesting =

@@ -16,6 +16,7 @@ module Arbitrary
     , arbitrary
     , arb
     , arbName
+    , schoolClasses
     ) where
 
 import Control.Applicative ((<**>))
@@ -102,6 +103,9 @@ instance Arbitrary PageAdminSettingsQuorum where
 
 instance Arbitrary PageAdminSettingsGaPUsersView where
     arbitrary = PageAdminSettingsGaPUsersView <$> arb
+
+instance Arbitrary PageAdminSettingsGaPUsersEdit where
+    arbitrary = PageAdminSettingsGaPUsersEdit <$> arb <*> arb
 
 instance Arbitrary PageAdminSettingsGaPUsersCreate where
     arbitrary = pure PageAdminSettingsGaPUsersCreate
@@ -194,10 +198,13 @@ instance Arbitrary IdeaSpace where
     arbitrary = garbitrary
 
 instance Arbitrary SchoolClass where
-    arbitrary = schoolClass <$> year <*> name
-      where
-        year = elements [2012..2020]
-        name = elements [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
+    arbitrary = elements schoolClasses
+
+schoolClasses :: [SchoolClass]
+schoolClasses = schoolClass <$> years <*> names
+  where
+    years = [2012..2020]
+    names = [ cs $ show age <> [branch] | age <- [1..12 :: Int], branch <- ['a'..'e'] ]
 
 instance Arbitrary ProtoTopic where
     arbitrary =
@@ -263,6 +270,12 @@ instance Arbitrary Quorums where
     arbitrary = garbitrary
 
 instance Arbitrary PermissionContext where
+    arbitrary = garbitrary
+
+instance Arbitrary Role where
+    arbitrary = garbitrary
+
+instance Arbitrary EditUser where
     arbitrary = garbitrary
 
 -- FIXME: instance Arbitrary Delegation

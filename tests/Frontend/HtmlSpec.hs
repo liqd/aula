@@ -9,12 +9,12 @@
 
 module Frontend.HtmlSpec where
 
-import Control.Lens ((^.), set)
+import Control.Arrow((&&&))
+import Control.Lens ((^.), set, view)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except
 import Data.List
 import Data.Maybe (fromMaybe)
-import Data.String
 import Data.String.Conversions
 import Data.Typeable (Typeable, typeOf)
 import Lucid (Html, ToHtml, toHtml, renderText)
@@ -29,7 +29,7 @@ import Text.Digestive.View
 import qualified Data.Text.Lazy as LT
 
 import Action
-import Arbitrary (arb)
+import Arbitrary (arb, schoolClasses)
 import Data.UriPath (absoluteUriPath)
 import Frontend.Core
 import Frontend.Page
@@ -71,6 +71,7 @@ spec = do
         , F (arb :: Gen MoveIdeasToTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
+--        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
         ]
 
 
@@ -95,16 +96,15 @@ spec = do
 -- Since the item descriptions are available only as 'Html', not as text, and 'Html' doesn't have
 -- 'Eq', we need to apply another trick and transform both the category value and the item
 -- description to 'LT'.
-selectCategoryValue :: ST -> View (Html ()) -> Category -> ST
-selectCategoryValue ref view cat = case find test choices of Just (i, _, _) -> value i
+-- TODO: Rewrite the comment above ^^
+selectValue :: Eq a => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> ST
+selectValue ref v xs x = case find test choices of Just (i, _, _) -> value i
   where
-    ref'    = absoluteRef ref view
+    ref'    = absoluteRef ref v
     value i = ref' <> "." <> i
-    choices = fieldInputChoice ref view
-    test (_, scat :: Html (), _) = showCategoryValue cat == renderText scat
-
-    showCategoryValue :: IsString s => Category -> s
-    showCategoryValue ((`lookup` categoryValues) -> Just v) = v
+    choices = fieldInputChoice ref v
+    test (_, sx :: Html (), _) = showValue x == renderText sx
+    showValue ((`lookup` xs) -> Just y) = y
 
 -- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
 class PayloadToEnv a where
@@ -123,10 +123,10 @@ payloadToEnv _ _ [""]       = pure []
 payloadToEnv v a ["", path] = payloadToEnvMapping v a path
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnvMapping view (ProtoIdea t (Markdown d) c _is) = \case
+    payloadToEnvMapping v (ProtoIdea t (Markdown d) c _is) = \case
         "title"         -> pure [TextInput t]
         "idea-text"     -> pure [TextInput d]
-        "idea-category" -> pure [TextInput $ selectCategoryValue "idea-category" view c]
+        "idea-category" -> pure [TextInput $ selectValue "idea-category" v categoryValues c]
 
 instance PayloadToEnv LoginFormData where
     payloadToEnvMapping _ (LoginFormData name pass) = \case
@@ -164,6 +164,13 @@ instance PayloadToEnv Quorums where
         "school-quorum" -> pure [TextInput (cs $ show school)]
         "class-quorum"  -> pure [TextInput (cs $ show clss)]
 
+instance PayloadToEnv EditUser where
+    payloadToEnvMapping v (EditUser r c) = \case
+        "user-role"  -> pure [TextInput $ selectValue "user-role" v roleValues r]
+        -- FIXME: Selection does not work for composite types like school class.
+        "user-class" -> pure [TextInput $ selectValue "user-class" v classes c]
+      where
+        classes = (id &&& cs . view className) <$> schoolClasses
 
 ----------------------------------------------------------------------
 -- machine room
@@ -276,3 +283,6 @@ instance ArbFormPageResult MoveIdeasToTopic where
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
         pure $ map (^. _Id) ideas
+
+instance ArbFormPageResult PageAdminSettingsGaPUsersEdit where
+    arbFormPageResult _ = arbitrary
