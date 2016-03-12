@@ -46,6 +46,7 @@ createRandomNoMeta l = do
                                      `Beside` PageShow x))
 
 -- | Generate one arbitrary item of each type (idea, user, ...)
+-- plus one extra user for logging test.
 --
 -- Note that no user is getting logged in by this code.
 genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
@@ -58,8 +59,12 @@ genInitialTestDb = do
     firstUser <- addFirstUser ( (protoUserLogin .~ Just (UserLogin "admin"))
                               . (protoUserPassword .~ Just (UserPassInitial "pssst"))
                               $ protoU )
+    protoU2 <- genArbitrary
+    user2 <- addUser firstUser ( (protoUserLogin .~ Just (UserLogin "admin2"))
+                               . (protoUserPassword .~ Just (UserPassInitial "pssst2"))
+                               $ protoU2 )
     _wildIdea <- addIdea firstUser =<< genArbitrary
-    topicIdea <- addIdea firstUser =<< genArbitrary
+    topicIdea <- addIdea user2 =<< genArbitrary
     _topic <- addTopic firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
 
