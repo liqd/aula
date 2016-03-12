@@ -70,7 +70,7 @@ type AulaTop =
 
 aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
-       enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
+       enter (Nat runAction) (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (Config.config ^. htmlStatic)
@@ -78,11 +78,6 @@ aulaTop (Nat runAction) =
   where
     proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
     proxy = Proxy
-
-    -- FIXME: Login shouldn't happen here
-    runActionForceLogin = Nat $ \action -> runAction $ do
-        Action.login adminUsernameHack
-        action
 
     waiServeDirectory :: FilePath -> Application
     waiServeDirectory =
