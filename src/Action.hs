@@ -116,6 +116,7 @@ class Monad m => ActionUserHandler m where
     -- | Make the user log out
     logout :: m ()
 
+-- | FIXME: every login changes all other logins (replaces the previous one)
 instance PersistM r => ActionUserHandler (Action r) where
     login uLogin = do
         put $ UserLoggedIn uLogin "session"
@@ -178,8 +179,8 @@ type ActionExcept = ServantErr
 -- | Creates a natural transformation from Action to the servant handler monad.
 --
 -- FIXME:
--- - The ability to change the state is missing.
--- - The state should be available after run.
+-- - The ability to change the state is missing. FIXME: which state? login modifes UserState all right
+-- - The state should be available after run. FIXME: which state? what for?
 mkRunAction :: (r :~> IO) -> UserState -> (Action r :~> ExceptT ServantErr IO)
 mkRunAction persistNat = \s -> Nat (run s)
   where
@@ -210,7 +211,7 @@ modifyCurrentUser f =
 loggedInUser :: (ActionUserHandler m) => m UserLogin
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
-    UserLoggedIn user _session -> return user
+    UserLoggedIn uLogin _session -> return uLogin
 
 
 ----------------------------------------------------------------------

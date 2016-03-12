@@ -41,6 +41,7 @@ module Persistent.Api
     , getUsers
     , addUser
     , addFirstUser
+    , mkMetaInfo
     , mkUserLogin
     , mkRandomPassword
     , modifyUser
@@ -235,21 +236,26 @@ nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
+-- No 'FromProto' instance, since this is more complex, due to the possible
+-- auto-generating of logins and passwords.
+userFromProto :: MetaInfo User -> UserLogin -> UserPass -> Proto User -> User
+userFromProto metainfo uLogin uPassword proto = User
+    { _userMeta      = metainfo
+    , _userLogin     = uLogin
+    , _userFirstName = proto ^. protoUserFirstName
+    , _userLastName  = proto ^. protoUserLastName
+    , _userAvatar    = "http://no.avatar/"
+    , _userGroups    = proto ^. protoUserGroups
+    , _userPassword  = uPassword
+    , _userEmail     = proto ^. protoUserEmail
+    }
+
 addUser :: User -> Proto User -> PersistM m => m User
 addUser cUser proto = do
     metainfo  <- nextMetaInfo cUser
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
-    let user = User
-          { _userMeta      = metainfo
-          , _userLogin     = uLogin
-          , _userFirstName = proto ^. protoUserFirstName
-          , _userLastName  = proto ^. protoUserLastName
-          , _userAvatar    = "http://no.avatar/"
-          , _userGroups    = proto ^. protoUserGroups
-          , _userPassword  = uPassword
-          , _userEmail     = proto ^. protoUserEmail
-          }
+    let user = userFromProto metainfo uLogin uPassword proto
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
@@ -258,29 +264,13 @@ addUser cUser proto = do
 addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
     now <- Timestamp <$> liftIO getCurrentTime
-    let uid = AUID 0
-        oid = AUID 0
-        uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
+    let uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
         uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
-        metainfo = MetaInfo
-            { _metaId              = oid
-            , _metaCreatedBy       = uid
-            , _metaCreatedByLogin  = uLogin
-            , _metaCreatedByAvatar = "http://no.avatar/"
-            , _metaCreatedAt       = now
-            , _metaChangedBy       = uid
-            , _metaChangedAt       = now
-            }
-        user = User
-          { _userMeta      = metainfo
-          , _userLogin     = uLogin
-          , _userFirstName = proto ^. protoUserFirstName
-          , _userLastName  = proto ^. protoUserLastName
-          , _userAvatar    = "http://no.avatar/"
-          , _userGroups    = proto ^. protoUserGroups
-          , _userPassword  = uPassword
-          , _userEmail     = proto ^. protoUserEmail
-          }
+        uid = AUID 0
+        oid = AUID 0
+        cUser = user  -- the user creates himself
+        metainfo = mkMetaInfo cUser uid now oid
+        user = userFromProto metainfo uLogin uPassword proto
 
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
@@ -339,19 +329,18 @@ instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
 -- | So far `mkMetaInfo` is only used by `nextMetaInfo`.
-mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
-mkMetaInfo cUser now oid = MetaInfo
+mkMetaInfo :: User -> AUID User -> Timestamp -> AUID a -> MetaInfo a
+mkMetaInfo cUser uid now oid = MetaInfo
     { _metaId              = oid
-    , _metaCreatedBy       = cUser ^. _Id
+    , _metaCreatedBy       = uid
     , _metaCreatedByLogin  = cUser ^. userLogin
     , _metaCreatedByAvatar = cUser ^. userAvatar
     , _metaCreatedAt       = now
-    , _metaChangedBy       = cUser ^. _Id
+    , _metaChangedBy       = uid
     , _metaChangedAt       = now
     }
 
--- TODO:
 nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
-nextMetaInfo cUser =
-  mkMetaInfo cUser <$> liftIO (Timestamp <$> getCurrentTime)
-                   <*> nextId
+nextMetaInfo cUser = do
+  now <- Timestamp <$> liftIO getCurrentTime
+  mkMetaInfo cUser (cUser ^. _Id) now <$> nextId
