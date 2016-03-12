@@ -272,6 +272,7 @@ test-suite spec
       AllModulesSpec
       Frontend.CoreSpec
       Frontend.Page.FileUploadSpec
+      Frontend.Page.LoginSpec
       Frontend.PathSpec
       FrontendSpec
       Persistent.ApiSpec

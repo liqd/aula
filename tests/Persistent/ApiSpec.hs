@@ -156,36 +156,6 @@ spec = do
             test id SchoolSpace
             test id (ClassSpace (SchoolClass 2016 "7a"))
 
--- FIXME: move these to ActionSpec or FrontendSpec or somewhere,
--- but somehow import mkEmpty and mkInitial from here.
--- Probably parameterize initialization of frontend by the initial DB.
-{-
-    describe "login" $ do
-        let t rp uLogin predicate = do
-                result <- liftIO . rp $ do
-                    login uLogin
-                    userState
-                result `shouldSatisfy` predicate
-
-        context "on empty database" . before mkEmpty $ do
-            it "will not log you in" $ \(Nat rp) -> t rp "nope" (== UserLoggedOut)
-
-        context "on initial database" . before mkInitial $ do
-            context "if user does not exist" $ do
-                it "will not log you in" $ \(Nat rp) -> do
-                    user:_ <- liftIO $ rp getUsers
-                    t rp ("not" <> (user ^. userLogin)) (== UserLoggedOut)
-
-            context "if user does exist" $ do
-                context "if password is wrong" $ do
-                    it "will not log you in" $ \_rp -> do
-                        pendingWith "this prototype doesn't do this yet."
-
-                context "if password is correct" $ do
-                    it "will indeed log you in (yeay)" $ \(Nat rp) -> do
-                        user:_ <- liftIO $ rp getUsers
-                        t rp (user ^. userLogin) (/= UserLoggedOut)
--}
     regression
 
 -- * Regression suite
