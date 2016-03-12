@@ -29,6 +29,7 @@ module Action
       -- * user handling
     , currentUser
     , modifyCurrentUser
+    , noCurrentUser
 
       -- * user state
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
@@ -202,6 +203,7 @@ mkRunAction persistNat = Nat run
            return $ UserLoggedIn uLogin "session"
       put uState
 
+
 ----------------------------------------------------------------------
 -- Action Combinators
 
@@ -217,11 +219,14 @@ modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) 
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
 
+noCurrentUser :: ActionUserHandler m => m Bool
+noCurrentUser = (UserLoggedOut ==) <$> userState
+
 
 ----------------------------------------------------------------------
 -- Action Helpers
 
-loggedInUser :: (ActionUserHandler m) => m UserLogin
+loggedInUser :: ActionUserHandler m => m UserLogin
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
     UserLoggedIn uLogin _session -> return uLogin
