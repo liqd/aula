@@ -256,7 +256,6 @@ aulaTesting =
   :<|> batchCreateUsers
   :<|> (PageShow <$> Action.persistent mkRandomPassword)
 
-
 ----------------------------------------------------------------------
 -- error handling in servant / wai
 
