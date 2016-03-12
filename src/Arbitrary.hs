@@ -697,7 +697,11 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
         (userAvatar .~ avatar) <$> addUser (ProtoUser Nothing fnam lnam [role] Nothing Nothing)
 
 instance Arbitrary DelegationNetwork where
-    arbitrary = pure $ unsafePerformIO fishDelegationNetworkIO
+    arbitrary = pure fishDelegationNetworkUnsafe
+
+{-# NOINLINE fishDelegationNetworkUnsafe #-}
+fishDelegationNetworkUnsafe :: DelegationNetwork
+fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
