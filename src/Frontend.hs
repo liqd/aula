@@ -30,7 +30,7 @@ import Thentos.Prelude
 
 import qualified Data.ByteString.Builder as Builder
 
-import Action (Action, mkRunAction, UserState(..))
+import Action (Action, mkRunAction)
 import Config
 import CreateRandom
 import Frontend.Core
@@ -52,7 +52,7 @@ runFrontend cfg = do
         proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
     -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve proxy . aulaTop $ action UserLoggedOut
+    runSettings settings . catch404 . serve proxy . aulaTop $ action
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)

@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE ViewPatterns               #-}
@@ -37,7 +38,7 @@ module Action
     )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
@@ -181,13 +182,25 @@ type ActionExcept = ServantErr
 -- FIXME:
 -- - The ability to change the state is missing. FIXME: which state? login modifes UserState all right
 -- - The state should be available after run. FIXME: which state? what for?
-mkRunAction :: (r :~> IO) -> UserState -> (Action r :~> ExceptT ServantErr IO)
-mkRunAction persistNat = \s -> Nat (run s)
+mkRunAction :: forall r. PersistM r
+            => (r :~> IO) -> Action r :~> ExceptT ServantErr IO
+mkRunAction persistNat = Nat run
   where
-    run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
+    run = ExceptT . fmap (view _1) . runRWSTflip persistNat UserLoggedOut . runExceptT . (setCurrentUser >>) . unAction
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
-
+    setCurrentUser :: ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) ()
+    setCurrentUser = do
+      mcurrentUID <- liftIO . atomically $ readTVar fakeCookieTVar
+      uState <- case mcurrentUID of
+         Nothing -> return UserLoggedOut
+         Just uid -> do
+           muser <- liftIO . unNat persistNat $ findUser uid
+           let uLogin = case muser of
+                 Nothing -> error "mkRunAction: currently logged in user not in DB"
+                 Just user -> user ^. userLogin
+           return $ UserLoggedIn uLogin "session"
+      put uState
 
 ----------------------------------------------------------------------
 -- Action Combinators

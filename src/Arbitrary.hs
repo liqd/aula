@@ -708,7 +708,7 @@ fishDelegationNetworkIO = do
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         [Admin] (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction persist UserLoggedOut
+    let (Nat ac) = mkRunAction persist
     either (error . ppShow) id <$> runExceptT
         (ac (Action.login "admin" >> fishDelegationNetworkAction))
 
