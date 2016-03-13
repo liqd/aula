@@ -416,16 +416,27 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
         <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
         <*> getSchoolClasses
 
-    editUser (EditUser role clss) = do
-        let isSelectedClass (Student clss')    = clss == clss'
-            isSelectedClass (ClassGuest clss') = clss == clss'
-            isSelectedClass _                  = False
+    editUser e = persistent $ modifyUser uid (userGroups %~ replaceUserRole e)
 
-        let addGroup gs = case role of
-                RoleStudent -> Student clss : gs
-                RoleGuest   -> ClassGuest clss : gs
+-- | Replaces the user role for a given class in the group list, if there is no
+-- student role in the same year. Otherwise it leaves the the user in its class.
+replaceUserRole :: EditUser -> [Group] -> [Group]
+replaceUserRole (EditUser role clss) gs
+  | studentInSameYear = gs
+  | otherwise = addGroup . filter (not . isSelectedClass) $ gs
+  where
+    studentInSameYear = isJust $ find (studentInSameYear' (_classSchoolYear clss)) gs
 
-        persistent $ modifyUser uid (userGroups %~ addGroup . filter (not . isSelectedClass))
+    studentInSameYear' year (Student c) = _classSchoolYear c == year
+    studentInSameYear' _ _              = False
+
+    isSelectedClass (Student clss')    = clss == clss'
+    isSelectedClass (ClassGuest clss') = clss == clss'
+    isSelectedClass _                  = False
+
+    addGroup xs = case role of
+        RoleStudent -> Student clss : xs
+        RoleGuest   -> ClassGuest clss : xs
 
 getSchoolClasses :: PersistM m => m [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
