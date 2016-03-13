@@ -408,7 +408,7 @@ adminSettingsGaPClassesCreate :: ActionM r m => m (Frame PageAdminSettingsGaPCla
 adminSettingsGaPClassesCreate =
     makeFrame PageAdminSettingsGaPClassesCreate
 
-adminSettingsGaPUserEdit :: ActionM r m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit ST) m
+adminSettingsGaPUserEdit :: ActionM r m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
     editUserPage = persistent $
