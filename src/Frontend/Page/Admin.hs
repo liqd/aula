@@ -29,7 +29,8 @@ data PageAdminSettingsDurations =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsDurations where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsDurations = PASD
+    pagePath _ = U.TopMain . U.Admin $ U.AdminDuration
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =

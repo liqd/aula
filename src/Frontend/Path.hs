@@ -44,6 +44,7 @@ top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
 top (TopStatic p)  = nil </> "static" <> p
 
+-- FIXME: Rename to Path
 data Main =
     ListSpaces
   | Space IdeaSpace Space
