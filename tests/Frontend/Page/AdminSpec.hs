@@ -17,14 +17,14 @@ spec :: Spec
 spec = do
     let test gen = property . forAllUserGroup gen $ \groups edit ->
                         checkInvariants groups
-                        && (checkInvariants $ replaceUserRole edit groups)
+                        && checkInvariants (replaceUserRole edit groups)
     describe "replaceUserRole" $ do
         it "Student in class stays student in class." . test $ genSafeStudent genProp1
         it "Student in class becomes guest in class." . test $ genSafeStudent genProp2
         it "Guest in class becomes student in class." . test $ genSafeClassGuest genProp3
-        it "Guest in class stays guest in class." . test $ genSafeClassGuest genProp4
+        it "Guest in class stays guest in class."     . test $ genSafeClassGuest genProp4
   where
-    checkInvariants gs = and . map ($ gs) $ [oneRoleClassOnceInv, oneClassStudent]
+    checkInvariants gs = all ($ gs) [oneRoleClassOnceInv, oneClassStudent]
     forAllUserGroup gen f =
         forAll (arb :: Gen User) $ \user ->
             let gs = cleanGroupData . _userGroups $ user
@@ -57,13 +57,12 @@ sameStudentInSameYear _ _ = False
 -- * Only one role in one class.
 -- * A class defined only ones.
 oneRoleClassOnceInv :: [Group] -> Bool
-oneRoleClassOnceInv = and . map ((<= 1) . length) . group . catMaybes . sort . map toClass
+oneRoleClassOnceInv = all ((<= 1) . length) . group . catMaybes . sort . map toClass
 
 -- * User can be student in one class only, and guests in many for a given year.
 oneClassStudent :: [Group] -> Bool
 oneClassStudent =
-    and
-    . map snd -- only values
+    all snd -- only values
     . Map.toList
     . fmap studentForOneClass
     . foldl (\m g -> insert (_classSchoolYear . fromJust . toClass $ g) g m) Map.empty -- group by year
@@ -113,12 +112,12 @@ genProp5 gs = elements . map setToClassGuest $ (schoolClasses \\ guestInClasses 
 -- Prop 6: user becomes a student in a class
 genProp6 gs = elements . map setToStudent $ (schoolClasses \\ studentInClasses gs)
 
-genSafeStudent :: ([Group] -> Gen EditUser) -> ([Group] -> Gen EditUser)
+genSafeStudent :: ([Group] -> Gen EditUser) -> [Group] -> Gen EditUser
 genSafeStudent gen gs
   | null $ studentInClasses gs = genProp6 gs
   | otherwise = gen gs
 
-genSafeClassGuest :: ([Group] -> Gen EditUser) -> ([Group] -> Gen EditUser)
+genSafeClassGuest :: ([Group] -> Gen EditUser) -> [Group] -> Gen EditUser
 genSafeClassGuest gen gs
   | null $ guestInClasses gs = genProp5 gs
   | otherwise = gen gs
