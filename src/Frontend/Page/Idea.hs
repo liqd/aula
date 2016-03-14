@@ -66,50 +66,78 @@ instance ToHtml ViewIdea where
     -- NP: I've avoided here complex conditionals.
     -- The result might be that too much information is displayed.
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
-        h2_ $ idea ^. ideaTitle . html
+        header_ [class_ "detail-header"] $ do
+            a_ [class_ "btn m-back detail-header-back", href_ U.Broken] "Zum Thema"
+            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                ul_ [class_ "pop-menu-list"] $ do
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] $ do
+                            i_ [class_ "icon-pencil"] nil
+                            "bearbeiten"
+                        a_ [href_ U.Broken] $ do
+                            i_ [class_ "icon-sign-out"] nil
+                            "Idee verschieben"
+        div_ [class_ "grid"] $ do
+            div_ [class_ "container-narrow"] $ do
+                h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
+                {- FIXME what was this for ?
+                div_ [class_ "sub-heading"] $ do
+                    idea ^. ideaMeta . to AuthorWidget . html <> " "
+                    idea ^. ideaCategory . showed . html
+                -}
 
-        div_ [id_ "author"]   $ idea ^. ideaMeta . to AuthorWidget . html
-        div_ [id_ "category"] $ idea ^. ideaCategory . showed . html
+                -- von X / X stimmen / X verbesserungvorschläge
+                div_ [class_ "sub-heading"] $ do
+                    when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
+                        "von " <> idea ^. createdBy . showed . html <> "/"
+                        totalVotes ^. showed . html <> " Stimmen" <> "/"
+                        totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                        span_ [class_ "progress-bar m-against"] $ do
+                            span_ [ class_ "progress-bar-progress"
+                            -- FIXME: dummy data
+                                  , style_ ("width: 75%")
+                                  ] $ do
+                                span_ [class_ "progress-bar-votes-for"] "6"
+                                span_ [class_ "progress-bar-votes-against"] "12"
 
-        div_ [id_ "badges"] $ do
-            -- At most one badge should be displayed
-            when (notFeasibleIdea idea) $ span_ [id_ "cross-mark"] ":cross-mark:"
-            when (winningIdea idea)     $ span_ [id_ "medal"] ":medal:"
+                        -- buttons
+                        when (phase == Just PhaseVoting) . div_ [class_ "voting-buttons"] $ do
+                            button_ [class_ "btn-cta voting-button", value_ "yes"]     "dafür"   -- FIXME
+                            button_ [class_ "btn-cta voting-button", value_ "neutral"] "neutral" -- FIXME
+                            button_ [class_ "btn-cta voting-button", value_ "no"]      "dagegen" -- FIXME
 
-        -- von X / X stimmen / X verbesserungvorschläge
-        when (phase >= Just PhaseVoting) . div_ [id_ "votes"] $ do
-            span_ $ "von " <> idea ^. createdBy . showed . html
-            span_ "/"
-            span_ $ totalVotes ^. showed . html <> " Stimmen"
-            span_ "/"
-            span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                div_ [id_ "badges"] $ do
+                    -- At most one badge should be displayed
+                    when (notFeasibleIdea idea) $ span_ [id_ "cross-mark"] ":cross-mark:"
+                    when (winningIdea idea)     $ span_ [id_ "medal"] ":medal:"
 
-        -- visual vote stats
-        when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
-            let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
-                n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
-            div_ $ do
-                span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
-            div_ $ do
-                span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
+                -- visual vote stats
+                {- FIXME plug this in to my nice widget pls
+                when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
+                    let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
+                        n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
+                    div_ $ do
+                        span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
+                    div_ $ do
+                        span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
+                -}
 
-        -- buttons
-        when (phase == Just PhaseVoting) . div_ [id_ "voting"] $ do
-            button_ [value_ "yes"]     "dafür"   -- FIXME
-            button_ [value_ "neutral"] "neutral" -- FIXME
-            button_ [value_ "no"]      "dagegen" -- FIXME
-
-        -- article
-        div_ [id_ "desc"] $ idea ^. ideaDesc . html
+                -- article
+                div_ [class_ "text-markdown"] $ idea ^. ideaDesc . html
 
         -- comments
-        div_ [id_ "comments"] $ do
-            hr_ []
-            span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
-            span_ $ button_ [value_ "create_comment"] "Neuer Verbesserungsvorschlag" -- FIXME
-            hr_ []
+        section_ [class_ "comments"] $ do
+            header_ [class_ "comments-header"] $ do
+                div_ [class_ "grid"] $ do
+                    div_ [class_ "container-narrow"] $ do
+                        h2_ [class_ "comments-header-heading"] $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                        -- FIXME not on design
+                        button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
             for_ (idea ^. ideaComments) $ \c ->
                 PageComment c ^. html
+            -- FIXME dummy content
+            div_ [class_ "comments-body"] $ do
+                nil
       where
         totalVotes    = Set.size $ idea ^. ideaVotes
         totalComments = Set.size $ idea ^. ideaComments

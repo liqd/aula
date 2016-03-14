@@ -92,7 +92,7 @@ instance ToHtml PageIdeasOverview where
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
-                span_ "WILDE IDEEN"
+                span_ [class_ "sub-heading"] "WILDE IDEEN"
                 "Was soll sich verändern?"
             p_ [class_ "sub-header"] . span_ $
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
