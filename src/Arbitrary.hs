@@ -117,6 +117,9 @@ instance Arbitrary CreateTopic where
 instance Arbitrary MoveIdeasToTopic where
     arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
 
+instance Arbitrary EditTopic where
+    arbitrary = pure EditTopic
+
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
 

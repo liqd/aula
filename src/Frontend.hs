@@ -174,6 +174,7 @@ type AulaSpace =
        -- create new idea inside topic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "edit" :> GetH (Frame EditTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote --FIXME: Change Type
 
@@ -193,6 +194,7 @@ aulaSpace space =
   :<|> Page.createTopic space []
   :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
+  :<|> error "api not implemented: topic/:topic/edit"
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 

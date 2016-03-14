@@ -11,8 +11,10 @@ module Frontend.Page.Topic
     , ViewTopicTab(..)
     , CreateTopic(..)
     , MoveIdeasToTopic(..)
+    , EditTopic(..)
     , viewTopic
     , createTopic
+    , editTopic
     , moveIdeasToTopic )
 where
 
@@ -55,13 +57,20 @@ data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
 instance Page CreateTopic where
     isPrivatePage _ = True
 
--- | 10.2 Create topic: Move ideas to topic
+-- | 10.2 Create topic: Move ideas to topic (Edit topic)
 data MoveIdeasToTopic = MoveIdeasToTopic IdeaSpace (AUID Topic) [Idea]
   deriving (Eq, Show, Read)
 
 instance Page MoveIdeasToTopic where
     isPrivatePage _ = True
 
+-- | 10.3 ???
+-- FIXME: Which page is this in the click-dummy?
+data EditTopic = EditTopic
+  deriving (Eq, Show, Read)
+
+instance Page EditTopic where
+    isPrivatePage _ = True
 
 ----------------------------------------------------------------------
 -- templates
@@ -81,6 +90,9 @@ tabLink topic curTab targetTab =
            , class_ $ tabSelected curTab targetTab
            ]
 
+instance ToHtml EditTopic where
+    toHtmlRaw = toHtml
+    toHtml p@EditTopic = semanticDiv p "Edit Topic" -- FIXME
 
 -- FIXME: how do we display a topic in the finished phase?
 -- Is this the same the result phase?
@@ -188,3 +200,6 @@ moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
     getPage = MoveIdeasToTopic space topicId <$> persistent (findWildIdeasBySpace space)
     addIdeas ideas = persistent $ Persistent.moveIdeasToTopic ideas (Just topicId)
+
+editTopic :: ActionM r m => IdeaSpace -> AUID Topic -> m (Frame EditTopic)
+editTopic _ _ = makeFrame EditTopic
