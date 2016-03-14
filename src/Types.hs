@@ -258,7 +258,6 @@ phaseName = \case
 ----------------------------------------------------------------------
 -- user
 
--- | FIXME: introduce newtypes 'UserLogin', 'UserFirstName', 'UserLastName'?
 data User = User
     { _userMeta      :: MetaInfo User
     , _userLogin     :: UserLogin

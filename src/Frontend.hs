@@ -30,7 +30,7 @@ import Thentos.Prelude
 
 import qualified Data.ByteString.Builder as Builder
 
-import Action (Action, mkRunAction, UserState(..))
+import Action (Action, mkRunAction)
 import Config
 import CreateRandom
 import Frontend.Core
@@ -51,7 +51,8 @@ runFrontend cfg = do
     let action = mkRunAction persist
         proxy  = Proxy :: Proxy AulaTop
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
-    runSettings settings . catch404 . serve proxy . aulaTop $ action UserLoggedOut
+    -- Note that no user is being logged in anywhere here.
+    runSettings settings . catch404 . serve proxy . aulaTop $ action
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
@@ -69,7 +70,7 @@ type AulaTop =
 
 aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
-       enter runActionForceLogin (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
+       enter (Nat runAction) (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
   :<|> (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (Config.config ^. htmlStatic)
@@ -77,11 +78,6 @@ aulaTop (Nat runAction) =
   where
     proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
     proxy = Proxy
-
-    -- FIXME: Login shouldn't happen here
-    runActionForceLogin = Nat $ \action -> runAction $ do
-        Action.login adminUsernameHack
-        action
 
     waiServeDirectory :: FilePath -> Application
     waiServeDirectory =
@@ -261,7 +257,6 @@ aulaTesting =
 
   :<|> batchCreateUsers
   :<|> (PageShow <$> Action.persistent mkRandomPassword)
-
 
 ----------------------------------------------------------------------
 -- error handling in servant / wai

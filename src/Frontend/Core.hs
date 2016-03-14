@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE MultiWayIf           #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -117,12 +118,15 @@ data Frame body = Frame User body | PublicFrame body
 data Frame' body = Frame' User (Html ()) body | PublicFrame' (Html ()) body
   deriving (Functor)
 
-makeFrame :: (ActionPersist r m, ActionUserHandler m, Page p)
+makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
-makeFrame p
-  | isPrivatePage p = flip Frame p <$> currentUser
-  | otherwise       = return $ PublicFrame p
+makeFrame p = do
+  isli <- isLoggedIn
+  if | not isli && isPrivatePage p -> redirect "/login"
+     | isPrivatePage p             -> flip Frame p <$> currentUser
+     | otherwise                   -> return $ PublicFrame p
 
+-- FIXME: as above
 makeFrame' :: (ActionPersist r m, ActionUserHandler m, Page p)
           => Html () -> p -> m (Frame' p)
 makeFrame' hdrs p

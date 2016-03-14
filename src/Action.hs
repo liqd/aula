@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE ViewPatterns               #-}
@@ -28,6 +29,7 @@ module Action
       -- * user handling
     , currentUser
     , modifyCurrentUser
+    , isLoggedIn
 
       -- * user state
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
@@ -37,6 +39,7 @@ module Action
     )
 where
 
+import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
@@ -45,15 +48,17 @@ import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Data.Char (ord)
 import Data.String.Conversions (ST, LBS)
-import Persistent
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
-import Types
+import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
+
+import Persistent
+import Types
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -67,6 +72,7 @@ import Test.QuickCheck (arbitrary, generate)
 data UserState
     = UserLoggedOut
     | UserLoggedIn { _username :: UserLogin, _sessionCookie :: ST }
+  deriving (Show, Eq)
 
 makeLenses ''UserState
 
@@ -104,12 +110,6 @@ instance PersistM r => ActionPersist r (Action r) where
 instance MonadIO (Action r) where
     liftIO = Action . liftIO
 
-instance PersistM r => PersistM (Action r) where
-    -- getDb :: AulaGetter a -> m a
-    getDb = persistent . getDb
-    -- modifyDb :: AulaSetter a -> (a -> a) -> m ()
-    modifyDb setter = persistent . modifyDb setter
-
 class Monad m => ActionUserHandler m where
     -- | Make the user logged in
     login  :: UserLogin -> m ()
@@ -118,15 +118,21 @@ class Monad m => ActionUserHandler m where
     -- | Make the user log out
     logout :: m ()
 
+-- | FIXME: every login changes all other logins (replaces the previous one)
 instance PersistM r => ActionUserHandler (Action r) where
-    login user = do
-        put $ UserLoggedIn user "session"
-        persistent $ loginUser user
+    login uLogin = do
+        put $ UserLoggedIn uLogin "session"
+        muser <- persistent $ findUserByLogin uLogin
+        case muser of
+          Nothing ->
+            error $ "ActionUserHandler.login: no such user" <> show uLogin
+          Just user ->
+            liftIO . atomically $ writeTVar fakeCookieTVar (Just $ view _Id user)
 
     userState = get
 
     logout = do
-        currentUser >>= persistent . logoutUser . view userLogin
+        liftIO . atomically $ writeTVar fakeCookieTVar Nothing
         put UserLoggedOut
 
 class MonadError ActionExcept m => ActionError m
@@ -139,6 +145,14 @@ instance GenArbitrary r => GenArbitrary (Action r) where
 
 ----------------------------------------------------------------------
 -- concrete monad type; user state
+
+-- FIXME: Until we have cookies, we get the logged-in user from this TVar.
+-- When we support cookies, we will obtain tokens from them and look up
+-- session from the token in the persistent DB. We will also work
+-- with thentos sessions, not just plain users.
+fakeCookieTVar :: TVar (Maybe (AUID User))
+{-# NOINLINE fakeCookieTVar #-}
+fakeCookieTVar = unsafePerformIO (newTVarIO Nothing)
 
 -- | The actions a user can perform.
 --
@@ -167,14 +181,29 @@ type ActionExcept = ServantErr
 -- | Creates a natural transformation from Action to the servant handler monad.
 --
 -- FIXME:
--- - The ability to change the state is missing.
--- - The state should be available after run.
-mkRunAction :: (r :~> IO) -> UserState -> (Action r :~> ExceptT ServantErr IO)
-mkRunAction persistNat = \s -> Nat (run s)
+-- - The ability to change the state is missing. FIXME: which state? login modifes UserState all right
+-- - The state should be available after run. FIXME: which state? what for?
+mkRunAction :: forall r. PersistM r
+            => (r :~> IO) -> Action r :~> ExceptT ServantErr IO
+mkRunAction persistNat = Nat run
   where
-    run s = ExceptT . fmap (view _1) . runRWSTflip persistNat s . runExceptT . unAction
+    run = ExceptT . fmap (view _1)
+        . runRWSTflip persistNat UserLoggedOut . runExceptT . (setCurrentUser >>) . unAction
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
+
+    setCurrentUser :: ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) ()
+    setCurrentUser = do
+      mcurrentUID <- liftIO . atomically $ readTVar fakeCookieTVar
+      uState <- case mcurrentUID of
+         Nothing -> return UserLoggedOut
+         Just uid -> do
+           muser <- liftIO . unNat persistNat $ findUser uid
+           let uLogin = case muser of
+                 Nothing -> error "mkRunAction: currently logged in user not in DB"
+                 Just user -> user ^. userLogin
+           return $ UserLoggedIn uLogin "session"
+      put uState
 
 
 ----------------------------------------------------------------------
@@ -192,14 +221,17 @@ modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) 
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
 
+isLoggedIn :: ActionUserHandler m => m Bool
+isLoggedIn = (UserLoggedOut /=) <$> userState
+
 
 ----------------------------------------------------------------------
 -- Action Helpers
 
-loggedInUser :: (ActionUserHandler m) => m UserLogin
+loggedInUser :: ActionUserHandler m => m UserLogin
 loggedInUser = userState >>= \case
     UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
-    UserLoggedIn user _session -> return user
+    UserLoggedIn uLogin _session -> return uLogin
 
 
 ----------------------------------------------------------------------

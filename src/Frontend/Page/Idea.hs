@@ -1,6 +1,7 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -15,7 +16,7 @@ module Frontend.Page.Idea
   )
 where
 
-import Action (ActionM, ActionPersist, ActionUserHandler, persistent)
+import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persistent, currentUser)
 import Frontend.Page.Comment
 import Frontend.Prelude
 
@@ -203,7 +204,8 @@ categoryValues = [ (CatRule,        "Regel")
 -- handlers
 
 -- FIXME restrict to the given IdeaSpace
-viewIdea :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
+viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
+    => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
 viewIdea _space ideaId = makeFrame =<< persistent (do
     -- FIXME 404
     Just idea  <- findIdea ideaId
@@ -218,7 +220,9 @@ viewIdea _space ideaId = makeFrame =<< persistent (do
                 pure . Just $ topic ^. topicPhase)
 
 createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea) m
-createIdea space mtopicId = redirectFormHandler (pure $ CreateIdea space mtopicId) (persistent . addIdea)
+createIdea space mtopicId =
+  redirectFormHandler (pure $ CreateIdea space mtopicId)
+  (\protoIdea -> currentUser >>= persistent . flip addIdea protoIdea)
 
 -- FIXME check _space
 editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea) m
