@@ -342,10 +342,10 @@ instance Arbitrary P.AdminPs where
 -- servant-mock
 
 instance Arbitrary a => Arbitrary (FormPage a) where
-    arbitrary = FormPage <$> arb <*> pure (return ()) 
+    arbitrary = FormPage <$> arb <*> pure (return ())
 
 instance Arbitrary a => Arbitrary (Frame a) where
-    arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ] 
+    arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
 
 instance Arbitrary a => Arbitrary (Frame' a)where
     arbitrary = oneof [ Frame' <$> arb <*> pure (pure ()) <*> arb, PublicFrame' (pure ()) <$> arb ]
