@@ -7,7 +7,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures -fno-warn-incomplete-patterns #-}
 
-module Frontend.HtmlSpec where
+module Frontend.CoreSpec where
 
 import Control.Arrow((&&&))
 import Control.Lens ((^.), set, view)
@@ -211,7 +211,7 @@ renderForm (F g) =
 -- via abstraction).
 runAction :: Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
 runAction action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
-                      unNat (mkRunAction rp UserLoggedOut) action
+                      unNat (mkRunAction rp) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
 failOnError = fmap (either (error . show) id) . runExceptT . runAction

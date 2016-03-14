@@ -69,7 +69,7 @@ testApi =
 
 testAppAulaExcept :: IO Application
 testAppAulaExcept = do
-    action <- ($ UserLoggedOut) . mkRunAction <$> Persistent.Implementation.STM.mkRunPersist
+    action <- mkRunAction <$> Persistent.Implementation.STM.mkRunPersist
     let proxy :: Proxy TestApi
         proxy = Proxy
     return $ serve (Proxy :: Proxy TestApi) (enter action $ catchAulaExcept proxy testApi)

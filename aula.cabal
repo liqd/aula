@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.9.1.
+-- This file has been generated from package.yaml by hpack version 0.10.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -210,7 +210,6 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs:
       tests
-    , src
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
@@ -265,43 +264,19 @@ test-suite spec
     , lucid
     , mtl
     , QuickCheck >= 2.8 && <2.9
+    , servant-mock
     , servant-server
     , string-conversions
     , text
     , wreq
   other-modules:
       AllModulesSpec
-      Api.PersistentSpec
-      Frontend.HtmlSpec
+      Frontend.CoreSpec
       Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec
+      Frontend.Page.LoginSpec
       Frontend.PathSpec
       FrontendSpec
+      Persistent.ApiSpec
       TypesSpec
-      Action
-      Api
-      Arbitrary
-      Config
-      CreateRandom
-      Data.UriPath
-      Frontend
-      Frontend.Core
-      Frontend.Page
-      Frontend.Page.Admin
-      Frontend.Page.Comment
-      Frontend.Page.Delegation
-      Frontend.Page.FileUpload
-      Frontend.Page.Idea
-      Frontend.Page.Login
-      Frontend.Page.Overview
-      Frontend.Page.Static
-      Frontend.Page.Topic
-      Frontend.Page.User
-      Frontend.Path
-      Frontend.Prelude
-      Lucid.Missing
-      Persistent
-      Persistent.Api
-      Persistent.Implementation.STM
-      Types
   default-language: Haskell2010

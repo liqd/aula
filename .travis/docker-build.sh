@@ -5,7 +5,13 @@
 # Change to the source directory which is attacehed as docker volume
 cd /liqd/aula
 
-stack install --fast --test --coverage --allow-different-user --pedantic aula
+if [ -z "$1" ] ; then
+    NO_OF_CASES="100"
+else
+    NO_OF_CASES="$1"
+fi
+
+stack install --fast --test --test-arguments "-a ${NO_OF_CASES}" --coverage --allow-different-user --pedantic aula
 
 # FIXME: Coveralls coverage
 # # Test

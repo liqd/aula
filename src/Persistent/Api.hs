@@ -41,6 +41,7 @@ module Persistent.Api
     , getUsers
     , addUser
     , addFirstUser
+    , mkMetaInfo
     , mkUserLogin
     , mkRandomPassword
     , modifyUser
@@ -51,8 +52,6 @@ module Persistent.Api
     , findTopic
     , findTopicsBySpace
     , findUserByLogin
-    , loginUser
-    , logoutUser
     , dbIdeas
     , dbUsers
     , dbTopics
@@ -60,7 +59,6 @@ module Persistent.Api
     , dbIdeaMap
     , dbUserMap
     , dbTopicMap
-    , dbCurrentUser
     , dbElaborationDuration
     , dbVoteDuration
     , dbSchoolQuorum
@@ -96,7 +94,6 @@ data AulaData = AulaData
     , _dbUserMap             :: AMap User
     , _dbTopicMap            :: AMap Topic
     , _dbDelegationMap       :: AMap Delegation
-    , _dbCurrentUser         :: Maybe (AUID User)
     , _dbElaborationDuration :: DurationDays
     , _dbVoteDuration        :: DurationDays
     , _dbSchoolQuorum        :: Int
@@ -124,16 +121,17 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil nil Nothing 21 21 30 3 0
+emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
 -- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
 class MonadIO m => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
 
-addDb :: (HasMetaInfo a, FromProto a) => AulaSetter (AMap a) -> Proto a -> PersistM m => m a
-addDb l pa = do
-    a  <- fromProto pa <$> nextMetaInfo
+addDb :: (HasMetaInfo a, FromProto a)
+      => User -> AulaSetter (AMap a) -> Proto a -> PersistM m => m a
+addDb cUser l pa = do
+    a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
@@ -164,14 +162,14 @@ addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: Proto Idea -> PersistM m => m Idea
-addIdea = addDb dbIdeaMap
+addIdea :: User -> Proto Idea -> PersistM m => m Idea
+addIdea cUser = addDb cUser dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
 findIdea = findInById dbIdeas
 
 findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
-findIdeasByUserId user = findAllIn dbIdeas (\i -> i ^. createdBy == user)
+findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
@@ -199,9 +197,9 @@ moveIdeasToTopic ideaIds topicId =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaTopic .~ topicId
 
-addTopic :: Proto Topic -> PersistM m => m Topic
-addTopic pt = do
-    t <- addDb dbTopicMap pt
+addTopic :: User -> Proto Topic -> PersistM m => m Topic
+addTopic cUser pt = do
+    t <- addDb cUser dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
@@ -210,8 +208,8 @@ addTopic pt = do
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
-addDelegation :: Proto Delegation -> PersistM m => m Delegation
-addDelegation = addDb dbDelegationMap
+addDelegation :: User -> Proto Delegation -> PersistM m => m Delegation
+addDelegation cUser = addDb cUser dbDelegationMap
 
 findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -231,14 +229,6 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
 
--- | FIXME: anyone can login
--- | FIXME: every login changes all other logins
-loginUser :: UserLogin -> PersistM m => m ()
-loginUser login = modifyDb dbCurrentUser . const . fmap (view _Id) =<< findUserByLogin login
-
-logoutUser :: UserLogin -> PersistM m => m ()
-logoutUser _userLogin = modifyDb dbCurrentUser $ const Nothing
-
 -------------------------------------------------------------------
 
 nextId :: PersistM m => m (AUID a)
@@ -246,24 +236,26 @@ nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
-currentUser :: PersistM m => m (AUID User)
-currentUser = (\(Just u) -> u) <$> getDb dbCurrentUser
+-- No 'FromProto' instance, since this is more complex, due to the possible
+-- auto-generating of logins and passwords.
+userFromProto :: MetaInfo User -> UserLogin -> UserPass -> Proto User -> User
+userFromProto metainfo uLogin uPassword proto = User
+    { _userMeta      = metainfo
+    , _userLogin     = uLogin
+    , _userFirstName = proto ^. protoUserFirstName
+    , _userLastName  = proto ^. protoUserLastName
+    , _userAvatar    = "http://no.avatar/"
+    , _userGroups    = proto ^. protoUserGroups
+    , _userPassword  = uPassword
+    , _userEmail     = proto ^. protoUserEmail
+    }
 
-addUser :: Proto User -> PersistM m => m User
-addUser proto = do
-    metainfo  <- nextMetaInfo
+addUser :: User -> Proto User -> PersistM m => m User
+addUser cUser proto = do
+    metainfo  <- nextMetaInfo cUser
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
-    let user = User
-          { _userMeta      = metainfo
-          , _userLogin     = uLogin
-          , _userFirstName = proto ^. protoUserFirstName
-          , _userLastName  = proto ^. protoUserLastName
-          , _userAvatar    = "http://no.avatar/"
-          , _userGroups    = proto ^. protoUserGroups
-          , _userPassword  = uPassword
-          , _userEmail     = proto ^. protoUserEmail
-          }
+    let user = userFromProto metainfo uLogin uPassword proto
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
@@ -272,29 +264,13 @@ addUser proto = do
 addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
     now <- Timestamp <$> liftIO getCurrentTime
-    let uid = AUID 0
-        oid = AUID 0
-        uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
+    uid <- nextId
+    let uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
         uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
-        metainfo = MetaInfo
-            { _metaId              = oid
-            , _metaCreatedBy       = uid
-            , _metaCreatedByLogin  = uLogin
-            , _metaCreatedByAvatar = "http://no.avatar/"
-            , _metaCreatedAt       = now
-            , _metaChangedBy       = uid
-            , _metaChangedAt       = now
-            }
-        user = User
-          { _userMeta      = metainfo
-          , _userLogin     = uLogin
-          , _userFirstName = proto ^. protoUserFirstName
-          , _userLastName  = proto ^. protoUserLastName
-          , _userAvatar    = "http://no.avatar/"
-          , _userGroups    = proto ^. protoUserGroups
-          , _userPassword  = uPassword
-          , _userEmail     = proto ^. protoUserEmail
-          }
+        -- the user creates herself
+        cUser = _Id .~ uid $ user
+        metainfo = mkMetaInfo cUser now uid
+        user = userFromProto metainfo uLogin uPassword proto
 
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
     return user
@@ -352,19 +328,18 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
--- | So far `mkMetaInfo` is only used by `nextMetaInfo`.
 mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
-mkMetaInfo user now oid = MetaInfo
+mkMetaInfo cUser now oid = MetaInfo
     { _metaId              = oid
-    , _metaCreatedBy       = user ^. _Id
-    , _metaCreatedByLogin  = user ^. userLogin
-    , _metaCreatedByAvatar = user ^. userAvatar
+    , _metaCreatedBy       = cUser ^. _Id
+    , _metaCreatedByLogin  = cUser ^. userLogin
+    , _metaCreatedByAvatar = cUser ^. userAvatar
     , _metaCreatedAt       = now
-    , _metaChangedBy       = user ^. _Id
+    , _metaChangedBy       = cUser ^. _Id
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: PersistM m => m (MetaInfo a)
-nextMetaInfo = mkMetaInfo <$> (currentUser >>= fmap (fromMaybe (error "no current user")) . findUser)
-                          <*> liftIO (Timestamp <$> getCurrentTime)
-                          <*> nextId
+nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
+nextMetaInfo cUser = do
+  now <- Timestamp <$> liftIO getCurrentTime
+  mkMetaInfo cUser now <$> nextId

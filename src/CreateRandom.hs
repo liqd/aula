@@ -26,10 +26,11 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 -- | Create random entities that have 'MetaInfo' in the Aula Action monad.
 createRandom
     :: ( Arbitrary (Proto a), Show a, FromProto a, Typeable a, HasMetaInfo a
-       , ActionPersist r m, GenArbitrary m)
+       , ActionUserHandler m, ActionPersist r m, GenArbitrary m)
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
-   x <- persistent . addDb l =<< genArbitrary
+   cUser <- currentUser
+   x <- persistent . addDb cUser l =<< genArbitrary
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
@@ -44,7 +45,10 @@ createRandomNoMeta l = do
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
--- | generate one arbitrary item of each type (idea, user, ...)
+-- | Generate one arbitrary item of each type (idea, user, ...)
+-- plus one extra user for logging test.
+--
+-- Note that no user is getting logged in by this code.
 genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
 genInitialTestDb = do
     addIdeaSpaceIfNotExists SchoolSpace
@@ -55,34 +59,32 @@ genInitialTestDb = do
     firstUser <- addFirstUser ( (protoUserLogin .~ Just (UserLogin "admin"))
                               . (protoUserPassword .~ Just (UserPassInitial "pssst"))
                               $ protoU )
-    loginUser $ firstUser ^. userLogin
-    _wildIdea <- addIdea =<< genArbitrary
-    topicIdea <- addIdea =<< genArbitrary
-    _topic <- addTopic . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+    protoU2 <- genArbitrary
+    user2 <- addUser firstUser ( (protoUserLogin .~ Just (UserLogin "admin2"))
+                               . (protoUserPassword .~ Just (UserPassInitial "pssst2"))
+                               $ protoU2 )
+    _wildIdea <- addIdea firstUser =<< genArbitrary
+    topicIdea <- addIdea user2 =<< genArbitrary
+    _topic <- addTopic firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
 
 -- FIXME
 frameUserHack :: User
-frameUserHack = User
-    { _userMeta      = frameUserMetaInfo
-    , _userLogin     = "VorNam"
-    , _userFirstName = "Vorname"
-    , _userLastName  = "Name"
-    , _userAvatar    = "https://avatar.com"
-    , _userGroups    = nil
-    , _userPassword  = UserPassInitial ""
-    , _userEmail     = Nothing
-    }
+frameUserHack = user
   where
     sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
-
-    frameUserMetaInfo :: MetaInfo User
-    frameUserMetaInfo = MetaInfo
-        { _metaId              = AUID 1
-        , _metaCreatedBy       = AUID 0
-        , _metaCreatedByLogin  = nil  -- FIXME: take from 'u'
-        , _metaCreatedByAvatar = nil  -- FIXME: take from 'u'
-        , _metaCreatedAt       = sometime
-        , _metaChangedBy       = AUID 0
-        , _metaChangedAt       = sometime
-        }
+    user = User
+      { _userMeta      = metainfo
+      , _userLogin     = "VorNam"
+      , _userFirstName = "Vorname"
+      , _userLastName  = "Name"
+      , _userAvatar    = "https://avatar.com"
+      , _userGroups    = nil
+      , _userPassword  = UserPassInitial ""
+      , _userEmail     = Nothing
+      }
+    uid = AUID 0
+    oid = AUID 1
+    cUser = _Id .~ uid $ user  -- the user creates himself
+    metainfo :: MetaInfo User
+    metainfo = mkMetaInfo cUser sometime oid

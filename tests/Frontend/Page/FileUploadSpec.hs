@@ -56,6 +56,8 @@ spec = describe "file upload" $ do
 
         it "posts users successfully; users will appear under /user" $ \uri -> do
             -- pendingWith "only partially implemented."
+            l <- postWith opts (cs uri <> "/login") [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+            (l ^. responseStatus . statusCode) `shouldBe` 200
             r <- postWith opts (cs uri <> "/testing/file-upload") [classPart, filePart]
             (r ^. responseStatus . statusCode) `shouldBe` 200
             s <- get (cs uri <> "/user")

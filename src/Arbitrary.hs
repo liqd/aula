@@ -16,6 +16,8 @@ module Arbitrary
     , generate
     , arbitrary
     , arb
+    , arbWord
+    , arbPhrase
     , arbName
     , schoolClasses
     , fishDelegationNetworkIO
@@ -116,6 +118,9 @@ instance Arbitrary CreateTopic where
 
 instance Arbitrary MoveIdeasToTopic where
     arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
+
+instance Arbitrary EditTopic where
+    arbitrary = pure EditTopic
 
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
@@ -334,6 +339,24 @@ instance Arbitrary P.UserPs where
 
 instance Arbitrary P.AdminPs where
     arbitrary = garbitrary
+
+----------------------------------------------------------------------
+-- servant-mock
+
+instance Arbitrary a => Arbitrary (FormPage a) where
+    arbitrary = FormPage <$> arb <*> pure (return ())
+
+instance Arbitrary a => Arbitrary (Frame a) where
+    arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
+
+instance Arbitrary a => Arbitrary (Frame' a)where
+    arbitrary = oneof [ Frame' <$> arb <*> pure (pure ()) <*> arb, PublicFrame' (pure ()) <$> arb ]
+
+instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
+    arbitrary = Beside <$> arb <*> arb
+
+instance Arbitrary BatchCreateUsers where
+    arbitrary = pure BatchCreateUsers
 
 ----------------------------------------------------------------------
 -- general-purpose helpers
@@ -698,7 +721,7 @@ fishAvatars =
     , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
     ]
 
-mkFishUser :: (GenArbitrary m, PersistM m, ActionM r m) => URL -> m User
+mkFishUser :: (GenArbitrary m, ActionM r m) => URL -> m User
 mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
         let first_last = cs . takeBaseName . cs $ avatar
             (fnam, lnam) = case ST.findIndex (== '_') first_last of
@@ -707,7 +730,9 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
                           , UserLastName  $ ST.drop (i+1) first_last
                           )
         role <- Student <$> genArbitrary
-        (userAvatar .~ avatar) <$> addUser (ProtoUser Nothing fnam lnam [role] Nothing Nothing)
+        cUser <- currentUser
+        let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
+        persistent $ (userAvatar .~ avatar) <$> addUser cUser pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
@@ -723,13 +748,14 @@ fishDelegationNetworkIO = do
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         [Admin] (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction persist UserLoggedOut
+    let (Nat ac) = mkRunAction persist
     either (error . ppShow) id <$> runExceptT
-        (ac (loginUser "admin" >> fishDelegationNetworkAction))
+        (ac (Action.login "admin" >> fishDelegationNetworkAction))
 
 fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
 fishDelegationNetworkAction = do
     users <- mkFishUser `mapM` fishAvatars
+    cUser <- currentUser
     let -- invariants:
         -- - u1 and u2 are in the same class or ctx is school.
         -- - no cycles  -- FIXME: not implemented!
@@ -745,10 +771,10 @@ fishDelegationNetworkAction = do
 
             if List.null users'
                 then pure []
-                else do
+                else persistent $ do
                     u1  <- liftIO . generate $ elements users'
                     u2  <- liftIO . generate $ elements users'
-                    (:[]) <$> addDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> addDelegation cUser (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . join <$> replicateM 500 mkdel
 

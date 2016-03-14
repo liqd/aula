@@ -85,7 +85,6 @@ tests:
     main: Spec.hs
     source-dirs:
       - tests
-      - src
     dependencies:
       - aula
       - base >=4.8 && <4.9
@@ -97,6 +96,7 @@ tests:
       - lucid
       - mtl
       - QuickCheck >= 2.8 && <2.9
+      - servant-mock
       - servant-server
       - string-conversions
       - text
