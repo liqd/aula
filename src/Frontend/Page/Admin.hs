@@ -418,8 +418,10 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
 
     editUser e = persistent $ modifyUser uid (userGroups %~ replaceUserRole e)
 
--- | Replaces the user role for a given class in the group list, if there is no
--- student role in the same year. Otherwise it leaves the the user in its class.
+-- | Adds group determined by 'EditUser' param to the list of groups.  If the new group replaces an
+-- exiting group, that existing group is removed.  *Definition:* Group @g@ replaces group @h@ iff
+-- both groups are indexed by a class (e.g. 'Student', 'ClassGuest') and the classes of @g@ and @h@
+-- have the same year.
 replaceUserRole :: EditUser -> [Group] -> [Group]
 replaceUserRole (EditUser role clss) gs
   | studentInSameYear = gs
