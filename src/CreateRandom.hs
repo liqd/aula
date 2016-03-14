@@ -85,6 +85,6 @@ frameUserHack = user
       }
     uid = AUID 0
     oid = AUID 1
-    cUser = user  -- the user creates himself
+    cUser = _Id .~ uid $ user  -- the user creates himself
     metainfo :: MetaInfo User
-    metainfo = mkMetaInfo cUser uid sometime oid
+    metainfo = mkMetaInfo cUser sometime oid

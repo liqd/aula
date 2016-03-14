@@ -261,6 +261,8 @@ addUser cUser proto = do
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
+--
+-- FIXME: this only works if @AUID 0@ is not used yet.
 addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
     now <- Timestamp <$> liftIO getCurrentTime
@@ -268,8 +270,8 @@ addFirstUser proto = do
         uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
         uid = AUID 0
         oid = AUID 0
-        cUser = user  -- the user creates himself
-        metainfo = mkMetaInfo cUser uid now oid
+        cUser = _Id .~ uid $ user  -- the user creates herself
+        metainfo = mkMetaInfo cUser now oid
         user = userFromProto metainfo uLogin uPassword proto
 
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
@@ -328,18 +330,18 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
-mkMetaInfo :: User -> AUID User -> Timestamp -> AUID a -> MetaInfo a
-mkMetaInfo cUser uid now oid = MetaInfo
+mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
+mkMetaInfo cUser now oid = MetaInfo
     { _metaId              = oid
-    , _metaCreatedBy       = uid
+    , _metaCreatedBy       = cUser ^. _Id
     , _metaCreatedByLogin  = cUser ^. userLogin
     , _metaCreatedByAvatar = cUser ^. userAvatar
     , _metaCreatedAt       = now
-    , _metaChangedBy       = uid
+    , _metaChangedBy       = cUser ^. _Id
     , _metaChangedAt       = now
     }
 
 nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
 nextMetaInfo cUser = do
   now <- Timestamp <$> liftIO getCurrentTime
-  mkMetaInfo cUser (cUser ^. _Id) now <$> nextId
+  mkMetaInfo cUser now <$> nextId
