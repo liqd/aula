@@ -29,8 +29,8 @@ module Frontend.Core
     , tabSelected
     , html
     , redirect
-    -- * Test only
-    , FormPage(..)
+    -- Test only
+    , FormPage(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
     )
 where
 

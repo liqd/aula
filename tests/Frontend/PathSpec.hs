@@ -56,6 +56,17 @@ spec = do
     mainGen :: Gen Main
     mainGen = arbitrary
 
+
+-- Each path has a handler
+
+mockAulaTop :: IO Application
+mockAulaTop = do
+    return $ serve (Proxy :: Proxy AulaTop) (mock (Proxy :: Proxy AulaTop))
+
+instance Arbitrary a => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPage a)) where
+    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPage a)))
+
+
 -- * UriPath and FromHttpApiData correspondence
 
 data UriPartGen where
@@ -67,11 +78,3 @@ uriPartAndHttpApiDataAreInverses (U g) =
     it (show $ typeOf g) . property . forAll g $ \uriPartData ->
         (Right uriPartData ==) . parseUrlPiece . cs $ uriPart uriPartData
 
--- * All Paths has a handler
-
-mockAulaTop :: IO Application
-mockAulaTop = do
-    return $ serve (Proxy :: Proxy AulaTop) (mock (Proxy :: Proxy AulaTop))
-
-instance Arbitrary a => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPage a)) where
-    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPage a)))

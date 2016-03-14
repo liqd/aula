@@ -41,6 +41,7 @@ import Types
 import qualified Action
 import qualified Persistent.Implementation.STM
 
+
 ----------------------------------------------------------------------
 -- driver
 
@@ -64,9 +65,6 @@ type AulaTop =
   :<|> "samples" :> Raw
   :<|> "static"  :> Raw
   :<|> GetH (Frame ())
-
-aulaTop' :: Server AulaTop
-aulaTop' = undefined
 
 aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
@@ -194,7 +192,7 @@ aulaSpace space =
   :<|> Page.createTopic space []
   :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
-  :<|> Page.editTopic   space -- FIXME
+  :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 
