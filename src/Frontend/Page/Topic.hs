@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -16,7 +17,7 @@ module Frontend.Page.Topic
     , moveIdeasToTopic )
 where
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, currentUser)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUser)
 import Frontend.Prelude hiding (moveIdeasToTopic)
 
 import qualified Persistent
@@ -173,7 +174,8 @@ ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 -- handlers
 
 -- FIXME check the 'space'
-viewTopic :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
+viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+    => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
 viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
 viewTopic _space tab topicId = makeFrame =<< persistent (do
     -- FIXME 404

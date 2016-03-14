@@ -118,14 +118,13 @@ data Frame body = Frame User body | PublicFrame body
 data Frame' body = Frame' User (Html ()) body | PublicFrame' (Html ()) body
   deriving (Functor)
 
-makeFrame :: (ActionPersist r m, ActionUserHandler m, Page p)
+makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
 makeFrame p = do
   noLoggedInUser <- noCurrentUser
-  if | noLoggedInUser && isPrivatePage p ->
-         error "makeFrame: should redirect to login page"  -- FIXME (also below), type is wrong: return $ PublicFrame PageHomeWithLoginPrompt
-     | isPrivatePage p -> flip Frame p <$> currentUser
-     | otherwise -> return $ PublicFrame p
+  if | noLoggedInUser && isPrivatePage p -> redirect "/login"
+     | isPrivatePage p                   -> flip Frame p <$> currentUser
+     | otherwise                         -> return $ PublicFrame p
 
 -- FIXME: as above
 makeFrame' :: (ActionPersist r m, ActionUserHandler m, Page p)

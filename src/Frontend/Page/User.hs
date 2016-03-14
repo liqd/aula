@@ -1,5 +1,6 @@
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -123,7 +124,8 @@ instance ToHtml PageUserProfileCreatedIdeas where
 -- that ensures data consistency, as other persistent computations
 -- can interleave if the compute partial results in more than
 -- one round. Same applies here like 'STM' and 'IO'.
-createdIdeas :: (ActionPersist r m, ActionUserHandler m) => AUID User -> m (Frame PageUserProfileCreatedIdeas)
+createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+    => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = join . persistent $ do
     -- FIXME: 404
     Just user <- findInById dbUsers userId
@@ -147,7 +149,8 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ $ do
             p_ "FIXME: Delegated votes"
 
-delegatedVotes :: (ActionPersist r m, ActionUserHandler m) => AUID User -> m (Frame PageUserProfileDelegatedVotes)
+delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+    => AUID User -> m (Frame PageUserProfileDelegatedVotes)
 delegatedVotes userId = join . persistent $ do
     -- FIXME: 404
     Just user <- findInById dbUsers userId

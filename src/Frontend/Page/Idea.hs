@@ -1,6 +1,7 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -15,7 +16,7 @@ module Frontend.Page.Idea
   )
 where
 
-import Action (ActionM, ActionPersist, ActionUserHandler, persistent, currentUser)
+import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persistent, currentUser)
 import Frontend.Page.Comment
 import Frontend.Prelude
 
@@ -203,7 +204,8 @@ categoryValues = [ (CatRule,        "Regel")
 -- handlers
 
 -- FIXME restrict to the given IdeaSpace
-viewIdea :: (ActionPersist r m, ActionUserHandler m) => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
+viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
+    => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
 viewIdea _space ideaId = makeFrame =<< persistent (do
     -- FIXME 404
     Just idea  <- findIdea ideaId
