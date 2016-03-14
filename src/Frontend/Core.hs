@@ -25,6 +25,7 @@ module Frontend.Core
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
+    , semanticSpan
     , showed
     , tabSelected
     , html
@@ -37,7 +38,6 @@ import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Data.Functor (($>))
 import Data.Set (Set)
-import Data.String (fromString)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid hiding (href_, script_, src_)
@@ -86,6 +86,9 @@ instance ToHtml () where
 -- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
+
+semanticSpan :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
+semanticSpan t = span_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
 ----------------------------------------------------------------------
 -- building blocks
@@ -243,11 +246,10 @@ newtype AuthorWidget a = AuthorWidget (MetaInfo a)
 
 instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
-    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        "["
-        img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
+    toHtml p@(AuthorWidget mi) = semanticSpan p . span_ $ do
+        -- FIXME make img optional
+        -- img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
         mi ^. metaCreatedByLogin . fromUserLogin . html
-        "]"
 
 
 data ListItemIdea = ListItemIdea Bool (Maybe Phase) Idea
