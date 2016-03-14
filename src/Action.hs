@@ -29,7 +29,7 @@ module Action
       -- * user handling
     , currentUser
     , modifyCurrentUser
-    , noCurrentUser
+    , isLoggedIn
 
       -- * user state
     , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
@@ -221,8 +221,8 @@ modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) 
 modifyCurrentUser f =
   currentUser >>= persistent . flip modifyUser f . (^. _Id)
 
-noCurrentUser :: ActionUserHandler m => m Bool
-noCurrentUser = (UserLoggedOut ==) <$> userState
+isLoggedIn :: ActionUserHandler m => m Bool
+isLoggedIn = (UserLoggedOut /=) <$> userState
 
 
 ----------------------------------------------------------------------
