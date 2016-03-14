@@ -25,6 +25,7 @@ import Text.Digestive.View (getForm)
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Set as Set
 import qualified Data.Text.IO as ST
 
 import Arbitrary
@@ -111,8 +112,20 @@ instance (ToHtml p) => ToHtml' (ToHtmlSpecial p) where
 
 instance Arbitrary (ToHtmlSpecial ViewIdea) where
     arbitrary = do
-        i <- arb  -- FIXME: make the result "less empty".
-        p <- arb  -- FIXME: how do we generate one page per phase here?
+        i <- Idea
+                <$> arb
+                <*> arbPhrase
+                <*> arb
+                <*> arb
+                <*> arb
+                <*> pure Nothing
+                <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
+                <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
+                <*> arb
+                <*> pure nil  -- votes
+                <*> pure Nothing
+
+        p <- pure Nothing  -- FIXME: how do we generate one page per phase here?
         return . ToHtmlSpecial $ ViewIdea i p
 
 

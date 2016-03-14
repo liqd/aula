@@ -16,6 +16,8 @@ module Arbitrary
     , generate
     , arbitrary
     , arb
+    , arbWord
+    , arbPhrase
     , arbName
     , schoolClasses
     , fishDelegationNetworkIO
