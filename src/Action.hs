@@ -187,9 +187,11 @@ mkRunAction :: forall r. PersistM r
             => (r :~> IO) -> Action r :~> ExceptT ServantErr IO
 mkRunAction persistNat = Nat run
   where
-    run = ExceptT . fmap (view _1) . runRWSTflip persistNat UserLoggedOut . runExceptT . (setCurrentUser >>) . unAction
+    run = ExceptT . fmap (view _1)
+        . runRWSTflip persistNat UserLoggedOut . runExceptT . (setCurrentUser >>) . unAction
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
+
     setCurrentUser :: ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) ()
     setCurrentUser = do
       mcurrentUID <- liftIO . atomically $ readTVar fakeCookieTVar
