@@ -194,7 +194,7 @@ aulaSpace space =
   :<|> Page.createTopic space []
   :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
-  :<|> error "api not implemented: topic/:topic/edit"
+  :<|> Page.editTopic   space -- FIXME
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 

@@ -48,7 +48,7 @@ spec = do
 
     describe "Paths and handlers" $ do
         beforeAll mockAulaTop $ do
-            it "Every path has a correspondence handler" $ \app -> property . forAll mainGen $ \path ->
+            it "Every path has a handler" $ \app -> property . forAll mainGen $ \path ->
                 flip Wai.property app $ do
                     get (cs . absoluteUriPath $ relPath path) `shouldRespondWith` 200
 
