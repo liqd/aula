@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -24,6 +25,7 @@ import Text.Digestive.View (getForm)
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Set as Set
 import qualified Data.Text.IO as ST
 
 import Arbitrary
@@ -44,7 +46,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasInDiscussion))
     , f (Proxy :: Proxy (ToHtmlDefault ViewTopic))
-    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea))
+    , f (Proxy :: Proxy (ToHtmlSpecial ViewIdea))
     , f (Proxy :: Proxy (ToHtmlForm    CreateIdea))
     , f (Proxy :: Proxy (ToHtmlForm    EditIdea))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreatedIdeas))
@@ -98,6 +100,33 @@ instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
 
 instance Arbitrary p => Arbitrary (ToHtmlForm p) where
     arbitrary = ToHtmlForm <$> arbitrary
+
+
+-- | For page types that need special treatment for arbitrary (like idea detail view with always 2-3
+-- comments).
+data ToHtmlSpecial p = ToHtmlSpecial p
+  deriving (Eq, Ord, Show, Read)
+
+instance (ToHtml p) => ToHtml' (ToHtmlSpecial p) where
+    toHtml' (ToHtmlSpecial p) = toHtml p
+
+instance Arbitrary (ToHtmlSpecial ViewIdea) where
+    arbitrary = do
+        i <- Idea
+                <$> arb
+                <*> arbPhrase
+                <*> arb
+                <*> arb
+                <*> arb
+                <*> pure Nothing
+                <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
+                <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
+                <*> arb
+                <*> pure nil  -- votes
+                <*> pure Nothing
+
+        p <- pure Nothing  -- FIXME: how do we generate one page per phase here?
+        return . ToHtmlSpecial $ ViewIdea i p
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
