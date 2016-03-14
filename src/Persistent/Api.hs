@@ -261,17 +261,15 @@ addUser cUser proto = do
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
---
--- FIXME: this only works if @AUID 0@ is not used yet.
 addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
     now <- Timestamp <$> liftIO getCurrentTime
+    uid <- nextId
     let uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
         uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
-        uid = AUID 0
-        oid = AUID 0
-        cUser = _Id .~ uid $ user  -- the user creates herself
-        metainfo = mkMetaInfo cUser now oid
+        -- the user creates herself
+        cUser = _Id .~ uid $ user
+        metainfo = mkMetaInfo cUser now uid
         user = userFromProto metainfo uLogin uPassword proto
 
     modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
