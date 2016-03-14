@@ -54,18 +54,19 @@ sameStudentInSameYear _ _ = False
 ----------------------------------------------------------------------
 -- invariants
 
--- * Only one role in one class.
--- * A class defined only ones.
+-- * Only one group in one class.
+-- * Each class is present only once.
 oneRoleClassOnceInv :: [Group] -> Bool
 oneRoleClassOnceInv = all ((<= 1) . length) . group . catMaybes . sort . map toClass
 
 -- * User can be student in one class only, and guests in many for a given year.
 oneClassStudent :: [Group] -> Bool
 oneClassStudent =
-    all snd -- only values
-    . Map.toList
+    and
+    . Map.elems
     . fmap studentForOneClass
-    . foldl (\m g -> insert (_classSchoolYear . fromJust . toClass $ g) g m) Map.empty -- group by year
+    . foldl (\m g -> insertToListMap (_classSchoolYear . fromJust . toClass $ g) g m)
+          Map.empty -- group by year
     . filter (isJust . toClass) -- only classes
   where
     studentForOneClass :: [Group] -> Bool
@@ -125,7 +126,7 @@ genSafeClassGuest gen gs
 ----------------------------------------------------------------------
 -- helper
 
-insert :: (Ord k) => k -> a -> Map.Map k [a] -> Map.Map k [a]
-insert k a m = case Map.lookup k m of
+insertToListMap :: (Ord k) => k -> a -> Map.Map k [a] -> Map.Map k [a]
+insertToListMap k a m = case Map.lookup k m of
     Nothing -> Map.insert k [a]    m
     Just as -> Map.insert k (a:as) m
