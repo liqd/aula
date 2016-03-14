@@ -17,6 +17,7 @@ module Arbitrary
     , arbitrary
     , arb
     , arbName
+    , schoolClasses
     , fishDelegationNetworkIO
     , fishDelegationNetworkAction
     , D3DN(..)
@@ -125,6 +126,9 @@ instance Arbitrary PageAdminSettingsQuorum where
 instance Arbitrary PageAdminSettingsGaPUsersView where
     arbitrary = PageAdminSettingsGaPUsersView <$> arb
 
+instance Arbitrary PageAdminSettingsGaPUsersEdit where
+    arbitrary = PageAdminSettingsGaPUsersEdit <$> arb <*> arb
+
 instance Arbitrary PageAdminSettingsGaPUsersCreate where
     arbitrary = pure PageAdminSettingsGaPUsersCreate
 
@@ -216,10 +220,13 @@ instance Arbitrary IdeaSpace where
     arbitrary = garbitrary
 
 instance Arbitrary SchoolClass where
-    arbitrary = schoolClass <$> year <*> name
-      where
-        year = elements [2016]
-        name = elements [ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ]
+    arbitrary = elements schoolClasses
+
+schoolClasses :: [SchoolClass]
+schoolClasses = schoolClass <$> years <*> names
+  where
+    years = [2016]
+    names = [ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ]
 
 instance Arbitrary ProtoTopic where
     arbitrary =
@@ -285,6 +292,12 @@ instance Arbitrary Quorums where
     arbitrary = garbitrary
 
 instance Arbitrary PermissionContext where
+    arbitrary = garbitrary
+
+instance Arbitrary Role where
+    arbitrary = garbitrary
+
+instance Arbitrary EditUser where
     arbitrary = garbitrary
 
 -- FIXME: instance Arbitrary Delegation
@@ -699,7 +712,11 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
         persistent $ (userAvatar .~ avatar) <$> addUser cUser pu
 
 instance Arbitrary DelegationNetwork where
-    arbitrary = pure $ unsafePerformIO fishDelegationNetworkIO
+    arbitrary = pure fishDelegationNetworkUnsafe
+
+{-# NOINLINE fishDelegationNetworkUnsafe #-}
+fishDelegationNetworkUnsafe :: DelegationNetwork
+fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do

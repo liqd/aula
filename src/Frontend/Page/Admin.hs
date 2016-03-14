@@ -8,6 +8,7 @@
 module Frontend.Page.Admin
 where
 
+import Control.Arrow ((&&&))
 import Data.Maybe (mapMaybe)
 
 import qualified Text.Digestive.Form as DF
@@ -50,6 +51,12 @@ data PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreate
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPUsersCreate where
+    isPrivatePage _ = True
+
+data PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEdit User [SchoolClass]
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPUsersEdit where
     isPrivatePage _ = True
 
 data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
@@ -129,6 +136,9 @@ instance ToMenuItem PageAdminSettingsGaPUsersView where
 
 instance ToMenuItem PageAdminSettingsGaPUsersCreate where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserCreate)
+
+instance ToMenuItem PageAdminSettingsGaPUsersEdit where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPClassesView where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
@@ -295,9 +305,9 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
                     td_ "Klasse ????" -- FIXME: Fetch the user's class if exists
-                    td_ "Role ???" -- FIXME: Fetch the user's role
+                    td_ "Rolle ???" -- FIXME: Fetch the user's role
                     td_ "" -- THIS SHOULD LEFT EMPTY
-                    td_ $ a_ [href_ U.ListSpaces] "bearbeiten"
+                    td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
@@ -306,21 +316,19 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
         adminFrame p . semanticDiv p $ do
             toHtml (show p)
 
-
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
         adminFrame p . semanticDiv p $ do
-            button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
             table_ $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [onclick_ U.ListSpaces] "KLASSE ANLEGEN"
+                    th_ $ button_ [onclick_ U.Broken] "KLASSE ANLEGEN"
                     th_ $ input_ [value_ "Klassensuche"]
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     th_ . toHtml $ clss ^. className
                     th_ ""
-                    th_ $ a_ [href_ U.ListSpaces] "bearbeiten"
+                    th_ $ a_ [href_ U.Broken] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPClassesCreate where
@@ -329,6 +337,58 @@ instance ToHtml PageAdminSettingsGaPClassesCreate where
         adminFrame p . semanticDiv p $ do
             toHtml (show p)
 
+data Role
+    = RoleStudent
+    | RoleGuest
+  deriving (Eq, Generic, Show)
+
+instance SOP.Generic Role
+
+data EditUser = EditUser
+    { editUserRole  :: Role
+    , editUserClass :: SchoolClass
+    }
+  deriving (Eq, Generic, Show)
+
+instance SOP.Generic EditUser
+
+roleValues :: IsString s => [(Role, s)]
+roleValues = [ (RoleStudent, "Schüler")
+             , (RoleGuest, "Gast")
+             ]
+
+instance FormPageView PageAdminSettingsGaPUsersEdit where
+    type FormPageResult PageAdminSettingsGaPUsersEdit = EditUser
+
+    formAction (PageAdminSettingsGaPUsersEdit user _classes) =
+        relPath . U.Admin . U.AdminEditUser $ user ^. _Id
+
+    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) =
+        relPath . U.Admin . U.AdminAccess $ PermUserView
+
+    -- FIXME: Show the user's role and class as default in the selections.
+    makeForm (PageAdminSettingsGaPUsersEdit _user classes) =
+        EditUser
+        <$> ("user-role"  .: DF.choice roleValues  Nothing)
+        <*> ("user-class" .: DF.choice classValues Nothing)
+      where
+        classValues = (id &&& toHtml . view className) <$> classes
+
+    formPage v fa p@(PageAdminSettingsGaPUsersEdit user _classes) = adminFrame p $ do
+        semanticDiv p $ do
+            DF.form v fa $ do
+                div_ $ do
+                    p_ "Avatar"
+                    toHtml (user ^. userLogin . fromUserLogin) >> br_ []
+                div_ $ do
+                    "Nutzerrolle"
+                    DF.inputSelect   "user-role" v >> br_ []
+                    "Klasse"
+                    DF.inputSelect   "user-class" v >> br_ []
+                div_ $ do
+                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Passwort zurücksetzen" >> br_ []
+                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
+                DF.inputSubmit "Änderungen speichern"
 
 -- FIXME: Fetch limited number of users ("pagination").
 
@@ -342,14 +402,49 @@ adminSettingsGaPUsersCreate =
 
 adminSettingsGaPClassesView :: ActionM r m => m (Frame PageAdminSettingsGaPClassesView)
 adminSettingsGaPClassesView =
-    makeFrame =<< PageAdminSettingsGaPClassesView . mapMaybe toClass <$> persistent getSpaces
-  where
-    toClass (ClassSpace clss) = Just clss
-    toClass _                 = Nothing
+    makeFrame =<< PageAdminSettingsGaPClassesView <$> persistent getSchoolClasses
 
 adminSettingsGaPClassesCreate :: ActionM r m => m (Frame PageAdminSettingsGaPClassesCreate)
 adminSettingsGaPClassesCreate =
     makeFrame PageAdminSettingsGaPClassesCreate
+
+adminSettingsGaPUserEdit :: ActionM r m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
+adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
+  where
+    editUserPage = persistent $
+        PageAdminSettingsGaPUsersEdit
+        <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
+        <*> getSchoolClasses
+
+    editUser e = persistent $ modifyUser uid (userGroups %~ replaceUserRole e)
+
+-- | Adds group determined by 'EditUser' param to the list of groups.  If the new group replaces an
+-- exiting group, that existing group is removed.  *Definition:* Group @g@ replaces group @h@ iff
+-- both groups are indexed by a class (e.g. 'Student', 'ClassGuest') and the classes of @g@ and @h@
+-- have the same year.
+replaceUserRole :: EditUser -> [Group] -> [Group]
+replaceUserRole (EditUser role clss) gs
+  | studentInSameYear = gs
+  | otherwise = addGroup . filter (not . isSelectedClass) $ gs
+  where
+    studentInSameYear = any (studentInSameYear' (_classSchoolYear clss)) gs
+
+    studentInSameYear' year (Student c) = _classSchoolYear c == year
+    studentInSameYear' _ _              = False
+
+    isSelectedClass (Student clss')    = clss == clss'
+    isSelectedClass (ClassGuest clss') = clss == clss'
+    isSelectedClass _                  = False
+
+    addGroup xs = case role of
+        RoleStudent -> Student clss : xs
+        RoleGuest   -> ClassGuest clss : xs
+
+getSchoolClasses :: PersistM m => m [SchoolClass]
+getSchoolClasses = mapMaybe toClass <$> getSpaces
+  where
+    toClass (ClassSpace clss) = Just clss
+    toClass _                 = Nothing
 
 
 -- * Events protocol
@@ -366,7 +461,7 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         div_ $ do
             p_ "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [onclick_ U.ListSpaces] "DOWNLOAD"
+            button_ [onclick_ U.Broken] "Download"
             p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
