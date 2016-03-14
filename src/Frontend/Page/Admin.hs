@@ -425,7 +425,7 @@ replaceUserRole (EditUser role clss) gs
   | studentInSameYear = gs
   | otherwise = addGroup . filter (not . isSelectedClass) $ gs
   where
-    studentInSameYear = isJust $ find (studentInSameYear' (_classSchoolYear clss)) gs
+    studentInSameYear = any (studentInSameYear' (_classSchoolYear clss)) gs
 
     studentInSameYear' year (Student c) = _classSchoolYear c == year
     studentInSameYear' _ _              = False
