@@ -12,6 +12,7 @@ where
 import Lucid hiding (href_)
 import Servant
 import Thentos.Prelude
+import Thentos.Types (throwError500)
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
@@ -108,12 +109,12 @@ batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
-        throwError $ err500 { errBody = "upload FAILED: no file!" }  -- FIXME: status code?
+        throwError500 "upload FAILED: no file!"  -- FIXME: status code?
     q (BatchCreateUsersFormData clname (Just file)) = do
         let schoolcl = SchoolClass theOnlySchoolYearHack clname
         eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
         case eCsv of
-            Left msg      -> throwError $ err500 { errBody = "csv parsing FAILED: " <> cs msg }
+            Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
                                              -- FIXME: status code?
             Right records -> mapM_ (p schoolcl) records
 

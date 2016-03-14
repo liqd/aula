@@ -11,8 +11,6 @@
 module FrontendSpec
 where
 
-import Control.Monad.Except (throwError)
-import Control.Monad.Error.Class (MonadError)
 import Data.String.Conversions (ST, cs)
 import Lucid (renderText, toHtml)
 import Test.Hspec (Spec, describe, context, it)
@@ -21,6 +19,7 @@ import Servant
 import Network.Wai
 
 import Action
+import Config
 import Frontend
 import Frontend.Core
 import qualified Persistent.Implementation.STM
@@ -61,15 +60,16 @@ type TestApi =
   :<|> "303"       :> GetH ST
   :<|> "any_other" :> GetH ST
 
-testApi :: (Monad m, MonadError ServantErr m) => ServerT TestApi m
+testApi :: (Monad m, MonadServantErr err m) => ServerT TestApi m
 testApi =
        error "unexpected"
-  :<|> throwError (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
-  :<|> throwError err500
+  :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
+  :<|> throwServantErr err500
 
 testAppAulaExcept :: IO Application
 testAppAulaExcept = do
-    action <- mkRunAction <$> Persistent.Implementation.STM.mkRunPersist
+-- FIXME
+    action <- mkRunAction <$> (ActionEnv <$> Persistent.Implementation.STM.mkRunPersist <*> pure Config.config)
     let proxy :: Proxy TestApi
         proxy = Proxy
     return $ serve (Proxy :: Proxy TestApi) (enter action $ catchAulaExcept proxy testApi)

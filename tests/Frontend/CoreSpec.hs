@@ -30,6 +30,7 @@ import qualified Data.Text.Lazy as LT
 
 import Action
 import Arbitrary (arb, schoolClasses)
+import qualified Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Core
 import Frontend.Page
@@ -211,7 +212,7 @@ renderForm (F g) =
 -- via abstraction).
 runAction :: Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
 runAction action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
-                      unNat (mkRunAction rp) action
+                      unNat (mkRunAction (ActionEnv rp Config.config)) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
 failOnError = fmap (either (error . show) id) . runExceptT . runAction
