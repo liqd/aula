@@ -125,7 +125,6 @@ data AdminPs =
     AdminDuration
   | AdminQuorum
   | AdminAccess PermissionContext
-  | AdminCreateUser
   | AdminEditUser (AUID User)
   | AdminEvent
   deriving (Generic, Show)
@@ -136,6 +135,5 @@ admin :: AdminPs -> UriPath -> UriPath
 admin AdminDuration       path = path </> "duration"
 admin AdminQuorum         path = path </> "quorum"
 admin (AdminAccess ctx)   path = path </> "access" </> uriPart ctx
-admin AdminCreateUser     path = path </> "user" </> "create"
 admin (AdminEditUser uid) path = path </> "user" </> uriPart uid </> "edit"
 admin AdminEvent          path = path </> "event"
