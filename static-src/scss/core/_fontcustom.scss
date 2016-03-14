@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.eot");
-  src: url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.woff") format("woff"),
-       url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.ttf") format("truetype"),
-       url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_3f6e89d62c3b6e6d40cb22d5e7b703cd.eot");
+  src: url("../icons/fontcustom_3f6e89d62c3b6e6d40cb22d5e7b703cd.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_3f6e89d62c3b6e6d40cb22d5e7b703cd.woff") format("woff"),
+       url("../icons/fontcustom_3f6e89d62c3b6e6d40cb22d5e7b703cd.ttf") format("truetype"),
+       url("../icons/fontcustom_3f6e89d62c3b6e6d40cb22d5e7b703cd.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_3f6e89d62c3b6e6d40cb22d5e7b703cd.svg#fontcustom") format("svg");
   }
 }
 
@@ -26,7 +26,9 @@
 .icon-bolt:before,
 .icon-comment-o:before,
 .icon-eye:before,
+.icon-pencil:before,
 .icon-power-off:before,
+.icon-sign-out:before,
 .icon-sun-o:before,
 .icon-voting:before {
   display: inline-block;
@@ -46,13 +48,17 @@
 .icon-bolt:before { content: "\f102"; }
 .icon-comment-o:before { content: "\f107"; }
 .icon-eye:before { content: "\f103"; }
+.icon-pencil:before { content: "\f109"; }
 .icon-power-off:before { content: "\f104"; }
+.icon-sign-out:before { content: "\f10a"; }
 .icon-sun-o:before { content: "\f105"; }
 .icon-voting:before { content: "\f108"; }
 
 $font-fontcustom-bolt: "\f102";
 $font-fontcustom-comment-o: "\f107";
 $font-fontcustom-eye: "\f103";
+$font-fontcustom-pencil: "\f109";
 $font-fontcustom-power-off: "\f104";
+$font-fontcustom-sign-out: "\f10a";
 $font-fontcustom-sun-o: "\f105";
 $font-fontcustom-voting: "\f108";
