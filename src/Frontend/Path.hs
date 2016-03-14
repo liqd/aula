@@ -36,7 +36,7 @@ instance HasPath Top where relPath = top
 
 top :: Top -> UriPath
 top Top            = nil
-top Broken         = nil
+top Broken         = "bröken"
 top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
