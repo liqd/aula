@@ -1,21 +1,35 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-{-# OPTIONS_GHC -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Frontend.PathSpec
 where
 
 import Data.String.Conversions (cs)
 import Data.Typeable (Typeable, typeOf)
-import Servant.API (FromHttpApiData(parseUrlPiece))
-import Test.Hspec (Spec, describe, it)
-import Test.QuickCheck (Gen, forAll, property)
+import Test.Hspec (Spec, beforeAll, describe, it)
+import Test.QuickCheck (Arbitrary, Gen, forAll, property)
 import qualified Data.Text as ST
 
 import Arbitrary
 import Data.UriPath
+import Frontend
+import Frontend.Core
 import Frontend.Path
 import Types
+
+import Servant
+import Servant.HTML.Lucid
+import Servant.Mock (HasMock(..), mock)
+import Servant.Missing hiding (redirect)
+import Network.Wai
+
+import Test.Hspec.Wai (get, shouldRespondWith)
+import qualified Test.Hspec.Wai.QuickCheck as Wai (property)
 
 spec :: Spec
 spec = do
@@ -31,9 +45,26 @@ spec = do
             [ U (arb :: Gen PermissionContext)
             , U (arb :: Gen IdeaSpace)
             ]
+
+    describe "Paths and handlers" $ do
+        beforeAll mockAulaTop $ do
+            it "Every path has a handler" $ \app -> property . forAll mainGen $ \path ->
+                flip Wai.property app $ do
+                    get (cs . absoluteUriPath $ relPath path) `shouldRespondWith` 200
+
   where
     mainGen :: Gen Main
     mainGen = arbitrary
+
+
+-- Each path has a handler
+
+mockAulaTop :: IO Application
+mockAulaTop = do
+    return $ serve (Proxy :: Proxy AulaTop) (mock (Proxy :: Proxy AulaTop))
+
+instance Arbitrary a => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPage a)) where
+    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPage a)))
 
 
 -- * UriPath and FromHttpApiData correspondence
@@ -46,3 +77,4 @@ uriPartAndHttpApiDataAreInverses :: UriPartGen -> Spec
 uriPartAndHttpApiDataAreInverses (U g) =
     it (show $ typeOf g) . property . forAll g $ \uriPartData ->
         (Right uriPartData ==) . parseUrlPiece . cs $ uriPart uriPartData
+

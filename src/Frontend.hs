@@ -67,7 +67,6 @@ type AulaTop =
   :<|> "static"  :> Raw
   :<|> GetH (Frame ())
 
-
 aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
        enter (Nat runAction) (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
@@ -169,6 +168,7 @@ type AulaSpace =
        -- create new idea inside topic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "edit" :> GetH (Frame EditTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote --FIXME: Change Type
 
@@ -188,6 +188,7 @@ aulaSpace space =
   :<|> Page.createTopic space []
   :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
+  :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 

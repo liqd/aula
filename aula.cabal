@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.9.1.
+-- This file has been generated from package.yaml by hpack version 0.10.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -264,6 +264,7 @@ test-suite spec
     , lucid
     , mtl
     , QuickCheck >= 2.8 && <2.9
+    , servant-mock
     , servant-server
     , string-conversions
     , text

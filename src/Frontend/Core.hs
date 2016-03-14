@@ -30,6 +30,8 @@ module Frontend.Core
     , tabSelected
     , html
     , redirect
+    -- Test only
+    , FormPage(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
     )
 where
 
@@ -115,6 +117,7 @@ class Page p where
 data Frame body = Frame User body | PublicFrame body
   deriving (Functor)
 
+-- FIXME: Replace it with enum type that represents the extra headers.
 data Frame' body = Frame' User (Html ()) body | PublicFrame' (Html ()) body
   deriving (Functor)
 
