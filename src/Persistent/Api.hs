@@ -328,7 +328,6 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
--- | So far `mkMetaInfo` is only used by `nextMetaInfo`.
 mkMetaInfo :: User -> AUID User -> Timestamp -> AUID a -> MetaInfo a
 mkMetaInfo cUser uid now oid = MetaInfo
     { _metaId              = oid
