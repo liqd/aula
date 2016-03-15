@@ -180,7 +180,7 @@ aulaSpace space =
   :<|> Page.createIdea (IdeaLocationSpace space)
 
   :<|> Page.viewTopics  space
-  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   space TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
   :<|> Page.viewTopic   space TabAllIdeas
   :<|> Page.viewTopic   space TabVotingIdeas
   :<|> Page.viewTopic   space TabWinningIdeas
