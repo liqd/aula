@@ -325,19 +325,20 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
                 FIXME - Dummy, dummy! -}
                 tbody_ $ do
-                    td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
-                    td_ "UserName"
-                    td_ "Klasse"
-                    td_ "Role"
-                    td_ ""
-                    td_ $ a_ [href_ U.Broken] "bearbeiten"
-                tbody_ $ do
-                    td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
-                    td_ "UserName"
-                    td_ "Klasse"
-                    td_ "Role"
-                    td_ ""
-                    td_ $ a_ [href_ U.Broken] "bearbeiten"
+                    tr_ $ do
+                        td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                        td_ "UserName"
+                        td_ "Klasse"
+                        td_ "Role"
+                        td_ ""
+                        td_ $ a_ [href_ U.Broken] "bearbeiten"
+                    tr_ $ do
+                        td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                        td_ "UserName"
+                        td_ "Klasse"
+                        td_ "Role"
+                        td_ ""
+                        td_ $ a_ [href_ U.Broken] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
