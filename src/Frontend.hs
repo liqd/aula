@@ -160,13 +160,17 @@ type AulaSpace =
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"              :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "all"     :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
+          :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
+          :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create"   :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
+
        -- create new topic
   :<|> "topic" :> "create" :> FormHandler CreateTopic
-       -- create new idea inside topic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "edit" :> GetH (Frame EditTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic)
@@ -182,11 +186,14 @@ aulaSpace space =
   :<|> Page.viewTopics  space
   :<|> Page.viewTopic   space TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
   :<|> Page.viewTopic   space TabAllIdeas
+  :<|> const Page.viewIdea
+  :<|> const Page.editIdea
+  :<|> Page.createIdea . IdeaLocationTopic space
   :<|> Page.viewTopic   space TabVotingIdeas
   :<|> Page.viewTopic   space TabWinningIdeas
   :<|> Page.viewTopic   space TabDelegation
+
   :<|> Page.createTopic space []
-  :<|> Page.createIdea . IdeaLocationTopic space
   :<|> Page.moveIdeasToTopic space
   :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
   :<|> error "api not implemented: topic/:topic/delegation/create"
