@@ -47,3 +47,60 @@
         font-weight: bold;
     }
 }
+
+.admin-table {
+    width: 100%;
+
+    th, td {
+        border-bottom: 2px solid $color-grey-lighter;
+        vertical-align: middle;
+        text-align: left;
+    }
+
+    th {
+        @include rem(padding-bottom, 10px);
+        line-height: $button-height;
+    }
+
+    td {
+        @include rem(padding, 7px 0);
+    }
+
+    .img-container {
+        @include make_rounded_thumbnail(35px);
+        display: block;
+    }
+}
+
+.inline-search-container {
+    display: inline-block;
+    position: relative;
+
+    .inline-search-input {
+        @include rem(font-size, $font-size-small);
+        @include rem(padding, 0 30px);
+        border: 1px solid $color-grey-light;
+        border-radius: $button-height / 2;
+        color: $color-grey-mid;
+        line-height: $button-height;
+        width: auto;
+    }
+
+    .inline-search-button {
+        @include rem(height, ($button-height - 2px));
+        @include rem(width, ($button-height - 2px));
+        background: $color-grey-light;
+        border-radius: ($button-height - 2px);
+        color: $color-text;
+        display: block;
+        line-height: ($button-height - 2px);
+        position: absolute;
+        right: 2px;
+        text-align: center;
+        top: 2px;
+
+        i:before {
+            line-height: ($button-height - 2px);
+        }
+    }
+}

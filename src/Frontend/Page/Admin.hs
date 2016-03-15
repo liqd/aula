@@ -304,14 +304,18 @@ instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
         adminFrame p . semanticDiv p $ do
-            table_ $ do
+            table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
-                    th_ "AVATAR"
+                    th_ nil
                     th_ "NAME"
                     th_ "KLASSE"
                     th_ "ROLE SELECTION"
-                    th_ $ button_ [onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
-                    th_ $ input_ [value_ "NUTZERSUCHE"]
+                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
+                    th_ $ do
+                        div_ [class_ "inline-search-container"] $ do
+                            input_ [class_ "inline-search-input", value_ "NUTZERSUCHE"] -- Placeholder not value
+                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
+                {-
                 tbody_ . forM_ users $ \user -> tr_ $ do
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
@@ -319,6 +323,21 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ "Rolle ???" -- FIXME: Fetch the user's role
                     td_ "" -- THIS SHOULD LEFT EMPTY
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
+                FIXME - Dummy, dummy! -}
+                tbody_ $ do
+                    td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                    td_ "UserName"
+                    td_ "Klasse"
+                    td_ "Role"
+                    td_ ""
+                    td_ $ a_ [href_ U.Broken] "bearbeiten"
+                tbody_ $ do
+                    td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                    td_ "UserName"
+                    td_ "Klasse"
+                    td_ "Role"
+                    td_ ""
+                    td_ $ a_ [href_ U.Broken] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
