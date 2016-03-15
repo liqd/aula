@@ -27,6 +27,9 @@ import Test.QuickCheck (generate, arbitrary)
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
   deriving (Functor, Applicative, Monad)
 
+newtype UpdatePersist a = UpdatePersist (ReaderT User Persist a)
+  deriving (Functor, Applicative, Monad)
+
 persistIO :: IO a -> Persist a
 persistIO = Persist . liftIO
 
@@ -44,4 +47,7 @@ instance MonadIO Persist where
 
 instance PersistM Persist where
     getDb l = Persist . ReaderT $ fmap (view l) . atomically . readTVar
+
+instance UpdatePersistM Persist where
     modifyDb l f = Persist . ReaderT $ \state -> atomically $ modifyTVar' state (l %~ f)
+    currentUser = error "TODO"

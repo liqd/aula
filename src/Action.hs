@@ -104,8 +104,18 @@ class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     -- complex computations.
     persistent :: r a -> m a
 
+class (UpdatePersistM r, Monad m) => UpdateAction r m | m -> r where
+    -- | Run @Persist@ computation in the action monad.
+    -- Authorization of the action should happen here.
+    -- FIXME: Rename atomically, and only call on
+    -- complex computations.
+    update :: r a -> m a
+
 instance PersistM r => ActionPersist r (Action r) where
     persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
+
+instance UpdatePersistM r => UpdateAction r (Action r) where
+    update r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
 
 instance MonadIO (Action r) where
     liftIO = Action . liftIO

@@ -10,6 +10,7 @@
 
 module Persistent.Api
     ( PersistM
+    , UpdatePersistM
     , AMap
     , AulaLens
     , AulaGetter
@@ -21,6 +22,7 @@ module Persistent.Api
     , getDb
     , addDb
     , modifyDb
+    , currentUser
     , findIn
     , findInBy
     , findInById
@@ -126,12 +128,18 @@ emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 -- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
 class MonadIO m => PersistM m where
     getDb :: AulaGetter a -> m a
+
+class PersistM m => UpdatePersistM m where
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
+    currentUser :: m User
+
+--type Persist a = forall m. PersistM m => m a
+--type UpdatePersist a = forall m. UpdatePersistM m => m a
 
 addDb :: (HasMetaInfo a, FromProto a)
-      => User -> AulaSetter (AMap a) -> Proto a -> PersistM m => m a
-addDb cUser l pa = do
-    a <- fromProto pa <$> nextMetaInfo cUser
+      => AulaSetter (AMap a) -> Proto a -> UpdatePersistM m => m a
+addDb l pa = do
+    a <- fromProto pa <$> nextMetaInfo
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
@@ -157,13 +165,17 @@ getIdeas :: PersistM m => m [Idea]
 getIdeas = getDb dbIdeas
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
-addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
+addIdeaSpaceIfNotExists :: IdeaSpace -> UpdatePersistM m => m ()
 addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
-    unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
+    unless exists $
+        -- NP: this line would be enough as an implementation.
+        -- I guess the reason is to avoid suprious update transactions
+        -- once we have a real persistency layer.
+        modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: User -> Proto Idea -> PersistM m => m Idea
-addIdea cUser = addDb cUser dbIdeaMap
+addIdea :: Proto Idea -> UpdatePersistM m => m Idea
+addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
 findIdea = findInById dbIdeas
@@ -171,16 +183,16 @@ findIdea = findInById dbIdeas
 findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
-modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
+modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> UpdatePersistM m => m ()
 modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
 
-modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
+modifyIdea :: AUID Idea -> (Idea -> Idea) -> UpdatePersistM m => m ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> PersistM m => m ()
+modifyUser :: AUID User -> (User -> User) -> UpdatePersistM m => m ()
 modifyUser = modifyAMap dbUserMap
 
-modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
+modifyTopic :: AUID Topic -> (Topic -> Topic) -> UpdatePersistM m => m ()
 modifyTopic = modifyAMap dbTopicMap
 
 findUser :: AUID User -> PersistM m => m (Maybe User)
@@ -192,14 +204,14 @@ getUsers = getDb dbUsers
 getTopics :: PersistM m => m [Topic]
 getTopics = getDb dbTopics
 
-moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> PersistM m => m ()
+moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> UpdatePersistM m => m ()
 moveIdeasToTopic ideaIds topicId =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaTopic .~ topicId
 
-addTopic :: User -> Proto Topic -> PersistM m => m Topic
-addTopic cUser pt = do
-    t <- addDb cUser dbTopicMap pt
+addTopic :: Proto Topic -> UpdatePersistM m => m Topic
+addTopic pt = do
+    t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
@@ -208,8 +220,8 @@ addTopic cUser pt = do
     moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
     return t
 
-addDelegation :: User -> Proto Delegation -> PersistM m => m Delegation
-addDelegation cUser = addDb cUser dbDelegationMap
+addDelegation :: Proto Delegation -> UpdatePersistM m => m Delegation
+addDelegation = addDb dbDelegationMap
 
 findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -231,7 +243,7 @@ findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == sp
 
 -------------------------------------------------------------------
 
-nextId :: PersistM m => m (AUID a)
+nextId :: UpdatePersistM m => m (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
@@ -250,9 +262,9 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
-addUser :: User -> Proto User -> PersistM m => m User
-addUser cUser proto = do
-    metainfo  <- nextMetaInfo cUser
+addUser :: Proto User -> UpdatePersistM m => m User
+addUser proto = do
+    metainfo  <- nextMetaInfo
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
     let user = userFromProto metainfo uLogin uPassword proto
@@ -261,7 +273,7 @@ addUser cUser proto = do
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
-addFirstUser :: Proto User -> PersistM m => m User
+addFirstUser :: Proto User -> UpdatePersistM m => m User
 addFirstUser proto = do
     now <- Timestamp <$> liftIO getCurrentTime
     uid <- nextId
@@ -339,7 +351,8 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
-nextMetaInfo cUser = do
-  now <- Timestamp <$> liftIO getCurrentTime
-  mkMetaInfo cUser now <$> nextId
+nextMetaInfo :: UpdatePersistM m => m (MetaInfo a)
+nextMetaInfo = do
+    cUser <- currentUser
+    now <- Timestamp <$> liftIO getCurrentTime
+    mkMetaInfo cUser now <$> nextId
