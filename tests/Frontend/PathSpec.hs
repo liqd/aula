@@ -44,6 +44,7 @@ spec = do
         mapM_ uriPartAndHttpApiDataAreInverses
             [ U (arb :: Gen PermissionContext)
             , U (arb :: Gen IdeaSpace)
+            , U (arb :: Gen SchoolClass)
             ]
 
     describe "Paths and handlers" $ do

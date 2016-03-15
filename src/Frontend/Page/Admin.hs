@@ -70,6 +70,12 @@ data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
 instance Page PageAdminSettingsGaPClassesCreate where
     isPrivatePage _ = True
 
+data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolClass [User]
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPClassesEdit where
+    isPrivatePage _ = True 
+
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
@@ -142,6 +148,9 @@ instance ToMenuItem PageAdminSettingsGaPClassesView where
 
 instance ToMenuItem PageAdminSettingsGaPClassesCreate where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassCreate)
+
+instance ToMenuItem PageAdminSettingsGaPClassesEdit where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
 -- | 11.4 Admin settings: Events protocol
 instance ToMenuItem PageAdminSettingsEventsProtocol where
@@ -353,7 +362,7 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     td_ . toHtml $ clss ^. className
                     td_ ""
-                    td_ $ a_ [href_ U.Broken] "bearbeiten"
+                    td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPClassesCreate where
@@ -415,6 +424,22 @@ instance FormPageView PageAdminSettingsGaPUsersEdit where
                     a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
                 DF.inputSubmit "Änderungen speichern"
 
+instance ToHtml PageAdminSettingsGaPClassesEdit where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit clss users) =
+        adminFrame p . semanticDiv p $ do
+            -- FIXME: Make appropiate design
+            div_ . h1_ . toHtml $ clss ^. className
+            table_ [class_ "admin-table"] $ do
+                thead_ . tr_ $ do
+                    th_ nil
+                    th_ "Name"
+                    th_ nil
+                tbody_ . forM_ users $ \user -> tr_ $ do
+                    td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                    td_ . toHtml $ user ^. userLogin . fromUserLogin
+                    td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
+
 -- FIXME: Fetch limited number of users ("pagination").
 
 adminSettingsGaPUsersView :: ActionM r m => m (Frame PageAdminSettingsGaPUsersView)
@@ -450,20 +475,21 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
 replaceUserRole :: EditUser -> [Group] -> [Group]
 replaceUserRole (EditUser role clss) gs
   | studentInSameYear = gs
-  | otherwise = addGroup . filter (not . isSelectedClass) $ gs
+  | otherwise = addGroup . filter (not . isClassInGroup clss) $ gs
   where
     studentInSameYear = any (studentInSameYear' (_classSchoolYear clss)) gs
 
     studentInSameYear' year (Student c) = _classSchoolYear c == year
     studentInSameYear' _ _              = False
 
-    isSelectedClass (Student clss')    = clss == clss'
-    isSelectedClass (ClassGuest clss') = clss == clss'
-    isSelectedClass _                  = False
-
     addGroup xs = case role of
         RoleStudent -> Student clss : xs
         RoleGuest   -> ClassGuest clss : xs
+
+isClassInGroup :: SchoolClass -> Group -> Bool
+isClassInGroup clss (Student clss')    = clss == clss'
+isClassInGroup clss (ClassGuest clss') = clss == clss'
+isClassInGroup _    _                  = False
 
 getSchoolClasses :: PersistM m => m [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
@@ -471,6 +497,12 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
     toClass (ClassSpace clss) = Just clss
     toClass _                 = Nothing
 
+adminSettingsGaPClassesEdit :: ActionM r m => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
+adminSettingsGaPClassesEdit clss =
+    makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
+  where
+    usersInClass = filter isUserInClass <$> persistent getUsers
+    isUserInClass u = any (isClassInGroup clss) (u ^. userGroups)
 
 -- ** Events protocol
 

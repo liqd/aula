@@ -40,7 +40,7 @@ import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -142,6 +142,11 @@ instance Arbitrary PageAdminSettingsGaPClassesView where
 
 instance Arbitrary PageAdminSettingsGaPClassesCreate where
     arbitrary = pure PageAdminSettingsGaPClassesCreate
+
+instance Arbitrary PageAdminSettingsGaPClassesEdit where
+    arbitrary = do
+        clss <- arb
+        PageAdminSettingsGaPClassesEdit clss <$> listOf (userForClass clss)
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
@@ -270,6 +275,12 @@ instance Arbitrary UserLastName where
 instance Arbitrary Group where
     arbitrary = garbitrary
 
+guestOrStudent :: SchoolClass -> Gen Group
+guestOrStudent clss = elements
+    [ Student clss
+    , ClassGuest clss
+    ]
+
 instance Arbitrary UserPass where
     arbitrary = garbitrary
 
@@ -289,6 +300,10 @@ instance Arbitrary UserSettingData where
 
 
 -- * admin
+
+userForClass :: SchoolClass -> Gen User
+userForClass clss =
+    arb <**> (set userGroups . pure <$> guestOrStudent clss)
 
 instance Arbitrary Durations where
     arbitrary = garbitrary

@@ -571,9 +571,15 @@ winningIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just Winning
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace
 
+instance HasUriPart SchoolClass where
+    uriPart = fromString . showSchoolClass
+
 showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
-showIdeaSpace (ClassSpace c) = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
+showIdeaSpace (ClassSpace c) = showSchoolClass c
+
+showSchoolClass :: SchoolClass -> String
+showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
 showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
@@ -582,17 +588,22 @@ showIdeaSpaceCategory (ClassSpace _) = "class"
 parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
 parseIdeaSpace s
     | s == "school" = Right SchoolSpace
-    | otherwise     =
-        case ST.splitOn "-" s of
-            [year, name] -> (\y -> ClassSpace $ schoolClass y name) <$> readYear year
-            _:_:_:_      -> err "Too many parts (two parts expected)"
-            _            -> err "Too few parts (two parts expected)"
+    | otherwise     = ClassSpace <$> parseSchoolClass s
+
+parseSchoolClass :: (IsString err, Monoid err) => ST -> Either err SchoolClass
+parseSchoolClass s = case ST.splitOn "-" s of
+    [year, name] -> (`schoolClass` name) <$> readYear year
+    _:_:_:_      -> err "Too many parts (two parts expected)"
+    _            -> err "Too few parts (two parts expected)"
   where
-    err msg = Left $ "Ill-formed idea space: " <> msg
+    err msg = Left $ "Ill-formed school class: " <> msg
     readYear = maybe (err "Year should be only digits") Right . readMaybe . cs
 
 instance FromHttpApiData IdeaSpace where
     parseUrlPiece = parseIdeaSpace
+
+instance FromHttpApiData SchoolClass where
+    parseUrlPiece = parseSchoolClass
 
 ideaTopicId :: Traversal' Idea (AUID Topic)
 ideaTopicId = ideaLocation . ideaLocationTopicId
