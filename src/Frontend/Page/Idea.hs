@@ -134,14 +134,14 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
                         -- FIXME not on design
                         button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
-            for_ (idea ^. ideaComments) $ \c ->
-                PageComment c ^. html
-            -- FIXME dummy content
-            div_ [class_ "comments-body"] $ do
-                nil
-      where
-        totalVotes    = Set.size $ idea ^. ideaVotes
-        totalComments = Set.size $ idea ^. ideaComments
+            div_ [class_ "comments-body grid"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    for_ (idea ^. ideaComments) $ \c ->
+                        PageComment c ^. html
+                          where
+                            totalVotes    = Set.size $ idea ^. ideaVotes
+                            totalComments = Set.size $ idea ^. ideaComments
+                    -- FIXME Please create the comments form here
 
 
 instance FormPageView CreateIdea where
