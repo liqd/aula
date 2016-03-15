@@ -96,7 +96,7 @@ instance ToHtml ViewIdea where
                         span_ [class_ "progress-bar m-against"] $ do
                             span_ [ class_ "progress-bar-progress"
                             -- FIXME: dummy data
-                                  , style_ ("width: 75%")
+                                  , style_ "width: 75%"
                                   ] $ do
                                 span_ [class_ "progress-bar-votes-for"] "6"
                                 span_ [class_ "progress-bar-votes-against"] "12"

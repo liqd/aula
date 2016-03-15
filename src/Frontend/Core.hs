@@ -243,10 +243,10 @@ instance ToHtml CommentVotesWidget where
     toHtml p@(VotesWidget votes) = semanticDiv p $ do
         div_ [class_ "comment-votes"] $ do
             span_ [class_ "comment-vote-up"] $ do
-                toHtml $ y
+                toHtml y
                 i_ [class_ "icon-thumbs-o-up"] nil
             span_ [class_ "comment-vote-down"] $ do
-                toHtml $ n
+                toHtml n
                 i_ [class_ "icon-thumbs-o-down"] nil
       where
         y = show (countVotes Up   commentVoteValue votes)
