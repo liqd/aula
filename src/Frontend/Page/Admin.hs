@@ -485,17 +485,18 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
 instance ToHtml PageAdminSettingsEventsProtocol where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = adminFrame p . semanticDiv p $ do
-        div_ $ do
-            p_ "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
-            -- FIXME: Clientside JavaScript. Change the download button link
-            -- If the value of the selection is changes.
+        label_ $ do
+            span_ [class_ "label-text"] "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
+        -- FIXME: Clientside JavaScript. Change the download button link
+        -- If the value of the selection is changes.
             select_ [name_ "idea"] . forM_ ideaSpaces $ \idea ->
                 option_ [value_ (makeValue idea)] (makeText idea)
-        div_ $ do
-            p_ "Event-Protokoll"
+        div_ [class_ "download-box"] $ do
+            header_ [class_ "download-box-header"] $ do
+                "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [onclick_ U.Broken] "Download"
-            p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
+                button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
+            p_ [class_ "download-box-body"] "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
         makeValue SchoolSpace = "idea-schoolspace"

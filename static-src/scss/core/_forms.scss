@@ -29,6 +29,13 @@ textarea {
     }
 }
 
+select {
+    @include rem(padding, 0 10px);
+    @include rem(height, 30px);
+    background-color: white;
+    width: auto;
+}
+
 .label-text {
     @include rem(padding-bottom, 9px);
     display: block;

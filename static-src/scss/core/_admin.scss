@@ -104,3 +104,26 @@
         }
     }
 }
+
+.download-box {
+    box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+    border: 1px solid $color-grey-light;
+    max-width: 550px;
+
+    .download-box-body, .download-box-header {
+        @include rem(padding, 15px);
+    }
+
+    .download-box-header {
+        background: $color-grey-lighter;
+        border-bottom: 1px solid $color-grey-light;
+        display: bold;
+        font-weight: bold;
+        line-height: $button-height;
+        overflow: hidden;
+
+        .download-box-button {
+            float: right;
+        }
+    }
+}
