@@ -135,8 +135,11 @@ spec = do
 
     findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec "findTopic" getTopics findTopic _Id changeAUID
-    let getIdeasWithTopic = filter (isJust . view ideaTopic) <$> getIdeas
-    findAllInBySpec "findIdeasByTopicId" getIdeasWithTopic findIdeasByTopicId (ideaTopic . _Just) changeAUID
+
+    let getIdeasWithTopic :: Persist [Idea]
+        getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
+    findAllInBySpec "findIdeasByTopicId"
+        getIdeasWithTopic findIdeasByTopicId (ideaMaybeTopicId . _Just) changeAUID
 
     describe "addIdeaSpace" $ do
         let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> IO)

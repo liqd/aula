@@ -14,7 +14,7 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (makeLenses, Lens', (^.), (^?), _Just)
+import Control.Lens (Lens', Traversal', makeLenses, (^.), (^?), _Just)
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -92,10 +92,10 @@ data Idea = Idea
 
 instance SOP.Generic Idea
 
--- | Invariant: for all @LocationTopic space tid@: idea space of topic with id 'tid' is 'space'.
+-- | Invariant: for all @IdeaLocationTopic space tid@: idea space of topic with id 'tid' is 'space'.
 data IdeaLocation =
-      IdeaLocationSpace IdeaSpace
-    | IdeaLocationTopic IdeaSpace (AUID Topic)
+      IdeaLocationSpace { _ideaLocationSpace :: IdeaSpace }
+    | IdeaLocationTopic { _ideaLocationSpace :: IdeaSpace, _ideaLocationTopicId :: AUID Topic }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaLocation
@@ -599,3 +599,22 @@ parseIdeaSpace s
 
 instance FromHttpApiData IdeaSpace where
     parseUrlPiece = parseIdeaSpace
+
+ideaTopicId :: Traversal' Idea (AUID Topic)
+ideaTopicId = ideaLocation . ideaLocationTopicId
+
+ideaLocationMaybeTopicId :: Lens' IdeaLocation (Maybe (AUID Topic))
+ideaLocationMaybeTopicId f = \case
+    IdeaLocationSpace spc     -> mk spc <$> f Nothing
+    IdeaLocationTopic spc tid -> mk spc <$> f (Just tid)
+  where
+    mk spc = \case
+        Nothing  -> IdeaLocationSpace spc
+        Just tid -> IdeaLocationTopic spc tid
+
+ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
+ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
+
+isWild :: IdeaLocation -> Bool
+isWild (IdeaLocationSpace _)   = True
+isWild (IdeaLocationTopic _ _) = False
