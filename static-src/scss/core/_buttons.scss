@@ -1,4 +1,4 @@
-.btn, .btn-cta {
+.btn, .btn-cta, input[type=submit] {
     border: 0;
     font-weight: bold;
     font-family: $font-family-regular;
@@ -35,6 +35,7 @@ input[type=submit] {
     @include rem(padding, 0 15px);
     background: $button-cta-base-color;
     border-radius: $button-height / 2;
+    border: none;
     color: #fff;
 
     &:hover, &:focus {

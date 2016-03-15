@@ -21,9 +21,29 @@ textarea {
     &.m-small {
         @extend .col-6-12;
     }
+
+    &.input-number {
+        @include rem(padding, 0 5px);
+        @include rem(width, 50px);
+        text-align: center;
+    }
 }
 
 .label-text {
     @include rem(padding-bottom, 9px);
     display: block;
+}
+
+.input-append {
+    float: left;
+    width: 100%;
+
+    .input-appendee {
+        @include rem(margin-right, 15px);
+        float: left;
+    }
+
+    .input-helper {
+        line-height: $input-height;
+    }
 }

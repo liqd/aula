@@ -158,18 +158,22 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [id_ "tabs"] . ul_ [] $ do
-        li_ [] $ menulink tab MenuItemDurations
-        li_ [] $ menulink tab MenuItemQuorum
-        if isPermissionsMenuItem tab
-            then do
-                li_ [] $ span_ "Gruppen & Nutzer"
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
-            else do
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
-        li_ [] $ menulink tab MenuItemEventsProtocol
-    div_ bdy
+    div_ [class_ "grid"] $ do
+        div_ [class_ "col-2-12"] $ do
+            nav_ [class_ "admin-menu"] $ do
+                h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
+                ul_ [] $ do
+                    li_ [] $ menulink tab MenuItemDurations
+                    li_ [] $ menulink tab MenuItemQuorum
+                    if isPermissionsMenuItem tab
+                        then do
+                            li_ [] $ span_ "Gruppen & Nutzer"
+                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                        else do
+                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                    li_ [] $ menulink tab MenuItemEventsProtocol
+        div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem t
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
@@ -228,12 +232,15 @@ instance FormPageView PageAdminSettingsDurations where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                div_ $ do
-                    "Wie viele Tage soll die Ausarbeitungphase dauern?" >> br_ []
-                    DF.inputText "elab-duration" v >> "Tage" >> br_ []
-                div_ $ do
-                    "Wie viele Tage soll die Abstimmungphase dauren?" >> br_ []
-                    DF.inputText "vote-duration" v >> "Tage" >> br_ []
+                -- TODO these should be "numeber" fields
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
+                    inputText_ [class_ "input-number input-appendee"] "elab-duration" v
+                    span_ [class_ "input-helper"] "Tage"
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
+                    inputText_  [class_ "input-number input-appendee"] "vote-duration" v
+                    span_ [class_ "input-helper"] "Tage"
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations) m

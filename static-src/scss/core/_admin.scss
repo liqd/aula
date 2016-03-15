@@ -1,0 +1,41 @@
+.admin-menu {
+    @include rem(margin-bottom, -($main-menu-height * 2));
+    background: $color-grey-light;
+    height: 100%;
+
+    .admin-menu-header, > ul {
+        @include rem(padding, 20px 25px);
+    }
+
+    > ul li {
+        @include rem(margin-bottom, 15px);
+
+        a {
+            color: $color-text;
+
+            &.tab-selected {
+                font-weight: bold;
+                color: $color-brand1;
+            }
+        }
+    }
+}
+
+.admin-menu-header {
+    @include rem(margin-bottom, 40px);
+    background: $color-brand1;
+    color: white;
+}
+
+.admin-body, .admin-menu {
+    @include rem(font-size, $font-size-small);
+}
+
+.admin-body {
+    @include rem(margin-top, 118px);
+    @include rem(padding-left, 50px);
+
+    .label-text {
+        font-weight: bold;
+    }
+}
