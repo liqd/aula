@@ -104,6 +104,7 @@ instance ToHtml PageIdeasOverview where
         div_ [class_ "icon-list"] $ do
             ul_ $ do
                 -- FIXME: these buttons should filter the ideas by category
+                -- FIXME: also, there should be a way to generate these with something like @f `mapM_` [minBound..]@
                 li_ [class_ "icon-rules"] $ do
                     a_ [href_ U.Broken] "Regeln"
                 li_ [class_ "icon-equipment"] $ do

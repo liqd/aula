@@ -55,8 +55,7 @@ test-everything:
 	cabal install --enable-test
 	make hlint
 	make click-dummies-recreate
-	git checkout -- package.yaml
-	hpack
+	git checkout -- package.yaml aula.cabal
 
 ghci-no-type-errors:
 	$(EXEC) ghci $(FULL_SOURCES) -fdefer-type-errors

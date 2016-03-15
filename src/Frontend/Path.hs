@@ -101,7 +101,7 @@ instance SOP.Generic Space
 -- | FIXME: there are structural similarities of wild ideas and ideas in topic that should be
 -- factored out.
 space :: Space -> UriPath -> UriPath
-space ListIdeas                   root = root </> "idea"
+space ListIdeas                   root = root </> "ideas"
 space (ViewIdea iid)              root = root </> "idea" </> uriPart iid </> "view"
 space (EditIdea iid)              root = root </> "idea" </> uriPart iid </> "edit"
 space CreateIdea                  root = root </> "idea" </> "create"
