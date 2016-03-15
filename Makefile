@@ -49,6 +49,15 @@ hlint:
 	$(HLINT) --version
 	find src exec tests -name '*.hs' | xargs $(HLINT)
 
+test-everything:
+	perl -i -pe 's/ghc-options: -Wall/ghc-options: -Wall -Werror/' package.yaml
+	hpack
+	cabal install --enable-test
+	make hlint
+	make click-dummies-recreate
+	git checkout -- package.yaml
+	hpack
+
 ghci-no-type-errors:
 	$(EXEC) ghci $(FULL_SOURCES) -fdefer-type-errors
 
