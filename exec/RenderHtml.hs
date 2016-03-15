@@ -118,7 +118,6 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                 <*> arb
                 <*> arb
                 <*> arb
-                <*> pure Nothing
                 <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
                 <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
                 <*> arb
