@@ -40,6 +40,7 @@ import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Data.Functor (($>))
 import Data.Set (Set)
+import Data.String (fromString)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid hiding (href_, script_, src_)
@@ -194,9 +195,8 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                                 "Logout"
             Nothing -> nil
         div_ [class_ "user-avatar"] $ do
-            nil
-            -- FIXME if avatar is available, replace empty body with this:
-            -- img_ [src_ $ P.TopStatic "some_avatar"] nil
+            maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                (mUser ^? _Just . userAvatar . _Just)
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
@@ -261,11 +261,9 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         div_ [class_ "author"] $ do
-            -- FIXME make img optional also img is broken
-            -- img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
             span_ [class_ "author-image"] $ do
-            -- FIXME only print this image if it's there
-                img_ [src_ P.Broken]
+                maybe nil (\url -> img_ [src_ $ P.TopStatic . fromString . cs $ url])
+                    (mi ^. metaCreatedByAvatar)
             span_ [class_ "author-text"] $ do
                 mi ^. metaCreatedByLogin . fromUserLogin . html
 
@@ -280,9 +278,8 @@ instance ToHtml ListItemIdea where
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ do
-                        nil
-                        -- FIXME if avatar is available, replace empty body with this:
-                        -- img_ [src_ $ P.TopStatic "some_avatar"] nil
+                        maybe nil (\url -> img_ [src_ $ P.TopStatic . fromString . cs $ url])
+                            (idea ^. createdByAvatar)
                     h2_ [class_ "ideas-list-title"] $ do
                         idea ^. ideaTitle . html
                         span_ [class_ "ideas-list-author"] $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
