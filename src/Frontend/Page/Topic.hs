@@ -79,7 +79,7 @@ instance Page EditTopic where
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabAllIdeas     -> go "tab-ideas"       U.ViewTopicIdeas        "Alle Ideen"
+    TabAllIdeas     -> go "tab-ideas"       U.ListTopicIdeas        "Alle Ideen"
     TabVotingIdeas  -> go "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
     TabWinningIdeas -> go "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
     TabDelegation   -> go "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
@@ -113,7 +113,7 @@ instance ToHtml ViewTopic where
                 p_   [id_ "topic-title"] $ topic ^. topicTitle . html
                 div_ [id_ "topic-desc"] $ topic ^. topicDesc . html
                 when (phase == PhaseRefinement) $
-                    a_ [id_ "add-idea", href_ . U.Space space $ U.CreateIdeaInTopic topicId] "+ Neue Idee"
+                    a_ [id_ "add-idea", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
                 when (phase < PhaseResult) .
                     a_  [id_ "delegate-vote", href_ . U.Space space $ U.CreateTopicDelegation topicId] $
                         span_ [id_ "bullhorn"] ":bullhorn:" <> " Stimme Beauftragen"
@@ -159,8 +159,8 @@ instance FormPageView MoveIdeasToTopic where
     -- the ideas to be added to the topic.
     type FormPageResult MoveIdeasToTopic = [AUID Idea]
 
-    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
-    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
+    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
+    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
 
     makeForm (MoveIdeasToTopic _ _ ideas) =
         fmap catMaybes . sequenceA $
