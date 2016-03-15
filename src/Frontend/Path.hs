@@ -162,8 +162,8 @@ instance HasPath IdeaPath
   where
     relPath (IdeaPath loc mode) = f loc mode
       where
-        f (IdeaLocationSpace space)     = relPath . Space space . g
-        f (IdeaLocationTopic space tid) = relPath . Space space . h tid
+        f (IdeaLocationSpace isp)     = relPath . Space isp . g
+        f (IdeaLocationTopic isp tid) = relPath . Space isp . h tid
 
         g IdeaModeList       = ListIdeas
         g IdeaModeCreate     = CreateIdea
