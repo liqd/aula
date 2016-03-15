@@ -302,7 +302,7 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
 
 instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
+    toHtmlRaw p@(PageAdminSettingsGaPUsersView _users) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -324,21 +324,16 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ "" -- THIS SHOULD LEFT EMPTY
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
                 FIXME - Dummy, dummy! -}
-                tbody_ $ do
-                    tr_ $ do
-                        td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+
+                let dummydummydummy = do
+                        td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
                         td_ "UserName"
                         td_ "Klasse"
                         td_ "Role"
                         td_ ""
                         td_ $ a_ [href_ U.Broken] "bearbeiten"
-                    tr_ $ do
-                        td_ $ span_ [class_ "img-container"] $ img_ [src_ U.Broken]
-                        td_ "UserName"
-                        td_ "Klasse"
-                        td_ "Role"
-                        td_ ""
-                        td_ $ a_ [href_ U.Broken] "bearbeiten"
+
+                tbody_ $ tr_ `mapM_` [dummydummydummy, dummydummydummy]
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
