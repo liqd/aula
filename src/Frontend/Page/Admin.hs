@@ -167,9 +167,11 @@ adminFrame t bdy = do
                     li_ [] $ menulink tab MenuItemQuorum
                     if isPermissionsMenuItem tab
                         then do
-                            li_ [] $ span_ "Gruppen & Nutzer"
-                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                            li_ [] $ do
+                                "Gruppen & Nutzer"
+                                ul_ $ do
+                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
                         else do
                             li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
                     li_ [] $ menulink tab MenuItemEventsProtocol

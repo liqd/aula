@@ -18,6 +18,14 @@
                 color: $color-brand1;
             }
         }
+
+        ul {
+            @include rem(margin-top, 5px);
+
+            li {
+                @include rem(margin, 5px 0 0 20px);
+            }
+        }
     }
 }
 
