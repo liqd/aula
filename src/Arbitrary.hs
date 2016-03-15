@@ -735,7 +735,7 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
         role <- Student <$> genArbitrary
         cUser <- currentUser
         let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
-        persistent $ (userAvatar .~ avatar) <$> addUser cUser pu
+        persistent $ (userAvatar .~ Just avatar) <$> addUser cUser pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
