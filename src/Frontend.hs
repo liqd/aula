@@ -147,7 +147,7 @@ aulaMain =
 
 type AulaSpace =
        -- browse wild ideas in an idea space
-       "idea" :> GetH (Frame PageIdeasOverview)
+       "ideas" :> GetH (Frame PageIdeasOverview)
        -- view idea details (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
