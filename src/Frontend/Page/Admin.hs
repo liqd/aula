@@ -274,12 +274,14 @@ instance FormPageView PageAdminSettingsQuorum where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                div_ $ do
-                    "Wie hoch soll das Quorum schulweit sein?" >> br_ []
-                    DF.inputText "school-quorum" v >> "% aller Schulerinnen der Schule" >> br_ []
-                div_ $ do
-                    "Wie hoch soll das Quorum klassenweit sein?" >> br_ []
-                    DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
+                    inputText_ [class_ "input-number input-appendee"] "school-quorum" v
+                    span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
+                    inputText_ [class_ "input-number input-appendee"] "class-quorum" v
+                    span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
