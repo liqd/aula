@@ -386,8 +386,8 @@ instance FormPageView PageAdminSettingsGaPUsersEdit where
                     "Klasse"
                     DF.inputSelect   "user-class" v >> br_ []
                 div_ $ do
-                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Passwort zurücksetzen" >> br_ []
-                    button_ [onclick_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
+                    a_ [href_ U.Broken, class_ "btn-cta"] "Passwort zurücksetzen" >> br_ []
+                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
                 DF.inputSubmit "Änderungen speichern"
 
 -- FIXME: Fetch limited number of users ("pagination").
