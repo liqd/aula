@@ -58,6 +58,14 @@ $arrow-width: 6px;
             opacity: 1;
         }
     }
+
+    &.m-dots {
+        &:before {
+            @extend .icon-ellipsis-h;;
+            @include rem(font-size, 20px);
+            color: $color-text;
+        }
+    }
 }
 
 .pop-menu-list {

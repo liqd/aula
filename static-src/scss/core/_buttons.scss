@@ -17,10 +17,16 @@
 }
 
 .btn {
+    background: transparent;
     color: $color-text;
+    padding: 0;
 
     &:hover, &:focus {
         color: $button-hover-color;
+    }
+
+    [class^="icon-"] {
+        @include rem(margin-right, 5px);
     }
 }
 

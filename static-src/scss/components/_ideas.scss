@@ -62,22 +62,6 @@
     }
 }
 
-$progress-bar-height: 5px;
-
-.progress-bar {
-    background-color: $color-grey-lighter;
-    border-radius: ($progress-bar-height/2);
-
-    &, .progress-bar-progress {
-        display: block;
-    }
-
-    .progress-bar-progress {
-        background-color: $color-brand1;
-        height: $progress-bar-height;
-    }
-}
-
 .no-js {
     .category-image-select {
         display: none;
