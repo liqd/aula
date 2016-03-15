@@ -749,7 +749,7 @@ fishDelegationNetworkIO = do
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         [Admin] (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction $ ActionEnv persist Config.config
+    let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
     either (error . ppShow) id <$> runExceptT
         (ac (Action.login "admin" >> fishDelegationNetworkAction))
 

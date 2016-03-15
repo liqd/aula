@@ -30,6 +30,7 @@ import qualified Data.Text.Lazy as LT
 
 import Action
 import Arbitrary (arb, schoolClasses)
+import Config (Config)
 import qualified Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Core
@@ -210,12 +211,12 @@ renderForm (F g) =
 -- infect other code, so they are left alone for now, though in the long run,
 -- abstraction would improve test code as well (separation of concerns
 -- via abstraction).
-runAction :: Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
-runAction action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
-                      unNat (mkRunAction (ActionEnv rp Config.config)) action
+runAction :: Config -> Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
+runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
+                          unNat (mkRunAction (ActionEnv rp cfg)) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
-failOnError = fmap (either (error . show) id) . runExceptT . runAction
+failOnError = fmap (either (error . show) id) . runExceptT . runAction Config.test
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --

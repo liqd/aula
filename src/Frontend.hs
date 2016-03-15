@@ -51,7 +51,7 @@ import qualified Persistent.Implementation.STM
 extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
 extendClearanceOnSessionToken _ = pure () -- FIXME
 
-runFrontend :: Config.Config -> IO ()
+runFrontend :: Config -> IO ()
 runFrontend cfg = do
     persist <- Persistent.Implementation.STM.mkRunPersist
     let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
@@ -65,7 +65,7 @@ runFrontend cfg = do
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
     -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve aulaTopProxy . aulaTop $ app
+    runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
@@ -81,11 +81,11 @@ type AulaTop
   :<|> Raw
 
 
-aulaTop :: Application -> Server AulaTop
-aulaTop app =
+aulaTop :: Config -> Application -> Server AulaTop
+aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
-  :<|> waiServeDirectory (Config.config ^. htmlStatic)
+  :<|> waiServeDirectory (cfg ^. htmlStatic)
   :<|> redirect ("/space" :: ST)
   :<|> app
   where

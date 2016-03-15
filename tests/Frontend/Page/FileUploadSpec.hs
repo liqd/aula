@@ -31,7 +31,7 @@ withServer action = bracket
     killThread
     (const $ action uri)
   where
-    cfg = Config.config
+    cfg = Config.test
     uri = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort)
     -- uri = "http://localhost:8081"
 
