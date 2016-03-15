@@ -40,7 +40,6 @@ import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Data.Functor (($>))
 import Data.Set (Set)
-import Data.String (fromString)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid hiding (href_, script_, src_)
@@ -241,21 +240,31 @@ newtype CommentVotesWidget = VotesWidget (Set CommentVote)
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget votes) = semanticDiv p . toHtml $ y <> n
+    toHtml p@(VotesWidget votes) = semanticDiv p $ do
+        div_ [class_ "comment-votes"] $ do
+            span_ [class_ "comment-vote-up"] $ do
+                toHtml y
+                i_ [class_ "icon-thumbs-o-up"] nil
+            span_ [class_ "comment-vote-down"] $ do
+                toHtml n
+                i_ [class_ "icon-thumbs-o-down"] nil
       where
-        y = "[up: "   <> show (countVotes Up   commentVoteValue votes) <> "]"
-        n = "[down: " <> show (countVotes Down commentVoteValue votes) <> "]"
+        y = show (countVotes Up   commentVoteValue votes)
+        n = show (countVotes Down commentVoteValue votes)
 
 newtype AuthorWidget a = AuthorWidget (MetaInfo a)
 
 instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        "["
-        img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
-        mi ^. metaCreatedByLogin . fromUserLogin . html
-        "]"
-
+        div_ [class_ "author"] $ do
+            -- FIXME make img optional also img is broken
+            -- img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
+            span_ [class_ "author-image"] $ do
+            -- FIXME only print this image if it's there
+                img_ [src_ P.Broken]
+            span_ [class_ "author-text"] $ do
+                mi ^. metaCreatedByLogin . fromUserLogin . html
 
 data ListItemIdea = ListItemIdea Bool (Maybe Phase) Idea
   deriving (Eq, Show, Read)

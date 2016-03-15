@@ -1,0 +1,60 @@
+$progress-bar-height: 5px;
+
+.progress-bar {
+    background-color: $color-grey-lighter;
+    border-radius: ($progress-bar-height/2);
+
+    &.m-against {
+        background-color: $color-negative;
+    }
+
+    &, .progress-bar-progress {
+        display: block;
+    }
+
+    .progress-bar-progress {
+        background-color: $color-positive;
+        height: $progress-bar-height;
+        position: relative;
+    }
+
+    .progress-bar-votes-for,
+    .progress-bar-votes-against {
+        @include rem(top, 10px);
+        @include rem(width, 15px);
+        font-weight: bold;
+        position: absolute;
+        text-align: center;
+    }
+
+    .progress-bar-votes-for {
+        @include rem(right, 5px);
+        color: $color-positive;
+    }
+
+    .progress-bar-votes-against {
+        @include rem(right, -20px);
+        color: $color-negative;
+    }
+}
+
+.voting-widget {
+    margin: 0 auto;
+    max-width: 500px;
+
+    .progress-bar {
+        @include rem(margin-top, 10px);
+    }
+}
+
+.voting-buttons {
+    @include rem(margin-top, 50px);
+
+    .voting-button {
+        @include rem(margin-right, 15px);
+
+        &:last-child {
+            margin-right: 0;
+        }
+    }
+}

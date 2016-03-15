@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.eot");
-  src: url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.woff") format("woff"),
-       url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.ttf") format("truetype"),
-       url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_1104679109868c1f6cf14af33d7ed0a8.eot");
+  src: url("../icons/fontcustom_1104679109868c1f6cf14af33d7ed0a8.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_1104679109868c1f6cf14af33d7ed0a8.woff") format("woff"),
+       url("../icons/fontcustom_1104679109868c1f6cf14af33d7ed0a8.ttf") format("truetype"),
+       url("../icons/fontcustom_1104679109868c1f6cf14af33d7ed0a8.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_5fa7525dc6c8dcaa651f317d2bf83f88.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_1104679109868c1f6cf14af33d7ed0a8.svg#fontcustom") format("svg");
   }
 }
 
@@ -25,9 +25,16 @@
 [data-icon]:before,
 .icon-bolt:before,
 .icon-comment-o:before,
+.icon-ellipsis-h:before,
 .icon-eye:before,
+.icon-flag:before,
+.icon-pencil:before,
 .icon-power-off:before,
+.icon-reply:before,
+.icon-sign-out:before,
 .icon-sun-o:before,
+.icon-thumbs-o-down:before,
+.icon-thumbs-o-up:before,
 .icon-voting:before {
   display: inline-block;
   font-family: "fontcustom";
@@ -45,14 +52,28 @@
 
 .icon-bolt:before { content: "\f102"; }
 .icon-comment-o:before { content: "\f107"; }
+.icon-ellipsis-h:before { content: "\f10b"; }
 .icon-eye:before { content: "\f103"; }
+.icon-flag:before { content: "\f10e"; }
+.icon-pencil:before { content: "\f109"; }
 .icon-power-off:before { content: "\f104"; }
+.icon-reply:before { content: "\f10f"; }
+.icon-sign-out:before { content: "\f10a"; }
 .icon-sun-o:before { content: "\f105"; }
+.icon-thumbs-o-down:before { content: "\f10c"; }
+.icon-thumbs-o-up:before { content: "\f10d"; }
 .icon-voting:before { content: "\f108"; }
 
 $font-fontcustom-bolt: "\f102";
 $font-fontcustom-comment-o: "\f107";
+$font-fontcustom-ellipsis-h: "\f10b";
 $font-fontcustom-eye: "\f103";
+$font-fontcustom-flag: "\f10e";
+$font-fontcustom-pencil: "\f109";
 $font-fontcustom-power-off: "\f104";
+$font-fontcustom-reply: "\f10f";
+$font-fontcustom-sign-out: "\f10a";
 $font-fontcustom-sun-o: "\f105";
+$font-fontcustom-thumbs-o-down: "\f10c";
+$font-fontcustom-thumbs-o-up: "\f10d";
 $font-fontcustom-voting: "\f108";
