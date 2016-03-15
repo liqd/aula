@@ -65,6 +65,9 @@ upgrade both concurrently in docker.
 1. push aula feature branch, wait for travis, merge, ./make-version.sh
 1. move submodule in aula-docker to new aula master
 1. push aula-docker
+1. wait for the quay.io/liqd/aula build
+1. run the tag-latest-build.sh on your local, which checks out the latest build, tags it with
+   the git hash and pushes the tag to quay.io
 
 FIXME: we should probably provide some of the shell commands to do all
 that?
@@ -81,21 +84,8 @@ aula-docker, travis could fail to build aula.
 
 ```
 env:
-    - AULA_IMAGE=quay.io/liqd/aula@<working-commit-hash> AULA_SOURCE=/liqd/aula
+    - AULA_IMAGE=quay.io/liqd/aula:<working-commit-hash> AULA_SOURCE=/liqd/aula
 ```
-
-
-
-TODO: it doesn't work!  also, on quay.io, there is a build id, and i
-don't think that's the commit hash, because there is also a commit
-hash in the fine print.
-
-```
-$ docker pull quay.io/liqd/aula@3fd1ea45
-Error parsing reference: "quay.io/liqd/aula@3fd1ea45" is not a valid repository/tag
-```
-
-
 
 it may also help to rebase the feature branch (still in the aula repo)
 into the past, onto a working release tag, or temporarily revert some
@@ -109,8 +99,8 @@ of thentos, aula, aula-docker, and you need to get an older, working
 combination back.
 
 - visit https://quay.io/repository/liqd/aula?tab=builds
-- select the commit hash of a build that is known to work, say DOCKER_HASH
-- `git clone https://github.com/liqd/aula-docker -b $DOCKER_HASH`
+- select the commit hash of a build that is known to work, say COMMIT_HASH
+- `git clone https://github.com/liqd/aula-docker -b $COMMIT_HASH`
 - `cd aula && git status && cd ../thentos && git status`
 - let's call the commit hashes you have found THENTOS_HASH and AULA_HASH
 
@@ -119,7 +109,7 @@ Now you can set everything up the way it worked on quay.io.
 TODO: not tested.
 
 ```shell
-docker pull quay.io/liqd/aula@$DOCKER_HASH
+docker pull quay.io/liqd/aula:$COMMIT_HASH
 cd .../thentos && git fetch && git checkout $THENTOS_HASH
 cd .../aula && git fetch && git checkout $AULA_HASH
 ```
@@ -127,7 +117,7 @@ cd .../aula && git fetch && git checkout $AULA_HASH
 
 ## Other ideas (probably not relevant for us, but fun)
 
-If you are not fond of excessive git submodule necromancy or if it
+If you are not fond of excessive git submodules or if it
 doesn't apply because you get other git repos from elsewhere, you can
 configure the required versions in resp. one-line config files and
 modify the `Dockerfile` to move those repos to those versions:
