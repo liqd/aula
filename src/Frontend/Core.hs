@@ -26,7 +26,6 @@ module Frontend.Core
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
-    , semanticSpan
     , showed
     , tabSelected
     , html
@@ -89,9 +88,6 @@ instance ToHtml () where
 -- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
-
-semanticSpan :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
-semanticSpan t = span_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
 ----------------------------------------------------------------------
 -- building blocks
