@@ -138,7 +138,7 @@ instance ToHtml PageIdeasInDiscussion where
             div_ . toHtml . show $ topic ^. topicPhase
             div_ . toHtml $ topic ^. topicTitle
             div_ . toHtml $ topic ^. topicDesc
-            a_ [href_ . U.Space space . U.ViewTopicIdeas $ topic ^. _Id] "view topic"
+            a_ [href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
 
 instance Page PageIdeasInDiscussion where
     isPrivatePage _ = True

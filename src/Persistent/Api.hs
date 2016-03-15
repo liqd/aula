@@ -48,7 +48,7 @@ module Persistent.Api
     , getTopics
     , addTopic
     , modifyTopic
-    , moveIdeasToTopic
+    , moveIdeasToLocation
     , findTopic
     , findTopicsBySpace
     , findUserByLogin
@@ -65,26 +65,29 @@ module Persistent.Api
     , dbClassQuorum
     , adminUsernameHack
     , addDelegation
+    , ideaLocationTopic
     )
 where
 
 import Control.Lens
-import Control.Monad (unless, replicateM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad (unless, replicateM)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
+import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Map (Map)
-import Data.Maybe (fromMaybe, isNothing)
-import Data.String.Conversions (ST, cs, (<>))
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
+import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
-
-import Types
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as ST
+
+import Types
+
 
 type AMap a = Map (AUID a) a
 
@@ -192,10 +195,10 @@ getUsers = getDb dbUsers
 getTopics :: PersistM m => m [Topic]
 getTopics = getDb dbTopics
 
-moveIdeasToTopic :: [AUID Idea] -> Maybe (AUID Topic) -> PersistM m => m ()
-moveIdeasToTopic ideaIds topicId =
+moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> PersistM m => m ()
+moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
-        modifyIdea ideaId $ ideaTopic .~ topicId
+        modifyIdea ideaId $ ideaLocation .~ location
 
 addTopic :: User -> Proto Topic -> PersistM m => m Topic
 addTopic cUser pt = do
@@ -205,7 +208,8 @@ addTopic cUser pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    moveIdeasToTopic (pt ^. protoTopicIdeas) (Just $ t ^. _Id)
+    Just loc <- ideaLocationTopic (t ^. _Id)
+    moveIdeasToLocation (pt ^. protoTopicIdeas) loc
     return t
 
 addDelegation :: User -> Proto Delegation -> PersistM m => m Delegation
@@ -221,13 +225,15 @@ findTopicsBySpace :: IdeaSpace -> PersistM m => m [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
-findIdeasByTopicId = findAllInBy dbIdeas ideaTopic . Just
+findIdeasByTopicId tid = do
+    Just loc <- ideaLocationTopic tid
+    findAllInBy dbIdeas ideaLocation loc
 
 findIdeasByTopic :: Topic -> PersistM m => m [Idea]
 findIdeasByTopic = findIdeasByTopicId . view _Id
 
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
-findWildIdeasBySpace space = findAllIn dbIdeas (\idea -> idea ^. ideaSpace == space && isNothing (idea ^. ideaTopic))
+findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
 -------------------------------------------------------------------
 
@@ -306,8 +312,7 @@ instance FromProto Idea where
         , _ideaTitle    = i ^. protoIdeaTitle
         , _ideaDesc     = i ^. protoIdeaDesc
         , _ideaCategory = i ^. protoIdeaCategory
-        , _ideaSpace    = i ^. protoIdeaIdeaSpace
-        , _ideaTopic    = Nothing
+        , _ideaLocation = i ^. protoIdeaLocation
         , _ideaComments = nil
         , _ideaLikes    = nil
         , _ideaQuorumOk = False
@@ -343,3 +348,10 @@ nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
 nextMetaInfo cUser = do
   now <- Timestamp <$> liftIO getCurrentTime
   mkMetaInfo cUser now <$> nextId
+
+ideaLocationTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
+ideaLocationTopic tid = do
+    mSpace <- view topicIdeaSpace <$$> findTopic tid
+    pure $ case mSpace of
+        Just space -> Just $ IdeaLocationTopic space tid
+        Nothing    -> Nothing

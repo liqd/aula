@@ -45,7 +45,7 @@ instance Page ViewIdea where
   isPrivatePage _ = True
 
 -- | 6. Create idea
-data CreateIdea = CreateIdea IdeaSpace (Maybe (AUID Topic))
+data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
@@ -147,17 +147,15 @@ instance ToHtml ViewIdea where
 instance FormPageView CreateIdea where
     type FormPageResult CreateIdea = ProtoIdea
 
-    formAction (CreateIdea space mtopicId) =
-        relPath . U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
+    formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
+    redirectOf (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeList
 
-    redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
-
-    makeForm (CreateIdea space _) =
+    makeForm (CreateIdea loc) =
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: DF.choice categoryValues Nothing)
-        <*> pure space
+        <*> pure loc
 
     formPage v fa p = do
         semanticDiv p $ do
@@ -198,26 +196,26 @@ instance FormPageView CreateIdea where
 instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) (U.EditIdea (idea ^. _Id))
-    redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
+    formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))
+    redirectOf (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) U.IdeaModeList
 
     makeForm (EditIdea idea) =
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
-        <*> pure (idea ^. ideaSpace)
+        <*> pure (idea ^. ideaLocation)
 
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
-            h3_ "Diene Idee"
+            h3_ "Deine Idee"
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
                 DF.inputSelect   "idea-category" v >> br_ []
                 DF.inputSubmit   "Speichern"
-                button_ [value_ ""] "IDEE LOSCHEN" -- FIXME delete button
-                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this back?
+                button_ [value_ ""] "Idee löschen" -- FIXME delete button
+                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
 
 categoryValues :: IsString s => [(Category, s)]
 categoryValues = [ (CatRule,        "Regel")
@@ -231,34 +229,34 @@ categoryValues = [ (CatRule,        "Regel")
 ----------------------------------------------------------------------
 -- handlers
 
--- FIXME restrict to the given IdeaSpace
+-- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
+-- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.
+-- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
-    => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
-viewIdea _space ideaId = makeFrame =<< persistent (do
-    -- FIXME 404
-    Just idea  <- findIdea ideaId
-    ViewIdea idea <$>
-        -- phase
-        case idea ^. ideaTopic of
-            Nothing ->
+    => AUID Idea -> m (Frame ViewIdea)
+viewIdea ideaId = makeFrame =<< persistent (do
+    -- FIXME: 404
+    Just idea <- findIdea ideaId
+    phase <- case idea ^. ideaLocation of
+            IdeaLocationSpace _ ->
                 pure Nothing
-            Just topicId -> do
-                -- FIXME 404
+            IdeaLocationTopic _ topicId -> do
+                -- (failure to match the following can only be caused by an inconsistent state)
                 Just topic <- findTopic topicId
-                pure . Just $ topic ^. topicPhase)
+                pure . Just $ topic ^. topicPhase
+    pure $ ViewIdea idea phase)
 
-createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea) m
-createIdea space mtopicId =
-  redirectFormHandler (pure $ CreateIdea space mtopicId)
+createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
+createIdea loc =
+  redirectFormHandler (pure $ CreateIdea loc)
   (\protoIdea -> currentUser >>= persistent . flip addIdea protoIdea)
 
--- FIXME check _space
-editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea) m
-editIdea _space ideaId =
+editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
+editIdea ideaId =
     redirectFormHandler
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
         (persistent . modifyIdea ideaId . newIdea)
   where
-    newIdea protoIdea =   (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
-                        . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
-                        . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
+                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
+                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
