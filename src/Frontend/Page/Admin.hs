@@ -350,15 +350,18 @@ instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
         adminFrame p . semanticDiv p $ do
-            table_ $ do
+            table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [onclick_ U.Broken] "KLASSE ANLEGEN"
-                    th_ $ input_ [value_ "Klassensuche"]
+                    th_ $ button_ [class_ "btn-cta", onclick_ U.Broken] "KLASSE ANLEGEN"
+                    th_ $ do
+                        div_ [class_ "inline-search-container"] $ do
+                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- Placeholder not value
+                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
-                    th_ . toHtml $ clss ^. className
-                    th_ ""
-                    th_ $ a_ [href_ U.Broken] "bearbeiten"
+                    td_ . toHtml $ clss ^. className
+                    td_ ""
+                    td_ $ a_ [href_ U.Broken] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPClassesCreate where
