@@ -68,7 +68,11 @@ instance ToHtml ViewIdea where
     -- The result might be that too much information is displayed.
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
         header_ [class_ "detail-header"] $ do
-            a_ [class_ "btn m-back detail-header-back", href_ U.Broken] "Zum Thema"
+            a_ [ class_ "btn m-back detail-header-back"
+               , let ispace  = idea ^. ideaLocation . ideaLocationSpace
+                     mtid = idea ^? ideaTopicId
+                 in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
+               ] "Zum Thema"
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 ul_ [class_ "pop-menu-list"] $ do
                     li_ [class_ "pop-menu-list-item"] $ do

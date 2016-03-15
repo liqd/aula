@@ -176,10 +176,10 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                 div_ [class_ "pop-menu"] $ do
                         "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Broken] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
-                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Broken] $ do
+                            li_ [class_ "pop-menu-list-item"] . a_ [href_ P.UserSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
                             li_ [class_ "pop-menu-list-item"] . a_ [href_ $ P.Admin P.AdminDuration] $ do
@@ -273,7 +273,7 @@ instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdea _linkToUserProfile _phase idea) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            a_ [href_ P.Broken] $ do
+            a_ [href_ $ P.IdeaPath (idea ^. ideaLocation) (P.IdeaModeView $ idea ^. _Id)] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ do
