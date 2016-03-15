@@ -8,7 +8,6 @@ module Persistent.ApiSpec where
 import Arbitrary ()
 import Control.Lens
 import Control.Monad.IO.Class
-import Data.Maybe
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
