@@ -46,7 +46,7 @@
 # -----------------------------------------------------------------------------
 
 input:
-  vectors: static/icons/svg
+  vectors: static-src/icons-svg
 #  templates: my/templates
 
 output:

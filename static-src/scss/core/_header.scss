@@ -30,7 +30,7 @@
     @include make_rounded_thumbnail($user-avatar-size);
     @include rem(margin-right, 12px);
     @include rem(margin-top, (($main-menu-height - $user-avatar-size) / 2));
-    float: right;
+    float: left;
 }
 
 .detail-header {

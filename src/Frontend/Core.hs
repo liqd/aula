@@ -175,28 +175,28 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
         case mUser of
             Just usr -> do
                 div_ [class_ "pop-menu"] $ do
-                        "Hi " <> (usr ^. userLogin . fromUserLogin . html)
-                        ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
-                                i_ [class_ "pop-menu-list-icon icon-eye"] nil
-                                "Profil anzeigen"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.UserSettings] $ do
-                                i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
-                                "Einstellungen"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.Admin P.AdminDuration] $ do
-                                i_ [class_ "pop-menu-list-icon icon-bolt"] nil
-                                "Prozessverwaltung"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.Logout] $ do
-                                i_ [class_ "pop-menu-list-icon icon-power-off"] nil
-                                "Logout"
+                    div_ [class_ "user-avatar"] $ do
+                        maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                            (mUser ^? _Just . userAvatar . _Just)
+                    "Hi " <> (usr ^. userLogin . fromUserLogin . html)
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                            i_ [class_ "pop-menu-list-icon icon-eye"] nil
+                            "Profil anzeigen"
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ P.UserSettings] $ do
+                            i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
+                            "Einstellungen"
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                            i_ [class_ "pop-menu-list-icon icon-bolt"] nil
+                            "Prozessverwaltung"
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ P.Logout] $ do
+                            i_ [class_ "pop-menu-list-icon icon-power-off"] nil
+                            "Logout"
             Nothing -> nil
-        div_ [class_ "user-avatar"] $ do
-            maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
-                (mUser ^? _Just . userAvatar . _Just)
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
