@@ -144,7 +144,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
 makeFrame p = do
   isli <- isLoggedIn
   if | not isli && isPrivatePage p -> redirect "/login"
-     | isPrivatePage p             -> flip Frame p <$> currentUser
+     | isli     || isPrivatePage p -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
 instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
