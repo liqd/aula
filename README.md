@@ -178,5 +178,5 @@ sass --watch static-src/scss/imports.scss:static/css/all.css --style compressed
 
 You need fontcustom installed https://github.com/FontCustom/fontcustom
 
-1. Add your SVGs to static/icons/svg No strokes, fills only.
+1. Add your SVGs to static-src/icons-svg/ No strokes, fills only.
 2. run `fontcustom compile -c ./fontcustom.yml`
