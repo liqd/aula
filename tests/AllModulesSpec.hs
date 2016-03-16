@@ -8,7 +8,7 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 -- to update the import list, run this:
 -- find ../src/ -name '*.hs' | perl -ne 'chomp; s!^../src/!!; s!/!.!g; s!.hs$!!; print "import $_ ()\n"' | sort
 import Action ()
-import Api ()
+import Action.Implementation ()
 import Arbitrary ()
 import Config ()
 import CreateRandom ()
