@@ -175,8 +175,7 @@ regression = describe "regression" $ do
             (\p i -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
 
 
-----------------------------------------------------------------------
--- Expectations
+-- * Expectations
 
 passes :: Expectation
 passes = return ()

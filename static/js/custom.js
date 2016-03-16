@@ -1,20 +1,9 @@
-// Header dropdown
-var drop = document.getElementsByClassName("main-header-user")[0];
-drop.onclick = function() {
-    toggleMenu();
-};
-
-function toggleMenu() {
-    if(drop.className.indexOf("m-open") > -1) {
-        removeClass(drop, "m-open");
-    } else {
-        addClass(drop, "m-open");
+// Pop Menus
+var pops = document.getElementsByClassName("pop-menu");
+for(p in pops) {
+    if(pops[p].className) {
+        addPopEvents(pops[p]);
     }
-}
-
-var menu = document.getElementsByClassName("pop-menu-list")[0];
-menu.onmouseleave = function() {
-    toggleMenu();
 }
 
 //JS detection
@@ -22,10 +11,10 @@ var body = document.getElementsByTagName("body")[0];
 removeClass(body, "no-js");
 
 //Category image selecting
-var imageSelect = document.getElementsByClassName("category-image-select")[0];
+var imageSelect = getElementByClassName("category-image-select");
 if(imageSelect) {
-    var buttons = document.getElementsByClassName("icon-list-button");
-    var radiosContainer = document.getElementsByClassName("category-radios")[0];
+    var buttons = getElementByClassName("icon-list-button");
+    var radiosContainer = getElementByClassName("category-radios");
     var radios = radiosContainer.getElementsByTagName("input");
 
     for(b in buttons) {
@@ -37,6 +26,30 @@ if(imageSelect) {
             addClass(el.target, "m-active");
         });
     }
+}
+
+function addPopEvents(el) {
+    el.onmouseenter = function() {
+        toggleMenu(el);
+    }
+
+    el.onmouseleave = function() {
+        toggleMenu(el);
+    }
+}
+
+
+function toggleMenu(el) {
+    if(el.className.indexOf("m-open") > -1) {
+        removeClass(el, "m-open");
+    } else {
+        addClass(el, "m-open");
+    }
+}
+
+function getElementByClassName(el, parent) {
+    if (typeof(parent)==='undefined') parent = document;
+    return parent.getElementsByClassName(el)[0];
 }
 
 function deselectAllCategories() {

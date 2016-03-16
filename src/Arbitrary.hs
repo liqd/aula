@@ -76,8 +76,8 @@ garbitrary = to <$> (hsequence =<< elements subs)
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
 
-----------------------------------------------------------------------
--- pages
+
+-- * pages
 
 instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
@@ -168,8 +168,7 @@ instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
 
 
-----------------------------------------------------------------------
--- idea
+-- * idea
 
 instance Arbitrary ProtoIdea where
     arbitrary =
@@ -205,8 +204,8 @@ instance Arbitrary DelegationContext where
 instance Arbitrary Delegation where
     arbitrary = garbitrary
 
-----------------------------------------------------------------------
--- comment
+
+-- * comment
 
 instance Arbitrary Comment where
     arbitrary = garbitrary
@@ -218,8 +217,7 @@ instance Arbitrary UpDown where
     arbitrary = garbitrary
 
 
-----------------------------------------------------------------------
--- idea space, topic, phase
+-- * idea space, topic, phase
 
 instance Arbitrary IdeaSpace where
     arbitrary = garbitrary
@@ -252,8 +250,7 @@ instance Arbitrary IdeaLocation where
     arbitrary = garbitrary
 
 
-----------------------------------------------------------------------
--- user
+-- * user
 
 instance Arbitrary User where
     arbitrary = garbitrary
@@ -290,8 +287,8 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
-----------------------------------------------------------------------
--- admin
+
+-- * admin
 
 instance Arbitrary Durations where
     arbitrary = garbitrary
@@ -313,8 +310,7 @@ instance Arbitrary EditUser where
 -- FIXME: instance Arbitrary DelegationContext
 
 
-----------------------------------------------------------------------
--- aula-specific helpers
+-- * aula-specific helpers
 
 instance Arbitrary (AUID a) where
     arbitrary = AUID . abs <$> arb
@@ -328,8 +324,8 @@ instance Arbitrary Document where
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
 
-----------------------------------------------------------------------
--- path
+
+-- * path
 
 instance Arbitrary P.Main where
     arbitrary = garbitrary
@@ -343,8 +339,8 @@ instance Arbitrary P.UserPs where
 instance Arbitrary P.AdminPs where
     arbitrary = garbitrary
 
-----------------------------------------------------------------------
--- servant-mock
+
+-- * servant-mock
 
 instance Arbitrary a => Arbitrary (FormPage a) where
     arbitrary = FormPage <$> arb <*> pure (return ())
@@ -352,17 +348,14 @@ instance Arbitrary a => Arbitrary (FormPage a) where
 instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
 
-instance Arbitrary a => Arbitrary (Frame' a)where
-    arbitrary = oneof [ Frame' <$> arb <*> pure (pure ()) <*> arb, PublicFrame' (pure ()) <$> arb ]
-
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb
 
 instance Arbitrary BatchCreateUsers where
     arbitrary = pure BatchCreateUsers
 
-----------------------------------------------------------------------
--- general-purpose helpers
+
+-- * general-purpose helpers
 
 scaleDown :: Gen a -> Gen a
 scaleDown = scale (`div` 3)
@@ -377,8 +370,7 @@ instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
 
-----------------------------------------------------------------------
--- arbitrary readable text
+-- * arbitrary readable text
 
 -- | source: lipsum.com
 loremIpsum :: [ST]
@@ -514,8 +506,7 @@ topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 
 
-----------------------------------------------------------------------
--- arbitrary (but plausible) delegation graphs
+-- * arbitrary (but plausible) delegation graphs
 
 fishAvatars :: [URL]
 fishAvatars =

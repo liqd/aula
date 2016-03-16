@@ -2,10 +2,12 @@
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE MultiWayIf           #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE ViewPatterns         #-}
@@ -14,11 +16,10 @@
 
 module Frontend.Core
     ( GetH
-    , Page, isPrivatePage
+    , Page, isPrivatePage, extraPageHeaders
     , PageShow(PageShow)
     , Beside(Beside)
-    , Frame(Frame, PublicFrame), makeFrame, pageFrame
-    , Frame'(Frame', PublicFrame'), makeFrame', pageFrame'
+    , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
     , FormPageView, FormPageResult
@@ -90,8 +91,16 @@ instance ToHtml () where
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
-----------------------------------------------------------------------
--- building blocks
+
+-- * building blocks
+
+-- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
+data Frame body
+    = Frame { _frameUser :: User, _frameBody :: body }
+    | PublicFrame               { _frameBody :: body }
+  deriving (Functor)
+
+makeLenses ''Frame
 
 type GetH = Get '[HTML]
 type FormHandlerT p a = FormH HTML (FormPage p) a
@@ -113,13 +122,29 @@ class FormPageView p where
 class Page p where
     isPrivatePage :: p -> Bool
 
--- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
-data Frame body = Frame User body | PublicFrame body
-  deriving (Functor)
+    extraPageHeaders  :: p -> Html ()
+    extraPageHeaders _ = nil
 
--- FIXME: Replace it with enum type that represents the extra headers.
-data Frame' body = Frame' User (Html ()) body | PublicFrame' (Html ()) body
-  deriving (Functor)
+instance Page () where
+    isPrivatePage _ = False
+
+instance Page ST where
+    isPrivatePage _ = True -- safer default, might need to be changed if needed
+
+instance (Page a, Page b) => Page (Beside a b) where
+    isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
+    extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
+
+frameAlgebra :: (body -> a) -> Frame body -> a
+frameAlgebra f = f . view frameBody
+
+-- | TODO: document this!
+instance FormPageView p => FormPageView (Frame p) where
+    type FormPageResult (Frame p) = FormPageResult p
+    formAction   = frameAlgebra formAction
+    redirectOf   = frameAlgebra redirectOf
+    makeForm     = frameAlgebra makeForm
+    formPage v a = frameAlgebra $ formPage v a
 
 makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
@@ -129,32 +154,17 @@ makeFrame p = do
      | isPrivatePage p             -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
--- FIXME: as above
-makeFrame' :: (ActionPersist r m, ActionUserHandler m, Page p)
-          => Html () -> p -> m (Frame' p)
-makeFrame' hdrs p
-  | isPrivatePage p = (\u -> Frame' u hdrs p) <$> currentUser
-  | otherwise       = return $ PublicFrame' hdrs p
-
-instance (ToHtml body) => ToHtml (Frame body) where
+instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
-    toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
-    toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
+    toHtml (Frame usr bdy)   = pageFrame (extraPageHeaders bdy) (Just usr) (toHtml bdy)
+    toHtml (PublicFrame bdy) = pageFrame (extraPageHeaders bdy) Nothing (toHtml bdy)
 
-instance (ToHtml body) => ToHtml (Frame' body) where
-    toHtmlRaw = toHtml
-    toHtml (Frame' usr hdrs bdy)   = pageFrame' hdrs (Just usr) (toHtml bdy)
-    toHtml (PublicFrame' hdrs bdy) = pageFrame' hdrs Nothing (toHtml bdy)
-
-pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame = pageFrame' nil
-
-pageFrame' :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame' (HtmlT . return . runIdentity . runHtmlT -> hdrs) mUser bdy = do
+pageFrame :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
+pageFrame hdrs mUser bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
-        hdrs
+        toHtml hdrs
     body_ [class_ "no-js"] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser >> bdy
@@ -175,28 +185,28 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
         case mUser of
             Just usr -> do
                 div_ [class_ "pop-menu"] $ do
-                        "Hi " <> (usr ^. userLogin . fromUserLogin . html)
-                        ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
-                                i_ [class_ "pop-menu-list-icon icon-eye"] nil
-                                "Profil anzeigen"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.UserSettings] $ do
-                                i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
-                                "Einstellungen"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.Admin P.AdminDuration] $ do
-                                i_ [class_ "pop-menu-list-icon icon-bolt"] nil
-                                "Prozessverwaltung"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.Logout] $ do
-                                i_ [class_ "pop-menu-list-icon icon-power-off"] nil
-                                "Logout"
+                    div_ [class_ "user-avatar"] $ do
+                        maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                            (mUser ^? _Just . userAvatar . _Just)
+                    "Hi " <> (usr ^. userLogin . fromUserLogin . html)
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                            i_ [class_ "pop-menu-list-icon icon-eye"] nil
+                            "Profil anzeigen"
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ P.UserSettings] $ do
+                            i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
+                            "Einstellungen"
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                            i_ [class_ "pop-menu-list-icon icon-bolt"] nil
+                            "Prozessverwaltung"
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ P.Logout] $ do
+                            i_ [class_ "pop-menu-list-icon icon-power-off"] nil
+                            "Logout"
             Nothing -> nil
-        div_ [class_ "user-avatar"] $ do
-            maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
-                (mUser ^? _Just . userAvatar . _Just)
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
@@ -366,7 +376,7 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result = processor result $> absoluteUriPath (redirectOf page)
-    renderer page v fa = FormPage page . toHtml . fmap (formPage v fa) <$> makeFrame page
+    renderer page v fa = FormPage page . formPage v fa <$> makeFrame page
 
 
 redirect :: (MonadError ActionExcept m) => ST -> m a

@@ -12,7 +12,6 @@ import Control.Exception (assert, SomeException(SomeException), evaluate)
 import Data.String.Conversions
 import Data.Typeable (TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import Lucid.Base (HtmlT(HtmlT))
 import System.Directory
 import System.Directory.Extra
 import System.Exit
@@ -33,8 +32,6 @@ import Config (getSamplesPath)
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude hiding ((<.>), (</>))
-
-import qualified Frontend.Path as U
 
 
 -- | config section: add new page types here.
@@ -88,12 +85,9 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
     toHtml' (ToHtmlDefault p) = toHtml p
 
 instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
-    toHtml' (ToHtmlForm p) = unwrap2 $ do
-        v <- unwrap1 $ getForm "" (makeForm p)
+    toHtml' (ToHtmlForm p) = toHtml $ do
+        let v = runIdentity $ getForm "" (makeForm p)
         formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
-      where
-        unwrap1 = return . runIdentity
-        unwrap2 = HtmlT . return . runIdentity . runHtmlT
 
 instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
     arbitrary = ToHtmlDefault <$> arbitrary
@@ -111,21 +105,20 @@ instance (ToHtml p) => ToHtml' (ToHtmlSpecial p) where
     toHtml' (ToHtmlSpecial p) = toHtml p
 
 instance Arbitrary (ToHtmlSpecial ViewIdea) where
-    arbitrary = do
-        i <- Idea
-                <$> arb
-                <*> arbPhrase
-                <*> arb
-                <*> arb
-                <*> arb
-                <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
-                <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
-                <*> arb
-                <*> pure nil  -- votes
-                <*> pure Nothing
-
-        p <- pure Nothing  -- FIXME: how do we generate one page per phase here?
-        return . ToHtmlSpecial $ ViewIdea i p
+    arbitrary = ToHtmlSpecial <$> (ViewIdea <$> i <*> p)
+      where
+        i = Idea <$> arb
+                 <*> arbPhrase
+                 <*> arb
+                 <*> arb
+                 <*> arb
+                 <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
+                 <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
+                 <*> arb
+                 <*> pure nil  -- votes
+                 <*> pure Nothing
+        -- FIXME: how do we generate one page per phase here?
+        p = pure Nothing
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
@@ -237,7 +230,11 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
             _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
 
 
--- | Take a binary serialization and use current 'ToHtml' instances for
+-- | Take a binary serialization and use current 'ToHtml' instances for.  This is a bit hacky,
+-- especially around the logged-in user, but it does the trick so far.
+--
+-- if you want to auto-refresh the page, you could add @[meta_ [httpEquiv_ "refresh", content_
+-- "1"]]@ to the default 'extraPageHeaders' in "Frontend.Core".
 dynamicRender :: ST -> IO ST
 dynamicRender s = do
     vs <- sequence $ pages g
@@ -258,13 +255,5 @@ dynamicRender s = do
         no :: IO (Maybe ST)
         no = return Nothing
 
-        -- if you want to auto-refresh the page:
-        -- >>> pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]]
         pf :: User -> a -> Html ()
-        pf user = pageFrame' hdrs (Just user) . toHtml'
-
-        hdrs :: Html ()
-        hdrs = do
-            script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
-            script_ [src_ $ U.TopStatic "d3-aula.js"]
-            link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
+        pf user = pageFrame nil (Just user) . toHtml'

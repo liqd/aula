@@ -21,8 +21,7 @@ import Frontend.Prelude
 import qualified Frontend.Path as U
 
 
-----------------------------------------------------------------------
--- types
+-- * types
 
 -- | 11.1 Admin settings: Durations
 data PageAdminSettingsDurations =
@@ -97,8 +96,7 @@ data Quorums = Quorums
 instance SOP.Generic Quorums
 
 
-----------------------------------------------------------------------
--- constants
+-- * constants
 
 defaultElaborationPeriod, defaultVotingPeriod :: DurationDays
 defaultElaborationPeriod = 21
@@ -109,8 +107,7 @@ defaultSchoolQuorum = 30
 defaultClassQuorum = 3
 
 
-----------------------------------------------------------------------
--- tabs
+-- * tabs
 
 data MenuItem
     = MenuItemDurations
@@ -151,10 +148,9 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
     toMenuItem _ = MenuItemEventsProtocol
 
 
-----------------------------------------------------------------------
--- templates
+-- * templates
 
--- * Duration
+-- ** Duration
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
@@ -258,7 +254,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
         Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
 
--- * Quorum
+-- ** Quorum
 
 instance FormPageView PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
@@ -298,7 +294,7 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
                 <*> getDb dbClassQuorum
 
 
--- * Groups and permisisons
+-- ** Groups and permisisons
 
 instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
@@ -476,7 +472,7 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
     toClass _                 = Nothing
 
 
--- * Events protocol
+-- ** Events protocol
 
 instance ToHtml PageAdminSettingsEventsProtocol where
     toHtml = toHtmlRaw

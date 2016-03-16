@@ -28,8 +28,8 @@ import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
-----------------------------------------------------------------------
--- types
+
+-- * types
 
 data ViewTopicTab
   = TabAllIdeas
@@ -74,8 +74,8 @@ data EditTopic = EditTopic
 instance Page EditTopic where
     isPrivatePage _ = True
 
-----------------------------------------------------------------------
--- templates
+
+-- * templates
 
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
@@ -183,8 +183,7 @@ ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
 
-----------------------------------------------------------------------
--- handlers
+-- * handlers
 
 -- FIXME check the 'space'
 viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
