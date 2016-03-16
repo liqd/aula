@@ -147,7 +147,7 @@ instance ToHtml ViewIdea where
                     -- FIXME Please create the comments form here
 
 
-instance FormPageView CreateIdea where
+instance FormPage CreateIdea where
     type FormPageResult CreateIdea = ProtoIdea
 
     formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
@@ -196,7 +196,7 @@ instance FormPageView CreateIdea where
                                         span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
                         DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
 
-instance FormPageView EditIdea where
+instance FormPage EditIdea where
     type FormPageResult EditIdea = ProtoIdea
 
     formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))

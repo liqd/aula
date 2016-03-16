@@ -31,7 +31,7 @@ instance ToHtml PageDelegateVote where
 instance Page PageDelegateVote where
     isPrivatePage _ = True
 
-instance FormPageView PageDelegateVote where  -- FIXME
+instance FormPage PageDelegateVote where  -- FIXME
     type FormPageResult PageDelegateVote = ()
     formAction _   = relPath U.Broken
     redirectOf _   = relPath U.Broken
