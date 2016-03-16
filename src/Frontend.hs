@@ -26,11 +26,14 @@ import Network.Wai.Application.Static
     )
 import Servant
 import System.FilePath (addTrailingPathSeparator)
-import Thentos.Prelude
 
 import qualified Data.ByteString.Builder as Builder
 
-import Action (Action, mkRunAction)
+import Thentos.Prelude
+import Thentos.Types (ThentosSessionToken)
+import Thentos.Frontend.State (serveFAction)
+
+import Action (Action, UserState, ActionEnv(..), mkRunAction)
 import Config
 import CreateRandom
 import Frontend.Core
@@ -44,14 +47,24 @@ import qualified Persistent.Implementation.STM
 
 -- * driver
 
-runFrontend :: Config.Config -> IO ()
+extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
+extendClearanceOnSessionToken _ = pure () -- FIXME
+
+runFrontend :: Config -> IO ()
 runFrontend cfg = do
     persist <- Persistent.Implementation.STM.mkRunPersist
-    let action = mkRunAction persist
-        proxy  = Proxy :: Proxy AulaTop
+    let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
+        runAction = mkRunAction (ActionEnv persist cfg)
+        aulaTopProxy = Proxy :: Proxy AulaTop
+        stateProxy   = Proxy :: Proxy UserState
+        aulaMainOrTestingProxy = Proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
+        aulaMainOrTesting :: ServerT (AulaMain :<|> "testing" :> AulaTesting) (Action  Persistent.Implementation.STM.Persist)
+        aulaMainOrTesting = catchAulaExcept aulaMainOrTestingProxy (aulaMain :<|> aulaTesting)
+    app <- serveFAction aulaMainOrTestingProxy stateProxy extendClearanceOnSessionToken runAction aulaMainOrTesting
+
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
     -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve proxy . aulaTop $ action
+    runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
@@ -60,23 +73,20 @@ runFrontend cfg = do
 
 -- * driver
 
-type AulaTop =
-       (AulaMain :<|> "testing" :> AulaTesting)
-  :<|> "samples" :> Raw
+type AulaTop
+    =  "samples" :> Raw
   :<|> "static"  :> Raw
   :<|> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
+  :<|> Raw
 
-aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
-aulaTop (Nat runAction) =
-       enter (Nat runAction) (catchAulaExcept proxy (aulaMain :<|> aulaTesting))
-  :<|> (\req cont -> getSamplesPath >>= \path ->
+aulaTop :: Config -> Application -> Server AulaTop
+aulaTop cfg app =
+       (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
-  :<|> waiServeDirectory (Config.config ^. htmlStatic)
-  :<|> redirect "/space"
+  :<|> waiServeDirectory (cfg ^. htmlStatic)
+  :<|> redirect ("/space" :: ST)
+  :<|> app
   where
-    proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
-    proxy = Proxy
-
     waiServeDirectory :: FilePath -> Application
     waiServeDirectory =
       staticApp . aulaTweakStaticSettings . defaultFileServerSettings .

@@ -37,8 +37,8 @@ module Frontend.Core
 where
 
 import Control.Lens
-import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
+import Control.Monad.Except.Missing (finally)
 import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String (fromString)
@@ -53,12 +53,12 @@ import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
-import qualified Servant.Missing
+--import qualified Servant.Missing
 import qualified Text.Digestive.Form as DF
 
 import Action
 import Api
-import Data.UriPath (UriPath, absoluteUriPath)
+import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_)
 import Types
 
@@ -143,7 +143,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect "/login"
+  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath P.Login)
      | isli     || isPrivatePage p -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
@@ -375,5 +375,6 @@ redirectFormHandler getPage processor = getH :<|> postH
     processor2 page result = processor result $> absoluteUriPath (redirectOf page)
 
 
-redirect :: (MonadError ActionExcept m) => ST -> m a
-redirect = Servant.Missing.redirect
+redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
+redirect uri = throwServantErr $
+    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }

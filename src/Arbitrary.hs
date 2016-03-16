@@ -51,6 +51,7 @@ import qualified Data.Tree as Tree
 import qualified Generics.Generic.Aeson as Aeson
 
 import Action
+import qualified Config
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude ((.~), ppShow, view, join)
@@ -751,7 +752,7 @@ fishDelegationNetworkIO = do
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         [Admin] (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction persist
+    let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
     either (error . ppShow) id <$> runExceptT
         (ac (Action.login "admin" >> fishDelegationNetworkAction))
 
