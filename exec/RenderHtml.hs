@@ -105,20 +105,20 @@ instance (ToHtml p) => ToHtml' (ToHtmlSpecial p) where
     toHtml' (ToHtmlSpecial p) = toHtml p
 
 instance Arbitrary (ToHtmlSpecial ViewIdea) where
-    arbitrary =
-        ToHtmlSpecial <$> (ViewIdea <$>
-            (Idea
-                <$> arb
-                <*> arbPhrase
-                <*> arb
-                <*> arb
-                <*> arb
-                <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
-                <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
-                <*> arb
-                <*> pure nil  -- votes
-                <*> pure Nothing) <*>
-            (pure Nothing))  -- FIXME: how do we generate one page per phase here?
+    arbitrary = ToHtmlSpecial <$> (ViewIdea <$> i <*> p)
+      where
+        i = Idea <$> arb
+                 <*> arbPhrase
+                 <*> arb
+                 <*> arb
+                 <*> arb
+                 <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
+                 <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
+                 <*> arb
+                 <*> pure nil  -- votes
+                 <*> pure Nothing
+        -- FIXME: how do we generate one page per phase here?
+        p = pure Nothing
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
