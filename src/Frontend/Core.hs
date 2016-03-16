@@ -135,7 +135,9 @@ instance (Page a, Page b) => Page (Beside a b) where
     isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
--- | TODO: document this!
+-- | 'FormPage' requires the second argument to be of type 'FormPageResult'.  When the page type
+-- carrying the form semantics is wrapped in a 'Frame' similar, we want to pass around the wrapping
+-- while maintaining the form semantics.
 instance FormPageView p => FormPageView (Frame p) where
     type FormPageResult (Frame p) = FormPageResult p
     formAction   = formAction   . view frameBody
