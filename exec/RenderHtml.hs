@@ -86,7 +86,7 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
 
 instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = toHtml $ do
-        v <- return . runIdentity $ getForm "" (makeForm p)
+        let v = runIdentity $ getForm "" (makeForm p)
         formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
 
 instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
@@ -105,8 +105,9 @@ instance (ToHtml p) => ToHtml' (ToHtmlSpecial p) where
     toHtml' (ToHtmlSpecial p) = toHtml p
 
 instance Arbitrary (ToHtmlSpecial ViewIdea) where
-    arbitrary = do
-        i <- Idea
+    arbitrary =
+        ToHtmlSpecial <$> (ViewIdea <$>
+            (Idea
                 <$> arb
                 <*> arbPhrase
                 <*> arb
@@ -116,10 +117,8 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                 <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
                 <*> arb
                 <*> pure nil  -- votes
-                <*> pure Nothing
-
-        p <- pure Nothing  -- FIXME: how do we generate one page per phase here?
-        return . ToHtmlSpecial $ ViewIdea i p
+                <*> pure Nothing) <*>
+            (pure Nothing))  -- FIXME: how do we generate one page per phase here?
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
