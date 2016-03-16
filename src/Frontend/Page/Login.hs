@@ -8,7 +8,6 @@ where
 
 import Action (ActionM)
 import qualified Action
-import qualified Frontend.Path as P
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
