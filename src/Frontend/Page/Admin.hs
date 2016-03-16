@@ -74,7 +74,7 @@ data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolCla
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPClassesEdit where
-    isPrivatePage _ = True 
+    isPrivatePage _ = True
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
@@ -410,19 +410,24 @@ instance FormPageView PageAdminSettingsGaPUsersEdit where
 
     formPage v fa p@(PageAdminSettingsGaPUsersEdit user _classes) = adminFrame p $ do
         semanticDiv p $ do
-            DF.form v fa $ do
-                div_ $ do
-                    p_ "Avatar"
-                    toHtml (user ^. userLogin . fromUserLogin) >> br_ []
-                div_ $ do
-                    "Nutzerrolle"
-                    DF.inputSelect   "user-role" v >> br_ []
-                    "Klasse"
-                    DF.inputSelect   "user-class" v >> br_ []
-                div_ $ do
-                    a_ [href_ U.Broken, class_ "btn-cta"] "Passwort zurücksetzen" >> br_ []
-                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
-                DF.inputSubmit "Änderungen speichern"
+            div_ [class_ "admin-container"] $ do
+                DF.form v fa $ do
+                    div_ [class_ "col-3-12"] $ do
+                        div_ [class_ "upload-avatar"] $ do
+                            a_ [href_ U.Broken] $ i_ [class_ "upload-avatar-icon icon-camera"] nil
+                    div_ [class_ "col-9-12"] $ do
+                        h1_ [class_ "admin-main-heading"] $ do
+                            toHtml (user ^. userLogin . fromUserLogin)
+                        label_ [class_ "col-6-12"] $ do
+                            span_ [class_ "label-text"] "Nutzerrolle"
+                            inputSelect_ [class_ "m-stretch"] "user-role" v
+                        label_ [class_ "col-6-12"] $ do
+                            span_ [class_ "label-text"] "Klasse"
+                            inputSelect_ [class_ "m-stretch"] "user-class" v
+                        a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                        div_ [class_ "admin-buttons"] $ do
+                            a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
+                            DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesEdit where
     toHtml = toHtmlRaw

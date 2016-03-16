@@ -1,5 +1,6 @@
 .btn, .btn-cta, input[type=submit] {
     border: 0;
+    display: inline-block;
     font-weight: bold;
     font-family: $font-family-regular;
     line-height: $button-height;

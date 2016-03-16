@@ -29,6 +29,7 @@ import Text.Digestive.View
 import qualified Data.Text.Lazy as LT
 
 import Action
+import Action.Implementation
 import Arbitrary (arb, schoolClasses)
 import Config (Config)
 import qualified Config
@@ -60,7 +61,6 @@ spec = do
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
-        , H (arb :: Gen PageLogout)
         , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
         , H (PageComment <$> arb)
         ]

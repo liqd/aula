@@ -34,6 +34,10 @@ select {
     @include rem(height, 30px);
     background-color: white;
     width: auto;
+
+    &.m-stretch {
+        width: 100%;
+    }
 }
 
 .label-text {

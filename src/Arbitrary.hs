@@ -51,6 +51,7 @@ import qualified Data.Tree as Tree
 import qualified Generics.Generic.Aeson as Aeson
 
 import Action
+import Action.Implementation
 import qualified Config
 import Frontend.Core
 import Frontend.Page
@@ -166,9 +167,6 @@ instance Arbitrary PageStaticTermsOfUse where
 
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = pure PageHomeWithLoginPrompt
-
-instance Arbitrary PageLogout where
-    arbitrary = pure PageLogout
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
@@ -358,9 +356,6 @@ instance Arbitrary P.AdminPs where
 
 -- * servant-mock
 
-instance Arbitrary a => Arbitrary (FormPage a) where
-    arbitrary = FormPage <$> arb <*> pure (return ())
-
 instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
 
@@ -384,6 +379,9 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
+
+instance GenArbitrary r => GenArbitrary (Action r) where
+    genArbitrary = liftIO $ generate arbitrary
 
 
 -- * arbitrary readable text
