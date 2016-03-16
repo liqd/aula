@@ -72,8 +72,7 @@ import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfTo
 import Test.QuickCheck (arbitrary, generate)
 
 
-----------------------------------------------------------------------
--- constraint types
+-- * constraint types
 
 -- | User representation during an action
 -- FIXME: Figure out which information is needed here.
@@ -190,8 +189,7 @@ instance GenArbitrary r => GenArbitrary (Action r) where
     genArbitrary = Action . liftIO $ generate arbitrary
 
 
-----------------------------------------------------------------------
--- concrete monad type; user state
+-- * concrete monad type; user state
 
 -- | The actions a user can perform.
 --
@@ -229,8 +227,7 @@ mkRunAction env = Nat run
             throwError500 "Invalid internal user session state"
 
 
-----------------------------------------------------------------------
--- Action Combinators
+-- * Action Combinators
 
 -- | Returns the current user ID
 currentUserId :: ActionUserHandler m => m (AUID User)
@@ -253,14 +250,16 @@ modifyCurrentUser f = currentUserId >>= persistent . (`modifyUser` f)
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
 
+
+-- * Action Helpers
+
 validLoggedIn :: UserState -> Bool
 validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 
 validUserState :: UserState -> Bool
 validUserState us = us == userLoggedOut || validLoggedIn us
 
-----------------------------------------------------------------------
--- csv temp files
+-- * csv temp files
 
 class ActionTempCsvFiles m where
     popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])

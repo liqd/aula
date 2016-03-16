@@ -25,8 +25,8 @@ import qualified Data.Set as Set
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
-----------------------------------------------------------------------
--- types
+
+-- * types
 
 -- | 5 Idea detail page
 -- This includes the pages 5.1 to 5.7 excluding 5.5 (PageIdeaDetailMoveIdeaToTopic) which needs its
@@ -45,7 +45,7 @@ instance Page ViewIdea where
   isPrivatePage _ = True
 
 -- | 6. Create idea
-data CreateIdea = CreateIdea IdeaSpace (Maybe (AUID Topic))
+data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
@@ -59,77 +59,106 @@ instance Page EditIdea where
   isPrivatePage _ = True
 
 
-----------------------------------------------------------------------
--- templates
+-- * templates
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     -- NP: I've avoided here complex conditionals.
     -- The result might be that too much information is displayed.
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
-        h2_ $ idea ^. ideaTitle . html
+        header_ [class_ "detail-header"] $ do
+            a_ [ class_ "btn m-back detail-header-back"
+               , let ispace  = idea ^. ideaLocation . ideaLocationSpace
+                     mtid = idea ^? ideaTopicId
+                 in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
+               ] "Zum Thema"
+            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                ul_ [class_ "pop-menu-list"] $ do
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] $ do
+                            i_ [class_ "icon-pencil"] nil
+                            "bearbeiten"
+                        a_ [href_ U.Broken] $ do
+                            i_ [class_ "icon-sign-out"] nil
+                            "Idee verschieben"
+        div_ [class_ "grid"] $ do
+            div_ [class_ "container-narrow"] $ do
+                h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
+                {- FIXME what was this for ?
+                div_ [class_ "sub-heading"] $ do
+                    idea ^. ideaMeta . to AuthorWidget . html <> " "
+                    idea ^. ideaCategory . showed . html
+                -}
 
-        div_ [id_ "author"]   $ idea ^. ideaMeta . to AuthorWidget . html
-        div_ [id_ "category"] $ idea ^. ideaCategory . showed . html
+                -- von X / X stimmen / X verbesserungvorschläge
+                div_ [class_ "sub-heading"] $ do
+                    when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
+                        "von " <> idea ^. createdBy . showed . html <> "/"
+                        totalVotes ^. showed . html <> " Stimmen" <> "/"
+                        totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                        span_ [class_ "progress-bar m-against"] $ do
+                            span_ [ class_ "progress-bar-progress"
+                            -- FIXME: dummy data
+                                  , style_ "width: 75%"
+                                  ] $ do
+                                span_ [class_ "progress-bar-votes-for"] "6"
+                                span_ [class_ "progress-bar-votes-against"] "12"
 
-        div_ [id_ "badges"] $ do
-            -- At most one badge should be displayed
-            when (notFeasibleIdea idea) $ span_ [id_ "cross-mark"] ":cross-mark:"
-            when (winningIdea idea)     $ span_ [id_ "medal"] ":medal:"
+                        -- buttons
+                        when (phase == Just PhaseVoting) . div_ [class_ "voting-buttons"] $ do
+                            button_ [class_ "btn-cta voting-button", value_ "yes"]     "dafür"   -- FIXME
+                            button_ [class_ "btn-cta voting-button", value_ "neutral"] "neutral" -- FIXME
+                            button_ [class_ "btn-cta voting-button", value_ "no"]      "dagegen" -- FIXME
 
-        -- von X / X stimmen / X verbesserungvorschläge
-        when (phase >= Just PhaseVoting) . div_ [id_ "votes"] $ do
-            span_ $ "von " <> idea ^. createdBy . showed . html
-            span_ "/"
-            span_ $ totalVotes ^. showed . html <> " Stimmen"
-            span_ "/"
-            span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                div_ [id_ "badges"] $ do
+                    -- At most one badge should be displayed
+                    when (notFeasibleIdea idea) $ span_ [id_ "cross-mark"] ":cross-mark:"
+                    when (winningIdea idea)     $ span_ [id_ "medal"] ":medal:"
 
-        -- visual vote stats
-        when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
-            let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
-                n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
-            div_ $ do
-                span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
-            div_ $ do
-                span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
+                -- visual vote stats
+                {- FIXME plug this in to my nice widget pls
+                when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
+                    let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
+                        n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
+                    div_ $ do
+                        span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
+                    div_ $ do
+                        span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
+                -}
 
-        -- buttons
-        when (phase == Just PhaseVoting) . div_ [id_ "voting"] $ do
-            button_ [value_ "yes"]     "dafür"   -- FIXME
-            button_ [value_ "neutral"] "neutral" -- FIXME
-            button_ [value_ "no"]      "dagegen" -- FIXME
-
-        -- article
-        div_ [id_ "desc"] $ idea ^. ideaDesc . html
+                -- article
+                div_ [class_ "text-markdown"] $ idea ^. ideaDesc . html
 
         -- comments
-        div_ [id_ "comments"] $ do
-            hr_ []
-            span_ $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
-            span_ $ button_ [value_ "create_comment"] "Neuer Verbesserungsvorschlag" -- FIXME
-            hr_ []
-            for_ (idea ^. ideaComments) $ \c ->
-                PageComment c ^. html
-      where
-        totalVotes    = Set.size $ idea ^. ideaVotes
-        totalComments = Set.size $ idea ^. ideaComments
+        section_ [class_ "comments"] $ do
+            header_ [class_ "comments-header"] $ do
+                div_ [class_ "grid"] $ do
+                    div_ [class_ "container-narrow"] $ do
+                        h2_ [class_ "comments-header-heading"] $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                        -- FIXME not on design
+                        button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
+            div_ [class_ "comments-body grid"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    for_ (idea ^. ideaComments) $ \c ->
+                        PageComment c ^. html
+                          where
+                            totalVotes    = Set.size $ idea ^. ideaVotes
+                            totalComments = Set.size $ idea ^. ideaComments
+                    -- FIXME Please create the comments form here
 
 
 instance FormPageView CreateIdea where
     type FormPageResult CreateIdea = ProtoIdea
 
-    formAction (CreateIdea space mtopicId) =
-        relPath . U.Space space $ maybe U.CreateIdea U.CreateIdeaInTopic mtopicId
+    formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
+    redirectOf (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeList
 
-    redirectOf (CreateIdea space _) = relPath $ U.Space space U.ListIdeas
-
-    makeForm (CreateIdea space _) =
+    makeForm (CreateIdea loc) =
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: DF.choice categoryValues Nothing)
-        <*> pure space
+        <*> pure loc
 
     formPage v fa p = do
         semanticDiv p $ do
@@ -170,26 +199,26 @@ instance FormPageView CreateIdea where
 instance FormPageView EditIdea where
     type FormPageResult EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) (U.EditIdea (idea ^. _Id))
-    redirectOf (EditIdea idea) = relPath $ U.Space (idea ^. ideaSpace) U.ListIdeas
+    formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))
+    redirectOf (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) U.IdeaModeList
 
     makeForm (EditIdea idea) =
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
-        <*> pure (idea ^. ideaSpace)
+        <*> pure (idea ^. ideaLocation)
 
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
-            h3_ "Diene Idee"
+            h3_ "Deine Idee"
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
                 DF.inputSelect   "idea-category" v >> br_ []
                 DF.inputSubmit   "Speichern"
-                button_ [value_ ""] "IDEE LOSCHEN" -- FIXME delete button
-                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this back?
+                button_ [value_ ""] "Idee löschen" -- FIXME delete button
+                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
 
 categoryValues :: IsString s => [(Category, s)]
 categoryValues = [ (CatRule,        "Regel")
@@ -200,37 +229,36 @@ categoryValues = [ (CatRule,        "Regel")
                  ]
 
 
-----------------------------------------------------------------------
--- handlers
+-- * handlers
 
--- FIXME restrict to the given IdeaSpace
+-- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
+-- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.
+-- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
-    => IdeaSpace -> AUID Idea -> m (Frame ViewIdea)
-viewIdea _space ideaId = makeFrame =<< persistent (do
-    -- FIXME 404
-    Just idea  <- findIdea ideaId
-    ViewIdea idea <$>
-        -- phase
-        case idea ^. ideaTopic of
-            Nothing ->
+    => AUID Idea -> m (Frame ViewIdea)
+viewIdea ideaId = makeFrame =<< persistent (do
+    -- FIXME: 404
+    Just idea <- findIdea ideaId
+    phase <- case idea ^. ideaLocation of
+            IdeaLocationSpace _ ->
                 pure Nothing
-            Just topicId -> do
-                -- FIXME 404
+            IdeaLocationTopic _ topicId -> do
+                -- (failure to match the following can only be caused by an inconsistent state)
                 Just topic <- findTopic topicId
-                pure . Just $ topic ^. topicPhase)
+                pure . Just $ topic ^. topicPhase
+    pure $ ViewIdea idea phase)
 
-createIdea :: ActionM r m => IdeaSpace -> Maybe (AUID Topic) -> ServerT (FormHandler CreateIdea) m
-createIdea space mtopicId =
-  redirectFormHandler (pure $ CreateIdea space mtopicId)
+createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
+createIdea loc =
+  redirectFormHandler (pure $ CreateIdea loc)
   (\protoIdea -> currentUser >>= persistent . flip addIdea protoIdea)
 
--- FIXME check _space
-editIdea :: ActionM r m => IdeaSpace -> AUID Idea -> ServerT (FormHandler EditIdea) m
-editIdea _space ideaId =
+editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
+editIdea ideaId =
     redirectFormHandler
         (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
         (persistent . modifyIdea ideaId . newIdea)
   where
-    newIdea protoIdea =   (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
-                        . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
-                        . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
+                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
+                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))

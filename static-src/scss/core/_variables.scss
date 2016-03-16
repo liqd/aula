@@ -15,6 +15,9 @@ $color-grey-light:          #e4e4e4;
 $color-grey-lighter:        #f6f6f6;
 $color-brand1:              #69970b; // Green
 
+$color-positive:            $color-brand1;
+$color-negative:            #cd0808;
+
 $color-text:                $color-grey-dark;
 $color-text-muted:          $color-grey-mid;
 $color-link:                $color-brand1;
@@ -26,7 +29,8 @@ $input-height:              50px;
 $tablet-breakpoint:         768px;
 $desktop-breakpoint:        992px;
 
-$button-cta-height:         25px;
+$button-height:             25px;
+$button-hover-color:        $color-grey-mid;
 $button-cta-base-color:     $color-brand1;
 $button-cta-hover-color:    $color-grey-dark;
 

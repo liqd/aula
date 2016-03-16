@@ -39,8 +39,7 @@ import qualified Persistent.Implementation.STM
 import Types
 
 
-----------------------------------------------------------------------
--- list all types for testing
+-- * list all types for testing
 
 spec :: Spec
 spec = do
@@ -62,6 +61,7 @@ spec = do
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen PageLogout)
+        , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
         , H (PageComment <$> arb)
         ]
     context "PageFormView" $ mapM_ testForm [
@@ -77,8 +77,7 @@ spec = do
         ]
 
 
-----------------------------------------------------------------------
--- translate form data back to form input
+-- * translate form data back to form input
 
 -- | Translate a value into the select string for the form 'Env'.
 --
@@ -173,8 +172,8 @@ instance PayloadToEnv EditUser where
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
-----------------------------------------------------------------------
--- machine room
+
+-- * machine room
 
 data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen
@@ -255,10 +254,10 @@ class FormPageView p => ArbFormPageResult p where
     arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 
 instance ArbFormPageResult CreateIdea where
-    arbFormPageResult (CreateIdea space _) = set protoIdeaIdeaSpace space <$> arbitrary
+    arbFormPageResult (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
 
 instance ArbFormPageResult EditIdea where
-    arbFormPageResult (EditIdea idea) = set protoIdeaIdeaSpace (idea ^. ideaSpace) <$> arbitrary
+    arbFormPageResult (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPageResult PageAdminSettingsQuorum where
     arbFormPageResult _ = arbitrary

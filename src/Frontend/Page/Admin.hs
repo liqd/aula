@@ -21,8 +21,7 @@ import Frontend.Prelude
 import qualified Frontend.Path as U
 
 
-----------------------------------------------------------------------
--- types
+-- * types
 
 -- | 11.1 Admin settings: Durations
 data PageAdminSettingsDurations =
@@ -71,6 +70,12 @@ data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
 instance Page PageAdminSettingsGaPClassesCreate where
     isPrivatePage _ = True
 
+data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolClass [User]
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPClassesEdit where
+    isPrivatePage _ = True 
+
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
@@ -97,8 +102,7 @@ data Quorums = Quorums
 instance SOP.Generic Quorums
 
 
-----------------------------------------------------------------------
--- constants
+-- * constants
 
 defaultElaborationPeriod, defaultVotingPeriod :: DurationDays
 defaultElaborationPeriod = 21
@@ -109,8 +113,7 @@ defaultSchoolQuorum = 30
 defaultClassQuorum = 3
 
 
-----------------------------------------------------------------------
--- tabs
+-- * tabs
 
 data MenuItem
     = MenuItemDurations
@@ -146,30 +149,38 @@ instance ToMenuItem PageAdminSettingsGaPClassesView where
 instance ToMenuItem PageAdminSettingsGaPClassesCreate where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassCreate)
 
+instance ToMenuItem PageAdminSettingsGaPClassesEdit where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+
 -- | 11.4 Admin settings: Events protocol
 instance ToMenuItem PageAdminSettingsEventsProtocol where
     toMenuItem _ = MenuItemEventsProtocol
 
 
-----------------------------------------------------------------------
--- templates
+-- * templates
 
--- * Duration
+-- ** Duration
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [id_ "tabs"] . ul_ [] $ do
-        li_ [] $ menulink tab MenuItemDurations
-        li_ [] $ menulink tab MenuItemQuorum
-        if isPermissionsMenuItem tab
-            then do
-                li_ [] $ span_ "Gruppen & Nutzer"
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
-            else do
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
-        li_ [] $ menulink tab MenuItemEventsProtocol
-    div_ bdy
+    div_ [class_ "grid"] $ do
+        div_ [class_ "col-2-12"] $ do
+            nav_ [class_ "admin-menu"] $ do
+                h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
+                ul_ [] $ do
+                    li_ [] $ menulink tab MenuItemDurations
+                    li_ [] $ menulink tab MenuItemQuorum
+                    if isPermissionsMenuItem tab
+                        then do
+                            li_ [] $ do
+                                "Gruppen & Nutzer"
+                                ul_ $ do
+                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                        else do
+                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                    li_ [] $ menulink tab MenuItemEventsProtocol
+        div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem t
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
@@ -228,12 +239,15 @@ instance FormPageView PageAdminSettingsDurations where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                div_ $ do
-                    "Wie viele Tage soll die Ausarbeitungphase dauern?" >> br_ []
-                    DF.inputText "elab-duration" v >> "Tage" >> br_ []
-                div_ $ do
-                    "Wie viele Tage soll die Abstimmungphase dauren?" >> br_ []
-                    DF.inputText "vote-duration" v >> "Tage" >> br_ []
+                -- TODO these should be "numeber" fields
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
+                    inputText_ [class_ "input-number input-appendee"] "elab-duration" v
+                    span_ [class_ "input-helper"] "Tage"
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
+                    inputText_  [class_ "input-number input-appendee"] "vote-duration" v
+                    span_ [class_ "input-helper"] "Tage"
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations) m
@@ -249,7 +263,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
         Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
 
--- * Quorum
+-- ** Quorum
 
 instance FormPageView PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
@@ -267,12 +281,14 @@ instance FormPageView PageAdminSettingsQuorum where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                div_ $ do
-                    "Wie hoch soll das Quorum schulweit sein?" >> br_ []
-                    DF.inputText "school-quorum" v >> "% aller Schulerinnen der Schule" >> br_ []
-                div_ $ do
-                    "Wie hoch soll das Quorum klassenweit sein?" >> br_ []
-                    DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
+                    inputText_ [class_ "input-number input-appendee"] "school-quorum" v
+                    span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
+                    inputText_ [class_ "input-number input-appendee"] "class-quorum" v
+                    span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
@@ -287,20 +303,24 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
                 <*> getDb dbClassQuorum
 
 
--- * Groups and permisisons
+-- ** Groups and permisisons
 
 instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
+    toHtmlRaw p@(PageAdminSettingsGaPUsersView _users) =
         adminFrame p . semanticDiv p $ do
-            table_ $ do
+            table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
-                    th_ "AVATAR"
+                    th_ nil
                     th_ "NAME"
                     th_ "KLASSE"
                     th_ "ROLE SELECTION"
-                    th_ $ button_ [onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
-                    th_ $ input_ [value_ "NUTZERSUCHE"]
+                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
+                    th_ $ do
+                        div_ [class_ "inline-search-container"] $ do
+                            input_ [class_ "inline-search-input", value_ "NUTZERSUCHE"] -- Placeholder not value
+                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
+                {-
                 tbody_ . forM_ users $ \user -> tr_ $ do
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
@@ -308,6 +328,17 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ "Rolle ???" -- FIXME: Fetch the user's role
                     td_ "" -- THIS SHOULD LEFT EMPTY
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
+                FIXME - Dummy, dummy! -}
+
+                let dummydummydummy = do
+                        td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                        td_ "UserName"
+                        td_ "Klasse"
+                        td_ "Role"
+                        td_ ""
+                        td_ $ a_ [href_ U.Broken] "bearbeiten"
+
+                tbody_ $ tr_ `mapM_` [dummydummydummy, dummydummydummy]
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
@@ -320,15 +351,18 @@ instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
         adminFrame p . semanticDiv p $ do
-            table_ $ do
+            table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [onclick_ U.Broken] "KLASSE ANLEGEN"
-                    th_ $ input_ [value_ "Klassensuche"]
+                    th_ $ button_ [class_ "btn-cta", onclick_ U.Broken] "KLASSE ANLEGEN"
+                    th_ $ do
+                        div_ [class_ "inline-search-container"] $ do
+                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- Placeholder not value
+                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
-                    th_ . toHtml $ clss ^. className
-                    th_ ""
-                    th_ $ a_ [href_ U.Broken] "bearbeiten"
+                    td_ . toHtml $ clss ^. className
+                    td_ ""
+                    td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPClassesCreate where
@@ -390,6 +424,22 @@ instance FormPageView PageAdminSettingsGaPUsersEdit where
                     a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen" >> br_ []
                 DF.inputSubmit "Änderungen speichern"
 
+instance ToHtml PageAdminSettingsGaPClassesEdit where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit clss users) =
+        adminFrame p . semanticDiv p $ do
+            -- FIXME: Make appropiate design
+            div_ . h1_ . toHtml $ clss ^. className
+            table_ [class_ "admin-table"] $ do
+                thead_ . tr_ $ do
+                    th_ nil
+                    th_ "Name"
+                    th_ nil
+                tbody_ . forM_ users $ \user -> tr_ $ do
+                    td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                    td_ . toHtml $ user ^. userLogin . fromUserLogin
+                    td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
+
 -- FIXME: Fetch limited number of users ("pagination").
 
 adminSettingsGaPUsersView :: ActionM r m => m (Frame PageAdminSettingsGaPUsersView)
@@ -425,20 +475,21 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
 replaceUserRole :: EditUser -> [Group] -> [Group]
 replaceUserRole (EditUser role clss) gs
   | studentInSameYear = gs
-  | otherwise = addGroup . filter (not . isSelectedClass) $ gs
+  | otherwise = addGroup . filter (not . isClassInGroup clss) $ gs
   where
     studentInSameYear = any (studentInSameYear' (_classSchoolYear clss)) gs
 
     studentInSameYear' year (Student c) = _classSchoolYear c == year
     studentInSameYear' _ _              = False
 
-    isSelectedClass (Student clss')    = clss == clss'
-    isSelectedClass (ClassGuest clss') = clss == clss'
-    isSelectedClass _                  = False
-
     addGroup xs = case role of
         RoleStudent -> Student clss : xs
         RoleGuest   -> ClassGuest clss : xs
+
+isClassInGroup :: SchoolClass -> Group -> Bool
+isClassInGroup clss (Student clss')    = clss == clss'
+isClassInGroup clss (ClassGuest clss') = clss == clss'
+isClassInGroup _    _                  = False
 
 getSchoolClasses :: PersistM m => m [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
@@ -446,23 +497,30 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
     toClass (ClassSpace clss) = Just clss
     toClass _                 = Nothing
 
+adminSettingsGaPClassesEdit :: ActionM r m => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
+adminSettingsGaPClassesEdit clss =
+    makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
+  where
+    usersInClass = filter isUserInClass <$> persistent getUsers
+    isUserInClass u = any (isClassInGroup clss) (u ^. userGroups)
 
--- * Events protocol
+-- ** Events protocol
 
 instance ToHtml PageAdminSettingsEventsProtocol where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = adminFrame p . semanticDiv p $ do
-        div_ $ do
-            p_ "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
-            -- FIXME: Clientside JavaScript. Change the download button link
-            -- If the value of the selection is changes.
+        label_ $ do
+            span_ [class_ "label-text"] "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
+        -- FIXME: Clientside JavaScript. Change the download button link
+        -- If the value of the selection is changes.
             select_ [name_ "idea"] . forM_ ideaSpaces $ \idea ->
                 option_ [value_ (makeValue idea)] (makeText idea)
-        div_ $ do
-            p_ "Event-Protokoll"
+        div_ [class_ "download-box"] $ do
+            header_ [class_ "download-box-header"] $ do
+                "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [onclick_ U.Broken] "Download"
-            p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
+                button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
+            p_ [class_ "download-box-body"] "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
         makeValue SchoolSpace = "idea-schoolspace"

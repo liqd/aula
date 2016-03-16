@@ -1,0 +1,129 @@
+.admin-menu {
+    @include rem(margin-bottom, -($main-menu-height * 2));
+    background: $color-grey-light;
+    height: 100%;
+
+    .admin-menu-header, > ul {
+        @include rem(padding, 20px 25px);
+    }
+
+    > ul li {
+        @include rem(margin-bottom, 15px);
+
+        a {
+            color: $color-text;
+
+            &.tab-selected {
+                font-weight: bold;
+                color: $color-brand1;
+            }
+        }
+
+        ul {
+            @include rem(margin-top, 5px);
+
+            li {
+                @include rem(margin, 5px 0 0 20px);
+            }
+        }
+    }
+}
+
+.admin-menu-header {
+    @include rem(margin-bottom, 40px);
+    background: $color-brand1;
+    color: white;
+}
+
+.admin-body, .admin-menu {
+    @include rem(font-size, $font-size-small);
+}
+
+.admin-body {
+    @include rem(margin-top, 118px);
+    @include rem(padding-left, 50px);
+
+    .label-text {
+        font-weight: bold;
+    }
+}
+
+.admin-table {
+    width: 100%;
+
+    th, td {
+        border-bottom: 2px solid $color-grey-lighter;
+        vertical-align: middle;
+        text-align: left;
+    }
+
+    th {
+        @include rem(padding-bottom, 10px);
+        line-height: $button-height;
+    }
+
+    td {
+        @include rem(padding, 7px 0);
+    }
+
+    .img-container {
+        @include make_rounded_thumbnail(35px);
+        display: block;
+    }
+}
+
+.inline-search-container {
+    display: inline-block;
+    position: relative;
+
+    .inline-search-input {
+        @include rem(font-size, $font-size-small);
+        @include rem(padding, 0 30px);
+        border: 1px solid $color-grey-light;
+        border-radius: $button-height / 2;
+        color: $color-grey-mid;
+        line-height: $button-height;
+        width: auto;
+    }
+
+    .inline-search-button {
+        @include rem(height, ($button-height - 2px));
+        @include rem(width, ($button-height - 2px));
+        background: $color-grey-light;
+        border-radius: ($button-height - 2px);
+        color: $color-text;
+        display: block;
+        line-height: ($button-height - 2px);
+        position: absolute;
+        right: 2px;
+        text-align: center;
+        top: 2px;
+
+        i:before {
+            line-height: ($button-height - 2px);
+        }
+    }
+}
+
+.download-box {
+    box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
+    border: 1px solid $color-grey-light;
+    max-width: 550px;
+
+    .download-box-body, .download-box-header {
+        @include rem(padding, 15px);
+    }
+
+    .download-box-header {
+        background: $color-grey-lighter;
+        border-bottom: 1px solid $color-grey-light;
+        display: bold;
+        font-weight: bold;
+        line-height: $button-height;
+        overflow: hidden;
+
+        .download-box-button {
+            float: right;
+        }
+    }
+}

@@ -40,7 +40,7 @@ import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -77,8 +77,8 @@ garbitrary = to <$> (hsequence =<< elements subs)
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
 
-----------------------------------------------------------------------
--- pages
+
+-- * pages
 
 instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
@@ -100,7 +100,7 @@ instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
 
 instance Arbitrary CreateIdea where
-    arbitrary = CreateIdea <$> arb <*> arb
+    arbitrary = CreateIdea <$> arb
 
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
@@ -144,6 +144,11 @@ instance Arbitrary PageAdminSettingsGaPClassesView where
 instance Arbitrary PageAdminSettingsGaPClassesCreate where
     arbitrary = pure PageAdminSettingsGaPClassesCreate
 
+instance Arbitrary PageAdminSettingsGaPClassesEdit where
+    arbitrary = do
+        clss <- arb
+        PageAdminSettingsGaPClassesEdit clss <$> listOf (userForClass clss)
+
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
 
@@ -169,8 +174,7 @@ instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
 
 
-----------------------------------------------------------------------
--- idea
+-- * idea
 
 instance Arbitrary ProtoIdea where
     arbitrary =
@@ -206,8 +210,8 @@ instance Arbitrary DelegationContext where
 instance Arbitrary Delegation where
     arbitrary = garbitrary
 
-----------------------------------------------------------------------
--- comment
+
+-- * comment
 
 instance Arbitrary Comment where
     arbitrary = garbitrary
@@ -219,8 +223,7 @@ instance Arbitrary UpDown where
     arbitrary = garbitrary
 
 
-----------------------------------------------------------------------
--- idea space, topic, phase
+-- * idea space, topic, phase
 
 instance Arbitrary IdeaSpace where
     arbitrary = garbitrary
@@ -249,9 +252,11 @@ instance Arbitrary Topic where
 instance Arbitrary Phase where
     arbitrary = garbitrary
 
+instance Arbitrary IdeaLocation where
+    arbitrary = garbitrary
 
-----------------------------------------------------------------------
--- user
+
+-- * user
 
 instance Arbitrary User where
     arbitrary = garbitrary
@@ -271,6 +276,12 @@ instance Arbitrary UserLastName where
 instance Arbitrary Group where
     arbitrary = garbitrary
 
+guestOrStudent :: SchoolClass -> Gen Group
+guestOrStudent clss = elements
+    [ Student clss
+    , ClassGuest clss
+    ]
+
 instance Arbitrary UserPass where
     arbitrary = garbitrary
 
@@ -288,8 +299,12 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
-----------------------------------------------------------------------
--- admin
+
+-- * admin
+
+userForClass :: SchoolClass -> Gen User
+userForClass clss =
+    arb <**> (set userGroups . pure <$> guestOrStudent clss)
 
 instance Arbitrary Durations where
     arbitrary = garbitrary
@@ -311,8 +326,7 @@ instance Arbitrary EditUser where
 -- FIXME: instance Arbitrary DelegationContext
 
 
-----------------------------------------------------------------------
--- aula-specific helpers
+-- * aula-specific helpers
 
 instance Arbitrary (AUID a) where
     arbitrary = AUID . abs <$> arb
@@ -326,8 +340,8 @@ instance Arbitrary Document where
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
 
-----------------------------------------------------------------------
--- path
+
+-- * path
 
 instance Arbitrary P.Main where
     arbitrary = garbitrary
@@ -341,8 +355,8 @@ instance Arbitrary P.UserPs where
 instance Arbitrary P.AdminPs where
     arbitrary = garbitrary
 
-----------------------------------------------------------------------
--- servant-mock
+
+-- * servant-mock
 
 instance Arbitrary a => Arbitrary (FormPage a) where
     arbitrary = FormPage <$> arb <*> pure (return ())
@@ -350,17 +364,14 @@ instance Arbitrary a => Arbitrary (FormPage a) where
 instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
 
-instance Arbitrary a => Arbitrary (Frame' a)where
-    arbitrary = oneof [ Frame' <$> arb <*> pure (pure ()) <*> arb, PublicFrame' (pure ()) <$> arb ]
-
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb
 
 instance Arbitrary BatchCreateUsers where
     arbitrary = pure BatchCreateUsers
 
-----------------------------------------------------------------------
--- general-purpose helpers
+
+-- * general-purpose helpers
 
 scaleDown :: Gen a -> Gen a
 scaleDown = scale (`div` 3)
@@ -375,8 +386,7 @@ instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
 
-----------------------------------------------------------------------
--- arbitrary readable text
+-- * arbitrary readable text
 
 -- | source: lipsum.com
 loremIpsum :: [ST]
@@ -512,8 +522,7 @@ topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 
 
-----------------------------------------------------------------------
--- arbitrary (but plausible) delegation graphs
+-- * arbitrary (but plausible) delegation graphs
 
 fishAvatars :: [URL]
 fishAvatars =
@@ -733,7 +742,7 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
         role <- Student <$> genArbitrary
         cUser <- currentUser
         let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
-        persistent $ (userAvatar .~ avatar) <$> addUser cUser pu
+        persistent $ (userAvatar .~ Just avatar) <$> addUser cUser pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe

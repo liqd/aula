@@ -1,14 +1,42 @@
+.btn, .btn-cta, input[type=submit] {
+    border: 0;
+    font-weight: bold;
+    font-family: $font-family-regular;
+    line-height: $button-height;
+    text-transform: uppercase;
+
+    &:hover, &:focus {
+        text-decoration: none;
+    }
+
+    &.m-back {
+        &:before {
+            content: "← ";
+        }
+    }
+}
+
+.btn {
+    background: transparent;
+    color: $color-text;
+    padding: 0;
+
+    &:hover, &:focus {
+        color: $button-hover-color;
+    }
+
+    [class^="icon-"] {
+        @include rem(margin-right, 5px);
+    }
+}
+
 .btn-cta,
 input[type=submit] {
     @include rem(padding, 0 15px);
     background: $button-cta-base-color;
-    border: 0;
-    border-radius: $button-cta-height / 2;
+    border-radius: $button-height / 2;
+    border: none;
     color: #fff;
-    font-family: $font-family-regular;
-    font-weight: bold;
-    line-height: $button-cta-height;
-    text-transform: uppercase;
 
     &:hover, &:focus {
         background-color: $button-cta-hover-color;

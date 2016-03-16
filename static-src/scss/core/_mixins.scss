@@ -27,6 +27,11 @@
     @include rem(height, $size);
     @include rem(width, $size);
     background: $color-grey-light;
+
+    img {
+        width: 100%;
+        height: auto;
+    }
 }
 
 $rem-baseline: $font-size-normal !default;
