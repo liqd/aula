@@ -26,7 +26,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.3.0
+    , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
     , generic-aeson
@@ -103,7 +103,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.3.0
+    , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
     , generic-aeson
@@ -156,7 +156,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.3.0
+    , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
     , generic-aeson
@@ -213,7 +213,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.3.0
+    , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
     , generic-aeson
