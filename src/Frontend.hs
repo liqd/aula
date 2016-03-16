@@ -36,12 +36,14 @@ import Thentos.Frontend.State (serveFAction)
 import Action (Action, UserState, ActionEnv(..), mkRunAction)
 import Config
 import CreateRandom
+import Data.UriPath
 import Frontend.Core
 import Frontend.Page as Page
 import Persistent
 import Types
 
 import qualified Action
+import qualified Frontend.Path as U
 import qualified Persistent.Implementation.STM
 
 
@@ -151,7 +153,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
   :<|> Page.login
-  :<|> (redirect . absolutePath . relPath $ P.Login)
+  :<|> (redirect . absoluteUriPath . relPath $ U.Login)
 
 
 type AulaSpace =
