@@ -123,6 +123,19 @@ data Category =
 
 instance SOP.Generic Category
 
+instance ToHtml Category where
+    toHtmlRaw = toHtml
+    toHtml CatRule = li_ [class_ "icon-rules"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
+    toHtml CatEquipment = li_ [class_ "icon-equipment"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
+    toHtml CatClass = li_ [class_ "icon-teaching"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
+    toHtml CatTime = li_ [class_ "icon-time"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
+    toHtml CatEnvironment = li_ [class_ "icon-environment"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
+
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
     { _likeMeta  :: MetaInfo IdeaLike

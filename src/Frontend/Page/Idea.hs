@@ -85,12 +85,10 @@ instance ToHtml ViewIdea where
         div_ [class_ "grid"] $ do
             div_ [class_ "container-narrow"] $ do
                 h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
-                {- FIXME what was this for ?
                 div_ [class_ "sub-heading"] $ do
-                    idea ^. ideaMeta . to AuthorWidget . html <> " "
-                    idea ^. ideaCategory . showed . html
-                -}
-
+                    idea ^. ideaMeta . to AuthorWidget . html
+                    " "
+                    idea ^. ideaCategory . html  -- FIXME: css doesn't work out the same way as in 'CreateIdea'
                 -- von X / X stimmen / X verbesserungvorschläge
                 div_ [class_ "sub-heading"] $ do
                     when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
@@ -179,20 +177,10 @@ instance FormPage CreateIdea where
                             div_ [class_ "category-radios"] $ do
                                 DF.inputRadio True "idea-category" v
                             div_ [class_ "icon-list m-inline category-image-select"] $ do
-                                ul_ $ do
+                                ul_ . sequence_ $ toHtml <$> [(minBound :: Category)..]
                                     -- FIXME: select a category for the newly created idea.  this
                                     -- needs to be tested.  see also: static/js/custom.js.
-                                    li_ [class_ "icon-rules"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
-                                    li_ [class_ "icon-equipment"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
-                                    li_ [class_ "icon-teaching"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
-                                    li_ [class_ "icon-time"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
-                                    li_ [class_ "icon-environment"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
-                        DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
+                        DF.inputSubmit "Idee veröffentlichen"
 
 instance FormPage EditIdea where
     type FormPageResult EditIdea = ProtoIdea
