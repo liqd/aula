@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_0c947473b2d10bde34648f972b8e4eb7.eot");
-  src: url("../icons/fontcustom_0c947473b2d10bde34648f972b8e4eb7.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_0c947473b2d10bde34648f972b8e4eb7.woff") format("woff"),
-       url("../icons/fontcustom_0c947473b2d10bde34648f972b8e4eb7.ttf") format("truetype"),
-       url("../icons/fontcustom_0c947473b2d10bde34648f972b8e4eb7.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_fe9ad2d1bd88090ffc431f20c50956e7.eot");
+  src: url("../icons/fontcustom_fe9ad2d1bd88090ffc431f20c50956e7.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_fe9ad2d1bd88090ffc431f20c50956e7.woff") format("woff"),
+       url("../icons/fontcustom_fe9ad2d1bd88090ffc431f20c50956e7.ttf") format("truetype"),
+       url("../icons/fontcustom_fe9ad2d1bd88090ffc431f20c50956e7.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_0c947473b2d10bde34648f972b8e4eb7.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_fe9ad2d1bd88090ffc431f20c50956e7.svg#fontcustom") format("svg");
   }
 }
 
@@ -32,6 +32,7 @@
 .icon-pencil:before,
 .icon-power-off:before,
 .icon-reply:before,
+.icon-search:before,
 .icon-sign-out:before,
 .icon-sun-o:before,
 .icon-thumbs-o-down:before,
@@ -60,6 +61,7 @@
 .icon-pencil:before { content: "\f109"; }
 .icon-power-off:before { content: "\f104"; }
 .icon-reply:before { content: "\f10f"; }
+.icon-search:before { content: "\f111"; }
 .icon-sign-out:before { content: "\f10a"; }
 .icon-sun-o:before { content: "\f105"; }
 .icon-thumbs-o-down:before { content: "\f10c"; }
@@ -75,6 +77,7 @@ $font-fontcustom-flag: "\f10e";
 $font-fontcustom-pencil: "\f109";
 $font-fontcustom-power-off: "\f104";
 $font-fontcustom-reply: "\f10f";
+$font-fontcustom-search: "\f111";
 $font-fontcustom-sign-out: "\f10a";
 $font-fontcustom-sun-o: "\f105";
 $font-fontcustom-thumbs-o-down: "\f10c";
