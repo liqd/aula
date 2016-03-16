@@ -25,8 +25,8 @@ import qualified Data.Set as Set
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
-----------------------------------------------------------------------
--- types
+
+-- * types
 
 -- | 5 Idea detail page
 -- This includes the pages 5.1 to 5.7 excluding 5.5 (PageIdeaDetailMoveIdeaToTopic) which needs its
@@ -59,8 +59,7 @@ instance Page EditIdea where
   isPrivatePage _ = True
 
 
-----------------------------------------------------------------------
--- templates
+-- * templates
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
@@ -230,8 +229,7 @@ categoryValues = [ (CatRule,        "Regel")
                  ]
 
 
-----------------------------------------------------------------------
--- handlers
+-- * handlers
 
 -- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
 -- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.

@@ -34,6 +34,10 @@ data PageDelegationNetwork = PageDelegationNetwork
 
 instance Page PageDelegationNetwork where
     isPrivatePage _ = True
+    extraPageHeaders _ = do
+        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+        script_ [src_ $ U.TopStatic "d3-aula.js"]
+        link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
@@ -93,11 +97,5 @@ instance ToHtml PageDelegationNetwork where
 
         bigHr
 
-viewDelegationNetwork :: ActionM r m => m (Frame' PageDelegationNetwork)
-viewDelegationNetwork = makeFrame' hdrs PageDelegationNetwork
-  where
-    hdrs :: Html ()
-    hdrs = do
-        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
-        script_ [src_ $ U.TopStatic "d3-aula.js"]
-        link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
+viewDelegationNetwork :: ActionM r m => m (Frame PageDelegationNetwork)
+viewDelegationNetwork = makeFrame PageDelegationNetwork

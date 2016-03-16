@@ -64,8 +64,7 @@ import Types
 import Test.QuickCheck (arbitrary, generate)
 
 
-----------------------------------------------------------------------
--- constraint types
+-- * constraint types
 
 -- | User representation during an action
 -- FIXME: Figure out which information is needed here.
@@ -143,8 +142,7 @@ instance GenArbitrary r => GenArbitrary (Action r) where
     genArbitrary = Action . liftIO $ generate arbitrary
 
 
-----------------------------------------------------------------------
--- concrete monad type; user state
+-- * concrete monad type; user state
 
 -- FIXME: Until we have cookies, we get the logged-in user from this TVar.
 -- When we support cookies, we will obtain tokens from them and look up
@@ -206,8 +204,7 @@ mkRunAction persistNat = Nat run
       put uState
 
 
-----------------------------------------------------------------------
--- Action Combinators
+-- * Action Combinators
 
 -- | Returns the current user
 currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
@@ -225,8 +222,7 @@ isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = (UserLoggedOut /=) <$> userState
 
 
-----------------------------------------------------------------------
--- Action Helpers
+-- * Action Helpers
 
 loggedInUser :: ActionUserHandler m => m UserLogin
 loggedInUser = userState >>= \case
@@ -234,8 +230,7 @@ loggedInUser = userState >>= \case
     UserLoggedIn uLogin _session -> return uLogin
 
 
-----------------------------------------------------------------------
--- csv temp files
+-- * csv temp files
 
 class ActionTempCsvFiles m where
     popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])

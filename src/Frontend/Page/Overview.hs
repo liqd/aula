@@ -21,8 +21,8 @@ import Frontend.Prelude
 import qualified Frontend.Path as U
 import qualified Data.Text as ST
 
-----------------------------------------------------------------------
--- pages
+
+-- * pages
 
 -- | 1. Rooms overview
 data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
@@ -43,8 +43,7 @@ data ActiveTab = WildIdeas | Topics
   deriving (Eq, Show, Read)
 
 
-----------------------------------------------------------------------
--- actions
+-- * actions
 
 viewRooms :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => m (Frame PageRoomsOverview)
@@ -60,8 +59,7 @@ viewTopics :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m
 viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> findTopicsBySpace space)
 
 
-----------------------------------------------------------------------
--- templates
+-- * templates
 
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml

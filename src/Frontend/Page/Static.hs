@@ -7,8 +7,8 @@ where
 
 import Frontend.Prelude
 
-----------------------------------------------------------------------
--- page
+
+-- * page
 
 -- | 14. Static page: Imprint
 data PageStaticImprint = PageStaticImprint
@@ -17,8 +17,8 @@ data PageStaticImprint = PageStaticImprint
 instance Page PageStaticImprint where
     isPrivatePage _ = False
 
-----------------------------------------------------------------------
--- template
+
+-- * template
 
 instance ToHtml PageStaticImprint where
     toHtmlRaw = toHtml
@@ -32,8 +32,8 @@ instance ToHtml PageStaticImprint where
                 p_ $ b_ "Projektleitung"
                 p_ $ b_ "Technische Leitung"
 
-----------------------------------------------------------------------
--- page
+
+-- * page
 
 -- | 15. Static page: Terms of use
 data PageStaticTermsOfUse = PageStaticTermsOfUse
@@ -42,8 +42,8 @@ data PageStaticTermsOfUse = PageStaticTermsOfUse
 instance Page PageStaticTermsOfUse where
     isPrivatePage _ = False
 
-----------------------------------------------------------------------
--- template
+
+-- * template
 
 instance ToHtml PageStaticTermsOfUse where
     toHtmlRaw = toHtml

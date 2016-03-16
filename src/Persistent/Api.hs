@@ -255,7 +255,6 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
--------------------------------------------------------------------
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
