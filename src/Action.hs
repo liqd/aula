@@ -119,7 +119,7 @@ class Monad m => ActionLog m where
     logEvent :: ST -> m ()
 
 instance ActionLog (Action r) where
-    logEvent = Action . liftIO . print
+    logEvent = liftIO . print
 
 -- | A monad that can include actions changing a persistent state.
 --
@@ -134,10 +134,7 @@ class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     persistent :: r a -> m a
 
 instance PersistM r => ActionPersist r (Action r) where
-    persistent r = Action $ view persistNat >>= \(Nat rp) -> liftIO $ rp r
-
-instance MonadIO (Action r) where
-    liftIO = Action . liftIO
+    persistent r = view persistNat >>= \(Nat rp) -> liftIO $ rp r
 
 instance MonadLIO DCLabel (Action r) where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
@@ -186,7 +183,7 @@ class MonadError ActionExcept m => ActionError m
 instance ActionError (Action r)
 
 instance GenArbitrary r => GenArbitrary (Action r) where
-    genArbitrary = Action . liftIO $ generate arbitrary
+    genArbitrary = liftIO $ generate arbitrary
 
 
 -- * concrete monad type; user state
@@ -201,13 +198,14 @@ instance GenArbitrary r => GenArbitrary (Action r) where
 -- FUTUREWORK: Move action implementation to another module and hide behind
 -- an API, similarly as it's done with persistent implementation,
 -- to reveal and mark (and possibly fix) where the implementation is hardwired.
-newtype Action r a = Action (ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a)
+newtype Action r a = MkAction { unAction :: ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a }
     deriving ( Functor
              , Applicative
              , Monad
              , MonadError ActionExcept
              , MonadReader (ActionEnv r)
              , MonadState UserState
+             , MonadIO
              )
 
 -- | Creates a natural transformation from Action to the servant handler monad.
@@ -217,7 +215,6 @@ mkRunAction env = Nat run
   where
     run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
         . runExceptT . unAction . (checkCurrentUser >>)
-    unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
 
     checkCurrentUser = do
@@ -266,11 +263,11 @@ class ActionTempCsvFiles m where
     cleanupTempCsvFiles :: FormData -> m ()
 
 instance ActionTempCsvFiles (Action r) where
-    popTempCsvFile = Action . liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
+    popTempCsvFile = liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
 
-    cleanupTempCsvFiles = Action . liftIO . releaseFormTempFiles
+    cleanupTempCsvFiles = liftIO . releaseFormTempFiles
 
 decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
