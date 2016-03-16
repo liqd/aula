@@ -1,37 +1,27 @@
-{-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE FunctionalDependencies     #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE ViewPatterns               #-}
-
-{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
-
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeOperators          #-}
 -- | The 'Action' module contains an API which
 module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
     , ActionPersist(persistent)
-    , ActionUserHandler(login, logout)
+    , ActionUserHandler(login, logout, userState)
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), config, persistNat
 
-      -- * concrete monad type (abstract)
-    , Action
-    , mkRunAction
-
       -- * user handling
+    , userLoggedOut
     , currentUser
     , modifyCurrentUser
     , isLoggedIn
+    , validUserState
+    , validLoggedIn
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken
@@ -43,12 +33,8 @@ module Action
     )
 where
 
-import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
-import Control.Monad.IO.Class
-import Control.Monad.RWS.Lazy
-import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
@@ -56,26 +42,19 @@ import Prelude hiding (log)
 import Servant
 import Servant.Missing
 
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
 import Persistent
 import Types
 import Config (Config)
-import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
-import Thentos.Action (freshSessionToken)
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
-
--- FIXME: Remove. It is scaffolding to generate random data
-import Test.QuickCheck (arbitrary, generate)
 
 
 -- * constraint types
 
 -- | User representation during an action
--- FIXME: Figure out which information is needed here.
 data UserState = UserState
     { _usSessionToken :: Maybe ThentosSessionToken
     , _usCsrfToken :: Maybe CsrfToken
@@ -112,14 +91,9 @@ class ( ActionLog m
       , ActionTempCsvFiles m
       ) => ActionM r m
 
-instance PersistM r => ActionM r (Action r)
-
 class Monad m => ActionLog m where
     -- | Log events
     logEvent :: ST -> m ()
-
-instance ActionLog (Action r) where
-    logEvent = Action . liftIO . print
 
 -- | A monad that can include actions changing a persistent state.
 --
@@ -132,18 +106,6 @@ class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     -- FIXME: Rename atomically, and only call on
     -- complex computations.
     persistent :: r a -> m a
-
-instance PersistM r => ActionPersist r (Action r) where
-    persistent r = Action $ view persistNat >>= \(Nat rp) -> liftIO $ rp r
-
-instance MonadIO (Action r) where
-    liftIO = Action . liftIO
-
-instance MonadLIO DCLabel (Action r) where
-    liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
-
-instance MonadRandom (Action r) where
-    getRandomBytes = liftIO . getRandomBytes
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -162,69 +124,10 @@ class ActionError m => ActionUserHandler m where
     -- | Make the user log out
     logout :: m ()
 
--- | FIXME: every login changes all other logins (replaces the previous one)
-instance PersistM r => ActionUserHandler (Action r) where
-    login uLogin = do
-        muser <- persistent $ findUserByLogin uLogin
-        case muser of
-            Nothing ->
-                throwError500 $ "ActionUserHandler.login: no such user" <> show uLogin
-            Just user -> do
-                usUserId .= Just (user ^. _Id)
-                sessionToken <- freshSessionToken
-                usSessionToken .= Just sessionToken
-
-    userState = use
-
-    logout = put userLoggedOut
-
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept
 
 class MonadError ActionExcept m => ActionError m
-
-instance ActionError (Action r)
-
-instance GenArbitrary r => GenArbitrary (Action r) where
-    genArbitrary = Action . liftIO $ generate arbitrary
-
-
--- * concrete monad type; user state
-
--- | The actions a user can perform.
---
--- FIXME:
--- - Figure out the exact stack we need to use here.
--- - Store the actual session data, userid etc.
--- - We should decide on exact userstate and handle everything here.
---
--- FUTUREWORK: Move action implementation to another module and hide behind
--- an API, similarly as it's done with persistent implementation,
--- to reveal and mark (and possibly fix) where the implementation is hardwired.
-newtype Action r a = Action (ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a)
-    deriving ( Functor
-             , Applicative
-             , Monad
-             , MonadError ActionExcept
-             , MonadReader (ActionEnv r)
-             , MonadState UserState
-             )
-
--- | Creates a natural transformation from Action to the servant handler monad.
--- See Frontend.runFrontend for the persistency of @UserState@.
-mkRunAction :: PersistM r => ActionEnv r -> Action r :~> ExceptT ServantErr IO
-mkRunAction env = Nat run
-  where
-    run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
-        . runExceptT . unAction . (checkCurrentUser >>)
-    unAction (Action a) = a
-    runRWSTflip r s comp = runRWST comp r s
-
-    checkCurrentUser = do
-        isValid <- userState $ to validUserState
-        unless isValid $ do
-            logout
-            throwError500 "Invalid internal user session state"
 
 
 -- * Action Combinators
@@ -264,13 +167,6 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 class ActionTempCsvFiles m where
     popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])
     cleanupTempCsvFiles :: FormData -> m ()
-
-instance ActionTempCsvFiles (Action r) where
-    popTempCsvFile = Action . liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
-      where
-        exceptToLeft (SomeException e) = return . Left . show $ e
-
-    cleanupTempCsvFiles = Action . liftIO . releaseFormTempFiles
 
 decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader

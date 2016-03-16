@@ -51,6 +51,7 @@ import qualified Data.Tree as Tree
 import qualified Generics.Generic.Aeson as Aeson
 
 import Action
+import Action.Implementation
 import qualified Config
 import Frontend.Core
 import Frontend.Page
@@ -378,6 +379,9 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
+
+instance GenArbitrary r => GenArbitrary (Action r) where
+    genArbitrary = liftIO $ generate arbitrary
 
 
 -- * arbitrary readable text
