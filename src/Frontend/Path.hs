@@ -21,7 +21,7 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types (AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext)
+import Types (AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext, SchoolClass)
 
 data Top =
     Top
@@ -135,18 +135,19 @@ data AdminPs =
   | AdminQuorum
   | AdminAccess PermissionContext
   | AdminEditUser (AUID User)
+  | AdminEditClass SchoolClass
   | AdminEvent
   deriving (Generic, Show)
 
 instance SOP.Generic AdminPs
 
 admin :: AdminPs -> UriPath -> UriPath
-admin AdminDuration       path = path </> "duration"
-admin AdminQuorum         path = path </> "quorum"
-admin (AdminAccess ctx)   path = path </> "access" </> uriPart ctx
-admin (AdminEditUser uid) path = path </> "user" </> uriPart uid </> "edit"
-admin AdminEvent          path = path </> "event"
-
+admin AdminDuration         path = path </> "duration"
+admin AdminQuorum           path = path </> "quorum"
+admin (AdminAccess ctx)     path = path </> "access" </> uriPart ctx
+admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
+admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
+admin AdminEvent            path = path </> "event"
 
 data IdeaPath = IdeaPath IdeaLocation IdeaMode
   deriving (Eq, Ord, Show, Read, Generic)
