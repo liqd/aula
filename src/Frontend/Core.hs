@@ -135,16 +135,13 @@ instance (Page a, Page b) => Page (Beside a b) where
     isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
-frameAlgebra :: (body -> a) -> Frame body -> a
-frameAlgebra f = f . view frameBody
-
 -- | TODO: document this!
 instance FormPageView p => FormPageView (Frame p) where
     type FormPageResult (Frame p) = FormPageResult p
-    formAction   = frameAlgebra formAction
-    redirectOf   = frameAlgebra redirectOf
-    makeForm     = frameAlgebra makeForm
-    formPage v a = frameAlgebra $ formPage v a
+    formAction   = formAction   . view frameBody
+    redirectOf   = redirectOf   . view frameBody
+    makeForm     = makeForm     . view frameBody
+    formPage v a = formPage v a . view frameBody
 
 makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
