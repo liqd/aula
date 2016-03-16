@@ -270,7 +270,7 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: URL  -- FIXME UriPath?  Maybe?
+    , _userAvatar    :: Maybe URL  -- FIXME UriPath?
     , _userGroups    :: [Group]  -- FIXME make a set.  rename group to role.
     , _userPassword  :: UserPass
     , _userEmail     :: Maybe UserEmail
@@ -388,7 +388,7 @@ data MetaInfo a = MetaInfo
     { _metaId              :: AUID a
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
-    , _metaCreatedByAvatar :: URL
+    , _metaCreatedByAvatar :: Maybe URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
     , _metaChangedAt       :: Timestamp
@@ -550,7 +550,7 @@ class HasMetaInfo a where
     createdBy       = metaInfo . metaCreatedBy
     createdByLogin  :: Lens' a UserLogin
     createdByLogin  = metaInfo . metaCreatedByLogin
-    createdByAvatar :: Lens' a URL
+    createdByAvatar :: Lens' a (Maybe URL)
     createdByAvatar = metaInfo . metaCreatedByAvatar
     createdAt       :: Lens' a Timestamp
     createdAt       = metaInfo . metaCreatedAt

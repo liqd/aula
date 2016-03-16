@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE TupleSections               #-}
 {-# LANGUAGE TypeOperators               #-}
 {-# LANGUAGE ViewPatterns                #-}
 
@@ -29,6 +30,7 @@ module Persistent.Api
 
     , getSpaces
     , getIdeas
+    , getNumVotersForIdea
     , addIdeaSpaceIfNotExists
     , addIdea
     , modifyIdea
@@ -159,6 +161,24 @@ getSpaces = getDb dbSpaces
 getIdeas :: PersistM m => m [Idea]
 getIdeas = getDb dbIdeas
 
+-- | Users can like an idea / vote on it iff they are students with access to the idea's space.
+getNumVotersForIdea :: PersistM m => Idea -> m (Idea, Int)
+getNumVotersForIdea idea = (idea,) . length . filter hasAccess <$> getUsers
+  where
+    hasAccess u = case idea ^. ideaLocation . ideaLocationSpace of
+        SchoolSpace   -> isStudent u
+        ClassSpace cl -> u `isStudentInClass` cl
+
+    isStudent (view userGroups -> gs) = any f gs
+      where
+        f (Student _) = True
+        f _           = False
+
+    isStudentInClass (view userGroups -> gs) cl = any f gs
+      where
+        f (Student cl') = cl' == cl
+        f _             = False
+
 -- | If idea space already exists, do nothing.  Otherwise, create it.
 addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
 addIdeaSpaceIfNotExists ispace = do
@@ -250,7 +270,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userLogin     = uLogin
     , _userFirstName = proto ^. protoUserFirstName
     , _userLastName  = proto ^. protoUserLastName
-    , _userAvatar    = "http://no.avatar/"
+    , _userAvatar    = Nothing
     , _userGroups    = proto ^. protoUserGroups
     , _userPassword  = uPassword
     , _userEmail     = proto ^. protoUserEmail
