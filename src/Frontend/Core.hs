@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE MultiWayIf           #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
@@ -14,11 +15,10 @@
 
 module Frontend.Core
     ( GetH
-    , Page, isPrivatePage
+    , Page, isPrivatePage, extraPageHeaders
     , PageShow(PageShow)
     , Beside(Beside)
     , Frame(Frame, PublicFrame), makeFrame, pageFrame
-    , Frame'(Frame', PublicFrame'), makeFrame', pageFrame'
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
     , FormPageView, FormPageResult
@@ -113,13 +113,24 @@ class FormPageView p where
 class Page p where
     isPrivatePage :: p -> Bool
 
+    extraPageHeaders  :: p -> Html ()
+    extraPageHeaders _ = nil
+
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body = Frame User body | PublicFrame body
   deriving (Functor)
 
--- FIXME: Replace it with enum type that represents the extra headers.
-data Frame' body = Frame' User (Html ()) body | PublicFrame' (Html ()) body
-  deriving (Functor)
+frameAlgebra :: (body -> a) -> Frame body -> a
+frameAlgebra f = \case (Frame _ b)     -> f b
+                       (PublicFrame b) -> f b
+
+-- | TODO: document this!
+instance FormPageView p => FormPageView (Frame p) where
+    type FormPageResult (Frame p) = FormPageResult p
+    formAction   = frameAlgebra formAction
+    redirectOf   = frameAlgebra redirectOf
+    makeForm     = frameAlgebra makeForm
+    formPage v a = frameAlgebra $ formPage v a
 
 makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
@@ -129,32 +140,17 @@ makeFrame p = do
      | isPrivatePage p             -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
--- FIXME: as above
-makeFrame' :: (ActionPersist r m, ActionUserHandler m, Page p)
-          => Html () -> p -> m (Frame' p)
-makeFrame' hdrs p
-  | isPrivatePage p = (\u -> Frame' u hdrs p) <$> currentUser
-  | otherwise       = return $ PublicFrame' hdrs p
-
-instance (ToHtml body) => ToHtml (Frame body) where
+instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
-    toHtml (Frame usr bdy)   = pageFrame (Just usr) (toHtml bdy)
-    toHtml (PublicFrame bdy) = pageFrame Nothing (toHtml bdy)
+    toHtml (Frame usr bdy)   = pageFrame (extraPageHeaders bdy) (Just usr) (toHtml bdy)
+    toHtml (PublicFrame bdy) = pageFrame (extraPageHeaders bdy) Nothing (toHtml bdy)
 
-instance (ToHtml body) => ToHtml (Frame' body) where
-    toHtmlRaw = toHtml
-    toHtml (Frame' usr hdrs bdy)   = pageFrame' hdrs (Just usr) (toHtml bdy)
-    toHtml (PublicFrame' hdrs bdy) = pageFrame' hdrs Nothing (toHtml bdy)
-
-pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame = pageFrame' nil
-
-pageFrame' :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame' (toHtml -> hdrs) mUser bdy = do
+pageFrame :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
+pageFrame hdrs mUser bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
-        hdrs
+        toHtml hdrs
     body_ [class_ "no-js"] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser >> bdy
@@ -366,7 +362,7 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result = processor result $> absoluteUriPath (redirectOf page)
-    renderer page v fa = FormPage page . toHtml . fmap (formPage v fa) <$> makeFrame page
+    renderer page v fa = FormPage page . formPage v fa <$> makeFrame page
 
 
 redirect :: (MonadError ActionExcept m) => ST -> m a

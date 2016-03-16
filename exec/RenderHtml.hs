@@ -33,8 +33,6 @@ import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude hiding ((<.>), (</>))
 
-import qualified Frontend.Path as U
-
 
 -- | config section: add new page types here.
 pages :: forall b.
@@ -233,7 +231,11 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
             _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
 
 
--- | Take a binary serialization and use current 'ToHtml' instances for
+-- | Take a binary serialization and use current 'ToHtml' instances for.  This is a bit hacky,
+-- especially around the logged-in user, but it does the trick so far.
+--
+-- if you want to auto-refresh the page, you could add @[meta_ [httpEquiv_ "refresh", content_
+-- "1"]]@ to the default 'extraPageHeaders' in "Frontend.Core".
 dynamicRender :: ST -> IO ST
 dynamicRender s = do
     vs <- sequence $ pages g
@@ -254,13 +256,5 @@ dynamicRender s = do
         no :: IO (Maybe ST)
         no = return Nothing
 
-        -- if you want to auto-refresh the page:
-        -- >>> pageFrame' [meta_ [httpEquiv_ "refresh", content_ "1"]]
         pf :: User -> a -> Html ()
-        pf user = pageFrame' hdrs (Just user) . toHtml'
-
-        hdrs :: Html ()
-        hdrs = do
-            script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
-            script_ [src_ $ U.TopStatic "d3-aula.js"]
-            link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
+        pf user = pageFrame nil (Just user) . toHtml'

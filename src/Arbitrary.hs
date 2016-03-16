@@ -348,9 +348,6 @@ instance Arbitrary a => Arbitrary (FormPage a) where
 instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
 
-instance Arbitrary a => Arbitrary (Frame' a)where
-    arbitrary = oneof [ Frame' <$> arb <*> pure (pure ()) <*> arb, PublicFrame' (pure ()) <$> arb ]
-
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb
 
