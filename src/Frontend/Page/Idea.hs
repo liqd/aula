@@ -63,8 +63,6 @@ instance Page EditIdea where
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    -- NP: I've avoided here complex conditionals.
-    -- The result might be that too much information is displayed.
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
         header_ [class_ "detail-header"] $ do
             a_ [ class_ "btn m-back detail-header-back"
