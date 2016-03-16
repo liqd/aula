@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE FunctionalDependencies     #-}
@@ -10,7 +11,7 @@
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE ViewPatterns               #-}
 
-{-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 -- | The 'Action' module contains an API which
 module Action
@@ -20,7 +21,8 @@ module Action
     , ActionPersist(persistent)
     , ActionUserHandler(login, logout)
     , ActionError
-    , ActionExcept
+    , ActionExcept(..)
+    , ActionEnv(..), config, persistNat
 
       -- * concrete monad type (abstract)
     , Action
@@ -32,26 +34,27 @@ module Action
     , isLoggedIn
 
       -- * user state
-    , UserState(UserLoggedOut, UserLoggedIn), sessionCookie, username
+    , UserState(..), usUserId, usCsrfToken, usSessionToken
 
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
+
+    , MonadServantErr, ThrowServantErr(..)
     )
 where
 
-import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, writeTVar)
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
-import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Char (ord)
+import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
-import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as Csv
@@ -59,6 +62,11 @@ import qualified Data.Vector as V
 
 import Persistent
 import Types
+import Config (Config)
+import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
+import Thentos.Action (freshSessionToken)
+import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
+import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 
 -- FIXME: Remove. It is scaffolding to generate random data
 import Test.QuickCheck (arbitrary, generate)
@@ -68,12 +76,34 @@ import Test.QuickCheck (arbitrary, generate)
 
 -- | User representation during an action
 -- FIXME: Figure out which information is needed here.
-data UserState
-    = UserLoggedOut
-    | UserLoggedIn { _username :: UserLogin, _sessionCookie :: ST }
+data UserState = UserState
+    { _usSessionToken :: Maybe ThentosSessionToken
+    , _usCsrfToken :: Maybe CsrfToken
+    , _usUserId :: Maybe (AUID User)
+    }
   deriving (Show, Eq)
 
 makeLenses ''UserState
+
+userLoggedOut :: UserState
+userLoggedOut = UserState Nothing Nothing Nothing
+
+data ActionEnv r = ActionEnv
+    { _persistNat :: r :~> IO
+    , _config     :: Config
+    }
+
+makeLenses ''ActionEnv
+
+instance GetCsrfSecret (ActionEnv r) where
+    csrfSecret = config . csrfSecret
+
+-- | Top level errors can happen.
+--
+newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
+    deriving (Eq, Show)
+
+makePrisms ''ActionExcept
 
 class ( ActionLog m
       , ActionPersist r m
@@ -104,35 +134,52 @@ class (PersistM r, Monad m) => ActionPersist r m | m -> r where
     persistent :: r a -> m a
 
 instance PersistM r => ActionPersist r (Action r) where
-    persistent r = Action $ ask >>= \(Nat rp) -> liftIO $ rp r
+    persistent r = Action $ view persistNat >>= \(Nat rp) -> liftIO $ rp r
 
 instance MonadIO (Action r) where
     liftIO = Action . liftIO
 
-class Monad m => ActionUserHandler m where
+instance MonadLIO DCLabel (Action r) where
+    liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
+
+instance MonadRandom (Action r) where
+    getRandomBytes = liftIO . getRandomBytes
+
+instance HasSessionCsrfToken UserState where
+    sessionCsrfToken = usCsrfToken
+
+instance GetThentosSessionToken UserState where
+    getThentosSessionToken = usSessionToken
+
+instance ThrowError500 ActionExcept where
+    error500 = _ServantErr . error500
+
+class ActionError m => ActionUserHandler m where
     -- | Make the user logged in
     login  :: UserLogin -> m ()
-    -- | Read the actual user state
-    userState :: m UserState
+    -- | Read the current user state
+    userState :: Getting a UserState a -> m a
     -- | Make the user log out
     logout :: m ()
 
 -- | FIXME: every login changes all other logins (replaces the previous one)
 instance PersistM r => ActionUserHandler (Action r) where
     login uLogin = do
-        put $ UserLoggedIn uLogin "session"
         muser <- persistent $ findUserByLogin uLogin
         case muser of
-          Nothing ->
-            error $ "ActionUserHandler.login: no such user" <> show uLogin
-          Just user ->
-            liftIO . atomically $ writeTVar fakeCookieTVar (Just $ view _Id user)
+            Nothing ->
+                throwError500 $ "ActionUserHandler.login: no such user" <> show uLogin
+            Just user -> do
+                usUserId .= Just (user ^. _Id)
+                sessionToken <- freshSessionToken
+                usSessionToken .= Just sessionToken
 
-    userState = get
+    userState = use
 
-    logout = do
-        liftIO . atomically $ writeTVar fakeCookieTVar Nothing
-        put UserLoggedOut
+    logout = put userLoggedOut
+
+instance ThrowServantErr ActionExcept where
+    _ServantErr = _ActionExcept
 
 class MonadError ActionExcept m => ActionError m
 
@@ -144,14 +191,6 @@ instance GenArbitrary r => GenArbitrary (Action r) where
 
 -- * concrete monad type; user state
 
--- FIXME: Until we have cookies, we get the logged-in user from this TVar.
--- When we support cookies, we will obtain tokens from them and look up
--- session from the token in the persistent DB. We will also work
--- with thentos sessions, not just plain users.
-fakeCookieTVar :: TVar (Maybe (AUID User))
-{-# NOINLINE fakeCookieTVar #-}
-fakeCookieTVar = unsafePerformIO (newTVarIO Nothing)
-
 -- | The actions a user can perform.
 --
 -- FIXME:
@@ -162,73 +201,63 @@ fakeCookieTVar = unsafePerformIO (newTVarIO Nothing)
 -- FUTUREWORK: Move action implementation to another module and hide behind
 -- an API, similarly as it's done with persistent implementation,
 -- to reveal and mark (and possibly fix) where the implementation is hardwired.
-newtype Action r a = Action (ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) a)
+newtype Action r a = Action (ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a)
     deriving ( Functor
              , Applicative
              , Monad
              , MonadError ActionExcept
-             , MonadReader (r :~> IO)
+             , MonadReader (ActionEnv r)
              , MonadState UserState
              )
 
--- | Top level errors can happen.
---
--- FIXME: Create a different type
-type ActionExcept = ServantErr
-
 -- | Creates a natural transformation from Action to the servant handler monad.
---
--- FIXME:
--- - The ability to change the state is missing. FIXME: which state? login modifes UserState all right
--- - The state should be available after run. FIXME: which state? what for?
-mkRunAction :: forall r. PersistM r
-            => (r :~> IO) -> Action r :~> ExceptT ServantErr IO
-mkRunAction persistNat = Nat run
+-- See Frontend.runFrontend for the persistency of @UserState@.
+mkRunAction :: PersistM r => ActionEnv r -> Action r :~> ExceptT ServantErr IO
+mkRunAction env = Nat run
   where
-    run = ExceptT . fmap (view _1)
-        . runRWSTflip persistNat UserLoggedOut . runExceptT . (setCurrentUser >>) . unAction
+    run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
+        . runExceptT . unAction . (checkCurrentUser >>)
     unAction (Action a) = a
     runRWSTflip r s comp = runRWST comp r s
 
-    setCurrentUser :: ExceptT ActionExcept (RWST (r :~> IO) () UserState IO) ()
-    setCurrentUser = do
-      mcurrentUID <- liftIO . atomically $ readTVar fakeCookieTVar
-      uState <- case mcurrentUID of
-         Nothing -> return UserLoggedOut
-         Just uid -> do
-           muser <- liftIO . unNat persistNat $ findUser uid
-           let uLogin = case muser of
-                 Nothing -> error "mkRunAction: currently logged in user not in DB"
-                 Just user -> user ^. userLogin
-           return $ UserLoggedIn uLogin "session"
-      put uState
+    checkCurrentUser = do
+        isValid <- userState $ to validUserState
+        unless isValid $ do
+            logout
+            throwError500 "Invalid internal user session state"
 
 
 -- * Action Combinators
 
+-- | Returns the current user ID
+currentUserId :: ActionUserHandler m => m (AUID User)
+currentUserId = userState usUserId >>= \case
+    Nothing -> throwError500 "User is logged out"
+    Just uid -> pure uid
+
 -- | Returns the current user
 currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
-currentUser =
-    loggedInUser
-    >>= persistent . findUserByLogin
-    >>= \ (Just user) -> return user
+currentUser = do
+    muser <- persistent . findUser =<< currentUserId
+    case muser of
+        Just user -> pure user
+        Nothing   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
 modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) -> m ()
-modifyCurrentUser f =
-  currentUser >>= persistent . flip modifyUser f . (^. _Id)
+modifyCurrentUser f = currentUserId >>= persistent . (`modifyUser` f)
 
 isLoggedIn :: ActionUserHandler m => m Bool
-isLoggedIn = (UserLoggedOut /=) <$> userState
+isLoggedIn = userState $ to validLoggedIn
 
 
 -- * Action Helpers
 
-loggedInUser :: ActionUserHandler m => m UserLogin
-loggedInUser = userState >>= \case
-    UserLoggedOut -> error "User is logged out" -- FIXME: Change ActionExcept and reuse here.
-    UserLoggedIn uLogin _session -> return uLogin
+validLoggedIn :: UserState -> Bool
+validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 
+validUserState :: UserState -> Bool
+validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * csv temp files
 

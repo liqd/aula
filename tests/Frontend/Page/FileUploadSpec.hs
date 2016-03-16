@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
@@ -13,10 +14,12 @@ import Control.Concurrent (forkIO, killThread)
 import Control.Exception
 import Control.Lens
 import Control.Monad (forM_)
-import Data.String.Conversions (ST, LBS, cs, (<>))
-import Network.Wreq
+import Data.String.Conversions (LBS, cs, (<>))
+import Network.Wreq hiding (get, post)
+import Network.Wreq.Types (Postable)
 import Test.Hspec (Spec, describe, it, around, shouldBe, shouldContain)
 
+import qualified Network.Wreq.Session as Sess
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import Action
@@ -24,16 +27,22 @@ import Config
 import Frontend
 import Frontend.Page.FileUpload
 
+-- Same as Frontend.Page.LoginSpec.Query
+data Query = Query
+    { post :: forall a. Postable a => String -> a -> IO (Response LBS)
+    , get  :: String -> IO (Response LBS)
+    }
 
-withServer :: (ST -> IO a) -> IO a
+-- Same as Frontend.Page.LoginSpec.withServer
+withServer :: (Query -> IO a) -> IO a
 withServer action = bracket
     (forkIO $ runFrontend cfg)
     killThread
-    (const $ action uri)
+    (const . Sess.withSession $ action . query)
   where
-    cfg = Config.config
-    uri = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort)
-    -- uri = "http://localhost:8081"
+    cfg = Config.test
+    uri path = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort) <> path
+    query sess = Query (Sess.post sess . uri) (Sess.get sess . uri)
 
 spec :: Spec
 spec = describe "file upload" $ do
@@ -51,16 +60,13 @@ spec = describe "file upload" $ do
                         , "Jens;Kuhn;jens@example.org"
                         ]
 
-            opts :: Options
-            opts = defaults
-
-        it "posts users successfully; users will appear under /user" $ \uri -> do
+        it "posts users successfully; users will appear under /user" $ \query -> do
             -- pendingWith "only partially implemented."
-            l <- postWith opts (cs uri <> "/login") [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+            l <- post query "/login" [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
             (l ^. responseStatus . statusCode) `shouldBe` 200
-            r <- postWith opts (cs uri <> "/testing/file-upload") [classPart, filePart]
+            r <- post query "/testing/file-upload" [classPart, filePart]
             (r ^. responseStatus . statusCode) `shouldBe` 200
-            s <- get (cs uri <> "/user")
+            s <- get query "/user"
             (s ^. responseStatus . statusCode) `shouldBe` 200
             (cs $ s ^. responseBody :: String) `shouldContain` "_fromUserLastName = &quot;Kuhn&quot"
 
