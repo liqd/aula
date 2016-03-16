@@ -33,7 +33,8 @@ import Thentos.Prelude
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
-import Action (Action, UserState, ActionEnv(..), mkRunAction)
+import Action (UserState, ActionEnv(..))
+import Action.Stack (Action, mkRunAction)
 import Config
 import CreateRandom
 import Frontend.Core

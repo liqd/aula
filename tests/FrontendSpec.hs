@@ -19,6 +19,7 @@ import Servant
 import Network.Wai
 
 import Action
+import Action.Stack
 import Config
 import Frontend
 import Frontend.Core
