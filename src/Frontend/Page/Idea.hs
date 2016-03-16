@@ -64,12 +64,15 @@ instance Page EditIdea where
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
+        let totalVotes    = Set.size $ idea ^. ideaVotes
+            totalComments = Set.size $ idea ^. ideaComments
+
         header_ [class_ "detail-header"] $ do
             a_ [ class_ "btn m-back detail-header-back"
                , let ispace  = idea ^. ideaLocation . ideaLocationSpace
                      mtid = idea ^? ideaTopicId
                  in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
-               ] "Zum Thema"
+               ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 ul_ [class_ "pop-menu-list"] $ do
                     li_ [class_ "pop-menu-list-item"] $ do
@@ -133,16 +136,13 @@ instance ToHtml ViewIdea where
                 div_ [class_ "grid"] $ do
                     div_ [class_ "container-narrow"] $ do
                         h2_ [class_ "comments-header-heading"] $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
-                        -- FIXME not on design
-                        button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         PageComment c ^. html
-                          where
-                            totalVotes    = Set.size $ idea ^. ideaVotes
-                            totalComments = Set.size $ idea ^. ideaComments
-                    -- FIXME Please create the comments form here
+
+            -- FIXME Please create the comments form here
+            button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
 
 
 instance FormPage CreateIdea where
