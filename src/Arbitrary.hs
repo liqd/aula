@@ -51,7 +51,7 @@ import qualified Data.Tree as Tree
 import qualified Generics.Generic.Aeson as Aeson
 
 import Action
-import Action.Stack
+import Action.Implementation
 import qualified Config
 import Frontend.Core
 import Frontend.Page

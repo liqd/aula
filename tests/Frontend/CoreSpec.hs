@@ -29,7 +29,7 @@ import Text.Digestive.View
 import qualified Data.Text.Lazy as LT
 
 import Action
-import Action.Stack
+import Action.Implementation
 import Arbitrary (arb, schoolClasses)
 import Config (Config)
 import qualified Config

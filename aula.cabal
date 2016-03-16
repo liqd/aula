@@ -69,7 +69,7 @@ library
     , vector ==0.10.12.3
   exposed-modules:
       Action
-      Action.Stack
+      Action.Implementation
       Api
       Arbitrary
       Config

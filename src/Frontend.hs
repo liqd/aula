@@ -34,7 +34,7 @@ import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
 import Action (UserState, ActionEnv(..))
-import Action.Stack (Action, mkRunAction)
+import Action.Implementation (Action, mkRunAction)
 import Config
 import CreateRandom
 import Frontend.Core

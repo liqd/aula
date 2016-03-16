@@ -2,8 +2,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
--- | The 'Action.Stack' module contains a monad stack implmententation of the 'Action' interface.
-module Action.Stack
+
+-- | The 'Action.Implementation' module contains a monad stack implmententation of the 'Action'
+-- interface.
+module Action.Implementation
     ( Action
     , mkRunAction
     )
