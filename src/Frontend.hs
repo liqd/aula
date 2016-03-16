@@ -87,7 +87,7 @@ aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
-  :<|> redirect ("/space" :: ST)
+  :<|> (redirect . absoluteUriPath . relPath $ U.ListSpaces)
   :<|> app
   where
     waiServeDirectory :: FilePath -> Application
