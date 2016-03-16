@@ -237,13 +237,7 @@ viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
 viewIdea ideaId = makeFrame =<< persistent (do
     -- FIXME: 404
     Just idea <- findIdea ideaId
-    phase <- case idea ^. ideaLocation of
-            IdeaLocationSpace _ ->
-                pure Nothing
-            IdeaLocationTopic _ topicId -> do
-                -- (failure to match the following can only be caused by an inconsistent state)
-                Just topic <- findTopic topicId
-                pure . Just $ topic ^. topicPhase
+    phase <- ideaPhase idea
     pure $ ViewIdea idea phase)
 
 createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
