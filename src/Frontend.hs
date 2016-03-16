@@ -64,7 +64,7 @@ type AulaTop =
        (AulaMain :<|> "testing" :> AulaTesting)
   :<|> "samples" :> Raw
   :<|> "static"  :> Raw
-  :<|> GetH (Frame ())
+  :<|> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 aulaTop :: (GenArbitrary r, PersistM r) => (Action r :~> ExceptT ServantErr IO) -> Server AulaTop
 aulaTop (Nat runAction) =
@@ -121,7 +121,7 @@ type AulaMain =
 
        -- login
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
-  :<|> "logout" :> GetH (Frame ())
+  :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
 aulaMain :: PersistM r => ServerT AulaMain (Action r)
@@ -173,7 +173,7 @@ type AulaSpace =
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "edit" :> GetH (Frame EditTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic)
-               :> "delegation" :> "create" :> FormHandler PageDelegateVote --FIXME: Change Type
+               :> "delegation" :> "create" :> FormHandler PageDelegateVote
 
 aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
@@ -237,9 +237,7 @@ aulaAdmin =
   :<|> Page.adminEventsProtocol
 
 type AulaTesting =
-       GetH (Frame ST)
-
-  :<|> "idea"  :> CreateRandom Idea
+       "idea"  :> CreateRandom Idea
   :<|> "space" :> CreateRandom IdeaSpace
   :<|> "topic" :> CreateRandom Topic
 
@@ -253,9 +251,7 @@ type AulaTesting =
 
 aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
 aulaTesting =
-       return (PublicFrame "yihaah!")
-
-  :<|> createRandom dbIdeaMap
+       createRandom dbIdeaMap
   :<|> createRandomNoMeta dbSpaceSet
   :<|> createRandom dbTopicMap
 

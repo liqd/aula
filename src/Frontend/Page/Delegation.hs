@@ -1,9 +1,10 @@
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -27,6 +28,15 @@ instance ToHtml PageDelegateVote where
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageDelegateVote"
 
+instance Page PageDelegateVote where
+    isPrivatePage _ = True
+
+instance FormPageView PageDelegateVote where  -- FIXME
+    type FormPageResult PageDelegateVote = ()
+    formAction _   = relPath U.Broken
+    redirectOf _   = relPath U.Broken
+    makeForm _     = pure ()
+    formPage _ _ _ = pure ()
 
 -- | 13. Delegation network
 data PageDelegationNetwork = PageDelegationNetwork

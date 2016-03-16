@@ -14,6 +14,7 @@ import Data.Typeable (Typeable, typeOf)
 import Test.Hspec (Spec, beforeAll, describe, it)
 import Test.QuickCheck (Arbitrary, Gen, forAll, property)
 import qualified Data.Text as ST
+import Text.Digestive.View (getForm)
 
 import Arbitrary
 import Data.UriPath
@@ -60,11 +61,20 @@ spec = do
 
 -- Each path has a handler
 
+instance (FormPageView a, Arbitrary a) => Arbitrary (FormPage a) where
+    arbitrary = do
+        page <- arb
+        let form = makeForm page
+        frameAction <- arb
+        view <- getForm frameAction form
+        pure $ FormPage view frameAction (PublicFrame page)
+
 mockAulaTop :: IO Application
 mockAulaTop = do
     return $ serve (Proxy :: Proxy AulaTop) (mock (Proxy :: Proxy AulaTop))
 
-instance Arbitrary a => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPage a)) where
+instance (FormPageView a, Page a, Arbitrary a)
+        => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPage a)) where
     mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPage a)))
 
 
@@ -78,4 +88,3 @@ uriPartAndHttpApiDataAreInverses :: UriPartGen -> Spec
 uriPartAndHttpApiDataAreInverses (U g) =
     it (show $ typeOf g) . property . forAll g $ \uriPartData ->
         (Right uriPartData ==) . parseUrlPiece . cs $ uriPart uriPartData
-
