@@ -167,9 +167,6 @@ instance Arbitrary PageStaticTermsOfUse where
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = pure PageHomeWithLoginPrompt
 
-instance Arbitrary PageLogout where
-    arbitrary = pure PageLogout
-
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
 
@@ -357,9 +354,6 @@ instance Arbitrary P.AdminPs where
 
 
 -- * servant-mock
-
-instance Arbitrary a => Arbitrary (FormPage a) where
-    arbitrary = FormPage <$> arb <*> pure (return ())
 
 instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]

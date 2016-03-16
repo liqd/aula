@@ -60,7 +60,6 @@ spec = do
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
-        , H (arb :: Gen PageLogout)
         , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
         , H (PageComment <$> arb)
         ]
