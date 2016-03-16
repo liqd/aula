@@ -19,7 +19,7 @@ data Config = Config
     , _htmlStatic :: FilePath
     , _cfgCsrfSecret :: CsrfSecret
     }
-  deriving (Show) -- , Eq)
+  deriving (Show)
 
 makeLenses ''Config
 

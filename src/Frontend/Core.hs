@@ -346,8 +346,5 @@ redirectFormHandler getPage processor = getH :<|> postH
     renderer page v fa = FormPage page . toHtml . fmap (formPage v fa) <$> makeFrame page
 
 
---redirect :: (MonadError ActionExcept m) => ST -> m a
---redirect = Servant.Missing.redirect
-
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $ Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
