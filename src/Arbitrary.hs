@@ -166,9 +166,6 @@ instance Arbitrary PageStaticTermsOfUse where
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = pure PageHomeWithLoginPrompt
 
-instance Arbitrary PageLogout where
-    arbitrary = pure PageLogout
-
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
 

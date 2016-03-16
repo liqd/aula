@@ -121,7 +121,7 @@ type AulaMain =
 
        -- login
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
-  :<|> "logout" :> GetH (Frame PageLogout)
+  :<|> "logout" :> GetH (Frame ())
 
 
 aulaMain :: PersistM r => ServerT AulaMain (Action r)
@@ -141,7 +141,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
   :<|> Page.login
-  :<|> Page.logout
+  :<|> redirect "/login"
 
 
 type AulaSpace =
