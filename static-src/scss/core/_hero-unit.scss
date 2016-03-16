@@ -1,0 +1,20 @@
+.hero-unit {
+    @include rem(padding, 60px 0 35px);
+    clear: left;
+    overflow: hidden;
+    text-align: center;
+
+    .main-heading {
+        @include rem(margin-bottom, 16px);
+    }
+
+    .sub-header {
+        @include rem(margin-bottom, 33px);
+        display: block;
+
+        span {
+            display: inline-block;
+            max-width: 617px;
+        }
+    }
+}
