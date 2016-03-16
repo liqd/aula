@@ -55,7 +55,6 @@ import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfTo
 -- * constraint types
 
 -- | User representation during an action
--- FIXME: Figure out which information is needed here.
 data UserState = UserState
     { _usSessionToken :: Maybe ThentosSessionToken
     , _usCsrfToken :: Maybe CsrfToken

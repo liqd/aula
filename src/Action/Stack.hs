@@ -30,15 +30,6 @@ import Thentos.Action (freshSessionToken)
 -- * concrete monad type; user state
 
 -- | The actions a user can perform.
---
--- FIXME:
--- - Figure out the exact stack we need to use here.
--- - Store the actual session data, userid etc.
--- - We should decide on exact userstate and handle everything here.
---
--- FUTUREWORK: Move action implementation to another module and hide behind
--- an API, similarly as it's done with persistent implementation,
--- to reveal and mark (and possibly fix) where the implementation is hardwired.
 newtype Action r a = MkAction { unAction :: ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a }
     deriving ( Functor
              , Applicative
@@ -65,7 +56,6 @@ instance MonadLIO DCLabel (Action r) where
 instance MonadRandom (Action r) where
     getRandomBytes = liftIO . getRandomBytes
 
--- | FIXME: every login changes all other logins (replaces the previous one)
 instance PersistM r => ActionUserHandler (Action r) where
     login uLogin = do
         muser <- persistent $ findUserByLogin uLogin
