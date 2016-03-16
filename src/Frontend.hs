@@ -33,7 +33,7 @@ import Thentos.Prelude
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
-import Action (UserState, ActionEnv(..))
+import Action (UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
 import Config
 import CreateRandom
@@ -154,7 +154,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
   :<|> Page.login
-  :<|> (redirect . absoluteUriPath . relPath $ U.Login)
+  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
 
 
 type AulaSpace =
