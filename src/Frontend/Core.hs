@@ -58,7 +58,7 @@ import qualified Text.Digestive.Form as DF
 
 import Action
 import Api
-import Data.UriPath (UriPath, absoluteUriPath)
+import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_)
 import Types
 
@@ -150,7 +150,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect "/login"
+  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath P.Login)
      | isPrivatePage p             -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
