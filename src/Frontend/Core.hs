@@ -347,4 +347,5 @@ redirectFormHandler getPage processor = getH :<|> postH
 
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
-redirect uri = throwServantErr $ Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+redirect uri = throwServantErr $
+    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }

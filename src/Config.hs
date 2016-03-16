@@ -28,7 +28,7 @@ devel = Config
     , _listenerInterface = "0.0.0.0"
     , _listenerPort = 8080
     , _htmlStatic = "./static"
-    -- BEWARE, this "secret" is hardcoded and public.
+    -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     }
 
