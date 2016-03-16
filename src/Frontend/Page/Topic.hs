@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -44,7 +45,7 @@ data ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas ViewTopicTab Topic [Idea]
+  = ViewTopicIdeas ViewTopicTab Topic [(Idea, Int)]
   | ViewTopicDelegations -- FIXME
   deriving (Eq, Show, Read)
 
@@ -101,7 +102,7 @@ instance ToHtml EditTopic where
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
     toHtml p@ViewTopicDelegations = semanticDiv p "ViewTopicDelegations" -- FIXME
-    toHtml p@(ViewTopicIdeas tab topic ideas) = semanticDiv p $ do
+    toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         -- assert tab /= TabDelegation
         div_ $ do
             div_ [id_ "navigation"] $ do
@@ -124,8 +125,8 @@ instance ToHtml ViewTopic where
                 tabLink topic tab TabDelegation
         div_ $ do
             a_ [id_ "settings"{-, href_ U.UserSettings FIXME USER??? -}] $ span_ [id_ "gear"] ":gear:"
-            div_ [id_ "ideas"] . for_ ideas $ \idea ->
-                ListItemIdea True (Just phase) idea ^. html
+            div_ [id_ "ideas"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
+                ListItemIdea True (Just phase) numVoters idea ^. html
       where
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
@@ -192,7 +193,7 @@ viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
 viewTopic _space tab topicId = makeFrame =<< persistent (do
     -- FIXME 404
     Just topic <- findTopic topicId
-    ViewTopicIdeas tab topic <$> findIdeasByTopic topic)
+    ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
 createTopic :: (ActionM r action) => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) action
 createTopic space ideas =
