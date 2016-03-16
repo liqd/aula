@@ -120,6 +120,16 @@ class Page p where
 data Frame body = Frame User body | PublicFrame body
   deriving (Functor)
 
+instance Page () where
+    isPrivatePage _ = False
+
+instance Page ST where
+    isPrivatePage _ = True -- safer default, might need to be changed if needed
+
+instance (Page a, Page b) => Page (Beside a b) where
+    isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
+    extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
+
 frameAlgebra :: (body -> a) -> Frame body -> a
 frameAlgebra f = \case (Frame _ b)     -> f b
                        (PublicFrame b) -> f b

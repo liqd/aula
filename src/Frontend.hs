@@ -285,6 +285,9 @@ catchAulaExcept Proxy = id
 
 data Page404 = Page404
 
+instance Page Page404 where
+    isPrivatePage _ = False
+
 instance ToHtml Page404 where
     toHtmlRaw = toHtml
     toHtml Page404 = div_ $ p_ "404"
