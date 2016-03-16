@@ -106,9 +106,9 @@
 }
 
 .download-box {
+    @extend .admin-container;
     box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
     border: 1px solid $color-grey-light;
-    max-width: 550px;
 
     .download-box-body, .download-box-header {
         @include rem(padding, 15px);
@@ -126,4 +126,47 @@
             float: right;
         }
     }
+}
+
+.admin-container {
+    max-width: 550px;
+}
+
+.admin-main-heading {
+    @extend .main-heading;
+    text-align: left;
+}
+
+$avatar-size: 118px;
+
+.upload-avatar a {
+    @include rem(font-size, 40px);
+    @include rem(height, $avatar-size);
+    @include rem(width, $avatar-size);
+    background: $color-grey-mid;
+    border-radius: $avatar-size / 2;
+    color: $color-grey-light;
+    text-align: center;
+
+    &:hover, &:focus {
+        color: white;
+        text-decoration: none;
+    }
+
+    .upload-avatar-icon, .upload-avatar-icon:before, &  {
+        line-height: $avatar-size;
+        display: block;
+        height: $avatar-size;
+    }
+}
+
+.admin-buttons {
+    [class^="btn-"], input[type="submit"] {
+        @include rem(margin-right, 15px);
+    }
+}
+
+.forgotten-password {
+    @include rem(top, -30px);
+    position: relative;
 }
