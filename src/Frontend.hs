@@ -151,7 +151,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
   :<|> Page.login
-  :<|> redirect "/login"
+  :<|> (redirect . absolutePath . relPath $ P.Login)
 
 
 type AulaSpace =
