@@ -253,10 +253,10 @@ class FormPageView p => ArbFormPageResult p where
     arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
 
 instance ArbFormPageResult CreateIdea where
-    arbFormPageResult (CreateIdea space _) = set protoIdeaIdeaSpace space <$> arbitrary
+    arbFormPageResult (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
 
 instance ArbFormPageResult EditIdea where
-    arbFormPageResult (EditIdea idea) = set protoIdeaIdeaSpace (idea ^. ideaSpace) <$> arbitrary
+    arbFormPageResult (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPageResult PageAdminSettingsQuorum where
     arbFormPageResult _ = arbitrary

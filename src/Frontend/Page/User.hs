@@ -26,7 +26,7 @@ instance Page PageUserSettings where
     isPrivatePage _ = True
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas User [Idea]
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas User [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
@@ -115,8 +115,8 @@ instance ToHtml PageUserProfileCreatedIdeas where
         div_ $ do
             button_ [value_ ""] "Some kind of settings on the right"
         -- List of ideas
-        div_ [id_ "ideas"] . for_ ideas $ \idea ->
-            ListItemIdea False Nothing idea ^. html
+        div_ [id_ "ideas"] . for_ ideas $ \(idea, numVoters) ->
+            ListItemIdea False Nothing numVoters idea ^. html
 
 -- | List all the created ideas for the given user.
 -- Using @join . persistent $ do ... return $ makeFrame@ will
@@ -129,8 +129,8 @@ createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept
 createdIdeas userId = join . persistent $ do
     -- FIXME: 404
     Just user <- findInById dbUsers userId
-    ideas <- findIdeasByUserId userId
-    return $ makeFrame (PageUserProfileCreatedIdeas user ideas)
+    ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
+    return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
 
 -- * User Profile: Delegated Votes
 

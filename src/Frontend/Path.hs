@@ -10,6 +10,8 @@ module Frontend.Path
     , Space(..)
     , UserPs(..)
     , AdminPs(..)
+    , IdeaPath(..)
+    , IdeaMode(..)
     )
 where
 
@@ -19,7 +21,7 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types (AUID, Idea, IdeaSpace, User, Topic, nil, PermissionContext)
+import Types (AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext)
 
 data Top =
     Top
@@ -81,32 +83,39 @@ data Space =
   | EditIdea (AUID Idea)
   | CreateIdea
   | ListTopics
-  | ViewTopicIdeas (AUID Topic)
+  | ListTopicIdeas (AUID Topic)
+  | ViewTopicIdea (AUID Topic) (AUID Idea)
+  | EditTopicIdea (AUID Topic) (AUID Idea)
+  | CreateTopicIdea (AUID Topic)
   | ViewTopicIdeasVoting (AUID Topic)
   | ViewTopicIdeasWinning (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
   | EditTopic (AUID Topic) -- FIXME
   | CreateTopic
-  | CreateIdeaInTopic (AUID Topic)
   | CreateTopicDelegation (AUID Topic)
   | MoveIdeasToTopic (AUID Topic)
   deriving (Generic, Show)
 
 instance SOP.Generic Space
 
+-- | FIXME: there are structural similarities of wild ideas and ideas in topic that should be
+-- factored out.
 space :: Space -> UriPath -> UriPath
-space ListIdeas                   root = root </> "idea"
+space ListIdeas                   root = root </> "ideas"
 space (ViewIdea iid)              root = root </> "idea" </> uriPart iid </> "view"
 space (EditIdea iid)              root = root </> "idea" </> uriPart iid </> "edit"
 space CreateIdea                  root = root </> "idea" </> "create"
 space ListTopics                  root = root </> "topic"
-space (ViewTopicIdeas tid)        root = root </> "topic" </> uriPart tid </> "ideas"
+space (ListTopicIdeas tid)        root = root </> "topic" </> uriPart tid </> "ideas"
+space (ViewTopicIdea tid iid)     root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "view"
+space (EditTopicIdea tid iid)     root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "edit"
+space (CreateTopicIdea tid)       root = root </> "topic" </> uriPart tid </> "idea" </> "create"
 space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
 space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
+-- FIXME: "ListTopicIdeas..." for the 3 lines above?
 space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space CreateTopic                 root = root </> "topic" </> "create"
-space (CreateIdeaInTopic tid)     root = root </> "topic" </> uriPart tid </> "idea" </> "create"
 space (MoveIdeasToTopic tid)      root = root </> "topic" </> uriPart tid </> "idea" </> "move"
 space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
 
@@ -137,3 +146,31 @@ admin AdminQuorum         path = path </> "quorum"
 admin (AdminAccess ctx)   path = path </> "access" </> uriPart ctx
 admin (AdminEditUser uid) path = path </> "user" </> uriPart uid </> "edit"
 admin AdminEvent          path = path </> "event"
+
+
+data IdeaPath = IdeaPath IdeaLocation IdeaMode
+  deriving (Eq, Ord, Show, Read, Generic)
+
+data IdeaMode =
+      IdeaModeList
+    | IdeaModeCreate
+    | IdeaModeView (AUID Idea)
+    | IdeaModeEdit (AUID Idea)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance HasPath IdeaPath
+  where
+    relPath (IdeaPath loc mode) = f loc mode
+      where
+        f (IdeaLocationSpace isp)     = relPath . Space isp . g
+        f (IdeaLocationTopic isp tid) = relPath . Space isp . h tid
+
+        g IdeaModeList       = ListIdeas
+        g IdeaModeCreate     = CreateIdea
+        g (IdeaModeView iid) = ViewIdea iid
+        g (IdeaModeEdit iid) = EditIdea iid
+
+        h tid IdeaModeList       = ListTopicIdeas tid
+        h tid IdeaModeCreate     = CreateTopicIdea tid
+        h tid (IdeaModeView iid) = ViewTopicIdea tid iid
+        h tid (IdeaModeEdit iid) = EditTopicIdea tid iid

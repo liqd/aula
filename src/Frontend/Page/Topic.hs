@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -20,7 +21,7 @@ module Frontend.Page.Topic
 where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUser)
-import Frontend.Prelude hiding (moveIdeasToTopic)
+import Frontend.Prelude hiding (moveIdeasToLocation)
 
 import qualified Persistent
 import qualified Frontend.Path as U
@@ -44,7 +45,7 @@ data ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas ViewTopicTab Topic [Idea]
+  = ViewTopicIdeas ViewTopicTab Topic [(Idea, Int)]
   | ViewTopicDelegations -- FIXME
   deriving (Eq, Show, Read)
 
@@ -79,7 +80,7 @@ instance Page EditTopic where
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabAllIdeas     -> go "tab-ideas"       U.ViewTopicIdeas        "Alle Ideen"
+    TabAllIdeas     -> go "tab-ideas"       U.ListTopicIdeas        "Alle Ideen"
     TabVotingIdeas  -> go "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
     TabWinningIdeas -> go "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
     TabDelegation   -> go "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
@@ -101,7 +102,7 @@ instance ToHtml EditTopic where
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
     toHtml p@ViewTopicDelegations = semanticDiv p "ViewTopicDelegations" -- FIXME
-    toHtml p@(ViewTopicIdeas tab topic ideas) = semanticDiv p $ do
+    toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         -- assert tab /= TabDelegation
         div_ $ do
             div_ [id_ "navigation"] $ do
@@ -113,7 +114,7 @@ instance ToHtml ViewTopic where
                 p_   [id_ "topic-title"] $ topic ^. topicTitle . html
                 div_ [id_ "topic-desc"] $ topic ^. topicDesc . html
                 when (phase == PhaseRefinement) $
-                    a_ [id_ "add-idea", href_ . U.Space space $ U.CreateIdeaInTopic topicId] "+ Neue Idee"
+                    a_ [id_ "add-idea", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
                 when (phase < PhaseResult) .
                     a_  [id_ "delegate-vote", href_ . U.Space space $ U.CreateTopicDelegation topicId] $
                         span_ [id_ "bullhorn"] ":bullhorn:" <> " Stimme Beauftragen"
@@ -124,8 +125,8 @@ instance ToHtml ViewTopic where
                 tabLink topic tab TabDelegation
         div_ $ do
             a_ [id_ "settings"{-, href_ U.UserSettings FIXME USER??? -}] $ span_ [id_ "gear"] ":gear:"
-            div_ [id_ "ideas"] . for_ ideas $ \idea ->
-                ListItemIdea True (Just phase) idea ^. html
+            div_ [id_ "ideas"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
+                ListItemIdea True (Just phase) numVoters idea ^. html
       where
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
@@ -159,8 +160,8 @@ instance FormPageView MoveIdeasToTopic where
     -- the ideas to be added to the topic.
     type FormPageResult MoveIdeasToTopic = [AUID Idea]
 
-    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
-    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ViewTopicIdeas topicId
+    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
+    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
 
     makeForm (MoveIdeasToTopic _ _ ideas) =
         fmap catMaybes . sequenceA $
@@ -192,7 +193,7 @@ viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
 viewTopic _space tab topicId = makeFrame =<< persistent (do
     -- FIXME 404
     Just topic <- findTopic topicId
-    ViewTopicIdeas tab topic <$> findIdeasByTopic topic)
+    ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
 createTopic :: (ActionM r action) => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) action
 createTopic space ideas =
@@ -203,7 +204,7 @@ moveIdeasToTopic :: ActionM r m => IdeaSpace -> AUID Topic -> ServerT (FormHandl
 moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
   where
     getPage = MoveIdeasToTopic space topicId <$> persistent (findWildIdeasBySpace space)
-    addIdeas ideas = persistent $ Persistent.moveIdeasToTopic ideas (Just topicId)
+    addIdeas ideas = persistent $ Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 editTopic :: ActionM r m => IdeaSpace -> AUID Topic -> m (Frame EditTopic)
 editTopic _ _ = makeFrame EditTopic

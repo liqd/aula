@@ -158,18 +158,24 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [id_ "tabs"] . ul_ [] $ do
-        li_ [] $ menulink tab MenuItemDurations
-        li_ [] $ menulink tab MenuItemQuorum
-        if isPermissionsMenuItem tab
-            then do
-                li_ [] $ span_ "Gruppen & Nutzer"
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
-            else do
-                li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
-        li_ [] $ menulink tab MenuItemEventsProtocol
-    div_ bdy
+    div_ [class_ "grid"] $ do
+        div_ [class_ "col-2-12"] $ do
+            nav_ [class_ "admin-menu"] $ do
+                h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
+                ul_ [] $ do
+                    li_ [] $ menulink tab MenuItemDurations
+                    li_ [] $ menulink tab MenuItemQuorum
+                    if isPermissionsMenuItem tab
+                        then do
+                            li_ [] $ do
+                                "Gruppen & Nutzer"
+                                ul_ $ do
+                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                        else do
+                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                    li_ [] $ menulink tab MenuItemEventsProtocol
+        div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem t
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
@@ -228,12 +234,15 @@ instance FormPageView PageAdminSettingsDurations where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                div_ $ do
-                    "Wie viele Tage soll die Ausarbeitungphase dauern?" >> br_ []
-                    DF.inputText "elab-duration" v >> "Tage" >> br_ []
-                div_ $ do
-                    "Wie viele Tage soll die Abstimmungphase dauren?" >> br_ []
-                    DF.inputText "vote-duration" v >> "Tage" >> br_ []
+                -- TODO these should be "numeber" fields
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
+                    inputText_ [class_ "input-number input-appendee"] "elab-duration" v
+                    span_ [class_ "input-helper"] "Tage"
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
+                    inputText_  [class_ "input-number input-appendee"] "vote-duration" v
+                    span_ [class_ "input-helper"] "Tage"
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations) m
@@ -267,12 +276,14 @@ instance FormPageView PageAdminSettingsQuorum where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                div_ $ do
-                    "Wie hoch soll das Quorum schulweit sein?" >> br_ []
-                    DF.inputText "school-quorum" v >> "% aller Schulerinnen der Schule" >> br_ []
-                div_ $ do
-                    "Wie hoch soll das Quorum klassenweit sein?" >> br_ []
-                    DF.inputText "class-quorum" v >> "% aller Schulerinnen der Klasse" >> br_ []
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
+                    inputText_ [class_ "input-number input-appendee"] "school-quorum" v
+                    span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
+                label_ [class_ "input-append"] $ do
+                    span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
+                    inputText_ [class_ "input-number input-appendee"] "class-quorum" v
+                    span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
                 DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
@@ -291,16 +302,20 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
 
 instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
+    toHtmlRaw p@(PageAdminSettingsGaPUsersView _users) =
         adminFrame p . semanticDiv p $ do
-            table_ $ do
+            table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
-                    th_ "AVATAR"
+                    th_ nil
                     th_ "NAME"
                     th_ "KLASSE"
                     th_ "ROLE SELECTION"
-                    th_ $ button_ [onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
-                    th_ $ input_ [value_ "NUTZERSUCHE"]
+                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
+                    th_ $ do
+                        div_ [class_ "inline-search-container"] $ do
+                            input_ [class_ "inline-search-input", value_ "NUTZERSUCHE"] -- Placeholder not value
+                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
+                {-
                 tbody_ . forM_ users $ \user -> tr_ $ do
                     td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
@@ -308,6 +323,17 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     td_ "Rolle ???" -- FIXME: Fetch the user's role
                     td_ "" -- THIS SHOULD LEFT EMPTY
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
+                FIXME - Dummy, dummy! -}
+
+                let dummydummydummy = do
+                        td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                        td_ "UserName"
+                        td_ "Klasse"
+                        td_ "Role"
+                        td_ ""
+                        td_ $ a_ [href_ U.Broken] "bearbeiten"
+
+                tbody_ $ tr_ `mapM_` [dummydummydummy, dummydummydummy]
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
@@ -320,15 +346,18 @@ instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
         adminFrame p . semanticDiv p $ do
-            table_ $ do
+            table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [onclick_ U.Broken] "KLASSE ANLEGEN"
-                    th_ $ input_ [value_ "Klassensuche"]
+                    th_ $ button_ [class_ "btn-cta", onclick_ U.Broken] "KLASSE ANLEGEN"
+                    th_ $ do
+                        div_ [class_ "inline-search-container"] $ do
+                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- Placeholder not value
+                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
-                    th_ . toHtml $ clss ^. className
-                    th_ ""
-                    th_ $ a_ [href_ U.Broken] "bearbeiten"
+                    td_ . toHtml $ clss ^. className
+                    td_ ""
+                    td_ $ a_ [href_ U.Broken] "bearbeiten"
 
 
 instance ToHtml PageAdminSettingsGaPClassesCreate where
@@ -452,17 +481,18 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
 instance ToHtml PageAdminSettingsEventsProtocol where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = adminFrame p . semanticDiv p $ do
-        div_ $ do
-            p_ "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
-            -- FIXME: Clientside JavaScript. Change the download button link
-            -- If the value of the selection is changes.
+        label_ $ do
+            span_ [class_ "label-text"] "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
+        -- FIXME: Clientside JavaScript. Change the download button link
+        -- If the value of the selection is changes.
             select_ [name_ "idea"] . forM_ ideaSpaces $ \idea ->
                 option_ [value_ (makeValue idea)] (makeText idea)
-        div_ $ do
-            p_ "Event-Protokoll"
+        div_ [class_ "download-box"] $ do
+            header_ [class_ "download-box-header"] $ do
+                "Event-Protokoll"
             -- FIXME: Link to the correct page.
-            button_ [onclick_ U.Broken] "Download"
-            p_ "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
+                button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
+            p_ [class_ "download-box-body"] "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
       where
         makeValue :: IdeaSpace -> ST
         makeValue SchoolSpace = "idea-schoolspace"

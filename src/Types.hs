@@ -14,7 +14,7 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (makeLenses, Lens', (^.), (^?), _Just)
+import Control.Lens (Lens', Traversal', makeLenses, (^.), (^?), _Just)
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -81,8 +81,7 @@ data Idea = Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
-    , _ideaSpace      :: IdeaSpace
-    , _ideaTopic      :: Maybe (AUID Topic)
+    , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Set Comment
     , _ideaLikes      :: Set IdeaLike
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
@@ -93,12 +92,20 @@ data Idea = Idea
 
 instance SOP.Generic Idea
 
+-- | Invariant: for all @IdeaLocationTopic space tid@: idea space of topic with id 'tid' is 'space'.
+data IdeaLocation =
+      IdeaLocationSpace { _ideaLocationSpace :: IdeaSpace }
+    | IdeaLocationTopic { _ideaLocationSpace :: IdeaSpace, _ideaLocationTopicId :: AUID Topic }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaLocation
+
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
     , _protoIdeaDesc       :: Document
     , _protoIdeaCategory   :: Category
-    , _protoIdeaIdeaSpace  :: IdeaSpace
+    , _protoIdeaLocation   :: IdeaLocation
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -263,7 +270,7 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: URL  -- FIXME UriPath?  Maybe?
+    , _userAvatar    :: Maybe URL  -- FIXME UriPath?
     , _userGroups    :: [Group]  -- FIXME make a set.  rename group to role.
     , _userPassword  :: UserPass
     , _userEmail     :: Maybe UserEmail
@@ -381,7 +388,7 @@ data MetaInfo a = MetaInfo
     { _metaId              :: AUID a
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
-    , _metaCreatedByAvatar :: URL
+    , _metaCreatedByAvatar :: Maybe URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
     , _metaChangedAt       :: Timestamp
@@ -491,6 +498,7 @@ instance Binary UserPass
 instance Binary UserEmail
 instance Binary Group
 instance Binary Idea
+instance Binary IdeaLocation
 instance Binary IdeaLike
 instance Binary IdeaResult
 instance Binary IdeaResultValue
@@ -516,6 +524,7 @@ makeLenses ''Document
 makeLenses ''UserPass
 makeLenses ''UserEmail
 makeLenses ''Idea
+makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
 makeLenses ''IdeaResult
 makeLenses ''IdeaSpace
@@ -541,7 +550,7 @@ class HasMetaInfo a where
     createdBy       = metaInfo . metaCreatedBy
     createdByLogin  :: Lens' a UserLogin
     createdByLogin  = metaInfo . metaCreatedByLogin
-    createdByAvatar :: Lens' a URL
+    createdByAvatar :: Lens' a (Maybe URL)
     createdByAvatar = metaInfo . metaCreatedByAvatar
     createdAt       :: Lens' a Timestamp
     createdAt       = metaInfo . metaCreatedAt
@@ -590,3 +599,22 @@ parseIdeaSpace s
 
 instance FromHttpApiData IdeaSpace where
     parseUrlPiece = parseIdeaSpace
+
+ideaTopicId :: Traversal' Idea (AUID Topic)
+ideaTopicId = ideaLocation . ideaLocationTopicId
+
+ideaLocationMaybeTopicId :: Lens' IdeaLocation (Maybe (AUID Topic))
+ideaLocationMaybeTopicId f = \case
+    IdeaLocationSpace spc     -> mk spc <$> f Nothing
+    IdeaLocationTopic spc tid -> mk spc <$> f (Just tid)
+  where
+    mk spc = \case
+        Nothing  -> IdeaLocationSpace spc
+        Just tid -> IdeaLocationTopic spc tid
+
+ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
+ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
+
+isWild :: IdeaLocation -> Bool
+isWild (IdeaLocationSpace _)   = True
+isWild (IdeaLocationTopic _ _) = False

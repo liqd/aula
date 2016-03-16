@@ -147,7 +147,7 @@ aulaMain =
 
 type AulaSpace =
        -- browse wild ideas in an idea space
-       "idea" :> GetH (Frame PageIdeasOverview)
+       "ideas" :> GetH (Frame PageIdeasOverview)
        -- view idea details (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
@@ -160,13 +160,17 @@ type AulaSpace =
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"              :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "all"     :> GetH (Frame ViewTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
+          :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
+          :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create"   :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
+
        -- create new topic
   :<|> "topic" :> "create" :> FormHandler CreateTopic
-       -- create new idea inside topic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create" :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "edit" :> GetH (Frame EditTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic)
@@ -175,18 +179,21 @@ type AulaSpace =
 aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
 aulaSpace space =
        Page.viewIdeas  space
-  :<|> Page.viewIdea   space
-  :<|> Page.editIdea   space
-  :<|> Page.createIdea space Nothing
+  :<|> Page.viewIdea
+  :<|> Page.editIdea
+  :<|> Page.createIdea (IdeaLocationSpace space)
 
   :<|> Page.viewTopics  space
+  :<|> Page.viewTopic   space TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
   :<|> Page.viewTopic   space TabAllIdeas
-  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> const Page.viewIdea
+  :<|> const Page.editIdea
+  :<|> Page.createIdea . IdeaLocationTopic space
   :<|> Page.viewTopic   space TabVotingIdeas
   :<|> Page.viewTopic   space TabWinningIdeas
   :<|> Page.viewTopic   space TabDelegation
+
   :<|> Page.createTopic space []
-  :<|> Page.createIdea  space . Just
   :<|> Page.moveIdeasToTopic space
   :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
   :<|> error "api not implemented: topic/:topic/delegation/create"
@@ -272,7 +279,7 @@ catchAulaExcept Proxy = id
 --   ... = (`catchError` actionExceptHandler)
 --  where
 --    actionExceptHandler :: ActionExcept -> s
---    actionExceptHandler = undefined
+--    actionExceptHandler = _
 --
 -- -- (async exceptions (`error` and all) should be caught inside module "Action" and exposed as
 -- -- `err500` here.)

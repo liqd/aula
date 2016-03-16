@@ -29,7 +29,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview IdeaSpace [Idea]
+data PageIdeasOverview = PageIdeasOverview IdeaSpace [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -52,7 +52,8 @@ viewRooms = makeFrame =<< persistent (PageRoomsOverview <$> getSpaces)
 
 viewIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasOverview)
-viewIdeas space = makeFrame =<< persistent (PageIdeasOverview space <$> findWildIdeasBySpace space)
+viewIdeas space = makeFrame =<< persistent
+    (PageIdeasOverview space <$> (findWildIdeasBySpace space >>= mapM getNumVotersForIdea))
 
 viewTopics :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasInDiscussion)
@@ -91,7 +92,7 @@ instance Page PageRoomsOverview where
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview space ideas) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview space ideaAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -104,6 +105,7 @@ instance ToHtml PageIdeasOverview where
         div_ [class_ "icon-list"] $ do
             ul_ $ do
                 -- FIXME: these buttons should filter the ideas by category
+                -- FIXME: also, there should be a way to generate these with something like @f `mapM_` [minBound..]@
                 li_ [class_ "icon-rules"] $ do
                     a_ [href_ U.Broken] "Regeln"
                 li_ [class_ "icon-equipment"] $ do
@@ -116,8 +118,8 @@ instance ToHtml PageIdeasOverview where
                     a_ [href_ U.Broken] "Umgebung"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
-                div_ [class_ "ideas-list"] . for_ ideas $ \idea ->
-                    ListItemIdea True Nothing idea ^. html
+                div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
+                    ListItemIdea True Nothing numVoters idea ^. html
 
 instance Page PageIdeasOverview where
     isPrivatePage _ = True
@@ -138,7 +140,7 @@ instance ToHtml PageIdeasInDiscussion where
             div_ . toHtml . show $ topic ^. topicPhase
             div_ . toHtml $ topic ^. topicTitle
             div_ . toHtml $ topic ^. topicDesc
-            a_ [href_ . U.Space space . U.ViewTopicIdeas $ topic ^. _Id] "view topic"
+            a_ [href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
 
 instance Page PageIdeasInDiscussion where
     isPrivatePage _ = True

@@ -40,6 +40,7 @@ import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Data.Functor (($>))
 import Data.Set (Set)
+import Data.String (fromString)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid hiding (href_, script_, src_)
@@ -175,24 +176,26 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
             Just usr -> do
                 div_ [class_ "pop-menu"] $ do
                     div_ [class_ "user-avatar"] $ do
-                        nil
-                        -- FIXME if avatar is available, replace empty body with this:
-                        -- img_ [src_ $ P.TopStatic "some_avatar"] nil
+                        maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                            (mUser ^? _Just . userAvatar . _Just)
                     "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                     ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Broken] $ do
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
                             i_ [class_ "pop-menu-list-icon icon-eye"] nil
                             "Profil anzeigen"
-                        li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Broken] $ do
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ P.UserSettings] $ do
                             i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                             "Einstellungen"
-                        li_ [class_ "pop-menu-list-item"] . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ $ P.Admin P.AdminDuration] $ do
                             i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                             "Prozessverwaltung"
-                        li_ [class_ "pop-menu-list-item"] . a_ [href_ P.Logout] $ do
+                        li_ [class_ "pop-menu-list-item"]
+                            . a_ [href_ P.Logout] $ do
                             i_ [class_ "pop-menu-list-icon icon-power-off"] nil
                             "Logout"
-
             Nothing -> nil
 
 
@@ -258,31 +261,33 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         div_ [class_ "author"] $ do
-            -- FIXME make img optional also img is broken
-            -- img_ [src_ . P.TopStatic . fromString . cs $ mi ^. metaCreatedByAvatar]
             span_ [class_ "author-image"] $ do
-            -- FIXME only print this image if it's there
-                img_ [src_ P.Broken]
+                maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                    (mi ^. metaCreatedByAvatar)
             span_ [class_ "author-text"] $ do
                 mi ^. metaCreatedByLogin . fromUserLogin . html
 
-data ListItemIdea = ListItemIdea Bool (Maybe Phase) Idea
+data ListItemIdea = ListItemIdea
+      Bool           -- ^ link to user profile
+      (Maybe Phase)  -- ^ phase
+      Int            -- ^ number of voters in idea space
+      Idea           -- ^ the idea itself
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea _linkToUserProfile _phase idea) = semanticDiv p $ do
+    toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            a_ [href_ P.Broken] $ do
+            a_ [href_ $ P.IdeaPath (idea ^. ideaLocation) (P.IdeaModeView $ idea ^. _Id)] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ do
-                        nil
-                        -- FIXME if avatar is available, replace empty body with this:
-                        -- img_ [src_ $ P.TopStatic "some_avatar"] nil
+                        maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                            (idea ^. createdByAvatar)
                     h2_ [class_ "ideas-list-title"] $ do
                         idea ^. ideaTitle . html
-                        span_ [class_ "ideas-list-author"] $ "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
+                        span_ [class_ "ideas-list-author"] $ do
+                            "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
@@ -292,17 +297,26 @@ instance ToHtml ListItemIdea where
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (numGivenVotes <> " von " <> numParticipants <> " Stimmen")
+                            toHtml (show numLikes <> " von " <> show numVoters <> " Stimmen")
                     span_ [class_ "progress-bar"] $ do
                         span_ [ class_ "progress-bar-progress"
-                              , style_ ("width: " <> percentageOfVotes <> "%")
+                              , style_ ("width: " <> cs (show percentLikes) <> "%")
                               ]
                             nil
       where
-        -- FIXME: extract these from the idea.
-        numGivenVotes     = cs $ show (24  :: Int) :: ST
-        numParticipants   = cs $ show (600 :: Int) :: ST
-        percentageOfVotes = cs $ show (67  :: Int) :: ST
+        numLikes :: Int
+        numLikes = Set.size $ idea ^. ideaLikes
+
+        -- div by zero is caught silently: if there are no voters, the quorum stays 0%.
+        -- FIXME: we could assert that values are always between 0..100, but the inconsistent test
+        -- data violates that invariant.
+        percentLikes :: Int
+        percentLikes = {- assert c -} v
+          where
+            -- c = v >= 0 && v <= 100
+            v = if numVoters == 0
+                  then 0
+                  else (numLikes * 100) `div` numVoters
 
 -- | HTML representation of a page generated by digestive functors.
 data FormPage p = FormPage p (Html ())
