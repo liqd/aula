@@ -68,7 +68,6 @@ testApi =
 
 testAppAulaExcept :: IO Application
 testAppAulaExcept = do
--- FIXME
     action <- mkRunAction <$> (ActionEnv <$> Persistent.Implementation.STM.mkRunPersist <*> pure Config.test)
     let proxy :: Proxy TestApi
         proxy = Proxy
