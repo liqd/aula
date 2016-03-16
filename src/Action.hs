@@ -158,7 +158,7 @@ instance Error500 ActionExcept where
 class ActionError m => ActionUserHandler m where
     -- | Make the user logged in
     login  :: UserLogin -> m ()
-    -- | Read the actual user state
+    -- | Read the current user state
     userState :: Getting a UserState a -> m a
     -- | Make the user log out
     logout :: m ()
@@ -179,23 +179,23 @@ instance PersistM r => ActionUserHandler (Action r) where
 
     logout = put userLoggedOut
 
-{- MOVE TO Servant.Missing -}
+-- FIXME: MOVE TO Servant.Missing
 class ThrowServantErr err where
     _ServantErr :: Prism' err ServantErr
     throwServantErr :: MonadError err m => ServantErr -> m any
     throwServantErr err = throwError $ _ServantErr # err
 
-{- MOVE TO Servant.Missing -}
+-- FIXME: MOVE TO Servant.Missing
 type MonadServantErr err m = (MonadError err m, ThrowServantErr err)
 
-{- MOVE TO Servant.Missing -}
+-- FIXME: MOVE TO Servant.Missing
 instance ThrowServantErr ServantErr where
     _ServantErr = id
 
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept
 
--- ORPHAN move
+-- FIXME: ORPHAN move
 instance Error500 ServantErr where
     error500 = prism (\msg -> err500 { errBody = cs msg })
                      (\err -> if errHTTPCode err == 500 then Right (cs (errBody err)) else Left err)
