@@ -399,8 +399,8 @@ newtype Document = Markdown { fromMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance ToHtml Document where
-    toHtml    = div_ . p_ . toHtml    . fromMarkdown
-    toHtmlRaw = div_ . p_ . toHtmlRaw . fromMarkdown
+    toHtml    = toHtml    . fromMarkdown
+    toHtmlRaw = toHtmlRaw . fromMarkdown
 
 
 -- * general-purpose types
