@@ -15,8 +15,8 @@ import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
-----------------------------------------------------------------------
--- page
+
+-- * page
 
 -- | 9. User settings
 data PageUserSettings = PageUserSettings User
@@ -40,10 +40,9 @@ instance Page PageUserProfileDelegatedVotes where
     isPrivatePage _ = True
 
 
-----------------------------------------------------------------------
--- templates
+-- * templates
 
--- * User Settings
+-- ** User Settings
 
 data UserSettingData = UserSettingData
     { profileEmail    :: Maybe UserEmail
@@ -100,7 +99,7 @@ userHeaderDiv _user =
         button_ [value_ ""] "KLASSENWEIT BEAUFTRAGEN" >> br_ [] --FIXME
         button_ [value_ ""] "SCHULWEIT BEUFTRAGEN" >> br_ [] -- FIXME
 
--- * User Profile: Created Ideas
+-- ** User Profile: Created Ideas
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
@@ -132,7 +131,7 @@ createdIdeas userId = join . persistent $ do
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
     return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
 
--- * User Profile: Delegated Votes
+-- ** User Profile: Delegated Votes
 
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml

@@ -15,8 +15,8 @@ import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
-----------------------------------------------------------------------
--- page
+
+-- * page
 
 -- | 16. Home page with login prompt
 data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
@@ -31,8 +31,8 @@ data PageLogout = PageLogout
 instance Page PageLogout where
     isPrivatePage _ = False
 
-----------------------------------------------------------------------
--- templates
+
+-- * templates
 
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
@@ -64,8 +64,8 @@ instance ToHtml PageLogout where
         p_ "Du bist ausgelogt."
         button_ [onclick_ P.Login] "Login"
 
-----------------------------------------------------------------------
--- handlers
+
+-- * handlers
 
 login :: (ActionM r action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
 login = redirectFormHandler (pure PageHomeWithLoginPrompt) makeUserLogin

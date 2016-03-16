@@ -37,8 +37,7 @@ import qualified Persistent.Implementation.STM
 import Types
 
 
-----------------------------------------------------------------------
--- list all types for testing
+-- * list all types for testing
 
 spec :: Spec
 spec = do
@@ -75,8 +74,7 @@ spec = do
         ]
 
 
-----------------------------------------------------------------------
--- translate form data back to form input
+-- * translate form data back to form input
 
 -- | Translate a value into the select string for the form 'Env'.
 --
@@ -171,8 +169,8 @@ instance PayloadToEnv EditUser where
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
-----------------------------------------------------------------------
--- machine room
+
+-- * machine room
 
 data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen

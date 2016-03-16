@@ -90,8 +90,8 @@ instance ToHtml () where
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
-----------------------------------------------------------------------
--- building blocks
+
+-- * building blocks
 
 type GetH = Get '[HTML]
 type FormHandlerT p a = FormH HTML (FormPage p) a

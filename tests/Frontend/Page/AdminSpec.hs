@@ -51,15 +51,14 @@ sameStudentInSameYear :: Group -> Group -> Bool
 sameStudentInSameYear (Student c) (Student d) = _classSchoolYear c == _classSchoolYear d
 sameStudentInSameYear _ _ = False
 
-----------------------------------------------------------------------
--- invariants
 
--- * Only one group in one class.
--- * Each class is present only once.
+-- * invariants
+
+-- | Only one group in one class; each class is present only once.
 oneRoleClassOnceInv :: [Group] -> Bool
 oneRoleClassOnceInv = all ((<= 1) . length) . group . catMaybes . sort . map toClass
 
--- * User can be student in one class only, and guests in many for a given year.
+-- | User can be student in one class only, and guests in many for a given year.
 oneClassStudent :: [Group] -> Bool
 oneClassStudent =
     and
@@ -72,14 +71,14 @@ oneClassStudent =
     studentForOneClass :: [Group] -> Bool
     studentForOneClass = (<= 1) . length . filter isStudent
 
-----------------------------------------------------------------------
--- generator
+
+-- * generator
 
 cleanGroupData :: [Group] -> [Group]
 cleanGroupData = nubBy sameStudentInSameYear . nubBy sameClass
 
-----------------------------------------------------------------------
--- properties
+
+-- * properties
 
 studentInClasses :: [Group] -> [SchoolClass]
 studentInClasses =  map (fromJust . toClass) . filter isStudent
@@ -123,8 +122,8 @@ genSafeClassGuest gen gs
   | null $ guestInClasses gs = genProp5 gs
   | otherwise = gen gs
 
-----------------------------------------------------------------------
--- helper
+
+-- * helper
 
 insertToListMap :: (Ord k) => k -> a -> Map.Map k [a] -> Map.Map k [a]
 insertToListMap k a m = case Map.lookup k m of

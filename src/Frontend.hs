@@ -42,8 +42,7 @@ import qualified Action
 import qualified Persistent.Implementation.STM
 
 
-----------------------------------------------------------------------
--- driver
+-- * driver
 
 runFrontend :: Config.Config -> IO ()
 runFrontend cfg = do
@@ -58,8 +57,8 @@ runFrontend cfg = do
              . setPort (cfg ^. listenerPort)
              $ defaultSettings
 
-----------------------------------------------------------------------
--- driver
+
+-- * driver
 
 type AulaTop =
        (AulaMain :<|> "testing" :> AulaTesting)
@@ -266,8 +265,8 @@ aulaTesting =
   :<|> batchCreateUsers
   :<|> (PageShow <$> Action.persistent mkRandomPassword)
 
-----------------------------------------------------------------------
--- error handling in servant / wai
+
+-- * error handling in servant / wai
 
 -- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
 -- type family.)
