@@ -150,7 +150,7 @@ pageFrame :: (Monad m) => Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame = pageFrame' nil
 
 pageFrame' :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame' (HtmlT . return . runIdentity . runHtmlT -> hdrs) mUser bdy = do
+pageFrame' (toHtml -> hdrs) mUser bdy = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]

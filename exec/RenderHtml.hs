@@ -12,7 +12,6 @@ import Control.Exception (assert, SomeException(SomeException), evaluate)
 import Data.String.Conversions
 import Data.Typeable (TypeRep, typeOf)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import Lucid.Base (HtmlT(HtmlT))
 import System.Directory
 import System.Directory.Extra
 import System.Exit
@@ -88,12 +87,9 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
     toHtml' (ToHtmlDefault p) = toHtml p
 
 instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
-    toHtml' (ToHtmlForm p) = unwrap2 $ do
-        v <- unwrap1 $ getForm "" (makeForm p)
+    toHtml' (ToHtmlForm p) = toHtml $ do
+        v <- return . runIdentity $ getForm "" (makeForm p)
         formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
-      where
-        unwrap1 = return . runIdentity
-        unwrap2 = HtmlT . return . runIdentity . runHtmlT
 
 instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
     arbitrary = ToHtmlDefault <$> arbitrary
