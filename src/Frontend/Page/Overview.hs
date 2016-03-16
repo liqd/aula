@@ -141,8 +141,7 @@ instance ToHtml PageIdeasInDiscussion where
                         div_ [class_ "theme-grid-item-image"] nil
                         div_ [class_ "theme-grid-item-text"] $ do
                             span_ [class_ "theme-grid-item-phase"] . toHtml . phaseName $ topic ^. topicPhase
-                            -- FIXME h2_ [class_ "theme-grid-item-title"] . toHtml $ topic ^. topicTitle
-                            h2_ [class_ "theme-grid-item-title"] "Dummy de doo"
+                            h2_ [class_ "theme-grid-item-title"] . toHtml $ topic ^. topicTitle
                             div_ [class_ "theme-grid-item-blurb"] . toHtml $ topic ^. topicDesc
                             a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
 
