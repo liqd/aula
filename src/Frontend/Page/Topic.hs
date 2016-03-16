@@ -132,7 +132,7 @@ instance ToHtml ViewTopic where
         topicId = topic ^. _Id
         space   = topic ^. topicIdeaSpace
 
-instance FormPageView CreateTopic where
+instance FormPage CreateTopic where
     type FormPageResult CreateTopic = ProtoTopic
 
     formAction (CreateTopic space _) = relPath $ U.Space space U.CreateTopic
@@ -155,7 +155,7 @@ instance FormPageView CreateTopic where
                 DF.inputText     "image" v >> br_ []
                 DF.inputSubmit   "Add Topic"
 
-instance FormPageView MoveIdeasToTopic where
+instance FormPage MoveIdeasToTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
     type FormPageResult MoveIdeasToTopic = [AUID Idea]

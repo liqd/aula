@@ -30,7 +30,7 @@ instance Page PageHomeWithLoginPrompt where
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
-instance FormPageView PageHomeWithLoginPrompt where
+instance FormPage PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData
 
     formAction _ = relPath U.Login

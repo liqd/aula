@@ -186,7 +186,7 @@ renderMarkup (H g) =
 
 data FormGen where
     F :: ( r ~ FormPageResult m
-         , Show m, Typeable m, FormPageView m
+         , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
          , ArbFormPageResult m
          ) => Gen m -> FormGen
@@ -250,8 +250,8 @@ postToForm (F g) = do
 --
 -- In some cases the arbitrary data generation depends on the 'Page' context
 -- and the 'FormPageResult' has to compute data from the context.
-class FormPageView p => ArbFormPageResult p where
-    arbFormPageResult :: (r ~ FormPageResult p, FormPageView p, Arbitrary r, Show r) => p -> Gen r
+class FormPage p => ArbFormPageResult p where
+    arbFormPageResult :: (r ~ FormPageResult p, FormPage p, Arbitrary r, Show r) => p -> Gen r
 
 instance ArbFormPageResult CreateIdea where
     arbFormPageResult (CreateIdea location) = set protoIdeaLocation location <$> arbitrary

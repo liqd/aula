@@ -218,7 +218,7 @@ menulink' targetMenuItem =
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
 
-instance FormPageView PageAdminSettingsDurations where
+instance FormPage PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations
 
     formAction _ = relPath $ U.Admin U.AdminDuration
@@ -265,7 +265,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
 
 -- ** Quorum
 
-instance FormPageView PageAdminSettingsQuorum where
+instance FormPage PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
 
     formAction _ = relPath $ U.Admin U.AdminQuorum
@@ -391,7 +391,7 @@ roleValues = [ (RoleStudent, "Schüler")
              , (RoleGuest, "Gast")
              ]
 
-instance FormPageView PageAdminSettingsGaPUsersEdit where
+instance FormPage PageAdminSettingsGaPUsersEdit where
     type FormPageResult PageAdminSettingsGaPUsersEdit = EditUser
 
     formAction (PageAdminSettingsGaPUsersEdit user _classes) =

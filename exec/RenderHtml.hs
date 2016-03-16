@@ -68,9 +68,9 @@ pages f =
     ]
 
 
--- | We write 'ToHtml' for pages that contain no forms, and 'FormPageView' for pages that do.  In
+-- | We write 'ToHtml' for pages that contain no forms, and 'FormPage' for pages that do.  In
 -- this module, we need to render both into html for viewing only, and 'ToHtml'' is introduced for
--- this.  We can instantiate wrapper types for 'ToHtml' instances and 'FormPageView', resp., and get
+-- this.  We can instantiate wrapper types for 'ToHtml' instances and 'FormPage', resp., and get
 -- a uniform way of rendering html for either.
 class ToHtml' p where
     toHtml' :: Monad m => p -> HtmlT m ()
@@ -79,14 +79,14 @@ class ToHtml' p where
 data ToHtmlDefault p = ToHtmlDefault p
   deriving (Eq, Ord, Show, Read)
 
--- | A wrapper type to make all 'FormPageView' instances 'ToHtml'' instances.
+-- | A wrapper type to make all 'FormPage' instances 'ToHtml'' instances.
 data ToHtmlForm p = ToHtmlForm p
   deriving (Eq, Ord, Show, Read)
 
 instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
     toHtml' (ToHtmlDefault p) = toHtml p
 
-instance (FormPageView p) => ToHtml' (ToHtmlForm p) where
+instance (FormPage p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = toHtml $ do
         let v = runIdentity $ getForm "" (makeForm p)
         formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
