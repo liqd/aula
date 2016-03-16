@@ -12,7 +12,6 @@ where
 import Lucid hiding (href_)
 import Servant
 import Thentos.Prelude
-import Thentos.Types (throwError500)
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST

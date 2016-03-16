@@ -45,13 +45,13 @@ where
 
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Char (ord)
 import Data.Maybe (isJust)
-import Data.String.Conversions (ST, LBS, cs)
+import Data.String.Conversions (ST, LBS)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
@@ -65,7 +65,7 @@ import Types
 import Config (Config)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 import Thentos.Action (freshSessionToken)
-import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken, Error500(..))
+import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 
 -- FIXME: Remove. It is scaffolding to generate random data
@@ -152,7 +152,7 @@ instance HasSessionCsrfToken UserState where
 instance GetThentosSessionToken UserState where
     getThentosSessionToken = usSessionToken
 
-instance Error500 ActionExcept where
+instance ThrowError500 ActionExcept where
     error500 = _ServantErr . error500
 
 class ActionError m => ActionUserHandler m where
@@ -179,26 +179,8 @@ instance PersistM r => ActionUserHandler (Action r) where
 
     logout = put userLoggedOut
 
--- FIXME: MOVE TO Servant.Missing
-class ThrowServantErr err where
-    _ServantErr :: Prism' err ServantErr
-    throwServantErr :: MonadError err m => ServantErr -> m any
-    throwServantErr err = throwError $ _ServantErr # err
-
--- FIXME: MOVE TO Servant.Missing
-type MonadServantErr err m = (MonadError err m, ThrowServantErr err)
-
--- FIXME: MOVE TO Servant.Missing
-instance ThrowServantErr ServantErr where
-    _ServantErr = id
-
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept
-
--- FIXME: ORPHAN move
-instance Error500 ServantErr where
-    error500 = prism (\msg -> err500 { errBody = cs msg })
-                     (\err -> if errHTTPCode err == 500 then Right (cs (errBody err)) else Left err)
 
 class MonadError ActionExcept m => ActionError m
 
