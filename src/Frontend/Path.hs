@@ -142,13 +142,12 @@ data AdminPs =
 instance SOP.Generic AdminPs
 
 admin :: AdminPs -> UriPath -> UriPath
-admin AdminDuration       path = path </> "duration"
-admin AdminQuorum         path = path </> "quorum"
-admin (AdminAccess ctx)   path = path </> "access" </> uriPart ctx
-admin (AdminEditUser uid) path = path </> "user" </> uriPart uid </> "edit"
+admin AdminDuration         path = path </> "duration"
+admin AdminQuorum           path = path </> "quorum"
+admin (AdminAccess ctx)     path = path </> "access" </> uriPart ctx
+admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
-admin AdminEvent          path = path </> "event"
--- TODO: Allignment
+admin AdminEvent            path = path </> "event"
 
 data IdeaPath = IdeaPath IdeaLocation IdeaMode
   deriving (Eq, Ord, Show, Read, Generic)
