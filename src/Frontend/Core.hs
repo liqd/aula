@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE ViewPatterns         #-}
@@ -18,7 +19,7 @@ module Frontend.Core
     , Page, isPrivatePage, extraPageHeaders
     , PageShow(PageShow)
     , Beside(Beside)
-    , Frame(Frame, PublicFrame), makeFrame, pageFrame
+    , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
     , FormPageView, FormPageResult
@@ -93,6 +94,14 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
 -- * building blocks
 
+-- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
+data Frame body
+    = Frame { _frameUser :: User, _frameBody :: body }
+    | PublicFrame               { _frameBody :: body }
+  deriving (Functor)
+
+makeLenses ''Frame
+
 type GetH = Get '[HTML]
 type FormHandlerT p a = FormH HTML (FormPage p) a
 type FormHandler p = FormHandlerT p ST
@@ -116,10 +125,6 @@ class Page p where
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
 
--- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
-data Frame body = Frame User body | PublicFrame body
-  deriving (Functor)
-
 instance Page () where
     isPrivatePage _ = False
 
@@ -131,8 +136,7 @@ instance (Page a, Page b) => Page (Beside a b) where
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
 frameAlgebra :: (body -> a) -> Frame body -> a
-frameAlgebra f = \case (Frame _ b)     -> f b
-                       (PublicFrame b) -> f b
+frameAlgebra f = f . view frameBody
 
 -- | TODO: document this!
 instance FormPageView p => FormPageView (Frame p) where
