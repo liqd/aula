@@ -129,18 +129,24 @@ instance ToHtml PageIdeasInDiscussion where
     toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
-        -- WARNING: This button is not in the design. But it should be here for
-        -- user experience reasons.
-        -- FIXME: This button should de displayed only for Teachers.
-        button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
+        div_ [class_ "grid theme-grid"] $ do
 
-        forM_ topics $ \topic -> do
-            hr_ []
-            img_ [src_ $ U.TopStatic "FIXME", alt_ "FIXME"]
-            div_ . toHtml . show $ topic ^. topicPhase
-            div_ . toHtml $ topic ^. topicTitle
-            div_ . toHtml $ topic ^. topicDesc
-            a_ [href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
+            header_ [class_ "themes-header"] $ do
+                -- WARNING: This button is not in the design. But it should be here for
+                -- user experience reasons.
+                -- FIXME: This button should de displayed only for Teachers.
+                button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
+
+            forM_ topics $ \topic -> do
+                div_ [class_ "col-1-3 theme-grid-col"] $ do
+                    div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
+                        div_ [class_ "theme-grid-item-image"] nil
+                        div_ [class_ "theme-grid-item-text"] $ do
+                            span_ [class_ "theme-grid-item-phase"] . toHtml . phaseName $ topic ^. topicPhase
+                            -- FIXME h2_ [class_ "theme-grid-item-title"] . toHtml $ topic ^. topicTitle
+                            h2_ [class_ "theme-grid-item-title"] "Dummy de doo"
+                            div_ [class_ "theme-grid-item-blurb"] . toHtml $ topic ^. topicDesc
+                            a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
 
 instance Page PageIdeasInDiscussion where
     isPrivatePage _ = True
