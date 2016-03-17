@@ -1,6 +1,5 @@
 module Frontend.Prelude (module X) where
 
-import Api                        as X
 import Data.UriPath               as X
 import Control.Monad.Trans.Except as X (ExceptT)
 import Lucid                      as X hiding (for_, script_, src_, href_, onclick_)

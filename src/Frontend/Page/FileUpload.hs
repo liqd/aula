@@ -31,7 +31,6 @@ data BatchCreateUsers = BatchCreateUsers
   deriving (Eq, Show)
 
 instance Page BatchCreateUsers where
-    isPrivatePage _ = True
 
 data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
   deriving (Eq, Show, Generic)

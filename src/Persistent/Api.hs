@@ -67,7 +67,7 @@ module Persistent.Api
     , dbClassQuorum
     , adminUsernameHack
     , addDelegation
-    , ideaLocationTopic
+    , ideaPhase
     )
 where
 
@@ -228,7 +228,7 @@ addTopic cUser pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    Just loc <- ideaLocationTopic (t ^. _Id)
+    Just loc <- ideaLocationFromTopic (t ^. _Id)
     moveIdeasToLocation (pt ^. protoTopicIdeas) loc
     return t
 
@@ -246,7 +246,7 @@ findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
 findIdeasByTopicId tid = do
-    Just loc <- ideaLocationTopic tid
+    Just loc <- ideaLocationFromTopic tid
     findAllInBy dbIdeas ideaLocation loc
 
 findIdeasByTopic :: Topic -> PersistM m => m [Idea]
@@ -368,9 +368,15 @@ nextMetaInfo cUser = do
   now <- Timestamp <$> liftIO getCurrentTime
   mkMetaInfo cUser now <$> nextId
 
-ideaLocationTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
-ideaLocationTopic tid = do
-    mSpace <- view topicIdeaSpace <$$> findTopic tid
-    pure $ case mSpace of
-        Just space -> Just $ IdeaLocationTopic space tid
-        Nothing    -> Nothing
+-- | Construct an 'IdeaLocation' from a 'Topic' id.
+ideaLocationFromTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
+ideaLocationFromTopic tid = (`IdeaLocationTopic` tid) . view topicIdeaSpace <$$> findTopic tid
+
+ideaPhase :: Idea -> PersistM m => m (Maybe Phase)
+ideaPhase idea = case idea ^. ideaLocation of
+    IdeaLocationSpace _ ->
+        pure Nothing
+    IdeaLocationTopic _ topicId -> do
+        -- (failure to match the following can only be caused by an inconsistent state)
+        Just topic <- findTopic topicId
+        pure . Just $ topic ^. topicPhase

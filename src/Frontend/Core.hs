@@ -53,11 +53,9 @@ import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
---import qualified Servant.Missing
 import qualified Text.Digestive.Form as DF
 
 import Action
-import Api
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_)
 import Types
@@ -121,6 +119,7 @@ class Page p => FormPage p where
 -- | Defines some properties for pages
 class Page p where
     isPrivatePage :: p -> Bool
+    isPrivatePage _ = True
 
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
@@ -234,8 +233,7 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
 newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
 
-instance Page (PageShow a) where
-    isPrivatePage _ = True
+instance Page (PageShow a)
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
@@ -255,6 +253,9 @@ instance ToHtml CommentVotesWidget where
                 toHtml n
                 i_ [class_ "icon-thumbs-o-down"] nil
       where
+        countVotes :: (Eq value) => value -> Lens' vote value -> Set vote -> Int
+        countVotes v l = Set.size . Set.filter ((== v) . view l)
+
         y = show (countVotes Up   commentVoteValue votes)
         n = show (countVotes Down commentVoteValue votes)
 

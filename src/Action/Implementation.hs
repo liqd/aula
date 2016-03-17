@@ -29,7 +29,7 @@ import Types
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 import Thentos.Action (freshSessionToken)
 
--- * concrete monad type; user state
+-- * concrete monad type
 
 -- | The actions a user can perform.
 newtype Action r a = MkAction { unAction :: ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a }

@@ -52,7 +52,7 @@ input:
 output:
   fonts: static/icons
   css: static-src/scss/core
-#  preview: app/views/styleguide
+  preview: static-src/icons-svg/preview
 #  my-custom-template.yml: path/to/template/output
 
 
@@ -72,7 +72,7 @@ output:
 
 templates:
 - scss
-#- preview
+- preview
 #- my-custom-template.yml
 
 preprocessor_path: ../icons/
