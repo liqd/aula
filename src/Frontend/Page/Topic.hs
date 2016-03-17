@@ -112,11 +112,10 @@ instance ToHtml ViewTopic where
                         li_ [class_ "pop-menu-list-item"] $ do
                             a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
                                 i_ [class_ "icon-pencil"] nil
-                                " bearbeiten"
+                                "bearbeiten"
             h1_   [class_ "main-heading"] $ do
                 span_ [class_ "sub-heading"] . toHtml $ phaseName phase
-                toHtml $ topic ^. topicTitle -- FIXME Empty :(
-                "Dummy do dee"
+                toHtml $ topic ^. topicTitle
             p_ [class_ "sub-header"] $ topic ^. topicDesc . html
             when (phase == PhaseRefinement) $
                 a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
