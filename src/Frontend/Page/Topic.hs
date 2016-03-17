@@ -50,21 +50,26 @@ data ViewTopic
   deriving (Eq, Show, Read)
 
 instance Page ViewTopic where
-    isPrivatePage _ = True
+    data PagePath ViewTopic = ViewTopicPath ViewTopicTab (AUID Topic)
+    pagePath (ViewTopicPath _ _) = U.Broken -- TODO
 
 -- | 10.1 Create topic: Create topic
 data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic where
-    isPrivatePage _ = True
+    data PagePath CreateTopic = CreateTopicPath IdeaSpace (AUID Topic)
+    pagePath (CreateTopicPath space topicId) =
+        U.TopMain . U.Space space $ U.CreateTopicIdea topicId
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
 data MoveIdeasToTopic = MoveIdeasToTopic IdeaSpace (AUID Topic) [Idea]
   deriving (Eq, Show, Read)
 
 instance Page MoveIdeasToTopic where
-    isPrivatePage _ = True
+    data PagePath MoveIdeasToTopic = MoveIdeasToTopicPath IdeaSpace (AUID Topic)
+    pagePath (MoveIdeasToTopicPath space topicId) =
+        U.TopMain . U.Space space $ U.MoveIdeasToTopic topicId
 
 -- | 10.3 ???
 -- FIXME: Which page is this in the click-dummy?
@@ -72,8 +77,8 @@ data EditTopic = EditTopic
   deriving (Eq, Show, Read)
 
 instance Page EditTopic where
-    isPrivatePage _ = True
-
+    data PagePath EditTopic = EditTopicPath IdeaSpace (AUID Topic)
+    pagePath (EditTopicPath space topicId) = U.TopMain . U.Space space $ U.EditTopic topicId
 
 -- * templates
 

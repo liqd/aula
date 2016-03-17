@@ -86,7 +86,8 @@ instance ToHtml PageRoomsOverview where
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
 
 instance Page PageRoomsOverview where
-    isPrivatePage _ = True
+    data PagePath PageRoomsOverview = PageRoomsOverviewPath
+    pagePath _ = U.TopMain U.ListSpaces
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
@@ -120,7 +121,8 @@ instance ToHtml PageIdeasOverview where
                     ListItemIdea True Nothing numVoters idea ^. html
 
 instance Page PageIdeasOverview where
-    isPrivatePage _ = True
+    data PagePath PageIdeasOverview = PageIdeasOverviewPath IdeaSpace
+    pagePath (PageIdeasOverviewPath space) = U.TopMain $ U.Space space U.ListIdeas
 
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
@@ -146,7 +148,8 @@ instance ToHtml PageIdeasInDiscussion where
                             a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
 
 instance Page PageIdeasInDiscussion where
-    isPrivatePage _ = True
+    data PagePath PageIdeasInDiscussion = PageIdeasInDiscussionPath IdeaSpace
+    pagePath (PageIdeasInDiscussionPath space) = U.TopMain $ U.Space space U.ListTopics
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml

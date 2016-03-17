@@ -23,21 +23,26 @@ data PageUserSettings = PageUserSettings User
   deriving (Eq, Show, Read)
 
 instance Page PageUserSettings where
-    isPrivatePage _ = True
+    data PagePath PageUserSettings = PageUserSettingsPath
+    pagePath _ = U.TopMain U.UserSettings
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas User [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
-    isPrivatePage _ = True
+    data PagePath PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeasPath (AUID User)
+    pagePath (PageUserProfileCreatedIdeasPath uid) =
+        U.TopMain $ U.User uid U.UserIdeas
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes User [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
-    isPrivatePage _ = True
+    data PagePath PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotesPath (AUID User)
+    pagePath (PageUserProfileDelegatedVotesPath uid) =
+        U.TopMain $ U.User uid U.UserDelegations
 
 
 -- * templates

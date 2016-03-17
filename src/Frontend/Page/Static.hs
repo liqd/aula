@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-# OPTIONS_GHC -Werror #-}
@@ -6,6 +7,7 @@ module Frontend.Page.Static
 where
 
 import Frontend.Prelude
+import qualified Frontend.Path as U (Top(..), Main(..))
 
 
 -- * page
@@ -15,8 +17,9 @@ data PageStaticImprint = PageStaticImprint
   deriving (Eq, Show, Read)
 
 instance Page PageStaticImprint where
+    data PagePath PageStaticImprint = PageStaticImprintPath
+    pagePath _ = U.TopMain U.Imprint
     isPrivatePage _ = False
-
 
 -- * template
 
@@ -40,8 +43,9 @@ data PageStaticTermsOfUse = PageStaticTermsOfUse
   deriving (Eq, Show, Read)
 
 instance Page PageStaticTermsOfUse where
+    data PagePath PageStaticTermsOfUse = PageStaticTermsOfUsePath
+    pagePath      _ = U.TopMain U.Terms
     isPrivatePage _ = False
-
 
 -- * template
 
