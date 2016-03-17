@@ -142,17 +142,54 @@ createdIdeas userId = join . persistent $ do
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
     toHtml p@(PageUserProfileDelegatedVotes user _delegation) = semanticDiv p $ do
-        userHeaderDiv user
-        div_ $ do
-             ul_ [] $ do
-                li_ $ span_ "Erhaltene Stimmen"
-                li_ $ a_ [href_ (P.User (user ^. _Id) P.UserIdeas)] "Erstellte Ideen"
-        -- School / Class select buttons
-        div_ $ do
-            button_ [value_ ""] "Schulweit"
-            button_ [value_ ""] "Klassenweit"
-        div_ $ do
-            p_ "FIXME: Delegated votes"
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv user
+            div_ [class_ "heroic-tabs"] $ do
+                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)] "Erstellte Ideen"
+                span_ [class_ "heroic-tab-item"] "Erhaltene Stimmen"
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    -- School / Class select buttons
+                    div_ [class_ "filter-toggles"] $ do
+                        button_ [class_ "filter-toggle-btn", value_ ""] "Schulweit" -- button has class m-active or not
+                        button_ [class_ "filter-toggle-btn m-active", value_ ""] "Klassenweit"
+                    -- FIXME Dummy
+                    h2_ "Insgesamt 20"
+                    ul_ [class_ "small-avatar-list"] $ do
+                        li_ [class_ "small-avatar-list-item"] $ do
+                            div_ [class_ "col-1-12"] $ do
+                                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+                            div_ [class_ "col-11-12"] $ do
+                                h3_ "UserName"
+                                p_ $ do
+                                    "5 Stimmen von "
+                                    strong_ $ do
+                                        a_ [href_ U.Broken] "UserName, "
+                                        a_ [href_ U.Broken] "UserName, "
+                                        a_ [href_ U.Broken] "UserName"
+                        li_ [class_ "small-avatar-list-item"] $ do
+                            div_ [class_ "col-1-12"] $ do
+                                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+                            div_ [class_ "col-11-12"] $ do
+                                h3_ "UserName"
+                                p_ $ do
+                                    "5 Stimmen von "
+                                    strong_ $ do
+                                        a_ [href_ U.Broken] "UserName, "
+                                        a_ [href_ U.Broken] "UserName, "
+                                        a_ [href_ U.Broken] "UserName"
+                        li_ [class_ "small-avatar-list-item"] $ do
+                            div_ [class_ "col-1-12"] $ do
+                                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+                            div_ [class_ "col-11-12"] $ do
+                                h3_ "UserName"
+                                p_ $ do
+                                    "5 Stimmen von "
+                                    strong_ $ do
+                                        a_ [href_ U.Broken] "UserName, "
+                                        a_ [href_ U.Broken] "UserName, "
+                                        a_ [href_ U.Broken] "UserName"
 
 delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
