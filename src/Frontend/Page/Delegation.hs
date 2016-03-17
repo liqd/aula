@@ -29,7 +29,8 @@ instance ToHtml PageDelegateVote where
     toHtml p = semanticDiv p "PageDelegateVote"
 
 instance Page PageDelegateVote where
-    isPrivatePage _ = True
+    data PagePath PageDelegateVote = PageDelegateVotePath
+    pagePath _ = U.Broken -- FIXME
 
 instance FormPage PageDelegateVote where  -- FIXME
     type FormPageResult PageDelegateVote = ()

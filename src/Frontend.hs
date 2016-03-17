@@ -297,6 +297,8 @@ catchAulaExcept Proxy = id
 data Page404 = Page404
 
 instance Page Page404 where
+    data PagePath Page404 = Page404Path
+    pagePath Page404Path = U.Broken
     isPrivatePage _ = False
 
 instance ToHtml Page404 where

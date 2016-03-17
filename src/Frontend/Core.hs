@@ -127,7 +127,7 @@ class Page p where
 
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
-{-
+
 instance Page () where
     data PagePath () = UnitPagePath
     pagePath UnitPagePath = P.Broken
@@ -143,7 +143,6 @@ instance (Page a, Page b) => Page (Beside a b) where
     pagePath BesidePagePath = P.Broken
     isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
--}
 
 instance Page p => Page (Frame p) where
     data PagePath (Frame p) = FramePagePath (PagePath p)
