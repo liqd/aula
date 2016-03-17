@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_9a52ba4a0e87edb285ebb45fb12098fc.eot");
-  src: url("../icons/fontcustom_9a52ba4a0e87edb285ebb45fb12098fc.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_9a52ba4a0e87edb285ebb45fb12098fc.woff") format("woff"),
-       url("../icons/fontcustom_9a52ba4a0e87edb285ebb45fb12098fc.ttf") format("truetype"),
-       url("../icons/fontcustom_9a52ba4a0e87edb285ebb45fb12098fc.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_13b3d58182d204883aac9fe1711535c5.eot");
+  src: url("../icons/fontcustom_13b3d58182d204883aac9fe1711535c5.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_13b3d58182d204883aac9fe1711535c5.woff") format("woff"),
+       url("../icons/fontcustom_13b3d58182d204883aac9fe1711535c5.ttf") format("truetype"),
+       url("../icons/fontcustom_13b3d58182d204883aac9fe1711535c5.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_9a52ba4a0e87edb285ebb45fb12098fc.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_13b3d58182d204883aac9fe1711535c5.svg#fontcustom") format("svg");
   }
 }
 
@@ -26,6 +26,7 @@
 .icon-bolt:before,
 .icon-bullhorn:before,
 .icon-camera:before,
+.icon-cogs:before,
 .icon-comment-o:before,
 .icon-ellipsis-h:before,
 .icon-eye:before,
@@ -56,6 +57,7 @@
 .icon-bolt:before { content: "\f102"; }
 .icon-bullhorn:before { content: "\f112"; }
 .icon-camera:before { content: "\f110"; }
+.icon-cogs:before { content: "\f113"; }
 .icon-comment-o:before { content: "\f107"; }
 .icon-ellipsis-h:before { content: "\f10b"; }
 .icon-eye:before { content: "\f103"; }
@@ -73,6 +75,7 @@
 $font-fontcustom-bolt: "\f102";
 $font-fontcustom-bullhorn: "\f112";
 $font-fontcustom-camera: "\f110";
+$font-fontcustom-cogs: "\f113";
 $font-fontcustom-comment-o: "\f107";
 $font-fontcustom-ellipsis-h: "\f10b";
 $font-fontcustom-eye: "\f103";
