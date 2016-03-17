@@ -1,7 +1,9 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -88,7 +90,9 @@ instance ToHtml ViewIdea where
                 div_ [class_ "sub-heading"] $ do
                     idea ^. ideaMeta . to AuthorWidget . html
                     " "
-                    idea ^. ideaCategory . html  -- FIXME: css doesn't work out the same way as in 'CreateIdea'
+                    toHtml $ CategoryButton (idea ^. ideaCategory)
+                        -- FIXME @the-cliff: this should look like in 'CreateIdea' (search this
+                        -- file for 'Category').
                 -- von X / X stimmen / X verbesserungvorschläge
                 div_ [class_ "sub-heading"] $ do
                     when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
@@ -177,10 +181,27 @@ instance FormPage CreateIdea where
                             div_ [class_ "category-radios"] $ do
                                 DF.inputRadio True "idea-category" v
                             div_ [class_ "icon-list m-inline category-image-select"] $ do
-                                ul_ $ toHtml `mapM_` [(minBound :: Category)..]
+                                ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
                                     -- FIXME: select a category for the newly created idea.  this
                                     -- needs to be tested.  see also: static/js/custom.js.
                         DF.inputSubmit "Idee veröffentlichen"
+
+newtype CategoryButton = CategoryButton Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance ToHtml CategoryButton where
+    toHtmlRaw = toHtml
+    toHtml (CategoryButton CatRule) = li_ [class_ "icon-rules"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
+    toHtml (CategoryButton CatEquipment) = li_ [class_ "icon-equipment"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
+    toHtml (CategoryButton CatClass) = li_ [class_ "icon-teaching"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
+    toHtml (CategoryButton CatTime) = li_ [class_ "icon-time"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
+    toHtml (CategoryButton CatEnvironment) = li_ [class_ "icon-environment"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
+
 
 instance FormPage EditIdea where
     type FormPageResult EditIdea = ProtoIdea
