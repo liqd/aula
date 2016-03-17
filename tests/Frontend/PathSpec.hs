@@ -61,21 +61,21 @@ spec = do
 
 -- Each path has a handler
 
-instance (FormPageView a, Arbitrary a) => Arbitrary (FormPage a) where
+instance (FormPage a, Arbitrary a) => Arbitrary (FormPageRep a) where
     arbitrary = do
         page <- arb
         let form = makeForm page
         frameAction <- arb
         view <- getForm frameAction form
-        pure $ FormPage view frameAction (PublicFrame page)
+        pure $ FormPageRep view frameAction (PublicFrame page)
 
 mockAulaTop :: IO Application
 mockAulaTop = do
     return $ serve (Proxy :: Proxy AulaTop) (mock (Proxy :: Proxy AulaTop))
 
-instance (FormPageView a, Page a, Arbitrary a)
-        => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPage a)) where
-    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPage a)))
+instance (FormPage a, Page a, Arbitrary a)
+        => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPageRep a)) where
+    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPageRep a)))
 
 
 -- * UriPath and FromHttpApiData correspondence

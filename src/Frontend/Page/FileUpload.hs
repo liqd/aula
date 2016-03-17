@@ -38,7 +38,7 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 
 instance SOP.Generic BatchCreateUsersFormData
 
-instance FormPageView BatchCreateUsers where
+instance FormPage BatchCreateUsers where
     type FormPageResult BatchCreateUsers = BatchCreateUsersFormData
 
     formAction BatchCreateUsers = relPath $ U.TopTesting "file-upload"

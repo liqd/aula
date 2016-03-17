@@ -52,7 +52,7 @@ data UserSettingData = UserSettingData
     }
     deriving (Eq, Show)
 
-instance FormPageView PageUserSettings where
+instance FormPage PageUserSettings where
     type FormPageResult PageUserSettings = UserSettingData
 
     formAction _ = relPath U.UserSettings
