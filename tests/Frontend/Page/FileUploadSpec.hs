@@ -33,13 +33,13 @@ spec = describe "file upload" $ do
 
         it "posts users successfully; users will appear under /user" $ \query -> do
             -- pendingWith "only partially implemented."
-            l <- post query "/login" [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
-            (l ^. responseStatus . statusCode) `shouldBe` 303
-            r <- post query "/testing/file-upload" [classPart, filePart]
-            (r ^. responseStatus . statusCode) `shouldBe` 303
-            s <- get query "/user"
-            (s ^. responseStatus . statusCode) `shouldBe` 200
-            (cs $ s ^. responseBody :: String) `shouldContain` "_fromUserLastName = &quot;Kuhn&quot"
+            post query "/login" [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+                `shouldRespond` [codeShouldBe 303]
+            post query "/testing/file-upload" [classPart, filePart]
+                `shouldRespond` [codeShouldBe 303]
+            get query "/user"
+                `shouldRespond` [codeShouldBe 200
+                                ,bodyShouldContain "_fromUserLastName = &quot;Kuhn&quot"]
 
     describe "csv file parser" $ do
         let ts :: [(String, [LBS])]

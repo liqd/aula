@@ -10,19 +10,31 @@ module AulaTests
     ) where
 
 import Control.Concurrent (forkIO, killThread)
-import Control.Exception
+import Control.Exception (bracket)
 import Network.Wreq.Types (Postable, StatusChecker)
 
 import qualified Network.Wreq.Session as Sess
 
 import Config
-import Frontend
 
-import Network.Wreq     as X hiding (get, post, put, Proxy)
-import Control.Lens     as X
+import Network.Wreq     as X hiding (get, post, put, head_, Proxy, Link)
 import Test.Hspec       as X
-import Thentos.Prelude  as X hiding (get, put)
 import Action           as X
+import Servant          as X
+import Frontend         as X
+import Frontend.Prelude as X hiding (get, put)
+
+codeShouldBe :: Int -> Response body -> Expectation
+codeShouldBe code l = l ^. responseStatus . statusCode `shouldBe` code
+
+bodyShouldBe :: (Show body, Eq body) => body -> Response body -> Expectation
+bodyShouldBe body l = l ^. responseBody `shouldBe` body
+
+bodyShouldContain :: String -> Response LBS -> Expectation
+bodyShouldContain body l = l ^. responseBody . to cs `shouldContain` body
+
+shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
+shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
 
 -- Same as Frontend.Page.FileUploadSpec.Query
 data Query = Query

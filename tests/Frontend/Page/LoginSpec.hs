@@ -1,29 +1,10 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-
-{-# OPTIONS_GHC -Werror -Wall #-}
-
-module Frontend.Page.LoginSpec
-where
+{-# LANGUAGE OverloadedStrings #-}
+module Frontend.Page.LoginSpec where
 
 import AulaTests
 
 spec :: Spec
 spec = describe "logging in" $ do
-
-  let
-    checkLogin query user pass code = do
-        l <- post query "/login" [partString "/login.user" user, partString "/login.pass" pass]
-        (l ^. responseStatus . statusCode) `shouldBe` code
-
-    checkLoggedIn query code = do
-        l <- get query "/space"
-        (l ^. responseStatus . statusCode) `shouldBe` code
-
   describe "with standard initial DB" . around withServer $ do
     it "redirects you if not logged in" $ \query -> do
       checkLoggedIn query 303
@@ -42,3 +23,10 @@ spec = describe "logging in" $ do
         it "will indeed log you in (yeay)" $ \query -> do
             checkLogin query "admin" "admin" 303
             checkLoggedIn query 200
+
+  where
+    checkLogin query user pass code = do
+        post query "/login" [partString "/login.user" user, partString "/login.pass" pass]
+          `shouldRespond` [codeShouldBe code]
+
+    checkLoggedIn query code = get query "/space" `shouldRespond` [codeShouldBe code]
