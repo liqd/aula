@@ -48,3 +48,8 @@ a {
     @include rem(margin, -15px 0 20px);
     display: block;
 }
+
+.meta-text {
+    color: $color-text-muted;
+    text-transform: uppercase;
+}
