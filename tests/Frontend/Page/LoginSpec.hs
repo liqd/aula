@@ -49,12 +49,23 @@ withServer action = bracket
 spec :: Spec
 spec = describe "logging in" $ do
 
+  let
+    checkLogin query user pass code = do
+        l <- post query "/login" [partString "/login.user" user, partString "/login.pass" pass]
+        (l ^. responseStatus . statusCode) `shouldBe` code
+
+    checkLoggedIn query code = do
+        l <- get query "/space"
+        (l ^. responseStatus . statusCode) `shouldBe` code
+
   describe "with standard initial DB" . around withServer $ do
+    it "redirects you if not logged in" $ \query -> do
+      checkLoggedIn query 303
+
     context "if user does not exist" $ do
-      it "will not log you in and will display something" $ \_query -> do
-        pendingWith "it should not throw exception for error codes 500"
-        -- l <- post query "/login" [partString "/login.user" "not the admin", partString "/login.pass" "foo"]
-        -- (l ^. responseStatus . statusCode) `shouldBe` 500
+      it "will not log you in and will display something" $ \query -> do
+        checkLogin query "not the admin" "foo" 500
+        checkLoggedIn query 303
 
     context "if user does exist" $ do
       context "if password is wrong" $ do
@@ -63,7 +74,5 @@ spec = describe "logging in" $ do
 
       context "if password is correct" $ do
         it "will indeed log you in (yeay)" $ \query -> do
-            l <- post query "/login" [partString "/login.user" "admin", partString "/login.pass" "admin"]
-            (l ^. responseStatus . statusCode) `shouldBe` 303
-            l2 <- get query "/space"
-            (l2 ^. responseStatus . statusCode) `shouldBe` 200
+            checkLogin query "admin" "admin" 303
+            checkLoggedIn query 200
