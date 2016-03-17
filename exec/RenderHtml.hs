@@ -73,6 +73,8 @@ pages f =
     ]
 
 
+-- * helper classes
+
 -- | We write 'ToHtml' for pages that contain no forms, and 'FormPage' for pages that do.  In
 -- this module, we need to render both into html for viewing only, and 'ToHtml'' is introduced for
 -- this.  We can instantiate wrapper types for 'ToHtml' instances and 'FormPage', resp., and get
@@ -194,6 +196,8 @@ instance Arbitrary ViewIdea_PhaseFinished where
     arbitrary = ViewIdea_PhaseFinished <$> pure constantSampleIdea
 
 
+-- * machine room
+
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)
 --
 -- FIXME: check out blaze-from-html package (lucid doesn't seem to have that yet).
@@ -314,7 +318,7 @@ dynamicRender s = do
     case vs ^? each . _Just of
         Just v -> return v
         Nothing -> error $ "dynamicRender: problem parsing the type of the following value." <>
-                           "  recreate samples?\n\n" <> cs s <> "\n\n"
+                           "  recreate samples?\n\n" <> take 200 (cs s) <> "\n\n"
   where
     g :: forall a. (Read a, ToHtml' a) => Proxy a -> IO (Maybe ST)
     g proxy = yes `catch` \(SomeException _) -> no
