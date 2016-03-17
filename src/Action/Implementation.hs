@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -50,7 +51,7 @@ instance PersistM r => ActionM r (Action r)
 instance ActionLog (Action r) where
     logEvent = liftIO . print
 
-instance PersistM r => ActionPersist r (Action r) where
+instance (MonadError ServantErr r, PersistM r) => ActionPersist r (Action r) where
     persistent r = view persistNat >>= \(Nat rp) -> liftIO $ rp r
 
 instance MonadLIO DCLabel (Action r) where

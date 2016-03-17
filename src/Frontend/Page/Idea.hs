@@ -316,8 +316,7 @@ categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
 viewIdea ideaId = makeFrame =<< persistent (do
-    -- FIXME: 404
-    Just idea <- findIdea ideaId
+    idea <- maybe404 "Could not find such idea" <$> findIdea ideaId
     phase <- ideaPhase idea
     pure $ ViewIdea idea phase)
 
@@ -327,7 +326,7 @@ createIdea loc = redirectFormHandler (pure $ CreateIdea loc) (currentUserAddDb a
 editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =
     redirectFormHandler
-        (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
+        (EditIdea . maybe404 "No such idea" <$> persistent (findIdea ideaId))
         (persistent . modifyIdea ideaId . newIdea)
   where
     newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
