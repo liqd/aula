@@ -128,6 +128,9 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
         p = pure Nothing
 
 
+-- newtypes for one 'ViewIdea' sample per phase.  the '_' in the mae are allowed here because they
+-- make it clear where teh page type ends and other information begins.
+
 newtype ViewIdea_PhaseNone = ViewIdea_PhaseNone Idea
   deriving (Eq, Ord, Show, Read)
 
