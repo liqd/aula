@@ -15,6 +15,10 @@
             content: "← ";
         }
     }
+
+    [class^="icon-"] {
+        @include rem(margin-right, 5px);
+    }
 }
 
 .btn {
@@ -25,10 +29,6 @@
     &:hover, &:focus {
         color: $button-hover-color;
     }
-
-    [class^="icon-"] {
-        @include rem(margin-right, 5px);
-    }
 }
 
 .btn-cta,
@@ -38,6 +38,28 @@ input[type=submit] {
     border-radius: $button-height / 2;
     border: none;
     color: #fff;
+
+    &:hover, &:focus {
+        background-color: $button-cta-hover-color;
+    }
+}
+
+$btn-settings-size: 35px;
+
+.btn-settings {
+    @include rem(font-size, 20px);
+    @include rem(height, $btn-settings-size);
+    @include rem(margin, 17px 0 30px);
+    @include rem(width, $btn-settings-size);
+    background: $button-cta-base-color;
+    color: white;
+    display: inline-block;
+    float: right;
+    text-align: center;
+
+    [class^="icon-"]:before, & {
+        line-height: $btn-settings-size;
+    }
 
     &:hover, &:focus {
         background-color: $button-cta-hover-color;

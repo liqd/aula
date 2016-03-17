@@ -35,4 +35,12 @@
 
 .detail-header {
     @include rem(padding, 23px 32px);
+
+    .detail-header-back {
+        float: left;
+    }
+
+    .detail-header-menu {
+        float: right;
+    }
 }

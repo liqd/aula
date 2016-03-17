@@ -104,29 +104,37 @@ instance ToHtml ViewTopic where
     toHtml p@ViewTopicDelegations = semanticDiv p "ViewTopicDelegations" -- FIXME
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         -- assert tab /= TabDelegation
-        div_ $ do
-            div_ [id_ "navigation"] $ do
-                a_ [id_ "back-themes", href_ $ U.Space space U.ListTopics] "<- Zu Allen Themen"
-                a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $
-                    span_ [id_ "pen"] ":pen:" <> " bearbeiten"
-            h2_ . toHtml $ phaseName phase
-            div_ $ do
-                p_   [id_ "topic-title"] $ topic ^. topicTitle . html
-                div_ [id_ "topic-desc"] $ topic ^. topicDesc . html
-                when (phase == PhaseRefinement) $
-                    a_ [id_ "add-idea", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
-                when (phase < PhaseResult) .
-                    a_  [id_ "delegate-vote", href_ . U.Space space $ U.CreateTopicDelegation topicId] $
-                        span_ [id_ "bullhorn"] ":bullhorn:" <> " Stimme Beauftragen"
-            div_ [id_ "tabs"] $ do
+        div_ [class_ "topic-header"] $ do
+            header_ [class_ "detail-header"] $ do
+                a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] $ do
+                            a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                " bearbeiten"
+            h1_   [class_ "main-heading"] $ do
+                span_ [class_ "sub-heading"] . toHtml $ phaseName phase
+                toHtml $ topic ^. topicTitle -- FIXME Empty :(
+                "Dummy do dee"
+            p_ [class_ "sub-header"] $ topic ^. topicDesc . html
+            when (phase == PhaseRefinement) $
+                a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
+            when (phase < PhaseResult) .
+                a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
+                    i_ [class_ "icon-bullhorn"] nil
+                    "Stimme Beauftragen"
+            div_ [class_ "heroic-tabs"] $ do
                 tabLink topic tab TabAllIdeas
                 when (phase >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
                 when (phase >= PhaseResult) $ tabLink topic tab TabWinningIdeas
                 tabLink topic tab TabDelegation
-        div_ $ do
-            a_ [id_ "settings"{-, href_ U.UserSettings FIXME USER??? -}] $ span_ [id_ "gear"] ":gear:"
-            div_ [id_ "ideas"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea True (Just phase) numVoters idea ^. html
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                a_ [class_ "btn-settings"{-, href_ U.UserSettings FIXME USER??? -}] $ do
+                    i_ [class_ "icon-cogs", title_ "Settings"] nil
+                div_ [class_ "ideas-list"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
+                    ListItemIdea True (Just phase) numVoters idea ^. html
       where
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id

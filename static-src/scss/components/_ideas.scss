@@ -33,6 +33,10 @@
     }
 }
 
+.ideas-list {
+    clear: both;
+}
+
 .ideas-list-title {
     @include rem(font-size, $font-size-xlarge);
     margin-top: -2px;
