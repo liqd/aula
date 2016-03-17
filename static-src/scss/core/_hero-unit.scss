@@ -31,26 +31,46 @@
 .heroic-cta {
     @include rem(font-size, 18px);
     line-height: $button-height + 3;
+
+    .heroic-btn-group & {
+        @include rem(margin-right, 15px);
+
+        &:last-child {
+            margin-right: 0;
+        }
+    }
+}
+
+.heroic-btn-group {
+    @include rem(margin-bottom, 40px);
+}
+
+.heroic-avatar {
+    @include make_rounded_thumbnail(100px);
+    margin: 0 auto;
 }
 
 .heroic-tabs {
-    bottom: 0;
+    @include rem(bottom, 6px);
+    left: 0;
+    display: inline-block;
     position: absolute;
     text-align: center;
     width: 100%;
 
-    a {
+    a, .heroic-tab-item {
         @include rem(margin-right, 28px);
         @include rem(padding, 5px 0);
         border-bottom: 1px solid transparent;
         color: $color-text;
-        display: inline-block;
         font-weight: bold;
 
         &:last-child {
             margin-right: 0;
         }
+    }
 
+    a {
         &:hover, &:focus, &.tab-selected {
             color: $color-link;
             border-color: $color-link;

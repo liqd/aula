@@ -49,7 +49,7 @@ $btn-settings-size: 35px;
 .btn-settings {
     @include rem(font-size, 20px);
     @include rem(height, $btn-settings-size);
-    @include rem(margin, 17px 0 30px);
+    @include rem(margin, 17px 0);
     @include rem(width, $btn-settings-size);
     background: $button-cta-base-color;
     color: white;

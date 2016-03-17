@@ -18,7 +18,7 @@ if(imageSelect) {
     var radios = radiosContainer.getElementsByTagName("input");
 
     for(b in buttons) {
-        if(buttons[b].className) buttons[b].addEventListener('click', function(el) {
+        if(buttons[b]) if(buttons[b].className) buttons[b].addEventListener('click', function(el) {
             var id = el.target.id.replace("select-", "");
             var radioEl = document.getElementById(id);
             deselectAllCategories();
