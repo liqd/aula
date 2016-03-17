@@ -22,22 +22,19 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 data PageUserSettings = PageUserSettings User
   deriving (Eq, Show, Read)
 
-instance Page PageUserSettings where
-    isPrivatePage _ = True
+instance Page PageUserSettings
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas User [(Idea, Int)]
   deriving (Eq, Show, Read)
 
-instance Page PageUserProfileCreatedIdeas where
-    isPrivatePage _ = True
+instance Page PageUserProfileCreatedIdeas
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes User [Delegation]
   deriving (Eq, Show, Read)
 
-instance Page PageUserProfileDelegatedVotes where
-    isPrivatePage _ = True
+instance Page PageUserProfileDelegatedVotes
 
 
 -- * templates

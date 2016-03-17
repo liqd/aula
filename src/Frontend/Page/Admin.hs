@@ -28,61 +28,52 @@ data PageAdminSettingsDurations =
     PageAdminSettingsDurations Durations
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsDurations where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsDurations
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
     PageAdminSettingsQuorum Quorums
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsQuorum where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsQuorum
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersView where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsGaPUsersView
 
 data PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreate
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersCreate where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsGaPUsersCreate
 
 data PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEdit User [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersEdit where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsGaPUsersEdit
 
 data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesView where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsGaPClassesView
 
 data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesCreate where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsGaPClassesCreate
 
 data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolClass [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesEdit where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsGaPClassesEdit
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsEventsProtocol where
-    isPrivatePage _ = True
+instance Page PageAdminSettingsEventsProtocol
 
 -- | Elaboration and Voting phase durations
 data Durations = Durations
