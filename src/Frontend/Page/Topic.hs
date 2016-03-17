@@ -188,11 +188,10 @@ ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
 -- * handlers
 
--- FIXME check the 'space'
 viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
-    => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
-viewTopic _space tab topicId = makeFrame =<< persistent (do
+    => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
+viewTopic TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
+viewTopic tab topicId = makeFrame =<< persistent (do
     -- FIXME 404
     Just topic <- findTopic topicId
     ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
@@ -201,11 +200,16 @@ createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler C
 createTopic space ideas =
   redirectFormHandler (pure $ CreateTopic space ideas) (currentUserAddDb addTopic)
 
-moveIdeasToTopic :: ActionM r m => IdeaSpace -> AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
-moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
+moveIdeasToTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
+moveIdeasToTopic topicId = redirectFormHandler getPage addIdeas
   where
-    getPage = MoveIdeasToTopic space topicId <$> persistent (findWildIdeasBySpace space)
-    addIdeas ideas = persistent $ Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
+    getPage = persistent $ do
+        Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
+        ideas <- findWildIdeasBySpace space
+        pure $ MoveIdeasToTopic space topicId ideas
+    addIdeas ideas = persistent $ do
+        Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
+        Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
-editTopic :: ActionM r m => IdeaSpace -> AUID Topic -> m (Frame EditTopic)
-editTopic _ _ = makeFrame EditTopic
+editTopic :: ActionM r m => AUID Topic -> m (Frame EditTopic)
+editTopic _ = makeFrame EditTopic
