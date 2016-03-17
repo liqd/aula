@@ -66,6 +66,8 @@ newtype DurationDays = DurationDays { fromDurationDays :: Int }
 -- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
 
+type UserWithProto a = (User, Proto a)
+
 -- | The method how a 't' value is calculated from its prototype
 -- and a metainfo to that.
 class FromProto t where

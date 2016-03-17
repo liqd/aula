@@ -17,6 +17,7 @@ module Action
 
       -- * user handling
     , userLoggedOut
+    , currentUserAddDb
     , currentUser
     , modifyCurrentUser
     , isLoggedIn
@@ -137,6 +138,12 @@ currentUserId :: ActionUserHandler m => m (AUID User)
 currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
+
+currentUserAddDb :: (ActionPersist r m, ActionUserHandler m) =>
+                    (UserWithProto a -> r a) -> Proto a -> m a
+currentUserAddDb addA protoA = do
+    cUser <- currentUser
+    persistent $ addA (cUser, protoA)
 
 -- | Returns the current user
 currentUser :: (ActionPersist r m, ActionUserHandler m) => m User

@@ -740,9 +740,8 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
                           , UserLastName  $ ST.drop (i+1) first_last
                           )
         role <- Student <$> genArbitrary
-        cUser <- currentUser
         let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
-        persistent $ (userAvatar .~ Just avatar) <$> addUser cUser pu
+        (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
@@ -784,7 +783,7 @@ fishDelegationNetworkAction = do
                 else persistent $ do
                     u1  <- liftIO . generate $ elements users'
                     u2  <- liftIO . generate $ elements users'
-                    (:[]) <$> addDelegation cUser (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> addDelegation (cUser, ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . join <$> replicateM 500 mkdel
 

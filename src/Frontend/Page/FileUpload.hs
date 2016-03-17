@@ -118,10 +118,9 @@ batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
 
     p :: SchoolClass -> CsvUserRecord -> m ()
     p schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = do
-      cUser <- currentUser
-      Action.persistent $ do
-        addIdeaSpaceIfNotExists $ ClassSpace schoolcl
-        void . addUser cUser $ ProtoUser
+      void $ do
+        Action.persistent . addIdeaSpaceIfNotExists $ ClassSpace schoolcl
+        currentUserAddDb addUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName

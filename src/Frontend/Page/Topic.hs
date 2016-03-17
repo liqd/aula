@@ -20,7 +20,7 @@ module Frontend.Page.Topic
     , moveIdeasToTopic )
 where
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUser)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUserAddDb)
 import Frontend.Prelude hiding (moveIdeasToLocation)
 
 import qualified Persistent
@@ -197,10 +197,9 @@ viewTopic _space tab topicId = makeFrame =<< persistent (do
     Just topic <- findTopic topicId
     ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
-createTopic :: (ActionM r action) => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) action
+createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) m
 createTopic space ideas =
-  redirectFormHandler (pure $ CreateTopic space ideas)
-    (\protoTopic -> currentUser >>= persistent . flip addTopic protoTopic)
+  redirectFormHandler (pure $ CreateTopic space ideas) (currentUserAddDb addTopic)
 
 moveIdeasToTopic :: ActionM r m => IdeaSpace -> AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
 moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas

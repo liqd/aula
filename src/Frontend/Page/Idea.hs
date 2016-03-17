@@ -18,7 +18,7 @@ module Frontend.Page.Idea
   )
 where
 
-import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persistent, currentUser)
+import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persistent, currentUserAddDb)
 import Frontend.Page.Comment
 import Frontend.Prelude
 
@@ -253,9 +253,7 @@ viewIdea ideaId = makeFrame =<< persistent (do
     pure $ ViewIdea idea phase)
 
 createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
-createIdea loc =
-  redirectFormHandler (pure $ CreateIdea loc)
-  (\protoIdea -> currentUser >>= persistent . flip addIdea protoIdea)
+createIdea loc = redirectFormHandler (pure $ CreateIdea loc) (currentUserAddDb addIdea)
 
 editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =
