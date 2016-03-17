@@ -177,7 +177,7 @@ instance FormPage CreateIdea where
                             div_ [class_ "category-radios"] $ do
                                 DF.inputRadio True "idea-category" v
                             div_ [class_ "icon-list m-inline category-image-select"] $ do
-                                ul_ . sequence_ $ toHtml <$> [(minBound :: Category)..]
+                                ul_ $ toHtml `mapM_` [(minBound :: Category)..]
                                     -- FIXME: select a category for the newly created idea.  this
                                     -- needs to be tested.  see also: static/js/custom.js.
                         DF.inputSubmit "Idee veröffentlichen"
