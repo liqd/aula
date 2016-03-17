@@ -62,9 +62,8 @@ runFrontend cfg = do
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
         aulaMainOrTestingProxy = Proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
-        aulaMainOrTesting :: ServerT (AulaMain :<|> "testing" :> AulaTesting) (Action  Persistent.Implementation.STM.Persist)
-        aulaMainOrTesting = catchAulaExcept aulaMainOrTestingProxy (aulaMain :<|> aulaTesting)
-    app <- serveFAction aulaMainOrTestingProxy stateProxy extendClearanceOnSessionToken runAction aulaMainOrTesting
+    app <- serveFAction aulaMainOrTestingProxy stateProxy extendClearanceOnSessionToken runAction
+             (aulaMain :<|> aulaTesting)
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
     -- Note that no user is being logged in anywhere here.
@@ -282,24 +281,6 @@ aulaTesting =
   :<|> undefined
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
-
-
--- * error handling in servant / wai
-
--- | (The proxy in the type of this function helps dealing with injectivity issues with the `Server`
--- type family.)
-catchAulaExcept :: (m a ~ (ServerT api (Action r)))
-                => Proxy api -> m a -> m a
-catchAulaExcept Proxy = id
--- FIXME: not implemented.  pseudo-code:
---
---   ... = (`catchError` actionExceptHandler)
---  where
---    actionExceptHandler :: ActionExcept -> s
---    actionExceptHandler = _
---
--- -- (async exceptions (`error` and all) should be caught inside module "Action" and exposed as
--- -- `err500` here.)
 
 data Page404 = Page404
 
