@@ -92,14 +92,15 @@ userHeaderDiv _user =
         div_ [class_ "heroic-avatar"] "Avatar"
         h1_ [class_ "main-heading"] "Username"
         span_ [class_ "post-title"] "Klasse"
-        p_ [class_ "sub-header"] "Ein kliener frier Beschreibungstext ..."
+        p_ [class_ "sub-header"] "Ein kleiner freier Beschreibungstext ..."  -- FIXME: get this from 'User' value!
         div_ [class_ "heroic-btn-group"] $ do
             button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
                 i_ [class_ "icon-bullhorn"] nil
-                "KLASSENWEIT BEAUFTRAGEN" --FIXME
+                "Klassenweit beauftragen" --FIXME
             button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
                 i_ [class_ "icon-bullhorn"] nil
-                "SCHULWEIT BEUFTRAGEN" -- FIXME
+                "Schulweit beauftragen" -- FIXME
+
 
 -- ** User Profile: Created Ideas
 
@@ -116,7 +117,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 -- Settings button
-                a_ [class_ "btn-settings"{-, href_ U.UserSettings FIXME USER??? -}] $ do
+                a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
                     i_ [class_ "icon-cogs", title_ "Settings"] nil
                 div_ [class_ "ideas-list"] $ do
                     for_ ideas $ \(idea, numVoters) ->
