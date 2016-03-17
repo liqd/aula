@@ -416,11 +416,11 @@ instance Binary Timestamp where
     get = get >>= maybe mzero return . parseTimestamp
 
 instance Show Timestamp where
-    show = show . renderTimestamp
+    show = renderTimestamp
 
 instance Read Timestamp where
-    readsPrec _ s = case splitAt (timestampFormatLength + 2) $ dropWhile isSpace s of
-        (parseTimestamp . read -> Just t, r) -> [(t, r)]
+    readsPrec _ s = case splitAt timestampFormatLength $ dropWhile isSpace s of
+        (parseTimestamp -> Just t, r) -> [(t, r)]
         _                             -> error $ "Read Timestamp: " <> show s
 
 parseTimestamp :: String -> Maybe Timestamp
