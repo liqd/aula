@@ -119,6 +119,7 @@ class Page p => FormPage p where
 -- | Defines some properties for pages
 class Page p where
     isPrivatePage :: p -> Bool
+    isPrivatePage _ = True
 
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
@@ -232,8 +233,7 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
 newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
 
-instance Page (PageShow a) where
-    isPrivatePage _ = True
+instance Page (PageShow a)
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml

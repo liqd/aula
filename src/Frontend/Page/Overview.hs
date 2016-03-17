@@ -85,8 +85,7 @@ instance ToHtml PageRoomsOverview where
             -- options.  one would be to only show the year if it is not the current one, or always show
             -- it, or either show "current" if applicable or the actual year if it lies in the past.)
 
-instance Page PageRoomsOverview where
-    isPrivatePage _ = True
+instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
@@ -119,8 +118,7 @@ instance ToHtml PageIdeasOverview where
                 div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
                     ListItemIdea True Nothing numVoters idea ^. html
 
-instance Page PageIdeasOverview where
-    isPrivatePage _ = True
+instance Page PageIdeasOverview
 
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
@@ -145,8 +143,7 @@ instance ToHtml PageIdeasInDiscussion where
                             div_ [class_ "theme-grid-item-blurb"] . toHtml $ topic ^. topicDesc
                             a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
 
-instance Page PageIdeasInDiscussion where
-    isPrivatePage _ = True
+instance Page PageIdeasInDiscussion
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml

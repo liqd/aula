@@ -49,30 +49,26 @@ data ViewTopic
   | ViewTopicDelegations -- FIXME
   deriving (Eq, Show, Read)
 
-instance Page ViewTopic where
-    isPrivatePage _ = True
+instance Page ViewTopic
 
 -- | 10.1 Create topic: Create topic
 data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
   deriving (Eq, Show, Read)
 
-instance Page CreateTopic where
-    isPrivatePage _ = True
+instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
 data MoveIdeasToTopic = MoveIdeasToTopic IdeaSpace (AUID Topic) [Idea]
   deriving (Eq, Show, Read)
 
-instance Page MoveIdeasToTopic where
-    isPrivatePage _ = True
+instance Page MoveIdeasToTopic
 
 -- | 10.3 ???
 -- FIXME: Which page is this in the click-dummy?
 data EditTopic = EditTopic
   deriving (Eq, Show, Read)
 
-instance Page EditTopic where
-    isPrivatePage _ = True
+instance Page EditTopic
 
 
 -- * templates
