@@ -24,6 +24,8 @@ module Arbitrary
     , fishDelegationNetworkAction
     , D3DN(..)
     , breakCycles
+    , constantSampleIdea
+    , constantSampleComments
     ) where
 
 import Control.Applicative ((<**>))
@@ -876,3 +878,390 @@ instance Aeson.ToJSON D3DN where
         getPower u = toJSON . List.length
                    . List.filter (== (u ^. _Id))
                    . fmap (view delegationTo)
+
+
+-- * constant sample values
+
+constantSampleTimestamp :: Timestamp
+constantSampleTimestamp = read "2016-03-17_12:57:25_558349000000"
+
+constantSampleIdea :: Idea
+constantSampleIdea = Idea
+    { _ideaMeta =
+        MetaInfo
+          { _metaId = AUID 0
+          , _metaCreatedBy = AUID 0
+          , _metaCreatedByLogin = UserLogin { _fromUserLogin = "same" }
+          , _metaCreatedByAvatar = Just ""
+          , _metaCreatedAt = constantSampleTimestamp
+          , _metaChangedBy = AUID 0
+          , _metaChangedAt = constantSampleTimestamp
+          }
+    , _ideaTitle = "ever principle pariatur impedit prevents"
+    , _ideaDesc = Markdown { fromMarkdown = ST.unlines
+        [ "hour, No consequat. libero fugit, beguiled system, porro necessitatibus quia bad rerum foresee et example, iusto resultant hold.\nrepudiandae vitae principle aute annoyances occaecati obligations produces pariatur? The recusandae. non veniam, they trivial elit, eas.\niusto amet, magni error as mollit sequi praesentium how in expedita omnis desires aute thei.\nequal laudantium, early therefore ad repudiated occaecat happiness. animi, desire, dolorem big saying ration."
+        , ""
+        , "sequi hour, magna Excepteur expound possimus, expedita non pleasure, and reprehenderit he able expound a fuga..\nmaster-builder nulla dolorum error quasi pains. cupidatat do cases except nostrum little of fail dolore.\npainful. omnis placeat expound toil saying physical ullam doloremque holds cupiditate libero ulla.\nconsectetur voluptate dolore perspiciatis accusamus assumenda To nulla to ab sapiente ipsam quam choice will, These praesentium ca."
+        , ""
+        , "tenetur take quia hand, we dicta consequences, denouncing cum laboris being must duty whic.\nfault system, pleasure? quam eu trivial commodo nobis obtain magni pleasure. eaque reiciendis us error that perfectly pleasures, encounte.\nlaborious occaecat illum toil obligations ut pains odit numquam him every dolores omnis Nemo Nam importan."
+        , ""
+        , "anim all it perfectly ducimus greater one is aliquam iste cupidatat it? reiciendis necessitatibus repudiandae foresee best, there atqu.\nvoluptate through asperiores consequatur? wise atque eu because nobis officiis advantage omnis minus accepted. extremel.\nEt commodo quam rejects, necessitatibus saying laborious extremely weakness laudantium, we beguiled ratione elit, cum Quis proident,.\noccaecati numquam libero fail quo certain fault illo how be beatae eius circumstances blanditiis able and At quae incidun.\nlong labore born certain sint dicta men endures cumque little laborum circumstances through aliquam quibusda.\nest, No distinguish. Duis weakness in own idea explorer The different quidem aspernatur quia necessitatibus abl."
+        ]}
+    , _ideaCategory = CatTime
+    , _ideaLocation =
+        IdeaLocationSpace { _ideaLocationSpace = SchoolSpace }
+    , _ideaComments = Set.fromList constantSampleComments
+    , _ideaLikes = Set.fromList
+          [
+            IdeaLike
+              { _likeMeta =
+                  MetaInfo
+                    { _metaId = AUID 2
+                    , _metaCreatedBy = AUID 6
+                    , _metaCreatedByLogin = UserLogin { _fromUserLogin = "aliqua" }
+                    , _metaCreatedByAvatar = Just ""
+                    , _metaCreatedAt = constantSampleTimestamp
+                    , _metaChangedBy = AUID 9
+                    , _metaChangedAt = constantSampleTimestamp
+                    }
+              }
+          ]
+    , _ideaQuorumOk = True
+    , _ideaVotes = Set.fromList []
+    , _ideaResult =
+        Just
+          IdeaResult
+            { _ideaResultMeta =
+                MetaInfo
+                  { _metaId = AUID 0
+                  , _metaCreatedBy = AUID 0
+                  , _metaCreatedByLogin = UserLogin { _fromUserLogin = "inventore" }
+                  , _metaCreatedByAvatar = Just ""
+                  , _metaCreatedAt = constantSampleTimestamp
+                  , _metaChangedBy = AUID 0
+                  , _metaChangedAt = constantSampleTimestamp
+                  }
+            , _ideaResultValue = Winning
+            , _ideaResultReason = Markdown { fromMarkdown = "" }
+            }
+    }
+
+constantSampleComments :: [Comment]
+constantSampleComments =
+    [ Comment
+        { _commentMeta =
+            MetaInfo
+              { _metaId = AUID 1
+              , _metaCreatedBy = AUID 1
+              , _metaCreatedByLogin = UserLogin { _fromUserLogin = "endures" }
+              , _metaCreatedByAvatar = Nothing
+              , _metaCreatedAt = constantSampleTimestamp
+              , _metaChangedBy = AUID 8
+              , _metaChangedAt = constantSampleTimestamp
+              }
+        , _commentText =
+            Markdown
+              { fromMarkdown =
+                  "amen 3 rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
+              }
+        , _commentVotes =
+            Set.fromList
+              [ CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "avoids" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Up
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Down
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin =
+                            UserLogin { _fromUserLogin = "consequatur" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Up
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin =
+                            UserLogin { _fromUserLogin = "consequuntur" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Down
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "dicta" }
+                        , _metaCreatedByAvatar = Nothing
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Up
+                  }
+              ]
+        , _commentReplies =
+            Set.fromList
+              [ Comment
+                  { _commentMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Excepteur" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
+                  , _commentVotes = Set.fromList []
+                  , _commentReplies = Set.fromList []
+                  }
+              , Comment
+                  { _commentMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "amet" }
+                        , _metaCreatedByAvatar = Nothing
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentText =
+                      Markdown
+                        { fromMarkdown =
+                            "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
+                        }
+                  , _commentVotes = Set.fromList []
+                  , _commentReplies = Set.fromList []
+                  }
+              , Comment
+                  { _commentMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
+                        , _metaCreatedByAvatar = Nothing
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentText =
+                      Markdown
+                        { fromMarkdown =
+                            "pleasure ever debitis dicta annoying pain. optio aperiam, hic find pain, pain. toil quo.\n"
+                        }
+                  , _commentReplies = nil
+                  , _commentVotes =
+                      Set.fromList
+                        [ CommentVote
+                            { _commentVoteMeta =
+                                MetaInfo
+                                  { _metaId = AUID 0
+                                  , _metaCreatedBy = AUID 0
+                                  , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Neque" }
+                                  , _metaCreatedByAvatar = Just ""
+                                  , _metaCreatedAt = constantSampleTimestamp
+                                  , _metaChangedBy = AUID 0
+                                  , _metaChangedAt = constantSampleTimestamp
+                                  }
+                            , _commentVoteValue = Up
+                            }
+                        ]
+                  }
+              ]
+        }
+    , Comment
+        { _commentMeta =
+            MetaInfo
+              { _metaId = AUID 10
+              , _metaCreatedBy = AUID 1
+              , _metaCreatedByLogin = UserLogin { _fromUserLogin = "endures" }
+              , _metaCreatedByAvatar = Nothing
+              , _metaCreatedAt = constantSampleTimestamp
+              , _metaChangedBy = AUID 8
+              , _metaChangedAt = constantSampleTimestamp
+              }
+        , _commentText =
+            Markdown
+              { fromMarkdown =
+                  "rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
+              }
+        , _commentVotes =
+            Set.fromList
+              [ CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "avoids" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Up
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Down
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin =
+                            UserLogin { _fromUserLogin = "consequatur" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Up
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin =
+                            UserLogin { _fromUserLogin = "consequuntur" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Down
+                  }
+              , CommentVote
+                  { _commentVoteMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "dicta" }
+                        , _metaCreatedByAvatar = Nothing
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentVoteValue = Up
+                  }
+              ]
+        , _commentReplies =
+            Set.fromList
+              [ Comment
+                  { _commentMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Excepteur" }
+                        , _metaCreatedByAvatar = Just ""
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
+                  , _commentVotes = Set.fromList []
+                  , _commentReplies = Set.fromList []
+                  }
+              , Comment
+                  { _commentMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "amet" }
+                        , _metaCreatedByAvatar = Nothing
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentText =
+                      Markdown
+                        { fromMarkdown =
+                            "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
+                        }
+                  , _commentVotes = Set.fromList []
+                  , _commentReplies = Set.fromList []
+                  }
+              , Comment
+                  { _commentMeta =
+                      MetaInfo
+                        { _metaId = AUID 0
+                        , _metaCreatedBy = AUID 0
+                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
+                        , _metaCreatedByAvatar = Nothing
+                        , _metaCreatedAt = constantSampleTimestamp
+                        , _metaChangedBy = AUID 0
+                        , _metaChangedAt = constantSampleTimestamp
+                        }
+                  , _commentText =
+                      Markdown
+                        { fromMarkdown =
+                            "pleasure ever debitis dicta annoying pain. optio aperiam, hic find pain, pain. toil quo.\n"
+                        }
+                  , _commentReplies = nil
+                  , _commentVotes =
+                      Set.fromList
+                        [ CommentVote
+                            { _commentVoteMeta =
+                                MetaInfo
+                                  { _metaId = AUID 0
+                                  , _metaCreatedBy = AUID 0
+                                  , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Neque" }
+                                  , _metaCreatedByAvatar = Just ""
+                                  , _metaCreatedAt = constantSampleTimestamp
+                                  , _metaChangedBy = AUID 0
+                                  , _metaChangedAt = constantSampleTimestamp
+                                  }
+                            , _commentVoteValue = Up
+                            }
+                        ]
+                  }
+              ]
+        }
+    ]
