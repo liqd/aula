@@ -207,10 +207,11 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = do
     footer_ [class_ "main-footer"] $ do
-        ul_ [class_ "grid main-footer-menu"] $ do
-            li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-            li_ $ a_ [href_ P.Imprint] "Impressum"
-        span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
+        div_ [class_ "grid"] $ do
+            ul_ [class_ "main-footer-menu"] $ do
+                li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
+                li_ $ a_ [href_ P.Imprint] "Impressum"
+            span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
