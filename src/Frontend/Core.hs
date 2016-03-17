@@ -159,7 +159,9 @@ pageFrame hdrs mUser bdy = do
         toHtml hdrs
     body_ [class_ "no-js"] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
-            headerMarkup mUser >> bdy
+            headerMarkup mUser
+            div_ [class_ "grid"] $ do
+                bdy
         footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
@@ -173,33 +175,33 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                     li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
             Nothing -> nil
 
-    -- FIXME: please add class m-selected to currently selected menu item
-    div_ [class_ "main-header-user"] $ do
-        case mUser of
-            Just usr -> do
-                div_ [class_ "pop-menu"] $ do
-                    div_ [class_ "user-avatar"] $ do
-                        maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
-                            (mUser ^? _Just . userAvatar . _Just)
-                    "Hi " <> (usr ^. userLogin . fromUserLogin . html)
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"]
-                            . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
-                            i_ [class_ "pop-menu-list-icon icon-eye"] nil
-                            "Profil anzeigen"
-                        li_ [class_ "pop-menu-list-item"]
-                            . a_ [href_ P.UserSettings] $ do
-                            i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
-                            "Einstellungen"
-                        li_ [class_ "pop-menu-list-item"]
-                            . a_ [href_ $ P.Admin P.AdminDuration] $ do
-                            i_ [class_ "pop-menu-list-icon icon-bolt"] nil
-                            "Prozessverwaltung"
-                        li_ [class_ "pop-menu-list-item"]
-                            . a_ [href_ P.Logout] $ do
-                            i_ [class_ "pop-menu-list-icon icon-power-off"] nil
-                            "Logout"
-            Nothing -> nil
+        -- FIXME: please add class m-selected to currently selected menu item
+        div_ [class_ "main-header-user"] $ do
+            case mUser of
+                Just usr -> do
+                    div_ [class_ "pop-menu"] $ do
+                        div_ [class_ "user-avatar"] $ do
+                            maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
+                                (mUser ^? _Just . userAvatar . _Just)
+                        "Hi " <> (usr ^. userLogin . fromUserLogin . html)
+                        ul_ [class_ "pop-menu-list"] $ do
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                                i_ [class_ "pop-menu-list-icon icon-eye"] nil
+                                "Profil anzeigen"
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ P.UserSettings] $ do
+                                i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
+                                "Einstellungen"
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                                i_ [class_ "pop-menu-list-icon icon-bolt"] nil
+                                "Prozessverwaltung"
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ P.Logout] $ do
+                                i_ [class_ "pop-menu-list-icon icon-power-off"] nil
+                                "Logout"
+                Nothing -> nil
 
 
 footerMarkup :: (Monad m) => HtmlT m ()
