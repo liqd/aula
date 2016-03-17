@@ -63,3 +63,6 @@ ghci-no-type-errors:
 seito-docker-hack:
 	pwd > pwd.log
 	docker exec -it `docker ps -q --filter="ancestor=$(AULA_IMAGE)"` /liqd/aula/docker/make-seito.sh
+
+wc:
+	find src tests -name '*.hs' | xargs wc
