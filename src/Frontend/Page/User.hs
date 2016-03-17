@@ -89,30 +89,38 @@ userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
 userHeaderDiv _user =
     div_ $ do
-        "Avatar" >> br_ []
-        "Username" >> br_ []
-        "Klasse" >> br_ []
-        "Ein kliener frier Beschreibungstext ..." >> br_ []
-        button_ [value_ ""] "KLASSENWEIT BEAUFTRAGEN" >> br_ [] --FIXME
-        button_ [value_ ""] "SCHULWEIT BEUFTRAGEN" >> br_ [] -- FIXME
+        div_ [class_ "heroic-avatar"] "Avatar"
+        h1_ [class_ "main-heading"] "Username"
+        span_ [class_ "post-title"] "Klasse"
+        p_ [class_ "sub-header"] "Ein kliener frier Beschreibungstext ..."
+        div_ [class_ "heroic-btn-group"] $ do
+            button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
+                i_ [class_ "icon-bullhorn"] nil
+                "KLASSENWEIT BEAUFTRAGEN" --FIXME
+            button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
+                i_ [class_ "icon-bullhorn"] nil
+                "SCHULWEIT BEUFTRAGEN" -- FIXME
 
 -- ** User Profile: Created Ideas
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
     toHtml p@(PageUserProfileCreatedIdeas user ideas) = semanticDiv p $ do
-        userHeaderDiv user
-        -- Tab selection
-        div_ $ do
-             ul_ [] $ do
-                li_ $ a_ [href_ (P.User (user ^. _Id) P.UserDelegations)] "Erhaltene Stimmen"
-                li_ $ span_ "Erstellte Ideen"
-        -- Settings button
-        div_ $ do
-            button_ [value_ ""] "Some kind of settings on the right"
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv user
+            -- Tab selection
+            div_ [class_ "heroic-tabs"] $ do
+                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)] "Erhaltene Stimmen"
+                span_ [class_ "heroic-tab-item"] "Erstellte Ideen"
         -- List of ideas
-        div_ [id_ "ideas"] . for_ ideas $ \(idea, numVoters) ->
-            ListItemIdea False Nothing numVoters idea ^. html
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                -- Settings button
+                a_ [class_ "btn-settings"{-, href_ U.UserSettings FIXME USER??? -}] $ do
+                    i_ [class_ "icon-cogs", title_ "Settings"] nil
+                div_ [class_ "ideas-list"] $ do
+                    for_ ideas $ \(idea, numVoters) ->
+                        ListItemIdea False Nothing numVoters idea ^. html
 
 -- | List all the created ideas for the given user.
 -- Using @join . persistent $ do ... return $ makeFrame@ will

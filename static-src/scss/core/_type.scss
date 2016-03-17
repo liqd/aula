@@ -43,3 +43,8 @@ a {
 .text-muted {
     color: $color-text-muted;
 }
+
+.post-title {
+    @include rem(margin, -15px 0 20px);
+    display: block;
+}

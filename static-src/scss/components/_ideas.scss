@@ -22,6 +22,10 @@
     border-bottom: 1px solid $color-grey-lighter;
     overflow: hidden;
 
+    &:first-child {
+        @include rem(margin-top, 15px);
+    }
+
     > a {
         color: $color-text;
         display: block;
