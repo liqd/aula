@@ -1,0 +1,60 @@
+.hero-unit {
+    @include rem(padding, 60px 0 35px);
+    clear: left;
+    overflow: hidden;
+    min-height: 290px;
+    position: relative;
+    text-align: center;
+
+    .main-heading {
+        @include rem(margin-bottom, 16px);
+    }
+
+    .sub-header {
+        @include rem(margin-bottom, 33px);
+        display: block;
+
+        span {
+            display: inline-block;
+            max-width: 617px;
+        }
+    }
+
+    .detail-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+    }
+}
+
+.heroic-cta {
+    @include rem(font-size, 18px);
+    line-height: $button-height + 3;
+}
+
+.heroic-tabs {
+    bottom: 0;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+
+    a {
+        @include rem(margin-right, 28px);
+        @include rem(padding, 5px 0);
+        border-bottom: 1px solid transparent;
+        color: $color-text;
+        display: inline-block;
+        font-weight: bold;
+
+        &:last-child {
+            margin-right: 0;
+        }
+
+        &:hover, &:focus, &.tab-selected {
+            color: $color-link;
+            border-color: $color-link;
+            text-decoration: none;
+        }
+    }
+}
