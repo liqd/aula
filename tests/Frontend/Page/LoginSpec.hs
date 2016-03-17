@@ -15,7 +15,7 @@ import Control.Exception
 import Control.Lens
 import Data.String.Conversions (LBS, cs, (<>))
 import Network.Wreq hiding (get, post)
-import Network.Wreq.Types (Postable)
+import Network.Wreq.Types (Postable, StatusChecker)
 import Test.Hspec
 
 import qualified Network.Wreq.Session as Sess
@@ -29,6 +29,10 @@ data Query = Query
     , get  :: String -> IO (Response LBS)
     }
 
+-- Same as Frontend.Page.FileUploadSpec.doNotThrowExceptionsOnErrorCodes
+doNotThrowExceptionsOnErrorCodes :: StatusChecker
+doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
+
 -- Same as Frontend.Page.FileUploadSpec.withServer
 withServer :: (Query -> IO a) -> IO a
 withServer action = bracket
@@ -38,7 +42,9 @@ withServer action = bracket
   where
     cfg = Config.test
     uri path = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort) <> path
-    query sess = Query (Sess.post sess . uri) (Sess.get sess . uri)
+    opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
+                    & redirects   .~ 0
+    query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
 
 spec :: Spec
 spec = describe "logging in" $ do
@@ -58,6 +64,6 @@ spec = describe "logging in" $ do
       context "if password is correct" $ do
         it "will indeed log you in (yeay)" $ \query -> do
             l <- post query "/login" [partString "/login.user" "admin", partString "/login.pass" "admin"]
-            (l ^. responseStatus . statusCode) `shouldBe` 200
+            (l ^. responseStatus . statusCode) `shouldBe` 303
             l2 <- get query "/space"
             (l2 ^. responseStatus . statusCode) `shouldBe` 200

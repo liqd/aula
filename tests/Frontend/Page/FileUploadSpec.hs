@@ -16,7 +16,7 @@ import Control.Lens
 import Control.Monad (forM_)
 import Data.String.Conversions (LBS, cs, (<>))
 import Network.Wreq hiding (get, post)
-import Network.Wreq.Types (Postable)
+import Network.Wreq.Types (Postable, StatusChecker)
 import Test.Hspec (Spec, describe, it, around, shouldBe, shouldContain)
 
 import qualified Network.Wreq.Session as Sess
@@ -33,6 +33,10 @@ data Query = Query
     , get  :: String -> IO (Response LBS)
     }
 
+-- Same as Frontend.Page.LoginSpec.doNotThrowExceptionsOnErrorCodes
+doNotThrowExceptionsOnErrorCodes :: StatusChecker
+doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
+
 -- Same as Frontend.Page.LoginSpec.withServer
 withServer :: (Query -> IO a) -> IO a
 withServer action = bracket
@@ -42,7 +46,9 @@ withServer action = bracket
   where
     cfg = Config.test
     uri path = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort) <> path
-    query sess = Query (Sess.post sess . uri) (Sess.get sess . uri)
+    opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
+                    & redirects   .~ 0
+    query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
 
 spec :: Spec
 spec = describe "file upload" $ do
@@ -63,9 +69,9 @@ spec = describe "file upload" $ do
         it "posts users successfully; users will appear under /user" $ \query -> do
             -- pendingWith "only partially implemented."
             l <- post query "/login" [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
-            (l ^. responseStatus . statusCode) `shouldBe` 200
+            (l ^. responseStatus . statusCode) `shouldBe` 303
             r <- post query "/testing/file-upload" [classPart, filePart]
-            (r ^. responseStatus . statusCode) `shouldBe` 200
+            (r ^. responseStatus . statusCode) `shouldBe` 303
             s <- get query "/user"
             (s ^. responseStatus . statusCode) `shouldBe` 200
             (cs $ s ^. responseBody :: String) `shouldContain` "_fromUserLastName = &quot;Kuhn&quot"
