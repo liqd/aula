@@ -25,6 +25,7 @@ import Network.Wai.Application.Static
     , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
     )
 import Servant
+import Servant.Missing (throwError500, throwServantErr)
 import System.FilePath (addTrailingPathSeparator)
 
 import qualified Data.ByteString.Builder as Builder
@@ -261,6 +262,9 @@ type AulaTesting =
 
   :<|> "file-upload" :> FormHandler BatchCreateUsers
   :<|> "random-password" :> GetH (PageShow UserPass)
+  :<|> "undefined" :> GetH ()
+  :<|> "error500" :> GetH ()
+  :<|> "error303" :> GetH ()
 
 aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
 aulaTesting =
@@ -275,6 +279,9 @@ aulaTesting =
 
   :<|> batchCreateUsers
   :<|> (PageShow <$> Action.persistent mkRandomPassword)
+  :<|> undefined
+  :<|> throwError500 "testing error500"
+  :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
 
 
 -- * error handling in servant / wai
