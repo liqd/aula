@@ -1,7 +1,9 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -63,15 +65,16 @@ instance Page EditIdea where
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    -- NP: I've avoided here complex conditionals.
-    -- The result might be that too much information is displayed.
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
+        let totalVotes    = Set.size $ idea ^. ideaVotes
+            totalComments = Set.size $ idea ^. ideaComments
+
         header_ [class_ "detail-header"] $ do
             a_ [ class_ "btn m-back detail-header-back"
                , let ispace  = idea ^. ideaLocation . ideaLocationSpace
                      mtid = idea ^? ideaTopicId
                  in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
-               ] "Zum Thema"
+               ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 ul_ [class_ "pop-menu-list"] $ do
                     li_ [class_ "pop-menu-list-item"] $ do
@@ -84,12 +87,12 @@ instance ToHtml ViewIdea where
         div_ [class_ "grid"] $ do
             div_ [class_ "container-narrow"] $ do
                 h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
-                {- FIXME what was this for ?
                 div_ [class_ "sub-heading"] $ do
-                    idea ^. ideaMeta . to AuthorWidget . html <> " "
-                    idea ^. ideaCategory . showed . html
-                -}
-
+                    idea ^. ideaMeta . to AuthorWidget . html
+                    " "
+                    toHtml $ CategoryButton (idea ^. ideaCategory)
+                        -- FIXME @the-cliff: this should look like in 'CreateIdea' (search this
+                        -- file for 'Category').
                 -- von X / X stimmen / X verbesserungvorschläge
                 div_ [class_ "sub-heading"] $ do
                     when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
@@ -135,16 +138,13 @@ instance ToHtml ViewIdea where
                 div_ [class_ "grid"] $ do
                     div_ [class_ "container-narrow"] $ do
                         h2_ [class_ "comments-header-heading"] $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
-                        -- FIXME not on design
-                        button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         PageComment c ^. html
-                          where
-                            totalVotes    = Set.size $ idea ^. ideaVotes
-                            totalComments = Set.size $ idea ^. ideaComments
-                    -- FIXME Please create the comments form here
+
+            -- FIXME Please create the comments form here
+            button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
 
 
 instance FormPage CreateIdea where
@@ -181,20 +181,27 @@ instance FormPage CreateIdea where
                             div_ [class_ "category-radios"] $ do
                                 DF.inputRadio True "idea-category" v
                             div_ [class_ "icon-list m-inline category-image-select"] $ do
-                                ul_ $ do
+                                ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
                                     -- FIXME: select a category for the newly created idea.  this
                                     -- needs to be tested.  see also: static/js/custom.js.
-                                    li_ [class_ "icon-rules"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
-                                    li_ [class_ "icon-equipment"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
-                                    li_ [class_ "icon-teaching"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
-                                    li_ [class_ "icon-time"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
-                                    li_ [class_ "icon-environment"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
-                        DF.inputSubmit      "IDEE VERÖFFENTLICHEN"
+                        DF.inputSubmit "Idee veröffentlichen"
+
+newtype CategoryButton = CategoryButton Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance ToHtml CategoryButton where
+    toHtmlRaw = toHtml
+    toHtml (CategoryButton CatRule) = li_ [class_ "icon-rules"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
+    toHtml (CategoryButton CatEquipment) = li_ [class_ "icon-equipment"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
+    toHtml (CategoryButton CatClass) = li_ [class_ "icon-teaching"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
+    toHtml (CategoryButton CatTime) = li_ [class_ "icon-time"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
+    toHtml (CategoryButton CatEnvironment) = li_ [class_ "icon-environment"] $
+        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
+
 
 instance FormPage EditIdea where
     type FormPageResult EditIdea = ProtoIdea
@@ -239,13 +246,7 @@ viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
 viewIdea ideaId = makeFrame =<< persistent (do
     -- FIXME: 404
     Just idea <- findIdea ideaId
-    phase <- case idea ^. ideaLocation of
-            IdeaLocationSpace _ ->
-                pure Nothing
-            IdeaLocationTopic _ topicId -> do
-                -- (failure to match the following can only be caused by an inconsistent state)
-                Just topic <- findTopic topicId
-                pure . Just $ topic ^. topicPhase
+    phase <- ideaPhase idea
     pure $ ViewIdea idea phase)
 
 createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m

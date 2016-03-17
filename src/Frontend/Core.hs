@@ -53,11 +53,9 @@ import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
---import qualified Servant.Missing
 import qualified Text.Digestive.Form as DF
 
 import Action
-import Api
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_)
 import Types
@@ -255,6 +253,9 @@ instance ToHtml CommentVotesWidget where
                 toHtml n
                 i_ [class_ "icon-thumbs-o-down"] nil
       where
+        countVotes :: (Eq value) => value -> Lens' vote value -> Set vote -> Int
+        countVotes v l = Set.size . Set.filter ((== v) . view l)
+
         y = show (countVotes Up   commentVoteValue votes)
         n = show (countVotes Down commentVoteValue votes)
 
