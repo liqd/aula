@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
 {-# LANGUAGE OverloadedStrings           #-}
@@ -128,10 +129,19 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
--- FIXME move enough specialized calls to IO in PersistM to remove MonadIO
-class MonadIO m => PersistM m where
+class Monad m => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
+
+    getCurrentTimestamp :: m Timestamp
+
+    default getCurrentTimestamp :: MonadIO m => m Timestamp
+    getCurrentTimestamp = Timestamp <$> liftIO getCurrentTime
+
+    mkRandomPassword :: m UserPass
+
+    default mkRandomPassword :: MonadIO m => m UserPass
+    mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 addDb :: (HasMetaInfo a, FromProto a)
       => User -> AulaSetter (AMap a) -> Proto a -> PersistM m => m a
@@ -288,7 +298,7 @@ addUser cUser proto = do
 -- name and password must be 'Just' in the proto user.
 addFirstUser :: Proto User -> PersistM m => m User
 addFirstUser proto = do
-    now <- Timestamp <$> liftIO getCurrentTime
+    now <- getCurrentTimestamp
     uid <- nextId
     let uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
         uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
@@ -318,9 +328,6 @@ mkUserLogin protoUser = pick (gen firstn lastn)
 
     noise :: [ST]
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
-
-mkRandomPassword :: PersistM m => m UserPass
-mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 adminUsernameHack :: UserLogin
 adminUsernameHack = UserLogin "admin"
@@ -364,9 +371,7 @@ mkMetaInfo cUser now oid = MetaInfo
     }
 
 nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
-nextMetaInfo cUser = do
-  now <- Timestamp <$> liftIO getCurrentTime
-  mkMetaInfo cUser now <$> nextId
+nextMetaInfo cUser = mkMetaInfo cUser <$> getCurrentTimestamp <*> nextId
 
 -- | Construct an 'IdeaLocation' from a 'Topic' id.
 ideaLocationFromTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
