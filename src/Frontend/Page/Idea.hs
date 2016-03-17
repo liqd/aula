@@ -25,6 +25,7 @@ import qualified Data.Set as Set
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
+import Debug.Trace
 
 -- * types
 
@@ -128,6 +129,7 @@ instance ToHtml ViewIdea where
 
                 -- article
                 div_ [class_ "text-markdown"] $ idea ^. ideaDesc . html
+                div_ $ idea ^. ideaCategory . showed . html
 
         -- comments
         section_ [class_ "comments"] $ do
@@ -157,7 +159,7 @@ instance FormPage CreateIdea where
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-        <*> ("idea-category" .: DF.choice categoryValues Nothing)
+        <*> ("idea-category" .: DF.choice categoryValues (Just CatTime))
         <*> pure loc
 
     formPage v fa p = do
@@ -179,13 +181,13 @@ instance FormPage CreateIdea where
                             span_ [class_ "label-text"]
                                 "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
                             div_ [class_ "category-radios"] $ do
-                                DF.inputRadio True "idea-category" v
+                                DF.inputRadio False "idea-category" v
                             div_ [class_ "icon-list m-inline category-image-select"] $ do
                                 ul_ $ do
                                     -- FIXME: select a category for the newly created idea.  this
                                     -- needs to be tested.  see also: static/js/custom.js.
                                     li_ [class_ "icon-rules"] $ do
-                                        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
+                                        span_ [class_ "icon-list-button m-active", id_ "select-.idea-category.0"] "Regeln"
                                     li_ [class_ "icon-equipment"] $ do
                                         span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
                                     li_ [class_ "icon-teaching"] $ do
@@ -251,7 +253,7 @@ viewIdea ideaId = makeFrame =<< persistent (do
 createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc =
   redirectFormHandler (pure $ CreateIdea loc)
-  (\protoIdea -> currentUser >>= persistent . flip addIdea protoIdea)
+  (\protoIdea -> traceShow protoIdea $ currentUser >>= persistent . flip addIdea protoIdea)
 
 editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =
