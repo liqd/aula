@@ -164,13 +164,14 @@ pageFrame hdrs mUser bdy = do
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header"] $ do
-    a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
-    case mUser of
-        Just _usr -> do
-            ul_ [class_ "main-header-menu"] $ do
-                li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
-                li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
-        Nothing -> nil
+    div_ [class_ "grid"] $ do
+        a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
+        case mUser of
+            Just _usr -> do
+                ul_ [class_ "main-header-menu"] $ do
+                    li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
+                    li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+            Nothing -> nil
 
     -- FIXME: please add class m-selected to currently selected menu item
     div_ [class_ "main-header-user"] $ do
@@ -204,7 +205,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = do
     footer_ [class_ "main-footer"] $ do
-        ul_ [class_ "main-footer-menu"] $ do
+        ul_ [class_ "grid main-footer-menu"] $ do
             li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
             li_ $ a_ [href_ P.Imprint] "Impressum"
         span_ [class_ "main-footer-blurb"] "Made with ♡ by Liqd"
