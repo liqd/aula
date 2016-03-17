@@ -43,7 +43,12 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasInDiscussion))
     , f (Proxy :: Proxy (ToHtmlDefault ViewTopic))
-    , f (Proxy :: Proxy (ToHtmlSpecial ViewIdea))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseNone))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseRefinement))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseJury))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseVoting))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseResult))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseFinished))
     , f (Proxy :: Proxy (ToHtmlForm    CreateIdea))
     , f (Proxy :: Proxy (ToHtmlForm    EditIdea))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreatedIdeas))
@@ -121,6 +126,72 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                  <*> pure Nothing
         -- FIXME: how do we generate one page per phase here?
         p = pure Nothing
+
+
+-- newtypes for one 'ViewIdea' sample per phase.  the '_' in the mae are allowed here because they
+-- make it clear where teh page type ends and other information begins.
+
+newtype ViewIdea_PhaseNone = ViewIdea_PhaseNone Idea
+  deriving (Eq, Ord, Show, Read)
+
+newtype ViewIdea_PhaseRefinement = ViewIdea_PhaseRefinement Idea
+  deriving (Eq, Ord, Show, Read)
+
+newtype ViewIdea_PhaseJury = ViewIdea_PhaseJury Idea
+  deriving (Eq, Ord, Show, Read)
+
+newtype ViewIdea_PhaseVoting = ViewIdea_PhaseVoting Idea
+  deriving (Eq, Ord, Show, Read)
+
+newtype ViewIdea_PhaseResult = ViewIdea_PhaseResult Idea
+  deriving (Eq, Ord, Show, Read)
+
+newtype ViewIdea_PhaseFinished = ViewIdea_PhaseFinished Idea
+  deriving (Eq, Ord, Show, Read)
+
+
+instance ToHtml ViewIdea_PhaseNone where
+    toHtmlRaw = toHtml
+    toHtml (ViewIdea_PhaseNone idea) = toHtml $ ViewIdea idea Nothing
+
+instance ToHtml ViewIdea_PhaseRefinement where
+    toHtmlRaw = toHtml
+    toHtml (ViewIdea_PhaseRefinement idea) = toHtml $ ViewIdea idea (Just PhaseRefinement)
+
+instance ToHtml ViewIdea_PhaseJury where
+    toHtmlRaw = toHtml
+    toHtml (ViewIdea_PhaseJury idea) = toHtml $ ViewIdea idea (Just PhaseJury)
+
+instance ToHtml ViewIdea_PhaseVoting where
+    toHtmlRaw = toHtml
+    toHtml (ViewIdea_PhaseVoting idea) = toHtml $ ViewIdea idea (Just PhaseVoting)
+
+instance ToHtml ViewIdea_PhaseResult where
+    toHtmlRaw = toHtml
+    toHtml (ViewIdea_PhaseResult idea) = toHtml $ ViewIdea idea (Just PhaseResult)
+
+instance ToHtml ViewIdea_PhaseFinished where
+    toHtmlRaw = toHtml
+    toHtml (ViewIdea_PhaseFinished idea) = toHtml $ ViewIdea idea (Just PhaseFinished)
+
+
+instance Arbitrary ViewIdea_PhaseNone where
+    arbitrary = ViewIdea_PhaseNone <$> pure constantSampleIdea
+
+instance Arbitrary ViewIdea_PhaseRefinement where
+    arbitrary = ViewIdea_PhaseRefinement <$> pure constantSampleIdea
+
+instance Arbitrary ViewIdea_PhaseJury where
+    arbitrary = ViewIdea_PhaseJury <$> pure constantSampleIdea
+
+instance Arbitrary ViewIdea_PhaseVoting where
+    arbitrary = ViewIdea_PhaseVoting <$> pure constantSampleIdea
+
+instance Arbitrary ViewIdea_PhaseResult where
+    arbitrary = ViewIdea_PhaseResult <$> pure constantSampleIdea
+
+instance Arbitrary ViewIdea_PhaseFinished where
+    arbitrary = ViewIdea_PhaseFinished <$> pure constantSampleIdea
 
 
 -- | main: recreate and refresh data once and terminate.  (for refresh loop, use hspec/sensei.)

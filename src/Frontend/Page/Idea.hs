@@ -99,6 +99,7 @@ instance ToHtml ViewIdea where
                         "von " <> idea ^. createdBy . showed . html <> "/"
                         totalVotes ^. showed . html <> " Stimmen" <> "/"
                         totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                                  -- FIXME: singular "Verbesserungsvorschlag" if there is only 1
                         span_ [class_ "progress-bar m-against"] $ do
                             span_ [ class_ "progress-bar-progress"
                             -- FIXME: dummy data
@@ -137,7 +138,9 @@ instance ToHtml ViewIdea where
             header_ [class_ "comments-header"] $ do
                 div_ [class_ "grid"] $ do
                     div_ [class_ "container-narrow"] $ do
-                        h2_ [class_ "comments-header-heading"] $ totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                        h2_ [class_ "comments-header-heading"] $ do
+                            totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                                -- FIXME: code redundancy!  search for 'totalComments' in this module
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
