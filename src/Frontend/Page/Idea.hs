@@ -42,21 +42,24 @@ data ViewIdea = ViewIdea Idea (Maybe Phase)
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
-  isPrivatePage _ = True
+    data PagePath ViewIdea = ViewIdeaPath IdeaSpace (AUID Idea)
+    pagePath (ViewIdeaPath space iid) = U.TopMain . U.Space space $ U.ViewIdea iid
 
 -- | 6. Create idea
 data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
-  isPrivatePage _ = True
+    data PagePath CreateIdea = CreateIdeaPath IdeaSpace
+    pagePath (CreateIdeaPath space) = U.TopMain $ U.Space space U.CreateIdea
 
 -- | 7. Edit idea
 data EditIdea = EditIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page EditIdea where
-  isPrivatePage _ = True
+    data PagePath EditIdea = EditIdeaPath IdeaSpace (AUID Idea)
+    pagePath (EditIdeaPath space iid) = U.TopMain $ U.Space space $ U.EditIdea iid
 
 
 -- * templates

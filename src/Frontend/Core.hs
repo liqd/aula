@@ -127,7 +127,7 @@ class Page p where
 
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
-
+{-
 instance Page () where
     data PagePath () = UnitPagePath
     pagePath UnitPagePath = P.Broken
@@ -143,12 +143,24 @@ instance (Page a, Page b) => Page (Beside a b) where
     pagePath BesidePagePath = P.Broken
     isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
+-}
 
 instance Page p => Page (Frame p) where
     data PagePath (Frame p) = FramePagePath (PagePath p)
     pagePath (FramePagePath p) = pagePath p
     isPrivatePage    = isPrivatePage    . view frameBody
     extraPageHeaders = extraPageHeaders . view frameBody
+
+frameAlgebra :: (body -> a) -> Frame body -> a
+frameAlgebra f = f . view frameBody
+
+-- | TODO: document this!
+instance FormPage p => FormPage (Frame p) where
+    type FormPageResult (Frame p) = FormPageResult p
+    formAction   = frameAlgebra formAction
+    redirectOf   = frameAlgebra redirectOf
+    makeForm     = frameAlgebra makeForm
+    formPage v a = frameAlgebra $ formPage v a
 
 makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)

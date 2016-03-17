@@ -22,6 +22,8 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
+    data PagePath PageHomeWithLoginPrompt = PageHomeWithLoginPromptPath
+    pagePath _ = U.TopMain U.Login
     isPrivatePage _ = False
 
 

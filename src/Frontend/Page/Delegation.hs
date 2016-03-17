@@ -43,7 +43,8 @@ data PageDelegationNetwork = PageDelegationNetwork
   deriving (Eq, Show, Read)
 
 instance Page PageDelegationNetwork where
-    isPrivatePage _ = True
+    data PagePath PageDelegationNetwork = PageDelegationNetworkPath
+    pagePath _ = U.TopMain U.DelegationView
     extraPageHeaders _ = do
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
         script_ [src_ $ U.TopStatic "d3-aula.js"]

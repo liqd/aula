@@ -29,8 +29,8 @@ data PageAdminSettingsDurations =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsDurations where
-    data PagePath PageAdminSettingsDurations = PASD
-    pagePath _ = U.TopMain . U.Admin $ U.AdminDuration
+    data PagePath PageAdminSettingsDurations = PageAdminSettingsDurationsPath
+    pagePath _ = U.TopMain $ U.Admin U.AdminDuration
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
@@ -38,44 +38,51 @@ data PageAdminSettingsQuorum =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsQuorum where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsQuorum = PageAdminSettingsQuorumPath
+    pagePath _ = U.TopMain $ U.Admin U.AdminQuorum
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPUsersView where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersViewPath
+    pagePath _ = U.TopMain . U.Admin $ U.AdminAccess PermUserView
 
 data PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreate
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPUsersCreate where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreatePath
+    pagePath _ = U.TopMain . U.Admin $ U.AdminAccess PermUserCreate
 
 data PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEdit User [SchoolClass]
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPUsersEdit where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEditPath (AUID User)
+    pagePath (PageAdminSettingsGaPUsersEditPath uid) = U.TopMain . U.Admin $ U.AdminEditUser uid
 
 data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPClassesView where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesViewPath
+    pagePath _ = U.TopMain . U.Admin $ U.AdminAccess PermClassView
 
 data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPClassesCreate where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreatePath
+    pagePath _ = U.TopMain . U.Admin $ U.AdminAccess PermClassCreate
 
 data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolClass [User]
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsGaPClassesEdit where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEditPath SchoolClass
+    pagePath (PageAdminSettingsGaPClassesEditPath clss) = U.TopMain . U.Admin $ U.AdminEditClass clss
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
@@ -83,7 +90,8 @@ data PageAdminSettingsEventsProtocol =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsEventsProtocol where
-    isPrivatePage _ = True
+    data PagePath PageAdminSettingsEventsProtocol = PageAdminSettingsEventsProtocolPath
+    pagePath _ = U.TopMain $ U.Admin U.AdminEvent
 
 -- | Elaboration and Voting phase durations
 data Durations = Durations
