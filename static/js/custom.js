@@ -13,18 +13,18 @@ removeClass(body, "no-js");
 // Category image selecting
 var imageSelect = getElementByClassName("category-image-select");
 if(imageSelect) {
-    var buttons = getElementByClassName("icon-list-button");
+    var buttons = imageSelect.getElementsByClassName("icon-list-button");
     var radiosContainer = getElementByClassName("category-radios");
     var radios = radiosContainer.getElementsByTagName("input");
 
-    for(b in buttons) {
-        if(buttons[b]) if(buttons[b].className) buttons[b].addEventListener('click', function(el) {
-            var id = el.target.id.replace("select-", "");
-            var radioEl = document.getElementById(id);
-            deselectAllCategories();
-            radioEl.setAttribute("checked","checked");
-            addClass(el.target, "m-active");
-        });
+    for(b = 0; b < buttons.length; ++b) {
+        if(buttons[b] && buttons[b].className)
+            buttons[b].addEventListener('click', function(el) {
+                var categoryid = el.target.id.replace("select-", "");
+                console.log("categoryid=" + categoryid);
+                deselectAllCategories();
+                selectCategory(categoryid)
+            });
     }
 }
 
@@ -53,10 +53,19 @@ function getElementByClassName(el, parent) {
 }
 
 function deselectAllCategories() {
-    for(r in radios) {
+    for(r=0; r<radios.length; ++r) {
         if(radios[r].id) {
-            radios[r].removeAttribute("checked");
+            radios[r].checked = false;
             removeClass(buttons[r], "m-active");
+        }
+    }
+}
+
+function selectCategory(categoryid) {
+    for(r=0; r<radios.length; ++r) {
+        if(radios[r].id && endsWith(String(radios[r].id), String(categoryid))) {
+            radios[r].checked = true;
+            addClass(buttons[r], "m-active");
         }
     }
 }
@@ -70,4 +79,7 @@ function removeClass(el, cl) {
 
 function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
+}
+function endsWith(str, suffix) {
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }
