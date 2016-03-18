@@ -19,7 +19,8 @@ spec = do
             it "sends an apologetic 500 http response" $ \query -> do
                 get query "/testing/error500" `shouldRespond` [codeShouldBe 500]
             it "bases http response on type `Page500`" $ \_query -> do
-                pending
+                pendingWith $ "We removed a handler that was supposed to do that, "
+                           <> "but didn't, in git commit ddea80ad1f."
 
         context "on `throw 303`" $ do
             it "redirects to the indicated uri." $ \query -> do
