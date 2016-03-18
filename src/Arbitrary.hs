@@ -99,7 +99,7 @@ instance Arbitrary ViewTopic where
     arbitrary = do
         tab <- arb
         case tab of
-            TabDelegation -> ViewTopicDelegations tab <$> arb
+            TabDelegation -> ViewTopicDelegations <$> arb <*> arb
             _ -> ViewTopicIdeas tab <$> arb <*> arb
 
 instance Arbitrary ViewIdea where

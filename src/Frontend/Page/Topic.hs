@@ -110,7 +110,7 @@ instance ToHtml ViewTopic where
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
-                a_ [class_ "btn-settings", href_ $ U.Broken] $ do  -- not sure what settings are meant here?
+                a_ [class_ "btn-settings", href_ U.Broken] $ do  -- not sure what settings are meant here?
                     i_ [class_ "icon-cogs", title_ "Settings"] nil
                 div_ [class_ "ideas-list"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
                     ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
