@@ -68,6 +68,7 @@ module Persistent.Api
     , dbClassQuorum
     , adminUsernameHack
     , addDelegation
+    , findDelegationsByContext
     , ideaPhase
     )
 where
@@ -244,6 +245,10 @@ addTopic pt = do
 
 addDelegation :: UserWithProto Delegation -> PersistM m => m Delegation
 addDelegation = addDb dbDelegationMap
+
+findDelegationsByContext :: DelegationContext -> PersistM m => m [Delegation]
+findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
+    <$> getDb dbDelegationMap
 
 findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin

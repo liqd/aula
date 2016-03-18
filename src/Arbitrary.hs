@@ -96,8 +96,11 @@ instance Arbitrary ViewTopicTab where
     arbitrary = elements [minBound..]
 
 instance Arbitrary ViewTopic where
-    arbitrary = oneof [ ViewTopicIdeas <$> arb <*> arb <*> arb
-                      , pure ViewTopicDelegations ]
+    arbitrary = do
+        tab <- arb
+        case tab of
+            TabDelegation -> ViewTopicDelegations tab <$> arb
+            _ -> ViewTopicIdeas tab <$> arb <*> arb
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb

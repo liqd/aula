@@ -21,6 +21,7 @@ module Frontend.Page.Topic
 where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUserAddDb)
+import Control.Exception (assert)
 import Frontend.Prelude hiding (moveIdeasToLocation)
 
 import qualified Persistent
@@ -36,7 +37,7 @@ data ViewTopicTab
   | TabVotingIdeas
   | TabWinningIdeas
   | TabDelegation
-  deriving (Eq, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 -- | 4 Topic overview
 -- * 4.1 Topic overview: Refinement phase
@@ -46,7 +47,7 @@ data ViewTopicTab
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
   = ViewTopicIdeas ViewTopicTab Topic [(Idea, Int)]
-  | ViewTopicDelegations -- FIXME
+  | ViewTopicDelegations Topic [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page ViewTopic
@@ -97,9 +98,25 @@ instance ToHtml EditTopic where
 -- Maybe some buttons to hide?
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
-    toHtml p@ViewTopicDelegations = semanticDiv p "ViewTopicDelegations" -- FIXME
+
+    toHtml p@(ViewTopicDelegations topic delegations) = semanticDiv p $ do
+        viewTopicHeaderDiv topic TabDelegation
+        -- related: Frontend.Page.User.renderDelegations
+        -- FIXME: implement!
+        pre_ $ topic ^. showed . html
+        pre_ $ delegations ^. showed . html
+
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
-        -- assert tab /= TabDelegation
+        assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                a_ [class_ "btn-settings", href_ $ U.Broken] $ do  -- not sure what settings are meant here?
+                    i_ [class_ "icon-cogs", title_ "Settings"] nil
+                div_ [class_ "ideas-list"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
+                    ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
+
+viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
+viewTopicHeaderDiv topic tab = do
         div_ [class_ "topic-header"] $ do
             header_ [class_ "detail-header"] $ do
                 a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
@@ -121,15 +138,9 @@ instance ToHtml ViewTopic where
                     "Stimme Beauftragen"
             div_ [class_ "heroic-tabs"] $ do
                 tabLink topic tab TabAllIdeas
-                when (phase >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
-                when (phase >= PhaseResult) $ tabLink topic tab TabWinningIdeas
+                when ((topic ^. topicPhase) >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
+                when ((topic ^. topicPhase) >= PhaseResult) $ tabLink topic tab TabWinningIdeas
                 tabLink topic tab TabDelegation
-        div_ [class_ "m-shadow"] $ do
-            div_ [class_ "grid"] $ do
-                a_ [class_ "btn-settings"{-, href_ U.UserSettings FIXME USER??? -}] $ do
-                    i_ [class_ "icon-cogs", title_ "Settings"] nil
-                div_ [class_ "ideas-list"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                    ListItemIdea True (Just phase) numVoters idea ^. html
       where
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
@@ -190,11 +201,12 @@ ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
 viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
 viewTopic tab topicId = makeFrame =<< persistent (do
-    -- FIXME 404
-    Just topic <- findTopic topicId
-    ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
+    Just topic <- findTopic topicId  -- FIXME: 404
+    delegations <- findDelegationsByContext $ DelCtxTopic topicId
+    case tab of
+        TabDelegation -> pure $ ViewTopicDelegations topic delegations
+        _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
 createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) m
 createTopic space ideas =
