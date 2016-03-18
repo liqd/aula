@@ -90,7 +90,6 @@ data Space =
   | ViewTopicIdeasVoting (AUID Topic)
   | ViewTopicIdeasWinning (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
-  | EditTopic (AUID Topic) -- FIXME
   | CreateTopic
   | CreateTopicDelegation (AUID Topic)
   | MoveIdeasToTopic (AUID Topic)
@@ -114,7 +113,6 @@ space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "i
 space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 -- FIXME: "ListTopicIdeas..." for the 3 lines above?
-space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space CreateTopic                 root = root </> "topic" </> "create"
 space (MoveIdeasToTopic tid)      root = root </> "topic" </> uriPart tid </> "idea" </> "move"
 space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"

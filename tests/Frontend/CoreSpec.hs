@@ -30,7 +30,7 @@ import qualified Data.Text.Lazy as LT
 
 import Action
 import Action.Implementation
-import Arbitrary (arb, schoolClasses)
+import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config (Config)
 import qualified Config
 import Data.UriPath (absoluteUriPath)
@@ -139,10 +139,13 @@ instance PayloadToEnv ProtoTopic where
         "desc"  -> pure [TextInput desc]
         "image" -> pure [TextInput image]
 
-instance PayloadToEnv [AUID Idea] where
-    payloadToEnvMapping _ iids (cs -> path)
+instance PayloadToEnv EditTopic where
+    payloadToEnvMapping _ (EditTopic title (Markdown desc) iids) path'
         | "idea-" `isPrefixOf` path = pure [TextInput onOrOff]
+        | path == "title"           = pure [TextInput title]
+        | path == "desc"            = pure [TextInput desc]
       where
+        path :: String = cs path'
         onOrOff = if path `elem` (("idea-" <>) . show <$> iids)
             then "on"
             else "off"
@@ -279,10 +282,13 @@ instance ArbFormPageResult CreateTopic where
 
 instance ArbFormPageResult MoveIdeasToTopic where
     arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
+        EditTopic
+        <$> arbPhrase
+        <*> arbitrary
         -- FIXME: Generate a sublist from the given ideas
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
-        pure $ map (^. _Id) ideas
+        <*> pure (map (^. _Id) ideas)
 
 instance ArbFormPageResult PageAdminSettingsGaPUsersEdit where
     arbFormPageResult _ = arbitrary
