@@ -23,7 +23,7 @@ spec = do
                            <> "but didn't, in git commit ddea80ad1f."
 
         context "on `throw 303`" $ do
-            it "redirects to the indicated uri." $ \query -> do
+            it "responds with 303." $ \query -> do
                 get query "/testing/error303" `shouldRespond` [codeShouldBe 303]
 
     describe "catch404" . around withServer $ do
