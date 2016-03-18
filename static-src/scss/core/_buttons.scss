@@ -65,3 +65,30 @@ $btn-settings-size: 35px;
         background-color: $button-cta-hover-color;
     }
 }
+
+.filter-toggles {
+    @include rem(margin, 17px 0);
+    overflow: hidden;
+
+    .filter-toggle-btn {
+        @include rem(margin-left, 15px);
+        float: right;
+    }
+}
+
+.filter-toggle-btn {
+    @include rem(padding, 0 10px);
+    border: 1px solid $button-cta-base-color;
+    background: white;
+    border-radius: 3px;
+    color: $button-cta-base-color;
+    font-family: $font-family-regular;
+    font-size: $font-size-small;
+    text-transform: uppercase;
+
+    &:hover, &:focus, &.m-active {
+        background: $button-cta-base-color;
+        color: #fff;
+        text-decoration: none;
+    }
+}
