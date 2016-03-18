@@ -17,14 +17,22 @@ if(imageSelect) {
     var radiosContainer = getElementByClassName("category-radios");
     var radios = radiosContainer.getElementsByTagName("input");
 
-    for(b = 0; b < buttons.length; ++b) {
-        if(buttons[b] && buttons[b].className)
-            buttons[b].addEventListener('click', function(el) {
-                var categoryid = el.target.id.replace("select-", "");
-                console.log("categoryid=" + categoryid);
-                deselectAllCategories();
-                selectCategory(categoryid)
-            });
+    var handler = function(b1) {
+        for (b2 = 0; b2 < buttons.length; ++b2) {
+            if (b2 == b1) {
+                addClass(buttons[b2], "m-active");
+            } else {
+                removeClass(buttons[b2], "m-active");
+            }
+        }
+        radios[b1].checked = true;  // this sets all other radios to false.
+    };
+
+    for (b = 0; b < buttons.length; ++b) {
+        var makeHandler = function(b1) { return function() { return handler(b1); } };
+        if(buttons[b] && buttons[b].className) {
+            buttons[b].addEventListener('click', makeHandler(b));
+        }
     }
 }
 
@@ -52,24 +60,6 @@ function getElementByClassName(el, parent) {
     return parent.getElementsByClassName(el)[0];
 }
 
-function deselectAllCategories() {
-    for(r=0; r<radios.length; ++r) {
-        if(radios[r].id) {
-            radios[r].checked = false;
-            removeClass(buttons[r], "m-active");
-        }
-    }
-}
-
-function selectCategory(categoryid) {
-    for(r=0; r<radios.length; ++r) {
-        if(radios[r].id && endsWith(String(radios[r].id), String(categoryid))) {
-            radios[r].checked = true;
-            addClass(buttons[r], "m-active");
-        }
-    }
-}
-
 function removeClass(el, cl) {
     if(el) {
         el.className = el.className.replace(" " + cl, "");
@@ -80,6 +70,7 @@ function removeClass(el, cl) {
 function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
 }
+
 function endsWith(str, suffix) {
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }
