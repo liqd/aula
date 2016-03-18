@@ -6,11 +6,11 @@ for(p in pops) {
     }
 }
 
-//JS detection
+// JS detection
 var body = document.getElementsByTagName("body")[0];
 removeClass(body, "no-js");
 
-//Category image selecting
+// Category image selecting
 var imageSelect = getElementByClassName("category-image-select");
 if(imageSelect) {
     var buttons = getElementByClassName("icon-list-button");
