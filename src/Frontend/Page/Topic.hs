@@ -117,34 +117,34 @@ instance ToHtml ViewTopic where
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do
-        div_ [class_ "topic-header"] $ do
-            header_ [class_ "detail-header"] $ do
-                a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-            h1_   [class_ "main-heading"] $ do
-                span_ [class_ "sub-heading"] . toHtml $ phaseName phase
-                toHtml $ topic ^. topicTitle
-            p_ [class_ "sub-header"] $ topic ^. topicDesc . html
-            when (phase == PhaseRefinement) $
-                a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
-            when (phase < PhaseResult) .
-                a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
-                    i_ [class_ "icon-bullhorn"] nil
-                    "Stimme Beauftragen"
-            div_ [class_ "heroic-tabs"] $ do
-                tabLink topic tab TabAllIdeas
-                when ((topic ^. topicPhase) >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
-                when ((topic ^. topicPhase) >= PhaseResult) $ tabLink topic tab TabWinningIdeas
-                tabLink topic tab TabDelegation
-      where
-        phase   = topic ^. topicPhase
-        topicId = topic ^. _Id
-        space   = topic ^. topicIdeaSpace
+    div_ [class_ "topic-header"] $ do
+        header_ [class_ "detail-header"] $ do
+            a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
+            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                ul_ [class_ "pop-menu-list"] $ do
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
+                            i_ [class_ "icon-pencil"] nil
+                            "bearbeiten"
+        h1_   [class_ "main-heading"] $ do
+            span_ [class_ "sub-heading"] . toHtml $ phaseName phase
+            toHtml $ topic ^. topicTitle
+        p_ [class_ "sub-header"] $ topic ^. topicDesc . html
+        when (phase == PhaseRefinement) $
+            a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
+        when (phase < PhaseResult) .
+            a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
+                i_ [class_ "icon-bullhorn"] nil
+                "Stimme Beauftragen"
+        div_ [class_ "heroic-tabs"] $ do
+            tabLink topic tab TabAllIdeas
+            when ((topic ^. topicPhase) >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
+            when ((topic ^. topicPhase) >= PhaseResult) $ tabLink topic tab TabWinningIdeas
+            tabLink topic tab TabDelegation
+  where
+    phase   = topic ^. topicPhase
+    topicId = topic ^. _Id
+    space   = topic ^. topicIdeaSpace
 
 instance FormPage CreateTopic where
     type FormPageResult CreateTopic = ProtoTopic
