@@ -733,15 +733,15 @@ fishAvatars =
 
 mkFishUser :: (GenArbitrary m, ActionM r m) => URL -> m User
 mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
-        let first_last = cs . takeBaseName . cs $ avatar
-            (fnam, lnam) = case ST.findIndex (== '_') first_last of
-                Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
-                Just i -> ( UserFirstName $ ST.take i first_last
-                          , UserLastName  $ ST.drop (i+1) first_last
-                          )
-        role <- Student <$> genArbitrary
-        let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
-        (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
+    let first_last = cs . takeBaseName . cs $ avatar
+        (fnam, lnam) = case ST.findIndex (== '_') first_last of
+            Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
+            Just i -> ( UserFirstName $ ST.take i first_last
+                      , UserLastName  $ ST.drop (i+1) first_last
+                      )
+    role <- Student <$> genArbitrary
+    let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
+    (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
