@@ -86,18 +86,18 @@ instance ToHtml ViewIdea where
                                 "Idee verschieben"
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
-                "VON "
+                "von "
                 idea ^. createdByLogin . fromUserLogin . html
-                " / 1 VERBESSERUNGSVORSCHLÄGE" --FIXME : Dummy stuff too confusing for Cliff!
+                " / "
+                when (phase >= Just PhaseVoting) $ do
+                    totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
+                    " / "
+                totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
             div_ [class_ "icon-list m-inline"] $ do
                 ul_ $ do
                     toHtml $ CategoryButton (idea ^. ideaCategory) -- FIXME allow a parameter so there arent links just spans
             div_ [class_ "sub-heading"] $ do
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
-                    "von " <> idea ^. createdBy . showed . html <> "/"
-                    totalVotes ^. showed . html <> " Stimmen" <> "/"
-                    totalComments ^. showed . html <> " Verbesserungsvorschläge"
-                              -- FIXME: singular "Verbesserungsvorschlag" if there is only 1
                     span_ [class_ "progress-bar m-against"] $ do
                         span_ [ class_ "progress-bar-progress"
                         -- FIXME: dummy data
@@ -134,7 +134,7 @@ instance ToHtml ViewIdea where
                     span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
             -}
 
-            -- article
+        -- article
         div_ [class_ "container-narrow text-markdown"] $ idea ^. ideaDesc . html
 
         -- comments
