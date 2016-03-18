@@ -25,6 +25,11 @@
         left: 0;
         width: 100%;
     }
+
+    .icon-list {
+        padding: 0;
+        text-align: center;
+    }
 }
 
 .heroic-cta {
@@ -75,5 +80,22 @@
             border-color: $color-link;
             text-decoration: none;
         }
+    }
+}
+
+.heroic-badges {
+    font-size: $font-size-small;
+
+    .m-feasable {
+        color: $color-positive;
+    }
+
+    .m-not-feasable {
+        color: $color-positive;
+    }
+
+    [class^="icon-"] {
+        @include rem(font-size, 50px);
+        display: block;
     }
 }

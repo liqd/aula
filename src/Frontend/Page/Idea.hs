@@ -68,70 +68,78 @@ instance ToHtml ViewIdea where
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
         let totalVotes    = Set.size $ idea ^. ideaVotes
             totalComments = Set.size $ idea ^. ideaComments
+        div_ [class_ "hero-unit narrow-container"] $ do
+            header_ [class_ "detail-header"] $ do
+                a_ [ class_ "btn m-back detail-header-back"
+                   , let ispace  = idea ^. ideaLocation . ideaLocationSpace
+                         mtid = idea ^? ideaTopicId
+                     in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
+                   ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] $ do
+                            a_ [href_ U.Broken] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                "bearbeiten"
+                            a_ [href_ U.Broken] $ do
+                                i_ [class_ "icon-sign-out"] nil
+                                "Idee verschieben"
+            h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
+            div_ [class_ "sub-header meta-text"] $ do
+                "von "
+                idea ^. createdByLogin . fromUserLogin . html
+                " / "
+                when (phase >= Just PhaseVoting) $ do
+                    totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
+                    " / "
+                totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
+            div_ [class_ "icon-list m-inline"] $ do
+                ul_ $ do
+                    toHtml $ CategoryLabel (idea ^. ideaCategory)
+            div_ [class_ "sub-heading"] $ do
+                when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
+                    span_ [class_ "progress-bar m-against"] $ do
+                        span_ [ class_ "progress-bar-progress"
+                        -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
+                              , style_ "width: 75%"
+                              ] $ do
+                            span_ [class_ "progress-bar-votes-for"] "6"
+                            span_ [class_ "progress-bar-votes-against"] "12"
 
-        header_ [class_ "detail-header"] $ do
-            a_ [ class_ "btn m-back detail-header-back"
-               , let ispace  = idea ^. ideaLocation . ideaLocationSpace
-                     mtid = idea ^? ideaTopicId
-                 in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
-               ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
-            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                ul_ [class_ "pop-menu-list"] $ do
-                    li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [href_ U.Broken] $ do
-                            i_ [class_ "icon-pencil"] nil
-                            "bearbeiten"
-                        a_ [href_ U.Broken] $ do
-                            i_ [class_ "icon-sign-out"] nil
-                            "Idee verschieben"
-        div_ [class_ "grid"] $ do
-            div_ [class_ "container-narrow"] $ do
-                h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
-                div_ [class_ "sub-heading"] $ do
-                    idea ^. ideaMeta . to AuthorWidget . html
-                    " "
-                    toHtml $ CategoryButton (idea ^. ideaCategory)
-                        -- FIXME @the-cliff: this should look like in 'CreateIdea' (search this
-                        -- file for 'Category').
-                -- von X / X stimmen / X verbesserungvorschläge
-                div_ [class_ "sub-heading"] $ do
-                    when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
-                        "von " <> idea ^. createdBy . showed . html <> "/"
-                        totalVotes ^. showed . html <> " Stimmen" <> "/"
-                        totalComments ^. showed . html <> " Verbesserungsvorschläge"
-                                  -- FIXME: singular "Verbesserungsvorschlag" if there is only 1
-                        span_ [class_ "progress-bar m-against"] $ do
-                            span_ [ class_ "progress-bar-progress"
-                            -- FIXME: dummy data
-                                  , style_ "width: 75%"
-                                  ] $ do
-                                span_ [class_ "progress-bar-votes-for"] "6"
-                                span_ [class_ "progress-bar-votes-against"] "12"
+                    -- buttons
+                    when (phase == Just PhaseVoting) . div_ [class_ "voting-buttons"] $ do
+                        button_ [class_ "btn-cta voting-button", value_ "yes"]     "dafür"   -- FIXME
+                        button_ [class_ "btn-cta voting-button", value_ "neutral"] "neutral" -- FIXME
+                        button_ [class_ "btn-cta voting-button", value_ "no"]      "dagegen" -- FIXME
 
-                        -- buttons
-                        when (phase == Just PhaseVoting) . div_ [class_ "voting-buttons"] $ do
-                            button_ [class_ "btn-cta voting-button", value_ "yes"]     "dafür"   -- FIXME
-                            button_ [class_ "btn-cta voting-button", value_ "neutral"] "neutral" -- FIXME
-                            button_ [class_ "btn-cta voting-button", value_ "no"]      "dagegen" -- FIXME
+            {- FIXME: data model is not clear yet.  read process specs again!
 
-                div_ [id_ "badges"] $ do
-                    -- At most one badge should be displayed
-                    when (notFeasibleIdea idea) $ span_ [id_ "cross-mark"] ":cross-mark:"
-                    when (winningIdea idea)     $ span_ [id_ "medal"] ":medal:"
+            div_ [class_ "heroic-badges"] $ do
+                case idea ^. ideaResult of
+                    NotFeasible -> do
+                        div_ [class_ "m-not-feasable"] $ do
+                        i_ [class_ "icon-times"] nil
+                        "vom Direktor abgelehnt"
+                when (winningIdea idea) $ do
+                    div_ [class_ "m-feasable"] $ do
+                        i_ [class_ "icon-check"] nil
+                        ""
 
-                -- visual vote stats
-                {- FIXME plug this in to my nice widget pls
-                when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
-                    let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
-                        n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
-                    div_ $ do
-                        span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
-                    div_ $ do
-                        span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
-                -}
+            -}
 
-                -- article
-                div_ [class_ "text-markdown"] $ idea ^. ideaDesc . html
+            -- visual vote stats
+            {- FIXME plug this in to my nice widget pls
+            when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
+                let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
+                    n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
+                div_ $ do
+                    span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
+                div_ $ do
+                    span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
+            -}
+
+        -- article
+        div_ [class_ "container-narrow text-markdown"] $ idea ^. ideaDesc . html
 
         -- comments
         section_ [class_ "comments"] $ do
@@ -146,8 +154,8 @@ instance ToHtml ViewIdea where
                     for_ (idea ^. ideaComments) $ \c ->
                         PageComment c ^. html
 
-            -- FIXME Please create the comments form here
-            button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
+                    -- FIXME Please create the comments form here
+                    button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
 
 
 instance FormPage CreateIdea where
@@ -191,6 +199,14 @@ instance FormPage CreateIdea where
 
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+newtype CategoryLabel = CategoryLabel Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance ToHtml CategoryLabel where
+    toHtmlRaw = toHtml
+    toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
+        -- FIXME: something without the `li_` elem?
 
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
