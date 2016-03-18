@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.9.1.
+-- This file has been generated from package.yaml by hpack version 0.9.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -80,7 +80,6 @@ library
       Frontend.Page.Admin
       Frontend.Page.Comment
       Frontend.Page.Delegation
-      Frontend.Page.FileUpload
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview

@@ -13,7 +13,7 @@ where
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import AulaTests
-import Frontend.Page.FileUpload
+import Frontend.Page.Admin
 
 spec :: Spec
 spec = describe "file upload" $ do
