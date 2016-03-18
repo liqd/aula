@@ -42,7 +42,8 @@ pages f =
     [ f (Proxy :: Proxy (ToHtmlDefault PageRoomsOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasInDiscussion))
-    , f (Proxy :: Proxy (ToHtmlDefault ViewTopic))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewTopic_Ideas))
+    , f (Proxy :: Proxy (ToHtmlDefault ViewTopic_Delegations))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseNone))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseRefinement))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseJury))
@@ -130,8 +131,34 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
         p = pure Nothing
 
 
--- newtypes for one 'ViewIdea' sample per phase.  the '_' in the mae are allowed here because they
--- make it clear where teh page type ends and other information begins.
+-- * pages with many modes
+
+-- newtypes for pages that have different views.  for instance, 'ViewIdea' has one sample per phase.
+-- the '_' in the mae are allowed here because they make it clear where teh page type ends and other
+-- information begins.
+
+newtype ViewTopic_Ideas = ViewTopic_Ideas (ViewTopicTab, Topic, [(Idea, Int)])
+  deriving (Eq, Ord, Show, Read)
+
+newtype ViewTopic_Delegations = ViewTopic_Delegations (Topic, [Delegation])
+  deriving (Eq, Ord, Show, Read)
+
+
+instance ToHtml ViewTopic_Ideas where
+    toHtmlRaw = toHtml
+    toHtml (ViewTopic_Ideas (_tab, _topic, _ideas)) = toHtml $ ViewTopicIdeas _tab _topic _ideas
+
+instance ToHtml ViewTopic_Delegations where
+    toHtmlRaw = toHtml
+    toHtml (ViewTopic_Delegations (_topic, _dlgs)) = toHtml $ ViewTopicDelegations _topic _dlgs
+
+
+instance Arbitrary ViewTopic_Ideas where
+    arbitrary = ViewTopic_Ideas <$> arb
+
+instance Arbitrary ViewTopic_Delegations where
+    arbitrary = ViewTopic_Delegations <$> arb
+
 
 newtype ViewIdea_PhaseNone = ViewIdea_PhaseNone Idea
   deriving (Eq, Ord, Show, Read)
