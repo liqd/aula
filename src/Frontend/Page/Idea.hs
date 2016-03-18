@@ -100,7 +100,7 @@ instance ToHtml ViewIdea where
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
                     span_ [class_ "progress-bar m-against"] $ do
                         span_ [ class_ "progress-bar-progress"
-                        -- FIXME: dummy data
+                        -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
                               , style_ "width: 75%"
                               ] $ do
                             span_ [class_ "progress-bar-votes-for"] "6"
@@ -112,16 +112,20 @@ instance ToHtml ViewIdea where
                         button_ [class_ "btn-cta voting-button", value_ "neutral"] "neutral" -- FIXME
                         button_ [class_ "btn-cta voting-button", value_ "no"]      "dagegen" -- FIXME
 
+            {- FIXME: data model is not clear yet.  read process specs again!
+
             div_ [class_ "heroic-badges"] $ do
-                -- At most one badge should be displayed
-                when (notFeasibleIdea idea) $ do
-                    div_ [class_ "m-not-feasable"] $ do
+                case idea ^. ideaResult of
+                    NotFeasible -> do
+                        div_ [class_ "m-not-feasable"] $ do
                         i_ [class_ "icon-times"] nil
-                        "Some Dummy text"
+                        "vom Direktor abgelehnt"
                 when (winningIdea idea) $ do
                     div_ [class_ "m-feasable"] $ do
                         i_ [class_ "icon-check"] nil
-                        "Some Dummy text"
+                        ""
+
+            -}
 
             -- visual vote stats
             {- FIXME plug this in to my nice widget pls
