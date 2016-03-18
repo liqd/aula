@@ -162,41 +162,42 @@ instance ToHtml PageUserProfileDelegatedVotes where
 
 renderDelegations :: Monad m => [Delegation] -> HtmlT m ()
 renderDelegations _ = do
-                    h2_ "Insgesamt 20"
-                    ul_ [class_ "small-avatar-list"] $ do
-                        li_ [class_ "small-avatar-list-item"] $ do
-                            div_ [class_ "col-1-12"] $ do
-                                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
-                            div_ [class_ "col-11-12"] $ do
-                                h3_ "UserName"
-                                p_ $ do
-                                    "5 Stimmen von "
-                                    strong_ $ do
-                                        a_ [href_ U.Broken] "UserName, "
-                                        a_ [href_ U.Broken] "UserName, "
-                                        a_ [href_ U.Broken] "UserName"
-                        li_ [class_ "small-avatar-list-item"] $ do
-                            div_ [class_ "col-1-12"] $ do
-                                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
-                            div_ [class_ "col-11-12"] $ do
-                                h3_ "UserName"
-                                p_ $ do
-                                    "5 Stimmen von "
-                                    strong_ $ do
-                                        a_ [href_ U.Broken] "UserName, "
-                                        a_ [href_ U.Broken] "UserName, "
-                                        a_ [href_ U.Broken] "UserName"
-                        li_ [class_ "small-avatar-list-item"] $ do
-                            div_ [class_ "col-1-12"] $ do
-                                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
-                            div_ [class_ "col-11-12"] $ do
-                                h3_ "UserName"
-                                p_ $ do
-                                    "5 Stimmen von "
-                                    strong_ $ do
-                                        a_ [href_ U.Broken] "UserName, "
-                                        a_ [href_ U.Broken] "UserName, "
-                                        a_ [href_ U.Broken] "UserName"
+    h2_ "Insgesamt 20"
+    ul_ [class_ "small-avatar-list"] $ do
+        li_ [class_ "small-avatar-list-item"] $ do
+            div_ [class_ "col-1-12"] $ do
+                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+            div_ [class_ "col-11-12"] $ do
+                h3_ "UserName"
+                p_ $ do
+                    "5 Stimmen von "
+                    strong_ $ do
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName"
+        li_ [class_ "small-avatar-list-item"] $ do
+            div_ [class_ "col-1-12"] $ do
+                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+            div_ [class_ "col-11-12"] $ do
+                h3_ "UserName"
+                p_ $ do
+                    "5 Stimmen von "
+                    strong_ $ do
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName"
+        li_ [class_ "small-avatar-list-item"] $ do
+            div_ [class_ "col-1-12"] $ do
+                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+            div_ [class_ "col-11-12"] $ do
+                h3_ "UserName"
+                p_ $ do
+                    "5 Stimmen von "
+                    strong_ $ do
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName"
+
 
 delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
