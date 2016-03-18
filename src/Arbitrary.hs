@@ -741,6 +741,7 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
                       )
     role <- Student <$> genArbitrary
     let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
+    -- FIXME: change avatar in the database, not just in the user returned from this function!
     (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
 
 instance Arbitrary DelegationNetwork where
