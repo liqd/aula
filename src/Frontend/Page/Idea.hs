@@ -95,7 +95,7 @@ instance ToHtml ViewIdea where
                 totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
             div_ [class_ "icon-list m-inline"] $ do
                 ul_ $ do
-                    toHtml $ CategoryButton (idea ^. ideaCategory) -- FIXME allow a parameter so there arent links just spans
+                    toHtml $ CategoryLabel (idea ^. ideaCategory)
             div_ [class_ "sub-heading"] $ do
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
                     span_ [class_ "progress-bar m-against"] $ do
@@ -195,6 +195,14 @@ instance FormPage CreateIdea where
 
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+newtype CategoryLabel = CategoryLabel Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance ToHtml CategoryLabel where
+    toHtmlRaw = toHtml
+    toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
+        -- FIXME: something without the `li_` elem?
 
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
