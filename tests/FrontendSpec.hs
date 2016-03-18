@@ -34,5 +34,6 @@ spec = do
                 get query "/nosuchpath" `shouldRespond` [codeShouldBe 404]
             it "bases http response on type `Page404`" $ \query -> do
                 get query "/nosuchpath" `shouldRespond`
-                    [codeShouldBe 404
-                    ,bodyShouldBe . cs . renderText . toHtml $ PublicFrame Page404]
+                    [ codeShouldBe 404
+                    , bodyShouldBe . cs . renderText . toHtml $ PublicFrame Page404
+                    ]
