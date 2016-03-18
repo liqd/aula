@@ -4,6 +4,7 @@
 
 .ideas-header {
     @extend .hero-unit;
+    min-height: 290px;
     background:     url(/static/images/header_wild_ideas_left.png) no-repeat left top,
                     url(/static/images/header_wild_ideas_right.png) no-repeat right top;
 }
