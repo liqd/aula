@@ -30,7 +30,7 @@ createRandom
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
    cUser <- currentUser
-   x <- persistent . addDb l . ((,) cUser) =<< genArbitrary
+   x <- persistent . addDb l . (,) cUser =<< genArbitrary
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
@@ -62,9 +62,9 @@ genInitialTestDb = do
     user2 <- addUser (firstUser,
                       protoU2 & protoUserLogin ?~ UserLogin "admin2"
                               & protoUserPassword ?~ UserPassInitial "pssst2")
-    _wildIdea <- addIdea . ((,) firstUser) =<< genArbitrary
-    topicIdea <- addIdea . ((,) user2) =<< genArbitrary
-    _topic <- addTopic . ((,) firstUser) . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+    _wildIdea <- addIdea . (,) firstUser =<< genArbitrary
+    topicIdea <- addIdea . (,) user2     =<< genArbitrary
+    _topic <- addTopic . (,) firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
 
 -- FIXME
