@@ -32,8 +32,8 @@ spec = describe "file upload" $ do
                         ]
 
         it "posts users successfully; users will appear under /user" $ \query -> do
-            -- pendingWith "only partially implemented."
-            post query "/login" [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+            post query "/login"
+                [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
                 `shouldRespond` [codeShouldBe 303]
             post query "/testing/file-upload" [classPart, filePart]
                 `shouldRespond` [codeShouldBe 303]
