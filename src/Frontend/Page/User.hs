@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -160,44 +161,27 @@ instance ToHtml PageUserProfileDelegatedVotes where
                         button_ [class_ "filter-toggle-btn m-active", value_ ""] "Klassenweit"
                     renderDelegations delegations
 
-renderDelegations :: Monad m => [Delegation] -> HtmlT m ()
+renderDelegations :: forall m. Monad m => [Delegation] -> HtmlT m ()
 renderDelegations _ = do
-    h2_ "Insgesamt 20"
-    ul_ [class_ "small-avatar-list"] $ do
-        li_ [class_ "small-avatar-list-item"] $ do
-            div_ [class_ "col-1-12"] $ do
-                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
-            div_ [class_ "col-11-12"] $ do
-                h3_ "UserName"
-                p_ $ do
-                    "5 Stimmen von "
-                    strong_ $ do
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName"
-        li_ [class_ "small-avatar-list-item"] $ do
-            div_ [class_ "col-1-12"] $ do
-                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
-            div_ [class_ "col-11-12"] $ do
-                h3_ "UserName"
-                p_ $ do
-                    "5 Stimmen von "
-                    strong_ $ do
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName"
-        li_ [class_ "small-avatar-list-item"] $ do
-            div_ [class_ "col-1-12"] $ do
-                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
-            div_ [class_ "col-11-12"] $ do
-                h3_ "UserName"
-                p_ $ do
-                    "5 Stimmen von "
-                    strong_ $ do
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName"
+    h2_ $ "Insgesamt " <> total ^. showed . html
+    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` [undefined, undefined, undefined]  -- FIXME
+  where
+    total :: Int
+    total = 20
 
+    renderLi :: Delegation -> HtmlT m ()  -- FIXME
+    renderLi _ = do
+        li_ [class_ "small-avatar-list-item"] $ do
+            div_ [class_ "col-1-12"] $ do
+                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+            div_ [class_ "col-11-12"] $ do
+                h3_ "UserName"
+                p_ $ do
+                    "5 Stimmen von "
+                    strong_ $ do
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName, "
+                        a_ [href_ U.Broken] "UserName"
 
 delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
