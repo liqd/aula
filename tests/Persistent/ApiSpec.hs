@@ -45,7 +45,7 @@ getDbSpec name getXs = do
 addDbSpecProp :: (Foldable f, Arbitrary proto)
               => String
               -> Persist (f a)
-              -> (proto -> Persist a)
+              -> ((User, proto) -> Persist a)
               -> (proto -> a -> Expectation)
               -> Spec
 addDbSpecProp name getXs addX propX =
@@ -53,7 +53,7 @@ addDbSpecProp name getXs addX propX =
         let t = it "adds one" $ \(Nat rp) -> do
                     before' <- liftIO $ length <$> rp getXs
                     p <- liftIO $ generate arbitrary
-                    r <- liftIO . rp $ addX p
+                    r <- liftIO . rp $ addX (frameUserHack, p)
                     after' <- liftIO $ length <$> rp getXs
                     after' `shouldBe` before' + 1
                     propX p r
@@ -62,7 +62,7 @@ addDbSpecProp name getXs addX propX =
         context "on initial database" . before mkInitial $ t
 
 addDbSpec :: (Foldable f, Arbitrary proto) =>
-             String -> Persist (f a) -> (proto -> Persist a) -> Spec
+             String -> Persist (f a) -> ((User, proto) -> Persist a) -> Spec
 addDbSpec name getXs addX = addDbSpecProp name getXs addX (\_ _ -> passes)
 
 findInBySpec :: (Eq a, Show a, Arbitrary k) =>
@@ -124,13 +124,13 @@ changeAUID (AUID i) = AUID (succ i)
 spec :: Spec
 spec = do
     getDbSpec "getIdeas" getIdeas
-    addDbSpec "addIdea"  getIdeas (addIdea frameUserHack)
+    addDbSpec "addIdea"  getIdeas addIdea
 
     getDbSpec "getUsers" getUsers
-    addDbSpec "addUsers" getUsers (addUser frameUserHack)
+    addDbSpec "addUsers" getUsers addUser
 
     getDbSpec "getTopics" getTopics
-    addDbSpec "addTopics" getTopics (addTopic frameUserHack)
+    addDbSpec "addTopics" getTopics addTopic
 
     findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec "findTopic" getTopics findTopic _Id changeAUID
@@ -171,7 +171,7 @@ regression :: Spec
 regression = describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp
-            "addIdea" getIdeas (addIdea frameUserHack)
+            "addIdea" getIdeas addIdea
             (\p i -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
 
 

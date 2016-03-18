@@ -144,8 +144,8 @@ class Monad m => PersistM m where
     mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 addDb :: (HasMetaInfo a, FromProto a)
-      => User -> AulaSetter (AMap a) -> Proto a -> PersistM m => m a
-addDb cUser l pa = do
+      => AulaSetter (AMap a) -> UserWithProto a -> PersistM m => m a
+addDb l (cUser, pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
@@ -195,8 +195,8 @@ addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: User -> Proto Idea -> PersistM m => m Idea
-addIdea cUser = addDb cUser dbIdeaMap
+addIdea :: UserWithProto Idea -> PersistM m => m Idea
+addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
 findIdea = findInById dbIdeas
@@ -230,20 +230,20 @@ moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaLocation .~ location
 
-addTopic :: User -> Proto Topic -> PersistM m => m Topic
-addTopic cUser pt = do
-    t <- addDb cUser dbTopicMap pt
+addTopic :: UserWithProto Topic -> PersistM m => m Topic
+addTopic pt = do
+    t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
     Just loc <- ideaLocationFromTopic (t ^. _Id)
-    moveIdeasToLocation (pt ^. protoTopicIdeas) loc
+    moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) loc
     return t
 
-addDelegation :: User -> Proto Delegation -> PersistM m => m Delegation
-addDelegation cUser = addDb cUser dbDelegationMap
+addDelegation :: UserWithProto Delegation -> PersistM m => m Delegation
+addDelegation = addDb dbDelegationMap
 
 findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
@@ -285,8 +285,8 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
-addUser :: User -> Proto User -> PersistM m => m User
-addUser cUser proto = do
+addUser :: UserWithProto User -> PersistM m => m User
+addUser (cUser, proto) = do
     metainfo  <- nextMetaInfo cUser
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)

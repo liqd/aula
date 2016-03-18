@@ -30,7 +30,7 @@ createRandom
     => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
    cUser <- currentUser
-   x <- persistent . addDb cUser l =<< genArbitrary
+   x <- persistent . addDb l . (,) cUser =<< genArbitrary
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 
@@ -56,16 +56,15 @@ genInitialTestDb = do
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
     protoU <- genArbitrary
-    firstUser <- addFirstUser ( (protoUserLogin .~ Just (UserLogin "admin"))
-                              . (protoUserPassword .~ Just (UserPassInitial "pssst"))
-                              $ protoU )
+    firstUser <- addFirstUser $ protoU & protoUserLogin    ?~ UserLogin "admin"
+                                       & protoUserPassword ?~ UserPassInitial "pssst"
     protoU2 <- genArbitrary
-    user2 <- addUser firstUser ( (protoUserLogin .~ Just (UserLogin "admin2"))
-                               . (protoUserPassword .~ Just (UserPassInitial "pssst2"))
-                               $ protoU2 )
-    _wildIdea <- addIdea firstUser =<< genArbitrary
-    topicIdea <- addIdea user2 =<< genArbitrary
-    _topic <- addTopic firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+    user2 <- addUser (firstUser,
+                      protoU2 & protoUserLogin ?~ UserLogin "admin2"
+                              & protoUserPassword ?~ UserPassInitial "pssst2")
+    _wildIdea <- addIdea . (,) firstUser =<< genArbitrary
+    topicIdea <- addIdea . (,) user2     =<< genArbitrary
+    _topic <- addTopic . (,) firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()
 
 -- FIXME

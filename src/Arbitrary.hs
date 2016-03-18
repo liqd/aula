@@ -733,16 +733,16 @@ fishAvatars =
 
 mkFishUser :: (GenArbitrary m, ActionM r m) => URL -> m User
 mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
-        let first_last = cs . takeBaseName . cs $ avatar
-            (fnam, lnam) = case ST.findIndex (== '_') first_last of
-                Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
-                Just i -> ( UserFirstName $ ST.take i first_last
-                          , UserLastName  $ ST.drop (i+1) first_last
-                          )
-        role <- Student <$> genArbitrary
-        cUser <- currentUser
-        let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
-        persistent $ (userAvatar .~ Just avatar) <$> addUser cUser pu
+    let first_last = cs . takeBaseName . cs $ avatar
+        (fnam, lnam) = case ST.findIndex (== '_') first_last of
+            Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
+            Just i -> ( UserFirstName $ ST.take i first_last
+                      , UserLastName  $ ST.drop (i+1) first_last
+                      )
+    role <- Student <$> genArbitrary
+    let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
+    -- FIXME: change avatar in the database, not just in the user returned from this function!
+    (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
@@ -784,7 +784,7 @@ fishDelegationNetworkAction = do
                 else persistent $ do
                     u1  <- liftIO . generate $ elements users'
                     u2  <- liftIO . generate $ elements users'
-                    (:[]) <$> addDelegation cUser (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> addDelegation (cUser, ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . join <$> replicateM 500 mkdel
 
