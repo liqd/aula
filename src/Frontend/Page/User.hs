@@ -111,8 +111,10 @@ instance ToHtml PageUserProfileCreatedIdeas where
             userHeaderDiv user
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)] "Erhaltene Stimmen"
-                span_ [class_ "heroic-tab-item"] "Erstellte Ideen"
+                span_ [class_ "heroic-tab-item"]
+                    "Erstellte Ideen"
+                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)]
+                    "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
@@ -141,20 +143,25 @@ createdIdeas userId = join . persistent $ do
 
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileDelegatedVotes user _delegation) = semanticDiv p $ do
+    toHtml p@(PageUserProfileDelegatedVotes user delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv user
             div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)] "Erstellte Ideen"
-                span_ [class_ "heroic-tab-item"] "Erhaltene Stimmen"
+                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
+                    "Erstellte Ideen"
+                span_ [class_ "heroic-tab-item"]
+                    "Erhaltene Stimmen"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    -- School / Class select buttons
+                    -- School / Class select buttons: FIXME mechanics!
                     div_ [class_ "filter-toggles"] $ do
-                        button_ [class_ "filter-toggle-btn", value_ ""] "Schulweit" -- button has class m-active or not
+                        button_ [class_ "filter-toggle-btn", value_ ""] "Schulweit"
                         button_ [class_ "filter-toggle-btn m-active", value_ ""] "Klassenweit"
-                    -- FIXME Dummy
+                    renderDelegations delegations
+
+renderDelegations :: Monad m => [Delegation] -> HtmlT m ()
+renderDelegations _ = do
                     h2_ "Insgesamt 20"
                     ul_ [class_ "small-avatar-list"] $ do
                         li_ [class_ "small-avatar-list-item"] $ do
