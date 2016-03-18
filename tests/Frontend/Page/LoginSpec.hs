@@ -1,54 +1,23 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE OverloadedStrings #-}
+module Frontend.Page.LoginSpec where
 
-{-# OPTIONS_GHC -Werror -Wall #-}
-
-module Frontend.Page.LoginSpec
-where
-
-import Control.Concurrent (forkIO, killThread)
-import Control.Exception
-import Control.Lens
-import Data.String.Conversions (LBS, cs, (<>))
-import Network.Wreq hiding (get, post)
-import Network.Wreq.Types (Postable)
-import Test.Hspec
-
-import qualified Network.Wreq.Session as Sess
-
-import Config
-import Frontend
-
--- Same as Frontend.Page.FileUploadSpec.Query
-data Query = Query
-    { post :: forall a. Postable a => String -> a -> IO (Response LBS)
-    , get  :: String -> IO (Response LBS)
-    }
-
--- Same as Frontend.Page.FileUploadSpec.withServer
-withServer :: (Query -> IO a) -> IO a
-withServer action = bracket
-    (forkIO $ runFrontend cfg)
-    killThread
-    (const . Sess.withSession $ action . query)
-  where
-    cfg = Config.test
-    uri path = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort) <> path
-    query sess = Query (Sess.post sess . uri) (Sess.get sess . uri)
+import AulaTests
 
 spec :: Spec
 spec = describe "logging in" $ do
-
   describe "with standard initial DB" . around withServer $ do
+    it "redirects you if not logged in" $ \query -> do
+      checkLoggedIn query 303
+
     context "if user does not exist" $ do
-      it "will not log you in and will display something" $ \_query -> do
-        pendingWith "it should not throw exception for error codes 500"
-        -- l <- post query "/login" [partString "/login.user" "not the admin", partString "/login.pass" "foo"]
-        -- (l ^. responseStatus . statusCode) `shouldBe` 500
+      it "will not log you in and will display something" $ \query -> do
+        checkLogin query "not the admin" "foo" 500
+        checkLoggedIn query 303
+
+      it "will not crash" $ \query -> do
+        pendingWith "sadly, it will."
+        checkLogin query "not the admin" "foo" (error "actually, what *do* we want to happen?")
+        checkLoggedIn query 303
 
     context "if user does exist" $ do
       context "if password is wrong" $ do
@@ -57,7 +26,12 @@ spec = describe "logging in" $ do
 
       context "if password is correct" $ do
         it "will indeed log you in (yeay)" $ \query -> do
-            l <- post query "/login" [partString "/login.user" "admin", partString "/login.pass" "admin"]
-            (l ^. responseStatus . statusCode) `shouldBe` 200
-            l2 <- get query "/space"
-            (l2 ^. responseStatus . statusCode) `shouldBe` 200
+            checkLogin query "admin" "admin" 303
+            checkLoggedIn query 200
+
+  where
+    checkLogin query user pass code = do
+        post query "/login" [partString "/login.user" user, partString "/login.pass" pass]
+          `shouldRespond` [codeShouldBe code]
+
+    checkLoggedIn query code = get query "/space" `shouldRespond` [codeShouldBe code]

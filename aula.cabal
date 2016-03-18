@@ -271,6 +271,7 @@ test-suite spec
     , wreq
   other-modules:
       AllModulesSpec
+      AulaTests
       Frontend.CoreSpec
       Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec
