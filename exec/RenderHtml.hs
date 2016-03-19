@@ -134,7 +134,7 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
 -- * pages with many modes
 
 -- newtypes for pages that have different views.  for instance, 'ViewIdea' has one sample per phase.
--- the '_' in the mae are allowed here because they make it clear where teh page type ends and other
+-- the '_' in the name are allowed here because they make it clear where the page type ends and other
 -- information begins.
 
 newtype ViewTopic_Ideas = ViewTopic_Ideas (ViewTopicTab, Topic, [(Idea, Int)])
