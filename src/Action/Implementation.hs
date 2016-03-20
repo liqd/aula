@@ -20,14 +20,18 @@ import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Prelude
 import Servant
 import Servant.Missing
+import Thentos.Action (freshSessionToken)
+import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
 import qualified Data.ByteString.Lazy as LBS
 
 import Action
+import Data.UriPath
 import Persistent
 import Types
-import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
-import Thentos.Action (freshSessionToken)
+
+import qualified Frontend.Path as U
+
 
 -- * concrete monad type
 
@@ -63,7 +67,7 @@ instance PersistM r => ActionUserHandler (Action r) where
         muser <- persistent $ findUserByLogin uLogin
         case muser of
             Nothing ->
-                throwError500 $ "ActionUserHandler.login: no such user" <> show uLogin
+                redirect . absoluteUriPath . relPath $ U.Login
             Just user -> do
                 usUserId .= Just (user ^. _Id)
                 sessionToken <- freshSessionToken
