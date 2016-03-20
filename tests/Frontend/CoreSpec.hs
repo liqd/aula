@@ -133,22 +133,27 @@ instance PayloadToEnv LoginFormData where
         "user" -> pure [TextInput name]
         "pass" -> pure [TextInput pass]
 
+ideaCheckboxValue iids path =
+    if path `elem` (("idea-" <>) . show <$> iids)
+        then "on"
+        else "off"
+
 instance PayloadToEnv ProtoTopic where
-    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ _) = \case
-        "title" -> pure [TextInput title]
-        "desc"  -> pure [TextInput desc]
-        "image" -> pure [TextInput image]
+    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ iids) path'
+        | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
+        | path == "title" = pure [TextInput title]
+        | path == "desc"  = pure [TextInput desc]
+        | path == "image" = pure [TextInput image]
+      where
+        path :: String = cs path'
 
 instance PayloadToEnv TopicFormPayload where
     payloadToEnvMapping _ (TopicFormPayload title (Markdown desc) iids) path'
-        | "idea-" `isPrefixOf` path = pure [TextInput onOrOff]
+        | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title"           = pure [TextInput title]
         | path == "desc"            = pure [TextInput desc]
       where
         path :: String = cs path'
-        onOrOff = if path `elem` (("idea-" <>) . show <$> iids)
-            then "on"
-            else "off"
 
 instance PayloadToEnv UserSettingData where
     payloadToEnvMapping _ (UserSettingData email oldpass newpass1 newpass2) = \case
@@ -277,7 +282,7 @@ instance ArbFormPageResult PageHomeWithLoginPrompt where
 instance ArbFormPageResult CreateTopic where
     arbFormPageResult (CreateTopic space ideas) =
             set protoTopicIdeaSpace space
-          . set protoTopicIdeas ideas
+          . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
 
 instance ArbFormPageResult EditTopic where

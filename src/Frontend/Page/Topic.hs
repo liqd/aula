@@ -52,7 +52,7 @@ data ViewTopic
 instance Page ViewTopic
 
 -- | 10.1 Create topic: Create topic
-data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
+data CreateTopic = CreateTopic IdeaSpace [Idea]
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic
@@ -146,9 +146,9 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
         <*> pure space
-        <*> pure ideas
+        <*> selectedIdeaParameters ideas
 
-    formPage v fa p =
+    formPage v fa p@(CreateTopic _space ideas) =
         semanticDiv p $ do
             h3_ "Create Topic"
             DF.form v fa $ do
@@ -156,6 +156,7 @@ instance FormPage CreateTopic where
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
                 -- FIXME: There is no image in the click dummy.
                 DF.inputText     "image" v >> br_ []
+                ideaCheckboces v ideas
                 DF.inputSubmit   "Add Topic"
 
 -- Edit topic description and add ideas to topic.
@@ -175,9 +176,7 @@ instance FormPage EditTopic where
         TopicFormPayload
         <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
         <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
-        <*> (fmap catMaybes . sequenceA $
-                [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
-                | idea <- ideas ])
+        <*> selectedIdeaParameters ideas
 
     formPage v fa p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
@@ -185,17 +184,26 @@ instance FormPage EditTopic where
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
-                ul_ $ do
-                    for_ ideas $ \idea ->
-                        li_ $ do
-                            DF.inputCheckbox (ideaToFormField idea) v
-                            idea ^. ideaTitle . html
+                ideaCheckboces v ideas
                 DF.inputSubmit "Speichern"
                 button_ "Abbrechen" -- FIXME
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
+ideaCheckboces :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+ideaCheckboces v ideas =
+    ul_ . for_ ideas $ \idea ->
+        li_ $ do
+            DF.inputCheckbox (ideaToFormField idea) v
+            idea ^. ideaTitle . html
+
+selectedIdeaParameters :: forall m v . (Monad m, Monoid v)
+                       => [Idea] -> DF.Form v m [AUID Idea]
+selectedIdeaParameters ideas =
+    fmap catMaybes . sequenceA $
+        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
+        | idea <- ideas ]
 
 -- * handlers
 
@@ -208,9 +216,11 @@ viewTopic tab topicId = makeFrame =<< persistent (do
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
         _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
-createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) m
-createTopic space ideas =
-  redirectFormHandler (pure $ CreateTopic space ideas) (currentUserAddDb addTopic)
+createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
+createTopic space =
+    redirectFormHandler
+        (CreateTopic space <$> persistent (findWildIdeasBySpace space))
+        (currentUserAddDb addTopic)
 
 editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
 editTopic topicId = redirectFormHandler getPage editTopicPostHandler

@@ -204,7 +204,7 @@ aulaSpace space =
   :<|> Page.viewTopic   TabWinningIdeas
   :<|> Page.viewTopic   TabDelegation
 
-  :<|> Page.createTopic space []
+  :<|> Page.createTopic space
   :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
