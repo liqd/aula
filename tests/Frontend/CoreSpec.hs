@@ -139,8 +139,8 @@ instance PayloadToEnv ProtoTopic where
         "desc"  -> pure [TextInput desc]
         "image" -> pure [TextInput image]
 
-instance PayloadToEnv EditTopic where
-    payloadToEnvMapping _ (EditTopic title (Markdown desc) iids) path'
+instance PayloadToEnv TopicFormPayload where
+    payloadToEnvMapping _ (TopicFormPayload title (Markdown desc) iids) path'
         | "idea-" `isPrefixOf` path = pure [TextInput onOrOff]
         | path == "title"           = pure [TextInput title]
         | path == "desc"            = pure [TextInput desc]
@@ -282,7 +282,7 @@ instance ArbFormPageResult CreateTopic where
 
 instance ArbFormPageResult MoveIdeasToTopic where
     arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
-        EditTopic
+        TopicFormPayload
         <$> arbPhrase
         <*> arbitrary
         -- FIXME: Generate a sublist from the given ideas
