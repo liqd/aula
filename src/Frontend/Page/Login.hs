@@ -46,7 +46,7 @@ instance FormPage PageHomeWithLoginPrompt where
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
                 div_ . DF.form v fa $ do
                     unless (fromMaybe True status) $ do
-                        p_ $ "Falscher Nutzername und/oder falsches Passwort."
+                        p_ "Falscher Nutzername und/oder falsches Passwort."
                     inputText_     [placeholder_ "Dein Benutzername"] "user" v
                     inputPassword_ [placeholder_ "Dein Passwort"] "pass" v
                     inputSubmit_   [] "Login"

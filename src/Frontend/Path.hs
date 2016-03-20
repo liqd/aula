@@ -74,7 +74,7 @@ main DelegationEdit   root = root </> "delegation" </> "edit"
 main DelegationView   root = root </> "delegation" </> "view"
 main Imprint          root = root </> "imprint"
 main Terms            root = root </> "terms"
-main (Login mb)       root = root </> (fromString ("login" <> if fromMaybe True mb then "" else "?status=False"))
+main (Login mb)       root = root </> fromString ("login" <> if fromMaybe True mb then "" else "?status=False")
 main Logout           root = root </> "logout"
 
 data Space =
