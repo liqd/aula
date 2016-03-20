@@ -276,10 +276,11 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
                 mi ^. metaCreatedByLogin . fromUserLogin . html
 
 data ListItemIdea = ListItemIdea
-      Bool           -- ^ link to user profile
-      (Maybe Phase)  -- ^ phase
-      Int            -- ^ number of voters in idea space
-      Idea           -- ^ the idea itself
+      { _listItemIdeaLinkToUser :: Bool
+      , _listItemIdeaPhase      :: Maybe Phase
+      , _listItemIdeaNumVoters  :: Int
+      , _listItemIdea           :: Idea
+      }
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where

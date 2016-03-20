@@ -196,18 +196,18 @@ aulaSpace space =
   :<|> Page.createIdea (IdeaLocationSpace space)
 
   :<|> Page.viewTopics  space
-  :<|> Page.viewTopic   space TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> Page.viewTopic   TabAllIdeas
   :<|> const Page.viewIdea
   :<|> const Page.editIdea
   :<|> Page.createIdea . IdeaLocationTopic space
-  :<|> Page.viewTopic   space TabVotingIdeas
-  :<|> Page.viewTopic   space TabWinningIdeas
-  :<|> Page.viewTopic   space TabDelegation
+  :<|> Page.viewTopic   TabVotingIdeas
+  :<|> Page.viewTopic   TabWinningIdeas
+  :<|> Page.viewTopic   TabDelegation
 
   :<|> Page.createTopic space []
-  :<|> Page.moveIdeasToTopic space
-  :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
+  :<|> Page.moveIdeasToTopic
+  :<|> Page.editTopic  -- FIXME: Implement real content, or remove completely.
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 
