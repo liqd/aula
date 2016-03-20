@@ -70,7 +70,3 @@ function removeClass(el, cl) {
 function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
 }
-
-function endsWith(str, suffix) {
-    return str.indexOf(suffix, str.length - suffix.length) !== -1;
-}
