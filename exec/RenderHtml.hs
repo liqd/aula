@@ -56,7 +56,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileDelegatedVotes))
     , f (Proxy :: Proxy (ToHtmlForm    PageUserSettings))
     , f (Proxy :: Proxy (ToHtmlForm    CreateTopic))
-    , f (Proxy :: Proxy (ToHtmlForm    MoveIdeasToTopic))
+    , f (Proxy :: Proxy (ToHtmlForm    EditTopic))
     , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsDurations))
     , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsQuorum))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPUsersView))

@@ -123,8 +123,8 @@ instance Arbitrary PageUserSettings where
 instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb
 
-instance Arbitrary MoveIdeasToTopic where
-    arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
+instance Arbitrary EditTopic where
+    arbitrary = EditTopic <$> arb <*> arb <*> arb
 
 instance Arbitrary TopicFormPayload where
     arbitrary = TopicFormPayload <$> arbPhrase <*> arb <*> arb

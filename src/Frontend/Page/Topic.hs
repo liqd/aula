@@ -12,11 +12,11 @@ module Frontend.Page.Topic
     ( ViewTopic(..)
     , ViewTopicTab(..)
     , CreateTopic(..)
-    , MoveIdeasToTopic(..)
+    , EditTopic(..)
     , TopicFormPayload(..)
     , viewTopic
     , createTopic
-    , moveIdeasToTopic )
+    , editTopic )
 where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUserAddDb)
@@ -58,10 +58,10 @@ data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
 instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
-data MoveIdeasToTopic = MoveIdeasToTopic IdeaSpace Topic [Idea]
+data EditTopic = EditTopic IdeaSpace Topic [Idea]
   deriving (Eq, Show, Read)
 
-instance Page MoveIdeasToTopic
+instance Page EditTopic
 
 
 -- * templates
@@ -163,15 +163,15 @@ data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
   deriving (Eq, Show)
 
 
-instance FormPage MoveIdeasToTopic where
+instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
-    type FormPageResult MoveIdeasToTopic = TopicFormPayload
+    type FormPageResult EditTopic = TopicFormPayload
 
-    formAction (MoveIdeasToTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
-    redirectOf (MoveIdeasToTopic space topic _) = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
+    formAction (EditTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    redirectOf (EditTopic space topic _) = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
-    makeForm (MoveIdeasToTopic _space topic ideas) =
+    makeForm (EditTopic _space topic ideas) =
         TopicFormPayload
         <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
         <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
@@ -179,7 +179,7 @@ instance FormPage MoveIdeasToTopic where
                 [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
                 | idea <- ideas ])
 
-    formPage v fa p@(MoveIdeasToTopic _space _topic ideas) = do
+    formPage v fa p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
             h3_ "Wählen Sie weitere Ideen aus"
             DF.form v fa $ do
@@ -212,17 +212,17 @@ createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler C
 createTopic space ideas =
   redirectFormHandler (pure $ CreateTopic space ideas) (currentUserAddDb addTopic)
 
-moveIdeasToTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
-moveIdeasToTopic topicId = redirectFormHandler getPage addIdeas
+editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
+editTopic topicId = redirectFormHandler getPage editTopicPostHandler
   where
     getPage = persistent $ do
         -- FIXME: 404
         Just topic <- findTopic topicId
         let space = view topicIdeaSpace topic
         ideas <- findWildIdeasBySpace space
-        pure $ MoveIdeasToTopic space topic ideas
+        pure $ EditTopic space topic ideas
     
-    addIdeas (TopicFormPayload title desc ideas) = persistent $ do
+    editTopicPostHandler (TopicFormPayload title desc ideas) = persistent $ do
         Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
         Persistent.modifyTopic topicId (set topicTitle title . set topicDesc desc)
         Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)

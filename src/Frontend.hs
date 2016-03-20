@@ -183,7 +183,7 @@ type AulaSpace =
 
        -- create new topic
   :<|> "topic" :> "create" :> FormHandler CreateTopic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler EditTopic
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote
 
@@ -205,7 +205,7 @@ aulaSpace space =
   :<|> Page.viewTopic   TabDelegation
 
   :<|> Page.createTopic space []
-  :<|> Page.moveIdeasToTopic
+  :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 

@@ -70,7 +70,7 @@ spec = do
         , F (arb :: Gen PageHomeWithLoginPrompt)
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
-        , F (arb :: Gen MoveIdeasToTopic)
+        , F (arb :: Gen EditTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
@@ -280,8 +280,8 @@ instance ArbFormPageResult CreateTopic where
           . set protoTopicIdeas ideas
         <$> arbitrary
 
-instance ArbFormPageResult MoveIdeasToTopic where
-    arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
+instance ArbFormPageResult EditTopic where
+    arbFormPageResult (EditTopic _space _topicid ideas) =
         TopicFormPayload
         <$> arbPhrase
         <*> arbitrary
