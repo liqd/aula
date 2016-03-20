@@ -156,7 +156,7 @@ instance FormPage CreateTopic where
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
                 -- FIXME: There is no image in the click dummy.
                 DF.inputText     "image" v >> br_ []
-                ideaCheckboces v ideas
+                ideaCheckboxes v ideas
                 DF.inputSubmit   "Add Topic"
 
 -- Edit topic description and add ideas to topic.
@@ -184,15 +184,15 @@ instance FormPage EditTopic where
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
-                ideaCheckboces v ideas
+                ideaCheckboxes v ideas
                 DF.inputSubmit "Speichern"
                 button_ "Abbrechen" -- FIXME
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
-ideaCheckboces :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
-ideaCheckboces v ideas =
+ideaCheckboxes :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+ideaCheckboxes v ideas =
     ul_ . for_ ideas $ \idea ->
         li_ $ do
             DF.inputCheckbox (ideaToFormField idea) v
