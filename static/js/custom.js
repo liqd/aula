@@ -1,4 +1,5 @@
 // Pop Menus
+
 var pops = document.getElementsByClassName("pop-menu");
 for(p in pops) {
     if(pops[p].className) {
@@ -6,11 +7,32 @@ for(p in pops) {
     }
 }
 
+function addPopEvents(el) {
+    el.onmouseenter = function() {
+        toggleMenu(el);
+    }
+
+    el.onmouseleave = function() {
+        toggleMenu(el);
+    }
+}
+
+
+function toggleMenu(el) {
+    if(el.className.indexOf("m-open") > -1) {
+        removeClass(el, "m-open");
+    } else {
+        addClass(el, "m-open");
+    }
+}
+
 // JS detection
+
 var body = document.getElementsByTagName("body")[0];
 removeClass(body, "no-js");
 
 // Category image selecting
+
 var imageSelect = getElementByClassName("category-image-select");
 if(imageSelect) {
     var buttons = imageSelect.getElementsByClassName("icon-list-button");
@@ -36,24 +58,7 @@ if(imageSelect) {
     }
 }
 
-function addPopEvents(el) {
-    el.onmouseenter = function() {
-        toggleMenu(el);
-    }
-
-    el.onmouseleave = function() {
-        toggleMenu(el);
-    }
-}
-
-
-function toggleMenu(el) {
-    if(el.className.indexOf("m-open") > -1) {
-        removeClass(el, "m-open");
-    } else {
-        addClass(el, "m-open");
-    }
-}
+// helpers
 
 function getElementByClassName(el, parent) {
     if (typeof(parent)==='undefined') parent = document;
