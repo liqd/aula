@@ -351,7 +351,11 @@ instance ToHtml PageAdminSettingsGaPClassesView where
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [class_ "btn-cta", onclick_ U.Broken] "KLASSE ANLEGEN"
+                    th_ $ button_
+                            [ class_ "btn-cta"
+                            , onclick_ . U.Admin $ U.AdminAccess PermClassCreate
+                            ]
+                            "KLASSE ANLEGEN"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             input_ [class_ "inline-search-input", value_ "Klassensuche"] -- Placeholder not value
@@ -360,12 +364,6 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                     td_ . toHtml $ clss ^. className
                     td_ ""
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
-
-instance ToHtml PageAdminSettingsGaPClassesCreate where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@PageAdminSettingsGaPClassesCreate =
-        adminFrame p . semanticDiv p $ do
-            toHtml (show p)
 
 data Role
     = RoleStudent
@@ -455,10 +453,6 @@ adminSettingsGaPClassesView :: ActionM r m => m (Frame PageAdminSettingsGaPClass
 adminSettingsGaPClassesView =
     makeFrame =<< PageAdminSettingsGaPClassesView <$> persistent getSchoolClasses
 
-adminSettingsGaPClassesCreate :: ActionM r m => m (Frame PageAdminSettingsGaPClassesCreate)
-adminSettingsGaPClassesCreate =
-    makeFrame PageAdminSettingsGaPClassesCreate
-
 adminSettingsGaPUserEdit :: ActionM r m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
@@ -537,27 +531,25 @@ adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> persist
 
 -- * Classes Create
 
-data BatchCreateUsers = BatchCreateUsers
-  deriving (Eq, Show)
-
-instance Page BatchCreateUsers where
-
 data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
   deriving (Eq, Show, Generic)
 
 instance SOP.Generic BatchCreateUsersFormData
 
-instance FormPage BatchCreateUsers where
-    type FormPageResult BatchCreateUsers = BatchCreateUsersFormData
+instance FormPage PageAdminSettingsGaPClassesCreate where
+    type FormPageResult PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
 
-    formAction BatchCreateUsers = relPath $ U.TopTesting "file-upload"
-    redirectOf _ = relPath U.Top
+    formAction PageAdminSettingsGaPClassesCreate =
+        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassCreate
 
-    makeForm BatchCreateUsers = BatchCreateUsersFormData
+    redirectOf PageAdminSettingsGaPClassesCreate =
+        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassView
+
+    makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
         <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
         <*> ("file"      DF..: DF.file)
 
-    formPage v fa p@BatchCreateUsers =
+    formPage v fa p@PageAdminSettingsGaPClassesCreate =
         semanticDiv p $ do
             h3_ "Klasse anlegen"
             a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
@@ -611,9 +603,9 @@ instance Csv.FromRecord CsvUserRecord where
             | v !! i == ""     = Nothing
             | otherwise        = Just . UserLogin $ v !! i
 
-batchCreateUsers :: forall r m. (ActionTempCsvFiles m, ActionM r m)
-                 => ServerT (FormHandler BatchCreateUsers) m
-batchCreateUsers = redirectFormHandler (pure BatchCreateUsers) q
+adminSettingsGaPClassesCreate :: forall r m. (ActionTempCsvFiles m, ActionM r m)
+                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
+adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
