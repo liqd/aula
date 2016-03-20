@@ -2,6 +2,9 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE ViewPatterns      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -11,11 +14,14 @@ where
 import Control.Arrow ((&&&))
 import Data.Maybe (mapMaybe)
 
+import qualified Data.Csv as Csv
+import qualified Data.Text as ST
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Generics.SOP as SOP
+import qualified Thentos.Types
 
-import Action (ActionM, ActionPersist(..))
+import Action
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
@@ -345,7 +351,11 @@ instance ToHtml PageAdminSettingsGaPClassesView where
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ "KLASSE"
-                    th_ $ button_ [class_ "btn-cta", onclick_ U.Broken] "KLASSE ANLEGEN"
+                    th_ $ button_
+                            [ class_ "btn-cta"
+                            , onclick_ . U.Admin $ U.AdminAccess PermClassCreate
+                            ]
+                            "KLASSE ANLEGEN"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             input_ [class_ "inline-search-input", value_ "Klassensuche"] -- Placeholder not value
@@ -354,13 +364,6 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                     td_ . toHtml $ clss ^. className
                     td_ ""
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
-
-
-instance ToHtml PageAdminSettingsGaPClassesCreate where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@PageAdminSettingsGaPClassesCreate =
-        adminFrame p . semanticDiv p $ do
-            toHtml (show p)
 
 data Role
     = RoleStudent
@@ -450,10 +453,6 @@ adminSettingsGaPClassesView :: ActionM r m => m (Frame PageAdminSettingsGaPClass
 adminSettingsGaPClassesView =
     makeFrame =<< PageAdminSettingsGaPClassesView <$> persistent getSchoolClasses
 
-adminSettingsGaPClassesCreate :: ActionM r m => m (Frame PageAdminSettingsGaPClassesCreate)
-adminSettingsGaPClassesCreate =
-    makeFrame PageAdminSettingsGaPClassesCreate
-
 adminSettingsGaPUserEdit :: ActionM r m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
@@ -528,3 +527,106 @@ instance ToHtml PageAdminSettingsEventsProtocol where
 
 adminEventsProtocol :: ActionM r m => m (Frame PageAdminSettingsEventsProtocol)
 adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> persistent getSpaces)
+
+
+-- * Classes Create
+
+data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
+  deriving (Eq, Show, Generic)
+
+instance SOP.Generic BatchCreateUsersFormData
+
+instance FormPage PageAdminSettingsGaPClassesCreate where
+    type FormPageResult PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+
+    formAction PageAdminSettingsGaPClassesCreate =
+        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassCreate
+
+    redirectOf PageAdminSettingsGaPClassesCreate =
+        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassView
+
+    makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+        <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
+        <*> ("file"      DF..: DF.file)
+
+    formPage v fa p@PageAdminSettingsGaPClassesCreate =
+        semanticDiv p $ do
+            h3_ "Klasse anlegen"
+            a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
+            DF.form v fa $ do
+                div_ $ do
+                    p_ "Klasse"
+                    DF.inputText "classname" v
+                div_ $ do
+                    p_ "CSV-Datei"
+                    DF.inputFile "file" v
+                DF.inputSubmit "upload!"
+
+theOnlySchoolYearHack :: Int
+theOnlySchoolYearHack = 2016
+
+data CsvUserRecord = CsvUserRecord
+    { _csvUserRecordFirst       :: UserFirstName
+    , _csvUserRecordLast        :: UserLastName
+    , _csvUserRecordEmail       :: Maybe UserEmail
+    , _csvUserRecordLogin       :: Maybe UserLogin
+    }
+  deriving (Eq, Show)
+
+instance Csv.FromRecord CsvUserRecord where
+    parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
+        <$> (UserFirstName <$> parseName 50 0)
+        <*> (UserLastName <$> parseName 50 1)
+        <*> parseMEmail 2
+        <*> pure (parseMLogin 3)
+      where
+        parseName :: (Monad m) => Int -> Int -> m ST
+        parseName maxLength i
+            | length v < i + 1
+                = fail $ "user record too short: " <> show v
+            | ST.length (v !! i) > maxLength
+                = fail $ "user record with overly long column " <> show i <> ": " <> show v
+            | otherwise
+                = pure $ v !! i
+
+        parseMEmail :: (Monad m) => Int -> m (Maybe UserEmail)
+        parseMEmail i
+            | length v < i + 1 = pure Nothing
+            | v !! i == ""     = pure Nothing
+            | otherwise        = case Thentos.Types.parseUserEmail $ v !! i of
+                Nothing    -> fail $ "user record with bad email address: " <> show v
+                Just email -> pure . Just . UserEmail $ Thentos.Types.fromUserEmail email
+
+        parseMLogin :: Int -> Maybe UserLogin
+        parseMLogin i
+            | length v < i + 1 = Nothing
+            | v !! i == ""     = Nothing
+            | otherwise        = Just . UserLogin $ v !! i
+
+adminSettingsGaPClassesCreate :: forall r m. (ActionTempCsvFiles m, ActionM r m)
+                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
+adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
+  where
+    q :: BatchCreateUsersFormData -> m ()
+    q (BatchCreateUsersFormData _clname Nothing) =
+        throwError500 "upload FAILED: no file!"  -- FIXME: status code?
+    q (BatchCreateUsersFormData clname (Just file)) = do
+        let schoolcl = SchoolClass theOnlySchoolYearHack clname
+        eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
+        case eCsv of
+            Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
+                                             -- FIXME: status code?
+            Right records -> mapM_ (p schoolcl) records
+
+    p :: SchoolClass -> CsvUserRecord -> m ()
+    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = do
+      void $ do
+        Action.persistent . addIdeaSpaceIfNotExists $ ClassSpace schoolcl
+        currentUserAddDb addUser ProtoUser
+            { _protoUserLogin     = mLogin
+            , _protoUserFirstName = firstName
+            , _protoUserLastName  = lastName
+            , _protoUserGroups    = [Student schoolcl]
+            , _protoUserPassword  = Nothing
+            , _protoUserEmail     = mEmail
+            }

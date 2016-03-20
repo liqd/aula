@@ -13,18 +13,24 @@ where
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import AulaTests
-import Frontend.Page.FileUpload
+import Frontend.Page.Admin
+import qualified Frontend.Path as U
+
+
+fileUploadPath :: (IsString s) => String -> s
+fileUploadPath rest =
+    fromString $ (cs . absoluteUriPath . relPath . U.Admin $ U.AdminAccess PermClassCreate) <> rest
 
 spec :: Spec
 spec = describe "file upload" $ do
     describe "http" . around withServer $ do
         let classPart :: Part
-            classPart = partString "/testing/file-upload.classname" "7a"
+            classPart = partString (fileUploadPath ".classname") "7a"
 
             filePart :: Part
             filePart = (partFileName .~ Just "x.csv") . (partContentType .~ Just "text/csv") $ p
               where
-                p = partString "/testing/file-upload.file" $ unlines
+                p = partString (fileUploadPath ".file") $ unlines
                         [ "Vorname;Nachname;email;Login-Name"
                         , "Hein;Blöd;bloed@example.org"
                         , "Heidi;Schmumel;br@example.org;mup"
@@ -35,7 +41,7 @@ spec = describe "file upload" $ do
             post query "/login"
                 [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
                 `shouldRespond` [codeShouldBe 303]
-            post query "/testing/file-upload" [classPart, filePart]
+            post query (fileUploadPath "") [classPart, filePart]
                 `shouldRespond` [codeShouldBe 303]
             get query "/user"
                 `shouldRespond` [codeShouldBe 200

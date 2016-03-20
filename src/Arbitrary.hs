@@ -367,9 +367,6 @@ instance Arbitrary a => Arbitrary (Frame a) where
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb
 
-instance Arbitrary BatchCreateUsers where
-    arbitrary = pure BatchCreateUsers
-
 
 -- * general-purpose helpers
 

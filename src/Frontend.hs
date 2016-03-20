@@ -230,7 +230,7 @@ type AulaAdmin =
   :<|> "access" :> "perm-user-view"    :> GetH (Frame PageAdminSettingsGaPUsersView)
   :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
   :<|> "access" :> "perm-class-view"   :> GetH (Frame PageAdminSettingsGaPClassesView)
-  :<|> "access" :> "perm-class-create" :> GetH (Frame PageAdminSettingsGaPClassesCreate)
+  :<|> "access" :> "perm-class-create" :> FormHandler PageAdminSettingsGaPClassesCreate
   :<|> "user" :> Capture "user" (AUID User) :> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit
   :<|> "class" :> Capture "class" SchoolClass :> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
        -- event log
@@ -259,7 +259,6 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
-  :<|> "file-upload" :> FormHandler BatchCreateUsers
   :<|> "random-password" :> GetH (PageShow UserPass)
   :<|> "undefined" :> GetH ()
   :<|> "error500" :> GetH ()
@@ -276,7 +275,6 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
 
-  :<|> batchCreateUsers
   :<|> (PageShow <$> Action.persistent mkRandomPassword)
   :<|> undefined
   :<|> throwError500 "testing error500"

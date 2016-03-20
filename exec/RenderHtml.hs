@@ -63,7 +63,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPUsersCreate))
     , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsGaPUsersEdit))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPClassesView))
-    , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPClassesCreate))
+    , f (Proxy :: Proxy (ToHtmlForm    PageAdminSettingsGaPClassesCreate))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsGaPClassesEdit))
     , f (Proxy :: Proxy (ToHtmlDefault PageAdminSettingsEventsProtocol))
     , f (Proxy :: Proxy (ToHtmlDefault PageDelegateVote))

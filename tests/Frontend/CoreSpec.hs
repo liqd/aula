@@ -55,7 +55,6 @@ spec = do
         , H (arb :: Gen PageAdminSettingsGaPUsersView)
         , H (arb :: Gen PageAdminSettingsGaPUsersCreate)
         , H (arb :: Gen PageAdminSettingsGaPClassesView)
-        , H (arb :: Gen PageAdminSettingsGaPClassesCreate)
         , H (arb :: Gen PageAdminSettingsEventsProtocol)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
