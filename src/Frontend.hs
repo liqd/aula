@@ -132,8 +132,8 @@ type AulaMain =
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
-       -- login
-  :<|> "login" :> FormHandler PageHomeWithLoginPrompt
+       -- login / logout
+  :<|> "login" :> QueryParam "status" Bool :> FormHandler PageHomeWithLoginPrompt
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
@@ -154,7 +154,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
   :<|> Page.login
-  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
+  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login Nothing))
 
 
 type AulaSpace =

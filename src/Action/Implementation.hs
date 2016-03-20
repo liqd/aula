@@ -67,7 +67,7 @@ instance PersistM r => ActionUserHandler (Action r) where
         muser <- persistent $ findUserByLogin uLogin
         case muser of
             Nothing ->
-                redirect . absoluteUriPath . relPath $ U.Login
+                redirect . absoluteUriPath . relPath . U.Login $ Just False
             Just user -> do
                 usUserId .= Just (user ^. _Id)
                 sessionToken <- freshSessionToken
