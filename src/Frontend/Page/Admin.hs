@@ -301,7 +301,7 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
                 <*> getDb dbClassQuorum
 
 
--- ** Groups and permisisons
+-- ** roles and permisisons
 
 instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
@@ -467,10 +467,10 @@ payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
 payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
-isClassInGroup :: SchoolClass -> Role -> Bool
-isClassInGroup clss (Student clss')    = clss == clss'
-isClassInGroup clss (ClassGuest clss') = clss == clss'
-isClassInGroup _    _                  = False
+isClassInRole :: SchoolClass -> Role -> Bool
+isClassInRole clss (Student clss')    = clss == clss'
+isClassInRole clss (ClassGuest clss') = clss == clss'
+isClassInRole _    _                  = False
 
 getSchoolClasses :: PersistM m => m [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
@@ -484,7 +484,7 @@ adminSettingsGaPClassesEdit clss =
   where
     -- FIXME: the following two lines should be happening in "Persistent.Api".
     usersInClass = filter isUserInClass <$> persistent getUsers
-    isUserInClass = isClassInGroup clss . view userRole
+    isUserInClass = isClassInRole clss . view userRole
 
 
 -- ** Events protocol
