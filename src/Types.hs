@@ -636,3 +636,12 @@ topicToIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 userToIdeaLocation :: User -> IdeaLocation
 userToIdeaLocation u =
     (\(Student clss) -> IdeaLocationSpace (ClassSpace clss)) . head $ u ^. userGroups
+
+-- german group name
+groupLabel :: IsString s => Group -> s
+groupLabel (Student _)    = "Student"
+groupLabel (ClassGuest _) = "Gast (Klasse)"
+groupLabel SchoolGuest    = "Gast (Klasse)"
+groupLabel Moderator      = "Moderator"
+groupLabel Principal      = "Direktor"
+groupLabel Admin          = "Administrator"
