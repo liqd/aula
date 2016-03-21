@@ -182,7 +182,7 @@ instance Arbitrary LoginFormData where
 instance Arbitrary ProtoIdea where
     arbitrary =
         garbitrary
-        <**> (set protoIdeaTitle <$> arbWord)
+        <**> (set protoIdeaTitle <$> arbPhrase)
 
 instance Arbitrary Idea where
     arbitrary =

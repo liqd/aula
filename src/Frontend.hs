@@ -48,6 +48,7 @@ import qualified Action
 import qualified Frontend.Path as U
 import qualified Persistent.Implementation.STM
 
+import DemoData
 
 -- * driver
 
@@ -66,6 +67,10 @@ runFrontend cfg = do
              (aulaMain :<|> aulaTesting)
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+
+    demoDataGen <- mkUniverse
+    unNat persist demoDataGen
+
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app
   where

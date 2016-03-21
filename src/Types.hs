@@ -203,6 +203,10 @@ data IdeaSpace =
 
 instance SOP.Generic IdeaSpace
 
+ideaSpaceToSchoolClass :: IdeaSpace -> Maybe SchoolClass
+ideaSpaceToSchoolClass (ClassSpace clss) = Just clss
+ideaSpaceToSchoolClass _                 = Nothing
+
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass
@@ -625,3 +629,10 @@ ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
 isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
+
+topicToIdeaLocation :: Topic -> IdeaLocation
+topicToIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
+
+userToIdeaLocation :: User -> IdeaLocation
+userToIdeaLocation u =
+    (\(Student clss) -> IdeaLocationSpace (ClassSpace clss)) . head $ u ^. userGroups

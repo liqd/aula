@@ -74,6 +74,7 @@ library
       Config
       CreateRandom
       Data.UriPath
+      DemoData
       Frontend
       Frontend.Core
       Frontend.Page
