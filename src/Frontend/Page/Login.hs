@@ -1,28 +1,34 @@
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
 module Frontend.Page.Login
 where
 
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
+
 import Action (ActionM)
 import qualified Action
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
-import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.Lucid.Html5 as DF
 
 
 -- * page
 
 -- | 16. Home page with login prompt
-data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt Bool
+data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt Bool LoginDemoHints
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
     isPrivatePage _ = False
+
+-- FIXME: remove (or otherwise protect) this type before going to production!
+data LoginDemoHints = LoginDemoHints { fromLoginDemoHints :: [User] }
+  deriving (Eq, Show, Read)
 
 
 -- * templates
@@ -40,7 +46,7 @@ instance FormPage PageHomeWithLoginPrompt where
         <$> ("user" .: DF.text Nothing)
         <*> ("pass" .: DF.text Nothing)
 
-    formPage v fa p@(PageHomeWithLoginPrompt status) =
+    formPage v fa p@(PageHomeWithLoginPrompt status loginDemoHints) =
         semanticDiv p $ do
             div_ [class_ "login-register-form"] $ do
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
@@ -52,11 +58,29 @@ instance FormPage PageHomeWithLoginPrompt where
                     inputSubmit_   [] "Login"
                     p_ [class_ "text-muted login-register-form-notice"]
                         "Solltest du dein Passwort nicht mehr kennen, melde dich bitte bei den Admins euer Schule."
+            toHtml loginDemoHints
+
+
+instance ToHtml LoginDemoHints where
+    toHtmlRaw = toHtml
+    toHtml (LoginDemoHints users) = do
+        hr_ []
+        div_ $ do
+            "DEMO-SYSTEM.  LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"
+            table_ [class_ "admin-table", style_ "padding: 30px"] $ do
+                tr_ $ do
+                    th_ "login"
+                    th_ "password"
+                (\u -> tr_ $ do
+                    td_ . toHtml $ u ^. userLogin . fromUserLogin
+                    td_ . toHtml . (\case (UserPassInitial s) -> s; any -> cs $ show any) $ u ^. userPassword)
+                  `mapM_` users
 
 
 -- * handlers
 
 login :: (ActionM r action) => Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
-login success = redirectFormHandler (pure $ PageHomeWithLoginPrompt success) makeUserLogin
+login success = redirectFormHandler getPage makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login $ UserLogin user
+    getPage = PageHomeWithLoginPrompt success . LoginDemoHints <$> Action.persistent getUsers
