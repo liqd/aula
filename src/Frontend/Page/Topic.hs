@@ -125,7 +125,7 @@ viewTopicHeaderDiv topic tab = do
                     li_ [class_ "pop-menu-list-item"] $ do
                         a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
                             i_ [class_ "icon-pencil"] nil
-                            "bearbeiten"
+                            "Thema bearbeiten"
         h1_   [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] . toHtml $ phaseName phase
             toHtml $ topic ^. topicTitle
