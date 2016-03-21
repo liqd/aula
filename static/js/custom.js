@@ -36,8 +36,7 @@ removeClass(body, "no-js");
 var imageSelect = getElementByClassName("category-image-select");
 if(imageSelect) {
     var buttons = imageSelect.getElementsByClassName("icon-list-button");
-    var radiosContainer = getElementByClassName("category-radios");
-    var radios = radiosContainer.getElementsByTagName("input");
+    var hidden = document.querySelectorAll("input[type=hidden]")[0];
 
     var handler = function(b1) {
         for (b2 = 0; b2 < buttons.length; ++b2) {
@@ -47,7 +46,7 @@ if(imageSelect) {
                 removeClass(buttons[b2], "m-active");
             }
         }
-        radios[b1].checked = true;  // this sets all other radios to false.
+        hidden.value = b1;
     };
 
     for (b = 0; b < buttons.length; ++b) {

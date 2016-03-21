@@ -122,10 +122,10 @@ payloadToEnv _ _ [""]       = pure []
 payloadToEnv v a ["", path] = payloadToEnvMapping v a path
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnvMapping v (ProtoIdea t (Markdown d) c _is) = \case
+    payloadToEnvMapping _v (ProtoIdea t (Markdown d) c _is) = \case
         "title"         -> pure [TextInput t]
         "idea-text"     -> pure [TextInput d]
-        "idea-category" -> pure [TextInput $ selectValue "idea-category" v categoryValues c]
+        "idea-category" -> pure [TextInput . cs . show . fromEnum $ c]
 
 instance PayloadToEnv LoginFormData where
     payloadToEnvMapping _ (LoginFormData name pass) = \case

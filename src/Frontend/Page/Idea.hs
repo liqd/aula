@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 {-# OPTIONS_GHC -Werror #-}
@@ -26,6 +27,7 @@ import qualified Frontend.Path as U
 import qualified Data.Set as Set
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Text.Digestive.Types as DF
 
 
 -- * types
@@ -191,16 +193,20 @@ instance FormPage CreateIdea where
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
 -- subform src/Frontend/Page/Topic.hs`.)
-makeFormSelectCategory :: Monad m => DF.Form (Html ()) m Category
-makeFormSelectCategory = DF.choice categoryValues Nothing
+makeFormSelectCategory :: (Monad m) => DF.Form (Html ()) m Category
+makeFormSelectCategory = DF.validate f $ DF.text Nothing
+  where
+    f :: ST -> DF.Result (Html ()) Category
+    f = maybe (DF.Error "bad category identifier") DF.Success
+      . (toEnumMay <=< readMay)
+      . cs
 
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
 formPageSelectCategory v = do
     label_ $ do
         span_ [class_ "label-text"]
             "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-        div_ [class_ "category-radios"] $ do
-            DF.inputRadio True "idea-category" v
+        DF.inputHidden "idea-category" v
         div_ [class_ "icon-list m-inline category-image-select"] $ do
             ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
                 -- FIXME: select a category for the newly created idea.  this
@@ -255,6 +261,9 @@ instance FormPage EditIdea where
                 DF.inputSubmit   "Speichern"
                 button_ [value_ ""] "Idee löschen" -- FIXME delete button
                 button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
+
+toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
+toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
 
 categoryToValue :: IsString s => Category -> s
 categoryToValue CatRule        = "Regel"
