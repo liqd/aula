@@ -171,9 +171,9 @@ instance PayloadToEnv Quorums where
         "school-quorum" -> pure [TextInput (cs $ show school)]
         "class-quorum"  -> pure [TextInput (cs $ show clss)]
 
-instance PayloadToEnv EditUser where
-    payloadToEnvMapping v (EditUser r c) = \case
-        "user-role"  -> pure [TextInput $ selectValue "user-role" v roleValues r]
+instance PayloadToEnv EditUserPayload where
+    payloadToEnvMapping v (EditUserPayload r c) = \case
+        "user-role"  -> pure [TextInput $ selectValue "user-role" v roleSelectionChoices r]
         -- FIXME: Selection does not work for composite types like school class.
         "user-class" -> pure [TextInput $ selectValue "user-class" v classes c]
       where

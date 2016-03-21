@@ -181,15 +181,11 @@ getNumVotersForIdea idea = (idea,) . length . filter hasAccess <$> getUsers
         SchoolSpace   -> isStudent u
         ClassSpace cl -> u `isStudentInClass` cl
 
-    isStudent (view userGroups -> gs) = any f gs
-      where
-        f (Student _) = True
-        f _           = False
+    isStudent (view userRole -> (Student _)) = True
+    isStudent _                              = False
 
-    isStudentInClass (view userGroups -> gs) cl = any f gs
-      where
-        f (Student cl') = cl' == cl
-        f _             = False
+    isStudentInClass (view userRole -> (Student cl')) cl = cl' == cl
+    isStudentInClass _ _ = False
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
 addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
@@ -291,7 +287,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userFirstName = proto ^. protoUserFirstName
     , _userLastName  = proto ^. protoUserLastName
     , _userAvatar    = Nothing
-    , _userGroups    = proto ^. protoUserGroups
+    , _userRole      = proto ^. protoUserRole
     , _userPassword  = uPassword
     , _userEmail     = proto ^. protoUserEmail
     }
