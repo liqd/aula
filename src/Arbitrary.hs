@@ -287,7 +287,7 @@ guestOrStudent clss = elements
     ]
 
 instance Arbitrary UserPass where
-    arbitrary = garbitrary
+    arbitrary = UserPassInitial <$> arbWord
 
 instance Arbitrary UserEmail where
     arbitrary = do
