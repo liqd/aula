@@ -17,7 +17,7 @@
     background-image: url(../images/#{$name}.png);
     background-repeat: no-repeat;
 
-    @if $pngonly != false {
+    @if $pngonly == false {
         .inlinesvg & {
             background-image: url(../svg/#{$name}.svg);
         }

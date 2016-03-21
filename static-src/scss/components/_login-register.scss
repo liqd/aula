@@ -1,6 +1,6 @@
 .login-register-form {
     @include rem(padding, 40px 30%);
-    @include svg(login_owl);
+    @include svg(login_owl,true);
     background-position: left center;
     margin: 0 auto;
     text-align: center;
