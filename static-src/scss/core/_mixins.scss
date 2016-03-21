@@ -13,12 +13,14 @@
 }
 
 //(aula-logo, no-repeat left center, contain);
-@mixin svg($name) {
+@mixin svg($name, $pngonly: false) {
     background-image: url(../images/#{$name}.png);
     background-repeat: no-repeat;
 
-    .inlinesvg & {
-        background-image: url(../svg/#{$name}.svg);
+    @if $pngonly == false {
+        .inlinesvg & {
+            background-image: url(../svg/#{$name}.svg);
+        }
     }
 }
 

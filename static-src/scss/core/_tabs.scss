@@ -1,7 +1,9 @@
 .tabs {
     box-shadow: rgba(0,0,0,0.2) 2px 2px 2px 0;
     float: left;
+    position: relative;
     width: 100%;
+    z-index: 100;
 
     .tab-item {
         float: left;

@@ -100,9 +100,6 @@ instance ToHtml ViewIdea where
                     totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
                     " / "
                 totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
-            div_ [class_ "icon-list m-inline"] $ do
-                ul_ $ do
-                    toHtml $ CategoryLabel (idea ^. ideaCategory)
             div_ [class_ "sub-heading"] $ do
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
                     span_ [class_ "progress-bar m-against"] $ do
@@ -146,7 +143,14 @@ instance ToHtml ViewIdea where
             -}
 
         -- article
-        div_ [class_ "container-narrow text-markdown"] $ idea ^. ideaDesc . html
+        div_ [class_ "container-narrow text-markdown"] $ do
+            idea ^. ideaDesc . html
+
+            div_ [class_ "view-category"] $ do
+                h2_ [class_ "sup-header"] "Diese Idee Gehoert Kategorie"
+                div_ [class_ "icon-list m-inline"] $ do
+                    ul_ $ do
+                        toHtml $ CategoryLabel (idea ^. ideaCategory)
 
         -- comments
         section_ [class_ "comments"] $ do
@@ -155,14 +159,16 @@ instance ToHtml ViewIdea where
                     div_ [class_ "container-narrow"] $ do
                         h2_ [class_ "comments-header-heading"] $ do
                             totalComments ^. showed . html <> " Verbesserungsvorschläge"
+                                -- FIXME: singular
                                 -- FIXME: code redundancy!  search for 'totalComments' in this module
+                        button_ [ value_ "create_comment"
+                                , class_ "btn-cta comments-header-button"]
+                              "Neuer Verbesserungsvorschlag"
+                        -- FIXME dummy
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         PageComment c ^. html
-
-                    -- FIXME Please create the comments form here
-                    button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
 
 
 instance FormPage CreateIdea where
@@ -180,7 +186,7 @@ instance FormPage CreateIdea where
 
     formPage v fa p = do
         semanticDiv p $ do
-            div_ [class_ "grid container-main popup-page"] $ do
+            div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Idee erstellen"
                     DF.form v fa $ do

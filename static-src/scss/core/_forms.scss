@@ -65,3 +65,7 @@ select {
         line-height: $input-height;
     }
 }
+
+.form-footer {
+    @include rem(margin-top, 20px);
+}

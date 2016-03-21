@@ -64,7 +64,7 @@ viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> fin
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
-        div_ [class_ "grid container-main"] $ do
+        div_ [class_ "container-main"] $ do
             f spaces
       where
         f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
@@ -135,12 +135,26 @@ instance ToHtml PageIdeasInDiscussion where
             forM_ topics $ \topic -> do
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
-                        div_ [class_ "theme-grid-item-image"] nil
-                        div_ [class_ "theme-grid-item-text"] $ do
-                            span_ [class_ "theme-grid-item-phase"] . toHtml . phaseName $ topic ^. topicPhase
-                            h2_ [class_ "theme-grid-item-title"] . toHtml $ topic ^. topicTitle
-                            div_ [class_ "theme-grid-item-blurb"] . toHtml $ topic ^. topicDesc
-                            a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
+                        a_ [ class_ "theme-grid-item-link"
+                           , href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id
+                           ] $ do
+                            img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
+                                      PhaseJury          -> "theme_pruf.png"
+                                      PhaseResult        -> "theme_ergf.png"
+                                      PhaseVoting        -> "theme_abs.png"
+                                      PhaseRefinement    -> "theme_aus.png"
+                                      PhaseFinished      -> "theme_fin.png"  -- FIXME: png file missing
+                                 , class_ "theme-grid-item-image"
+                                 ]
+                            div_ [class_ "theme-grid-item-text"] $ do
+                                span_ [class_ "theme-grid-item-phase"] . toHtml . phaseName
+                                    $ topic ^. topicPhase
+                                h2_   [class_ "theme-grid-item-title"] . toHtml
+                                    $ topic ^. topicTitle
+                                div_  [class_ "theme-grid-item-blurb"] . toHtml
+                                    $ topic ^. topicDesc
+                                span_ [class_ "theme-grid-item-link"]
+                                    "view topic"
 
 instance Page PageIdeasInDiscussion
 

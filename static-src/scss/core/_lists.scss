@@ -3,6 +3,10 @@
     background: $color-grey-lighter;
     text-align: center;
 
+    .view-category & {
+        @include rem(padding-top, 10px);
+    }
+
     &.m-inline {
         background: none;
         text-align: left;
@@ -22,19 +26,25 @@
             background-repeat: no-repeat;
             background-position: center top;
             text-align: center;
+            opacity: 0.6;
+
+            &:hover, &:focus, &.m-active {
+                opacity: 1;
+            }
+
+            .view-category & {
+                opacity: 1;
+
+                > a, > span {
+                    cursor: default;
+                }
+            }
 
             > a, > span {
                 @include rem(padding-top, 60px);
-                background: #fff;
                 color: $color-brand1;
                 cursor: pointer;
                 display: block;
-                opacity: 0.4;
-
-                &:hover, &:focus, &.m-active {
-                    background: none;
-                    opacity: 1;
-                }
             }
 
             &.icon-rules {
@@ -91,4 +101,8 @@
     .small-avatar-list-item {
         @include rem(margin-bottom, 40px);
     }
+}
+
+.view-category {
+    @include rem(padding-top, 60px);
 }

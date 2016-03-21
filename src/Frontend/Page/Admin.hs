@@ -237,7 +237,7 @@ instance FormPage PageAdminSettingsDurations where
     formPage v fa p = adminFrame p $ do
         semanticDiv p $ do
             DF.form v fa $ do
-                -- TODO these should be "numeber" fields
+                -- FIXME these should be "number" fields
                 label_ [class_ "input-append"] $ do
                     span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
                     inputText_ [class_ "input-number input-appendee"] "elab-duration" v

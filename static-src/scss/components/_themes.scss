@@ -6,41 +6,7 @@
     box-shadow: 0 0 2px 0 rgba(77, 77, 77, 0.5);
 
     .theme-grid-item-image {
-        height: auto;
         width: 100%;
-    }
-
-    &.phase-PhaseJury {
-        .theme-grid-item-image {
-            content: url("/static/images/theme_pruf.png");
-        }
-    }
-
-    &.phase-PhaseResult {
-        .theme-grid-item-image {
-            content: url("/static/images/theme_ergf.png");
-        }
-    }
-
-    &.phase-PhaseVoting {
-        .theme-grid-item-image {
-            content: url("/static/images/theme_abs.png");
-        }
-    }
-
-    &.phase-PhaseRefinement {
-        .theme-grid-item-image {
-            content: url("/static/images/theme_aus.png");
-        }
-    }
-
-    &.phase-PhaseFinished {
-        .theme-grid-item-image {
-            border: 1px solid red;
-            &:before {
-                content: "NO DESIGN";
-            }
-        }
     }
 
     .theme-grid-item-text {
@@ -49,6 +15,7 @@
 
     .theme-grid-item-phase {
         @include rem(font-size, $font-size-smaller);
+        color: $color-text-muted;
         display: block;
         text-transform: uppercase;
     }
@@ -65,6 +32,21 @@
 
     .theme-grid-item-link {
         font-weight: bold;
+    }
+
+    .theme-grid-item-blurb,
+    .theme-grid-item-title {
+        color: $color-text;
+    }
+
+    .theme-grid-item-link {
+        &:focus, &:hover {
+            text-decoration: none;
+
+            .theme-grid-item-link {
+                text-decoration: underline;
+            }
+        }
     }
 }
 

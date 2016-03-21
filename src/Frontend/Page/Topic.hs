@@ -150,14 +150,23 @@ instance FormPage CreateTopic where
 
     formPage v fa p@(CreateTopic _space ideas) =
         semanticDiv p $ do
-            h3_ "Create Topic"
-            DF.form v fa $ do
-                DF.inputText     "title" v >> br_ []
-                DF.inputTextArea Nothing Nothing "desc" v >> br_ []
-                -- FIXME: There is no image in the click dummy.
-                DF.inputText     "image" v >> br_ []
-                formPageIdeaSelection v ideas
-                DF.inputSubmit   "Add Topic"
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Create Topic"
+                    DF.form v fa $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
+                            inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
+                                "title" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Beschreiben Sie das Thema"
+                        -- FIXME I want a placeholder here too
+                            DF.inputTextArea Nothing Nothing "desc" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
+                            formPageIdeaSelection v ideas
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "Veröffentlichen"
 
 -- Edit topic description and add ideas to topic.
 data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
@@ -232,7 +241,7 @@ editTopic topicId = redirectFormHandler getPage editTopicPostHandler
         let space = view topicIdeaSpace topic
         ideas <- findWildIdeasBySpace space
         pure $ EditTopic space topic ideas
-    
+
     editTopicPostHandler (TopicFormPayload title desc ideas) = persistent $ do
         Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
         Persistent.modifyTopic topicId (set topicTitle title . set topicDesc desc)
