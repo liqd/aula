@@ -18,7 +18,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * page
 
 -- | 16. Home page with login prompt
-data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt (Maybe Bool)
+data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt Bool
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
@@ -45,7 +45,7 @@ instance FormPage PageHomeWithLoginPrompt where
             div_ [class_ "login-register-form"] $ do
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
                 div_ . DF.form v fa $ do
-                    unless (fromMaybe True status) $ do
+                    unless status $ do
                         p_ "Falscher Nutzername und/oder falsches Passwort."
                     inputText_     [placeholder_ "Dein Benutzername"] "user" v
                     inputPassword_ [placeholder_ "Dein Passwort"] "pass" v
@@ -56,7 +56,7 @@ instance FormPage PageHomeWithLoginPrompt where
 
 -- * handlers
 
-login :: (ActionM r action) => Maybe Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
-login status = redirectFormHandler (pure $ PageHomeWithLoginPrompt status) makeUserLogin
+login :: (ActionM r action) => Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
+login success = redirectFormHandler (pure $ PageHomeWithLoginPrompt success) makeUserLogin
   where
     makeUserLogin (LoginFormData user _pass) = Action.login $ UserLogin user

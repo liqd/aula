@@ -153,7 +153,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
-  :<|> Page.login
+  :<|> Page.login . fromMaybe True
   :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login Nothing))
 
 
