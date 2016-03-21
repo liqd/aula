@@ -135,12 +135,25 @@ instance ToHtml PageIdeasInDiscussion where
             forM_ topics $ \topic -> do
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
-                        div_ [class_ "theme-grid-item-image"] nil
-                        div_ [class_ "theme-grid-item-text"] $ do
-                            span_ [class_ "theme-grid-item-phase"] . toHtml . phaseName $ topic ^. topicPhase
-                            h2_ [class_ "theme-grid-item-title"] . toHtml $ topic ^. topicTitle
-                            div_ [class_ "theme-grid-item-blurb"] . toHtml $ topic ^. topicDesc
-                            a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] "view topic"
+                        a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] $ do
+                            img_ [src_ U.Broken, class_ "theme-grid-item-image"] -- FIXME see below
+
+
+    {-
+        FIXME!! Image URLs
+        PhaseJury =         "/static/images/theme_pruf.png"
+        PhaseResult =       "/static/images/theme_ergf.png"
+        PhaseVoting =       "/static/images/theme_abs.png"
+        PhaseRefinement =   "/static/images/theme_aus.png"
+        PhaseFinished =     "/static/images/theme_aus.png"
+
+    -}
+
+                            div_ [class_ "theme-grid-item-text"] $ do
+                                span_ [class_ "theme-grid-item-phase"] . toHtml . phaseName $ topic ^. topicPhase
+                                h2_ [class_ "theme-grid-item-title"] . toHtml $ topic ^. topicTitle
+                                div_ [class_ "theme-grid-item-blurb"] . toHtml $ topic ^. topicDesc
+                                span_ [class_ "theme-grid-item-link"] "view topic"
 
 instance Page PageIdeasInDiscussion
 
