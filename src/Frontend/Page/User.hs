@@ -120,9 +120,9 @@ instance ToHtml PageUserProfileCreatedIdeas where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 -- Settings button
-                a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
-                    i_ [class_ "icon-sort", title_ "Settings"] nil
                 div_ [class_ "ideas-list"] $ do
+                    a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
+                        i_ [class_ "icon-sort", title_ "Settings"] nil
                     for_ ideas $ \(idea, numVoters) ->
                         ListItemIdea False Nothing numVoters idea ^. html
 
