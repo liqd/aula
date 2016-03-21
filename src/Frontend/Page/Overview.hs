@@ -136,16 +136,16 @@ instance ToHtml PageIdeasInDiscussion where
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
                         a_ [class_ "theme-grid-item-link", href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id] $ do
-                            img_ [src_ U.Broken, class_ "theme-grid-item-image"] -- FIXME see below
+                            img_ [src_ U.Broken, class_ "theme-grid-item-image"] -- TODO see below
 
 
     {-
-        FIXME!! Image URLs
+        TODO!! Image URLs
         PhaseJury =         "/static/images/theme_pruf.png"
         PhaseResult =       "/static/images/theme_ergf.png"
         PhaseVoting =       "/static/images/theme_abs.png"
         PhaseRefinement =   "/static/images/theme_aus.png"
-        PhaseFinished =     "/static/images/theme_aus.png"
+        PhaseFinished =     BROKEN
 
     -}
 
