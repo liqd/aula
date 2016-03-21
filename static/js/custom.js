@@ -53,7 +53,7 @@ if(imageSelect) {
     for (b = 0; b < buttons.length; ++b) {
         var makeHandler = function(b1) { return function() { return handler(b1); } };
         if(buttons[b] && buttons[b].className) {
-            buttons[b].addEventListener('click', makeHandler(b));
+            buttons[b].addEventListener("click", makeHandler(b));
         }
     }
 }
@@ -61,7 +61,7 @@ if(imageSelect) {
 // helpers
 
 function getElementByClassName(el, parent) {
-    if (typeof(parent)==='undefined') parent = document;
+    if (typeof(parent) === "undefined") parent = document;
     return parent.getElementsByClassName(el)[0];
 }
 
