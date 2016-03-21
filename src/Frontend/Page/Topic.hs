@@ -159,11 +159,11 @@ instance FormPage CreateTopic where
                             inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
                                 "title" v
                         label_ $ do
-                            span_ [class_ "label-text"] "Beschreiben Sie sad Thema"
+                            span_ [class_ "label-text"] "Beschreiben Sie das Thema"
                         -- FIXME I want a placeholder here too
                             DF.inputTextArea Nothing Nothing "desc" v
                         label_ $ do
-                            span_ [class_ "label-text"] "Fuegen Sie weitere wilde dem neuen Thema hinzu"
+                            span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
                             formPageIdeaSelection v ideas
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Veröffentlichen"
