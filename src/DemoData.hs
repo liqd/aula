@@ -1,13 +1,15 @@
-{-# LANGUAGE RankNTypes    #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE OverloadedStrings #-}
 module DemoData
 where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Monad (void)
+import Control.Monad (zipWithM_, void)
 import Control.Lens ((^.), set, view)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
+import Data.String.Conversions ((<>))
 
 import Arbitrary hiding (generate)
 import Persistent
@@ -41,12 +43,20 @@ numberOfLikes = 500
 
 genFirstUser :: Gen ProtoUser
 genFirstUser =
-    arbitrary <**> (set protoUserLogin . Just <$> arbitrary)
+    arbitrary
+    <**> (set protoUserLogin . Just <$> arbitrary)
+    <**> (set protoUserPassword . Just <$> arbitrary)
 
 genStudent :: [SchoolClass] -> Gen ProtoUser
 genStudent classes =
     arbitrary
     <**> (set protoUserGroups . pure <$> elements (map Student classes))
+
+genAvatar :: Gen URL
+genAvatar = avatar <$> elements fishAvatars
+  where
+    avatar :: URL -> URL
+    avatar url = "http://zierfischverzeichnis.de/klassen/pisces/" <> url
 
 genTopic :: [IdeaSpace] -> Gen ProtoTopic
 genTopic ideaSpaces =
@@ -77,6 +87,8 @@ genLike ideas students = do
       where
         location = view ideaLocation idea
 
+updateAvatar :: User -> URL -> forall m . PersistM m => m ()
+updateAvatar user url = modifyUser (user ^. _Id) (set userAvatar (Just url))
 
 -- * Universe
 
@@ -97,6 +109,8 @@ universe rnd = void $ do
 
     students' <- generate numberOfStudents rnd (genStudent classes)
     students  <- mapM (addUser . (,) admin) students'
+    avatars   <- generate numberOfStudents rnd genAvatar
+    zipWithM_ updateAvatar students avatars
 
     topics' <- generate numberOfTopics rnd (genTopic ideaSpaces)
     topics  <- mapM (addTopic . (,) admin) topics'
@@ -108,6 +122,7 @@ universe rnd = void $ do
     sequence likes
   where
     assert' p = assert p $ return ()
+
 
 
 -- * Helpers

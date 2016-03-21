@@ -26,6 +26,7 @@ module Arbitrary
     , breakCycles
     , constantSampleIdea
     , constantSampleComments
+    , fishAvatars
     ) where
 
 import Control.Applicative ((<**>))
