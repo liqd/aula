@@ -29,6 +29,13 @@ textarea {
     }
 }
 
+textarea {
+    @include rem(padding-bottom, 10px);
+    @include rem(padding-top, 10px);
+    line-height: 1.4;
+    min-height: 100px;
+}
+
 select {
     @include rem(padding, 0 10px);
     @include rem(height, 30px);
