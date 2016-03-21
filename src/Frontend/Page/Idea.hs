@@ -149,13 +149,12 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ do
                             totalComments ^. showed . html <> " Verbesserungsvorschläge"
                                 -- FIXME: code redundancy!  search for 'totalComments' in this module
+                        button_ [value_ "create_comment comments-header-button", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
+                        -- FIXME dummy
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         PageComment c ^. html
-
-                    -- FIXME Please create the comments form here
-                    button_ [value_ "create_comment", class_ "btn-cta comments-header-button"] "Neuer Verbesserungsvorschlag"
 
 
 instance FormPage CreateIdea where
