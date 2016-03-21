@@ -16,7 +16,7 @@
 
 module Frontend.Core
     ( GetH
-    , Page, isPrivatePage, extraPageHeaders
+    , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
     , Beside(Beside)
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
@@ -53,6 +53,7 @@ import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
+import qualified Data.Text as ST
 import qualified Text.Digestive.Form as DF
 
 import Action
@@ -124,6 +125,9 @@ class Page p where
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
 
+    extraBodyClasses  :: p -> [ST]
+    extraBodyClasses _ = nil
+
 instance Page () where
     isPrivatePage _ = False
 
@@ -148,16 +152,18 @@ makeFrame p = do
 
 instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
-    toHtml (Frame usr bdy)   = pageFrame (extraPageHeaders bdy) (Just usr) (toHtml bdy)
-    toHtml (PublicFrame bdy) = pageFrame (extraPageHeaders bdy) Nothing (toHtml bdy)
+    toHtml (Frame usr bdy)   = pageFrame bdy (Just usr) (toHtml bdy)
+    toHtml (PublicFrame bdy) = pageFrame bdy Nothing (toHtml bdy)
 
-pageFrame :: (Monad m) => Html () -> Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame hdrs mUser bdy = do
+pageFrame :: (Monad m, Page p) => p -> Maybe User -> HtmlT m a -> HtmlT m ()
+pageFrame p mUser bdy = do
+    let hdrs = extraPageHeaders p
+        bodyClasses = extraBodyClasses p
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         toHtml hdrs
-    body_ [class_ "no-js"] $ do
+    body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser
             div_ [class_ "grid"] $ do
@@ -338,8 +344,8 @@ instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
     toHtml fop@(FormPageRep v a frp) = frameToHtml $ formPage v a <$> frp
       where
-        frameToHtml (Frame usr bdy)   = pageFrame (extraPageHeaders fop) (Just usr) (toHtml bdy)
-        frameToHtml (PublicFrame bdy) = pageFrame (extraPageHeaders fop) Nothing (toHtml bdy)
+        frameToHtml (Frame usr bdy)   = pageFrame fop (Just usr) (toHtml bdy)
+        frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)

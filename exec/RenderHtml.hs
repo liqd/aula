@@ -36,7 +36,7 @@ import Frontend.Prelude hiding ((<.>), (</>))
 
 -- | config section: add new page types here.
 pages :: forall b.
-    (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a) => Proxy a -> b)
+    (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a, Page a) => Proxy a -> b)
     -> [b]
 pages f =
     [ f (Proxy :: Proxy (ToHtmlDefault PageRoomsOverview))
@@ -105,6 +105,16 @@ instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
 instance Arbitrary p => Arbitrary (ToHtmlForm p) where
     arbitrary = ToHtmlForm <$> arbitrary
 
+instance (Page p) => Page (ToHtmlDefault p) where
+    isPrivatePage    (ToHtmlDefault p) = isPrivatePage    p
+    extraPageHeaders (ToHtmlDefault p) = extraPageHeaders p
+    extraBodyClasses (ToHtmlDefault p) = extraBodyClasses p
+
+instance (Page p) => Page (ToHtmlForm p) where
+    isPrivatePage    (ToHtmlForm p) = isPrivatePage    p
+    extraPageHeaders (ToHtmlForm p) = extraPageHeaders p
+    extraBodyClasses (ToHtmlForm p) = extraBodyClasses p
+
 
 -- | For page types that need special treatment for arbitrary (like idea detail view with always 2-3
 -- comments).
@@ -158,6 +168,17 @@ instance Arbitrary ViewTopic_Ideas where
 
 instance Arbitrary ViewTopic_Delegations where
     arbitrary = ViewTopic_Delegations <$> arb
+
+
+instance Page ViewTopic_Ideas where
+    isPrivatePage    _ = isPrivatePage    $ ViewTopicIdeas undefined undefined undefined
+    extraPageHeaders _ = extraPageHeaders $ ViewTopicIdeas undefined undefined undefined
+    extraBodyClasses _ = extraBodyClasses $ ViewTopicIdeas undefined undefined undefined
+
+instance Page ViewTopic_Delegations where
+    isPrivatePage    _ = isPrivatePage    $ ViewTopicDelegations undefined undefined
+    extraPageHeaders _ = extraPageHeaders $ ViewTopicDelegations undefined undefined
+    extraBodyClasses _ = extraBodyClasses $ ViewTopicDelegations undefined undefined
 
 
 newtype ViewIdea_PhaseNone = ViewIdea_PhaseNone Idea
@@ -221,6 +242,37 @@ instance Arbitrary ViewIdea_PhaseResult where
 
 instance Arbitrary ViewIdea_PhaseFinished where
     arbitrary = ViewIdea_PhaseFinished <$> pure constantSampleIdea
+
+
+instance Page ViewIdea_PhaseNone where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseRefinement where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseJury where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseVoting where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseResult where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseFinished where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
 
 
 -- * machine room
@@ -347,7 +399,7 @@ dynamicRender s = do
         Nothing -> error $ "dynamicRender: problem parsing the type of the following value." <>
                            "  recreate samples?\n\n" <> take 200 (cs s) <> "\n\n"
   where
-    g :: forall a. (Read a, ToHtml' a) => Proxy a -> IO (Maybe ST)
+    g :: forall a. (Read a, ToHtml' a, Page a) => Proxy a -> IO (Maybe ST)
     g proxy = yes `catch` \(SomeException _) -> no
       where
         yes :: IO (Maybe ST)
@@ -360,4 +412,4 @@ dynamicRender s = do
         no = return Nothing
 
         pf :: User -> a -> Html ()
-        pf user = pageFrame nil (Just user) . toHtml'
+        pf user p = pageFrame p (Just user) $ toHtml' p
