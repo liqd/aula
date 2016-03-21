@@ -326,11 +326,13 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                                 Nothing  -> nil
                                 Just url -> img_ [Lucid.src_ url]
                         td_ $ user ^. userLogin . fromUserLogin . html
-                        td_ $ (case user ^. userGroups of
+                        td_ (case user ^. userGroups of
                                 [Student cl]    -> toHtml $ showSchoolClass cl
                                 [ClassGuest cl] -> toHtml $ showSchoolClass cl
                                 _               -> nil)
-                        td_ $ case user ^. userGroups of (g:_) -> groupLabel g  -- FIXME: there should only be one group!
+                        td_ (case user ^. userGroups of
+                                (g:_) -> groupLabel g  -- FIXME: there should only be one group!
+                                []    -> error "impossible.")
                         td_ ""
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
