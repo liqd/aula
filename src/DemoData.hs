@@ -136,3 +136,7 @@ gen rnd (QC.MkGen g) =
 generate :: forall a . Int -> QCGen -> Gen a -> forall m . Monad m => m [a]
 generate n rnd g =
     gen rnd (sequence [ resize n' g | n' <- take n $ cycle [0,2..20] ])
+
+userToIdeaLocation :: User -> IdeaLocation
+userToIdeaLocation u =
+    (\(Student clss) -> IdeaLocationSpace (ClassSpace clss)) . head $ u ^. userGroups
