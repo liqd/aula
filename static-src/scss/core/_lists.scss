@@ -22,19 +22,17 @@
             background-repeat: no-repeat;
             background-position: center top;
             text-align: center;
+            opacity: 0.6;
+
+            &:hover, &:focus, &.m-active {
+                opacity: 1;
+            }
 
             > a, > span {
                 @include rem(padding-top, 60px);
-                background: #fff;
                 color: $color-brand1;
                 cursor: pointer;
                 display: block;
-                opacity: 0.4;
-
-                &:hover, &:focus, &.m-active {
-                    background: none;
-                    opacity: 1;
-                }
             }
 
             &.icon-rules {
