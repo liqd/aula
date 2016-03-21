@@ -26,6 +26,7 @@ module Arbitrary
     , breakCycles
     , constantSampleIdea
     , constantSampleComments
+    , fishAvatars
     ) where
 
 import Control.Applicative ((<**>))
@@ -182,7 +183,7 @@ instance Arbitrary LoginFormData where
 instance Arbitrary ProtoIdea where
     arbitrary =
         garbitrary
-        <**> (set protoIdeaTitle <$> arbWord)
+        <**> (set protoIdeaTitle <$> arbPhrase)
 
 instance Arbitrary Idea where
     arbitrary =
@@ -286,7 +287,7 @@ guestOrStudent clss = elements
     ]
 
 instance Arbitrary UserPass where
-    arbitrary = garbitrary
+    arbitrary = UserPassInitial <$> arbWord
 
 instance Arbitrary UserEmail where
     arbitrary = do

@@ -40,6 +40,7 @@ module Persistent.Api
     , findIdeasByTopic
     , findIdeasByUserId
     , findWildIdeasBySpace
+    , addLikeToIdea
     , findUser
     , getUsers
     , addUser
@@ -270,6 +271,11 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
+-- FIXME: Same user can like the same idea more than once.
+addLikeToIdea :: User -> AUID Idea -> PersistM m => m ()
+addLikeToIdea cUser iid = do
+    metainfo <- nextMetaInfo cUser
+    modifyIdea iid (ideaLikes %~ Set.insert (IdeaLike metainfo))
 
 nextId :: PersistM m => m (AUID a)
 nextId = do

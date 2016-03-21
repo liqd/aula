@@ -39,6 +39,7 @@ import Action.Implementation (Action, mkRunAction)
 import Config
 import CreateRandom
 import Data.UriPath
+import DemoData
 import Frontend.Core
 import Frontend.Page as Page
 import Persistent
@@ -66,6 +67,10 @@ runFrontend cfg = do
              (aulaMain :<|> aulaTesting)
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+
+    demoDataGen <- mkUniverse
+    unNat persist demoDataGen
+
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app
   where
