@@ -16,9 +16,10 @@ import Data.Maybe (mapMaybe)
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
+import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Generics.SOP as SOP
 import qualified Thentos.Types
 
 import Action
@@ -304,38 +305,36 @@ adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuoru
 
 instance ToHtml PageAdminSettingsGaPUsersView where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPUsersView _users) =
+    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
-                    th_ "NAME"
-                    th_ "KLASSE"
-                    th_ "ROLE SELECTION"
-                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
+                    th_ "Name"
+                    th_ "Klasse"
+                    th_ "Rolle [<>]"
+                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             input_ [class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
-                {-
-                tbody_ . forM_ users $ \user -> tr_ $ do
-                    td_ $ img_ [src_ . U.TopStatic . fromString . cs $ user ^. userAvatar]
-                    td_ . toHtml $ user ^. userLogin . fromUserLogin
-                    td_ "Klasse ????" -- FIXME: Fetch the user's class if exists
-                    td_ "Rolle ???" -- FIXME: Fetch the user's role
-                    td_ "" -- THIS SHOULD LEFT EMPTY
-                    td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "Bearbeiten"
-                FIXME - Dummy, dummy! -}
 
-                let dummydummydummy = do
-                        td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
-                        td_ "UserName"
-                        td_ "Klasse"
-                        td_ "Role"
+                let renderUserRow :: forall m. (Monad m) => User -> HtmlT m ()
+                    renderUserRow user = tr_ $ do
+                        td_ . span_ [class_ "img-container"] $ do
+                            case user ^. userAvatar of
+                                Nothing  -> nil
+                                Just url -> img_ [Lucid.src_ url]
+                        td_ $ user ^. userLogin . fromUserLogin . html
+                        td_ $ (case user ^. userGroups of
+                                [Student cl]    -> toHtml $ showSchoolClass cl
+                                [ClassGuest cl] -> toHtml $ showSchoolClass cl
+                                _               -> nil)
+                        td_ $ case user ^. userGroups of (g:_) -> groupLabel g  -- FIXME: there should only be one group!
                         td_ ""
-                        td_ $ a_ [href_ U.Broken] "bearbeiten"
+                        td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
-                tbody_ $ tr_ `mapM_` [dummydummydummy, dummydummydummy]
+                tbody_ $ renderUserRow `mapM_` users
 
 
 instance ToHtml PageAdminSettingsGaPUsersCreate where
