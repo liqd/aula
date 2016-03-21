@@ -196,15 +196,15 @@ makeFormSelectCategory = DF.choice categoryValues Nothing
 
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
 formPageSelectCategory v = do
-                        label_ $ do
-                            span_ [class_ "label-text"]
-                                "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            div_ [class_ "category-radios"] $ do
-                                DF.inputRadio True "idea-category" v
-                            div_ [class_ "icon-list m-inline category-image-select"] $ do
-                                ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
-                                    -- FIXME: select a category for the newly created idea.  this
-                                    -- needs to be tested.  see also: static/js/custom.js.
+    label_ $ do
+        span_ [class_ "label-text"]
+            "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
+        div_ [class_ "category-radios"] $ do
+            DF.inputRadio True "idea-category" v
+        div_ [class_ "icon-list m-inline category-image-select"] $ do
+            ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
+                -- FIXME: select a category for the newly created idea.  this
+                -- needs to be tested.  see also: static/js/custom.js.
 
 
 newtype CategoryButton = CategoryButton Category
