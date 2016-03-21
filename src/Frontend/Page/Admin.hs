@@ -213,7 +213,7 @@ menulink' targetMenuItem =
     MenuItemGroupsAndPermissions Nothing
         -> MenuLink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
     MenuItemEventsProtocol
-        -> MenuLink "tab-events"             U.AdminEvent "Beauftragen Stimmen"
+        -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
 
 instance FormPage PageAdminSettingsDurations where
     type FormPageResult PageAdminSettingsDurations = Durations

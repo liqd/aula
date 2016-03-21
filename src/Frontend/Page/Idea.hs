@@ -68,8 +68,10 @@ instance Page EditIdea where
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
-        let totalVotes    = Set.size $ idea ^. ideaVotes
+        let totalLikes    = Set.size $ idea ^. ideaLikes
+            totalVotes    = Set.size $ idea ^. ideaVotes
             totalComments = Set.size $ idea ^. ideaComments
+
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
@@ -91,6 +93,9 @@ instance ToHtml ViewIdea where
                 "von "
                 idea ^. createdByLogin . fromUserLogin . html
                 " / "
+                when (phase `elem` [Nothing, Just PhaseRefinement]) $ do
+                    totalLikes ^. showed . html <> " Likes"  -- FIXME: singular
+                    " / "
                 when (phase >= Just PhaseVoting) $ do
                     totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
                     " / "
