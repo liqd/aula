@@ -92,7 +92,7 @@
         @include rem(width, ($button-height - 2px));
         background: $color-grey-light;
         border-radius: ($button-height - 2px);
-        color: $color-text;
+        color: $color-grey-mid;
         display: block;
         line-height: ($button-height - 2px);
         position: absolute;
