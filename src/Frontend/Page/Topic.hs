@@ -12,12 +12,11 @@ module Frontend.Page.Topic
     ( ViewTopic(..)
     , ViewTopicTab(..)
     , CreateTopic(..)
-    , MoveIdeasToTopic(..)
     , EditTopic(..)
+    , TopicFormPayload(..)
     , viewTopic
     , createTopic
-    , editTopic
-    , moveIdeasToTopic )
+    , editTopic )
 where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUserAddDb)
@@ -53,20 +52,13 @@ data ViewTopic
 instance Page ViewTopic
 
 -- | 10.1 Create topic: Create topic
-data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
+data CreateTopic = CreateTopic IdeaSpace [Idea]
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
-data MoveIdeasToTopic = MoveIdeasToTopic IdeaSpace (AUID Topic) [Idea]
-  deriving (Eq, Show, Read)
-
-instance Page MoveIdeasToTopic
-
--- | 10.3 ???
--- FIXME: Which page is this in the click-dummy?
-data EditTopic = EditTopic
+data EditTopic = EditTopic IdeaSpace Topic [Idea]
   deriving (Eq, Show, Read)
 
 instance Page EditTopic
@@ -88,10 +80,6 @@ tabLink topic curTab targetTab =
            , href_ . U.Space space . uri $ (topic ^. _Id)
            , class_ $ tabSelected curTab targetTab
            ]
-
-instance ToHtml EditTopic where
-    toHtmlRaw = toHtml
-    toHtml p@EditTopic = semanticDiv p "Edit Topic" -- FIXME
 
 -- FIXME: how do we display a topic in the finished phase?
 -- Is this the same the result phase?
@@ -123,7 +111,7 @@ viewTopicHeaderDiv topic tab = do
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 ul_ [class_ "pop-menu-list"] $ do
                     li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
+                        a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
                             i_ [class_ "icon-pencil"] nil
                             "bearbeiten"
         h1_   [class_ "main-heading"] $ do
@@ -158,44 +146,65 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
         <*> pure space
-        <*> pure ideas
+        <*> makeFormIdeaSelection ideas
 
-    formPage v fa p =
+    formPage v fa p@(CreateTopic _space ideas) =
         semanticDiv p $ do
             h3_ "Create Topic"
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
+                -- FIXME: There is no image in the click dummy.
                 DF.inputText     "image" v >> br_ []
+                formPageIdeaSelection v ideas
                 DF.inputSubmit   "Add Topic"
 
-instance FormPage MoveIdeasToTopic where
+-- Edit topic description and add ideas to topic.
+data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
+  deriving (Eq, Show)
+
+
+instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
-    type FormPageResult MoveIdeasToTopic = [AUID Idea]
+    type FormPageResult EditTopic = TopicFormPayload
 
-    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
-    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
+    formAction (EditTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    redirectOf (EditTopic space topic _) = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
-    makeForm (MoveIdeasToTopic _ _ ideas) =
-        fmap catMaybes . sequenceA $
-        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing) | idea <- ideas ]
+    makeForm (EditTopic _space topic ideas) =
+        TopicFormPayload
+        <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
+        <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
+        <*> makeFormIdeaSelection ideas
 
-    formPage v fa p@(MoveIdeasToTopic _ _ ideas) = do
+    formPage v fa p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
             h3_ "Wählen Sie weitere Ideen aus"
             DF.form v fa $ do
-                ul_ $ do
-                    for_ ideas $ \idea ->
-                        li_ $ do
-                            DF.inputCheckbox (ideaToFormField idea) v
-                            idea ^. ideaTitle . html
+                DF.inputText     "title" v >> br_ []
+                DF.inputTextArea Nothing Nothing "desc" v >> br_ []
+                formPageIdeaSelection v ideas
                 DF.inputSubmit "Speichern"
                 button_ "Abbrechen" -- FIXME
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
+-- FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+formPageIdeaSelection v ideas =
+    ul_ . for_ ideas $ \idea ->
+        li_ $ do
+            DF.inputCheckbox (ideaToFormField idea) v
+            idea ^. ideaTitle . html
+
+makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
+                      => [Idea] -> DF.Form v m [AUID Idea]
+makeFormIdeaSelection ideas =
+    fmap catMaybes . sequenceA $
+        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
+        | idea <- ideas ]
 
 -- * handlers
 
@@ -208,20 +217,23 @@ viewTopic tab topicId = makeFrame =<< persistent (do
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
         _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
-createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) m
-createTopic space ideas =
-  redirectFormHandler (pure $ CreateTopic space ideas) (currentUserAddDb addTopic)
+createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
+createTopic space =
+    redirectFormHandler
+        (CreateTopic space <$> persistent (findWildIdeasBySpace space))
+        (currentUserAddDb addTopic)
 
-moveIdeasToTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
-moveIdeasToTopic topicId = redirectFormHandler getPage addIdeas
+editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
+editTopic topicId = redirectFormHandler getPage editTopicPostHandler
   where
     getPage = persistent $ do
-        Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
+        -- FIXME: 404
+        Just topic <- findTopic topicId
+        let space = view topicIdeaSpace topic
         ideas <- findWildIdeasBySpace space
-        pure $ MoveIdeasToTopic space topicId ideas
-    addIdeas ideas = persistent $ do
+        pure $ EditTopic space topic ideas
+    
+    editTopicPostHandler (TopicFormPayload title desc ideas) = persistent $ do
         Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
+        Persistent.modifyTopic topicId (set topicTitle title . set topicDesc desc)
         Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
-
-editTopic :: ActionM r m => AUID Topic -> m (Frame EditTopic)
-editTopic _ = makeFrame EditTopic

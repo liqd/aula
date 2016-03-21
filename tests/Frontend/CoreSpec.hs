@@ -30,7 +30,7 @@ import qualified Data.Text.Lazy as LT
 
 import Action
 import Action.Implementation
-import Arbitrary (arb, schoolClasses)
+import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config (Config)
 import qualified Config
 import Data.UriPath (absoluteUriPath)
@@ -69,7 +69,7 @@ spec = do
         , F (arb :: Gen PageHomeWithLoginPrompt)
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
-        , F (arb :: Gen MoveIdeasToTopic)
+        , F (arb :: Gen EditTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
@@ -132,19 +132,27 @@ instance PayloadToEnv LoginFormData where
         "user" -> pure [TextInput name]
         "pass" -> pure [TextInput pass]
 
-instance PayloadToEnv ProtoTopic where
-    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ _) = \case
-        "title" -> pure [TextInput title]
-        "desc"  -> pure [TextInput desc]
-        "image" -> pure [TextInput image]
+ideaCheckboxValue iids path =
+    if path `elem` (("idea-" <>) . show <$> iids)
+        then "on"
+        else "off"
 
-instance PayloadToEnv [AUID Idea] where
-    payloadToEnvMapping _ iids (cs -> path)
-        | "idea-" `isPrefixOf` path = pure [TextInput onOrOff]
+instance PayloadToEnv ProtoTopic where
+    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ iids) path'
+        | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
+        | path == "title" = pure [TextInput title]
+        | path == "desc"  = pure [TextInput desc]
+        | path == "image" = pure [TextInput image]
       where
-        onOrOff = if path `elem` (("idea-" <>) . show <$> iids)
-            then "on"
-            else "off"
+        path :: String = cs path'
+
+instance PayloadToEnv TopicFormPayload where
+    payloadToEnvMapping _ (TopicFormPayload title (Markdown desc) iids) path'
+        | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
+        | path == "title"           = pure [TextInput title]
+        | path == "desc"            = pure [TextInput desc]
+      where
+        path :: String = cs path'
 
 instance PayloadToEnv UserSettingData where
     payloadToEnvMapping _ (UserSettingData email oldpass newpass1 newpass2) = \case
@@ -273,15 +281,18 @@ instance ArbFormPageResult PageHomeWithLoginPrompt where
 instance ArbFormPageResult CreateTopic where
     arbFormPageResult (CreateTopic space ideas) =
             set protoTopicIdeaSpace space
-          . set protoTopicIdeas ideas
+          . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
 
-instance ArbFormPageResult MoveIdeasToTopic where
-    arbFormPageResult (MoveIdeasToTopic _space _topicid ideas) =
+instance ArbFormPageResult EditTopic where
+    arbFormPageResult (EditTopic _space _topicid ideas) =
+        TopicFormPayload
+        <$> arbPhrase
+        <*> arbitrary
         -- FIXME: Generate a sublist from the given ideas
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
-        pure $ map (^. _Id) ideas
+        <*> pure (view _Id <$> ideas)
 
 instance ArbFormPageResult PageAdminSettingsGaPUsersEdit where
     arbFormPageResult _ = arbitrary
