@@ -154,7 +154,7 @@ instance ToHtml ViewIdea where
                             totalComments ^. showed . html <> " Verbesserungsvorschläge"
                                 -- FIXME: singular
                                 -- FIXME: code redundancy!  search for 'totalComments' in this module
-                        button_ [ value_ "create_comment comments-header-button"
+                        button_ [ value_ "create_comment"
                                 , class_ "btn-cta comments-header-button"]
                               "Neuer Verbesserungsvorschlag"
                         -- FIXME dummy
