@@ -173,7 +173,7 @@ instance FormPage CreateIdea where
 
     formPage v fa p = do
         semanticDiv p $ do
-            div_ [class_ "grid container-main popup-page"] $ do
+            div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Idee erstellen"
                     DF.form v fa $ do

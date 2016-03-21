@@ -64,7 +64,7 @@ viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> fin
 instance ToHtml PageRoomsOverview where
     toHtmlRaw = toHtml
     toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
-        div_ [class_ "grid container-main"] $ do
+        div_ [class_ "container-main"] $ do
             f spaces
       where
         f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
