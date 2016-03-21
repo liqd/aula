@@ -256,13 +256,15 @@ instance FormPage EditIdea where
                 button_ [value_ ""] "Idee löschen" -- FIXME delete button
                 button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
 
+categoryToValue :: IsString s => Category -> s
+categoryToValue CatRule        = "Regel"
+categoryToValue CatEquipment   = "Ausstattung"
+categoryToValue CatClass       = "Unterricht"
+categoryToValue CatTime        = "Zeit"
+categoryToValue CatEnvironment = "Umgebung"
+
 categoryValues :: IsString s => [(Category, s)]
-categoryValues = [ (CatRule,        "Regel")
-                 , (CatEquipment,   "Ausstattung")
-                 , (CatClass,       "Unterricht")
-                 , (CatTime,        "Zeit")
-                 , (CatEnvironment, "Umgebung")
-                 ]
+categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 
 
 -- * handlers
