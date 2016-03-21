@@ -22,6 +22,7 @@
     background-color: #fff;
     border-bottom: 1px solid $color-grey-lighter;
     overflow: hidden;
+    width: 100%;
 
     &:first-child {
         @include rem(margin-top, 15px);
