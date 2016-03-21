@@ -293,7 +293,7 @@ instance ArbFormPageResult EditTopic where
         -- FIXME: Generate a sublist from the given ideas
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
-        <*> pure (map (^. _Id) ideas)
+        <*> pure (view _Id <$> ideas)
 
 instance ArbFormPageResult PageAdminSettingsGaPUsersEdit where
     arbFormPageResult _ = arbitrary

@@ -146,7 +146,7 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
         <*> pure space
-        <*> selectedIdeaParameters ideas
+        <*> makeFormIdeaSelection ideas
 
     formPage v fa p@(CreateTopic _space ideas) =
         semanticDiv p $ do
@@ -156,7 +156,7 @@ instance FormPage CreateTopic where
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
                 -- FIXME: There is no image in the click dummy.
                 DF.inputText     "image" v >> br_ []
-                ideaCheckboxes v ideas
+                formPageIdeaSelection v ideas
                 DF.inputSubmit   "Add Topic"
 
 -- Edit topic description and add ideas to topic.
@@ -176,7 +176,7 @@ instance FormPage EditTopic where
         TopicFormPayload
         <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
         <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
-        <*> selectedIdeaParameters ideas
+        <*> makeFormIdeaSelection ideas
 
     formPage v fa p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
@@ -184,23 +184,24 @@ instance FormPage EditTopic where
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
-                ideaCheckboxes v ideas
+                formPageIdeaSelection v ideas
                 DF.inputSubmit "Speichern"
                 button_ "Abbrechen" -- FIXME
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
-ideaCheckboxes :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
-ideaCheckboxes v ideas =
+-- FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+formPageIdeaSelection v ideas =
     ul_ . for_ ideas $ \idea ->
         li_ $ do
             DF.inputCheckbox (ideaToFormField idea) v
             idea ^. ideaTitle . html
 
-selectedIdeaParameters :: forall m v . (Monad m, Monoid v)
-                       => [Idea] -> DF.Form v m [AUID Idea]
-selectedIdeaParameters ideas =
+makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
+                      => [Idea] -> DF.Form v m [AUID Idea]
+makeFormIdeaSelection ideas =
     fmap catMaybes . sequenceA $
         [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
         | idea <- ideas ]
