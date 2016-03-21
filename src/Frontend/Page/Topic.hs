@@ -97,10 +97,10 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "m-shadow"] $ do
-            div_ [class_ "grid"] $ do
+            div_ [class_ "ideas-list"] $ do
                 a_ [class_ "btn-settings", href_ U.Broken] $ do  -- not sure what settings are meant here?
-                    i_ [class_ "icon-cogs", title_ "Settings"] nil
-                div_ [class_ "ideas-list"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
+                    i_ [class_ "icon-sort", title_ "Settings"] nil
+                for_ ideasAndNumVoters $ \(idea, numVoters) ->
                     ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
@@ -113,7 +113,7 @@ viewTopicHeaderDiv topic tab = do
                     li_ [class_ "pop-menu-list-item"] $ do
                         a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
                             i_ [class_ "icon-pencil"] nil
-                            "bearbeiten"
+                            "Thema bearbeiten"
         h1_   [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] . toHtml $ phaseName phase
             toHtml $ topic ^. topicTitle

@@ -114,9 +114,8 @@ instance ToHtml PageIdeasOverview where
                 li_ [class_ "icon-environment"] $ do
                     a_ [href_ U.Broken] "Umgebung"
         div_ [class_ "m-shadow"] $ do
-            div_ [class_ "grid"] $ do
-                div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
-                    ListItemIdea True Nothing numVoters idea ^. html
+            div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
+                ListItemIdea True Nothing numVoters idea ^. html
 
 instance Page PageIdeasOverview
 
@@ -125,7 +124,7 @@ instance ToHtml PageIdeasInDiscussion where
     toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
-        div_ [class_ "grid theme-grid"] $ do
+        div_ [class_ "theme-grid"] $ do
 
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for

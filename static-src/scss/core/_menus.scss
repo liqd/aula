@@ -50,9 +50,6 @@ $arrow-width: 6px;
             >:before {
                 @include rem(margin, 0 -1px 0);
             }
-
-            z-index: 1000;
-            position: relative;
         }
     }
 
@@ -82,6 +79,7 @@ $arrow-width: 6px;
     background: #fff;
     border: 1px solid $color-grey-light;
     visibility: hidden;
+    text-align: left;
     z-index: 1;
 
     >:after, >:before {

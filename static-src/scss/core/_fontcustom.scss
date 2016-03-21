@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_d414d7cb514b91bd43bf820220301c9c.eot");
-  src: url("../icons/fontcustom_d414d7cb514b91bd43bf820220301c9c.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_d414d7cb514b91bd43bf820220301c9c.woff") format("woff"),
-       url("../icons/fontcustom_d414d7cb514b91bd43bf820220301c9c.ttf") format("truetype"),
-       url("../icons/fontcustom_d414d7cb514b91bd43bf820220301c9c.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_6962b2864531749ec5bda1606d64894e.eot");
+  src: url("../icons/fontcustom_6962b2864531749ec5bda1606d64894e.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_6962b2864531749ec5bda1606d64894e.woff") format("woff"),
+       url("../icons/fontcustom_6962b2864531749ec5bda1606d64894e.ttf") format("truetype"),
+       url("../icons/fontcustom_6962b2864531749ec5bda1606d64894e.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_d414d7cb514b91bd43bf820220301c9c.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_6962b2864531749ec5bda1606d64894e.svg#fontcustom") format("svg");
   }
 }
 
@@ -37,6 +37,7 @@
 .icon-reply:before,
 .icon-search:before,
 .icon-sign-out:before,
+.icon-sort:before,
 .icon-sun-o:before,
 .icon-thumbs-o-down:before,
 .icon-thumbs-o-up:before,
@@ -56,42 +57,44 @@
   font-smoothing: antialiased;
 }
 
-.icon-bolt:before { content: "\f100"; }
-.icon-bullhorn:before { content: "\f101"; }
-.icon-camera:before { content: "\f102"; }
-.icon-check:before { content: "\f103"; }
-.icon-cogs:before { content: "\f104"; }
-.icon-comment-o:before { content: "\f105"; }
-.icon-ellipsis-h:before { content: "\f106"; }
-.icon-eye:before { content: "\f107"; }
-.icon-flag:before { content: "\f108"; }
+.icon-bolt:before { content: "\f102"; }
+.icon-bullhorn:before { content: "\f112"; }
+.icon-camera:before { content: "\f110"; }
+.icon-check:before { content: "\f114"; }
+.icon-cogs:before { content: "\f113"; }
+.icon-comment-o:before { content: "\f107"; }
+.icon-ellipsis-h:before { content: "\f10b"; }
+.icon-eye:before { content: "\f103"; }
+.icon-flag:before { content: "\f10e"; }
 .icon-pencil:before { content: "\f109"; }
-.icon-power-off:before { content: "\f10a"; }
-.icon-reply:before { content: "\f10b"; }
-.icon-search:before { content: "\f10c"; }
-.icon-sign-out:before { content: "\f10d"; }
-.icon-sun-o:before { content: "\f10e"; }
-.icon-thumbs-o-down:before { content: "\f10f"; }
-.icon-thumbs-o-up:before { content: "\f110"; }
-.icon-times:before { content: "\f111"; }
-.icon-voting:before { content: "\f112"; }
+.icon-power-off:before { content: "\f104"; }
+.icon-reply:before { content: "\f10f"; }
+.icon-search:before { content: "\f111"; }
+.icon-sign-out:before { content: "\f10a"; }
+.icon-sort:before { content: "\f116"; }
+.icon-sun-o:before { content: "\f105"; }
+.icon-thumbs-o-down:before { content: "\f10c"; }
+.icon-thumbs-o-up:before { content: "\f10d"; }
+.icon-times:before { content: "\f115"; }
+.icon-voting:before { content: "\f108"; }
 
-$font-fontcustom-bolt: "\f100";
-$font-fontcustom-bullhorn: "\f101";
-$font-fontcustom-camera: "\f102";
-$font-fontcustom-check: "\f103";
-$font-fontcustom-cogs: "\f104";
-$font-fontcustom-comment-o: "\f105";
-$font-fontcustom-ellipsis-h: "\f106";
-$font-fontcustom-eye: "\f107";
-$font-fontcustom-flag: "\f108";
+$font-fontcustom-bolt: "\f102";
+$font-fontcustom-bullhorn: "\f112";
+$font-fontcustom-camera: "\f110";
+$font-fontcustom-check: "\f114";
+$font-fontcustom-cogs: "\f113";
+$font-fontcustom-comment-o: "\f107";
+$font-fontcustom-ellipsis-h: "\f10b";
+$font-fontcustom-eye: "\f103";
+$font-fontcustom-flag: "\f10e";
 $font-fontcustom-pencil: "\f109";
-$font-fontcustom-power-off: "\f10a";
-$font-fontcustom-reply: "\f10b";
-$font-fontcustom-search: "\f10c";
-$font-fontcustom-sign-out: "\f10d";
-$font-fontcustom-sun-o: "\f10e";
-$font-fontcustom-thumbs-o-down: "\f10f";
-$font-fontcustom-thumbs-o-up: "\f110";
-$font-fontcustom-times: "\f111";
-$font-fontcustom-voting: "\f112";
+$font-fontcustom-power-off: "\f104";
+$font-fontcustom-reply: "\f10f";
+$font-fontcustom-search: "\f111";
+$font-fontcustom-sign-out: "\f10a";
+$font-fontcustom-sort: "\f116";
+$font-fontcustom-sun-o: "\f105";
+$font-fontcustom-thumbs-o-down: "\f10c";
+$font-fontcustom-thumbs-o-up: "\f10d";
+$font-fontcustom-times: "\f115";
+$font-fontcustom-voting: "\f108";

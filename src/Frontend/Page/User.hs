@@ -112,7 +112,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             userHeaderDiv user
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
-                span_ [class_ "heroic-tab-item"]
+                span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
                 a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)]
                     "Erhaltene Stimmen"
@@ -120,9 +120,9 @@ instance ToHtml PageUserProfileCreatedIdeas where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 -- Settings button
-                a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
-                    i_ [class_ "icon-cogs", title_ "Settings"] nil
                 div_ [class_ "ideas-list"] $ do
+                    a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
+                        i_ [class_ "icon-sort", title_ "Settings"] nil
                     for_ ideas $ \(idea, numVoters) ->
                         ListItemIdea False Nothing numVoters idea ^. html
 
@@ -150,7 +150,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
             div_ [class_ "heroic-tabs"] $ do
                 a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
                     "Erstellte Ideen"
-                span_ [class_ "heroic-tab-item"]
+                span_ [class_ "heroic-tab-item  m-active"]
                     "Erhaltene Stimmen"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do

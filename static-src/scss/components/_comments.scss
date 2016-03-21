@@ -1,5 +1,5 @@
 .comments {
-    @include rem(margin-top, 50px);
+    @include rem(margin, 50px 0);
     overflow: hidden;
 
     .comments-header {
