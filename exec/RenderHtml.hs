@@ -42,7 +42,6 @@ pages f =
     [ f (Proxy :: Proxy (ToHtmlDefault PageRoomsOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasInDiscussion))
-{-
     , f (Proxy :: Proxy (ToHtmlDefault ViewTopic_Ideas))
     , f (Proxy :: Proxy (ToHtmlDefault ViewTopic_Delegations))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseNone))
@@ -51,7 +50,6 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseVoting))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseResult))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseFinished))
--}
     , f (Proxy :: Proxy (ToHtmlForm    CreateIdea))
     , f (Proxy :: Proxy (ToHtmlForm    EditIdea))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreatedIdeas))
@@ -172,6 +170,17 @@ instance Arbitrary ViewTopic_Delegations where
     arbitrary = ViewTopic_Delegations <$> arb
 
 
+instance Page ViewTopic_Ideas where
+    isPrivatePage    _ = isPrivatePage    $ ViewTopicIdeas undefined undefined undefined
+    extraPageHeaders _ = extraPageHeaders $ ViewTopicIdeas undefined undefined undefined
+    extraBodyClasses _ = extraBodyClasses $ ViewTopicIdeas undefined undefined undefined
+
+instance Page ViewTopic_Delegations where
+    isPrivatePage    _ = isPrivatePage    $ ViewTopicDelegations undefined undefined
+    extraPageHeaders _ = extraPageHeaders $ ViewTopicDelegations undefined undefined
+    extraBodyClasses _ = extraBodyClasses $ ViewTopicDelegations undefined undefined
+
+
 newtype ViewIdea_PhaseNone = ViewIdea_PhaseNone Idea
   deriving (Eq, Ord, Show, Read)
 
@@ -233,6 +242,37 @@ instance Arbitrary ViewIdea_PhaseResult where
 
 instance Arbitrary ViewIdea_PhaseFinished where
     arbitrary = ViewIdea_PhaseFinished <$> pure constantSampleIdea
+
+
+instance Page ViewIdea_PhaseNone where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseRefinement where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseJury where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseVoting where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseResult where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
+
+instance Page ViewIdea_PhaseFinished where
+    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
+    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
+    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
 
 
 -- * machine room
