@@ -132,8 +132,10 @@ type AulaMain =
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
-       -- login
-  :<|> "login" :> FormHandler PageHomeWithLoginPrompt
+       -- login / logout
+       -- FIXME: login should not ask a query parameter whether or not to show a login error, but
+       -- use form validation of some cookie-based message queue.
+  :<|> "login" :> QueryParam "status" Bool :> FormHandler PageHomeWithLoginPrompt
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
@@ -153,8 +155,8 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
-  :<|> Page.login
-  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
+  :<|> Page.login . fromMaybe True
+  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login Nothing))
 
 
 type AulaSpace =
@@ -183,8 +185,7 @@ type AulaSpace =
 
        -- create new topic
   :<|> "topic" :> "create" :> FormHandler CreateTopic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler MoveIdeasToTopic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "edit" :> GetH (Frame EditTopic)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler EditTopic
   :<|> "topic" :> Capture "topic" (AUID Topic)
                :> "delegation" :> "create" :> FormHandler PageDelegateVote
 
@@ -196,18 +197,17 @@ aulaSpace space =
   :<|> Page.createIdea (IdeaLocationSpace space)
 
   :<|> Page.viewTopics  space
-  :<|> Page.viewTopic   space TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> Page.viewTopic   space TabAllIdeas
+  :<|> Page.viewTopic   TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> Page.viewTopic   TabAllIdeas
   :<|> const Page.viewIdea
   :<|> const Page.editIdea
   :<|> Page.createIdea . IdeaLocationTopic space
-  :<|> Page.viewTopic   space TabVotingIdeas
-  :<|> Page.viewTopic   space TabWinningIdeas
-  :<|> Page.viewTopic   space TabDelegation
+  :<|> Page.viewTopic   TabVotingIdeas
+  :<|> Page.viewTopic   TabWinningIdeas
+  :<|> Page.viewTopic   TabDelegation
 
-  :<|> Page.createTopic space []
-  :<|> Page.moveIdeasToTopic space
-  :<|> Page.editTopic        space -- FIXME: Implement real content, or remove completely.
+  :<|> Page.createTopic space
+  :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 
@@ -230,7 +230,7 @@ type AulaAdmin =
   :<|> "access" :> "perm-user-view"    :> GetH (Frame PageAdminSettingsGaPUsersView)
   :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
   :<|> "access" :> "perm-class-view"   :> GetH (Frame PageAdminSettingsGaPClassesView)
-  :<|> "access" :> "perm-class-create" :> GetH (Frame PageAdminSettingsGaPClassesCreate)
+  :<|> "access" :> "perm-class-create" :> FormHandler PageAdminSettingsGaPClassesCreate
   :<|> "user" :> Capture "user" (AUID User) :> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit
   :<|> "class" :> Capture "class" SchoolClass :> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
        -- event log
@@ -259,7 +259,6 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
-  :<|> "file-upload" :> FormHandler BatchCreateUsers
   :<|> "random-password" :> GetH (PageShow UserPass)
   :<|> "undefined" :> GetH ()
   :<|> "error500" :> GetH ()
@@ -276,7 +275,6 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
 
-  :<|> batchCreateUsers
   :<|> (PageShow <$> Action.persistent mkRandomPassword)
   :<|> undefined
   :<|> throwError500 "testing error500"

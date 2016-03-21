@@ -96,8 +96,11 @@ instance Arbitrary ViewTopicTab where
     arbitrary = elements [minBound..]
 
 instance Arbitrary ViewTopic where
-    arbitrary = oneof [ ViewTopicIdeas <$> arb <*> arb <*> arb
-                      , pure ViewTopicDelegations ]
+    arbitrary = do
+        tab <- arb
+        case tab of
+            TabDelegation -> ViewTopicDelegations <$> arb <*> arb
+            _ -> ViewTopicIdeas tab <$> arb <*> arb
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
@@ -120,11 +123,11 @@ instance Arbitrary PageUserSettings where
 instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb
 
-instance Arbitrary MoveIdeasToTopic where
-    arbitrary = MoveIdeasToTopic <$> arb <*> arb <*> arb
-
 instance Arbitrary EditTopic where
-    arbitrary = pure EditTopic
+    arbitrary = EditTopic <$> arb <*> arb <*> arb
+
+instance Arbitrary TopicFormPayload where
+    arbitrary = TopicFormPayload <$> arbPhrase <*> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
@@ -168,7 +171,7 @@ instance Arbitrary PageStaticTermsOfUse where
     arbitrary = pure PageStaticTermsOfUse
 
 instance Arbitrary PageHomeWithLoginPrompt where
-    arbitrary = pure PageHomeWithLoginPrompt
+    arbitrary = PageHomeWithLoginPrompt <$> arb <*> (LoginDemoHints <$> arb)
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
@@ -363,9 +366,6 @@ instance Arbitrary a => Arbitrary (Frame a) where
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb
-
-instance Arbitrary BatchCreateUsers where
-    arbitrary = pure BatchCreateUsers
 
 
 -- * general-purpose helpers

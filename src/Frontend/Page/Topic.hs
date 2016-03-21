@@ -12,15 +12,15 @@ module Frontend.Page.Topic
     ( ViewTopic(..)
     , ViewTopicTab(..)
     , CreateTopic(..)
-    , MoveIdeasToTopic(..)
     , EditTopic(..)
+    , TopicFormPayload(..)
     , viewTopic
     , createTopic
-    , editTopic
-    , moveIdeasToTopic )
+    , editTopic )
 where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUserAddDb)
+import Control.Exception (assert)
 import Frontend.Prelude hiding (moveIdeasToLocation)
 
 import qualified Persistent
@@ -36,7 +36,7 @@ data ViewTopicTab
   | TabVotingIdeas
   | TabWinningIdeas
   | TabDelegation
-  deriving (Eq, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 -- | 4 Topic overview
 -- * 4.1 Topic overview: Refinement phase
@@ -46,26 +46,19 @@ data ViewTopicTab
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
   = ViewTopicIdeas ViewTopicTab Topic [(Idea, Int)]
-  | ViewTopicDelegations -- FIXME
+  | ViewTopicDelegations Topic [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page ViewTopic
 
 -- | 10.1 Create topic: Create topic
-data CreateTopic = CreateTopic IdeaSpace [AUID Idea]
+data CreateTopic = CreateTopic IdeaSpace [Idea]
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
-data MoveIdeasToTopic = MoveIdeasToTopic IdeaSpace (AUID Topic) [Idea]
-  deriving (Eq, Show, Read)
-
-instance Page MoveIdeasToTopic
-
--- | 10.3 ???
--- FIXME: Which page is this in the click-dummy?
-data EditTopic = EditTopic
+data EditTopic = EditTopic IdeaSpace Topic [Idea]
   deriving (Eq, Show, Read)
 
 instance Page EditTopic
@@ -88,52 +81,58 @@ tabLink topic curTab targetTab =
            , class_ $ tabSelected curTab targetTab
            ]
 
-instance ToHtml EditTopic where
-    toHtmlRaw = toHtml
-    toHtml p@EditTopic = semanticDiv p "Edit Topic" -- FIXME
-
 -- FIXME: how do we display a topic in the finished phase?
 -- Is this the same the result phase?
 -- Maybe some buttons to hide?
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
-    toHtml p@ViewTopicDelegations = semanticDiv p "ViewTopicDelegations" -- FIXME
+
+    toHtml p@(ViewTopicDelegations topic delegations) = semanticDiv p $ do
+        viewTopicHeaderDiv topic TabDelegation
+        -- related: Frontend.Page.User.renderDelegations
+        -- FIXME: implement!
+        pre_ $ topic ^. showed . html
+        pre_ $ delegations ^. showed . html
+
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
-        -- assert tab /= TabDelegation
-        div_ [class_ "topic-header"] $ do
-            header_ [class_ "detail-header"] $ do
-                a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-            h1_   [class_ "main-heading"] $ do
-                span_ [class_ "sub-heading"] . toHtml $ phaseName phase
-                toHtml $ topic ^. topicTitle
-            p_ [class_ "sub-header"] $ topic ^. topicDesc . html
-            when (phase == PhaseRefinement) $
-                a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
-            when (phase < PhaseResult) .
-                a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
-                    i_ [class_ "icon-bullhorn"] nil
-                    "Stimme Beauftragen"
-            div_ [class_ "heroic-tabs"] $ do
-                tabLink topic tab TabAllIdeas
-                when (phase >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
-                when (phase >= PhaseResult) $ tabLink topic tab TabWinningIdeas
-                tabLink topic tab TabDelegation
+        assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
-                a_ [class_ "btn-settings"{-, href_ U.UserSettings FIXME USER??? -}] $ do
+                a_ [class_ "btn-settings", href_ U.Broken] $ do  -- not sure what settings are meant here?
                     i_ [class_ "icon-cogs", title_ "Settings"] nil
                 div_ [class_ "ideas-list"] . for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                    ListItemIdea True (Just phase) numVoters idea ^. html
-      where
-        phase   = topic ^. topicPhase
-        topicId = topic ^. _Id
-        space   = topic ^. topicIdeaSpace
+                    ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
+
+viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
+viewTopicHeaderDiv topic tab = do
+    div_ [class_ "topic-header"] $ do
+        header_ [class_ "detail-header"] $ do
+            a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
+            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                ul_ [class_ "pop-menu-list"] $ do
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
+                            i_ [class_ "icon-pencil"] nil
+                            "bearbeiten"
+        h1_   [class_ "main-heading"] $ do
+            span_ [class_ "sub-heading"] . toHtml $ phaseName phase
+            toHtml $ topic ^. topicTitle
+        p_ [class_ "sub-header"] $ topic ^. topicDesc . html
+        when (phase == PhaseRefinement) $
+            a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
+        when (phase < PhaseResult) .
+            a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
+                i_ [class_ "icon-bullhorn"] nil
+                "Stimme Beauftragen"
+        div_ [class_ "heroic-tabs"] $ do
+            tabLink topic tab TabAllIdeas
+            when ((topic ^. topicPhase) >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
+            when ((topic ^. topicPhase) >= PhaseResult) $ tabLink topic tab TabWinningIdeas
+            tabLink topic tab TabDelegation
+  where
+    phase   = topic ^. topicPhase
+    topicId = topic ^. _Id
+    space   = topic ^. topicIdeaSpace
 
 instance FormPage CreateTopic where
     type FormPageResult CreateTopic = ProtoTopic
@@ -147,65 +146,94 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
         <*> pure space
-        <*> pure ideas
+        <*> makeFormIdeaSelection ideas
 
-    formPage v fa p =
+    formPage v fa p@(CreateTopic _space ideas) =
         semanticDiv p $ do
             h3_ "Create Topic"
             DF.form v fa $ do
                 DF.inputText     "title" v >> br_ []
                 DF.inputTextArea Nothing Nothing "desc" v >> br_ []
+                -- FIXME: There is no image in the click dummy.
                 DF.inputText     "image" v >> br_ []
+                formPageIdeaSelection v ideas
                 DF.inputSubmit   "Add Topic"
 
-instance FormPage MoveIdeasToTopic where
+-- Edit topic description and add ideas to topic.
+data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
+  deriving (Eq, Show)
+
+
+instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
-    type FormPageResult MoveIdeasToTopic = [AUID Idea]
+    type FormPageResult EditTopic = TopicFormPayload
 
-    formAction (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
-    redirectOf (MoveIdeasToTopic space topicId _) = relPath . U.Space space $ U.ListTopicIdeas topicId
+    formAction (EditTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    redirectOf (EditTopic space topic _) = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
-    makeForm (MoveIdeasToTopic _ _ ideas) =
-        fmap catMaybes . sequenceA $
-        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing) | idea <- ideas ]
+    makeForm (EditTopic _space topic ideas) =
+        TopicFormPayload
+        <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
+        <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
+        <*> makeFormIdeaSelection ideas
 
-    formPage v fa p@(MoveIdeasToTopic _ _ ideas) = do
+    formPage v fa p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
             h3_ "Wählen Sie weitere Ideen aus"
             DF.form v fa $ do
-                ul_ $ do
-                    for_ ideas $ \idea ->
-                        li_ $ do
-                            DF.inputCheckbox (ideaToFormField idea) v
-                            idea ^. ideaTitle . html
+                DF.inputText     "title" v >> br_ []
+                DF.inputTextArea Nothing Nothing "desc" v >> br_ []
+                formPageIdeaSelection v ideas
                 DF.inputSubmit "Speichern"
                 button_ "Abbrechen" -- FIXME
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
 
+-- FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+formPageIdeaSelection v ideas =
+    ul_ . for_ ideas $ \idea ->
+        li_ $ do
+            DF.inputCheckbox (ideaToFormField idea) v
+            idea ^. ideaTitle . html
+
+makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
+                      => [Idea] -> DF.Form v m [AUID Idea]
+makeFormIdeaSelection ideas =
+    fmap catMaybes . sequenceA $
+        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
+        | idea <- ideas ]
 
 -- * handlers
 
--- FIXME check the 'space'
 viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
-    => IdeaSpace -> ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic _space TabDelegation _ = makeFrame ViewTopicDelegations -- FIXME
-viewTopic _space tab topicId = makeFrame =<< persistent (do
-    -- FIXME 404
-    Just topic <- findTopic topicId
-    ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
+    => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
+viewTopic tab topicId = makeFrame =<< persistent (do
+    Just topic <- findTopic topicId  -- FIXME: 404
+    delegations <- findDelegationsByContext $ DelCtxTopic topicId
+    case tab of
+        TabDelegation -> pure $ ViewTopicDelegations topic delegations
+        _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
-createTopic :: ActionM r m => IdeaSpace -> [AUID Idea] -> ServerT (FormHandler CreateTopic) m
-createTopic space ideas =
-  redirectFormHandler (pure $ CreateTopic space ideas) (currentUserAddDb addTopic)
+createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
+createTopic space =
+    redirectFormHandler
+        (CreateTopic space <$> persistent (findWildIdeasBySpace space))
+        (currentUserAddDb addTopic)
 
-moveIdeasToTopic :: ActionM r m => IdeaSpace -> AUID Topic -> ServerT (FormHandler MoveIdeasToTopic) m
-moveIdeasToTopic space topicId = redirectFormHandler getPage addIdeas
+editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
+editTopic topicId = redirectFormHandler getPage editTopicPostHandler
   where
-    getPage = MoveIdeasToTopic space topicId <$> persistent (findWildIdeasBySpace space)
-    addIdeas ideas = persistent $ Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
-
-editTopic :: ActionM r m => IdeaSpace -> AUID Topic -> m (Frame EditTopic)
-editTopic _ _ = makeFrame EditTopic
+    getPage = persistent $ do
+        -- FIXME: 404
+        Just topic <- findTopic topicId
+        let space = view topicIdeaSpace topic
+        ideas <- findWildIdeasBySpace space
+        pure $ EditTopic space topic ideas
+    
+    editTopicPostHandler (TopicFormPayload title desc ideas) = persistent $ do
+        Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
+        Persistent.modifyTopic topicId (set topicTitle title . set topicDesc desc)
+        Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)

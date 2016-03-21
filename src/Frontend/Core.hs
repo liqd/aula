@@ -142,7 +142,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath P.Login)
+  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath $ P.Login Nothing)
      | isli     || isPrivatePage p -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
@@ -276,10 +276,11 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
                 mi ^. metaCreatedByLogin . fromUserLogin . html
 
 data ListItemIdea = ListItemIdea
-      Bool           -- ^ link to user profile
-      (Maybe Phase)  -- ^ phase
-      Int            -- ^ number of voters in idea space
-      Idea           -- ^ the idea itself
+      { _listItemIdeaLinkToUser :: Bool
+      , _listItemIdeaPhase      :: Maybe Phase
+      , _listItemIdeaNumVoters  :: Int
+      , _listItemIdea           :: Idea
+      }
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where

@@ -10,13 +10,8 @@ spec = describe "logging in" $ do
       checkLoggedIn query 303
 
     context "if user does not exist" $ do
-      it "will not log you in and will display something" $ \query -> do
-        checkLogin query "not the admin" "foo" 500
-        checkLoggedIn query 303
-
-      it "will not crash" $ \query -> do
-        pendingWith "sadly, it will."
-        checkLogin query "not the admin" "foo" (error "actually, what *do* we want to happen?")
+      it "will not log you in and will redirect" $ \query -> do
+        checkLogin query "not the admin" "foo" 303
         checkLoggedIn query 303
 
     context "if user does exist" $ do

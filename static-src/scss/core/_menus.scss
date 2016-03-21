@@ -50,6 +50,9 @@ $arrow-width: 6px;
             >:before {
                 @include rem(margin, 0 -1px 0);
             }
+
+            z-index: 1000;
+            position: relative;
         }
     }
 
