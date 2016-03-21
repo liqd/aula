@@ -262,7 +262,7 @@ instance Arbitrary IdeaLocation where
 -- * user
 
 instance Arbitrary User where
-    arbitrary = garbitrary
+    arbitrary = garbitrary <**> (set userGroups . (:[]) <$> garbitrary)
 
 instance Arbitrary ProtoUser where
     arbitrary = garbitrary
