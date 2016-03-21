@@ -1,30 +1,9 @@
 // Pop Menus
+
 var pops = document.getElementsByClassName("pop-menu");
 for(p in pops) {
     if(pops[p].className) {
         addPopEvents(pops[p]);
-    }
-}
-
-//JS detection
-var body = document.getElementsByTagName("body")[0];
-removeClass(body, "no-js");
-
-//Category image selecting
-var imageSelect = getElementByClassName("category-image-select");
-if(imageSelect) {
-    var buttons = getElementByClassName("icon-list-button");
-    var radiosContainer = getElementByClassName("category-radios");
-    var radios = radiosContainer.getElementsByTagName("input");
-
-    for(b in buttons) {
-        if(buttons[b]) if(buttons[b].className) buttons[b].addEventListener('click', function(el) {
-            var id = el.target.id.replace("select-", "");
-            var radioEl = document.getElementById(id);
-            deselectAllCategories();
-            radioEl.setAttribute("checked","checked");
-            addClass(el.target, "m-active");
-        });
     }
 }
 
@@ -47,18 +26,42 @@ function toggleMenu(el) {
     }
 }
 
-function getElementByClassName(el, parent) {
-    if (typeof(parent)==='undefined') parent = document;
-    return parent.getElementsByClassName(el)[0];
-}
+// JS detection
 
-function deselectAllCategories() {
-    for(r in radios) {
-        if(radios[r].id) {
-            radios[r].removeAttribute("checked");
-            removeClass(buttons[r], "m-active");
+var body = document.getElementsByTagName("body")[0];
+removeClass(body, "no-js");
+
+// Category image selecting
+
+var imageSelect = getElementByClassName("category-image-select");
+if(imageSelect) {
+    var buttons = imageSelect.getElementsByClassName("icon-list-button");
+    var hidden = document.querySelectorAll("input[type=hidden]")[0];
+
+    var handler = function(b1) {
+        for (b2 = 0; b2 < buttons.length; ++b2) {
+            if (b2 == b1) {
+                addClass(buttons[b2], "m-active");
+            } else {
+                removeClass(buttons[b2], "m-active");
+            }
+        }
+        hidden.value = b1;
+    };
+
+    for (b = 0; b < buttons.length; ++b) {
+        var makeHandler = function(b1) { return function() { return handler(b1); } };
+        if(buttons[b] && buttons[b].className) {
+            buttons[b].addEventListener("click", makeHandler(b));
         }
     }
+}
+
+// helpers
+
+function getElementByClassName(el, parent) {
+    if (typeof(parent) === "undefined") parent = document;
+    return parent.getElementsByClassName(el)[0];
 }
 
 function removeClass(el, cl) {

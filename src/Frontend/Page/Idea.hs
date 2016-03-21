@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 {-# OPTIONS_GHC -Werror #-}
@@ -26,6 +27,7 @@ import qualified Frontend.Path as U
 import qualified Data.Set as Set
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Text.Digestive.Types as DF
 
 
 -- * types
@@ -168,7 +170,7 @@ instance FormPage CreateIdea where
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-        <*> ("idea-category" .: DF.choice categoryValues Nothing)
+        <*> ("idea-category" .: makeFormSelectCategory)
         <*> pure loc
 
     formPage v fa p = do
@@ -186,16 +188,30 @@ instance FormPage CreateIdea where
                         -- FIXME I want a placeholder here too
                         -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
                             DF.inputTextArea Nothing Nothing "idea-text" v
-                        label_ $ do
-                            span_ [class_ "label-text"]
-                                "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            div_ [class_ "category-radios"] $ do
-                                DF.inputRadio True "idea-category" v
-                            div_ [class_ "icon-list m-inline category-image-select"] $ do
-                                ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
-                                    -- FIXME: select a category for the newly created idea.  this
-                                    -- needs to be tested.  see also: static/js/custom.js.
+                        formPageSelectCategory v
                         DF.inputSubmit "Idee veröffentlichen"
+
+-- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
+-- subform src/Frontend/Page/Topic.hs`.)
+makeFormSelectCategory :: (Monad m) => DF.Form (Html ()) m Category
+makeFormSelectCategory = DF.validate f $ DF.text Nothing
+  where
+    f :: ST -> DF.Result (Html ()) Category
+    f = maybe (DF.Error "bad category identifier") DF.Success
+      . (toEnumMay <=< readMay)
+      . cs
+
+formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
+formPageSelectCategory v = do
+    label_ $ do
+        span_ [class_ "label-text"]
+            "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
+        DF.inputHidden "idea-category" v
+        div_ [class_ "icon-list m-inline category-image-select"] $ do
+            ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
+                -- FIXME: select a category for the newly created idea.  this
+                -- needs to be tested.  see also: static/js/custom.js.
+
 
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
@@ -246,13 +262,18 @@ instance FormPage EditIdea where
                 button_ [value_ ""] "Idee löschen" -- FIXME delete button
                 button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
 
+toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
+toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
+
+categoryToValue :: IsString s => Category -> s
+categoryToValue CatRule        = "Regel"
+categoryToValue CatEquipment   = "Ausstattung"
+categoryToValue CatClass       = "Unterricht"
+categoryToValue CatTime        = "Zeit"
+categoryToValue CatEnvironment = "Umgebung"
+
 categoryValues :: IsString s => [(Category, s)]
-categoryValues = [ (CatRule,        "Regel")
-                 , (CatEquipment,   "Ausstattung")
-                 , (CatClass,       "Unterricht")
-                 , (CatTime,        "Zeit")
-                 , (CatEnvironment, "Umgebung")
-                 ]
+categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 
 
 -- * handlers
