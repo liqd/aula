@@ -168,7 +168,7 @@ instance FormPage CreateIdea where
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-        <*> ("idea-category" .: DF.choice categoryValues Nothing)
+        <*> ("idea-category" .: makeFormSelectCategory)
         <*> pure loc
 
     formPage v fa p = do
@@ -186,6 +186,16 @@ instance FormPage CreateIdea where
                         -- FIXME I want a placeholder here too
                         -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
                             DF.inputTextArea Nothing Nothing "idea-text" v
+                        formPageSelectCategory v
+                        DF.inputSubmit "Idee veröffentlichen"
+
+-- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
+-- subform src/Frontend/Page/Topic.hs`.)
+makeFormSelectCategory :: Monad m => DF.Form (Html ()) m Category
+makeFormSelectCategory = DF.choice categoryValues Nothing
+
+formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
+formPageSelectCategory v = do
                         label_ $ do
                             span_ [class_ "label-text"]
                                 "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
@@ -195,7 +205,7 @@ instance FormPage CreateIdea where
                                 ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
                                     -- FIXME: select a category for the newly created idea.  this
                                     -- needs to be tested.  see also: static/js/custom.js.
-                        DF.inputSubmit "Idee veröffentlichen"
+
 
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
