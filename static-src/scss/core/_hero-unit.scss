@@ -74,8 +74,8 @@
         }
     }
 
-    a {
-        &:hover, &:focus, &.tab-selected {
+    a, span {
+        &:hover, &:focus, &.tab-selected, &.m-active {
             color: $color-link;
             border-color: $color-link;
             text-decoration: none;

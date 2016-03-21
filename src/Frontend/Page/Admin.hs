@@ -315,7 +315,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "NUTZER ANLEGEN"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [class_ "inline-search-input", value_ "NUTZERSUCHE"] -- Placeholder not value
+                            input_ [class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 {-
                 tbody_ . forM_ users $ \user -> tr_ $ do
@@ -358,7 +358,7 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                             "KLASSE ANLEGEN"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- Placeholder not value
+                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     td_ . toHtml $ clss ^. className

@@ -112,7 +112,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             userHeaderDiv user
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
-                span_ [class_ "heroic-tab-item"]
+                span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
                 a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)]
                     "Erhaltene Stimmen"
@@ -150,7 +150,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
             div_ [class_ "heroic-tabs"] $ do
                 a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
                     "Erstellte Ideen"
-                span_ [class_ "heroic-tab-item"]
+                span_ [class_ "heroic-tab-item  m-active"]
                     "Erhaltene Stimmen"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do

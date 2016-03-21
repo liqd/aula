@@ -75,10 +75,11 @@
 .inline-search-container {
     display: inline-block;
     position: relative;
+    text-transform: capitalize;
 
     .inline-search-input {
         @include rem(font-size, $font-size-small);
-        @include rem(padding, 0 30px);
+        @include rem(padding, 0 15px);
         border: 1px solid $color-grey-light;
         border-radius: $button-height / 2;
         color: $color-grey-mid;
