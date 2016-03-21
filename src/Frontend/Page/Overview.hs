@@ -124,7 +124,7 @@ instance ToHtml PageIdeasInDiscussion where
     toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
-        div_ [class_ "grid theme-grid"] $ do
+        div_ [class_ "theme-grid"] $ do
 
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for
