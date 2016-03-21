@@ -263,7 +263,7 @@ instance Arbitrary IdeaLocation where
 -- * user
 
 instance Arbitrary User where
-    arbitrary = garbitrary <**> (set userGroups . (:[]) <$> garbitrary)
+    arbitrary = garbitrary <**> (set userRole <$> garbitrary)
 
 instance Arbitrary ProtoUser where
     arbitrary = garbitrary
@@ -277,10 +277,10 @@ instance Arbitrary UserFirstName where
 instance Arbitrary UserLastName where
     arbitrary = UserLastName <$> arbWord
 
-instance Arbitrary Group where
+instance Arbitrary Role where
     arbitrary = garbitrary
 
-guestOrStudent :: SchoolClass -> Gen Group
+guestOrStudent :: SchoolClass -> Gen Role
 guestOrStudent clss = elements
     [ Student clss
     , ClassGuest clss
@@ -308,7 +308,7 @@ instance Arbitrary UserSettingData where
 
 userForClass :: SchoolClass -> Gen User
 userForClass clss =
-    arb <**> (set userGroups . pure <$> guestOrStudent clss)
+    arb <**> (set userRole <$> guestOrStudent clss)
 
 instance Arbitrary Durations where
     arbitrary = garbitrary
@@ -319,10 +319,10 @@ instance Arbitrary Quorums where
 instance Arbitrary PermissionContext where
     arbitrary = garbitrary
 
-instance Arbitrary Role where
+instance Arbitrary RoleSelection where
     arbitrary = garbitrary
 
-instance Arbitrary EditUser where
+instance Arbitrary EditUserPayload where
     arbitrary = garbitrary
 
 -- FIXME: instance Arbitrary Delegation
@@ -741,7 +741,7 @@ mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = d
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> genArbitrary
-    let pu = ProtoUser Nothing fnam lnam [role] Nothing Nothing
+    let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
     (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
 
@@ -757,7 +757,7 @@ fishDelegationNetworkIO = do
     persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
     _ <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-        [Admin] (Just (UserPassInitial "admin")) Nothing
+        Admin (Just (UserPassInitial "admin")) Nothing
 
     let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
     either (error . ppShow) id <$> runExceptT
@@ -774,9 +774,9 @@ fishDelegationNetworkAction = do
         mkdel = do
             ctx :: DelegationContext <- liftIO . generate $ arbitrary
             let fltr u = ctx == DelCtxIdeaSpace SchoolSpace
-                      || case u ^. userGroups of
-                             [Student cl] -> ctx == DelCtxIdeaSpace (ClassSpace cl)
-                             _            -> False
+                      || case u ^. userRole of
+                             Student cl -> ctx == DelCtxIdeaSpace (ClassSpace cl)
+                             _          -> False
 
                 users' = List.filter fltr users
 
@@ -820,7 +820,7 @@ instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Group where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON (MetaInfo a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson

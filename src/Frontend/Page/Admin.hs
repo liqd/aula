@@ -326,13 +326,11 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                                 Nothing  -> nil
                                 Just url -> img_ [Lucid.src_ url]
                         td_ $ user ^. userLogin . fromUserLogin . html
-                        td_ (case user ^. userGroups of
-                                [Student cl]    -> toHtml $ showSchoolClass cl
-                                [ClassGuest cl] -> toHtml $ showSchoolClass cl
-                                _               -> nil)
-                        td_ (case user ^. userGroups of
-                                (g:_) -> groupLabel g  -- FIXME: there should only be one group!
-                                []    -> error "impossible.")
+                        td_ (case user ^. userRole of
+                                Student cl    -> toHtml $ showSchoolClass cl
+                                ClassGuest cl -> toHtml $ showSchoolClass cl
+                                _             -> nil)
+                        td_ $ roleLabel (user ^. userRole)
                         td_ ""
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
@@ -366,28 +364,29 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                     td_ ""
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
-data Role
+data RoleSelection
     = RoleStudent
     | RoleGuest
   deriving (Eq, Generic, Show)
 
-instance SOP.Generic Role
+instance SOP.Generic RoleSelection
 
-data EditUser = EditUser
-    { editUserRole  :: Role
+data EditUserPayload = EditUserPayload
+    { editUserRole  :: RoleSelection
     , editUserClass :: SchoolClass
     }
   deriving (Eq, Generic, Show)
 
-instance SOP.Generic EditUser
+instance SOP.Generic EditUserPayload
 
-roleValues :: IsString s => [(Role, s)]
-roleValues = [ (RoleStudent, "Schüler")
+roleSelectionChoices :: IsString s => [(RoleSelection, s)]
+roleSelectionChoices =
+             [ (RoleStudent, "Schüler")
              , (RoleGuest, "Gast")
              ]
 
 instance FormPage PageAdminSettingsGaPUsersEdit where
-    type FormPageResult PageAdminSettingsGaPUsersEdit = EditUser
+    type FormPageResult PageAdminSettingsGaPUsersEdit = EditUserPayload
 
     formAction (PageAdminSettingsGaPUsersEdit user _classes) =
         relPath . U.Admin . U.AdminEditUser $ user ^. _Id
@@ -397,8 +396,8 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (PageAdminSettingsGaPUsersEdit _user classes) =
-        EditUser
-        <$> ("user-role"  .: DF.choice roleValues  Nothing)
+        EditUserPayload
+        <$> ("user-role"  .: DF.choice roleSelectionChoices Nothing)
         <*> ("user-class" .: DF.choice classValues Nothing)
       where
         classValues = (id &&& toHtml . view className) <$> classes
@@ -462,27 +461,13 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
         <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
         <*> getSchoolClasses
 
-    editUser e = persistent $ modifyUser uid (userGroups %~ replaceUserRole e)
+    editUser e = persistent $ modifyUser uid (userRole .~ payloadToUserRole e)
 
--- | Adds group determined by 'EditUser' param to the list of groups.  If the new group replaces an
--- exiting group, that existing group is removed.  *Definition:* Group @g@ replaces group @h@ iff
--- both groups are indexed by a class (e.g. 'Student', 'ClassGuest') and the classes of @g@ and @h@
--- have the same year.
-replaceUserRole :: EditUser -> [Group] -> [Group]
-replaceUserRole (EditUser role clss) gs
-  | studentInSameYear = gs
-  | otherwise = addGroup . filter (not . isClassInGroup clss) $ gs
-  where
-    studentInSameYear = any (studentInSameYear' (_classSchoolYear clss)) gs
+payloadToUserRole :: EditUserPayload -> Role
+payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
+payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
-    studentInSameYear' year (Student c) = _classSchoolYear c == year
-    studentInSameYear' _ _              = False
-
-    addGroup xs = case role of
-        RoleStudent -> Student clss : xs
-        RoleGuest   -> ClassGuest clss : xs
-
-isClassInGroup :: SchoolClass -> Group -> Bool
+isClassInGroup :: SchoolClass -> Role -> Bool
 isClassInGroup clss (Student clss')    = clss == clss'
 isClassInGroup clss (ClassGuest clss') = clss == clss'
 isClassInGroup _    _                  = False
@@ -497,8 +482,10 @@ adminSettingsGaPClassesEdit :: ActionM r m => SchoolClass -> m (Frame PageAdminS
 adminSettingsGaPClassesEdit clss =
     makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
   where
+    -- FIXME: the following two lines should be happening in "Persistent.Api".
     usersInClass = filter isUserInClass <$> persistent getUsers
-    isUserInClass u = any (isClassInGroup clss) (u ^. userGroups)
+    isUserInClass = isClassInGroup clss . view userRole
+
 
 -- ** Events protocol
 
@@ -627,7 +614,7 @@ adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPCl
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
-            , _protoUserGroups    = [Student schoolcl]
+            , _protoUserRole      = Student schoolcl
             , _protoUserPassword  = Nothing
             , _protoUserEmail     = mEmail
             }

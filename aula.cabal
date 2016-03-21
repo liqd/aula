@@ -273,7 +273,6 @@ test-suite spec
       AllModulesSpec
       AulaTests
       Frontend.CoreSpec
-      Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec
       Frontend.Page.LoginSpec
       Frontend.PathSpec

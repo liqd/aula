@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE ViewPatterns      #-}
+
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 -- | FIXME: this should be moved away from production code into `./tests/`
 module DemoData
@@ -52,7 +55,7 @@ genFirstUser =
 genStudent :: [SchoolClass] -> Gen ProtoUser
 genStudent classes =
     arbitrary
-    <**> (set protoUserGroups . pure <$> elements (map Student classes))
+    <**> (set protoUserRole <$> elements (map Student classes))
 
 genAvatar :: Gen URL
 genAvatar = mkUrl <$> elements fishAvatars
@@ -138,5 +141,4 @@ generate n rnd g =
     gen rnd (sequence [ resize n' g | n' <- take n $ cycle [0,2..20] ])
 
 userToIdeaLocation :: User -> IdeaLocation
-userToIdeaLocation u =
-    (\(Student clss) -> IdeaLocationSpace (ClassSpace clss)) . head $ u ^. userGroups
+userToIdeaLocation (view userRole -> Student cl) = IdeaLocationSpace (ClassSpace cl)

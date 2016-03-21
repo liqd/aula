@@ -275,7 +275,7 @@ data User = User
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
     , _userAvatar    :: Maybe URL  -- FIXME UriPath?
-    , _userGroups    :: [Group]  -- FIXME make a set.  rename group to role.
+    , _userRole      :: Role
     , _userPassword  :: UserPass
     , _userEmail     :: Maybe UserEmail
     }
@@ -298,7 +298,7 @@ data ProtoUser = ProtoUser
     { _protoUserLogin     :: Maybe UserLogin
     , _protoUserFirstName :: UserFirstName
     , _protoUserLastName  :: UserLastName
-    , _protoUserGroups    :: [Group]
+    , _protoUserRole      :: Role
     , _protoUserPassword  :: Maybe UserPass
     , _protoUserEmail     :: Maybe UserEmail
     }
@@ -306,9 +306,9 @@ data ProtoUser = ProtoUser
 
 instance SOP.Generic ProtoUser
 
--- | Note that all groups except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
--- (Rationale: e.g. teachres have trust each other and can cover for each other.)
-data Group =
+-- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
+-- (Rationale: e.g. teachers have trust each other and can cover for each other.)
+data Role =
     Student SchoolClass
   | ClassGuest SchoolClass  -- ^ e.g., parents
   | SchoolGuest  -- ^ e.g., researchers
@@ -317,7 +317,7 @@ data Group =
   | Admin
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic Group
+instance SOP.Generic Role
 
 data UserPass =
     UserPassInitial   ST
@@ -496,7 +496,7 @@ instance Binary DelegationContext
 instance Binary Document
 instance Binary UserPass
 instance Binary UserEmail
-instance Binary Group
+instance Binary Role
 instance Binary Idea
 instance Binary IdeaLocation
 instance Binary IdeaLike
@@ -633,11 +633,11 @@ isWild (IdeaLocationTopic _ _) = False
 topicToIdeaLocation :: Topic -> IdeaLocation
 topicToIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
--- german group name
-groupLabel :: IsString s => Group -> s
-groupLabel (Student _)    = "Student"
-groupLabel (ClassGuest _) = "Gast (Klasse)"
-groupLabel SchoolGuest    = "Gast (Klasse)"
-groupLabel Moderator      = "Moderator"
-groupLabel Principal      = "Direktor"
-groupLabel Admin          = "Administrator"
+-- | german role name
+roleLabel :: IsString s => Role -> s
+roleLabel (Student _)    = "Student"
+roleLabel (ClassGuest _) = "Gast (Klasse)"
+roleLabel SchoolGuest    = "Gast (Klasse)"
+roleLabel Moderator      = "Moderator"
+roleLabel Principal      = "Direktor"
+roleLabel Admin          = "Administrator"

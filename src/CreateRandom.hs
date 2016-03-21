@@ -78,7 +78,7 @@ frameUserHack = user
       , _userFirstName = "Vorname"
       , _userLastName  = "Name"
       , _userAvatar    = Nothing
-      , _userGroups    = nil
+      , _userRole      = Admin
       , _userPassword  = UserPassInitial ""
       , _userEmail     = Nothing
       }
