@@ -133,6 +133,8 @@ type AulaMain =
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
        -- login / logout
+       -- FIXME: login should not ask a query parameter whether or not to show a login error, but
+       -- use form validation of some cookie-based message queue.
   :<|> "login" :> QueryParam "status" Bool :> FormHandler PageHomeWithLoginPrompt
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
