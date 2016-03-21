@@ -1,6 +1,7 @@
 .main-header {
     @extend %main-menu-container;
     @include box-shadow(0 0 3px 0 rgba(0, 0, 0, 0.5));
+    @include rem(margin-bottom, 3px);
 
     > .grid {
         overflow: visible;
