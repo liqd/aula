@@ -93,9 +93,6 @@ instance ToHtml ViewIdea where
                     totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
                     " / "
                 totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
-            div_ [class_ "icon-list m-inline"] $ do
-                ul_ $ do
-                    toHtml $ CategoryLabel (idea ^. ideaCategory)
             div_ [class_ "sub-heading"] $ do
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
                     span_ [class_ "progress-bar m-against"] $ do
@@ -139,7 +136,14 @@ instance ToHtml ViewIdea where
             -}
 
         -- article
-        div_ [class_ "container-narrow text-markdown"] $ idea ^. ideaDesc . html
+        div_ [class_ "container-narrow text-markdown"] $ do
+            idea ^. ideaDesc . html
+
+            div_ [class_ "view-category"] $ do
+                h2_ [class_ "sup-header"] "Diese Idee Gehoert Kategorie"
+                div_ [class_ "icon-list m-inline"] $ do
+                    ul_ $ do
+                        toHtml $ CategoryLabel (idea ^. ideaCategory)
 
         -- comments
         section_ [class_ "comments"] $ do
