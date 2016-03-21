@@ -142,7 +142,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath P.Login)
+  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath $ P.Login Nothing)
      | isli     || isPrivatePage p -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
