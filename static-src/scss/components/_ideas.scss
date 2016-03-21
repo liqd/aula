@@ -39,6 +39,7 @@
 }
 
 .ideas-list {
+    @include rem(padding, 15px);
     clear: both;
 }
 
