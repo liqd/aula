@@ -39,6 +39,7 @@ import Action.Implementation (Action, mkRunAction)
 import Config
 import CreateRandom
 import Data.UriPath
+import DemoData
 import Frontend.Core
 import Frontend.Page as Page
 import Persistent
@@ -48,7 +49,6 @@ import qualified Action
 import qualified Frontend.Path as U
 import qualified Persistent.Implementation.STM
 
-import DemoData
 
 -- * driver
 

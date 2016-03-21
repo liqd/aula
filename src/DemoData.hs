@@ -1,5 +1,7 @@
-{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
+
+-- | FIXME: this should be moved away from production code into `./tests/`
 module DemoData
 where
 
@@ -53,10 +55,10 @@ genStudent classes =
     <**> (set protoUserGroups . pure <$> elements (map Student classes))
 
 genAvatar :: Gen URL
-genAvatar = avatar <$> elements fishAvatars
+genAvatar = mkUrl <$> elements fishAvatars
   where
-    avatar :: URL -> URL
-    avatar url = "http://zierfischverzeichnis.de/klassen/pisces/" <> url
+    mkUrl :: URL -> URL
+    mkUrl url = "http://zierfischverzeichnis.de/klassen/pisces/" <> url
 
 genTopic :: [IdeaSpace] -> Gen ProtoTopic
 genTopic ideaSpaces =
@@ -90,6 +92,7 @@ genLike ideas students = do
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (set userAvatar (Just url))
 
+
 -- * Universe
 
 mkUniverse :: forall m . PersistM m => IO (m ())
@@ -122,7 +125,6 @@ universe rnd = void $ do
     sequence likes
   where
     assert' p = assert p $ return ()
-
 
 
 -- * Helpers
