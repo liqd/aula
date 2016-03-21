@@ -625,3 +625,12 @@ ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
 isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
+
+-- german group name
+groupLabel :: IsString s => Group -> s
+groupLabel (Student _)    = "Student"
+groupLabel (ClassGuest _) = "Gast (Klasse)"
+groupLabel SchoolGuest    = "Gast (Klasse)"
+groupLabel Moderator      = "Moderator"
+groupLabel Principal      = "Direktor"
+groupLabel Admin          = "Administrator"
