@@ -36,12 +36,13 @@ import Frontend.Prelude hiding ((<.>), (</>))
 
 -- | config section: add new page types here.
 pages :: forall b.
-    (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a) => Proxy a -> b)
+    (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml' a, Page a) => Proxy a -> b)
     -> [b]
 pages f =
     [ f (Proxy :: Proxy (ToHtmlDefault PageRoomsOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasOverview))
     , f (Proxy :: Proxy (ToHtmlDefault PageIdeasInDiscussion))
+{-
     , f (Proxy :: Proxy (ToHtmlDefault ViewTopic_Ideas))
     , f (Proxy :: Proxy (ToHtmlDefault ViewTopic_Delegations))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseNone))
@@ -50,6 +51,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseVoting))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseResult))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseFinished))
+-}
     , f (Proxy :: Proxy (ToHtmlForm    CreateIdea))
     , f (Proxy :: Proxy (ToHtmlForm    EditIdea))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreatedIdeas))
@@ -104,6 +106,16 @@ instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
 
 instance Arbitrary p => Arbitrary (ToHtmlForm p) where
     arbitrary = ToHtmlForm <$> arbitrary
+
+instance (Page p) => Page (ToHtmlDefault p) where
+    isPrivatePage    (ToHtmlDefault p) = isPrivatePage    p
+    extraPageHeaders (ToHtmlDefault p) = extraPageHeaders p
+    extraBodyClasses (ToHtmlDefault p) = extraBodyClasses p
+
+instance (Page p) => Page (ToHtmlForm p) where
+    isPrivatePage    (ToHtmlForm p) = isPrivatePage    p
+    extraPageHeaders (ToHtmlForm p) = extraPageHeaders p
+    extraBodyClasses (ToHtmlForm p) = extraBodyClasses p
 
 
 -- | For page types that need special treatment for arbitrary (like idea detail view with always 2-3
@@ -347,7 +359,7 @@ dynamicRender s = do
         Nothing -> error $ "dynamicRender: problem parsing the type of the following value." <>
                            "  recreate samples?\n\n" <> take 200 (cs s) <> "\n\n"
   where
-    g :: forall a. (Read a, ToHtml' a) => Proxy a -> IO (Maybe ST)
+    g :: forall a. (Read a, ToHtml' a, Page a) => Proxy a -> IO (Maybe ST)
     g proxy = yes `catch` \(SomeException _) -> no
       where
         yes :: IO (Maybe ST)
@@ -360,4 +372,4 @@ dynamicRender s = do
         no = return Nothing
 
         pf :: User -> a -> Html ()
-        pf user = pageFrame nil (Just user) . toHtml'
+        pf user p = pageFrame p (Just user) $ toHtml' p
