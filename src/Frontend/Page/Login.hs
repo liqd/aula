@@ -73,7 +73,7 @@ instance ToHtml LoginDemoHints where
                     th_ "password"
                 (\u -> tr_ $ do
                     td_ . toHtml $ u ^. userLogin . fromUserLogin
-                    td_ . toHtml . (\case (UserPassInitial s) -> s; any -> cs $ show any) $ u ^. userPassword)
+                    td_ . toHtml . (\case (UserPassInitial s) -> s; s -> cs $ show s) $ u ^. userPassword)
                   `mapM_` users
 
 
