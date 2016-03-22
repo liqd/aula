@@ -146,7 +146,9 @@ instance FormPage CreateTopic where
     type FormPageResult CreateTopic = Topic
 
     formAction (CreateTopic space _) = relPath $ U.Space space U.CreateTopic
-    redirectOf (CreateTopic space _) _ = relPath $ U.Space space U.ListTopics
+
+    redirectOf (CreateTopic space _) topic =
+        relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
     makeForm (CreateTopic space ideas) =
         ProtoTopic
