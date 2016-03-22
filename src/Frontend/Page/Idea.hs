@@ -177,7 +177,9 @@ instance FormPage CreateIdea where
     type FormPageResult CreateIdea = Idea
 
     formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
-    redirectOf (CreateIdea loc) _ = relPath $ U.IdeaPath loc U.IdeaModeList
+
+    redirectOf (CreateIdea loc) idea =
+        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
 
     makeForm (CreateIdea loc) =
         ProtoIdea
@@ -255,7 +257,9 @@ instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
 
     formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))
-    redirectOf (EditIdea idea) _ = relPath $ U.IdeaPath (idea ^. ideaLocation) U.IdeaModeList
+
+    redirectOf (EditIdea idea) _ =
+        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
 
     makeForm (EditIdea idea) =
         ProtoIdea
