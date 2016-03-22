@@ -117,7 +117,8 @@ instance ToHtml PageIdeasOverview where
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
                 ListItemIdea True Nothing numVoters idea ^. html
 
-instance Page PageIdeasOverview
+instance Page PageIdeasOverview where
+    extraBodyClasses _ = ["m-shadow"]
 
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml

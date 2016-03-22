@@ -1,5 +1,6 @@
 .hero-unit {
     @include rem(padding, 60px 0 35px);
+    background: white;
     clear: left;
     overflow: hidden;
     position: relative;

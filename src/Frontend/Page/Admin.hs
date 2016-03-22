@@ -17,7 +17,6 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
-import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Thentos.Types
@@ -161,24 +160,23 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [class_ "grid"] $ do
-        div_ [class_ "col-2-12"] $ do
-            nav_ [class_ "admin-menu"] $ do
-                h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
-                ul_ [] $ do
-                    li_ [] $ menulink tab MenuItemDurations
-                    li_ [] $ menulink tab MenuItemQuorum
-                    if isPermissionsMenuItem tab
-                        then do
-                            li_ [] $ do
-                                "Gruppen & Nutzer"
-                                ul_ $ do
-                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
-                        else do
-                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
-                    li_ [] $ menulink tab MenuItemEventsProtocol
-        div_ [class_ "col-10-12 admin-body"] bdy
+    div_ [class_ "col-2-12"] $ do
+        nav_ [class_ "admin-menu"] $ do
+            h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
+            ul_ [] $ do
+                li_ [] $ menulink tab MenuItemDurations
+                li_ [] $ menulink tab MenuItemQuorum
+                if isPermissionsMenuItem tab
+                    then do
+                        li_ [] $ do
+                            "Gruppen & Nutzer"
+                            ul_ $ do
+                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                    else do
+                        li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                li_ [] $ menulink tab MenuItemEventsProtocol
+    div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem t
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
@@ -316,22 +314,19 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
+                            input_ [type_ "text", class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
 
                 let renderUserRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserRow user = tr_ $ do
-                        td_ . span_ [class_ "img-container"] $ do
-                            case user ^. userAvatar of
-                                Nothing  -> nil
-                                Just url -> img_ [Lucid.src_ url]
+                        td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                         td_ $ user ^. userLogin . fromUserLogin . html
                         td_ (case user ^. userRole of
                                 Student cl    -> toHtml $ showSchoolClass cl
                                 ClassGuest cl -> toHtml $ showSchoolClass cl
                                 _             -> nil)
                         td_ $ roleLabel (user ^. userRole)
-                        td_ ""
+                        td_ (toHtmlRaw ("&nbsp;" :: String))
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
                 tbody_ $ renderUserRow `mapM_` users
@@ -357,11 +352,11 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                             "Klasse anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
+                            input_ [type_ "text", class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     td_ . toHtml $ clss ^. className
-                    td_ ""
+                    td_ (toHtmlRaw ("&nbsp;" :: String))
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
@@ -397,10 +392,20 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
         relPath . U.Admin . U.AdminAccess $ PermUserView
 
     -- FIXME: Show the user's role and class as default in the selections.
-    makeForm (PageAdminSettingsGaPUsersEdit _user classes) =
-        EditUserPayload
-        <$> ("user-role"  .: DF.choice roleSelectionChoices Nothing)
-        <*> ("user-class" .: DF.choice classValues Nothing)
+    makeForm (PageAdminSettingsGaPUsersEdit user classes) =
+        let role = case user ^. userRole of
+                Student _    -> Just RoleStudent
+                ClassGuest _ -> Just RoleGuest
+                _            -> Nothing  -- FIXME: see RoleSelection
+
+            clval = case user ^. userRole of
+                Student cl    -> Just cl
+                ClassGuest cl -> Just cl
+                _             -> Nothing  -- FIXME: see RoleSelection
+
+        in EditUserPayload
+            <$> ("user-role"  .: DF.choice roleSelectionChoices role)
+            <*> ("user-class" .: DF.choice classValues clval)
       where
         classValues = (id &&& toHtml . view className) <$> classes
 
@@ -410,24 +415,18 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                 DF.form v fa $ do
                     div_ [class_ "col-3-12"] $ do
                         div_ [class_ "upload-avatar"] $ do
-                            a_ [href_ U.Broken] $ i_ [class_ "upload-avatar-icon icon-camera"] nil
+                            a_ [href_ U.Broken] $ do
+                                i_ [class_ "upload-avatar-icon icon-camera"] $ do
+                                    avatarImgFromHasMeta user
                     div_ [class_ "col-9-12"] $ do
                         h1_ [class_ "admin-main-heading"] $ do
                             toHtml (user ^. userLogin . fromUserLogin)
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Nutzerrolle"
-                            let role = case user ^. userRole of
-                                    Student _    -> [value_ "Schüler"]
-                                    ClassGuest _ -> [value_ "Gast"]
-                                    _            -> []  -- FIXME: see RoleSelection
-                            inputSelect_ ([class_ "m-stretch"] <> role) "user-role" v
+                            inputSelect_ [class_ "m-stretch"] "user-role" v
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Klasse"
-                            let clval = case user ^. userRole of
-                                    Student cl    -> [value_ . cs $ showSchoolClass cl]
-                                    ClassGuest cl -> [value_ . cs $ showSchoolClass cl]
-                                    _             -> []  -- FIXME: see RoleSelection
-                            inputSelect_ ([class_ "m-stretch"] <> clval)  "user-class" v
+                            inputSelect_ [class_ "m-stretch"]  "user-class" v
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
                             a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"

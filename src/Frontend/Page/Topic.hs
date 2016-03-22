@@ -49,7 +49,8 @@ data ViewTopic
   | ViewTopicDelegations Topic [Delegation]
   deriving (Eq, Show, Read)
 
-instance Page ViewTopic
+instance Page ViewTopic where
+    extraBodyClasses _ = ["m-shadow"]
 
 -- | 10.1 Create topic: Create topic
 data CreateTopic = CreateTopic IdeaSpace [Idea]
@@ -96,12 +97,17 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
-        div_ [class_ "m-shadow"] $ do
-            div_ [class_ "ideas-list"] $ do
-                a_ [class_ "btn-settings", href_ U.Broken] $ do  -- not sure what settings are meant here?
-                    i_ [class_ "icon-sort", title_ "Settings"] nil
-                for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                    ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
+        div_ [class_ "ideas-list"] $ do
+            div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
+                i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
+                ul_ [class_ "pop-menu-list"] $ do
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] "Unterstützung"  -- FIXME Dummy
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
+
+            for_ ideasAndNumVoters $ \(idea, numVoters) ->
+                ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do
@@ -118,12 +124,13 @@ viewTopicHeaderDiv topic tab = do
             span_ [class_ "sub-heading"] . toHtml $ phaseName phase
             toHtml $ topic ^. topicTitle
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
-        when (phase == PhaseRefinement) $
-            a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
-        when (phase < PhaseResult) .
-            a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
-                i_ [class_ "icon-bullhorn"] nil
-                "Stimme Beauftragen"
+        div_ [class_ "heroic-btn-group"] $ do
+            when (phase == PhaseRefinement) $
+                a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
+            when (phase < PhaseResult) .
+                a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
+                    i_ [class_ "icon-bullhorn"] nil
+                    "Stimme Beauftragen"
         div_ [class_ "heroic-tabs"] $ do
             tabLink topic tab TabAllIdeas
             when ((topic ^. topicPhase) >= PhaseVoting) $ tabLink topic tab TabVotingIdeas

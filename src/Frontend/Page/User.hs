@@ -121,8 +121,13 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "grid"] $ do
                 -- Settings button
                 div_ [class_ "ideas-list"] $ do
-                    a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
-                        i_ [class_ "icon-sort", title_ "Settings"] nil
+                    div_ [class_ "btn-settings pop-menu"] $ do
+                        i_ [class_ "icon-sort", title_ "Sort by"] nil  -- FIXME German
+                        ul_ [class_ "pop-menu-list"] $ do
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                a_ [href_ U.Broken] "popularity" -- FIXME German / Dummy
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                a_ [href_ U.Broken] "date"  -- FIXME German / Dummy
                     for_ ideas $ \(idea, numVoters) ->
                         ListItemIdea False Nothing numVoters idea ^. html
 
@@ -173,7 +178,8 @@ renderDelegations _ = do
     renderLi _ = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
-                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+                div_ [class_ "small-avatar-list-image"] $ do
+                    nil -- FIXME Make a real image a child here (avatarImgFromHasMeta)
             div_ [class_ "col-11-12"] $ do
                 h3_ "UserName"
                 p_ $ do
