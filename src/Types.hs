@@ -66,6 +66,8 @@ newtype DurationDays = DurationDays { fromDurationDays :: Int }
 -- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
 
+-- | FIXME: it would be nice to have the creator in a reader in the persist monad rather than as an
+-- explicit parameter (note this type synonym is isomorphic to an explicit argument).
 type UserWithProto a = (User, Proto a)
 
 -- | The method how a 't' value is calculated from its prototype
@@ -635,7 +637,7 @@ topicToIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
 -- | german role name
 roleLabel :: IsString s => Role -> s
-roleLabel (Student _)    = "Student"
+roleLabel (Student _)    = "Schüler"
 roleLabel (ClassGuest _) = "Gast (Klasse)"
 roleLabel SchoolGuest    = "Gast (Schule)"
 roleLabel Moderator      = "Moderator"

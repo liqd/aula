@@ -136,7 +136,7 @@ instance ToMenuItem PageAdminSettingsGaPUsersView where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPUsersCreate where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserCreate)
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPUsersEdit where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
@@ -145,7 +145,7 @@ instance ToMenuItem PageAdminSettingsGaPClassesView where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
 instance ToMenuItem PageAdminSettingsGaPClassesCreate where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassCreate)
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
 instance ToMenuItem PageAdminSettingsGaPClassesEdit where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
@@ -349,12 +349,12 @@ instance ToHtml PageAdminSettingsGaPClassesView where
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
-                    th_ "KLASSE"
+                    th_ "Klasse"
                     th_ $ button_
                             [ class_ "btn-cta"
                             , onclick_ . U.Admin $ U.AdminAccess PermClassCreate
                             ]
-                            "KLASSE ANLEGEN"
+                            "Klasse anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             input_ [class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
@@ -364,6 +364,8 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                     td_ ""
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
+-- | FIXME: re-visit application logic.  we should really be able to change everybody into every
+-- role, and the class field should be hidden / displayed as appropriate.  see issue #197.
 data RoleSelection
     = RoleStudent
     | RoleGuest
@@ -414,10 +416,18 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                             toHtml (user ^. userLogin . fromUserLogin)
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Nutzerrolle"
-                            inputSelect_ [class_ "m-stretch"] "user-role" v
+                            let role = case user ^. userRole of
+                                    Student _    -> [value_ "Schüler"]
+                                    ClassGuest _ -> [value_ "Gast"]
+                                    _            -> []  -- FIXME: see RoleSelection
+                            inputSelect_ ([class_ "m-stretch"] <> role) "user-role" v
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Klasse"
-                            inputSelect_ [class_ "m-stretch"] "user-class" v
+                            let clval = case user ^. userRole of
+                                    Student cl    -> [value_ . cs $ showSchoolClass cl]
+                                    ClassGuest cl -> [value_ . cs $ showSchoolClass cl]
+                                    _             -> []  -- FIXME: see RoleSelection
+                            inputSelect_ ([class_ "m-stretch"] <> clval)  "user-class" v
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
                             a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
@@ -538,7 +548,7 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
         <*> ("file"      DF..: DF.file)
 
     formPage v fa p@PageAdminSettingsGaPClassesCreate =
-        semanticDiv p $ do
+        adminFrame p . semanticDiv p $ do
             h3_ "Klasse anlegen"
             a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
             DF.form v fa $ do
