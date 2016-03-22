@@ -10,17 +10,11 @@
 module Frontend.CoreSpec where
 
 import Control.Arrow((&&&))
-import Control.Lens ((^.), set, view)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except
 import Data.List
-import Data.Maybe (fromMaybe)
 import Data.String.Conversions
-import Data.Typeable (Typeable, typeOf)
-import Lucid (Html, ToHtml, toHtml, renderText)
-import Servant (unNat)
+import Data.Typeable (typeOf)
 import Servant.Server.Internal.ServantErr
-import Test.Hspec (Spec, context, it, pendingWith, shouldBe)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
 import Text.Digestive.Types
@@ -32,12 +26,12 @@ import Action
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config (Config)
-import qualified Config
-import Data.UriPath (absoluteUriPath)
 import Frontend.Core
 import Frontend.Page
 import qualified Persistent.Implementation.STM
 import Types
+
+import AulaTests
 
 
 -- * list all types for testing
@@ -222,7 +216,7 @@ runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersis
                           unNat (mkRunAction (ActionEnv rp cfg)) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
-failOnError = fmap (either (error . show) id) . runExceptT . runAction Config.test
+failOnError = fmap (either (error . show) id) . runExceptT . runAction testConfig
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --

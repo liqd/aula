@@ -24,6 +24,10 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Prelude as X hiding (get, put)
 
+
+testConfig :: Config
+testConfig = devel & listenerPort .~ 18081
+
 codeShouldBe :: Int -> Response body -> Expectation
 codeShouldBe code l = l ^. responseStatus . statusCode `shouldBe` code
 
@@ -36,25 +40,24 @@ bodyShouldContain body l = l ^. responseBody . to cs `shouldContain` body
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
 
--- Same as Frontend.Page.FileUploadSpec.Query
 data Query = Query
     { post :: forall a. Postable a => String -> a -> IO (Response LBS)
     , get  :: String -> IO (Response LBS)
     }
 
--- Same as Frontend.Page.FileUploadSpec.doNotThrowExceptionsOnErrorCodes
 doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
--- Same as Frontend.Page.FileUploadSpec.withServer
 withServer :: (Query -> IO a) -> IO a
 withServer action = bracket
     (forkIO $ runFrontend cfg)
     killThread
     (const . Sess.withSession $ action . query)
   where
-    cfg = Config.test
-    uri path = "http://" <> cs (cfg ^. listenerInterface) <> ":" <> (cs . show $ cfg ^. listenerPort) <> path
+    cfg = testConfig
+    uri path = "http://" <> cs (cfg ^. listenerInterface)
+                  <> ":" <> (cs . show $ cfg ^. listenerPort)
+                  <> path
     opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
                     & redirects   .~ 0
     query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
