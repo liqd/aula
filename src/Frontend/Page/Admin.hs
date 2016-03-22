@@ -136,7 +136,7 @@ instance ToMenuItem PageAdminSettingsGaPUsersView where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPUsersCreate where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserCreate)
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPUsersEdit where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
@@ -145,7 +145,7 @@ instance ToMenuItem PageAdminSettingsGaPClassesView where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
 instance ToMenuItem PageAdminSettingsGaPClassesCreate where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassCreate)
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
 instance ToMenuItem PageAdminSettingsGaPClassesEdit where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
@@ -540,7 +540,7 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
         <*> ("file"      DF..: DF.file)
 
     formPage v fa p@PageAdminSettingsGaPClassesCreate =
-        semanticDiv p $ do
+        adminFrame p . semanticDiv p $ do
             h3_ "Klasse anlegen"
             a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
             DF.form v fa $ do
