@@ -9,11 +9,11 @@ module AulaTests
     , module X
     ) where
 
-import System.IO.Unsafe (unsafePerformIO)
-import Control.Concurrent.MVar
-import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
+import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
 import Control.Exception (bracket)
 import Network.Wreq.Types (Postable, StatusChecker)
+import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Network.Wreq.Session as Sess
 
