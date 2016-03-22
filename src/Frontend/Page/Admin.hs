@@ -365,7 +365,7 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
--- role, and the class field should be hidden / displayed as appropriate.
+-- role, and the class field should be hidden / displayed as appropriate.  see issue #197.
 data RoleSelection
     = RoleStudent
     | RoleGuest
