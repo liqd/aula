@@ -32,6 +32,7 @@ import Network.Wai
 import Test.Hspec.Wai (get, shouldRespondWith)
 import qualified Test.Hspec.Wai.QuickCheck as Wai (property)
 
+
 spec :: Spec
 spec = do
 
@@ -49,7 +50,7 @@ spec = do
             ]
 
     describe "Paths and handlers" $ do
-        beforeAll mockAulaTop $ do
+        beforeAll mockAulaMain $ do
             it "Every path has a handler" $ \app -> property . forAll mainGen $ \path ->
                 flip Wai.property app $ do
                     get (cs . absoluteUriPath $ relPath path) `shouldRespondWith` 200
@@ -69,9 +70,9 @@ instance (FormPage a, Arbitrary a) => Arbitrary (FormPageRep a) where
         view <- getForm frameAction form
         pure $ FormPageRep view frameAction (PublicFrame page)
 
-mockAulaTop :: IO Application
-mockAulaTop = do
-    return $ serve (Proxy :: Proxy AulaTop) (mock (Proxy :: Proxy AulaTop))
+mockAulaMain :: IO Application
+mockAulaMain = do
+    return $ serve (Proxy :: Proxy AulaMain) (mock (Proxy :: Proxy AulaMain))
 
 instance (FormPage a, Page a, Arbitrary a)
         => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPageRep a)) where
