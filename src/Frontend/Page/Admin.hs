@@ -394,21 +394,22 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (PageAdminSettingsGaPUsersEdit user classes) =
-        let role = case user ^. userRole of
-                Student _    -> Just RoleStudent
-                ClassGuest _ -> Just RoleGuest
-                _            -> Nothing  -- FIXME: see RoleSelection
-
-            clval = case user ^. userRole of
-                Student cl    -> Just cl
-                ClassGuest cl -> Just cl
-                _             -> Nothing  -- FIXME: see RoleSelection
-
-        in EditUserPayload
+        EditUserPayload
             <$> ("user-role"  .: DF.choice roleSelectionChoices role)
             <*> ("user-class" .: DF.choice classValues clval)
       where
         classValues = (id &&& toHtml . view className) <$> classes
+
+        role = case user ^. userRole of
+            Student _    -> Just RoleStudent
+            ClassGuest _ -> Just RoleGuest
+            _            -> Nothing  -- FIXME: see RoleSelection
+
+        clval = case user ^. userRole of
+            Student cl    -> Just cl
+            ClassGuest cl -> Just cl
+            _             -> Nothing  -- FIXME: see RoleSelection
+
 
     formPage v fa p@(PageAdminSettingsGaPUsersEdit user _classes) = adminFrame p $ do
         semanticDiv p $ do
