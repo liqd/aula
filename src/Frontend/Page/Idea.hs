@@ -266,14 +266,27 @@ instance FormPage EditIdea where
     -- FIXME: needs to be styled (recycle CreateIdea form!)
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
-            h3_ "Deine Idee"
-            DF.form v fa $ do
-                DF.inputText     "title" v >> br_ []
-                DF.inputTextArea Nothing Nothing "idea-text" v >> br_ []
-                DF.inputSelect   "idea-category" v >> br_ []
-                DF.inputSubmit   "Speichern"
-                button_ [value_ ""] "Idee löschen" -- FIXME delete button
-                button_ [value_ ""] "Abbrechen"    -- FIXME undo button => is this "back"?
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Deine Idee"
+                    DF.form v fa $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
+                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                                "title" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
+                        -- FIXME I want a placeholder here too
+                        -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
+                            DF.inputTextArea Nothing Nothing "idea-text" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
+                            DF.inputSelect   "idea-category" v -- FIXME should be pictures but it xplodes
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "Idee veröffentlichen"
+                            button_ [class_ "btn-cta", value_ ""] $ do
+                                i_ [class_ "icon-trash-o"] nil-- FIXME delete button
+                                "Idee löschen"
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
