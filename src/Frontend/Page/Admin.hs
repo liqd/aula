@@ -416,10 +416,18 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                             toHtml (user ^. userLogin . fromUserLogin)
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Nutzerrolle"
-                            inputSelect_ [class_ "m-stretch"] "user-role" v
+                            let role = case user ^. userRole of
+                                    Student _    -> [value_ "Schüler"]
+                                    ClassGuest _ -> [value_ "Gast"]
+                                    _            -> []  -- FIXME: see RoleSelection
+                            inputSelect_ ([class_ "m-stretch"] <> role) "user-role" v
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Klasse"
-                            inputSelect_ [class_ "m-stretch"] "user-class" v
+                            let clval = case user ^. userRole of
+                                    Student cl    -> [value_ . cs $ showSchoolClass cl]
+                                    ClassGuest cl -> [value_ . cs $ showSchoolClass cl]
+                                    _             -> []  -- FIXME: see RoleSelection
+                            inputSelect_ ([class_ "m-stretch"] <> clval)  "user-class" v
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
                             a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
