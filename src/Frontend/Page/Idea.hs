@@ -262,6 +262,7 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
+    -- FIXME: needs to be styled (recycle CreateIdea form!)
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
             h3_ "Deine Idee"
