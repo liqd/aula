@@ -17,7 +17,6 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
-import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Thentos.Types
