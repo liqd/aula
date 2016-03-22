@@ -68,8 +68,9 @@ runFrontend cfg = do
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
-    demoDataGen <- mkUniverse
-    unNat persist demoDataGen
+    when (cfg ^. generateDemoData) $ do
+        demoDataGen <- mkUniverse
+        unNat persist demoDataGen
 
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app

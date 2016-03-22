@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Config
 where
@@ -18,11 +17,13 @@ data Config = Config
     , _listenerPort :: Int
     , _htmlStatic :: FilePath
     , _cfgCsrfSecret :: CsrfSecret
+    , _generateDemoData :: Bool
     }
   deriving (Show)
 
 makeLenses ''Config
 
+devel :: Config
 devel = Config
     { _dbPath = "./aula.db"
     , _listenerInterface = "0.0.0.0"
@@ -30,9 +31,8 @@ devel = Config
     , _htmlStatic = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _generateDemoData = True
     }
-
-test = devel & listenerPort .~ 18081
 
 instance GetCsrfSecret Config where
     csrfSecret = pre cfgCsrfSecret
