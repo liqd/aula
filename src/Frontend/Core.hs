@@ -22,7 +22,7 @@ module Frontend.Core
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
-    , FormPage, FormPageResult, FormPageCreatedData
+    , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
@@ -109,18 +109,18 @@ type FormHandler p = FormHandlerT p ST
 class Page p => FormPage p where
 
     -- | Information which parsed from the form
-    type FormPageResult p :: *
+    type FormPagePayload p :: *
 
     -- | Information created while processing the form data
-    type FormPageCreatedData p :: *
-    type FormPageCreatedData p = ()
+    type FormPageResult p :: *
+    type FormPageResult p = ()
 
     -- | The form action used in form generation
     formAction :: p -> UriPath
     -- | Calculates a redirect address from the given page
-    redirectOf :: p -> FormPageCreatedData p -> UriPath
+    redirectOf :: p -> FormPageResult p -> UriPath
     -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -368,7 +368,7 @@ instance FormPage p => ToHtml (FormPageRep p) where
 redirectFormHandler
     :: (FormPage p, Page p, ActionM r m)
     => m p                       -- ^ Page representation
-    -> (FormPageResult p -> m (FormPageCreatedData p)) -- ^ Processor for the form result
+    -> (FormPagePayload p -> m (FormPageResult p)) -- ^ Processor for the form result
     -> ServerT (FormHandler p) m
 redirectFormHandler getPage processor = getH :<|> postH
   where

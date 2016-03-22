@@ -217,7 +217,7 @@ menulink' targetMenuItem =
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
 
 instance FormPage PageAdminSettingsDurations where
-    type FormPageResult PageAdminSettingsDurations = Durations
+    type FormPagePayload PageAdminSettingsDurations = Durations
 
     formAction _ = relPath $ U.Admin U.AdminDuration
 
@@ -264,7 +264,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
 -- ** Quorum
 
 instance FormPage PageAdminSettingsQuorum where
-    type FormPageResult PageAdminSettingsQuorum = Quorums
+    type FormPagePayload PageAdminSettingsQuorum = Quorums
 
     formAction _ = relPath $ U.Admin U.AdminQuorum
     redirectOf _ _ = relPath $ U.Admin U.AdminQuorum
@@ -388,7 +388,7 @@ roleSelectionChoices =
              ]
 
 instance FormPage PageAdminSettingsGaPUsersEdit where
-    type FormPageResult PageAdminSettingsGaPUsersEdit = EditUserPayload
+    type FormPagePayload PageAdminSettingsGaPUsersEdit = EditUserPayload
 
     formAction (PageAdminSettingsGaPUsersEdit user _classes) =
         relPath . U.Admin . U.AdminEditUser $ user ^. _Id
@@ -535,7 +535,7 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 instance SOP.Generic BatchCreateUsersFormData
 
 instance FormPage PageAdminSettingsGaPClassesCreate where
-    type FormPageResult PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+    type FormPagePayload PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
 
     formAction PageAdminSettingsGaPClassesCreate =
         relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassCreate

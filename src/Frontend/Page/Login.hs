@@ -37,7 +37,7 @@ data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
 instance FormPage PageHomeWithLoginPrompt where
-    type FormPageResult PageHomeWithLoginPrompt = LoginFormData
+    type FormPagePayload PageHomeWithLoginPrompt = LoginFormData
 
     formAction _ = relPath $ U.Login Nothing
     redirectOf _ _ = relPath U.ListSpaces

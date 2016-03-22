@@ -192,10 +192,10 @@ renderMarkup (H g) =
         LT.length (renderText (toHtml pageSource)) > 0
 
 data FormGen where
-    F :: ( r ~ FormPageResult m
+    F :: ( r ~ FormPagePayload m
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
-         , ArbFormPageResult m
+         , ArbFormPagePayload m
          ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
@@ -240,7 +240,7 @@ postToForm :: FormGen -> Spec
 postToForm (F g) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
         page <- pick g
-        payload <- pick (arbFormPageResult page)
+        payload <- pick (arbFormPagePayload page)
 
         let frm = makeForm page
         env <- run' $ (`payloadToEnv` payload) <$> getForm "" frm
@@ -253,39 +253,39 @@ postToForm (F g) = do
     where
         run' = run . failOnError
 
--- | Arbitrary test data generation for the 'FormPageResult' type.
+-- | Arbitrary test data generation for the 'FormPagePayload' type.
 --
 -- In some cases the arbitrary data generation depends on the 'Page' context
--- and the 'FormPageResult' has to compute data from the context.
-class FormPage p => ArbFormPageResult p where
-    arbFormPageResult :: (r ~ FormPageResult p, FormPage p, Arbitrary r, Show r) => p -> Gen r
+-- and the 'FormPagePayload' has to compute data from the context.
+class FormPage p => ArbFormPagePayload p where
+    arbFormPagePayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen r
 
-instance ArbFormPageResult CreateIdea where
-    arbFormPageResult (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
+instance ArbFormPagePayload CreateIdea where
+    arbFormPagePayload (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
 
-instance ArbFormPageResult EditIdea where
-    arbFormPageResult (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
+instance ArbFormPagePayload EditIdea where
+    arbFormPagePayload (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
-instance ArbFormPageResult PageAdminSettingsQuorum where
-    arbFormPageResult _ = arbitrary
+instance ArbFormPagePayload PageAdminSettingsQuorum where
+    arbFormPagePayload _ = arbitrary
 
-instance ArbFormPageResult PageAdminSettingsDurations where
-    arbFormPageResult _ = arbitrary
+instance ArbFormPagePayload PageAdminSettingsDurations where
+    arbFormPagePayload _ = arbitrary
 
-instance ArbFormPageResult PageUserSettings where
-    arbFormPageResult _ = arbitrary
+instance ArbFormPagePayload PageUserSettings where
+    arbFormPagePayload _ = arbitrary
 
-instance ArbFormPageResult PageHomeWithLoginPrompt where
-    arbFormPageResult _ = arbitrary
+instance ArbFormPagePayload PageHomeWithLoginPrompt where
+    arbFormPagePayload _ = arbitrary
 
-instance ArbFormPageResult CreateTopic where
-    arbFormPageResult (CreateTopic space ideas) =
+instance ArbFormPagePayload CreateTopic where
+    arbFormPagePayload (CreateTopic space ideas) =
             set protoTopicIdeaSpace space
           . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
 
-instance ArbFormPageResult EditTopic where
-    arbFormPageResult (EditTopic _space _topicid ideas) =
+instance ArbFormPagePayload EditTopic where
+    arbFormPagePayload (EditTopic _space _topicid ideas) =
         TopicFormPayload
         <$> arbPhrase
         <*> arbitrary
@@ -294,5 +294,5 @@ instance ArbFormPageResult EditTopic where
         -- result generation should select from those ideas only.
         <*> pure (view _Id <$> ideas)
 
-instance ArbFormPageResult PageAdminSettingsGaPUsersEdit where
-    arbFormPageResult _ = arbitrary
+instance ArbFormPagePayload PageAdminSettingsGaPUsersEdit where
+    arbFormPagePayload _ = arbitrary

@@ -173,8 +173,8 @@ instance ToHtml ViewIdea where
 
 
 instance FormPage CreateIdea where
-    type FormPageResult CreateIdea = ProtoIdea
-    type FormPageCreatedData CreateIdea = Idea
+    type FormPagePayload CreateIdea = ProtoIdea
+    type FormPageResult CreateIdea = Idea
 
     formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
     redirectOf (CreateIdea loc) _ = relPath $ U.IdeaPath loc U.IdeaModeList
@@ -252,7 +252,7 @@ instance ToHtml CategoryButton where
 
 
 instance FormPage EditIdea where
-    type FormPageResult EditIdea = ProtoIdea
+    type FormPagePayload EditIdea = ProtoIdea
 
     formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))
     redirectOf (EditIdea idea) _ = relPath $ U.IdeaPath (idea ^. ideaLocation) U.IdeaModeList
