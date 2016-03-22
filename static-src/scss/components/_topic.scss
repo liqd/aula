@@ -1,7 +1,8 @@
 .topic-header {
     @extend .hero-unit;
     background:     url(/static/images/header_vote_left.png) no-repeat left top,
-                    url(/static/images/header_vote_right.png) no-repeat right top;
+                    url(/static/images/header_vote_right.png) no-repeat right top,
+                    white;
     min-height: 337px;
 }
 
