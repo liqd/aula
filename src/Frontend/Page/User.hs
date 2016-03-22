@@ -178,7 +178,8 @@ renderDelegations _ = do
     renderLi _ = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
-                div_ [class_ "small-avatar-list-image"] nil -- FIXME Make a real image a child here
+                div_ [class_ "small-avatar-list-image"] $ do
+                    nil -- FIXME Make a real image a child here (avatarImgFromHasMeta)
             div_ [class_ "col-11-12"] $ do
                 h3_ "UserName"
                 p_ $ do

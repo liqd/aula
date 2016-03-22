@@ -17,7 +17,6 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
-import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Thentos.Types
@@ -321,10 +320,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
 
                 let renderUserRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserRow user = tr_ $ do
-                        td_ . span_ [class_ "img-container"] $ do
-                            case user ^. userAvatar of
-                                Nothing  -> nil
-                                Just url -> img_ [Lucid.src_ url]
+                        td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                         td_ $ user ^. userLogin . fromUserLogin . html
                         td_ (case user ^. userRole of
                                 Student cl    -> toHtml $ showSchoolClass cl
@@ -410,7 +406,9 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                 DF.form v fa $ do
                     div_ [class_ "col-3-12"] $ do
                         div_ [class_ "upload-avatar"] $ do
-                            a_ [href_ U.Broken] $ i_ [class_ "upload-avatar-icon icon-camera"] nil
+                            a_ [href_ U.Broken] $ do
+                                i_ [class_ "upload-avatar-icon icon-camera"] $ do
+                                    avatarImgFromHasMeta user
                     div_ [class_ "col-9-12"] $ do
                         h1_ [class_ "admin-main-heading"] $ do
                             toHtml (user ^. userLogin . fromUserLogin)
