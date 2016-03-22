@@ -160,24 +160,23 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [class_ "grid"] $ do
-        div_ [class_ "col-2-12"] $ do
-            nav_ [class_ "admin-menu"] $ do
-                h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
-                ul_ [] $ do
-                    li_ [] $ menulink tab MenuItemDurations
-                    li_ [] $ menulink tab MenuItemQuorum
-                    if isPermissionsMenuItem tab
-                        then do
-                            li_ [] $ do
-                                "Gruppen & Nutzer"
-                                ul_ $ do
-                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                                    li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
-                        else do
-                            li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
-                    li_ [] $ menulink tab MenuItemEventsProtocol
-        div_ [class_ "col-10-12 admin-body"] bdy
+    div_ [class_ "col-2-12"] $ do
+        nav_ [class_ "admin-menu"] $ do
+            h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
+            ul_ [] $ do
+                li_ [] $ menulink tab MenuItemDurations
+                li_ [] $ menulink tab MenuItemQuorum
+                if isPermissionsMenuItem tab
+                    then do
+                        li_ [] $ do
+                            "Gruppen & Nutzer"
+                            ul_ $ do
+                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
+                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                    else do
+                        li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                li_ [] $ menulink tab MenuItemEventsProtocol
+    div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem t
     isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
