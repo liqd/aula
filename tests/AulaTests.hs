@@ -28,7 +28,7 @@ import Frontend.Prelude as X hiding (get, put)
 
 
 testConfig :: IO Config
-testConfig = (devel &) . (listenerPort .~) <$> pop
+testConfig = (devel & generateDemoData .~ False &) . (listenerPort .~) <$> pop
   where
     pop :: IO Int
     pop = modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
