@@ -41,6 +41,7 @@ module Persistent.Api
     , findIdeasByUserId
     , findWildIdeasBySpace
     , addLikeToIdea
+    , addCommentToIdea
     , findUser
     , getUsers
     , addUser
@@ -272,6 +273,14 @@ addLikeToIdea :: User -> AUID Idea -> PersistM m => m ()
 addLikeToIdea cUser iid = do
     metainfo <- nextMetaInfo cUser
     modifyIdea iid (ideaLikes %~ Set.insert (IdeaLike metainfo))
+
+-- FIXME: Save comments properly.
+addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
+addCommentToIdea cUser iid msg = do
+    metainfo <- nextMetaInfo cUser
+    let comment = Comment metainfo msg Set.empty Set.empty
+    modifyIdea iid (ideaComments %~ Set.insert comment)
+    return comment
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
