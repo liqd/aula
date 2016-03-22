@@ -9,6 +9,8 @@ module AulaTests
     , module X
     ) where
 
+import System.IO.Unsafe (unsafePerformIO)
+import Control.Concurrent.MVar
 import Control.Concurrent (forkIO, killThread)
 import Control.Exception (bracket)
 import Network.Wreq.Types (Postable, StatusChecker)
@@ -25,8 +27,16 @@ import Frontend         as X
 import Frontend.Prelude as X hiding (get, put)
 
 
-testConfig :: Config
-testConfig = devel & listenerPort .~ 18081
+testConfig :: IO Config
+testConfig = (devel &) . (listenerPort .~) <$> pop
+  where
+    pop :: IO Int
+    pop = modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
+
+-- | This is where the ports are popped from that the individual tests are run under.
+testConfigPortSource :: MVar [Int]
+testConfigPortSource = unsafePerformIO . newMVar . mconcat $ repeat [18081..29713]
+{-# NOINLINE testConfigPortSource #-}
 
 codeShouldBe :: Int -> Response body -> Expectation
 codeShouldBe code l = l ^. responseStatus . statusCode `shouldBe` code
@@ -50,8 +60,9 @@ doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
 withServer :: (Query -> IO a) -> IO a
 withServer action = do
-    let cfg = testConfig
-        uri path = "http://" <> cs (cfg ^. listenerInterface)
+    cfg <- testConfig
+
+    let uri path = "http://" <> cs (cfg ^. listenerInterface)
                       <> ":" <> (cs . show $ cfg ^. listenerPort)
                       <> path
         opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes

@@ -25,7 +25,7 @@ import qualified Data.Text.Lazy as LT
 import Action
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
-import Config (Config)
+import Config (Config, devel)
 import Frontend.Core
 import Frontend.Page
 import qualified Persistent.Implementation.STM
@@ -216,7 +216,7 @@ runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersis
                           unNat (mkRunAction (ActionEnv rp cfg)) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
-failOnError = fmap (either (error . show) id) . runExceptT . runAction testConfig
+failOnError = fmap (either (error . show) id) . runExceptT . runAction Config.devel
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
