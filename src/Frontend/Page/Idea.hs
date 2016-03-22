@@ -147,7 +147,7 @@ instance ToHtml ViewIdea where
             idea ^. ideaDesc . html
 
             div_ [class_ "view-category"] $ do
-                h2_ [class_ "sup-header"] "Diese Idee Gehoert Kategorie"
+                h2_ [class_ "sup-header"] "Diese Idee gehört in die Kategorie"
                 div_ [class_ "icon-list m-inline"] $ do
                     ul_ $ do
                         toHtml $ CategoryLabel (idea ^. ideaCategory)
