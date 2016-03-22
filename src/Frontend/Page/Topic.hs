@@ -99,11 +99,11 @@ instance ToHtml ViewTopic where
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
             div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
-                i_ [class_ "icon-sort", title_ "Settings"] nil
+                i_ [class_ "icon-sort", title_ "Sory by"] nil  -- FIXME German
                 ul_ [class_ "pop-menu-list"] $ do
                     li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [href_ U.Broken] "popularity"
-                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] "popularity"  -- FIXME German / Dummy
+                    li_ [class_ "pop-menu-list-item"] $ do  -- FIXME German / Dummy
                         a_ [href_ U.Broken] "date"
 
             for_ ideasAndNumVoters $ \(idea, numVoters) ->
