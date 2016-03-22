@@ -178,7 +178,7 @@ instance FormPage CreateIdea where
 
     formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
 
-    redirectOf (CreateIdea loc) idea =
+    redirectOf (CreateIdea _loc) idea =
         relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
 
     makeForm (CreateIdea loc) =
