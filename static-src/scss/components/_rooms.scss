@@ -18,10 +18,10 @@
     }
 
     &.is-school .item-room-image {
-        @include svg(school_teaser,true);
+        @include svg(school_teaser);
     }
 
     &.is-class .item-room-image {
-        @include svg(class_teaser);
+        @include svg(class_teaser,true);
     }
 }
