@@ -41,9 +41,9 @@ if(imageSelect) {
     var handler = function(b1) {
         for (b2 = 0; b2 < buttons.length; ++b2) {
             if (b2 == b1) {
-                addClass(buttons[b2], "m-active");
+                addClass(buttons[b2].parentNode, "m-active");
             } else {
-                removeClass(buttons[b2], "m-active");
+                removeClass(buttons[b2].parentNode, "m-active");
             }
         }
         hidden.value = b1;
