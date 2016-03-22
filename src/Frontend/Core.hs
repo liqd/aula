@@ -40,7 +40,6 @@ where
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
--- import Data.Functor (($>)) TODO
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
@@ -109,7 +108,7 @@ type FormHandler p = FormHandlerT p ST
 -- | Render Form based Views
 class Page p => FormPage p where
 
-    -- | Information which parsed from the form
+    -- | Information parsed from the form
     type FormPagePayload p :: *
 
     -- | Information created while processing the form data
