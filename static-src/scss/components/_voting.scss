@@ -3,6 +3,7 @@ $progress-bar-height: 5px;
 .progress-bar {
     background-color: $color-grey-lighter;
     border-radius: ($progress-bar-height/2);
+    overflow: hidden;
 
     &.m-against {
         background-color: $color-negative;
