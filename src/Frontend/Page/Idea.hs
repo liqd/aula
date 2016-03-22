@@ -74,15 +74,16 @@ instance ToHtml ViewIdea where
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
+                let ispace  = idea ^. ideaLocation . ideaLocationSpace
+                    mtid = idea ^? ideaTopicId
+
                 a_ [ class_ "btn m-back detail-header-back"
-                   , let ispace  = idea ^. ideaLocation . ideaLocationSpace
-                         mtid = idea ^? ideaTopicId
-                     in href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
+                   , href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
                    ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [href_ U.Broken] $ do
+                            a_ [href_ . U.Space ispace $ U.EditIdea (idea ^. _Id)] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
                             a_ [href_ U.Broken] $ do
