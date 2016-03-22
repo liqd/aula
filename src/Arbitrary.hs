@@ -18,6 +18,7 @@ module Arbitrary
     , arb
     , arbWord
     , arbPhrase
+    , arbPhraseOf
     , arbName
     , schoolClasses
     , fishDelegationNetworkIO
@@ -503,9 +504,10 @@ arbWord :: Gen ST
 arbWord = ST.filter isAlpha <$> elements loremIpsumDict
 
 arbPhrase :: Gen ST
-arbPhrase = do
-    n <- (+ 3) . (`mod` 5) <$> arbitrary
-    ST.intercalate " " <$> replicateM n arbWord
+arbPhrase = (+ 3) . (`mod` 5) <$> arbitrary >>= arbPhraseOf
+
+arbPhraseOf :: Int -> Gen ST
+arbPhraseOf n = ST.intercalate " " <$> replicateM n arbWord
 
 newtype Paragraph = Paragraph { fromParagraph :: ST }
 

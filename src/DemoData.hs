@@ -78,7 +78,7 @@ genIdea :: [IdeaSpace] -> [Topic] -> Gen ProtoIdea
 genIdea ideaSpaces topics =
     arbitrary
     <**> (set protoIdeaLocation <$> genIdeaLocation ideaSpaces topics)
-
+    <**> (set protoIdeaDesc . Markdown <$> (arbPhraseOf =<< choose (100, 300)))
 
 genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m ())
 genLike ideas students = do
