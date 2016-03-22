@@ -31,6 +31,7 @@ module Frontend.Core
     , tabSelected
     , html
     , redirect
+    , avatarImgFromMaybeURL, avatarImgFromHasMeta, avatarImgFromMeta
     -- Test only
     , FormPageRep(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
     )
@@ -41,7 +42,6 @@ import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
 import Data.Functor (($>))
 import Data.Set (Set)
-import Data.String (fromString)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid hiding (href_, script_, src_)
@@ -54,6 +54,7 @@ import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
 import qualified Data.Text as ST
+import qualified Lucid
 import qualified Text.Digestive.Form as DF
 
 import Action
@@ -186,9 +187,7 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
             case mUser of
                 Just usr -> do
                     div_ [class_ "pop-menu"] $ do
-                        div_ [class_ "user-avatar"] $ do
-                            maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
-                                (mUser ^? _Just . userAvatar . _Just)
+                        div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
                         "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
@@ -269,17 +268,14 @@ instance ToHtml CommentVotesWidget where
         y = show (countVotes Up   commentVoteValue votes)
         n = show (countVotes Down commentVoteValue votes)
 
-newtype AuthorWidget a = AuthorWidget (MetaInfo a)
+newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
 
 instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         div_ [class_ "author"] $ do
-            span_ [class_ "author-image"] $ do
-                maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
-                    (mi ^. metaCreatedByAvatar)
-            span_ [class_ "author-text"] $ do
-                mi ^. metaCreatedByLogin . fromUserLogin . html
+            span_ [class_ "author-image"] $ avatarImgFromMeta mi
+            span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
 data ListItemIdea = ListItemIdea
       { _listItemIdeaLinkToUser :: Bool
@@ -296,9 +292,7 @@ instance ToHtml ListItemIdea where
             a_ [href_ $ P.IdeaPath (idea ^. ideaLocation) (P.IdeaModeView $ idea ^. _Id)] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
-                    div_ [class_ "ideas-list-img-container"] $ do
-                        maybe nil (\url -> img_ [src_ . P.TopStatic . fromString . cs $ url])
-                            (idea ^. createdByAvatar)
+                    div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
                     h2_ [class_ "ideas-list-title"] $ do
                         idea ^. ideaTitle . html
                         span_ [class_ "ideas-list-author"] $ do
@@ -390,3 +384,13 @@ redirectFormHandler getPage processor = getH :<|> postH
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $
     Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+
+
+avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
+avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
+
+avatarImgFromMeta :: forall m a. (Monad m) => MetaInfo a -> HtmlT m ()
+avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
+
+avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
+avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
