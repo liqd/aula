@@ -32,9 +32,9 @@ body.m-shadow {
     .main-grid {
         @include rem(margin-bottom, -$main-menu-height);
         @include rem(margin-top, -$main-menu-height);
-        @include rem(padding-top, $main-menu-height);
+        @include rem(padding-bottom, $main-menu-height);
         background-color: $color-grey-lighter;
-        height: 100%;
+        min-height: 100%;
     }
 }
 
