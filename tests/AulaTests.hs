@@ -11,7 +11,7 @@ module AulaTests
 
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Concurrent.MVar
-import Control.Concurrent (forkIO, killThread)
+import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (bracket)
 import Network.Wreq.Types (Postable, StatusChecker)
 
@@ -70,6 +70,7 @@ withServer action = do
         query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
 
     bracket
-        (forkIO $ runFrontend cfg)
+        (forkIO (runFrontend cfg) <* threadDelay 200000)
         killThread
         (const . Sess.withSession $ action . query)
+        -- (a threadDelay of 20000 or less will lead to failures due to race condition)
