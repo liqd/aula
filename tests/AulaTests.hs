@@ -12,9 +12,11 @@ module AulaTests
 import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
 import Control.Exception (bracket)
+import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
 
+import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
 
 import Config
@@ -62,15 +64,25 @@ withServer :: (Query -> IO a) -> IO a
 withServer action = do
     cfg <- testConfig
 
-    let uri path = "http://" <> cs (cfg ^. listenerInterface)
-                      <> ":" <> (cs . show $ cfg ^. listenerPort)
-                      <> path
-        opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
+    let opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
                         & redirects   .~ 0
-        query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
+        query sess = Query (Sess.postWith opts sess . mkServerUri cfg)
+                           (Sess.getWith opts sess . mkServerUri cfg)
 
     bracket
-        (forkIO (runFrontend cfg) <* threadDelay 200000)
+        (runFrontendSafeFork cfg)
         killThread
         (const . Sess.withSession $ action . query)
-        -- (a threadDelay of 20000 or less will lead to failures due to race condition)
+
+mkServerUri :: Config -> String -> String
+mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
+                          <> ":" <> show (cfg ^. listenerPort)
+                          <> path
+
+runFrontendSafeFork :: Config -> IO ThreadId
+runFrontendSafeFork cfg = do
+    threadId <- forkIO $ runFrontend cfg
+    let loop = catch
+          (Network.Wreq.get $ mkServerUri cfg "/")
+          (\(_ :: HttpException) -> threadDelay 4900 >> loop)
+    loop >> return threadId
