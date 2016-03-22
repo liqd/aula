@@ -98,8 +98,14 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
-            a_ [class_ "btn-settings", href_ U.Broken] $ do  -- not sure what settings are meant here?
+            div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
                 i_ [class_ "icon-sort", title_ "Settings"] nil
+                ul_ [class_ "pop-menu-list"] $ do
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] "popularity"
+                    li_ [class_ "pop-menu-list-item"] $ do
+                        a_ [href_ U.Broken] "date"
+
             for_ ideasAndNumVoters $ \(idea, numVoters) ->
                 ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
 

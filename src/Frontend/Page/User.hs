@@ -121,8 +121,13 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "grid"] $ do
                 -- Settings button
                 div_ [class_ "ideas-list"] $ do
-                    a_ [class_ "btn-settings", href_ $ U.User (user ^. _Id) U.UserIdeas] $ do
+                    div_ [class_ "btn-settings pop-menu"] $ do
                         i_ [class_ "icon-sort", title_ "Settings"] nil
+                        ul_ [class_ "pop-menu-list"] $ do
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                a_ [href_ U.Broken] "popularity"
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                a_ [href_ U.Broken] "date"
                     for_ ideas $ \(idea, numVoters) ->
                         ListItemIdea False Nothing numVoters idea ^. html
 
