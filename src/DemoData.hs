@@ -43,6 +43,9 @@ numberOfIdeas = 300
 numberOfLikes :: Int
 numberOfLikes = 500
 
+numberOfComments :: Int
+numberOfComments = 500
+
 
 -- * Generators
 
@@ -78,19 +81,37 @@ genIdea :: [IdeaSpace] -> [Topic] -> Gen ProtoIdea
 genIdea ideaSpaces topics =
     arbitrary
     <**> (set protoIdeaLocation <$> genIdeaLocation ideaSpaces topics)
+    <**> (set protoIdeaDesc . Markdown <$> (arbPhraseOf =<< choose (100, 300)))
 
-
-genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m ())
-genLike ideas students = do
-    idea <- elements ideas
-    student <- elements $ filter (sameSpace idea) students
-    return $ addLikeToIdea student (idea ^. _Id)
+-- FIXME: Sometimes there are no related students.
+-- In that case, we generate noise test data.
+relatedStudents :: Idea -> [User] -> [User]
+relatedStudents idea students = case filter sameSpace students of
+    [] -> take 10 students
+    xs -> xs
   where
-    sameSpace idea student
+    sameSpace student
       | location == IdeaLocationSpace SchoolSpace = True
       | otherwise = location == userToIdeaLocation student
       where
         location = view ideaLocation idea
+
+ideaStudentPair :: [Idea] -> [User] -> Gen (Idea, User)
+ideaStudentPair ideas students = do
+    idea <- elements ideas
+    student <- elements $ relatedStudents idea students
+    return (idea, student)
+
+genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m ())
+genLike ideas students = do
+    (idea, student) <- ideaStudentPair ideas students
+    return $ addLikeToIdea student (idea ^. _Id)
+
+genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m Comment)
+genComment ideas students = do
+    (idea, student) <- ideaStudentPair ideas students
+    msg <- Markdown <$> (arbPhraseOf =<< choose (10, 100))
+    return $ addCommentToIdea student (idea ^. _Id) msg
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (set userAvatar (Just url))
@@ -125,7 +146,11 @@ universe rnd = void $ do
     ideas  <- mapM (addIdea . (,) admin) ideas'
 
     likes <- generate numberOfLikes rnd (genLike ideas students)
-    sequence likes
+    sequence_ likes
+
+    comments <- generate numberOfComments rnd (genComment ideas students)
+    sequence_ comments
+
   where
     assert' p = assert p $ return ()
 
