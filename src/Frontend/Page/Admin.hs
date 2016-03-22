@@ -222,7 +222,7 @@ instance FormPage PageAdminSettingsDurations where
     formAction _ = relPath $ U.Admin U.AdminDuration
 
     -- FIXME: Do we redirect to the same page???
-    redirectOf _ = relPath $ U.Admin U.AdminDuration
+    redirectOf _ _ = relPath $ U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
@@ -267,7 +267,7 @@ instance FormPage PageAdminSettingsQuorum where
     type FormPageResult PageAdminSettingsQuorum = Quorums
 
     formAction _ = relPath $ U.Admin U.AdminQuorum
-    redirectOf _ = relPath $ U.Admin U.AdminQuorum
+    redirectOf _ _ = relPath $ U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
@@ -393,7 +393,7 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
     formAction (PageAdminSettingsGaPUsersEdit user _classes) =
         relPath . U.Admin . U.AdminEditUser $ user ^. _Id
 
-    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) =
+    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) _ =
         relPath . U.Admin . U.AdminAccess $ PermUserView
 
     -- FIXME: Show the user's role and class as default in the selections.
@@ -540,7 +540,7 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
     formAction PageAdminSettingsGaPClassesCreate =
         relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassCreate
 
-    redirectOf PageAdminSettingsGaPClassesCreate =
+    redirectOf PageAdminSettingsGaPClassesCreate _ =
         relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassView
 
     makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData

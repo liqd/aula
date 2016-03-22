@@ -40,7 +40,7 @@ instance FormPage PageHomeWithLoginPrompt where
     type FormPageResult PageHomeWithLoginPrompt = LoginFormData
 
     formAction _ = relPath $ U.Login Nothing
-    redirectOf _ = relPath U.ListSpaces
+    redirectOf _ _ = relPath U.ListSpaces
 
     makeForm _ = LoginFormData
         <$> ("user" .: DF.text Nothing)

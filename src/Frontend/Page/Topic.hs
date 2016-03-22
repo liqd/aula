@@ -136,9 +136,10 @@ viewTopicHeaderDiv topic tab = do
 
 instance FormPage CreateTopic where
     type FormPageResult CreateTopic = ProtoTopic
+    type FormPageCreatedData CreateTopic = Topic
 
     formAction (CreateTopic space _) = relPath $ U.Space space U.CreateTopic
-    redirectOf (CreateTopic space _) = relPath $ U.Space space U.ListTopics
+    redirectOf (CreateTopic space _) _ = relPath $ U.Space space U.ListTopics
 
     makeForm (CreateTopic space ideas) =
         ProtoTopic
@@ -179,7 +180,7 @@ instance FormPage EditTopic where
     type FormPageResult EditTopic = TopicFormPayload
 
     formAction (EditTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
-    redirectOf (EditTopic space topic _) = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
+    redirectOf (EditTopic space topic _) _ = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
     makeForm (EditTopic _space topic ideas) =
         TopicFormPayload
