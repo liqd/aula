@@ -49,15 +49,16 @@ doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
 withServer :: (Query -> IO a) -> IO a
-withServer action = bracket
-    (forkIO $ runFrontend cfg)
-    killThread
-    (const . Sess.withSession $ action . query)
-  where
-    cfg = testConfig
-    uri path = "http://" <> cs (cfg ^. listenerInterface)
-                  <> ":" <> (cs . show $ cfg ^. listenerPort)
-                  <> path
-    opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
-                    & redirects   .~ 0
-    query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
+withServer action = do
+    let cfg = testConfig
+        uri path = "http://" <> cs (cfg ^. listenerInterface)
+                      <> ":" <> (cs . show $ cfg ^. listenerPort)
+                      <> path
+        opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
+                        & redirects   .~ 0
+        query sess = Query (Sess.postWith opts sess . uri) (Sess.getWith opts sess . uri)
+
+    bracket
+        (forkIO $ runFrontend cfg)
+        killThread
+        (const . Sess.withSession $ action . query)
