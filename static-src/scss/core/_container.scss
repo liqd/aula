@@ -30,16 +30,17 @@ body.m-shadow {
     background-color: #fff;
 
     .main-grid {
-        @include rem(margin-bottom, -$main-menu-height);
-        @include rem(margin-top, -$main-menu-height);
-        @include rem(padding-bottom, $main-menu-height);
         background-color: $color-grey-lighter;
-        min-height: 100%;
     }
 }
 
 .main-grid {
+    @include rem(margin-bottom, -$main-menu-height);
+    @include rem(margin-top, -$main-menu-height);
+    @include rem(padding-bottom, $main-menu-height);
+    @include rem(padding-top, $main-menu-height);
     overflow: visible;
+    min-height: 100%;
 }
 
 .popup-page {
