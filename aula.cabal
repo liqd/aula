@@ -44,6 +44,7 @@ library
     , filepath
     , functor-infix
     , generics-sop
+    , http-client
     , http-types
     , lens
     , lucid
@@ -121,6 +122,7 @@ executable aula-server
     , filepath
     , functor-infix
     , generics-sop
+    , http-client
     , http-types
     , lens
     , lucid
@@ -174,6 +176,7 @@ executable aula-html-dummies
     , filepath
     , functor-infix
     , generics-sop
+    , http-client
     , http-types
     , lens
     , lucid
@@ -231,6 +234,7 @@ test-suite spec
     , filepath
     , functor-infix
     , generics-sop
+    , http-client
     , http-types
     , lens
     , lucid

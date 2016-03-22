@@ -35,6 +35,7 @@ dependencies:
     - filepath
     - functor-infix
     - generics-sop
+    - http-client
     - http-types
     - lens
     - lucid
