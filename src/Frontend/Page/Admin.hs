@@ -316,7 +316,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
+                            input_ [type_ "text", class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
 
                 let renderUserRow :: forall m. (Monad m) => User -> HtmlT m ()
@@ -331,7 +331,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                                 ClassGuest cl -> toHtml $ showSchoolClass cl
                                 _             -> nil)
                         td_ $ roleLabel (user ^. userRole)
-                        td_ ""
+                        td_ (toHtmlRaw ("&nbsp;" :: String))
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
                 tbody_ $ renderUserRow `mapM_` users
@@ -357,11 +357,11 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                             "Klasse anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
+                            input_ [type_ "text", class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     td_ . toHtml $ clss ^. className
-                    td_ ""
+                    td_ (toHtmlRaw ("&nbsp;" :: String))
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every

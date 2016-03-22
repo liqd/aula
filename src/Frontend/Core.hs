@@ -166,7 +166,7 @@ pageFrame p mUser bdy = do
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         _ <- div_ [class_ "page-wrapper"] $ do
             headerMarkup mUser
-            div_ [class_ "grid"] $ do
+            div_ [class_ "grid main-grid"] $ do
                 bdy
         footerMarkup
 

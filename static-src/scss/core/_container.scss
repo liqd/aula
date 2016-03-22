@@ -26,6 +26,22 @@ body, html {
     background-color: $color-grey-lighter;
 }
 
+body.m-shadow {
+    background-color: #fff;
+
+    .main-grid {
+        @include rem(margin-bottom, -$main-menu-height);
+        @include rem(margin-top, -$main-menu-height);
+        @include rem(padding-bottom, $main-menu-height);
+        background-color: $color-grey-lighter;
+        min-height: 100%;
+    }
+}
+
+.main-grid {
+    overflow: visible;
+}
+
 .popup-page {
     .main-heading {
         text-align: left;
