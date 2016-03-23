@@ -188,12 +188,12 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory)
         <*> pure loc
 
-    formPage v fa p = do
+    formPage v form p = do
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Idee erstellen"
-                    DF.form v fa $ do
+                    form $ do
                         label_ $ do
                             span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
                             inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
@@ -270,12 +270,12 @@ instance FormPage EditIdea where
 
     -- FIXME: factor out code common with CreateIdea.
     -- FIXME: category choice should look like in CreateIdea.
-    formPage v fa p@(EditIdea _idea) =
+    formPage v form p@(EditIdea _idea) =
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Deine Idee"
-                    DF.form v fa $ do
+                    form $ do
                         label_ $ do
                             span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
                             inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]

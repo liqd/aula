@@ -232,9 +232,9 @@ instance FormPage PageAdminSettingsDurations where
         readPeriod (DurationDays d) (DurationDays v) =
             fromMaybe d . readMaybe <$> DF.string (Just (show v))
 
-    formPage v fa p = adminFrame p $ do
+    formPage v form p = adminFrame p $ do
         semanticDiv p $ do
-            DF.form v fa $ do
+            form $ do
                 -- FIXME these should be "number" fields
                 label_ [class_ "input-append"] $ do
                     span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
@@ -274,9 +274,9 @@ instance FormPage PageAdminSettingsQuorum where
       where
         readPercentage d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
 
-    formPage v fa p = adminFrame p $ do
+    formPage v form p = adminFrame p $ do
         semanticDiv p $ do
-            DF.form v fa $ do
+            form $ do
                 label_ [class_ "input-append"] $ do
                     span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
                     inputText_ [class_ "input-number input-appendee"] "school-quorum" v
@@ -410,10 +410,10 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
             _             -> Nothing  -- FIXME: see RoleSelection
 
 
-    formPage v fa p@(PageAdminSettingsGaPUsersEdit user _classes) = adminFrame p $ do
+    formPage v form p@(PageAdminSettingsGaPUsersEdit user _classes) = adminFrame p $ do
         semanticDiv p $ do
             div_ [class_ "admin-container"] $ do
-                DF.form v fa $ do
+                form $ do
                     div_ [class_ "col-3-12"] $ do
                         div_ [class_ "upload-avatar"] $ do
                             a_ [href_ U.Broken] $ do
@@ -547,11 +547,11 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
         <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
         <*> ("file"      DF..: DF.file)
 
-    formPage v fa p@PageAdminSettingsGaPClassesCreate =
+    formPage v form p@PageAdminSettingsGaPClassesCreate =
         adminFrame p . semanticDiv p $ do
             h3_ "Klasse anlegen"
             a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
-            DF.form v fa $ do
+            form $ do
                 div_ $ do
                     p_ "Klasse"
                     DF.inputText "classname" v

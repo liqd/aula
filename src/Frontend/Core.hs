@@ -55,6 +55,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
@@ -121,8 +122,10 @@ class Page p => FormPage p where
     redirectOf :: p -> FormPageResult p -> UriPath
     -- | Generates a Html view from the given page
     makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPagePayload p)
-    -- | Generates a Html snippet from the given view, form action, and the @p@ page
-    formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
+    -- | @formPage v f p@
+    -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
+    -- The argument @f@ must be used in-place of @DF.form@.
+    formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
 
 -- | Defines some properties for pages
 class Page p where
@@ -342,7 +345,7 @@ instance Page p => Page (FormPageRep p) where
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
-    toHtml fop@(FormPageRep v a frp) = frameToHtml $ formPage v a <$> frp
+    toHtml fop@(FormPageRep v a frp) = frameToHtml $ formPage v (DF.form v a) <$> frp
       where
         frameToHtml (Frame usr bdy)   = pageFrame fop (Just usr) (toHtml bdy)
         frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)

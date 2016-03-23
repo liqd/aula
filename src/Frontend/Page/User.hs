@@ -64,9 +64,9 @@ instance FormPage PageUserSettings where
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
 
-    formPage v fa p = do
+    formPage v form p = do
         semanticDiv p $ do
-            DF.form v fa $ do
+            form $ do
                 h1_ "Einstellungen"
                 p_ "E-mailadresse (optional)"
                 DF.inputText "email" v >> br_ []
