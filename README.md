@@ -4,7 +4,6 @@ status: experimental
 ## Build Status
 
 [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula)
-[![Coverage Status](https://coveralls.io/repos/github/liqd/aula/badge.svg?branch=master)](https://coveralls.io/github/liqd/aula?branch=master)
 
 
 ## Getting started (with docker)
