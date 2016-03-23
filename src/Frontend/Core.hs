@@ -23,7 +23,7 @@ module Frontend.Core
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
     , FormPage, FormPagePayload, FormPageResult
-    , formAction, redirectOf, makeForm, formPage, redirectFormHandler
+    , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
@@ -38,8 +38,10 @@ module Frontend.Core
 where
 
 import Control.Lens
+import Control.Monad (when)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
+import Data.Maybe (isJust, fromJust)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
@@ -126,6 +128,11 @@ class Page p => FormPage p where
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
+    -- | Guard the form, if the 'guardPage' returns an UriPath the page will
+    -- be redirected. It olny guards GET handlers.
+    guardPage :: (ActionM r m) => p -> m (Maybe UriPath)
+    guardPage _ = pure Nothing
+
 
 -- | Defines some properties for pages
 class Page p where
@@ -370,8 +377,13 @@ redirectFormHandler
     -> ServerT (FormHandler p) m
 redirectFormHandler getPage processor = getH :<|> postH
   where
+    guard page = do
+        r <- guardPage page
+        when (isJust r) . redirect . absoluteUriPath $ fromJust r
+
     getH = do
         page <- getPage
+        guard page
         let fa = absoluteUriPath $ formAction page
         v <- getForm fa (processor1 page)
         FormPageRep v fa <$> makeFrame page
