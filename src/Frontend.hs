@@ -46,6 +46,7 @@ import Persistent
 import Types
 
 import qualified Action
+import qualified Backend
 import qualified Frontend.Path as U
 import qualified Persistent.Implementation.STM
 
@@ -60,11 +61,15 @@ runFrontend cfg = do
     persist <- Persistent.Implementation.STM.mkRunPersist
     let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv persist cfg)
-        aulaTopProxy = Proxy :: Proxy AulaTop
-        stateProxy   = Proxy :: Proxy UserState
+
+        aulaTopProxy           = Proxy :: Proxy AulaTop
+        stateProxy             = Proxy :: Proxy UserState
         aulaMainOrTestingProxy = Proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
+
     app <- serveFAction aulaMainOrTestingProxy stateProxy extendClearanceOnSessionToken runAction
              (aulaMain :<|> aulaTesting)
+    api <- serveFAction (Proxy :: Proxy Backend.Api) stateProxy extendClearanceOnSessionToken runAction
+             Backend.api
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
@@ -73,7 +78,7 @@ runFrontend cfg = do
         unNat persist demoDataGen
 
     -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app
+    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app api
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
@@ -85,14 +90,16 @@ runFrontend cfg = do
 type AulaTop
     =  "samples" :> Raw
   :<|> "static"  :> Raw
+  :<|> "api" :> Raw
   :<|> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
   :<|> Raw
 
-aulaTop :: Config -> Application -> Server AulaTop
-aulaTop cfg app =
+aulaTop :: Config -> Application -> Application -> Server AulaTop
+aulaTop cfg app api =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
+  :<|> api
   :<|> (redirect . absoluteUriPath . relPath $ U.ListSpaces)
   :<|> app
   where

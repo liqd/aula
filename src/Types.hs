@@ -35,7 +35,7 @@ import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 import qualified Generics.SOP as SOP
 
-import Test.QuickCheck (Arbitrary)
+import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
 
 -- * a small prelude
@@ -477,7 +477,11 @@ timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where
-    genArbitrary :: Arbitrary a => m a
+    genGen :: Gen a -> m a
+
+-- | FIXME: should either go to the test suite or go away completely.
+genArbitrary :: (GenArbitrary m, Arbitrary a) => m a
+genArbitrary = genGen arbitrary
 
 
 -- * admin pages

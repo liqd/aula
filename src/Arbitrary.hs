@@ -390,7 +390,7 @@ instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
 instance GenArbitrary r => GenArbitrary (Action r) where
-    genArbitrary = liftIO $ generate arbitrary
+    genGen = liftIO . generate
 
 
 -- * arbitrary readable text
@@ -739,7 +739,7 @@ fishAvatars =
     , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
     ]
 
-mkFishUser :: (GenArbitrary m, ActionM r m) => Maybe SchoolClass -> URL -> m User
+mkFishUser :: (GenArbitrary r, ActionM r m) => Maybe SchoolClass -> URL -> m User
 mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
     let first_last = cs . takeBaseName . cs $ avatar
         (fnam, lnam) = case ST.findIndex (== '_') first_last of
@@ -747,7 +747,7 @@ mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -
             Just i -> ( UserFirstName $ ST.take i first_last
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
-    role <- Student <$> maybe genArbitrary pure mSchoolClass
+    role <- Student <$> maybe (persistent genArbitrary) pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
     (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
@@ -772,20 +772,20 @@ fishDelegationNetworkIO = do
     either (error . ppShow) id <$> runExceptT
         (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
 
-fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
+fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
 
-fishDelegationNetworkAction' :: Maybe SchoolClass -> Action Persistent.Implementation.STM.Persist DelegationNetwork
+fishDelegationNetworkAction' :: Maybe SchoolClass -> (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction' mSchoolClass = do
     users <- mkFishUser mSchoolClass `mapM` List.take 25 fishAvatars
     cUser <- currentUser
     let -- invariants:
         -- - u1 and u2 are in the same class or ctx is school.
         -- - no cycles  -- FIXME: not implemented!
-        mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
+        mkdel :: (GenArbitrary r, ActionM r m) => m [Delegation]
         mkdel = do
             ctx :: DelegationContext
-                <- DlgCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
+                <- DlgCtxIdeaSpace . ClassSpace <$> maybe (persistent genArbitrary) pure mSchoolClass
             let fltr u = ctx == DlgCtxIdeaSpace SchoolSpace
                       || case u ^. userRole of
                              Student cl -> ctx == DlgCtxIdeaSpace (ClassSpace cl)
@@ -796,8 +796,8 @@ fishDelegationNetworkAction' mSchoolClass = do
             if List.null users'
                 then pure []
                 else persistent $ do
-                    u1  <- liftIO . generate $ elements users'
-                    u2  <- liftIO . generate $ elements users'
+                    u1  <- genGen $ elements users'
+                    u2  <- genGen $ elements users'
                     (:[]) <$> addDelegation (cUser, ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel

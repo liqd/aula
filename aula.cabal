@@ -74,6 +74,7 @@ library
       Action.Dummy
       Action.Implementation
       Arbitrary
+      Backend
       Config
       CreateRandom
       Data.UriPath
@@ -283,6 +284,7 @@ test-suite spec
   other-modules:
       AllModulesSpec
       AulaTests
+      BackendSpec
       Frontend.CoreSpec
       Frontend.Page.FileUploadSpec
       Frontend.Page.LoginSpec
