@@ -163,7 +163,10 @@ instance FormPage CreateTopic where
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Create Topic"
-                    DF.form v fa $ do
+                    DF.form v fa $ createOrEditTopic v ideas
+
+createOrEditTopic :: Monad m => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+createOrEditTopic v ideas = do
                         label_ $ do
                             span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
                             inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
@@ -175,6 +178,8 @@ instance FormPage CreateTopic where
                         label_ $ do
                             span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
                             formPageIdeaSelection v ideas
+                            -- FIXME: mark the one with the quorum that triggered creating this
+                            -- topic as selected by default.
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Veröffentlichen"
 
@@ -202,20 +207,9 @@ instance FormPage EditTopic where
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Wählen Sie weitere Ideen aus"
-                    DF.form v fa $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Beschreiben Sie das Thema"
-                        -- FIXME I want a placeholder here too
-                            DF.inputTextArea Nothing Nothing "desc" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
-                            formPageIdeaSelection v ideas
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Veröffentlichen"
+                    DF.form v fa $ createOrEditTopic v ideas
+                        -- FIXME: displayed the current contents!
+
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
