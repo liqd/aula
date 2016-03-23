@@ -757,13 +757,13 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
     persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
-    _ <- pr . addFirstUser $ ProtoUser
+    admin <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         Admin (Just (UserPassInitial "admin")) Nothing
 
     let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
     either (error . ppShow) id <$> runExceptT
-        (ac (Action.login "admin" >> fishDelegationNetworkAction))
+        (ac (Action.login admin >> fishDelegationNetworkAction))
 
 fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

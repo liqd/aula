@@ -70,6 +70,7 @@ library
     , vector ==0.10.12.3
   exposed-modules:
       Action
+      Action.Dummy
       Action.Implementation
       Arbitrary
       Config

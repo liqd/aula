@@ -61,7 +61,7 @@ spec = do
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME
           F (arb :: Gen EditIdea)
-        , F (arb :: Gen PageHomeWithLoginPrompt)
+--      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen EditTopic)
@@ -122,10 +122,10 @@ instance PayloadToEnv ProtoIdea where
         "idea-text"     -> pure [TextInput d]
         "idea-category" -> pure [TextInput . cs . show . fromEnum $ c]
 
-instance PayloadToEnv LoginFormData where
-    payloadToEnvMapping _ (LoginFormData name pass) = \case
-        "user" -> pure [TextInput name]
-        "pass" -> pure [TextInput pass]
+instance PayloadToEnv User where
+    payloadToEnvMapping _ u = \case
+        "user" -> pure [TextInput $ u ^. userLogin . fromUserLogin]
+        "pass" -> pure []
 
 ideaCheckboxValue iids path =
     if path `elem` (("idea-" <>) . show <$> iids)

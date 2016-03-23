@@ -17,6 +17,7 @@ import qualified Data.Text as ST
 import Text.Digestive.View (getForm)
 
 import Arbitrary
+import Action.Dummy
 import Data.UriPath
 import Frontend
 import Frontend.Core
@@ -65,9 +66,8 @@ spec = do
 instance (FormPage a, Arbitrary a) => Arbitrary (FormPageRep a) where
     arbitrary = do
         page <- arb
-        let form = makeForm page
         frameAction <- arb
-        view <- getForm frameAction form
+        Right view <- runDummyT $ getForm frameAction (makeForm page)
         pure $ FormPageRep view frameAction (PublicFrame page)
 
 mockAulaMain :: IO Application

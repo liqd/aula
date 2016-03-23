@@ -48,6 +48,7 @@ module Persistent.Api
     , addFirstUser
     , mkMetaInfo
     , mkUserLogin
+    , getCurrentTimestamp
     , mkRandomPassword
     , modifyUser
     , getTopics

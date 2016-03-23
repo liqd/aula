@@ -30,6 +30,7 @@ import qualified Data.Text.IO as ST
 
 import Arbitrary
 import Config (getSamplesPath)
+import Action.Dummy
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude hiding ((<.>), (</>))
@@ -97,7 +98,7 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
 
 instance (FormPage p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = toHtml $ do
-        let v = runIdentity $ getForm "" (makeForm p)
+        let (Right v) = runDummy $ getForm "" (makeForm p)
         formPage v (DF.form v "/pseudo/form/action") p  -- (action doesn't matter here)
 
 instance Arbitrary p => Arbitrary (ToHtmlDefault p) where

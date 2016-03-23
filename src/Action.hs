@@ -119,7 +119,7 @@ instance ThrowError500 ActionExcept where
 
 class ActionError m => ActionUserHandler m where
     -- | Make the user logged in
-    login  :: UserLogin -> m ()
+    login  :: User -> m ()
     -- | Read the current user state
     userState :: Getting a UserState a -> m a
     -- | Make the user log out
