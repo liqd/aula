@@ -179,7 +179,7 @@ createOrEditTopic v ideas = do
         span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
-        -- topic as selected by default.
+        -- topic as selected by default.  (see also: FIXME at makeFormIdeaSelection.)
     footer_ [class_ "form-footer"] $ do
         DF.inputSubmit "Veröffentlichen"
 
@@ -208,7 +208,6 @@ instance FormPage EditTopic where
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Thema bearbeiten"
                     DF.form v fa $ createOrEditTopic v ideas
-                        -- FIXME: displayed the current contents!
 
 
 ideaToFormField :: Idea -> ST
@@ -222,6 +221,9 @@ formPageIdeaSelection v ideas =
             DF.inputCheckbox (ideaToFormField idea) v
             idea ^. ideaTitle . html
 
+-- FIXME: this is called both from CreateTopic and EditTopic.  the ideas listed here should include
+-- wild ones in the surrounding space, plus those already in the topic.  the ones already in the
+-- topic should be pre-selected.
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
                       => [Idea] -> DF.Form v m [AUID Idea]
 makeFormIdeaSelection ideas =
