@@ -196,13 +196,23 @@ instance FormPage EditTopic where
 
     formPage v fa p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
-            h3_ "Wählen Sie weitere Ideen aus"
-            DF.form v fa $ do
-                DF.inputText     "title" v >> br_ []
-                DF.inputTextArea Nothing Nothing "desc" v >> br_ []
-                formPageIdeaSelection v ideas
-                DF.inputSubmit "Speichern"
-                button_ "Abbrechen" -- FIXME
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Wählen Sie weitere Ideen aus"
+                    DF.form v fa $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
+                            inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
+                                "title" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Beschreiben Sie das Thema"
+                        -- FIXME I want a placeholder here too
+                            DF.inputTextArea Nothing Nothing "desc" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
+                            formPageIdeaSelection v ideas
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "Veröffentlichen"
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
