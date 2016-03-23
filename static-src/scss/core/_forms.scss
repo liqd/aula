@@ -69,3 +69,10 @@ select {
 .form-footer {
     @include rem(margin-top, 20px);
 }
+
+.form-error {
+    @include rem(margin-bottom, 30px);
+    color: $color-negative;
+    display: block;
+    font-weight: bold;
+}
