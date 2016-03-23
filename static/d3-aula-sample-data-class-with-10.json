@@ -1,0 +1,104 @@
+{
+    "ctxs": [
+        "2016-7a"
+    ],
+    "links": [
+        {
+            "context": "2016-7a",
+            "source": 3,
+            "target": 4
+        },
+        {
+            "context": "2016-7a",
+            "source": 2,
+            "target": 0
+        },
+        {
+            "context": "2016-7a",
+            "source": 3,
+            "target": 8
+        },
+        {
+            "context": "2016-7a",
+            "source": 3,
+            "target": 2
+        },
+        {
+            "context": "2016-7a",
+            "source": 9,
+            "target": 7
+        },
+        {
+            "context": "2016-7a",
+            "source": 3,
+            "target": 2
+        },
+        {
+            "context": "2016-7a",
+            "source": 9,
+            "target": 7
+        },
+        {
+            "context": "2016-7a",
+            "source": 2,
+            "target": 0
+        },
+        {
+            "context": "2016-7a",
+            "source": 9,
+            "target": 6
+        }
+    ],
+    "nodes": [
+        {
+            "name": "alecau",
+            "power": 2,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/characiformes/alestidae/thumbnails/alestopetersius_caudalis.gif"
+        },
+        {
+            "name": "arnspi",
+            "power": 0,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/characiformes/alestidae/thumbnails/arnoldichthys_spilopterus.gif"
+        },
+        {
+            "name": "aphani",
+            "power": 2,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/characiformes/characidae/thumbnails/aphyocharax_anisitsi.gif"
+        },
+        {
+            "name": "astjor",
+            "power": 0,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/characiformes/characidae/thumbnails/astyanax_jordani.gif"
+        },
+        {
+            "name": "anoano",
+            "power": 1,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/pisces/characiformes/thumnails/anostomus_anostomus.gif"
+        },
+        {
+            "name": "anaana",
+            "power": 0,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/cyprinodontiformes/anablepidae/thumbnails/anableps_anableps.gif"
+        },
+        {
+            "name": "aphaus",
+            "power": 1,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/cyprinodontiformes/cyprinodontidae/thumnails/aphyosemion_australe_gold1.gif"
+        },
+        {
+            "name": "aphstr",
+            "power": 2,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/cyprinodontiformes/cyprinodontidae/thumnails/aphyosemion_striatum.gif"
+        },
+        {
+            "name": "aplpan",
+            "power": 1,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/cyprinodontiformes/cyprinodontidae/thumnails/aplocheilus_panchax_thai.gif"
+        },
+        {
+            "name": "ampcit",
+            "power": 0,
+            "avatar": "http://zierfischverzeichnis.de/klassen/pisces/labroidei/cichlasomatinae/thumbnails/amphilophus_citrinellus_m.gif"
+        }
+    ]
+}
