@@ -59,6 +59,11 @@ instance FormPage PageHomeWithLoginPrompt where
                         "Solltest du dein Passwort nicht mehr kennen, melde dich bitte bei den Admins euer Schule."
             toHtml loginDemoHints
 
+    guardPage _ = do
+        -- Redirect from login if the user is already logged in.
+        li <- Action.isLoggedIn
+        pure $ if li then Just $ relPath U.ListSpaces else Nothing
+
 
 instance ToHtml LoginDemoHints where
     toHtmlRaw = toHtml
