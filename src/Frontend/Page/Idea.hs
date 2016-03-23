@@ -263,7 +263,8 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    -- FIXME: needs to be styled (recycle CreateIdea form!)
+    -- FIXME: factor out code common with CreateIdea.
+    -- FIXME: category choice should look like in CreateIdea.
     formPage v fa p@(EditIdea _idea) =
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
@@ -281,11 +282,11 @@ instance FormPage EditIdea where
                             DF.inputTextArea Nothing Nothing "idea-text" v
                         label_ $ do
                             span_ [class_ "label-text"] "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            DF.inputSelect   "idea-category" v -- FIXME should be pictures but it xplodes
+                            DF.inputSelect "idea-category" v -- FIXME should be pictures but it xplodes
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Idee veröffentlichen"
                             button_ [class_ "btn-cta", value_ ""] $ do
-                                i_ [class_ "icon-trash-o"] nil-- FIXME delete button
+                                i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
                                 "Idee löschen"
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
