@@ -129,7 +129,7 @@ class Page p => FormPage p where
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
     -- | Guard the form, if the 'guardPage' returns an UriPath the page will
-    -- be redirected. It olny guards GET handlers.
+    -- be redirected. It only guards GET handlers.
     guardPage :: (ActionM r m) => p -> m (Maybe UriPath)
     guardPage _ = pure Nothing
 
