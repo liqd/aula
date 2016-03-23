@@ -162,7 +162,7 @@ instance FormPage CreateTopic where
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Create Topic"
+                    h1_ [class_ "main-heading"] "Thema erstellen"
                     DF.form v fa $ createOrEditTopic v ideas
 
 createOrEditTopic :: Monad m => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
@@ -206,7 +206,7 @@ instance FormPage EditTopic where
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Wählen Sie weitere Ideen aus"
+                    h1_ [class_ "main-heading"] "Thema bearbeiten"
                     DF.form v fa $ createOrEditTopic v ideas
                         -- FIXME: displayed the current contents!
 
