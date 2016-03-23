@@ -345,10 +345,12 @@ instance Page p => Page (FormPageRep p) where
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
-    toHtml fop@(FormPageRep v a frp) = frameToHtml $ formPage v (DF.form v a) <$> frp
+    toHtml fop@(FormPageRep v a frp) = frameToHtml $ formPage v form <$> frp
       where
         frameToHtml (Frame usr bdy)   = pageFrame fop (Just usr) (toHtml bdy)
         frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)
+        form bdy = DF.childErrorList "" v >> DF.form v a bdy
+
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)
