@@ -158,25 +158,30 @@ instance FormPage CreateTopic where
         <*> pure space
         <*> makeFormIdeaSelection ideas
 
-    formPage v fa p@(CreateTopic _space ideas) =
+    formPage v form p@(CreateTopic _space ideas) =
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Create Topic"
-                    DF.form v fa $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Beschreiben Sie das Thema"
-                        -- FIXME I want a placeholder here too
-                            DF.inputTextArea Nothing Nothing "desc" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
-                            formPageIdeaSelection v ideas
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Veröffentlichen"
+                    h1_ [class_ "main-heading"] "Thema erstellen"
+                    form $ createOrEditTopic v ideas
+
+createOrEditTopic :: Monad m => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+createOrEditTopic v ideas = do
+    label_ $ do
+        span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
+        inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
+            "title" v
+    label_ $ do
+        span_ [class_ "label-text"] "Beschreiben Sie das Thema"
+    -- FIXME I want a placeholder here too
+        DF.inputTextArea Nothing Nothing "desc" v
+    label_ $ do
+        span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
+        formPageIdeaSelection v ideas
+        -- FIXME: mark the one with the quorum that triggered creating this
+        -- topic as selected by default.  (see also: FIXME at makeFormIdeaSelection.)
+    footer_ [class_ "form-footer"] $ do
+        DF.inputSubmit "Veröffentlichen"
 
 -- Edit topic description and add ideas to topic.
 data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
@@ -197,15 +202,12 @@ instance FormPage EditTopic where
         <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
         <*> makeFormIdeaSelection ideas
 
-    formPage v fa p@(EditTopic _space _topic ideas) = do
+    formPage v form p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
-            h3_ "Wählen Sie weitere Ideen aus"
-            DF.form v fa $ do
-                DF.inputText     "title" v >> br_ []
-                DF.inputTextArea Nothing Nothing "desc" v >> br_ []
-                formPageIdeaSelection v ideas
-                DF.inputSubmit "Speichern"
-                button_ "Abbrechen" -- FIXME
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Thema bearbeiten"
+                    form $ createOrEditTopic v ideas
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
@@ -218,6 +220,9 @@ formPageIdeaSelection v ideas =
             DF.inputCheckbox (ideaToFormField idea) v
             idea ^. ideaTitle . html
 
+-- FIXME: this is called both from CreateTopic and EditTopic.  the ideas listed here should include
+-- wild ones in the surrounding space, plus those already in the topic.  the ones already in the
+-- topic should be pre-selected.
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
                       => [Idea] -> DF.Form v m [AUID Idea]
 makeFormIdeaSelection ideas =

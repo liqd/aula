@@ -64,12 +64,12 @@ instance FormPage PageUserSettings where
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
 
-    formPage v fa p = do
+    formPage v form p = do
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Einstellungen"
-                    DF.form v fa $ do
+                    form $ do
                         label_ $ do
                             span_ [class_ "label-text"] "E-mailadresse (optional)"
                             inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
@@ -88,7 +88,7 @@ instance FormPage PageUserSettings where
                             inputPassword_ [class_ "m-small"]
                                 "new-password2" v
                         footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "ANDERUNGEN SPEICHERN"
+                            DF.inputSubmit "Änderungen speichern"
 
 
 userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings) action
