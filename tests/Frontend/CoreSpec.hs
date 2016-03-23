@@ -21,6 +21,7 @@ import Text.Digestive.Types
 import Text.Digestive.View
 
 import qualified Data.Text.Lazy as LT
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Action.Implementation
@@ -202,7 +203,7 @@ renderForm (F g) =
     it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . failOnError $ do
             v <- getForm (absoluteUriPath $ formAction page) (makeForm page)
-            return . LT.length . renderText $ formPage v "formAction" page
+            return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
 -- | Run the given action for testing.

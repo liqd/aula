@@ -24,6 +24,7 @@ import Text.Digestive.View (getForm)
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
+import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Data.Set as Set
 import qualified Data.Text.IO as ST
 
@@ -97,7 +98,7 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
 instance (FormPage p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = toHtml $ do
         let v = runIdentity $ getForm "" (makeForm p)
-        formPage v "/pseudo/form/action" p  -- (action doesn't matter here)
+        formPage v (DF.form v "/pseudo/form/action") p  -- (action doesn't matter here)
 
 instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
     arbitrary = ToHtmlDefault <$> arbitrary

@@ -158,12 +158,12 @@ instance FormPage CreateTopic where
         <*> pure space
         <*> makeFormIdeaSelection ideas
 
-    formPage v fa p@(CreateTopic _space ideas) =
+    formPage v form p@(CreateTopic _space ideas) =
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Thema erstellen"
-                    DF.form v fa $ createOrEditTopic v ideas
+                    form $ createOrEditTopic v ideas
 
 createOrEditTopic :: Monad m => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
 createOrEditTopic v ideas = do
@@ -202,13 +202,12 @@ instance FormPage EditTopic where
         <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
         <*> makeFormIdeaSelection ideas
 
-    formPage v fa p@(EditTopic _space _topic ideas) = do
+    formPage v form p@(EditTopic _space _topic ideas) = do
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Thema bearbeiten"
-                    DF.form v fa $ createOrEditTopic v ideas
-
+                    form $ createOrEditTopic v ideas
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)

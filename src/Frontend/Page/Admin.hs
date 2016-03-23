@@ -232,19 +232,17 @@ instance FormPage PageAdminSettingsDurations where
         readPeriod (DurationDays d) (DurationDays v) =
             fromMaybe d . readMaybe <$> DF.string (Just (show v))
 
-    formPage v fa p = adminFrame p $ do
-        semanticDiv p $ do
-            DF.form v fa $ do
-                -- FIXME these should be "number" fields
-                label_ [class_ "input-append"] $ do
-                    span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
-                    inputText_ [class_ "input-number input-appendee"] "elab-duration" v
-                    span_ [class_ "input-helper"] "Tage"
-                label_ [class_ "input-append"] $ do
-                    span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
-                    inputText_  [class_ "input-number input-appendee"] "vote-duration" v
-                    span_ [class_ "input-helper"] "Tage"
-                DF.inputSubmit "AENDERUNGEN SPIECHERN"
+    formPage v form p = adminFrame p . semanticDiv p . form $ do
+        -- FIXME these should be "number" fields
+        label_ [class_ "input-append"] $ do
+            span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
+            inputText_ [class_ "input-number input-appendee"] "elab-duration" v
+            span_ [class_ "input-helper"] "Tage"
+        label_ [class_ "input-append"] $ do
+            span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
+            inputText_  [class_ "input-number input-appendee"] "vote-duration" v
+            span_ [class_ "input-helper"] "Tage"
+        DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations) m
 adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) saveDurations
@@ -274,18 +272,16 @@ instance FormPage PageAdminSettingsQuorum where
       where
         readPercentage d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
 
-    formPage v fa p = adminFrame p $ do
-        semanticDiv p $ do
-            DF.form v fa $ do
-                label_ [class_ "input-append"] $ do
-                    span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
-                    inputText_ [class_ "input-number input-appendee"] "school-quorum" v
-                    span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
-                label_ [class_ "input-append"] $ do
-                    span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
-                    inputText_ [class_ "input-number input-appendee"] "class-quorum" v
-                    span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
-                DF.inputSubmit "AENDERUNGEN SPIECHERN"
+    formPage v form p = adminFrame p . semanticDiv p . form $ do
+        label_ [class_ "input-append"] $ do
+            span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
+            inputText_ [class_ "input-number input-appendee"] "school-quorum" v
+            span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
+        label_ [class_ "input-append"] $ do
+            span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
+            inputText_ [class_ "input-number input-appendee"] "class-quorum" v
+            span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
+        DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
 adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
@@ -410,28 +406,26 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
             _             -> Nothing  -- FIXME: see RoleSelection
 
 
-    formPage v fa p@(PageAdminSettingsGaPUsersEdit user _classes) = adminFrame p $ do
-        semanticDiv p $ do
-            div_ [class_ "admin-container"] $ do
-                DF.form v fa $ do
-                    div_ [class_ "col-3-12"] $ do
-                        div_ [class_ "upload-avatar"] $ do
-                            a_ [href_ U.Broken] $ do
-                                i_ [class_ "upload-avatar-icon icon-camera"] $ do
-                                    avatarImgFromHasMeta user
-                    div_ [class_ "col-9-12"] $ do
-                        h1_ [class_ "admin-main-heading"] $ do
-                            toHtml (user ^. userLogin . fromUserLogin)
-                        label_ [class_ "col-6-12"] $ do
-                            span_ [class_ "label-text"] "Nutzerrolle"
-                            inputSelect_ [class_ "m-stretch"] "user-role" v
-                        label_ [class_ "col-6-12"] $ do
-                            span_ [class_ "label-text"] "Klasse"
-                            inputSelect_ [class_ "m-stretch"]  "user-class" v
-                        a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
-                        div_ [class_ "admin-buttons"] $ do
-                            a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
-                            DF.inputSubmit "Änderungen speichern"
+    formPage v form p@(PageAdminSettingsGaPUsersEdit user _classes) =
+        adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
+            div_ [class_ "col-3-12"] $ do
+                div_ [class_ "upload-avatar"] $ do
+                    a_ [href_ U.Broken] $ do
+                        i_ [class_ "upload-avatar-icon icon-camera"] $ do
+                            avatarImgFromHasMeta user
+            div_ [class_ "col-9-12"] $ do
+                h1_ [class_ "admin-main-heading"] $ do
+                    toHtml (user ^. userLogin . fromUserLogin)
+                label_ [class_ "col-6-12"] $ do
+                    span_ [class_ "label-text"] "Nutzerrolle"
+                    inputSelect_ [class_ "m-stretch"] "user-role" v
+                label_ [class_ "col-6-12"] $ do
+                    span_ [class_ "label-text"] "Klasse"
+                    inputSelect_ [class_ "m-stretch"]  "user-class" v
+                a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                div_ [class_ "admin-buttons"] $ do
+                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
+                    DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesEdit where
     toHtml = toHtmlRaw
@@ -547,18 +541,17 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
         <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
         <*> ("file"      DF..: DF.file)
 
-    formPage v fa p@PageAdminSettingsGaPClassesCreate =
-        adminFrame p . semanticDiv p $ do
-            h3_ "Klasse anlegen"
-            a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
-            DF.form v fa $ do
-                div_ $ do
-                    p_ "Klasse"
-                    DF.inputText "classname" v
-                div_ $ do
-                    p_ "CSV-Datei"
-                    DF.inputFile "file" v
-                DF.inputSubmit "upload!"
+    formPage v form p@PageAdminSettingsGaPClassesCreate = adminFrame p . semanticDiv p $ do
+        h3_ "Klasse anlegen"
+        a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
+        form $ do
+            div_ $ do
+                p_ "Klasse"
+                DF.inputText "classname" v
+            div_ $ do
+                p_ "CSV-Datei"
+                DF.inputFile "file" v
+            DF.inputSubmit "upload!"
 
 theOnlySchoolYearHack :: Int
 theOnlySchoolYearHack = 2016
