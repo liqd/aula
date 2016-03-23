@@ -734,15 +734,15 @@ fishAvatars =
     , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
     ]
 
-mkFishUser :: (GenArbitrary m, ActionM r m) => URL -> m User
-mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
+mkFishUser :: (GenArbitrary m, ActionM r m) => Maybe SchoolClass -> URL -> m User
+mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
     let first_last = cs . takeBaseName . cs $ avatar
         (fnam, lnam) = case ST.findIndex (== '_') first_last of
             Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
             Just i -> ( UserFirstName $ ST.take i first_last
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
-    role <- Student <$> genArbitrary
+    role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
     (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
@@ -766,15 +766,19 @@ fishDelegationNetworkIO = do
         (ac (Action.login "admin" >> fishDelegationNetworkAction))
 
 fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
-fishDelegationNetworkAction = do
-    users <- mkFishUser `mapM` fishAvatars
+fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
+
+fishDelegationNetworkAction' :: Maybe SchoolClass -> Action Persistent.Implementation.STM.Persist DelegationNetwork
+fishDelegationNetworkAction' mSchoolClass = do
+    users <- mkFishUser mSchoolClass `mapM` List.take 25 fishAvatars
     cUser <- currentUser
     let -- invariants:
         -- - u1 and u2 are in the same class or ctx is school.
         -- - no cycles  -- FIXME: not implemented!
         mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
         mkdel = do
-            ctx :: DelegationContext <- liftIO . generate $ arbitrary
+            ctx :: DelegationContext
+                <- DelCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
             let fltr u = ctx == DelCtxIdeaSpace SchoolSpace
                       || case u ^. userRole of
                              Student cl -> ctx == DelCtxIdeaSpace (ClassSpace cl)
@@ -789,7 +793,7 @@ fishDelegationNetworkAction = do
                     u2  <- liftIO . generate $ elements users'
                     (:[]) <$> addDelegation (cUser, ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
-    DelegationNetwork users . join <$> replicateM 500 mkdel
+    DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel
 
 -- (NOTE: we only want to break cycles inside each context.  cyclical paths travelling through
 -- different contexts are not really cycles.)
