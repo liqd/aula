@@ -22,7 +22,7 @@ module Frontend.Core
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
-    , FormPage, FormPageResult
+    , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
@@ -40,7 +40,6 @@ where
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
-import Data.Functor (($>))
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
@@ -108,13 +107,20 @@ type FormHandler p = FormHandlerT p ST
 
 -- | Render Form based Views
 class Page p => FormPage p where
+
+    -- | Information parsed from the form
+    type FormPagePayload p :: *
+
+    -- | Information created while processing the form data
     type FormPageResult p :: *
+    type FormPageResult p = ()
+
     -- | The form action used in form generation
     formAction :: p -> UriPath
     -- | Calculates a redirect address from the given page
-    redirectOf :: p -> UriPath
+    redirectOf :: p -> FormPageResult p -> UriPath
     -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPageResult p)
+    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | Generates a Html snippet from the given view, form action, and the @p@ page
     formPage :: (Monad m) => View (HtmlT m ()) -> ST -> p -> HtmlT m ()
 
@@ -355,7 +361,7 @@ instance FormPage p => ToHtml (FormPageRep p) where
 redirectFormHandler
     :: (FormPage p, Page p, ActionM r m)
     => m p                       -- ^ Page representation
-    -> (FormPageResult p -> m a) -- ^ Processor for the form result
+    -> (FormPagePayload p -> m (FormPageResult p)) -- ^ Processor for the form result
     -> ServerT (FormHandler p) m
 redirectFormHandler getPage processor = getH :<|> postH
   where
@@ -378,7 +384,7 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
-    processor2 page result = processor result $> absoluteUriPath (redirectOf page)
+    processor2 page result = absoluteUriPath . redirectOf page <$> processor result
 
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a

@@ -215,12 +215,12 @@ menulink' targetMenuItem =
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
 
 instance FormPage PageAdminSettingsDurations where
-    type FormPageResult PageAdminSettingsDurations = Durations
+    type FormPagePayload PageAdminSettingsDurations = Durations
 
     formAction _ = relPath $ U.Admin U.AdminDuration
 
     -- FIXME: Do we redirect to the same page???
-    redirectOf _ = relPath $ U.Admin U.AdminDuration
+    redirectOf _ _ = relPath $ U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
@@ -262,10 +262,10 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
 -- ** Quorum
 
 instance FormPage PageAdminSettingsQuorum where
-    type FormPageResult PageAdminSettingsQuorum = Quorums
+    type FormPagePayload PageAdminSettingsQuorum = Quorums
 
     formAction _ = relPath $ U.Admin U.AdminQuorum
-    redirectOf _ = relPath $ U.Admin U.AdminQuorum
+    redirectOf _ _ = relPath $ U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
@@ -383,12 +383,12 @@ roleSelectionChoices =
              ]
 
 instance FormPage PageAdminSettingsGaPUsersEdit where
-    type FormPageResult PageAdminSettingsGaPUsersEdit = EditUserPayload
+    type FormPagePayload PageAdminSettingsGaPUsersEdit = EditUserPayload
 
     formAction (PageAdminSettingsGaPUsersEdit user _classes) =
         relPath . U.Admin . U.AdminEditUser $ user ^. _Id
 
-    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) =
+    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) _ =
         relPath . U.Admin . U.AdminAccess $ PermUserView
 
     -- FIXME: Show the user's role and class as default in the selections.
@@ -535,12 +535,12 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 instance SOP.Generic BatchCreateUsersFormData
 
 instance FormPage PageAdminSettingsGaPClassesCreate where
-    type FormPageResult PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+    type FormPagePayload PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
 
     formAction PageAdminSettingsGaPClassesCreate =
         relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassCreate
 
-    redirectOf PageAdminSettingsGaPClassesCreate =
+    redirectOf PageAdminSettingsGaPClassesCreate _ =
         relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassView
 
     makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData

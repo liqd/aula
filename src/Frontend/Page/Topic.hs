@@ -142,10 +142,13 @@ viewTopicHeaderDiv topic tab = do
     space   = topic ^. topicIdeaSpace
 
 instance FormPage CreateTopic where
-    type FormPageResult CreateTopic = ProtoTopic
+    type FormPagePayload CreateTopic = ProtoTopic
+    type FormPageResult CreateTopic = Topic
 
     formAction (CreateTopic space _) = relPath $ U.Space space U.CreateTopic
-    redirectOf (CreateTopic space _) = relPath $ U.Space space U.ListTopics
+
+    redirectOf (CreateTopic space _) topic =
+        relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
     makeForm (CreateTopic space ideas) =
         ProtoTopic
@@ -183,10 +186,10 @@ data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
 instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
-    type FormPageResult EditTopic = TopicFormPayload
+    type FormPagePayload EditTopic = TopicFormPayload
 
     formAction (EditTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
-    redirectOf (EditTopic space topic _) = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
+    redirectOf (EditTopic space topic _) _ = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
 
     makeForm (EditTopic _space topic ideas) =
         TopicFormPayload
