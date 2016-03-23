@@ -167,21 +167,21 @@ instance FormPage CreateTopic where
 
 createOrEditTopic :: Monad m => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
 createOrEditTopic v ideas = do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Beschreiben Sie das Thema"
-                        -- FIXME I want a placeholder here too
-                            DF.inputTextArea Nothing Nothing "desc" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
-                            formPageIdeaSelection v ideas
-                            -- FIXME: mark the one with the quorum that triggered creating this
-                            -- topic as selected by default.
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Veröffentlichen"
+    label_ $ do
+        span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
+        inputText_ [class_ "m-small", placeholder_ "z.B. Computerraum"]
+            "title" v
+    label_ $ do
+        span_ [class_ "label-text"] "Beschreiben Sie das Thema"
+    -- FIXME I want a placeholder here too
+        DF.inputTextArea Nothing Nothing "desc" v
+    label_ $ do
+        span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
+        formPageIdeaSelection v ideas
+        -- FIXME: mark the one with the quorum that triggered creating this
+        -- topic as selected by default.
+    footer_ [class_ "form-footer"] $ do
+        DF.inputSubmit "Veröffentlichen"
 
 -- Edit topic description and add ideas to topic.
 data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
