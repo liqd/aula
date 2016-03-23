@@ -332,7 +332,26 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
     toHtml = toHtmlRaw
     toHtmlRaw p@PageAdminSettingsGaPUsersCreate =
         adminFrame p . semanticDiv p $ do
-            toHtml (show p)
+            div_ [class_ "admin-container"] $ do
+                form_ $ do -- FIXME
+                    div_ [class_ "col-3-12"] $ do
+                        div_ [class_ "upload-avatar"] $ do
+                            a_ [href_ U.Broken] $ do
+                                i_ [class_ "upload-avatar-icon icon-camera"] nil
+                    div_ [class_ "col-9-12"] $ do
+                        h1_ [class_ "admin-main-heading"] $ do
+                            "UserName" -- FIXME
+                        label_ [class_ "col-6-12"] $ do
+                            span_ [class_ "label-text"] "Nutzerrolle"
+                            -- FIXME inputSelect_ [class_ "m-stretch"] "user-role" v
+                            select_ [class_ "m-stretch"] nil
+                        label_ [class_ "col-6-12"] $ do
+                            span_ [class_ "label-text"] "Klasse"
+                            -- FIXME inputSelect_ [class_ "m-stretch"]  "user-class" v
+                            select_ [class_ "m-stretch"] nil
+                        a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                        div_ [class_ "admin-buttons"] $ do
+                            DF.inputSubmit "speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
@@ -405,14 +424,13 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
             ClassGuest cl -> Just cl
             _             -> Nothing  -- FIXME: see RoleSelection
 
-
     formPage v form p@(PageAdminSettingsGaPUsersEdit user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
             div_ [class_ "col-3-12"] $ do
                 div_ [class_ "upload-avatar"] $ do
                     a_ [href_ U.Broken] $ do
-                        i_ [class_ "upload-avatar-icon icon-camera"] $ do
-                            avatarImgFromHasMeta user
+                        i_ [class_ "upload-avatar-icon icon-camera"] nil
+                        avatarImgFromHasMeta user
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     toHtml (user ^. userLogin . fromUserLogin)
