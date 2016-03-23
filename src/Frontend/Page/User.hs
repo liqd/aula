@@ -66,18 +66,29 @@ instance FormPage PageUserSettings where
 
     formPage v fa p = do
         semanticDiv p $ do
-            DF.form v fa $ do
-                h1_ "Einstellungen"
-                p_ "E-mailadresse (optional)"
-                DF.inputText "email" v >> br_ []
-                h3_ "Passwort andern"
-                p_ "aktualles Passwort"
-                DF.inputText "old-password" v >> br_ []
-                p_ "neues Passwort"
-                DF.inputText "new-password1" v >> br_ []
-                p_ "neues Passwort bestatigen"
-                DF.inputText "new-password2" v >> br_ []
-                DF.inputSubmit "ANDERUNGEN SPEICHERN"
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Einstellungen"
+                    DF.form v fa $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "E-mailadresse (optional)"
+                            inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
+                                "email" v
+                        h2_ [class_ "label-header"] "Passwort andern"
+                        label_ $ do
+                            span_ [class_ "label-text"] "aktualles Passwort"
+                            inputPassword_ [class_ "m-small"]
+                                "old-password" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "neues Passwort"
+                            inputPassword_ [class_ "m-small"]
+                                "new-password1" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "neues Passwort bestatigen"
+                            inputPassword_ [class_ "m-small"]
+                                "new-password2" v
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "ANDERUNGEN SPEICHERN"
 
 
 userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings) action

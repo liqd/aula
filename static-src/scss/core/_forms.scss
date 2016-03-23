@@ -52,6 +52,10 @@ select {
     display: block;
 }
 
+.label-header {
+    @include rem(margin-bottom, 20px);
+}
+
 .input-append {
     float: left;
     width: 100%;
