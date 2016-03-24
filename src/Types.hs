@@ -664,8 +664,9 @@ isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
 
-topicToIdeaLocation :: Topic -> IdeaLocation
-topicToIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
+-- | Construct an 'IdeaLocation' from a 'Topic'
+topicIdeaLocation :: Topic -> IdeaLocation
+topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
 -- | german role name
 roleLabel :: IsString s => Role -> s

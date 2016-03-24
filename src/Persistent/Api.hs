@@ -31,6 +31,8 @@ module Persistent.Api
 
     , getSpaces
     , getIdeas
+    , getWildIdeas
+    , getIdeasWithTopic
     , getNumVotersForIdea
     , addIdeaSpaceIfNotExists
     , addIdea
@@ -81,7 +83,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad (unless, replicateM)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
-import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
@@ -172,6 +173,12 @@ getSpaces = getDb dbSpaces
 getIdeas :: PersistM m => m [Idea]
 getIdeas = getDb dbIdeas
 
+getWildIdeas :: PersistM m => m [Idea]
+getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
+
+getIdeasWithTopic :: PersistM m => m [Idea]
+getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
+
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
 getNumVotersForIdea :: PersistM m => Idea -> m (Idea, Int)
 getNumVotersForIdea idea = (idea,) . length . filter hasAccess <$> getUsers
@@ -235,8 +242,7 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    Just loc <- ideaLocationFromTopic (t ^. _Id)
-    moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) loc
+    moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) (topicIdeaLocation t)
     return t
 
 addDelegation :: UserWithProto Delegation -> PersistM m => m Delegation
@@ -257,11 +263,13 @@ findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
 findIdeasByTopicId tid = do
-    Just loc <- ideaLocationFromTopic tid
-    findAllInBy dbIdeas ideaLocation loc
+    mt <- findTopic tid
+    case mt of
+        Nothing -> pure []
+        Just t  -> findIdeasByTopic t
 
 findIdeasByTopic :: Topic -> PersistM m => m [Idea]
-findIdeasByTopic = findIdeasByTopicId . view _Id
+findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
@@ -392,10 +400,6 @@ mkMetaInfo cUser now oid = MetaInfo
 
 nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
 nextMetaInfo cUser = mkMetaInfo cUser <$> getCurrentTimestamp <*> nextId
-
--- | Construct an 'IdeaLocation' from a 'Topic' id.
-ideaLocationFromTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
-ideaLocationFromTopic tid = (`IdeaLocationTopic` tid) . view topicIdeaSpace <$$> findTopic tid
 
 ideaPhase :: Idea -> PersistM m => m (Maybe Phase)
 ideaPhase idea = case idea ^. ideaLocation of

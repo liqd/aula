@@ -6,7 +6,7 @@
 module Persistent.ApiSpec where
 
 import Arbitrary ()
-import Control.Lens
+import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
 import Data.String.Conversions
 import Servant.Server
@@ -91,29 +91,30 @@ findInBySpec name getXs findXBy f change =
                     mu <- liftIO . rp $ findXBy y
                     mu `shouldBe` Just x
 
-findAllInBySpec :: (Eq a, Show a, Arbitrary k) =>
-                    String -> Persist [a] -> (k -> Persist [a]) ->
+findAllInBySpec :: (Eq a, Show a) =>
+                    String -> Persist [a] -> Persist (Gen k) -> (k -> Persist [a]) ->
                     Fold a k -> (k -> k) ->
                     Spec
-findAllInBySpec name getXs findAllXBy f change =
+findAllInBySpec name getXs genKs findAllXBy f change =
     describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "will come up empty" $ \(Nat rp) -> do
-                rf <- liftIO $ generate arbitrary
+                genK <- liftIO . rp $ genKs
+                rf <- liftIO $ generate genK
                 us <- liftIO . rp $ findAllXBy rf
                 us `shouldBe` []
 
         context "on initial database" . before mkInitial $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \(Nat rp) -> do
-                    x:_ <- liftIO $ rp getXs
+                    [x] <- liftIO $ rp getXs
                     let Just y = x ^? f
                     us <- liftIO . rp $ findAllXBy (change y)
                     us `shouldBe` []
             context "if it exists" $ do
                 it "will come up with the newly added record" $ \(Nat rp) -> do
-                    x:_ <- liftIO $ rp getXs
-                    let Just y = x ^? f
+                    [x] <- liftIO $ rp getXs
+                    let [y] = x ^.. f
                     us <- liftIO . rp $ findAllXBy y
                     us `shouldBe` [x]
 
@@ -125,6 +126,8 @@ spec :: Spec
 spec = do
     getDbSpec "getIdeas" getIdeas
     addDbSpec "addIdea"  getIdeas addIdea
+    getDbSpec "getWildIdeas"      getWildIdeas
+    getDbSpec "getIdeasWithTopic" getIdeasWithTopic
 
     getDbSpec "getUsers" getUsers
     addDbSpec "addUsers" getUsers addUser
@@ -135,14 +138,10 @@ spec = do
     findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec "findTopic" getTopics findTopic _Id changeAUID
 
-    {- FIXME: this test doesn't work well with arbitrary, inconsistent databases
-
-    let getIdeasWithTopic :: Persist [Idea]
-        getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
+    let getArbTopicIds :: Persist (Gen (AUID Topic))
+        getArbTopicIds = elements . map (view _Id) <$> getTopics
     findAllInBySpec "findIdeasByTopicId"
-        getIdeasWithTopic findIdeasByTopicId (ideaMaybeTopicId . _Just) changeAUID
-
-    -}
+        getIdeasWithTopic getArbTopicIds findIdeasByTopicId ideaTopicId changeAUID
 
     describe "addIdeaSpace" $ do
         let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> IO)

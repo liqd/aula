@@ -73,7 +73,7 @@ genTopic ideaSpaces =
 genIdeaLocation :: [IdeaSpace] -> [Topic] -> Gen IdeaLocation
 genIdeaLocation ideaSpaces topics = oneof
     [ IdeaLocationSpace <$> elements ideaSpaces
-    , topicToIdeaLocation <$> elements topics
+    , topicIdeaLocation <$> elements topics
     ]
 
 genIdea :: [IdeaSpace] -> [Topic] -> Gen ProtoIdea
