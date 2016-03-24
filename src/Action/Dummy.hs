@@ -24,8 +24,8 @@ runDummy :: Dummy a -> Either ActionExcept a
 runDummy = runIdentity . runDummyT
 
 notImplemented :: Monad m => String -> String -> DummyT m a
-notImplemented meth _class = throwError500 $ unlines
-    ["Method ", meth, " from class ", _class, " not implemented for instance Dummy"]
+notImplemented meth cl = throwError500 $ unlines
+    ["Method ", meth, " from class ", cl, " not implemented for instance Dummy"]
 
 instance Monad m => PersistM (DummyT m) where
     getDb _             = notImplemented "PersistM" "getDb"
