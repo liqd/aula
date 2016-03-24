@@ -7,9 +7,9 @@
 module Frontend.Page.Login
 where
 
-import qualified Text.Digestive.Form as DF
+import Text.Digestive
 
-import Action (ActionM)
+import Action (ActionM, persistent)
 import qualified Action
 import Frontend.Prelude
 
@@ -35,15 +35,26 @@ data LoginDemoHints = LoginDemoHints { fromLoginDemoHints :: [User] }
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
+checkLogin :: (v ~ Html (), ActionM r m) => LoginFormData -> m (Result v User)
+checkLogin (LoginFormData uLogin _pass) = do
+    muser <- persistent $ findUserByLogin (UserLogin uLogin)
+    pure $ case muser of
+        Nothing ->
+            Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
+        Just user -> do
+            -- FIXME check password
+            pure user
+
 instance FormPage PageHomeWithLoginPrompt where
-    type FormPagePayload PageHomeWithLoginPrompt = LoginFormData
+    type FormPagePayload PageHomeWithLoginPrompt = User
 
     formAction _ = relPath $ U.Login Nothing
     redirectOf _ _ = relPath U.ListSpaces
 
-    makeForm _ = LoginFormData
-        <$> ("user" .: DF.text Nothing)
-        <*> ("pass" .: DF.text Nothing)
+    makeForm _ = validateM checkLogin $
+        LoginFormData
+        <$> ("user" .: text Nothing)
+        <*> ("pass" .: text Nothing)
 
     formPage v form p@(PageHomeWithLoginPrompt status loginDemoHints) =
         semanticDiv p $ do
@@ -84,7 +95,6 @@ instance ToHtml LoginDemoHints where
 -- * handlers
 
 login :: (ActionM r action) => Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
-login success = redirectFormHandler getPage makeUserLogin
+login success = redirectFormHandler getPage Action.login
   where
-    makeUserLogin (LoginFormData user _pass) = Action.login $ UserLogin user
     getPage = PageHomeWithLoginPrompt success . LoginDemoHints <$> Action.persistent getUsers
