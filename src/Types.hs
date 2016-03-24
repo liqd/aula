@@ -200,7 +200,7 @@ instance SOP.Generic UpDown
 -- | "Ideenraum" is one of "Klasse", "Schule".
 data IdeaSpace =
     SchoolSpace
-  | ClassSpace SchoolClass
+  | ClassSpace { _ideaSpaceSchoolClass :: SchoolClass }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaSpace
@@ -311,8 +311,8 @@ instance SOP.Generic ProtoUser
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
-    Student SchoolClass
-  | ClassGuest SchoolClass  -- ^ e.g., parents
+    Student    { _studentSchoolClass :: SchoolClass }
+  | ClassGuest { _guestSchoolClass   :: SchoolClass } -- ^ e.g., parents
   | SchoolGuest  -- ^ e.g., researchers
   | Moderator
   | Principal
@@ -322,8 +322,8 @@ data Role =
 instance SOP.Generic Role
 
 data UserPass =
-    UserPassInitial   ST
-  | UserPassEncrypted SBS  -- FIXME: use "Crypto.Scrypt.EncryptedPass"
+    UserPassInitial   { _userPassInitial   :: ST }
+  | UserPassEncrypted { _userPassEncrypted :: SBS } -- FIXME: use "Crypto.Scrypt.EncryptedPass"
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserPass
@@ -356,14 +356,17 @@ data ProtoDelegation = ProtoDelegation
 instance SOP.Generic ProtoDelegation
 
 data DelegationContext =
-    DelCtxIdeaSpace IdeaSpace
-  | DelCtxTopic (AUID Topic)
-  | DelCtxIdea (AUID Idea)
+    DelCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
+  | DelCtxTopic     { _delCtxTopicId   :: AUID Topic }
+  | DelCtxIdea      { _delCtxIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationContext
 
-data DelegationNetwork = DelegationNetwork [User] [Delegation]
+data DelegationNetwork = DelegationNetwork
+    { _networkUsers         :: [User]
+    , _networkDelegations   :: [Delegation]
+    }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic DelegationNetwork
@@ -534,6 +537,7 @@ makeLenses ''Comment
 makeLenses ''CommentVote
 makeLenses ''Delegation
 makeLenses ''DelegationContext
+makeLenses ''DelegationNetwork
 makeLenses ''Document
 makeLenses ''UserPass
 makeLenses ''UserEmail
@@ -547,6 +551,7 @@ makeLenses ''MetaInfo
 makeLenses ''Phase
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
+makeLenses ''Role
 makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
