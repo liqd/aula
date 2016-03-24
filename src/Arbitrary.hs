@@ -949,7 +949,6 @@ constantSampleIdea = Idea
                   , _metaChangedAt = constantSampleTimestamp
                   }
             , _ideaResultValue = Winning
-            , _ideaResultReason = Markdown { fromMarkdown = "" }
             }
     }
 

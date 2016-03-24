@@ -121,10 +121,11 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "heroic-badges"] $ do
                 case idea ^. ideaResult of
-                    NotFeasible -> do
+                    NotFeasible _reason -> do
                         div_ [class_ "m-not-feasable"] $ do
                         i_ [class_ "icon-times"] nil
                         "vom Direktor abgelehnt"
+                        -- FIXME display the _reason (do we? shall we?)
                 when (winningIdea idea) $ do
                     div_ [class_ "m-feasable"] $ do
                         i_ [class_ "icon-check"] nil

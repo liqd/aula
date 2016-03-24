@@ -14,7 +14,7 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (Lens', Traversal', makeLenses, makePrisms, (^.), (^?), _Just)
+import Control.Lens (Lens', Traversal', makeLenses, makePrisms, (^.), _Just, has)
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -152,14 +152,16 @@ instance SOP.Generic IdeaVoteValue
 data IdeaResult = IdeaResult
     { _ideaResultMeta   :: MetaInfo IdeaResult
     , _ideaResultValue  :: IdeaResultValue
-    , _ideaResultReason :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaResult
 
-data IdeaResultValue = NotFeasible | Winning | NotEnoughVotes
-  deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
+data IdeaResultValue
+    = NotFeasible { _ideaResultReason :: Document }
+    | Winning
+    | NotEnoughVotes
+  deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaResultValue
 
@@ -588,10 +590,10 @@ instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
 
 notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just NotFeasible
+notFeasibleIdea = has $ ideaResult . _Just . ideaResultValue . _NotFeasible
 
 winningIdea :: Idea -> Bool
-winningIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just Winning
+winningIdea = has $ ideaResult . _Just . ideaResultValue . _Winning
 
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace
