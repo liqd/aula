@@ -151,8 +151,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
 createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = join . persistent $ do
-    -- FIXME: 404
-    Just user <- findInById dbUsers userId
+    user <- maybe404 "No such user" <$> findInById dbUsers userId
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
     return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
 
@@ -203,6 +202,5 @@ renderDelegations _ = do
 delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
 delegatedVotes userId = join . persistent $ do
-    -- FIXME: 404
-    Just user <- findInById dbUsers userId
+    user <- maybe404 "No such user" <$> findInById dbUsers userId
     return $ makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes

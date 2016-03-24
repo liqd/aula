@@ -26,7 +26,9 @@ import Data.Time
 import Data.UriPath
 import GHC.Generics
 import Lucid
+import Servant (err404, ServantErr(..))
 import Servant.API (FromHttpApiData(parseUrlPiece))
+import Servant.Missing (MonadServantErr, throwServantErr)
 import Text.Read (readMaybe)
 
 import qualified Data.Text as ST
@@ -54,6 +56,11 @@ justIf x b = if b then Just x else Nothing
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
+
+maybe404 :: MonadServantErr err m => LBS -> Maybe a -> m a
+maybe404 msg = \case
+    Nothing -> throwServantErr $ err404 { errBody = msg }
+    Just x  -> pure x
 
 
 -- * prototypes for types

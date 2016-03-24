@@ -88,6 +88,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
+import Servant.Missing (MonadServantErr)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -238,7 +239,7 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    Just loc <- ideaLocationFromTopic (t ^. _Id)
+    loc <- maybe404 "No such topic" =<< ideaLocationFromTopic (t ^. _Id)
     moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) loc
     return t
 
@@ -394,11 +395,11 @@ nextMetaInfo cUser = mkMetaInfo cUser <$> getCurrentTimestamp <*> nextId
 ideaLocationFromTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
 ideaLocationFromTopic tid = (`IdeaLocationTopic` tid) . view topicIdeaSpace <$$> findTopic tid
 
-ideaPhase :: Idea -> PersistM m => m (Maybe Phase)
+ideaPhase :: (PersistM m, MonadServantErr err m) => Idea -> m (Maybe Phase)
 ideaPhase idea = case idea ^. ideaLocation of
     IdeaLocationSpace _ ->
         pure Nothing
     IdeaLocationTopic _ topicId -> do
-        -- (failure to match the following can only be caused by an inconsistent state)
-        Just topic <- findTopic topicId
+        -- (such error 404 can only be caused by an inconsistent state)
+        topic <- maybe404 "Could not find such topic" =<< findTopic topicId
         pure . Just $ topic ^. topicPhase

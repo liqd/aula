@@ -480,7 +480,7 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
     editUserPage = persistent $
         PageAdminSettingsGaPUsersEdit
-        <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
+        <$> (maybe404 "No such user" =<< findUser uid)
         <*> getSchoolClasses
 
     editUser e = persistent $ modifyUser uid (userRole .~ payloadToUserRole e)

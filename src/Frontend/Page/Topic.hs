@@ -235,7 +235,7 @@ makeFormIdeaSelection ideas =
 viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
 viewTopic tab topicId = makeFrame =<< persistent (do
-    Just topic <- findTopic topicId  -- FIXME: 404
+    topic <- maybe404 "No such topic" $ findTopic topicId
     delegations <- findDelegationsByContext $ DelCtxTopic topicId
     case tab of
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
@@ -251,8 +251,7 @@ editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
 editTopic topicId = redirectFormHandler getPage editTopicPostHandler
   where
     getPage = persistent $ do
-        -- FIXME: 404
-        Just topic <- findTopic topicId
+        topic <- maybe404 "No such topic" $ findTopic topicId
         let space = view topicIdeaSpace topic
         ideas <- findWildIdeasBySpace space
         pure $ EditTopic space topic ideas
