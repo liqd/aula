@@ -44,6 +44,7 @@ module Persistent.Api
     , findWildIdeasBySpace
     , addLikeToIdea
     , addCommentToIdea
+    , addReplyToIdeaComment
     , findUser
     , getUsers
     , addUser
@@ -294,6 +295,10 @@ instance FromProto Comment where
 
 addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
 addCommentToIdea cUser iid msg = addDb (dbIdeaMap . at iid . _Just . ideaComments) (cUser, msg)
+
+addReplyToIdeaComment :: User -> AUID Idea -> AUID Comment -> Document -> PersistM m => m Comment
+addReplyToIdeaComment cUser iid cid msg =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies) (cUser, msg)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do

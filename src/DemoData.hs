@@ -43,7 +43,10 @@ numberOfLikes :: Int
 numberOfLikes = 500
 
 numberOfComments :: Int
-numberOfComments = 500
+numberOfComments = 2000
+
+numberOfReplies :: Int
+numberOfReplies = 10000
 
 
 -- * Generators
@@ -106,11 +109,19 @@ genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     return $ addLikeToIdea student (idea ^. _Id)
 
+arbDocument :: Gen Document
+arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
+
 genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m Comment)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    msg <- Markdown <$> (arbPhraseOf =<< choose (10, 100))
-    return $ addCommentToIdea student (idea ^. _Id) msg
+    addCommentToIdea student (idea ^. _Id) <$> arbDocument
+
+genReply :: [Comment] -> [Idea] -> [User] -> forall m . PersistM m => Gen (m Comment)
+genReply comments ideas students = do
+    (idea, student) <- ideaStudentPair ideas students
+    comment <- elements comments
+    addReplyToIdeaComment student (idea ^. _Id) (comment ^. _Id) <$> arbDocument
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
@@ -138,17 +149,15 @@ universe rnd = void $ do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics' <- generate numberOfTopics rnd (genTopic ideaSpaces)
-    topics  <- mapM (addTopic . (,) admin) topics'
+    topics  <- mapM (addTopic . (,) admin) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
 
-    ideas' <- generate numberOfIdeas rnd (genIdea ideaSpaces topics)
-    ideas  <- mapM (addIdea . (,) admin) ideas'
+    ideas  <- mapM (addIdea . (,) admin) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
-    likes <- generate numberOfLikes rnd (genLike ideas students)
-    sequence_ likes
+    sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
 
-    comments <- generate numberOfComments rnd (genComment ideas students)
-    sequence_ comments
+    comments <- sequence =<< generate numberOfComments rnd (genComment ideas students)
+
+    sequence_ =<< generate numberOfReplies rnd (genReply comments ideas students)
 
   where
     assert' p = assert p $ return ()
@@ -156,6 +165,9 @@ universe rnd = void $ do
 
 -- * Helpers
 
+-- This 'Monad m => m a' is strange, why not simply 'a' instead?
+-- Second, is this actually safe to use the same generator over and over or
+-- does it need to be threaded?
 gen :: forall a . QCGen -> Gen a -> forall m . Monad m => m a
 gen rnd (QC.MkGen g) =
     return $ g rnd 30
