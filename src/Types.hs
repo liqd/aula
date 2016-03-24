@@ -14,7 +14,7 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (Lens', Traversal', makeLenses, (^.), (^?), _Just)
+import Control.Lens (Lens', Traversal', makeLenses, makePrisms, (^.), (^?), _Just)
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -516,6 +516,18 @@ instance Binary User
 instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
+
+makePrisms ''IdeaLocation
+makePrisms ''Category
+makePrisms ''IdeaVoteValue
+makePrisms ''IdeaResultValue
+makePrisms ''UpDown
+makePrisms ''IdeaSpace
+makePrisms ''Phase
+makePrisms ''Role
+makePrisms ''UserPass
+makePrisms ''DelegationContext
+makePrisms ''PermissionContext
 
 makeLenses ''Category
 makeLenses ''Comment
