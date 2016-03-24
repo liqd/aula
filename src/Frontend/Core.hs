@@ -123,7 +123,7 @@ class Page p => FormPage p where
     -- | Calculates a redirect address from the given page
     redirectOf :: p -> FormPageResult p -> UriPath
     -- | Generates a Html view from the given page
-    makeForm :: (Monad m, ActionM r m) => p -> DF.Form (Html ()) m (FormPagePayload p)
+    makeForm :: ActionM r m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
