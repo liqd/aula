@@ -101,7 +101,7 @@ ideaStudentPair ideas students = do
     student <- elements $ relatedStudents idea students
     return (idea, student)
 
-genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m ())
+genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     return $ addLikeToIdea student (idea ^. _Id)

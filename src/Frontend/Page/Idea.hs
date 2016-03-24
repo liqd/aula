@@ -24,7 +24,7 @@ import Frontend.Page.Comment
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
@@ -68,9 +68,9 @@ instance Page EditIdea where
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
-        let totalLikes    = Set.size $ idea ^. ideaLikes
-            totalVotes    = Set.size $ idea ^. ideaVotes
-            totalComments = Set.size $ idea ^. ideaComments
+        let totalLikes    = Map.size $ idea ^. ideaLikes
+            totalVotes    = Map.size $ idea ^. ideaVotes
+            totalComments = Map.size $ idea ^. ideaComments
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do

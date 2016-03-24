@@ -42,7 +42,6 @@ import Control.Monad (when)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
 import Data.Maybe (isJust, fromJust)
-import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid hiding (href_, script_, src_)
@@ -53,7 +52,7 @@ import Servant.Missing (FormH, getFormDataEnv)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -265,7 +264,7 @@ instance Show a => ToHtml (PageShow a) where
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
 -- | FIXME: find better name?
-newtype CommentVotesWidget = VotesWidget (Set CommentVote)
+newtype CommentVotesWidget = VotesWidget (AMap CommentVote)
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
@@ -278,8 +277,8 @@ instance ToHtml CommentVotesWidget where
                 toHtml n
                 i_ [class_ "icon-thumbs-o-down"] nil
       where
-        countVotes :: (Eq value) => value -> Lens' vote value -> Set vote -> Int
-        countVotes v l = Set.size . Set.filter ((== v) . view l)
+        countVotes :: (Eq value) => value -> Lens' vote value -> AMap vote -> Int
+        countVotes v l = Map.size . Map.filter ((== v) . view l)
 
         y = show (countVotes Up   commentVoteValue votes)
         n = show (countVotes Down commentVoteValue votes)
@@ -317,7 +316,7 @@ instance ToHtml ListItemIdea where
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-comment-o"] nil
-                            let s = Set.size (idea ^. ideaComments)
+                            let s = Map.size (idea ^. ideaComments)
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
@@ -330,7 +329,7 @@ instance ToHtml ListItemIdea where
                             nil
       where
         numLikes :: Int
-        numLikes = Set.size $ idea ^. ideaLikes
+        numLikes = Map.size $ idea ^. ideaLikes
 
         -- div by zero is caught silently: if there are no voters, the quorum stays 0%.
         -- FIXME: we could assert that values are always between 0..100, but the inconsistent test

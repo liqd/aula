@@ -83,7 +83,6 @@ import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
-import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
@@ -95,8 +94,6 @@ import qualified Data.Text as ST
 
 import Types
 
-
-type AMap a = Map (AUID a) a
 
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
@@ -269,19 +266,25 @@ findIdeasByTopic = findIdeasByTopicId . view _Id
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
--- FIXME: Same user can like the same idea more than once.
-addLikeToIdea :: User -> AUID Idea -> PersistM m => m ()
-addLikeToIdea cUser iid = do
-    metainfo <- nextMetaInfo cUser
-    modifyIdea iid (ideaLikes %~ Set.insert (IdeaLike metainfo))
+instance FromProto IdeaLike where
+    fromProto () = IdeaLike
 
--- FIXME: Save comments properly.
+-- FIXME: Same user can like the same idea more than once.
+addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
+addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
+
+-- Should we have that the author of a comment automatically casts their vote on the comment?
+-- If so should it be made a real vote or accounted for when viewing the comment?
+instance FromProto Comment where
+    fromProto d m = Comment { _commentMeta      = m
+                            , _commentText      = d
+                            , _commentReplies   = nil
+                            , _commentVotes     = nil
+                            }
+
+
 addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
-addCommentToIdea cUser iid msg = do
-    metainfo <- nextMetaInfo cUser
-    let comment = Comment metainfo msg Set.empty Set.empty
-    modifyIdea iid (ideaComments %~ Set.insert comment)
-    return comment
+addCommentToIdea cUser iid msg = addDb (dbIdeaMap . at iid . _Just . ideaComments) (cUser, msg)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
