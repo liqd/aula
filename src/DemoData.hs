@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE ViewPatterns      #-}
 
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
@@ -11,7 +10,7 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Monad (zipWithM_, void)
-import Control.Lens ((^.), set, view)
+import Control.Lens (Getter, (^.), (?~), set, re, pre)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -92,9 +91,9 @@ relatedStudents idea students = case filter sameSpace students of
   where
     sameSpace student
       | location == IdeaLocationSpace SchoolSpace = True
-      | otherwise = location == userToIdeaLocation student
+      | otherwise = Just location == student ^. userIdeaLocation
       where
-        location = view ideaLocation idea
+        location = idea ^. ideaLocation
 
 ideaStudentPair :: [Idea] -> [User] -> Gen (Idea, User)
 ideaStudentPair ideas students = do
@@ -114,7 +113,7 @@ genComment ideas students = do
     return $ addCommentToIdea student (idea ^. _Id) msg
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
-updateAvatar user url = modifyUser (user ^. _Id) (set userAvatar (Just url))
+updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
 
 
 -- * Universe
@@ -165,5 +164,5 @@ generate :: forall a . Int -> QCGen -> Gen a -> forall m . Monad m => m [a]
 generate n rnd g =
     gen rnd (sequence [ resize n' g | n' <- take n $ cycle [0,2..20] ])
 
-userToIdeaLocation :: User -> IdeaLocation
-userToIdeaLocation (view userRole -> Student cl) = IdeaLocationSpace (ClassSpace cl)
+userIdeaLocation :: Getter User (Maybe IdeaLocation)
+userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocationSpace
