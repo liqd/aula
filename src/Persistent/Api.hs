@@ -208,8 +208,9 @@ findIdea = findInById dbIdeas
 findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
+-- FIXME deal with changedBy and changedAt
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
-modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
+modifyAMap l ident = modifyDb (l . at ident . _Just)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap dbIdeaMap
