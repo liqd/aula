@@ -12,9 +12,11 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
+  , CommentIdea(..)
   , viewIdea
   , createIdea
   , editIdea
+  , commentIdea
   , categoryValues
   )
 where
@@ -62,6 +64,13 @@ data EditIdea = EditIdea Idea
 instance Page EditIdea where
   isPrivatePage _ = True
 
+-- | X. Comment idea
+data CommentIdea = CommentIdea IdeaLocation (AUID Idea)
+  deriving (Eq, Show, Read)
+
+instance Page CommentIdea where
+  isPrivatePage _ = True
+
 
 -- * templates
 
@@ -71,11 +80,11 @@ instance ToHtml ViewIdea where
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
+            ispace        = idea ^. ideaLocation . ideaLocationSpace
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
-                let ispace  = idea ^. ideaLocation . ideaLocationSpace
-                    mtid = idea ^? ideaTopicId
+                let mtid = idea ^? ideaTopicId
 
                 a_ [ class_ "btn m-back detail-header-back"
                    , href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
@@ -164,9 +173,9 @@ instance ToHtml ViewIdea where
                                 -- FIXME: singular
                                 -- FIXME: code redundancy!  search for 'totalComments' in this module
                         button_ [ value_ "create_comment"
-                                , class_ "btn-cta comments-header-button"]
+                                , class_ "btn-cta comments-header-button"
+                                , onclick_ (U.Space ispace $ U.CommentIdea (idea ^. _Id))]
                               "Neuer Verbesserungsvorschlag"
-                        -- FIXME dummy
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
@@ -295,6 +304,30 @@ instance FormPage EditIdea where
                                 i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
                                 "Idee löschen"
 
+instance FormPage CommentIdea where
+    type FormPagePayload CommentIdea = Document
+    type FormPageResult CommentIdea = Comment
+
+    formAction (CommentIdea ideaLoc ideaId) = relPath $ U.IdeaPath ideaLoc (U.IdeaModeComment ideaId)
+
+    redirectOf (CommentIdea ideaLoc ideaId) _ =
+        relPath . U.Space (ideaLoc ^. ideaLocationSpace) $ U.ViewIdea ideaId
+
+    makeForm CommentIdea{} =
+        "comment-text" .: (Markdown <$> DF.text Nothing)
+
+    -- FIXME styling
+    formPage v form p@CommentIdea{} =
+        semanticDiv p $ do
+            div_ [class_ "container-comment-idea"] $ do
+                h1_ [class_ "main-heading"] "Comment on an idea"
+                form $ do
+                    label_ $ do
+                        span_ [class_ "label-text"] "What is your comment?"
+                        DF.inputTextArea Nothing Nothing "comment-text" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Post"
+
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
 
@@ -334,3 +367,9 @@ editIdea ideaId =
     newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
                       . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
                       . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+
+commentIdea :: ActionM r m => IdeaLocation -> AUID Idea -> ServerT (FormHandler CommentIdea) m
+commentIdea ideaLoc ideaId =
+    redirectFormHandler
+        (pure $ CommentIdea ideaLoc ideaId)
+        (currentUserAddDb $ addCommentToIdea ideaId)

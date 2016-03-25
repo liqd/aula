@@ -81,11 +81,13 @@ data Space =
     ListIdeas
   | ViewIdea (AUID Idea)
   | EditIdea (AUID Idea)
+  | CommentIdea (AUID Idea)
   | CreateIdea
   | ListTopics
   | ListTopicIdeas (AUID Topic)
   | ViewTopicIdea (AUID Topic) (AUID Idea)
   | EditTopicIdea (AUID Topic) (AUID Idea)
+  | CommentTopicIdea (AUID Topic) (AUID Idea)
   | CreateTopicIdea (AUID Topic)
   | ViewTopicIdeasVoting (AUID Topic)
   | ViewTopicIdeasWinning (AUID Topic)
@@ -103,11 +105,13 @@ space :: Space -> UriPath -> UriPath
 space ListIdeas                   root = root </> "ideas"
 space (ViewIdea iid)              root = root </> "idea" </> uriPart iid </> "view"
 space (EditIdea iid)              root = root </> "idea" </> uriPart iid </> "edit"
+space (CommentIdea iid)           root = root </> "idea" </> uriPart iid </> "comment"
 space CreateIdea                  root = root </> "idea" </> "create"
 space ListTopics                  root = root </> "topic"
 space (ListTopicIdeas tid)        root = root </> "topic" </> uriPart tid </> "ideas"
 space (ViewTopicIdea tid iid)     root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "view"
 space (EditTopicIdea tid iid)     root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "edit"
+space (CommentTopicIdea tid iid)  root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "comment"
 space (CreateTopicIdea tid)       root = root </> "topic" </> uriPart tid </> "idea" </> "create"
 space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
 space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
@@ -155,6 +159,7 @@ data IdeaMode =
     | IdeaModeCreate
     | IdeaModeView (AUID Idea)
     | IdeaModeEdit (AUID Idea)
+    | IdeaModeComment (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance HasPath IdeaPath
@@ -164,12 +169,14 @@ instance HasPath IdeaPath
         f (IdeaLocationSpace isp)     = relPath . Space isp . g
         f (IdeaLocationTopic isp tid) = relPath . Space isp . h tid
 
-        g IdeaModeList       = ListIdeas
-        g IdeaModeCreate     = CreateIdea
-        g (IdeaModeView iid) = ViewIdea iid
-        g (IdeaModeEdit iid) = EditIdea iid
+        g IdeaModeList          = ListIdeas
+        g IdeaModeCreate        = CreateIdea
+        g (IdeaModeView iid)    = ViewIdea iid
+        g (IdeaModeEdit iid)    = EditIdea iid
+        g (IdeaModeComment iid) = CommentIdea iid
 
-        h tid IdeaModeList       = ListTopicIdeas tid
-        h tid IdeaModeCreate     = CreateTopicIdea tid
-        h tid (IdeaModeView iid) = ViewTopicIdea tid iid
-        h tid (IdeaModeEdit iid) = EditTopicIdea tid iid
+        h tid IdeaModeList          = ListTopicIdeas tid
+        h tid IdeaModeCreate        = CreateTopicIdea tid
+        h tid (IdeaModeView iid)    = ViewTopicIdea tid iid
+        h tid (IdeaModeEdit iid)    = EditTopicIdea tid iid
+        h tid (IdeaModeComment iid) = CommentTopicIdea tid iid

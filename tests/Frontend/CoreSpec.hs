@@ -61,6 +61,7 @@ spec = do
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME
           F (arb :: Gen EditIdea)
+        , F (arb :: Gen CommentIdea)
 --      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
@@ -174,6 +175,10 @@ instance PayloadToEnv EditUserPayload where
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
+instance PayloadToEnv Document where
+    payloadToEnvMapping _ (Markdown comment) = \case
+        "comment-text" -> pure [TextInput comment]
+
 
 -- * machine room
 
@@ -260,6 +265,9 @@ instance ArbFormPagePayload CreateIdea where
 
 instance ArbFormPagePayload EditIdea where
     arbFormPagePayload (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
+
+instance ArbFormPagePayload CommentIdea where
+    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = arbitrary

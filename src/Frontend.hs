@@ -172,6 +172,8 @@ type AulaSpace =
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandlerT EditIdea Idea
+       -- comment on an idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> FormHandlerT CommentIdea Idea
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
@@ -184,6 +186,8 @@ type AulaSpace =
           :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
           :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
+          :> Capture "idea" (AUID Idea) :> "comment" :> FormHandler CommentIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create"   :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
@@ -200,14 +204,16 @@ aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea
   :<|> Page.editIdea
-  :<|> Page.createIdea (IdeaLocationSpace space)
+  :<|> Page.commentIdea locSpace
+  :<|> Page.createIdea  locSpace
 
   :<|> Page.viewTopics  space
   :<|> Page.viewTopic   TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
   :<|> Page.viewTopic   TabAllIdeas
   :<|> const Page.viewIdea
   :<|> const Page.editIdea
-  :<|> Page.createIdea . IdeaLocationTopic space
+  :<|> Page.commentIdea . locTopic
+  :<|> Page.createIdea  . locTopic
   :<|> Page.viewTopic   TabVotingIdeas
   :<|> Page.viewTopic   TabWinningIdeas
   :<|> Page.viewTopic   TabDelegation
@@ -216,6 +222,8 @@ aulaSpace space =
   :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
+  where locSpace = IdeaLocationSpace space
+        locTopic = IdeaLocationTopic space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
