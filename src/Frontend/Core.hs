@@ -277,11 +277,8 @@ instance ToHtml CommentVotesWidget where
                 toHtml n
                 i_ [class_ "icon-thumbs-o-down"] nil
       where
-        countVotes :: (Eq value) => value -> Lens' vote value -> AMap vote -> Int
-        countVotes v l = Map.size . Map.filter ((== v) . view l)
-
-        y = show (countVotes Up   commentVoteValue votes)
-        n = show (countVotes Down commentVoteValue votes)
+        y = show (countCommentVotes Up   votes)
+        n = show (countCommentVotes Down votes)
 
 newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
 
@@ -316,7 +313,7 @@ instance ToHtml ListItemIdea where
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-comment-o"] nil
-                            let s = Map.size (idea ^. ideaComments)
+                            let s = idea ^. ideaComments . commentsCount
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do

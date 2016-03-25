@@ -3,6 +3,7 @@
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
+{-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
@@ -14,7 +15,7 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (Lens', Traversal', makeLenses, makePrisms, (^.), _Just, has)
+import Control.Lens
 import Control.Monad
 import Data.Binary
 import Data.Char
@@ -24,8 +25,8 @@ import Data.String
 import Data.String.Conversions
 import Data.Time
 import Data.UriPath
-import GHC.Generics
-import Lucid
+import GHC.Generics (Generic)
+import Lucid (ToHtml, toHtml, toHtmlRaw)
 import Servant.API (FromHttpApiData(parseUrlPiece))
 import Text.Read (readMaybe)
 
@@ -688,3 +689,21 @@ roleLabel Admin          = "Administrator"
 
 aMapFromList :: HasMetaInfo a => [a] -> AMap a
 aMapFromList = fromList . map (\x -> (x ^. _Id, x))
+
+foldComment :: Fold Comment Comment
+foldComment = cosmosOf (commentReplies . each)
+
+foldComments :: Fold Comments Comment
+foldComments = each . foldComment
+
+commentsCount :: Getter Comments Int
+commentsCount = to $ lengthOf foldComments
+
+countEq :: (Foldable f, Eq value) => value -> Lens' vote value -> f vote -> Int
+countEq v l = lengthOf $ folded . filtered ((== v) . view l)
+
+countIdeaVotes :: IdeaVoteValue -> IdeaVotes -> Int
+countIdeaVotes v = countEq v ideaVoteValue
+
+countCommentVotes :: UpDown -> CommentVotes -> Int
+countCommentVotes v = countEq v commentVoteValue

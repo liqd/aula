@@ -70,7 +70,7 @@ instance ToHtml ViewIdea where
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
-            totalComments = Map.size $ idea ^. ideaComments
+            totalComments = idea ^. ideaComments . commentsCount
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -136,8 +136,8 @@ instance ToHtml ViewIdea where
             -- visual vote stats
             {- FIXME plug this in to my nice widget pls
             when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
-                let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
-                    n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
+                let y = countIdeaVotes Yes $ idea ^. ideaVotes
+                    n = countIdeaVotes No  $ idea ^. ideaVotes
                 div_ $ do
                     span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
                 div_ $ do
