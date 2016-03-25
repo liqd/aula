@@ -138,8 +138,10 @@ spec = do
     findInBySpec "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec "findTopic" getTopics findTopic _Id changeAUID
 
-    let getArbTopicIds :: Persist (Gen (AUID Topic))
-        getArbTopicIds = elements . map (view _Id) <$> getTopics
+    let elements' [] = arbitrary
+        elements' xs = elements xs
+        getArbTopicIds :: Persist (Gen (AUID Topic))
+        getArbTopicIds = elements' . map (view _Id) <$> getTopics
     findAllInBySpec "findIdeasByTopicId"
         getIdeasWithTopic getArbTopicIds findIdeasByTopicId ideaTopicId changeAUID
 
