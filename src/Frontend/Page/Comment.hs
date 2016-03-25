@@ -18,12 +18,8 @@
 module Frontend.Page.Comment
 where
 
-import Control.Lens
-import Prelude
-import Lucid
-
 import Types
-import Frontend.Core
+import Frontend.Prelude
 
 
 data PageComment = PageComment Comment
@@ -31,7 +27,14 @@ data PageComment = PageComment Comment
 
 instance ToHtml PageComment where
     toHtmlRaw = toHtml
-    toHtml p@(PageComment comment) = semanticDiv p $ do
+    toHtml p@(PageComment comment) = semanticDiv p $ toHtml (CommentWidget comment)
+
+data CommentWidget = CommentWidget Comment
+  deriving (Eq, Show, Read)
+
+instance ToHtml CommentWidget where
+    toHtmlRaw = toHtml
+    toHtml (CommentWidget comment) = do
         div_ [class_ "comment"] $ do
             header_ [class_ "comment-header"] $ do
                 comment ^. commentMeta . to AuthorWidget . html
@@ -46,3 +49,8 @@ instance ToHtml PageComment where
                     button_ [class_ "btn comment-footer-button"] $ do
                         i_ [class_ "icon-flag"] nil
                         "melden"
+        div_ [class_ "comment-replies"] $ do
+            for_ (comment ^. commentReplies) $ \reply -> do
+                div_ [class_ "comment-reply"] $ do
+                    span_ "A reply" -- FIXME comment-reply styling
+                    toHtml (CommentWidget reply)
