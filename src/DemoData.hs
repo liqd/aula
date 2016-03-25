@@ -34,7 +34,7 @@ numberOfStudents :: Int
 numberOfStudents = 130
 
 numberOfTopics :: Int
-numberOfTopics = 100
+numberOfTopics = 20
 
 numberOfIdeas :: Int
 numberOfIdeas = 300
@@ -43,11 +43,13 @@ numberOfLikes :: Int
 numberOfLikes = 500
 
 numberOfComments :: Int
-numberOfComments = 2000
+numberOfComments = 500
 
 numberOfReplies :: Int
-numberOfReplies = 10000
+numberOfReplies = 2000
 
+numberOfCommentVotes :: Int
+numberOfCommentVotes = 5000
 
 -- * Generators
 
@@ -112,16 +114,34 @@ genLike ideas students = do
 arbDocument :: Gen Document
 arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
 
-genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m Comment)
+data CommentInContext = CommentInContext
+    { _cicIdea :: Idea
+    , _cicParentComment :: Maybe Comment
+    , _cicComment :: Comment
+    }
+
+genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    addCommentToIdea student (idea ^. _Id) <$> arbDocument
+    fmap (CommentInContext idea Nothing) .
+        addCommentToIdea student (idea ^. _Id) <$> arbDocument
 
-genReply :: [Comment] -> [Idea] -> [User] -> forall m . PersistM m => Gen (m Comment)
-genReply comments ideas students = do
-    (idea, student) <- ideaStudentPair ideas students
-    comment <- elements comments
-    addReplyToIdeaComment student (idea ^. _Id) (comment ^. _Id) <$> arbDocument
+genReply :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
+genReply comments_in_context students = do
+    CommentInContext idea Nothing comment <- elements comments_in_context
+    (_, student) <- ideaStudentPair [idea] students
+    fmap (CommentInContext idea (Just comment)) .
+        addReplyToIdeaComment student (idea ^. _Id) (comment ^. _Id) <$> arbDocument
+
+genCommentVote :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentVote)
+genCommentVote comments_in_context students = do
+    CommentInContext idea mparent comment <- elements comments_in_context
+    (_, student) <- ideaStudentPair [idea] students
+    case mparent of
+        Nothing ->
+            addCommentVoteToIdeaComment student (idea ^. _Id) (comment ^. _Id) <$> arb
+        Just parent ->
+            addCommentVoteToIdeaCommentReply student (idea ^. _Id) (parent ^. _Id) (comment ^. _Id) <$> arb
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
@@ -157,7 +177,9 @@ universe rnd = void $ do
 
     comments <- sequence =<< generate numberOfComments rnd (genComment ideas students)
 
-    sequence_ =<< generate numberOfReplies rnd (genReply comments ideas students)
+    replies <- sequence =<< generate numberOfReplies rnd (genReply comments students)
+
+    sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
 
   where
     assert' p = assert p $ return ()

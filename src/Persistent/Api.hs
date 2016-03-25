@@ -45,6 +45,8 @@ module Persistent.Api
     , addLikeToIdea
     , addCommentToIdea
     , addReplyToIdeaComment
+    , addCommentVoteToIdeaComment
+    , addCommentVoteToIdeaCommentReply
     , findUser
     , getUsers
     , addUser
@@ -296,9 +298,25 @@ instance FromProto Comment where
 addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
 addCommentToIdea cUser iid msg = addDb (dbIdeaMap . at iid . _Just . ideaComments) (cUser, msg)
 
+
 addReplyToIdeaComment :: User -> AUID Idea -> AUID Comment -> Document -> PersistM m => m Comment
 addReplyToIdeaComment cUser iid cid msg =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies) (cUser, msg)
+
+instance FromProto CommentVote where
+    fromProto = flip CommentVote
+
+addCommentVoteToIdeaComment :: User -> AUID Idea -> AUID Comment
+                            -> UpDown -> PersistM m => m CommentVote
+addCommentVoteToIdeaComment cUser iid cid v =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes) (cUser, v)
+
+addCommentVoteToIdeaCommentReply :: User -> AUID Idea -> AUID Comment -> AUID Comment
+                                 -> UpDown -> PersistM m => m CommentVote
+addCommentVoteToIdeaCommentReply cUser iid cid rid v =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments
+                     . at cid . _Just . commentReplies
+                     . at rid . _Just . commentVotes) (cUser, v)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
