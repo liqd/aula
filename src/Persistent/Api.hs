@@ -192,8 +192,8 @@ findInBy l f b = findIn l (\x -> x ^? f == Just b)
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> PersistM m => m (Maybe a)
-findInById l = findInBy l _Id
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> PersistM m => m (Maybe a)
+findInById l i = getDb (l . at i)
 
 getSpaces :: PersistM m => m [IdeaSpace]
 getSpaces = getDb dbSpaces
@@ -231,7 +231,7 @@ addIdea :: UserWithProto Idea -> PersistM m => m Idea
 addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
-findIdea = findInById dbIdeas
+findIdea = findInById dbIdeaMap
 
 findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
@@ -250,7 +250,7 @@ modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
 modifyTopic = modifyAMap dbTopicMap
 
 findUser :: AUID User -> PersistM m => m (Maybe User)
-findUser = findInById dbUsers
+findUser = findInById dbUserMap
 
 getUsers :: PersistM m => m [User]
 getUsers = getDb dbUsers
@@ -285,7 +285,7 @@ findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
 findTopic :: AUID Topic -> PersistM m => m (Maybe Topic)
-findTopic = findInById dbTopics
+findTopic = findInById dbTopicMap
 
 findTopicsBySpace :: IdeaSpace -> PersistM m => m [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
