@@ -124,14 +124,14 @@ genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m CommentInConte
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     fmap (CommentInContext idea Nothing) .
-        addCommentToIdea student (idea ^. _Id) <$> arbDocument
+        addCommentToIdea (idea ^. _Id) . (,) student <$> arbDocument
 
 genReply :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
     CommentInContext idea Nothing comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
     fmap (CommentInContext idea (Just comment)) .
-        addReplyToIdeaComment student (idea ^. _Id) (comment ^. _Id) <$> arbDocument
+        addReplyToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arbDocument
 
 genCommentVote :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do
@@ -139,9 +139,9 @@ genCommentVote comments_in_context students = do
     (_, student) <- ideaStudentPair [idea] students
     case mparent of
         Nothing ->
-            addCommentVoteToIdeaComment student (idea ^. _Id) (comment ^. _Id) <$> arb
+            addCommentVoteToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arb
         Just parent ->
-            addCommentVoteToIdeaCommentReply student (idea ^. _Id) (parent ^. _Id) (comment ^. _Id) <$> arb
+            addCommentVoteToIdeaCommentReply (idea ^. _Id) (parent ^. _Id) (comment ^. _Id) . (,) student <$> arb
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)

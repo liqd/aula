@@ -152,6 +152,8 @@ class Monad m => PersistM m where
     default mkRandomPassword :: MonadIO m => m UserPass
     mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
+type AddDb m a = UserWithProto a -> PersistM m => m a
+
 -- @addDb l (u, p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
 -- The record is computed from the prototype @p@, the current time and the given user @u@.
@@ -167,8 +169,7 @@ class Monad m => PersistM m where
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: (HasMetaInfo a, FromProto a)
-      => AulaTraversal (AMap a) -> UserWithProto a -> PersistM m => m a
+addDb :: (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb m a
 addDb l (cUser, pa) = do
     when enforceDebuggingAssertions $ do
         db <- getDb id
@@ -227,7 +228,7 @@ addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: UserWithProto Idea -> PersistM m => m Idea
+addIdea :: AddDb m Idea
 addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
@@ -263,7 +264,7 @@ moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaLocation .~ location
 
-addTopic :: UserWithProto Topic -> PersistM m => m Topic
+addTopic :: AddDb m Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
@@ -274,7 +275,7 @@ addTopic pt = do
     moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) (topicIdeaLocation t)
     return t
 
-addDelegation :: UserWithProto Delegation -> PersistM m => m Delegation
+addDelegation :: AddDb m Delegation
 addDelegation = addDb dbDelegationMap
 
 findDelegationsByContext :: DelegationContext -> PersistM m => m [Delegation]
@@ -324,15 +325,15 @@ instance FromProto Comment where
 
 -- Assumption (check when enforceDebuggingAssertions):
 -- the given @AUID Idea@ MUST be in the DB.
-addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
-addCommentToIdea cUser iid msg = addDb (dbIdeaMap . at iid . _Just . ideaComments) (cUser, msg)
+addCommentToIdea :: AUID Idea -> AddDb m Comment
+addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
 
 -- Assumptions (checked when enforceDebuggingAssertions):
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addReplyToIdeaComment :: User -> AUID Idea -> AUID Comment -> Document -> PersistM m => m Comment
-addReplyToIdeaComment cUser iid cid msg =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies) (cUser, msg)
+addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
+addReplyToIdeaComment iid cid =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies)
 
 instance FromProto CommentVote where
     fromProto = flip CommentVote
@@ -340,21 +341,19 @@ instance FromProto CommentVote where
 -- Assumptions (checked when enforceDebuggingAssertions):
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addCommentVoteToIdeaComment :: User -> AUID Idea -> AUID Comment
-                            -> UpDown -> PersistM m => m CommentVote
-addCommentVoteToIdeaComment cUser iid cid v =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes) (cUser, v)
+addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
+addCommentVoteToIdeaComment iid cid =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
 
 -- Assumptions (checked when enforceDebuggingAssertions):
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
-addCommentVoteToIdeaCommentReply :: User -> AUID Idea -> AUID Comment -> AUID Comment
-                                 -> UpDown -> PersistM m => m CommentVote
-addCommentVoteToIdeaCommentReply cUser iid cid rid v =
+addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb m CommentVote
+addCommentVoteToIdeaCommentReply iid cid rid =
     addDb (dbIdeaMap . at iid . _Just . ideaComments
                      . at cid . _Just . commentReplies
-                     . at rid . _Just . commentVotes) (cUser, v)
+                     . at rid . _Just . commentVotes)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
@@ -375,7 +374,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
-addUser :: UserWithProto User -> PersistM m => m User
+addUser :: AddDb m User
 addUser (cUser, proto) = do
     metainfo  <- nextMetaInfo cUser
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
