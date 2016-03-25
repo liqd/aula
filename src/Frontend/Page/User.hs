@@ -152,7 +152,7 @@ createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = join . persistent $ do
     -- FIXME: 404
-    Just user <- findInById dbUsers userId
+    Just user <- findUser userId
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
     return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
 
@@ -204,5 +204,5 @@ delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExce
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
 delegatedVotes userId = join . persistent $ do
     -- FIXME: 404
-    Just user <- findInById dbUsers userId
+    Just user <- findUser userId
     return $ makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes
