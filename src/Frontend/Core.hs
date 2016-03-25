@@ -264,7 +264,7 @@ instance Show a => ToHtml (PageShow a) where
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
 -- | FIXME: find better name?
-newtype CommentVotesWidget = VotesWidget (AMap CommentVote)
+newtype CommentVotesWidget = VotesWidget CommentVotes
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml

@@ -99,10 +99,10 @@ import Types
 
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
-    , _dbIdeaMap             :: AMap Idea
-    , _dbUserMap             :: AMap User
-    , _dbTopicMap            :: AMap Topic
-    , _dbDelegationMap       :: AMap Delegation
+    , _dbIdeaMap             :: Ideas
+    , _dbUserMap             :: Users
+    , _dbTopicMap            :: Topics
+    , _dbDelegationMap       :: Delegations
     , _dbElaborationDuration :: DurationDays
     , _dbVoteDuration        :: DurationDays
     , _dbSchoolQuorum        :: Int

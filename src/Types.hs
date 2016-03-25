@@ -85,10 +85,10 @@ data Idea = Idea
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
     , _ideaLocation   :: IdeaLocation
-    , _ideaComments   :: AMap Comment
-    , _ideaLikes      :: AMap IdeaLike
+    , _ideaComments   :: Comments
+    , _ideaLikes      :: IdeaLikes
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
-    , _ideaVotes      :: AMap IdeaVote
+    , _ideaVotes      :: IdeaVotes
     , _ideaResult     :: Maybe IdeaResult
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -181,8 +181,8 @@ instance SOP.Generic IdeaResultValue
 data Comment = Comment
     { _commentMeta    :: MetaInfo Comment
     , _commentText    :: Document
-    , _commentVotes   :: AMap CommentVote
-    , _commentReplies :: AMap Comment
+    , _commentVotes   :: CommentVotes
+    , _commentReplies :: Comments
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -392,6 +392,15 @@ newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, Enum, Real, Num, Integral)
 
 type AMap a = Map (AUID a) a
+
+type Users        = AMap User
+type Ideas        = AMap Idea
+type Topics       = AMap Topic
+type Delegations  = AMap Delegation
+type Comments     = AMap Comment
+type CommentVotes = AMap CommentVote
+type IdeaVotes    = AMap IdeaVote
+type IdeaLikes    = AMap IdeaLike
 
 instance HasUriPart (AUID a) where
     uriPart (AUID s) = fromString . show $ s
