@@ -83,7 +83,7 @@ where
 
 import Control.Lens
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad (unless, replicateM)
+import Control.Monad (unless, replicateM, when)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
@@ -98,6 +98,9 @@ import qualified Data.Text as ST
 
 import Types
 
+
+enforceDebuggingAssertions :: Bool
+enforceDebuggingAssertions = True
 
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
@@ -118,6 +121,7 @@ makeLenses ''AulaData
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
 type AulaSetter a = Setter' AulaData a
+type AulaTraversal a = Traversal' AulaData a
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -148,9 +152,30 @@ class Monad m => PersistM m where
     default mkRandomPassword :: MonadIO m => m UserPass
     mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
+-- @addDb l (u, p)@ adds a record to the DB.
+-- The record is added on the behalf of the user @u@.
+-- The record is computed from the prototype @p@, the current time and the given user @u@.
+-- The record is added at the location pointed by the traversal @l@.
+--
+-- It is expected that @l@ points to exactly one target. This assumption is dynamically
+-- check when @enforceDebuggingAssertions@ is True.
+--
+-- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
+-- above at the expense of pushing the burden towards cases where the traversal is only a
+-- lens when some additional assumptions are met (see addReplyToIdeaComment for instance).
+--
+-- It could make sense for the traversal to point to more than one target for instance
+-- to index the record at different locations. For instance we could keep an additional
+-- global map of the comments, votes, likes and still call @addDb@ only once.
 addDb :: (HasMetaInfo a, FromProto a)
-      => AulaSetter (AMap a) -> UserWithProto a -> PersistM m => m a
+      => AulaTraversal (AMap a) -> UserWithProto a -> PersistM m => m a
 addDb l (cUser, pa) = do
+    when enforceDebuggingAssertions $ do
+        db <- getDb id
+        let len = lengthOf l db
+        when (len /= 1) $ do
+            fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
+                <> "to target exactly 1 field not " <> show len
     a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
@@ -282,6 +307,8 @@ instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
 -- FIXME: Same user can like the same idea more than once.
+-- Assumption (check when enforceDebuggingAssertions):
+-- the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
 addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
 
@@ -295,10 +322,14 @@ instance FromProto Comment where
                             }
 
 
+-- Assumption (check when enforceDebuggingAssertions):
+-- the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
 addCommentToIdea cUser iid msg = addDb (dbIdeaMap . at iid . _Just . ideaComments) (cUser, msg)
 
-
+-- Assumptions (checked when enforceDebuggingAssertions):
+-- * the given @AUID Idea@ MUST be in the DB.
+-- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addReplyToIdeaComment :: User -> AUID Idea -> AUID Comment -> Document -> PersistM m => m Comment
 addReplyToIdeaComment cUser iid cid msg =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies) (cUser, msg)
@@ -306,11 +337,18 @@ addReplyToIdeaComment cUser iid cid msg =
 instance FromProto CommentVote where
     fromProto = flip CommentVote
 
+-- Assumptions (checked when enforceDebuggingAssertions):
+-- * the given @AUID Idea@ MUST be in the DB.
+-- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: User -> AUID Idea -> AUID Comment
                             -> UpDown -> PersistM m => m CommentVote
 addCommentVoteToIdeaComment cUser iid cid v =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes) (cUser, v)
 
+-- Assumptions (checked when enforceDebuggingAssertions):
+-- * the given @AUID Idea@ MUST be in the DB.
+-- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
+-- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
 addCommentVoteToIdeaCommentReply :: User -> AUID Idea -> AUID Comment -> AUID Comment
                                  -> UpDown -> PersistM m => m CommentVote
 addCommentVoteToIdeaCommentReply cUser iid cid rid v =
