@@ -69,15 +69,17 @@ import qualified Persistent.Implementation.STM
 
 -- | FIXME: push this upstream to basic-sop.
 -- See also: https://github.com/well-typed/basic-sop/pull/1
-garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
-garbitrary = to <$> (hsequence =<< elements subs)
+garbitrary' :: forall a. (Int -> Int) -> (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary' scaling = to <$> (hsequence =<< elements subs)
   where
     subs :: [SOP Gen (Code a)]
-    subs = apInjs_POP (hcpure p (scale (\s -> max 0 (s - 10)) arbitrary))
+    subs = apInjs_POP (hcpure p (scale scaling arbitrary))
 
     p :: Proxy Arbitrary
     p = Proxy
 
+garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary = garbitrary' (max 0 . subtract 10)
 
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
@@ -219,7 +221,7 @@ instance Arbitrary Delegation where
 -- * comment
 
 instance Arbitrary Comment where
-    arbitrary = garbitrary
+    arbitrary = garbitrary' (`div` 3)
 
 instance Arbitrary CommentVote where
     arbitrary = garbitrary
