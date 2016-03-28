@@ -34,7 +34,7 @@ data CommentWidget = CommentWidget Comment
 
 instance ToHtml CommentWidget where
     toHtmlRaw = toHtml
-    toHtml (CommentWidget comment) = do
+    toHtml p@(CommentWidget comment) = semanticDiv p $ do
         div_ [class_ "comment"] $ do
             header_ [class_ "comment-header"] $ do
                 comment ^. commentMeta . to AuthorWidget . html
@@ -50,7 +50,28 @@ instance ToHtml CommentWidget where
                         i_ [class_ "icon-flag"] nil
                         "melden"
         div_ [class_ "comment-replies"] $ do
-            for_ (comment ^. commentReplies) $ \reply -> do
-                div_ [class_ "comment-reply"] $ do
-                    span_ "A reply" -- FIXME comment-reply styling
-                    toHtml (CommentWidget reply)
+            for_ (comment ^. commentReplies) $ toHtml . CommentReplyWidget
+
+data CommentReplyWidget = CommentReplyWidget Comment
+  deriving (Eq, Show, Read)
+
+-- FIXME: (1) style this; (2) factor out code that is common with 'CommentWidget'; (3) turn hlint
+-- back on for this module in HLint.hs
+instance ToHtml CommentReplyWidget where
+    toHtmlRaw = toHtml
+    toHtml p@(CommentReplyWidget comment) = semanticDiv p $ do
+        div_ [class_ "comment-reply"] $ do
+            span_ "this is a sub-comment!"
+            header_ [class_ "comment-header"] $ do
+                comment ^. commentMeta . to AuthorWidget . html
+                comment ^. commentVotes . to VotesWidget . html
+            div_ [class_ "comments-body"] $ do
+                comment ^. commentText . html
+            footer_ [class_ "comment-footer"] $ do
+                div_ [class_ "comment-footer-buttons"] $ do
+                    button_ [class_ "btn comment-footer-button"] $ do
+                        i_ [class_ "icon-reply"] nil
+                        "antworten"
+                    button_ [class_ "btn comment-footer-button"] $ do
+                        i_ [class_ "icon-flag"] nil
+                        "melden"
