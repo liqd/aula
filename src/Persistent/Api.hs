@@ -99,9 +99,6 @@ import qualified Data.Text as ST
 import Types
 
 
-enforceDebuggingAssertions :: Bool
-enforceDebuggingAssertions = True
-
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
     , _dbIdeaMap             :: Ideas
@@ -152,6 +149,15 @@ class Monad m => PersistM m where
     default mkRandomPassword :: MonadIO m => m UserPass
     mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
+
+-- | The argument is a consistency check that will throw an error if it fails.
+--
+-- This can be equipped with a switch for performance, but if at all possible it would be nice to
+-- run the checks even in production.
+assertPersistM :: PersistM m => m () -> m ()
+assertPersistM check = check
+
+
 type AddDb m a = UserWithProto a -> PersistM m => m a
 
 -- @addDb l (u, p)@ adds a record to the DB.
@@ -159,8 +165,7 @@ type AddDb m a = UserWithProto a -> PersistM m => m a
 -- The record is computed from the prototype @p@, the current time and the given user @u@.
 -- The record is added at the location pointed by the traversal @l@.
 --
--- It is expected that @l@ points to exactly one target. This assumption is dynamically
--- check when @enforceDebuggingAssertions@ is True.
+-- It is expected that @l@ points to exactly one target (checked by 'assert').
 --
 -- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
 -- above at the expense of pushing the burden towards cases where the traversal is only a
@@ -171,7 +176,7 @@ type AddDb m a = UserWithProto a -> PersistM m => m a
 -- global map of the comments, votes, likes and still call @addDb@ only once.
 addDb :: (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb m a
 addDb l (cUser, pa) = do
-    when enforceDebuggingAssertions $ do
+    assertPersistM $ do
         db <- getDb id
         let len = lengthOf l db
         when (len /= 1) $ do
@@ -308,8 +313,7 @@ instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
 -- FIXME: Same user can like the same idea more than once.
--- Assumption (check when enforceDebuggingAssertions):
--- the given @AUID Idea@ MUST be in the DB.
+-- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
 addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
 
@@ -321,12 +325,11 @@ instance FromProto Comment where
                             }
 
 
--- Assumption (check when enforceDebuggingAssertions):
--- the given @AUID Idea@ MUST be in the DB.
+-- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: AUID Idea -> AddDb m Comment
 addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
 
--- Assumptions (checked when enforceDebuggingAssertions):
+-- FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
@@ -336,14 +339,14 @@ addReplyToIdeaComment iid cid =
 instance FromProto CommentVote where
     fromProto = flip CommentVote
 
--- Assumptions (checked when enforceDebuggingAssertions):
+-- FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
 addCommentVoteToIdeaComment iid cid =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
 
--- Assumptions (checked when enforceDebuggingAssertions):
+-- FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
