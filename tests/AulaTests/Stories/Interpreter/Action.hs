@@ -8,7 +8,7 @@
 
 {-# OPTIONS_GHC #-}
 
-module AulaTests.Stories where
+module AulaTests.Stories.Interpreter.Action where
 
 import Control.Monad.Free
 import Control.Monad.IO.Class (liftIO)
@@ -20,8 +20,8 @@ import Data.Typeable (Typeable, typeOf)
 import Lucid (Html, ToHtml, toHtml, renderText)
 import Servant (unNat)
 import Servant.Server.Internal.ServantErr
-import Test.Hspec
-import Test.QuickCheck
+import Test.Hspec  -- (Spec, context, it, pendingWith, shouldBe)
+import Test.QuickCheck  -- (Arbitrary(..), Gen, forAll, property)
 import Text.Digestive.Types
 import Text.Digestive.View
 
@@ -31,21 +31,11 @@ import Arbitrary
 import Types
 
 import AulaTests.Stories.DSL
-import AulaTests.Stories.Interpreter.Action
 
 
-spec :: Spec
-spec = describe "stories" $ it "works" $ do
-    liftIO $ do
-        print "---------------------------"
-        run program
-        print "---------------------------"
-    True `shouldBe` True
-
-
-program :: Behavior ()
-program = do
-    login "admin"
-    selectIdeaSpace "school"
-    createIdea (ProtoIdea "title" (Markdown "desc") CatRule (IdeaLocationSpace SchoolSpace))
-    logout
+run :: Behavior a -> IO a
+run (Pure r)                     = pure r
+run (Free (Login l k))           = print ("logged in: " <> show l) >> run k
+run (Free (Logout k))            = print "logged out" >> run k
+run (Free (SelectIdeaSpace s k)) = print ("select idea space: " <> show s) >> run k
+run (Free (CreateIdea pi k))     = print ("create idea: " <> show pi) >> run k
