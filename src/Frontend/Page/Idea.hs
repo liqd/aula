@@ -48,28 +48,24 @@ data ViewIdea = ViewIdea Idea (Maybe Phase)
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
-  isPrivatePage _ = True
 
 -- | 6. Create idea
 data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
-  isPrivatePage _ = True
 
 -- | 7. Edit idea
 data EditIdea = EditIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page EditIdea where
-  isPrivatePage _ = True
 
 -- | X. Comment idea
 data CommentIdea = CommentIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page CommentIdea where
-  isPrivatePage _ = True
 
 
 -- * templates
