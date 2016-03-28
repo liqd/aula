@@ -72,6 +72,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticImprint))
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticTermsOfUse))
     , f (Proxy :: Proxy (ToHtmlForm    PageHomeWithLoginPrompt))
+    , f (Proxy :: Proxy (ToHtmlForm    CommentIdea))
     ]
 
 
