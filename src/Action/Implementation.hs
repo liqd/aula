@@ -27,7 +27,6 @@ import qualified Data.ByteString.Lazy as LBS
 
 import Action
 import Persistent
-import Types
 
 
 -- * concrete monad type
@@ -60,10 +59,10 @@ instance MonadRandom (Action r) where
     getRandomBytes = liftIO . getRandomBytes
 
 instance PersistM r => ActionUserHandler (Action r) where
-    login user = do
-                usUserId .= Just (user ^. _Id)
-                sessionToken <- freshSessionToken
-                usSessionToken .= Just sessionToken
+    login uid = do
+        usUserId .= Just uid
+        sessionToken <- freshSessionToken
+        usSessionToken .= Just sessionToken
 
     userState = use
 

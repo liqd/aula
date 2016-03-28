@@ -763,7 +763,7 @@ fishDelegationNetworkIO = do
 
     let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
     either (error . ppShow) id <$> runExceptT
-        (ac (Action.login admin >> fishDelegationNetworkAction))
+        (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
 
 fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
