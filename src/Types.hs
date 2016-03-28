@@ -359,8 +359,8 @@ instance SOP.Generic ProtoDelegation
 
 data DelegationContext =
     DelCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
-  | DelCtxTopic     { _delCtxTopicId   :: AUID Topic }
-  | DelCtxIdea      { _delCtxIdeaId    :: AUID Idea  }
+  | DelCtxTopicId   { _delCtxTopicId   :: AUID Topic }
+  | DelCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationContext
