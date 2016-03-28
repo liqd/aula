@@ -31,6 +31,8 @@ module Persistent.Api
 
     , getSpaces
     , getIdeas
+    , getWildIdeas
+    , getIdeasWithTopic
     , getNumVotersForIdea
     , addIdeaSpaceIfNotExists
     , addIdea
@@ -42,6 +44,9 @@ module Persistent.Api
     , findWildIdeasBySpace
     , addLikeToIdea
     , addCommentToIdea
+    , addReplyToIdeaComment
+    , addCommentVoteToIdeaComment
+    , addCommentVoteToIdeaCommentReply
     , findUser
     , getUsers
     , addUser
@@ -78,12 +83,10 @@ where
 
 import Control.Lens
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad (unless, replicateM)
+import Control.Monad (unless, replicateM, when)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
-import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
-import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
@@ -96,14 +99,12 @@ import qualified Data.Text as ST
 import Types
 
 
-type AMap a = Map (AUID a) a
-
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
-    , _dbIdeaMap             :: AMap Idea
-    , _dbUserMap             :: AMap User
-    , _dbTopicMap            :: AMap Topic
-    , _dbDelegationMap       :: AMap Delegation
+    , _dbIdeaMap             :: Ideas
+    , _dbUserMap             :: Users
+    , _dbTopicMap            :: Topics
+    , _dbDelegationMap       :: Delegations
     , _dbElaborationDuration :: DurationDays
     , _dbVoteDuration        :: DurationDays
     , _dbSchoolQuorum        :: Int
@@ -117,6 +118,7 @@ makeLenses ''AulaData
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
 type AulaSetter a = Setter' AulaData a
+type AulaTraversal a = Traversal' AulaData a
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -147,9 +149,39 @@ class Monad m => PersistM m where
     default mkRandomPassword :: MonadIO m => m UserPass
     mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
-addDb :: (HasMetaInfo a, FromProto a)
-      => AulaSetter (AMap a) -> UserWithProto a -> PersistM m => m a
+
+-- | The argument is a consistency check that will throw an error if it fails.
+--
+-- This can be equipped with a switch for performance, but if at all possible it would be nice to
+-- run the checks even in production.
+assertPersistM :: PersistM m => m () -> m ()
+assertPersistM check = check
+
+
+type AddDb m a = UserWithProto a -> PersistM m => m a
+
+-- | @addDb l (u, p)@ adds a record to the DB.
+-- The record is added on the behalf of the user @u@.
+-- The record is computed from the prototype @p@, the current time and the given user @u@.
+-- The record is added at the location pointed by the traversal @l@.
+--
+-- It is expected that @l@ points to exactly one target (checked by 'assertPersistM').
+--
+-- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
+-- above at the expense of pushing the burden towards cases where the traversal is only a
+-- lens when some additional assumptions are met (see addReplyToIdeaComment for instance).
+--
+-- It could make sense for the traversal to point to more than one target for instance
+-- to index the record at different locations. For instance we could keep an additional
+-- global map of the comments, votes, likes and still call @addDb@ only once.
+addDb :: (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb m a
 addDb l (cUser, pa) = do
+    assertPersistM $ do
+        db <- getDb id
+        let len = lengthOf l db
+        when (len /= 1) $ do
+            fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
+                <> "to target exactly 1 field not " <> show len
     a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
@@ -166,14 +198,20 @@ findInBy l f b = findIn l (\x -> x ^? f == Just b)
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter [a] -> AUID a -> PersistM m => m (Maybe a)
-findInById l = findInBy l _Id
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> PersistM m => m (Maybe a)
+findInById l i = getDb (l . at i)
 
 getSpaces :: PersistM m => m [IdeaSpace]
 getSpaces = getDb dbSpaces
 
 getIdeas :: PersistM m => m [Idea]
 getIdeas = getDb dbIdeas
+
+getWildIdeas :: PersistM m => m [Idea]
+getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
+
+getIdeasWithTopic :: PersistM m => m [Idea]
+getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
 
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
 getNumVotersForIdea :: PersistM m => Idea -> m (Idea, Int)
@@ -195,17 +233,18 @@ addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> getSpaces
     unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
 
-addIdea :: UserWithProto Idea -> PersistM m => m Idea
+addIdea :: AddDb m Idea
 addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
-findIdea = findInById dbIdeas
+findIdea = findInById dbIdeaMap
 
 findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
+-- | FIXME deal with changedBy and changedAt
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
-modifyAMap l ident f = modifyDb l (at ident . _Just %~ f)
+modifyAMap l ident = modifyDb (l . at ident . _Just)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap dbIdeaMap
@@ -217,7 +256,7 @@ modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
 modifyTopic = modifyAMap dbTopicMap
 
 findUser :: AUID User -> PersistM m => m (Maybe User)
-findUser = findInById dbUsers
+findUser = findInById dbUserMap
 
 getUsers :: PersistM m => m [User]
 getUsers = getDb dbUsers
@@ -230,7 +269,7 @@ moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaLocation .~ location
 
-addTopic :: UserWithProto Topic -> PersistM m => m Topic
+addTopic :: AddDb m Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
@@ -238,11 +277,10 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    Just loc <- ideaLocationFromTopic (t ^. _Id)
-    moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) loc
+    moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) (topicIdeaLocation t)
     return t
 
-addDelegation :: UserWithProto Delegation -> PersistM m => m Delegation
+addDelegation :: AddDb m Delegation
 addDelegation = addDb dbDelegationMap
 
 findDelegationsByContext :: DelegationContext -> PersistM m => m [Delegation]
@@ -253,42 +291,77 @@ findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
 findTopic :: AUID Topic -> PersistM m => m (Maybe Topic)
-findTopic = findInById dbTopics
+findTopic = findInById dbTopicMap
 
 findTopicsBySpace :: IdeaSpace -> PersistM m => m [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
 findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
 findIdeasByTopicId tid = do
-    Just loc <- ideaLocationFromTopic tid
-    findAllInBy dbIdeas ideaLocation loc
+    mt <- findTopic tid
+    case mt of
+        Nothing -> pure []
+        Just t  -> findIdeasByTopic t
 
 findIdeasByTopic :: Topic -> PersistM m => m [Idea]
-findIdeasByTopic = findIdeasByTopicId . view _Id
+findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
 findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
--- FIXME: Same user can like the same idea more than once.
-addLikeToIdea :: User -> AUID Idea -> PersistM m => m ()
-addLikeToIdea cUser iid = do
-    metainfo <- nextMetaInfo cUser
-    modifyIdea iid (ideaLikes %~ Set.insert (IdeaLike metainfo))
+instance FromProto IdeaLike where
+    fromProto () = IdeaLike
 
--- FIXME: Save comments properly.
-addCommentToIdea :: User -> AUID Idea -> Document -> PersistM m => m Comment
-addCommentToIdea cUser iid msg = do
-    metainfo <- nextMetaInfo cUser
-    let comment = Comment metainfo msg Set.empty Set.empty
-    modifyIdea iid (ideaComments %~ Set.insert comment)
-    return comment
+-- | FIXME: Same user can like the same idea more than once.
+-- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
+addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
+addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
+
+instance FromProto Comment where
+    fromProto d m = Comment { _commentMeta      = m
+                            , _commentText      = d
+                            , _commentReplies   = nil
+                            , _commentVotes     = nil
+                            }
+
+
+-- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
+addCommentToIdea :: AUID Idea -> AddDb m Comment
+addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
+
+-- | FIXME: Assumptions:
+-- * the given @AUID Idea@ MUST be in the DB.
+-- * the given @AUID Comment@ MUST be one of the comment of the given idea.
+addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
+addReplyToIdeaComment iid cid =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies)
+
+instance FromProto CommentVote where
+    fromProto = flip CommentVote
+
+-- | FIXME: Assumptions:
+-- * the given @AUID Idea@ MUST be in the DB.
+-- * the given @AUID Comment@ MUST be one of the comment of the given idea.
+addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
+addCommentVoteToIdeaComment iid cid =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
+
+-- | FIXME: Assumptions:
+-- * the given @AUID Idea@ MUST be in the DB.
+-- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
+-- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
+addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb m CommentVote
+addCommentVoteToIdeaCommentReply iid cid rid =
+    addDb (dbIdeaMap . at iid . _Just . ideaComments
+                     . at cid . _Just . commentReplies
+                     . at rid . _Just . commentVotes)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
--- No 'FromProto' instance, since this is more complex, due to the possible
+-- | No 'FromProto' instance, since this is more complex, due to the possible
 -- auto-generating of logins and passwords.
 userFromProto :: MetaInfo User -> UserLogin -> UserPass -> Proto User -> User
 userFromProto metainfo uLogin uPassword proto = User
@@ -302,7 +375,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
-addUser :: UserWithProto User -> PersistM m => m User
+addUser :: AddDb m User
 addUser (cUser, proto) = do
     metainfo  <- nextMetaInfo cUser
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
@@ -389,10 +462,6 @@ mkMetaInfo cUser now oid = MetaInfo
 
 nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
 nextMetaInfo cUser = mkMetaInfo cUser <$> getCurrentTimestamp <*> nextId
-
--- | Construct an 'IdeaLocation' from a 'Topic' id.
-ideaLocationFromTopic :: AUID Topic -> PersistM m => m (Maybe IdeaLocation)
-ideaLocationFromTopic tid = (`IdeaLocationTopic` tid) . view topicIdeaSpace <$$> findTopic tid
 
 ideaPhase :: Idea -> PersistM m => m (Maybe Phase)
 ideaPhase idea = case idea ^. ideaLocation of

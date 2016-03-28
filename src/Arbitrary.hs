@@ -69,15 +69,17 @@ import qualified Persistent.Implementation.STM
 
 -- | FIXME: push this upstream to basic-sop.
 -- See also: https://github.com/well-typed/basic-sop/pull/1
-garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
-garbitrary = to <$> (hsequence =<< elements subs)
+garbitrary' :: forall a. (Int -> Int) -> (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary' scaling = to <$> (hsequence =<< elements subs)
   where
     subs :: [SOP Gen (Code a)]
-    subs = apInjs_POP (hcpure p (scale (\s -> max 0 (s - 10)) arbitrary))
+    subs = apInjs_POP (hcpure p (scale scaling arbitrary))
 
     p :: Proxy Arbitrary
     p = Proxy
 
+garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary = garbitrary' (max 0 . subtract 10)
 
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
@@ -112,6 +114,9 @@ instance Arbitrary CreateIdea where
 
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
+
+instance Arbitrary CommentIdea where
+    arbitrary = CommentIdea <$> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
@@ -219,7 +224,7 @@ instance Arbitrary Delegation where
 -- * comment
 
 instance Arbitrary Comment where
-    arbitrary = garbitrary
+    arbitrary = garbitrary' (`div` 3)
 
 instance Arbitrary CommentVote where
     arbitrary = garbitrary
@@ -917,8 +922,8 @@ constantSampleIdea = Idea
     , _ideaCategory = CatTime
     , _ideaLocation =
         IdeaLocationSpace { _ideaLocationSpace = SchoolSpace }
-    , _ideaComments = Set.fromList constantSampleComments
-    , _ideaLikes = Set.fromList
+    , _ideaComments = aMapFromList constantSampleComments
+    , _ideaLikes = aMapFromList
           [
             IdeaLike
               { _likeMeta =
@@ -934,7 +939,7 @@ constantSampleIdea = Idea
               }
           ]
     , _ideaQuorumOk = True
-    , _ideaVotes = Set.fromList []
+    , _ideaVotes = nil
     , _ideaResult =
         Just
           IdeaResult
@@ -971,7 +976,7 @@ constantSampleComments =
                   "amen 3 rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
               }
         , _commentVotes =
-            Set.fromList
+            aMapFromList
               [ CommentVote
                   { _commentVoteMeta =
                       MetaInfo
@@ -1041,7 +1046,7 @@ constantSampleComments =
                   }
               ]
         , _commentReplies =
-            Set.fromList
+            aMapFromList
               [ Comment
                   { _commentMeta =
                       MetaInfo
@@ -1054,8 +1059,8 @@ constantSampleComments =
                         , _metaChangedAt = constantSampleTimestamp
                         }
                   , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1073,8 +1078,8 @@ constantSampleComments =
                         { fromMarkdown =
                             "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
                         }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1094,7 +1099,7 @@ constantSampleComments =
                         }
                   , _commentReplies = nil
                   , _commentVotes =
-                      Set.fromList
+                      aMapFromList
                         [ CommentVote
                             { _commentVoteMeta =
                                 MetaInfo
@@ -1129,7 +1134,7 @@ constantSampleComments =
                   "rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
               }
         , _commentVotes =
-            Set.fromList
+            aMapFromList
               [ CommentVote
                   { _commentVoteMeta =
                       MetaInfo
@@ -1199,7 +1204,7 @@ constantSampleComments =
                   }
               ]
         , _commentReplies =
-            Set.fromList
+            aMapFromList
               [ Comment
                   { _commentMeta =
                       MetaInfo
@@ -1212,8 +1217,8 @@ constantSampleComments =
                         , _metaChangedAt = constantSampleTimestamp
                         }
                   , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1231,8 +1236,8 @@ constantSampleComments =
                         { fromMarkdown =
                             "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
                         }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1252,7 +1257,7 @@ constantSampleComments =
                         }
                   , _commentReplies = nil
                   , _commentVotes =
-                      Set.fromList
+                      aMapFromList
                         [ CommentVote
                             { _commentVoteMeta =
                                 MetaInfo

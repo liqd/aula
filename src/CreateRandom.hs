@@ -62,7 +62,7 @@ genInitialTestDb = do
     user2 <- addUser (firstUser,
                       protoU2 & protoUserLogin ?~ UserLogin "admin2"
                               & protoUserPassword ?~ UserPassInitial "pssst2")
-    _wildIdea <- addIdea . (,) firstUser =<< genArbitrary
+    _wildIdea <- addIdea . (,) firstUser . (protoIdeaLocation . ideaLocationMaybeTopicId .~ Nothing) =<< genArbitrary
     topicIdea <- addIdea . (,) user2     =<< genArbitrary
     _topic <- addTopic . (,) firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
     return ()

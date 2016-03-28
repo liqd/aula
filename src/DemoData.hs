@@ -34,7 +34,7 @@ numberOfStudents :: Int
 numberOfStudents = 130
 
 numberOfTopics :: Int
-numberOfTopics = 100
+numberOfTopics = 20
 
 numberOfIdeas :: Int
 numberOfIdeas = 300
@@ -45,6 +45,11 @@ numberOfLikes = 500
 numberOfComments :: Int
 numberOfComments = 500
 
+numberOfReplies :: Int
+numberOfReplies = 2000
+
+numberOfCommentVotes :: Int
+numberOfCommentVotes = 5000
 
 -- * Generators
 
@@ -73,7 +78,7 @@ genTopic ideaSpaces =
 genIdeaLocation :: [IdeaSpace] -> [Topic] -> Gen IdeaLocation
 genIdeaLocation ideaSpaces topics = oneof
     [ IdeaLocationSpace <$> elements ideaSpaces
-    , topicToIdeaLocation <$> elements topics
+    , topicIdeaLocation <$> elements topics
     ]
 
 genIdea :: [IdeaSpace] -> [Topic] -> Gen ProtoIdea
@@ -101,16 +106,42 @@ ideaStudentPair ideas students = do
     student <- elements $ relatedStudents idea students
     return (idea, student)
 
-genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m ())
+genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     return $ addLikeToIdea student (idea ^. _Id)
 
-genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m Comment)
+arbDocument :: Gen Document
+arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
+
+data CommentInContext = CommentInContext
+    { _cicIdea :: Idea
+    , _cicParentComment :: Maybe Comment
+    , _cicComment :: Comment
+    }
+
+genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    msg <- Markdown <$> (arbPhraseOf =<< choose (10, 100))
-    return $ addCommentToIdea student (idea ^. _Id) msg
+    fmap (CommentInContext idea Nothing) .
+        addCommentToIdea (idea ^. _Id) . (,) student <$> arbDocument
+
+genReply :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
+genReply comments_in_context students = do
+    CommentInContext idea Nothing comment <- elements comments_in_context
+    (_, student) <- ideaStudentPair [idea] students
+    fmap (CommentInContext idea (Just comment)) .
+        addReplyToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arbDocument
+
+genCommentVote :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentVote)
+genCommentVote comments_in_context students = do
+    CommentInContext idea mparent comment <- elements comments_in_context
+    (_, student) <- ideaStudentPair [idea] students
+    case mparent of
+        Nothing ->
+            addCommentVoteToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arb
+        Just parent ->
+            addCommentVoteToIdeaCommentReply (idea ^. _Id) (parent ^. _Id) (comment ^. _Id) . (,) student <$> arb
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
@@ -138,17 +169,17 @@ universe rnd = void $ do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics' <- generate numberOfTopics rnd (genTopic ideaSpaces)
-    topics  <- mapM (addTopic . (,) admin) topics'
+    topics  <- mapM (addTopic . (,) admin) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
 
-    ideas' <- generate numberOfIdeas rnd (genIdea ideaSpaces topics)
-    ideas  <- mapM (addIdea . (,) admin) ideas'
+    ideas  <- mapM (addIdea . (,) admin) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
-    likes <- generate numberOfLikes rnd (genLike ideas students)
-    sequence_ likes
+    sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
 
-    comments <- generate numberOfComments rnd (genComment ideas students)
-    sequence_ comments
+    comments <- sequence =<< generate numberOfComments rnd (genComment ideas students)
+
+    replies <- sequence =<< generate numberOfReplies rnd (genReply comments students)
+
+    sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
 
   where
     assert' p = assert p $ return ()
@@ -156,6 +187,9 @@ universe rnd = void $ do
 
 -- * Helpers
 
+-- This 'Monad m => m a' is strange, why not simply 'a' instead?
+-- Second, is this actually safe to use the same generator over and over or
+-- does it need to be threaded?
 gen :: forall a . QCGen -> Gen a -> forall m . Monad m => m a
 gen rnd (QC.MkGen g) =
     return $ g rnd 30

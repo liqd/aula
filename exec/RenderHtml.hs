@@ -25,7 +25,6 @@ import Text.Digestive.View (getForm)
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Data.Set as Set
 import qualified Data.Text.IO as ST
 
 import Arbitrary
@@ -73,6 +72,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticImprint))
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticTermsOfUse))
     , f (Proxy :: Proxy (ToHtmlForm    PageHomeWithLoginPrompt))
+    , f (Proxy :: Proxy (ToHtmlForm    CommentIdea))
     ]
 
 
@@ -134,8 +134,8 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                  <*> arb
                  <*> arb
                  <*> arb
-                 <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
-                 <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
+                 <*> (aMapFromList <$> vectorOf 5 arb)  -- comments
+                 <*> (aMapFromList <$> vectorOf 5 arb)  -- likes
                  <*> arb
                  <*> pure nil  -- votes
                  <*> pure Nothing
