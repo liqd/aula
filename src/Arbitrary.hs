@@ -780,10 +780,10 @@ fishDelegationNetworkAction' mSchoolClass = do
         mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
         mkdel = do
             ctx :: DelegationContext
-                <- DelCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
-            let fltr u = ctx == DelCtxIdeaSpace SchoolSpace
+                <- DlgCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
+            let fltr u = ctx == DlgCtxIdeaSpace SchoolSpace
                       || case u ^. userRole of
-                             Student cl -> ctx == DelCtxIdeaSpace (ClassSpace cl)
+                             Student cl -> ctx == DlgCtxIdeaSpace (ClassSpace cl)
                              _          -> False
 
                 users' = List.filter fltr users
@@ -863,7 +863,7 @@ instance Aeson.ToJSON D3DN where
             , "context" .= toJSON (renderCtx d)
             ]
 
-        renderCtx (Delegation _ (DelCtxIdeaSpace s) _ _) = showIdeaSpace s
+        renderCtx (Delegation _ (DlgCtxIdeaSpace s) _ _) = showIdeaSpace s
         renderCtx _ = error "instance Aeson.ToJSON D3DN where: context type not implemented."
 
 
