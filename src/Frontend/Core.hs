@@ -45,6 +45,7 @@ import Data.Maybe (isJust, fromJust)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
+import Data.Version (showVersion)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_)
 import Servant
@@ -65,6 +66,8 @@ import Lucid.Missing (script_, href_, src_)
 import Types
 
 import qualified Frontend.Path as P
+import qualified Paths_aula as Paths
+-- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
 
 
 -- | FIXME: Could this be a PR for lucid?
@@ -232,7 +235,11 @@ footerMarkup = do
             ul_ [class_ "main-footer-menu"] $ do
                 li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
                 li_ $ a_ [href_ P.Imprint] "Impressum"
-            span_ [class_ "main-footer-blurb"] "Made with \x2665 by Liqd"
+            span_ [class_ "main-footer-blurb"] $ do
+                "Made with \x2665 by Liqd"
+            span_ [class_ "main-footer-blurb"] $ do
+                toHtmlRaw ("&nbsp;" :: ST)
+                "[v" <> toHtml (showVersion Paths.version) <> "]"
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 

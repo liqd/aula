@@ -1,7 +1,8 @@
 SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
-FULL_SOURCES=-isrc -itests -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
+SOME_SOURCES=-isrc -itests -idist/build/autogen
+FULL_SOURCES=$(SOME_SOURCES) -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
 AULA_IMAGE=quay.io/liqd/aula
 
 .phony:
@@ -24,7 +25,7 @@ unregister-full:
 
 # only aware of aula sources
 sensei: .phony aula.unregister
-	$(EXEC) sensei -isrc -itests tests/Spec.hs $(SENSEI_ARGS)
+	$(EXEC) sensei $(SOME_SOURCES) tests/Spec.hs $(SENSEI_ARGS)
 
 # aware of aula and thentos sources
 sensei-full: .phony unregister-full
