@@ -63,6 +63,8 @@ dependencies:
 
 library:
   source-dirs: src
+  other-modules:
+    - Paths_aula
 
 executables:
   aula-server:
