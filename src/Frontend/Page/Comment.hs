@@ -22,13 +22,6 @@ import Types
 import Frontend.Prelude
 
 
-data PageComment = PageComment Comment
-  deriving (Eq, Show, Read)
-
-instance ToHtml PageComment where
-    toHtmlRaw = toHtml
-    toHtml p@(PageComment comment) = semanticDiv p $ toHtml (CommentWidget comment)
-
 data CommentWidget = CommentWidget Comment
   deriving (Eq, Show, Read)
 

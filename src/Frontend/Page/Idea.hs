@@ -179,7 +179,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        PageComment c ^. html
+                        CommentWidget c ^. html
 
 
 instance FormPage CreateIdea where
