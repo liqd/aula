@@ -65,7 +65,7 @@ instance Page EditIdea where
   isPrivatePage _ = True
 
 -- | X. Comment idea
-data CommentIdea = CommentIdea IdeaLocation (AUID Idea)
+data CommentIdea = CommentIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page CommentIdea where
@@ -308,16 +308,17 @@ instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = Document
     type FormPageResult CommentIdea = Comment
 
-    formAction (CommentIdea ideaLoc ideaId) = relPath $ U.IdeaPath ideaLoc (U.IdeaModeComment ideaId)
+    formAction (CommentIdea idea) = relPath $
+        U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeComment (idea ^. _Id))
 
-    redirectOf (CommentIdea ideaLoc ideaId) _ =
-        relPath . U.Space (ideaLoc ^. ideaLocationSpace) $ U.ViewIdea ideaId
+    redirectOf (CommentIdea idea) _ =
+        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
 
     makeForm CommentIdea{} =
         "comment-text" .: (Markdown <$> DF.text Nothing)
 
     -- FIXME styling
-    formPage v form p@CommentIdea{} =
+    formPage v form p@(CommentIdea idea) =
         semanticDiv p $ do
             div_ [class_ "container-comment-idea"] $ do
                 h1_ [class_ "main-heading"] "Comment on an idea"
@@ -368,8 +369,10 @@ editIdea ideaId =
                       . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
                       . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
 
-commentIdea :: ActionM r m => IdeaLocation -> AUID Idea -> ServerT (FormHandler CommentIdea) m
-commentIdea ideaLoc ideaId =
+commentIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler CommentIdea) m
+commentIdea ideaId =
     redirectFormHandler
-        (pure $ CommentIdea ideaLoc ideaId)
+        (do
+            Just idea <- persistent $ findIdea ideaId  -- FIXME: 404
+            pure $ CommentIdea idea)
         (currentUserAddDb $ addCommentToIdea ideaId)

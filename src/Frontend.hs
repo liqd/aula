@@ -204,7 +204,7 @@ aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea
   :<|> Page.editIdea
-  :<|> Page.commentIdea locSpace
+  :<|> Page.commentIdea
   :<|> Page.createIdea  locSpace
 
   :<|> Page.viewTopics  space
@@ -212,7 +212,7 @@ aulaSpace space =
   :<|> Page.viewTopic   TabAllIdeas
   :<|> const Page.viewIdea
   :<|> const Page.editIdea
-  :<|> Page.commentIdea . locTopic
+  :<|> const Page.commentIdea
   :<|> Page.createIdea  . locTopic
   :<|> Page.viewTopic   TabVotingIdeas
   :<|> Page.viewTopic   TabWinningIdeas
