@@ -321,7 +321,7 @@ instance FormPage CommentIdea where
     formPage v form p@(CommentIdea idea) =
         semanticDiv p $ do
             div_ [class_ "container-comment-idea"] $ do
-                h1_ [class_ "main-heading"] "Comment on an idea"
+                h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
                 form $ do
                     label_ $ do
                         span_ [class_ "label-text"] "What is your comment?"
