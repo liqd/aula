@@ -160,12 +160,12 @@ assertPersistM check = check
 
 type AddDb m a = UserWithProto a -> PersistM m => m a
 
--- @addDb l (u, p)@ adds a record to the DB.
+-- | @addDb l (u, p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
 -- The record is computed from the prototype @p@, the current time and the given user @u@.
 -- The record is added at the location pointed by the traversal @l@.
 --
--- It is expected that @l@ points to exactly one target (checked by 'assert').
+-- It is expected that @l@ points to exactly one target (checked by 'assertPersistM').
 --
 -- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
 -- above at the expense of pushing the burden towards cases where the traversal is only a
@@ -242,7 +242,7 @@ findIdea = findInById dbIdeaMap
 findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
--- FIXME deal with changedBy and changedAt
+-- | FIXME deal with changedBy and changedAt
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
 modifyAMap l ident = modifyDb (l . at ident . _Just)
 
@@ -312,7 +312,7 @@ findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . v
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
--- FIXME: Same user can like the same idea more than once.
+-- | FIXME: Same user can like the same idea more than once.
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
 addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
@@ -325,11 +325,11 @@ instance FromProto Comment where
                             }
 
 
--- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
+-- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: AUID Idea -> AddDb m Comment
 addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
 
--- FIXME: Assumptions:
+-- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
@@ -339,14 +339,14 @@ addReplyToIdeaComment iid cid =
 instance FromProto CommentVote where
     fromProto = flip CommentVote
 
--- FIXME: Assumptions:
+-- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
 addCommentVoteToIdeaComment iid cid =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
 
--- FIXME: Assumptions:
+-- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
@@ -361,7 +361,7 @@ nextId = do
     modifyDb dbLastId (+1)
     AUID <$> getDb dbLastId
 
--- No 'FromProto' instance, since this is more complex, due to the possible
+-- | No 'FromProto' instance, since this is more complex, due to the possible
 -- auto-generating of logins and passwords.
 userFromProto :: MetaInfo User -> UserLogin -> UserPass -> Proto User -> User
 userFromProto metainfo uLogin uPassword proto = User
