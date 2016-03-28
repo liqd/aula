@@ -95,6 +95,6 @@ instance ToHtml LoginDemoHints where
 -- * handlers
 
 login :: (ActionM r action) => Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
-login success = redirectFormHandler getPage Action.login
+login success = redirectFormHandler getPage Action.loginByUser
   where
     getPage = PageHomeWithLoginPrompt success . LoginDemoHints <$> Action.persistent getUsers

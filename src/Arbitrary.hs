@@ -761,14 +761,16 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
+    cfg <- Config.getConfig Config.DontWarnMissing
+
     persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
     admin <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         Admin (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
+    let (Nat ac) = mkRunAction $ ActionEnv persist cfg
     either (error . ppShow) id <$> runExceptT
-        (ac (Action.login admin >> fishDelegationNetworkAction))
+        (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
 
 fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
@@ -783,10 +785,10 @@ fishDelegationNetworkAction' mSchoolClass = do
         mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
         mkdel = do
             ctx :: DelegationContext
-                <- DelCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
-            let fltr u = ctx == DelCtxIdeaSpace SchoolSpace
+                <- DlgCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
+            let fltr u = ctx == DlgCtxIdeaSpace SchoolSpace
                       || case u ^. userRole of
-                             Student cl -> ctx == DelCtxIdeaSpace (ClassSpace cl)
+                             Student cl -> ctx == DlgCtxIdeaSpace (ClassSpace cl)
                              _          -> False
 
                 users' = List.filter fltr users
@@ -866,7 +868,7 @@ instance Aeson.ToJSON D3DN where
             , "context" .= toJSON (renderCtx d)
             ]
 
-        renderCtx (Delegation _ (DelCtxIdeaSpace s) _ _) = showIdeaSpace s
+        renderCtx (Delegation _ (DlgCtxIdeaSpace s) _ _) = showIdeaSpace s
         renderCtx _ = error "instance Aeson.ToJSON D3DN where: context type not implemented."
 
 

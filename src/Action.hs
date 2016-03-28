@@ -16,6 +16,7 @@ module Action
     , ActionEnv(..), config, persistNat
 
       -- * user handling
+    , loginByUser, loginByName
     , userLoggedOut
     , currentUserAddDb
     , currentUser
@@ -119,7 +120,7 @@ instance ThrowError500 ActionExcept where
 
 class ActionError m => ActionUserHandler m where
     -- | Make the user logged in
-    login  :: User -> m ()
+    login  :: AUID User -> m ()
     -- | Read the current user state
     userState :: Getting a UserState a -> m a
     -- | Make the user log out
@@ -132,6 +133,14 @@ class MonadError ActionExcept m => ActionError m
 
 
 -- * Action Combinators
+
+loginByUser :: ActionUserHandler m => User -> m ()
+loginByUser = login . view _Id
+
+loginByName :: (ActionPersist r m, ActionUserHandler m) => UserLogin -> m ()
+loginByName n = do
+    Just u <- persistent (findUserByLogin n)  -- FIXME: handle 'Nothing'
+    loginByUser u
 
 -- | Returns the current user ID
 currentUserId :: ActionUserHandler m => m (AUID User)
@@ -168,6 +177,7 @@ validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 
 validUserState :: UserState -> Bool
 validUserState us = us == userLoggedOut || validLoggedIn us
+
 
 -- * csv temp files
 

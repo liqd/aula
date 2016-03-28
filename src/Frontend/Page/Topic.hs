@@ -236,7 +236,7 @@ viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
 viewTopic tab topicId = makeFrame =<< persistent (do
     Just topic <- findTopic topicId  -- FIXME: 404
-    delegations <- findDelegationsByContext $ DelCtxTopic topicId
+    delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
     case tab of
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
         _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
