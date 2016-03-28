@@ -14,6 +14,7 @@ module Frontend.Path
     , IdeaMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, voteCommentIdea, voteCommentIdeaReply, isPostOnly
+    , isBroken
     )
 where
 
@@ -28,7 +29,6 @@ import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, Permis
 
 data Top =
     Top
-  | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
   | TopMain Main
   | TopTesting UriPath
   | TopSamples
@@ -41,7 +41,6 @@ instance HasPath Top where relPath = top
 
 top :: Top -> UriPath
 top Top            = nil
-top Broken         = "bröken"
 top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
@@ -61,6 +60,7 @@ data Main =
   | Terms
   | Login
   | Logout
+  | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
   deriving (Generic, Show)
 
 isPostOnly :: Main -> Bool
@@ -75,6 +75,11 @@ isPostOnly = \case
 
     -- FIXME[#312] Logout -> True
     _ -> False
+
+-- FIXME: Remove
+isBroken :: Main -> Bool
+isBroken Broken = True
+isBroken _      = False
 
 instance SOP.Generic Main
 
@@ -94,6 +99,7 @@ main Imprint          root = root </> "imprint"
 main Terms            root = root </> "terms"
 main Login            root = root </> "login"
 main Logout           root = root </> "logout"
+main Broken           root = root </> "bröken"
 
 data Space =
     ListTopics

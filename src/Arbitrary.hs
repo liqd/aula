@@ -44,7 +44,7 @@ import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -354,7 +354,8 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- * path
 
 instance Arbitrary P.Main where
-    arbitrary = garbitrary
+    -- FIXME: Remove Broken
+    arbitrary = suchThat garbitrary (not . P.isBroken)
 
 instance Arbitrary P.IdeaMode where
     arbitrary = garbitrary
