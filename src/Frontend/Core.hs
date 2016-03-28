@@ -38,15 +38,15 @@ module Frontend.Core
 where
 
 import Control.Lens
-import Control.Monad (when)
-import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
+import Control.Monad.Except (MonadError)
+import Control.Monad (when)
 import Data.Maybe (isJust, fromJust)
 import Data.Set (Set)
 import Data.String.Conversions
 import Data.Typeable
-import Lucid hiding (href_, script_, src_)
 import Lucid.Base
+import Lucid hiding (href_, script_, src_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, getFormDataEnv)
