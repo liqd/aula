@@ -313,8 +313,6 @@ instance FromProto IdeaLike where
 addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
 addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
 
--- Should we have that the author of a comment automatically casts their vote on the comment?
--- If so should it be made a real vote or accounted for when viewing the comment?
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
                             , _commentText      = d

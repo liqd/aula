@@ -179,6 +179,10 @@ instance SOP.Generic IdeaResultValue
 --
 -- 'Comments' are hierarchical.  The application logic is responsible for putting some limit (if
 -- any) on the recursion depth under which all children become siblings.
+--
+-- A comment has no implicit 'yes' vote by the author.  This gives the author the option of voting
+-- for a comment, or even against it.  Even though the latter may never make sense, somebody may
+-- still learn something from trying it out, and this is a teaching application.
 data Comment = Comment
     { _commentMeta    :: MetaInfo Comment
     , _commentText    :: Document
