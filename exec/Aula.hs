@@ -10,6 +10,6 @@ import Config
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
-    let cfg = Config.devel
+    cfg <- getConfig WarnMissing
     putStrLn $ "running aula with config " <> show cfg
     runFrontend cfg

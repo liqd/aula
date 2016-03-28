@@ -1,15 +1,48 @@
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
+{-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
+
 module Config
+    ( Config
+    , WarnMissing(WarnMissing, DontWarnMissing)
+    , dbPath
+    , generateDemoData
+    , htmlStatic
+    , listenerInterface
+    , listenerPort
+    , getConfig
+    , aulaRoot
+    , setCurrentDirectoryToAulaRoot
+    , getSamplesPath
+    )
 where
 
 import Control.Lens
+import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import Data.String.Conversions (SBS, cs)
+import Data.Yaml
+import GHC.Generics
 import System.Directory
 import System.Environment
+import System.FilePath ((</>))
+import System.IO (hPutStrLn, stderr)
 import Thentos.Frontend.CSRF (GetCsrfSecret(..), CsrfSecret(..))
+
+
+instance ToJSON CsrfSecret where
+  toJSON (CsrfSecret s) = String $ cs s
+
+instance FromJSON CsrfSecret where
+  parseJSON o = CsrfSecret . (cs :: String -> SBS) <$> parseJSON o
+
+-- FIXME: if we decide that json instances for csrf secrets are a good idea, they should move to
+-- thentos.
+
 
 data Config = Config
     { _dbPath :: FilePath
@@ -19,12 +52,15 @@ data Config = Config
     , _cfgCsrfSecret :: CsrfSecret
     , _generateDemoData :: Bool
     }
-  deriving (Show)
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''Config
 
-devel :: Config
-devel = Config
+instance GetCsrfSecret Config where
+    csrfSecret = pre cfgCsrfSecret
+
+defaultConfig :: Config
+defaultConfig = Config
     { _dbPath = "./aula.db"
     , _listenerInterface = "0.0.0.0"
     , _listenerPort = 8080
@@ -34,13 +70,44 @@ devel = Config
     , _generateDemoData = True
     }
 
-instance GetCsrfSecret Config where
-    csrfSecret = pre cfgCsrfSecret
+data WarnMissing = WarnMissing | DontWarnMissing
+  deriving (Eq, Show)
+
+getConfig :: WarnMissing -> IO Config
+getConfig warnMissing = configFilePath >>= maybe (msg1 >> dflt) decodeFileDflt
+  where
+    dflt :: IO Config
+    dflt = pure defaultConfig
+
+    decodeFileDflt :: FilePath -> IO Config
+    decodeFileDflt fp = decodeFileEither fp >>= either (\emsg -> msg2 (show emsg) >> dflt) pure
+
+    msg1 :: IO ()
+    msg1 = f
+        [ "no config file found ($AULA_ROOT_PATH not set)."
+        , "to fix this, write the following lines to $AULA_ROOT_PATH/aula.yaml:"
+        ]
+
+    msg2 :: String -> IO ()
+    msg2 emsg = f
+        [ "could not read config file:"
+        , emsg
+        , "to fix this, write the following lines to $AULA_ROOT_PATH/aula.yaml:"
+        ]
+
+    f :: [String] -> IO ()
+    f msgs = case warnMissing of
+        WarnMissing     -> hPutStrLn stderr . unlines $ [""] <> msgs <> ["", cs $ encode defaultConfig]
+        DontWarnMissing -> pure ()
+
+configFilePath :: IO (Maybe FilePath)
+configFilePath = (</> "aula.yaml") <$$> aulaRoot
+
+aulaRoot :: IO (Maybe FilePath)
+aulaRoot = lookup "AULA_ROOT_PATH" <$> getEnvironment
 
 setCurrentDirectoryToAulaRoot :: IO ()
-setCurrentDirectoryToAulaRoot = do
-    getEnvironment >>= maybe (pure ()) setCurrentDirectory . lookup "AULA_ROOT_PATH"
-
+setCurrentDirectoryToAulaRoot = aulaRoot >>= maybe (pure ()) setCurrentDirectory
 
 getSamplesPath :: IO FilePath
 getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment

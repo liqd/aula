@@ -26,7 +26,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
-import Config (Config, devel)
+import Config (Config, getConfig, WarnMissing(DontWarnMissing))
 import Frontend.Core
 import Frontend.Page
 import qualified Persistent.Implementation.STM
@@ -217,7 +217,9 @@ runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersis
                           unNat (mkRunAction (ActionEnv rp cfg)) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
-failOnError = fmap (either (error . show) id) . runExceptT . runAction Config.devel
+failOnError pers = do
+    cfg <- getConfig DontWarnMissing
+    fmap (either (error . show) id) . runExceptT $ runAction cfg pers
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
