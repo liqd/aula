@@ -324,10 +324,10 @@ instance FormPage CommentIdea where
                 h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
                 form $ do
                     label_ $ do
-                        span_ [class_ "label-text"] "What is your comment?"
+                        span_ [class_ "label-text"] "Was möchtest du sagen?"
                         DF.inputTextArea Nothing Nothing "comment-text" v
                     footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Post"
+                        DF.inputSubmit "Kommentar abgeben"
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
