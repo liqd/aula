@@ -148,7 +148,7 @@ instance FormPage CreateTopic where
 
     formAction (CreateTopic space _) = U.Space space U.CreateTopic
 
-    redirectOf (CreateTopic _ _) topic = relPath $ U.listTopicIdeas topic
+    redirectOf (CreateTopic _ _) = U.listTopicIdeas
 
     makeForm (CreateTopic space ideas) =
         ProtoTopic
@@ -195,7 +195,7 @@ instance FormPage EditTopic where
 
     formAction (EditTopic space topic _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
 
-    redirectOf (EditTopic _ topic _) _ = relPath $ U.listTopicIdeas topic
+    redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
 
     makeForm (EditTopic _space topic ideas) =
         TopicFormPayload

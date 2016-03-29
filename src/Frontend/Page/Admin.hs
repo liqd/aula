@@ -220,7 +220,7 @@ instance FormPage PageAdminSettingsDurations where
     formAction _ = U.Admin U.AdminDuration
 
     -- FIXME: Do we redirect to the same page???
-    redirectOf _ _ = relPath $ U.Admin U.AdminDuration
+    redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
@@ -262,8 +262,8 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
 instance FormPage PageAdminSettingsQuorum where
     type FormPagePayload PageAdminSettingsQuorum = Quorums
 
-    formAction _ = U.Admin U.AdminQuorum
-    redirectOf _ _ = relPath $ U.Admin U.AdminQuorum
+    formAction _   = U.Admin U.AdminQuorum
+    redirectOf _ _ = U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
@@ -404,7 +404,7 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
         U.Admin . U.AdminEditUser $ user ^. _Id
 
     redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) _ =
-        relPath . U.Admin . U.AdminAccess $ PermUserView
+        U.Admin . U.AdminAccess $ PermUserView
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (PageAdminSettingsGaPUsersEdit user classes) =
@@ -553,7 +553,7 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
         U.Admin $ U.AdminAccess PermClassCreate
 
     redirectOf PageAdminSettingsGaPClassesCreate _ =
-        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassView
+        U.Admin $ U.AdminAccess PermClassView
 
     makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
         <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate

@@ -206,7 +206,7 @@ instance FormPage CreateIdea where
 
     formAction (CreateIdea loc) = U.createIdea loc
 
-    redirectOf (CreateIdea _loc) idea = relPath $ U.viewIdea idea
+    redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
         ProtoIdea
@@ -285,7 +285,7 @@ instance FormPage EditIdea where
 
     formAction (EditIdea idea) = U.editIdea idea
 
-    redirectOf (EditIdea idea) _ = relPath $ U.viewIdea idea
+    redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -326,7 +326,7 @@ instance FormPage CommentIdea where
 
     formAction (CommentIdea idea) = U.editIdea idea
 
-    redirectOf (CommentIdea idea) _ = relPath $ U.viewIdea idea
+    redirectOf (CommentIdea idea) _ = U.viewIdea idea
 
     makeForm CommentIdea{} =
         "comment-text" .: (Markdown <$> DF.text Nothing)
