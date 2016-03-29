@@ -53,6 +53,10 @@ readWith Proxy = read
 justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
 
+lowerFirst :: String -> String
+lowerFirst [] = []
+lowerFirst (x:xs) = toLower x : xs
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
 
@@ -658,6 +662,25 @@ instance FromHttpApiData IdeaSpace where
 
 instance FromHttpApiData SchoolClass where
     parseUrlPiece = parseSchoolClass
+
+instance FromHttpApiData IdeaVoteValue where
+    parseUrlPiece = \case
+        "yes"     -> Right Yes
+        "no"      -> Right No
+        "neutral" -> Right Neutral
+        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are expected)"
+
+instance HasUriPart IdeaVoteValue where
+    uriPart = fromString . lowerFirst . show
+
+instance HasUriPart UpDown where
+    uriPart = fromString . lowerFirst . show
+
+instance FromHttpApiData UpDown where
+    parseUrlPiece = \case
+        "up"   -> Right Up
+        "down" -> Right Down
+        _      -> Left "Ill-formed comment vote value: only `up' or `down' are expected)"
 
 ideaTopicId :: Traversal' Idea (AUID Topic)
 ideaTopicId = ideaLocation . ideaLocationTopicId

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
@@ -12,6 +13,7 @@ module Frontend.Path
     , AdminPs(..)
     , IdeaMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
+    , likeIdea, voteIdea, voteCommentIdea, voteCommentIdeaReply, isPostOnly
     )
 where
 
@@ -22,7 +24,7 @@ import Data.UriPath
 import qualified Generics.SOP as SOP
 
 import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
-             , SchoolClass, _Id, ideaLocation, topicIdeaSpace)
+             , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment)
 
 data Top =
     Top
@@ -61,6 +63,19 @@ data Main =
   | Logout
   deriving (Generic, Show)
 
+isPostOnly :: Main -> Bool
+isPostOnly = \case
+    IdeaPath _ m ->
+        case m of
+            LikeIdea{} -> True
+            VoteIdea{} -> True
+            VoteCommentIdea{} -> True
+            VoteCommentIdeaReply{} -> True
+            _ -> False
+
+    -- FIXME[#312] Logout -> True
+    _ -> False
+
 instance SOP.Generic Main
 
 instance HasPath Main where relPath p = main p nil
@@ -98,8 +113,23 @@ viewIdea idea = IdeaPath (idea ^. ideaLocation) $ ViewIdea (idea ^. _Id)
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
 
+likeIdea :: Idea -> Main
+likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
+
+voteIdea :: Idea -> IdeaVoteValue -> Main
+voteIdea idea = IdeaPath (idea ^. ideaLocation) . VoteIdea (idea ^. _Id)
+
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
+
+voteCommentIdea :: Idea -> Comment -> UpDown -> Main
+voteCommentIdea idea comment =
+    IdeaPath (idea ^. ideaLocation) . VoteCommentIdea (idea ^. _Id) (comment ^. _Id)
+
+voteCommentIdeaReply :: Idea -> Comment -> Comment -> UpDown -> Main
+voteCommentIdeaReply idea comment reply =
+    IdeaPath (idea ^. ideaLocation) .
+    VoteCommentIdeaReply (idea ^. _Id) (comment ^. _Id) (reply ^. _Id)
 
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
@@ -111,11 +141,19 @@ listTopicIdeas :: Topic -> Main
 listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode ListIdeas         root = root </> "ideas"
-ideaMode (ViewIdea iid)    root = root </> "idea" </> uriPart iid </> "view"
-ideaMode (EditIdea iid)    root = root </> "idea" </> uriPart iid </> "edit"
-ideaMode (CommentIdea iid) root = root </> "idea" </> uriPart iid </> "comment"
-ideaMode CreateIdea        root = root </> "idea" </> "create"
+ideaMode ListIdeas                      root = root </> "ideas"
+ideaMode (ViewIdea i)                   root = root </> "idea" </> uriPart i </> "view"
+ideaMode (EditIdea i)                   root = root </> "idea" </> uriPart i </> "edit"
+ideaMode (LikeIdea i)                   root = root </> "idea" </> uriPart i </> "like"
+ideaMode (VoteIdea i v)                 root = root </> "idea" </> uriPart i </> "vote"
+                                                    </> uriPart v
+ideaMode (CommentIdea i)                root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (VoteCommentIdea i c v)        root = root </> "idea" </> uriPart i </> "comment"
+                                                    </> uriPart c </> "vote" </> uriPart v
+ideaMode (VoteCommentIdeaReply i c r v) root = root </> "idea" </> uriPart i </> "comment"
+                                                    </> uriPart c </> "reply" </> uriPart r
+                                                    </> "vote" </> uriPart v
+ideaMode CreateIdea                     root = root </> "idea" </> "create"
 
 ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
 ideaPath loc mode root =
@@ -173,7 +211,11 @@ data IdeaMode =
     | CreateIdea
     | ViewIdea (AUID Idea)
     | EditIdea (AUID Idea)
+    | LikeIdea (AUID Idea)
+    | VoteIdea (AUID Idea) IdeaVoteValue
     | CommentIdea (AUID Idea)
+    | VoteCommentIdea (AUID Idea) (AUID Comment) UpDown
+    | VoteCommentIdeaReply (AUID Idea) (AUID Comment) (AUID Comment) UpDown
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaMode

@@ -172,8 +172,19 @@ type AulaSpace =
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandlerT EditIdea Idea
+       -- `like' on an idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "like" :> PostH
+       -- vote on an idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
        -- comment on an idea
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> FormHandlerT CommentIdea Idea
+       -- vote on a comment
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
+                                            :> "vote"    :> Capture "vote" UpDown :> PostH
+       -- vote on a reply of a comment
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
+              :> "reply" :> Capture "reply" (AUID Comment)
+              :> "vote" :> Capture "vote" UpDown :> PostH
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
@@ -182,12 +193,23 @@ type AulaSpace =
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"              :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "all"     :> GetH (Frame ViewTopic)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
-          :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
-          :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
-          :> Capture "idea" (AUID Idea) :> "comment" :> FormHandler CommentIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "view" :> GetH (Frame ViewIdea)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "edit" :> FormHandler EditIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "like" :> PostH
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> FormHandler CommentIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> Capture "comment" (AUID Comment)
+               :> "vote" :> Capture "vote" UpDown :> PostH
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> Capture "comment" (AUID Comment)
+               :> "reply" :> Capture "reply" (AUID Comment)
+               :> "vote" :> Capture "vote" UpDown :> PostH
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create"   :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
@@ -204,7 +226,11 @@ aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea
   :<|> Page.editIdea
+  :<|> Action.likeIdea
+  :<|> Action.voteIdea
   :<|> Page.commentIdea
+  :<|> Action.voteIdeaComment
+  :<|> Action.voteIdeaCommentReply
   :<|> Page.createIdea  locSpace
 
   :<|> Page.viewTopics  space
@@ -212,7 +238,11 @@ aulaSpace space =
   :<|> Page.viewTopic   TabAllIdeas
   :<|> const Page.viewIdea
   :<|> const Page.editIdea
+  :<|> const Action.likeIdea
+  :<|> const Action.voteIdea
   :<|> const Page.commentIdea
+  :<|> const Action.voteIdeaComment
+  :<|> const Action.voteIdeaCommentReply
   :<|> Page.createIdea  . locTopic
   :<|> Page.viewTopic   TabVotingIdeas
   :<|> Page.viewTopic   TabWinningIdeas

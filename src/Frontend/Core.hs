@@ -16,6 +16,7 @@
 
 module Frontend.Core
     ( GetH
+    , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
     , Beside(Beside)
@@ -107,6 +108,7 @@ data Frame body
 makeLenses ''Frame
 
 type GetH = Get '[HTML]
+type PostH = Post '[HTML] ()
 type FormHandlerT p a = FormH HTML (FormPageRep p) a
 type FormHandler p = FormHandlerT p ST
 
