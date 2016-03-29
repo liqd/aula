@@ -62,14 +62,11 @@ runFrontend cfg = do
     let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv persist cfg)
 
-        aulaTopProxy           = Proxy :: Proxy AulaTop
-        stateProxy             = Proxy :: Proxy UserState
-        aulaMainOrTestingProxy = Proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
+        aulaTopProxy = Proxy :: Proxy AulaTop
+        stateProxy   = Proxy :: Proxy UserState
 
-    app <- serveFAction aulaMainOrTestingProxy stateProxy extendClearanceOnSessionToken runAction
-             (aulaMain :<|> aulaTesting)
-    api <- serveFAction (Proxy :: Proxy Backend.Api) stateProxy extendClearanceOnSessionToken runAction
-             Backend.api
+    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
+            runAction aulaActions
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
@@ -78,28 +75,26 @@ runFrontend cfg = do
         unNat persist demoDataGen
 
     -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app api
+    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
              $ defaultSettings
 
 
--- * driver
+-- * routing tables
 
 type AulaTop
     =  "samples" :> Raw
   :<|> "static"  :> Raw
-  :<|> "api" :> Raw
   :<|> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
   :<|> Raw
 
-aulaTop :: Config -> Application -> Application -> Server AulaTop
-aulaTop cfg app api =
+aulaTop :: Config -> Application -> Server AulaTop
+aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
-  :<|> api
   :<|> (redirect . absoluteUriPath . relPath $ U.ListSpaces)
   :<|> app
   where
@@ -120,6 +115,19 @@ aulaTop cfg app api =
           return $! tweakedMime mime
       , ssRedirectToIndex = True
       }
+
+
+type AulaActions =
+       AulaMain
+  :<|> "api" :> Backend.Api
+  :<|> "testing" :> AulaTesting
+
+aulaActions :: (GenArbitrary r, PersistM r) => ServerT AulaActions (Action r)
+aulaActions =
+       aulaMain
+  :<|> Backend.api
+  :<|> aulaTesting
+
 
 type AulaMain =
        -- view all spaces
