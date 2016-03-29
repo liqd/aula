@@ -53,7 +53,7 @@ data UserSettingData = UserSettingData
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
-    formAction _ = relPath U.UserSettings
+    formAction _ = U.UserSettings
     redirectOf _ _ = relPath U.ListSpaces  -- FIXME: Redirect to the right place
 
     makeForm (PageUserSettings user) =
