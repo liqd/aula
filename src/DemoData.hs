@@ -109,7 +109,7 @@ ideaStudentPair ideas students = do
 genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    return $ addLikeToIdea student (idea ^. _Id)
+    return $ addLikeToIdea (idea ^. _Id) (student, ())
 
 arbDocument :: Gen Document
 arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))

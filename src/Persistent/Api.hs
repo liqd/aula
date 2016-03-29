@@ -314,8 +314,8 @@ instance FromProto IdeaLike where
 
 -- | FIXME: Same user can like the same idea more than once.
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
-addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
+addLikeToIdea :: AUID Idea -> AddDb m IdeaLike
+addLikeToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
