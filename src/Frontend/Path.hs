@@ -10,8 +10,8 @@ module Frontend.Path
     , Space(..)
     , UserPs(..)
     , AdminPs(..)
-    , IdeaPath(..)
     , IdeaMode(..)
+    , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     )
 where
 
@@ -21,7 +21,8 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types (AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext, SchoolClass)
+import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
+             , SchoolClass, _Id, ideaLocation, topicIdeaSpace)
 
 data Top =
     Top
@@ -47,6 +48,7 @@ top (TopStatic p)  = nil </> "static" <> p
 data Main =
     ListSpaces
   | Space IdeaSpace Space
+  | IdeaPath IdeaLocation IdeaMode
   | ListUsers
   | User (AUID User) UserPs
   | UserSettings
@@ -66,6 +68,7 @@ instance HasPath Main where relPath p = main p nil
 main :: Main -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
+main (IdeaPath l m)   root = ideaPath l m root
 main ListUsers        root = root </> "user"
 main (User uid p)     root = user  p (root </> "user" </> uriPart uid)
 main UserSettings     root = root </> "user" </> "settings"
@@ -78,17 +81,7 @@ main (Login mb)       root = root </> fromString ("login" <> if fromMaybe True m
 main Logout           root = root </> "logout"
 
 data Space =
-    ListIdeas
-  | ViewIdea (AUID Idea)
-  | EditIdea (AUID Idea)
-  | CommentIdea (AUID Idea)
-  | CreateIdea
-  | ListTopics
-  | ListTopicIdeas (AUID Topic)
-  | ViewTopicIdea (AUID Topic) (AUID Idea)
-  | EditTopicIdea (AUID Topic) (AUID Idea)
-  | CommentTopicIdea (AUID Topic) (AUID Idea)
-  | CreateTopicIdea (AUID Topic)
+    ListTopics
   | ViewTopicIdeasVoting (AUID Topic)
   | ViewTopicIdeasWinning (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
@@ -99,20 +92,43 @@ data Space =
 
 instance SOP.Generic Space
 
+viewIdea :: Idea -> Main
+viewIdea idea = IdeaPath (idea ^. ideaLocation) $ ViewIdea (idea ^. _Id)
+
+editIdea :: Idea -> Main
+editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
+
+commentIdea :: Idea -> Main
+commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
+
+createIdea :: IdeaLocation -> Main
+createIdea loc = IdeaPath loc $ CreateIdea
+
+listIdeas :: IdeaLocation -> Main
+listIdeas loc = IdeaPath loc $ ListIdeas
+
+listTopicIdeas :: Topic -> Main
+listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
+
+ideaMode :: IdeaMode -> UriPath -> UriPath
+ideaMode ListIdeas         root = root </> "ideas"
+ideaMode (ViewIdea iid)    root = root </> "idea" </> uriPart iid </> "view"
+ideaMode (EditIdea iid)    root = root </> "idea" </> uriPart iid </> "edit"
+ideaMode (CommentIdea iid) root = root </> "idea" </> uriPart iid </> "comment"
+ideaMode CreateIdea        root = root </> "idea" </> "create"
+
+ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
+ideaPath loc mode root =
+    case loc of
+        IdeaLocationSpace isp     -> ideaMode mode $ rootSpace isp
+        IdeaLocationTopic isp tid -> ideaMode mode $ rootSpace isp </> "topic" </> uriPart tid
+  where
+    rootSpace isp = root </> "space" </> uriPart isp
+
 -- | FIXME: there are structural similarities of wild ideas and ideas in topic that should be
 -- factored out.
 space :: Space -> UriPath -> UriPath
-space ListIdeas                   root = root </> "ideas"
-space (ViewIdea iid)              root = root </> "idea" </> uriPart iid </> "view"
-space (EditIdea iid)              root = root </> "idea" </> uriPart iid </> "edit"
-space (CommentIdea iid)           root = root </> "idea" </> uriPart iid </> "comment"
-space CreateIdea                  root = root </> "idea" </> "create"
 space ListTopics                  root = root </> "topic"
-space (ListTopicIdeas tid)        root = root </> "topic" </> uriPart tid </> "ideas"
-space (ViewTopicIdea tid iid)     root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "view"
-space (EditTopicIdea tid iid)     root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "edit"
-space (CommentTopicIdea tid iid)  root = root </> "topic" </> uriPart tid </> "idea" </> uriPart iid </> "comment"
-space (CreateTopicIdea tid)       root = root </> "topic" </> uriPart tid </> "idea" </> "create"
 space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
 space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
@@ -151,32 +167,13 @@ admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"
 
-data IdeaPath = IdeaPath IdeaLocation IdeaMode
-  deriving (Eq, Ord, Show, Read, Generic)
 
 data IdeaMode =
-      IdeaModeList
-    | IdeaModeCreate
-    | IdeaModeView (AUID Idea)
-    | IdeaModeEdit (AUID Idea)
-    | IdeaModeComment (AUID Idea)
+      ListIdeas
+    | CreateIdea
+    | ViewIdea (AUID Idea)
+    | EditIdea (AUID Idea)
+    | CommentIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance HasPath IdeaPath
-  where
-    relPath (IdeaPath loc mode) = f loc mode
-      where
-        f (IdeaLocationSpace isp)     = relPath . Space isp . g
-        f (IdeaLocationTopic isp tid) = relPath . Space isp . h tid
-
-        g IdeaModeList          = ListIdeas
-        g IdeaModeCreate        = CreateIdea
-        g (IdeaModeView iid)    = ViewIdea iid
-        g (IdeaModeEdit iid)    = EditIdea iid
-        g (IdeaModeComment iid) = CommentIdea iid
-
-        h tid IdeaModeList          = ListTopicIdeas tid
-        h tid IdeaModeCreate        = CreateTopicIdea tid
-        h tid (IdeaModeView iid)    = ViewTopicIdea tid iid
-        h tid (IdeaModeEdit iid)    = EditTopicIdea tid iid
-        h tid (IdeaModeComment iid) = CommentTopicIdea tid iid
+instance SOP.Generic IdeaMode

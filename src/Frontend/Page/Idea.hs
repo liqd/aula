@@ -76,19 +76,16 @@ instance ToHtml ViewIdea where
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
-            ispace        = idea ^. ideaLocation . ideaLocationSpace
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
-                let mtid = idea ^? ideaTopicId
-
                 a_ [ class_ "btn m-back detail-header-back"
-                   , href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
+                   , href_ . U.listIdeas $ idea ^. ideaLocation
                    ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [href_ . U.Space ispace $ U.EditIdea (idea ^. _Id)] $ do
+                            a_ [href_ $ U.editIdea idea] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
                             a_ [href_ U.Broken] $ do
@@ -170,7 +167,7 @@ instance ToHtml ViewIdea where
                                 -- FIXME: code redundancy!  search for 'totalComments' in this module
                         button_ [ value_ "create_comment"
                                 , class_ "btn-cta comments-header-button"
-                                , onclick_ (U.Space ispace $ U.CommentIdea (idea ^. _Id))]
+                                , onclick_ (U.commentIdea idea)]
                               "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -182,10 +179,9 @@ instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
     type FormPageResult CreateIdea = Idea
 
-    formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
+    formAction (CreateIdea loc) = relPath $ U.createIdea loc
 
-    redirectOf (CreateIdea _loc) idea =
-        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
+    redirectOf (CreateIdea _loc) idea = relPath $ U.viewIdea idea
 
     makeForm (CreateIdea loc) =
         ProtoIdea
@@ -262,10 +258,9 @@ instance ToHtml CategoryButton where
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))
+    formAction (EditIdea idea) = relPath $ U.editIdea idea
 
-    redirectOf (EditIdea idea) _ =
-        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
+    redirectOf (EditIdea idea) _ = relPath $ U.viewIdea idea
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -304,11 +299,9 @@ instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = Document
     type FormPageResult CommentIdea = Comment
 
-    formAction (CommentIdea idea) = relPath $
-        U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeComment (idea ^. _Id))
+    formAction (CommentIdea idea) = relPath $ U.editIdea idea
 
-    redirectOf (CommentIdea idea) _ =
-        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
+    redirectOf (CommentIdea idea) _ = relPath $ U.viewIdea idea
 
     makeForm CommentIdea{} =
         "comment-text" .: (Markdown <$> DF.text Nothing)
