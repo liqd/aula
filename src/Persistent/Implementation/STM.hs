@@ -22,7 +22,7 @@ import Types
 import Persistent.Api
 
 -- FIXME: Remove
-import Test.QuickCheck (generate, arbitrary)
+import Test.QuickCheck (generate)
 
 newtype Persist a = Persist (ReaderT (TVar AulaData) IO a)
   deriving (Functor, Applicative, Monad)
@@ -31,7 +31,7 @@ persistIO :: IO a -> Persist a
 persistIO = Persist . liftIO
 
 instance GenArbitrary Persist where
-    genArbitrary = persistIO $ generate arbitrary
+    genGen = persistIO . generate
 
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = do
