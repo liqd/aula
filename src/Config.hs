@@ -34,14 +34,13 @@ import System.IO (hPutStrLn, stderr)
 import Thentos.Frontend.CSRF (GetCsrfSecret(..), CsrfSecret(..))
 
 
+-- | FIXME: move this instance upstream and remove -fno-warn-orphans for this module.
 instance ToJSON CsrfSecret where
   toJSON (CsrfSecret s) = String $ cs s
 
+-- | FIXME: move this instance upstream and remove -fno-warn-orphans for this module.
 instance FromJSON CsrfSecret where
   parseJSON o = CsrfSecret . (cs :: String -> SBS) <$> parseJSON o
-
--- FIXME: if we decide that json instances for csrf secrets are a good idea, they should move to
--- thentos.
 
 
 data Config = Config
