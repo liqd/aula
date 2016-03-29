@@ -74,7 +74,7 @@ instance ToHtml PageRoomsOverview where
         g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
         g ispace = div_ [class_ "col-1-3"] $ do
             div_ [class_ ("item-room is-" <> showIdeaSpaceCategory ispace)] $ do
-                a_ [href_ $ U.Space ispace U.ListIdeas] $ do
+                a_ [href_ $ U.listIdeas (IdeaLocationSpace ispace)] $ do
                     span_ [class_ "item-room-image"] nil
                     h2_ [class_ "item-room-title"] $ h ispace
 
@@ -98,7 +98,7 @@ instance ToHtml PageIdeasOverview where
             p_ [class_ "sub-header"] . span_ $
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-            button_ [onclick_ (U.Space space U.CreateIdea), class_ "btn-cta"] "+ Neue Idee"
+            button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
         div_ [class_ "icon-list"] $ do
             ul_ $ do
                 -- FIXME: these buttons should filter the ideas by category
@@ -137,7 +137,7 @@ instance ToHtml PageIdeasInDiscussion where
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
                         a_ [ class_ "theme-grid-item-link"
-                           , href_ . U.Space space . U.ListTopicIdeas $ topic ^. _Id
+                           , href_ . U.listIdeas $ IdeaLocationTopic space (topic ^. _Id)
                            ] $ do
                             img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
                                       PhaseJury          -> "theme_pruf.png"
@@ -164,7 +164,7 @@ instance ToHtml Tabs where
     toHtml (Tabs activeTab space) = ul_ [class_ "tabs"] $ do
         li_ [class_ . ST.unwords $
              "tab-item tab-item-wild-ideas" : ["m-active" | activeTab == WildIdeas]] $ do
-            a_ [href_ $ U.Space space U.ListIdeas] $ do
+            a_ [href_ $ U.listIdeas loc] $ do
                 "Wilde Ideen " >> toHtml (spaceDesc space)
         li_ [class_ . ST.unwords $
              "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
@@ -174,3 +174,4 @@ instance ToHtml Tabs where
         spaceDesc :: IdeaSpace -> ST
         spaceDesc SchoolSpace    = "der Schule"
         spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className
+        loc = IdeaLocationSpace space

@@ -43,6 +43,7 @@ module Persistent.Api
     , findIdeasByUserId
     , findWildIdeasBySpace
     , addLikeToIdea
+    , addVoteToIdea
     , addCommentToIdea
     , addReplyToIdeaComment
     , addCommentVoteToIdeaComment
@@ -312,10 +313,18 @@ findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . v
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
--- | FIXME: Same user can like the same idea more than once.
+-- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
-addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
+addLikeToIdea :: AUID Idea -> AddDb m IdeaLike
+addLikeToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes)
+
+instance FromProto IdeaVote where
+    fromProto = flip IdeaVote
+
+-- | FIXME: Same user can vote on the same idea more than once (Issue #308).
+-- FIXME: Check also that the given idea exists and is in the right phase.
+addVoteToIdea :: AUID Idea -> AddDb m IdeaVote
+addVoteToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m

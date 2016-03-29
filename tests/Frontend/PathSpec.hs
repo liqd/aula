@@ -30,7 +30,7 @@ import Servant.Mock (HasMock(..), mock)
 import Servant.Missing hiding (redirect)
 import Network.Wai
 
-import Test.Hspec.Wai (get, shouldRespondWith)
+import Test.Hspec.Wai (get, post, shouldRespondWith)
 import qualified Test.Hspec.Wai.QuickCheck as Wai (property)
 
 
@@ -54,7 +54,11 @@ spec = do
         beforeAll mockAulaMain $ do
             it "Every path has a handler" $ \app -> property . forAll mainGen $ \path ->
                 flip Wai.property app $ do
-                    get (cs . absoluteUriPath $ relPath path) `shouldRespondWith` 200
+                    let uri = cs . absoluteUriPath $ relPath path
+                    if isPostOnly path then
+                        post uri "" `shouldRespondWith` 204
+                    else
+                        get  uri `shouldRespondWith` 200
 
   where
     mainGen :: Gen Main

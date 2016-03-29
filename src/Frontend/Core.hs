@@ -16,6 +16,7 @@
 
 module Frontend.Core
     ( GetH
+    , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
     , Beside(Beside)
@@ -107,6 +108,7 @@ data Frame body
 makeLenses ''Frame
 
 type GetH = Get '[HTML]
+type PostH = Post '[HTML] ()
 type FormHandlerT p a = FormH HTML (FormPageRep p) a
 type FormHandler p = FormHandlerT p ST
 
@@ -308,7 +310,7 @@ instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            a_ [href_ $ P.IdeaPath (idea ^. ideaLocation) (P.IdeaModeView $ idea ^. _Id)] $ do
+            a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea

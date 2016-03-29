@@ -70,17 +70,18 @@ instance Page EditTopic
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabAllIdeas     -> go "tab-ideas"       U.ListTopicIdeas        "Alle Ideen"
-    TabVotingIdeas  -> go "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
-    TabWinningIdeas -> go "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
-    TabDelegation   -> go "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
+    TabAllIdeas     -> go "tab-ideas"       U.listTopicIdeas        "Alle Ideen"
+    TabVotingIdeas  -> g' "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
+    TabWinningIdeas -> g' "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
+    TabDelegation   -> g' "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
   where
     space = topic ^. topicIdeaSpace
     go ident uri =
         a_ [ id_ ident
-           , href_ . U.Space space . uri $ (topic ^. _Id)
+           , href_ $ uri topic
            , class_ $ tabSelected curTab targetTab
            ]
+    g' ident uri = go ident (U.Space space . uri . view _Id)
 
 -- FIXME: how do we display a topic in the finished phase?
 -- Is this the same the result phase?
@@ -126,7 +127,7 @@ viewTopicHeaderDiv topic tab = do
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
             when (phase == PhaseRefinement) $
-                a_ [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicIdea topicId] "+ Neue Idee"
+                a_ [class_ "btn-cta heroic-cta", href_ . U.createIdea $ IdeaLocationTopic space topicId] "+ Neue Idee"
             when (phase < PhaseResult) .
                 a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
                     i_ [class_ "icon-bullhorn"] nil
@@ -147,8 +148,7 @@ instance FormPage CreateTopic where
 
     formAction (CreateTopic space _) = relPath $ U.Space space U.CreateTopic
 
-    redirectOf (CreateTopic space _) topic =
-        relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
+    redirectOf (CreateTopic _ _) topic = relPath $ U.listTopicIdeas topic
 
     makeForm (CreateTopic space ideas) =
         ProtoTopic
@@ -194,7 +194,8 @@ instance FormPage EditTopic where
     type FormPagePayload EditTopic = TopicFormPayload
 
     formAction (EditTopic space topic _) = relPath . U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
-    redirectOf (EditTopic space topic _) _ = relPath . U.Space space $ U.ListTopicIdeas (topic ^. _Id)
+
+    redirectOf (EditTopic _ topic _) _ = relPath $ U.listTopicIdeas topic
 
     makeForm (EditTopic _space topic ideas) =
         TopicFormPayload

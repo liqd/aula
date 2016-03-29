@@ -356,6 +356,9 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 instance Arbitrary P.Main where
     arbitrary = garbitrary
 
+instance Arbitrary P.IdeaMode where
+    arbitrary = garbitrary
+
 instance Arbitrary P.Space where
     arbitrary = garbitrary
 
