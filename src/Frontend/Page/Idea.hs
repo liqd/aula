@@ -103,6 +103,31 @@ instance ToHtml ViewIdea where
                     totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
                     " / "
                 totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
+
+
+            when False . div_ $ do
+                -- FIXME: needs design/layout
+                -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
+                div_ ">>>>>>>>>>> some phase-specific stuff"
+
+                let postlink mode msg =
+                        form_ [ method_ "POST"
+                              , action_ . absoluteUriPath . relPath
+                                    $ U.IdeaPath (idea ^. ideaLocation) mode
+                              ] $
+                            input_ [ type_ "submit", value_ msg ]
+
+                postlink (U.LikeIdea (idea ^. _Id))         "like this idea"
+                postlink (U.VoteIdea (idea ^. _Id) Yes)     "vote yes on idea"
+                postlink (U.VoteIdea (idea ^. _Id) No)      "vote no on idea"
+                postlink (U.VoteIdea (idea ^. _Id) Neutral) "vote neutral on idea"
+
+                pre_ . toHtml $ ppShow (idea ^. ideaLikes)
+                pre_ . toHtml $ ppShow (idea ^. ideaVotes)
+
+                div_ ">>>>>>>>>>> some phase-specific stuff"
+
+
             div_ [class_ "sub-heading"] $ do
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
                     span_ [class_ "progress-bar m-against"] $ do
