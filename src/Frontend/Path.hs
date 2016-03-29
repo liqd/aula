@@ -102,10 +102,10 @@ commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
 createIdea :: IdeaLocation -> Main
-createIdea loc = IdeaPath loc $ CreateIdea
+createIdea loc = IdeaPath loc CreateIdea
 
 listIdeas :: IdeaLocation -> Main
-listIdeas loc = IdeaPath loc $ ListIdeas
+listIdeas loc = IdeaPath loc ListIdeas
 
 listTopicIdeas :: Topic -> Main
 listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
