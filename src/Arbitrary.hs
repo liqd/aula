@@ -763,7 +763,7 @@ fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
     cfg <- Config.getConfig Config.DontWarnMissing
 
-    persist@(Nat pr) <- Persistent.Implementation.mkRunPersist
+    persist@(Nat pr) <- Persistent.Implementation.mkRunPersistInMemory
     admin <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         Admin (Just (UserPassInitial "admin")) Nothing

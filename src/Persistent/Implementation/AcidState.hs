@@ -11,6 +11,7 @@
 module Persistent.Implementation.AcidState
     ( Persist
     , mkRunPersist
+    , mkRunPersistInMemory
     )
 where
 
@@ -19,8 +20,9 @@ import Control.Lens
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (get, put)
-import Data.Acid (AcidState, Query, Update, makeAcidic, openLocalState, query, update)
-import Data.Acid.Local (createCheckpointAndClose)
+import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, update)
+import Data.Acid.Local (openLocalState, createCheckpointAndClose)
+import Data.Acid.Memory (openMemoryState)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
@@ -39,12 +41,21 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
+mkRunPersistGeneric :: (AulaData -> IO (AcidState AulaData))
+                    -> (AcidState AulaData -> IO ())
+                    -> IO (Persist :~> IO)
+mkRunPersistGeneric openState closeState = return $
+    Nat (\(Persist c) ->
+            bracket (openState emptyAulaData)
+                    closeState
+                    (c `runReaderT`)
+        )
+
 mkRunPersist :: IO (Persist :~> IO)
-mkRunPersist = return $
-    Nat $ \(Persist c) ->
-        bracket (openLocalState emptyAulaData)
-                createCheckpointAndClose
-                (c `runReaderT`)
+mkRunPersist = mkRunPersistGeneric openLocalState createCheckpointAndClose
+
+mkRunPersistInMemory :: IO (Persist :~> IO)
+mkRunPersistInMemory = mkRunPersistGeneric openMemoryState closeAcidState
 
 instance MonadIO Persist where
     liftIO = persistIO
@@ -64,4 +75,4 @@ instance PersistM Persist where
     getDb l = Persist . ReaderT $ fmap (view l) . flip query AskDbM
     modifyDb l f = Persist . ReaderT $ \state -> do
       aulaData <- update state GetDbM
-      update state (PutDbM $ l %~ f $ aulaData)
+      update state (PutDbM . (l %~ f) $ aulaData)

@@ -5,6 +5,7 @@
 module Persistent.Implementation
     ( Persist
     , mkRunPersist
+    , mkRunPersistInMemory
     )
 where
 

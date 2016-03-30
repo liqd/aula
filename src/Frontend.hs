@@ -58,6 +58,8 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
+    -- TODO: this is wrong, because this is also used for tests and then
+    -- tests may break the DB stored in files.
     persist <- Persistent.Implementation.mkRunPersist
     let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv persist cfg)

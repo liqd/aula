@@ -9,6 +9,7 @@
 module Persistent.Implementation.STM
     ( Persist
     , mkRunPersist
+    , mkRunPersistInMemory
     )
 where
 
@@ -38,6 +39,9 @@ mkRunPersist = do
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = c `runReaderT` tvar
     return $ Nat run
+
+mkRunPersistInMemory :: IO (Persist :~> IO)
+mkRunPersistInMemory = mkRunPersist
 
 instance MonadIO Persist where
     liftIO = persistIO

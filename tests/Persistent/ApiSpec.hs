@@ -22,13 +22,13 @@ import Types
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: IO (Persist :~> IO)
 mkInitial = do
-    rp <- mkRunPersist
+    rp <- mkRunPersistInMemory
     unNat rp genInitialTestDb
     return rp
 
 -- | the empty database
 mkEmpty :: IO (Persist :~> IO)
-mkEmpty = mkRunPersist
+mkEmpty = mkRunPersistInMemory
 
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
 getDbSpec name getXs = do
