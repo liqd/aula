@@ -70,6 +70,10 @@ instance Page CommentIdea where
 
 -- * templates
 
+backLink :: Monad m => IdeaLocation -> HtmlT m ()
+backLink IdeaLocationSpace{} = "Zum Ideenraum"
+backLink IdeaLocationTopic{} = "Zum Thema"
+
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
@@ -81,7 +85,7 @@ instance ToHtml ViewIdea where
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
                    , href_ . U.listIdeas $ idea ^. ideaLocation
-                   ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
+                   ] $ backLink (idea ^. ideaLocation)
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
