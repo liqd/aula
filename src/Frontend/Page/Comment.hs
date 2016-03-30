@@ -29,31 +29,14 @@ instance ToHtml CommentWidget where
     toHtmlRaw = toHtml
     toHtml p@(CommentWidget comment) = semanticDiv p $ do
         div_ [class_ "comment"] $ do
-            header_ [class_ "comment-header"] $ do
-                comment ^. commentMeta . to AuthorWidget . html
-                comment ^. commentVotes . to VotesWidget . html
-            div_ [class_ "comments-body"] $ do
-                comment ^. commentText . html
-            footer_ [class_ "comment-footer"] $ do
-                div_ [class_ "comment-footer-buttons"] $ do
-                    button_ [class_ "btn comment-footer-button"] $ do
-                        i_ [class_ "icon-reply"] nil
-                        "antworten"
-                    button_ [class_ "btn comment-footer-button"] $ do
-                        i_ [class_ "icon-flag"] nil
-                        "melden"
-            div_ [class_ "comment-replies"] $ do
-                for_ (comment ^. commentReplies) $ toHtml . CommentReplyWidget
+            commentToHtml comment
+            div_ [class_ "comment-replies"] $
+                for_ (comment ^. commentReplies) $
+                    div_ [class_ "comment-reply"] . commentToHtml
 
-data CommentReplyWidget = CommentReplyWidget Comment
-  deriving (Eq, Show, Read)
-
--- FIXME: (1) style this; (2) factor out code that is common with 'CommentWidget'; (3) turn hlint
--- back on for this module in HLint.hs
-instance ToHtml CommentReplyWidget where
-    toHtmlRaw = toHtml
-    toHtml p@(CommentReplyWidget comment) = semanticDiv p $ do
-        div_ [class_ "comment-reply"] $ do
+commentToHtml :: Monad m => Comment -> HtmlT m ()
+commentToHtml comment = div_ $ do
+            hr_ []  -- FIXME: comments melt into each other without this.  should be fixed in css.
             header_ [class_ "comment-header"] $ do
                 comment ^. commentMeta . to AuthorWidget . html
                 comment ^. commentVotes . to VotesWidget . html
