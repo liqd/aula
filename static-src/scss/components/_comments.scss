@@ -110,3 +110,16 @@ $author-image-size: 37px;
         }
     }
 }
+
+.container-comment-idea {
+    textarea {
+        @include rem(margin-bottom, 20px);
+    }
+
+    .form-footer {
+        .btn, .btn-cta, input[type=submit] {
+            @include rem(margin, 0 0 0 20px);
+            float: right;
+        }
+    }
+}
