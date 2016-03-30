@@ -173,8 +173,8 @@ createOrEditTopic v ideas = do
             "title" v
     label_ $ do
         span_ [class_ "label-text"] "Beschreiben Sie das Thema"
-    -- FIXME I want a placeholder here too
-        DF.inputTextArea Nothing Nothing "desc" v
+        inputTextArea_ [placeholder_ "Was haben die Ideen dieses Themas gemeinsam?"]
+            Nothing Nothing "desc" v
     label_ $ do
         span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
         formPageIdeaSelection v ideas

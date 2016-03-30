@@ -236,9 +236,9 @@ instance FormPage CreateIdea where
                                 "title" v
                         label_ $ do
                             span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                        -- FIXME I want a placeholder here too
-                        -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
-                            DF.inputTextArea Nothing Nothing "idea-text" v
+                            inputTextArea_
+                                [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                                Nothing Nothing "idea-text" v
                         formPageSelectCategory v
                         DF.inputSubmit "Idee veröffentlichen"
 
@@ -317,9 +317,8 @@ instance FormPage EditIdea where
                                 "title" v
                         label_ $ do
                             span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                        -- FIXME I want a placeholder here too
-                        -- "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."
-                            DF.inputTextArea Nothing Nothing "idea-text" v
+                            inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                                Nothing Nothing "idea-text" v
                         label_ $ do
                             span_ [class_ "label-text"] "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
                             DF.inputSelect "idea-category" v -- FIXME should be pictures but it xplodes
@@ -348,7 +347,7 @@ instance FormPage CommentIdea where
                 form $ do
                     label_ $ do
                         span_ [class_ "label-text"] "Was möchtest du sagen?"
-                        DF.inputTextArea Nothing Nothing "comment-text" v
+                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "comment-text" v
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Kommentar abgeben"
 
