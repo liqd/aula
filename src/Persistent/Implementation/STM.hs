@@ -50,4 +50,4 @@ instance PersistM Persist where
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO
 
--- TODO: we want tests for all of this!
+-- FIXME: we want tests for all the exception mechanics!

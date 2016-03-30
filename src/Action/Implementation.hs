@@ -53,7 +53,8 @@ instance PersistM r => ActionPersist r (Action r) where
     persistent r = do
         Nat rp <- view persistNat
         v  <- liftIO . runExceptT . rp $ r
-        either (throwError . ActionExcept . unPersistExcept) pure v  -- TODO: is this strict enough?  how can we test this?
+        either (throwError . ActionExcept . unPersistExcept) pure v
+            -- FIXME: is this strict enough?  how can we test this?
 
 instance MonadLIO DCLabel (Action r) where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
