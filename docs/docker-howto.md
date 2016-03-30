@@ -106,7 +106,7 @@ combination back.
 
 Now you can set everything up the way it worked on quay.io.
 
-TODO: not tested.
+FIXME: not tested.
 
 ```shell
 docker pull quay.io/liqd/aula:$COMMIT_HASH
