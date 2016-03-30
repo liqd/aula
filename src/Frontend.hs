@@ -68,11 +68,12 @@ runFrontend cfg = do
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
             runAction aulaActions
 
-    unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+    Right _ <- runExceptT $ unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
     when (cfg ^. generateDemoData) $ do
         demoDataGen <- mkUniverse
-        unNat persist demoDataGen
+        Right _ <- runExceptT $ unNat persist demoDataGen
+        return ()
 
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app

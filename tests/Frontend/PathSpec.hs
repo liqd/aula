@@ -65,13 +65,13 @@ spec = do
     mainGen = arbitrary
 
 
--- Each path has a handler
+-- * Each path has a handler
 
 instance (FormPage a, Arbitrary a) => Arbitrary (FormPageRep a) where
     arbitrary = do
-        page <- arb
+        page        <- arb
         frameAction <- arb
-        Right view <- runDummyT $ getForm frameAction (makeForm page)
+        Right view  <- runDummyT $ getForm frameAction (makeForm page)
         pure $ FormPageRep view frameAction (PublicFrame page)
 
 mockAulaMain :: IO Application

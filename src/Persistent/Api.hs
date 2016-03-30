@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures           #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
 {-# LANGUAGE OverloadedStrings           #-}
@@ -16,6 +17,7 @@ module Persistent.Api
     , AulaLens
     , AulaGetter
     , AulaSetter
+    , PersistExcept(PersistExcept, unPersistExcept)
 
     , AulaData
     , emptyAulaData
@@ -83,6 +85,7 @@ module Persistent.Api
 where
 
 import Control.Lens
+import Control.Monad.Error.Class (MonadError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad (unless, replicateM, when)
 import Data.Elocrypt (mkPassword)
@@ -92,6 +95,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
+import Servant (ServantErr)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -136,7 +140,12 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
-class Monad m => PersistM m where
+-- | FIXME: this will have constructors dedicated for specific errors, and 'ServantErr' will only be
+-- introduced later.
+newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
+    deriving (Eq, Show)
+
+class (MonadError PersistExcept m, Monad m) => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
 

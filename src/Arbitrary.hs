@@ -31,6 +31,7 @@ module Arbitrary
     ) where
 
 import Control.Applicative ((<**>))
+import Control.Exception (ErrorCall(ErrorCall), throwIO)
 import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
@@ -765,16 +766,19 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
-    cfg <- Config.getConfig Config.DontWarnMissing
+    let action :: Action Persistent.Implementation.STM.Persist DelegationNetwork
+        action = do
+            admin <- persistent . addFirstUser $ ProtoUser
+                (Just "admin") (UserFirstName "admin") (UserLastName "admin")
+                Admin (Just (UserPassInitial "admin")) Nothing
+            Action.loginByUser admin
+            fishDelegationNetworkAction
 
-    persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
-    admin <- pr . addFirstUser $ ProtoUser
-        (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-        Admin (Just (UserPassInitial "admin")) Nothing
-
-    let (Nat ac) = mkRunAction $ ActionEnv persist cfg
-    either (error . ppShow) id <$> runExceptT
-        (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
+    cfg     <- Config.getConfig Config.DontWarnMissing
+    persist <- Persistent.Implementation.STM.mkRunPersist
+    v :: Either ServantErr DelegationNetwork
+            <- runExceptT $ unNat (mkRunAction (ActionEnv persist cfg)) action
+    either (throwIO . ErrorCall . ppShow) pure v
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
