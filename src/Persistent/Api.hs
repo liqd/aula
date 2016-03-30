@@ -92,6 +92,7 @@ import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
+import Data.Typeable (Typeable)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -112,7 +113,7 @@ data AulaData = AulaData
     , _dbClassQuorum         :: Int
     , _dbLastId              :: Integer
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Typeable)
 
 makeLenses ''AulaData
 

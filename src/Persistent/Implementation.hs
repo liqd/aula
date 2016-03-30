@@ -11,7 +11,7 @@ where
 #ifdef USE_STM
 import Persistent.Implementation.STM
 #elif USE_ACID_STATE
-import Persistent.Implementation.ACID_STATE
+import Persistent.Implementation.AcidState
 #else
-import Persistent.Implementation.STM
+import Persistent.Implementation.AcidState
 #endif

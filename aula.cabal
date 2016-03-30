@@ -29,6 +29,7 @@ library
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
+    , acid-state
     , basic-sop
     , binary
     , bytestring
@@ -97,6 +98,7 @@ library
       Persistent
       Persistent.Api
       Persistent.Implementation
+      Persistent.Implementation.AcidState
       Persistent.Implementation.STM
       Types
   other-modules:
@@ -113,6 +115,7 @@ executable aula-html-dummies
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
+    , acid-state
     , basic-sop
     , binary
     , bytestring
@@ -171,6 +174,7 @@ executable aula-server
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
+    , acid-state
     , basic-sop
     , binary
     , bytestring
@@ -227,6 +231,7 @@ test-suite spec
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
+    , acid-state
     , basic-sop
     , binary
     , bytestring
