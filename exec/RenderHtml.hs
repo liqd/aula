@@ -25,11 +25,11 @@ import Text.Digestive.View (getForm)
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Data.Set as Set
 import qualified Data.Text.IO as ST
 
 import Arbitrary
 import Config (getSamplesPath)
+import Action.Dummy
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude hiding ((<.>), (</>))
@@ -72,6 +72,7 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticImprint))
     , f (Proxy :: Proxy (ToHtmlDefault PageStaticTermsOfUse))
     , f (Proxy :: Proxy (ToHtmlForm    PageHomeWithLoginPrompt))
+    , f (Proxy :: Proxy (ToHtmlForm    CommentIdea))
     ]
 
 
@@ -97,7 +98,7 @@ instance (ToHtml p) => ToHtml' (ToHtmlDefault p) where
 
 instance (FormPage p) => ToHtml' (ToHtmlForm p) where
     toHtml' (ToHtmlForm p) = toHtml $ do
-        let v = runIdentity $ getForm "" (makeForm p)
+        let (Right v) = runDummy $ getForm "" (makeForm p)
         formPage v (DF.form v "/pseudo/form/action") p  -- (action doesn't matter here)
 
 instance Arbitrary p => Arbitrary (ToHtmlDefault p) where
@@ -133,8 +134,8 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                  <*> arb
                  <*> arb
                  <*> arb
-                 <*> (Set.fromList <$> vectorOf 5 arb)  -- comments
-                 <*> (Set.fromList <$> vectorOf 5 arb)  -- likes
+                 <*> (aMapFromList <$> vectorOf 5 arb)  -- comments
+                 <*> (aMapFromList <$> vectorOf 5 arb)  -- likes
                  <*> arb
                  <*> pure nil  -- votes
                  <*> pure Nothing

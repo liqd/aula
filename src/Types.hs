@@ -3,6 +3,7 @@
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
+{-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
@@ -14,18 +15,18 @@ module Types
     , readMaybe)
 where
 
-import Control.Lens (Lens', Traversal', makeLenses, (^.), (^?), _Just)
+import Control.Lens
 import Control.Monad
 import Data.Binary
 import Data.Char
+import Data.Map (Map, fromList)
 import Data.Proxy (Proxy(Proxy))
-import Data.Set (Set)
 import Data.String
 import Data.String.Conversions
 import Data.Time
 import Data.UriPath
-import GHC.Generics
-import Lucid
+import GHC.Generics (Generic)
+import Lucid (ToHtml, toHtml, toHtmlRaw)
 import Servant.API (FromHttpApiData(parseUrlPiece))
 import Text.Read (readMaybe)
 
@@ -34,7 +35,7 @@ import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 import qualified Generics.SOP as SOP
 
-import Test.QuickCheck (Arbitrary)
+import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
 
 -- * a small prelude
@@ -51,6 +52,10 @@ readWith Proxy = read
 
 justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
+
+lowerFirst :: String -> String
+lowerFirst [] = []
+lowerFirst (x:xs) = toLower x : xs
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
@@ -85,10 +90,10 @@ data Idea = Idea
     , _ideaDesc       :: Document
     , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
     , _ideaLocation   :: IdeaLocation
-    , _ideaComments   :: Set Comment
-    , _ideaLikes      :: Set IdeaLike
+    , _ideaComments   :: Comments
+    , _ideaLikes      :: IdeaLikes
     , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
-    , _ideaVotes      :: Set IdeaVote
+    , _ideaVotes      :: IdeaVotes
     , _ideaResult     :: Maybe IdeaResult
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -135,6 +140,8 @@ data IdeaLike = IdeaLike
 
 instance SOP.Generic IdeaLike
 
+type instance Proto IdeaLike = ()
+
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote', which doesn't have neutral.
 data IdeaVote = IdeaVote
     { _ideaVoteMeta  :: MetaInfo IdeaVote
@@ -144,6 +151,8 @@ data IdeaVote = IdeaVote
 
 instance SOP.Generic IdeaVote
 
+type instance Proto IdeaVote = IdeaVoteValue
+
 data IdeaVoteValue = Yes | No | Neutral
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
@@ -152,14 +161,18 @@ instance SOP.Generic IdeaVoteValue
 data IdeaResult = IdeaResult
     { _ideaResultMeta   :: MetaInfo IdeaResult
     , _ideaResultValue  :: IdeaResultValue
-    , _ideaResultReason :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaResult
 
-data IdeaResultValue = NotFeasible | Winning | NotEnoughVotes
-  deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
+data IdeaResultValue
+    = NotFeasible { _ideaResultReason :: Document }
+    | Winning
+    | NotEnoughVotes
+  deriving (Eq, Ord, Show, Read, Generic)
+
+type instance Proto IdeaResult = IdeaResultValue
 
 instance SOP.Generic IdeaResultValue
 
@@ -170,15 +183,21 @@ instance SOP.Generic IdeaResultValue
 --
 -- 'Comments' are hierarchical.  The application logic is responsible for putting some limit (if
 -- any) on the recursion depth under which all children become siblings.
+--
+-- A comment has no implicit 'yes' vote by the author.  This gives the author the option of voting
+-- for a comment, or even against it.  Even though the latter may never make sense, somebody may
+-- still learn something from trying it out, and this is a teaching application.
 data Comment = Comment
     { _commentMeta    :: MetaInfo Comment
     , _commentText    :: Document
-    , _commentVotes   :: Set CommentVote
-    , _commentReplies :: Set Comment
+    , _commentVotes   :: CommentVotes
+    , _commentReplies :: Comments
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Comment
+
+type instance Proto Comment = Document
 
 -- | "Stimme" for "Verbesserungsvorschlag"
 data CommentVote = CommentVote
@@ -186,6 +205,8 @@ data CommentVote = CommentVote
     , _commentVoteValue :: UpDown
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+type instance Proto CommentVote = UpDown
 
 instance SOP.Generic CommentVote
 
@@ -200,7 +221,7 @@ instance SOP.Generic UpDown
 -- | "Ideenraum" is one of "Klasse", "Schule".
 data IdeaSpace =
     SchoolSpace
-  | ClassSpace SchoolClass
+  | ClassSpace { _ideaSpaceSchoolClass :: SchoolClass }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaSpace
@@ -311,8 +332,8 @@ instance SOP.Generic ProtoUser
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
-    Student SchoolClass
-  | ClassGuest SchoolClass  -- ^ e.g., parents
+    Student    { _studentSchoolClass :: SchoolClass }
+  | ClassGuest { _guestSchoolClass   :: SchoolClass } -- ^ e.g., parents
   | SchoolGuest  -- ^ e.g., researchers
   | Moderator
   | Principal
@@ -322,8 +343,8 @@ data Role =
 instance SOP.Generic Role
 
 data UserPass =
-    UserPassInitial   ST
-  | UserPassEncrypted SBS  -- FIXME: use "Crypto.Scrypt.EncryptedPass"
+    UserPassInitial   { _userPassInitial   :: ST }
+  | UserPassEncrypted { _userPassEncrypted :: SBS } -- FIXME: use "Crypto.Scrypt.EncryptedPass"
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserPass
@@ -356,14 +377,17 @@ data ProtoDelegation = ProtoDelegation
 instance SOP.Generic ProtoDelegation
 
 data DelegationContext =
-    DelCtxIdeaSpace IdeaSpace
-  | DelCtxTopic (AUID Topic)
-  | DelCtxIdea (AUID Idea)
+    DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
+  | DlgCtxTopicId   { _delCtxTopicId   :: AUID Topic }
+  | DlgCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationContext
 
-data DelegationNetwork = DelegationNetwork [User] [Delegation]
+data DelegationNetwork = DelegationNetwork
+    { _networkUsers         :: [User]
+    , _networkDelegations   :: [Delegation]
+    }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic DelegationNetwork
@@ -375,6 +399,17 @@ instance SOP.Generic DelegationNetwork
 -- only and will probably be generated by sql `serial` type.
 newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, Enum, Real, Num, Integral)
+
+type AMap a = Map (AUID a) a
+
+type Users        = AMap User
+type Ideas        = AMap Idea
+type Topics       = AMap Topic
+type Delegations  = AMap Delegation
+type Comments     = AMap Comment
+type CommentVotes = AMap CommentVote
+type IdeaVotes    = AMap IdeaVote
+type IdeaLikes    = AMap IdeaLike
 
 instance HasUriPart (AUID a) where
     uriPart (AUID s) = fromString . show $ s
@@ -446,7 +481,11 @@ timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where
-    genArbitrary :: Arbitrary a => m a
+    genGen :: Gen a -> m a
+
+-- | FIXME: should either go to the test suite or go away completely.
+genArbitrary :: (GenArbitrary m, Arbitrary a) => m a
+genArbitrary = genGen arbitrary
 
 
 -- * admin pages
@@ -517,11 +556,24 @@ instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
 
+makePrisms ''IdeaLocation
+makePrisms ''Category
+makePrisms ''IdeaVoteValue
+makePrisms ''IdeaResultValue
+makePrisms ''UpDown
+makePrisms ''IdeaSpace
+makePrisms ''Phase
+makePrisms ''Role
+makePrisms ''UserPass
+makePrisms ''DelegationContext
+makePrisms ''PermissionContext
+
 makeLenses ''Category
 makeLenses ''Comment
 makeLenses ''CommentVote
 makeLenses ''Delegation
 makeLenses ''DelegationContext
+makeLenses ''DelegationNetwork
 makeLenses ''Document
 makeLenses ''UserPass
 makeLenses ''UserEmail
@@ -535,6 +587,7 @@ makeLenses ''MetaInfo
 makeLenses ''Phase
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
+makeLenses ''Role
 makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
@@ -561,6 +614,7 @@ class HasMetaInfo a where
     changedAt       :: Lens' a Timestamp
     changedAt       = metaInfo . metaChangedAt
 
+instance HasMetaInfo Comment where metaInfo = commentMeta
 instance HasMetaInfo CommentVote where metaInfo = commentVoteMeta
 instance HasMetaInfo Delegation where metaInfo = delegationMeta
 instance HasMetaInfo Idea where metaInfo = ideaMeta
@@ -571,10 +625,10 @@ instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
 
 notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just NotFeasible
+notFeasibleIdea = has $ ideaResult . _Just . ideaResultValue . _NotFeasible
 
 winningIdea :: Idea -> Bool
-winningIdea idea = idea ^? ideaResult . _Just . ideaResultValue == Just Winning
+winningIdea = has $ ideaResult . _Just . ideaResultValue . _Winning
 
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace
@@ -613,6 +667,25 @@ instance FromHttpApiData IdeaSpace where
 instance FromHttpApiData SchoolClass where
     parseUrlPiece = parseSchoolClass
 
+instance FromHttpApiData IdeaVoteValue where
+    parseUrlPiece = \case
+        "yes"     -> Right Yes
+        "no"      -> Right No
+        "neutral" -> Right Neutral
+        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are expected)"
+
+instance HasUriPart IdeaVoteValue where
+    uriPart = fromString . lowerFirst . show
+
+instance HasUriPart UpDown where
+    uriPart = fromString . lowerFirst . show
+
+instance FromHttpApiData UpDown where
+    parseUrlPiece = \case
+        "up"   -> Right Up
+        "down" -> Right Down
+        _      -> Left "Ill-formed comment vote value: only `up' or `down' are expected)"
+
 ideaTopicId :: Traversal' Idea (AUID Topic)
 ideaTopicId = ideaLocation . ideaLocationTopicId
 
@@ -632,8 +705,9 @@ isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
 
-topicToIdeaLocation :: Topic -> IdeaLocation
-topicToIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
+-- | Construct an 'IdeaLocation' from a 'Topic'
+topicIdeaLocation :: Topic -> IdeaLocation
+topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
 -- | german role name
 roleLabel :: IsString s => Role -> s
@@ -643,3 +717,24 @@ roleLabel SchoolGuest    = "Gast (Schule)"
 roleLabel Moderator      = "Moderator"
 roleLabel Principal      = "Direktor"
 roleLabel Admin          = "Administrator"
+
+aMapFromList :: HasMetaInfo a => [a] -> AMap a
+aMapFromList = fromList . map (\x -> (x ^. _Id, x))
+
+foldComment :: Fold Comment Comment
+foldComment = cosmosOf (commentReplies . each)
+
+foldComments :: Fold Comments Comment
+foldComments = each . foldComment
+
+commentsCount :: Getter Comments Int
+commentsCount = to $ lengthOf foldComments
+
+countEq :: (Foldable f, Eq value) => value -> Lens' vote value -> f vote -> Int
+countEq v l = lengthOf $ folded . filtered ((== v) . view l)
+
+countIdeaVotes :: IdeaVoteValue -> IdeaVotes -> Int
+countIdeaVotes v = countEq v ideaVoteValue
+
+countCommentVotes :: UpDown -> CommentVotes -> Int
+countCommentVotes v = countEq v commentVoteValue

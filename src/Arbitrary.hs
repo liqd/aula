@@ -44,7 +44,7 @@ import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -69,15 +69,17 @@ import qualified Persistent.Implementation.STM
 
 -- | FIXME: push this upstream to basic-sop.
 -- See also: https://github.com/well-typed/basic-sop/pull/1
-garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
-garbitrary = to <$> (hsequence =<< elements subs)
+garbitrary' :: forall a. (Int -> Int) -> (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary' scaling = to <$> (hsequence =<< elements subs)
   where
     subs :: [SOP Gen (Code a)]
-    subs = apInjs_POP (hcpure p (scale (\s -> max 0 (s - 10)) arbitrary))
+    subs = apInjs_POP (hcpure p (scale scaling arbitrary))
 
     p :: Proxy Arbitrary
     p = Proxy
 
+garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
+garbitrary = garbitrary' (max 0 . subtract 10)
 
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
@@ -112,6 +114,9 @@ instance Arbitrary CreateIdea where
 
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
+
+instance Arbitrary CommentIdea where
+    arbitrary = CommentIdea <$> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
@@ -173,7 +178,7 @@ instance Arbitrary PageStaticTermsOfUse where
     arbitrary = pure PageStaticTermsOfUse
 
 instance Arbitrary PageHomeWithLoginPrompt where
-    arbitrary = PageHomeWithLoginPrompt <$> arb <*> (LoginDemoHints <$> arb)
+    arbitrary = PageHomeWithLoginPrompt <$> (LoginDemoHints <$> arb)
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
@@ -219,7 +224,7 @@ instance Arbitrary Delegation where
 -- * comment
 
 instance Arbitrary Comment where
-    arbitrary = garbitrary
+    arbitrary = garbitrary' (`div` 3)
 
 instance Arbitrary CommentVote where
     arbitrary = garbitrary
@@ -349,6 +354,10 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- * path
 
 instance Arbitrary P.Main where
+    -- FIXME: Remove Broken
+    arbitrary = suchThat garbitrary (not . P.isBroken)
+
+instance Arbitrary P.IdeaMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.Space where
@@ -385,7 +394,7 @@ instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
 instance GenArbitrary r => GenArbitrary (Action r) where
-    genArbitrary = liftIO $ generate arbitrary
+    genGen = liftIO . generate
 
 
 -- * arbitrary readable text
@@ -734,15 +743,15 @@ fishAvatars =
     , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
     ]
 
-mkFishUser :: (GenArbitrary m, ActionM r m) => URL -> m User
-mkFishUser (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
+mkFishUser :: (GenArbitrary r, ActionM r m) => Maybe SchoolClass -> URL -> m User
+mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
     let first_last = cs . takeBaseName . cs $ avatar
         (fnam, lnam) = case ST.findIndex (== '_') first_last of
             Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatar
             Just i -> ( UserFirstName $ ST.take i first_last
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
-    role <- Student <$> genArbitrary
+    role <- Student <$> maybe (persistent genArbitrary) pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
     (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
@@ -756,28 +765,34 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
+    cfg <- Config.getConfig Config.DontWarnMissing
+
     persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
-    _ <- pr . addFirstUser $ ProtoUser
+    admin <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         Admin (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction $ ActionEnv persist Config.devel
+    let (Nat ac) = mkRunAction $ ActionEnv persist cfg
     either (error . ppShow) id <$> runExceptT
-        (ac (Action.login "admin" >> fishDelegationNetworkAction))
+        (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
 
-fishDelegationNetworkAction :: Action Persistent.Implementation.STM.Persist DelegationNetwork
-fishDelegationNetworkAction = do
-    users <- mkFishUser `mapM` fishAvatars
+fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
+fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
+
+fishDelegationNetworkAction' :: Maybe SchoolClass -> (GenArbitrary r, ActionM r m) => m DelegationNetwork
+fishDelegationNetworkAction' mSchoolClass = do
+    users <- mkFishUser mSchoolClass `mapM` List.take 25 fishAvatars
     cUser <- currentUser
     let -- invariants:
         -- - u1 and u2 are in the same class or ctx is school.
         -- - no cycles  -- FIXME: not implemented!
-        mkdel :: Action Persistent.Implementation.STM.Persist [Delegation]
+        mkdel :: (GenArbitrary r, ActionM r m) => m [Delegation]
         mkdel = do
-            ctx :: DelegationContext <- liftIO . generate $ arbitrary
-            let fltr u = ctx == DelCtxIdeaSpace SchoolSpace
+            ctx :: DelegationContext
+                <- DlgCtxIdeaSpace . ClassSpace <$> maybe (persistent genArbitrary) pure mSchoolClass
+            let fltr u = ctx == DlgCtxIdeaSpace SchoolSpace
                       || case u ^. userRole of
-                             Student cl -> ctx == DelCtxIdeaSpace (ClassSpace cl)
+                             Student cl -> ctx == DlgCtxIdeaSpace (ClassSpace cl)
                              _          -> False
 
                 users' = List.filter fltr users
@@ -785,11 +800,11 @@ fishDelegationNetworkAction = do
             if List.null users'
                 then pure []
                 else persistent $ do
-                    u1  <- liftIO . generate $ elements users'
-                    u2  <- liftIO . generate $ elements users'
+                    u1  <- genGen $ elements users'
+                    u2  <- genGen $ elements users'
                     (:[]) <$> addDelegation (cUser, ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
-    DelegationNetwork users . join <$> replicateM 500 mkdel
+    DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel
 
 -- (NOTE: we only want to break cycles inside each context.  cyclical paths travelling through
 -- different contexts are not really cycles.)
@@ -857,7 +872,7 @@ instance Aeson.ToJSON D3DN where
             , "context" .= toJSON (renderCtx d)
             ]
 
-        renderCtx (Delegation _ (DelCtxIdeaSpace s) _ _) = showIdeaSpace s
+        renderCtx (Delegation _ (DlgCtxIdeaSpace s) _ _) = showIdeaSpace s
         renderCtx _ = error "instance Aeson.ToJSON D3DN where: context type not implemented."
 
 
@@ -913,8 +928,8 @@ constantSampleIdea = Idea
     , _ideaCategory = CatTime
     , _ideaLocation =
         IdeaLocationSpace { _ideaLocationSpace = SchoolSpace }
-    , _ideaComments = Set.fromList constantSampleComments
-    , _ideaLikes = Set.fromList
+    , _ideaComments = aMapFromList constantSampleComments
+    , _ideaLikes = aMapFromList
           [
             IdeaLike
               { _likeMeta =
@@ -930,7 +945,7 @@ constantSampleIdea = Idea
               }
           ]
     , _ideaQuorumOk = True
-    , _ideaVotes = Set.fromList []
+    , _ideaVotes = nil
     , _ideaResult =
         Just
           IdeaResult
@@ -945,7 +960,6 @@ constantSampleIdea = Idea
                   , _metaChangedAt = constantSampleTimestamp
                   }
             , _ideaResultValue = Winning
-            , _ideaResultReason = Markdown { fromMarkdown = "" }
             }
     }
 
@@ -968,7 +982,7 @@ constantSampleComments =
                   "amen 3 rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
               }
         , _commentVotes =
-            Set.fromList
+            aMapFromList
               [ CommentVote
                   { _commentVoteMeta =
                       MetaInfo
@@ -1038,7 +1052,7 @@ constantSampleComments =
                   }
               ]
         , _commentReplies =
-            Set.fromList
+            aMapFromList
               [ Comment
                   { _commentMeta =
                       MetaInfo
@@ -1051,8 +1065,8 @@ constantSampleComments =
                         , _metaChangedAt = constantSampleTimestamp
                         }
                   , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1070,8 +1084,8 @@ constantSampleComments =
                         { fromMarkdown =
                             "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
                         }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1091,7 +1105,7 @@ constantSampleComments =
                         }
                   , _commentReplies = nil
                   , _commentVotes =
-                      Set.fromList
+                      aMapFromList
                         [ CommentVote
                             { _commentVoteMeta =
                                 MetaInfo
@@ -1126,7 +1140,7 @@ constantSampleComments =
                   "rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
               }
         , _commentVotes =
-            Set.fromList
+            aMapFromList
               [ CommentVote
                   { _commentVoteMeta =
                       MetaInfo
@@ -1196,7 +1210,7 @@ constantSampleComments =
                   }
               ]
         , _commentReplies =
-            Set.fromList
+            aMapFromList
               [ Comment
                   { _commentMeta =
                       MetaInfo
@@ -1209,8 +1223,8 @@ constantSampleComments =
                         , _metaChangedAt = constantSampleTimestamp
                         }
                   , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1228,8 +1242,8 @@ constantSampleComments =
                         { fromMarkdown =
                             "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
                         }
-                  , _commentVotes = Set.fromList []
-                  , _commentReplies = Set.fromList []
+                  , _commentVotes = nil
+                  , _commentReplies = nil
                   }
               , Comment
                   { _commentMeta =
@@ -1249,7 +1263,7 @@ constantSampleComments =
                         }
                   , _commentReplies = nil
                   , _commentVotes =
-                      Set.fromList
+                      aMapFromList
                         [ CommentVote
                             { _commentVoteMeta =
                                 MetaInfo

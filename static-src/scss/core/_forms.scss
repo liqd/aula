@@ -52,6 +52,10 @@ select {
     display: block;
 }
 
+.label-header {
+    @include rem(margin-bottom, 20px);
+}
+
 .input-append {
     float: left;
     width: 100%;
@@ -73,3 +77,11 @@ select {
         @include rem(margin-right, 20px);
     }
 }
+
+.form-error {
+    @include rem(margin-bottom, 30px);
+    color: $color-negative;
+    display: block;
+    font-weight: bold;
+}
+

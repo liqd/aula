@@ -16,6 +16,7 @@
 
 module Frontend.Core
     ( GetH
+    , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
     , Beside(Beside)
@@ -23,7 +24,7 @@ module Frontend.Core
     , FormHandler, FormHandlerT
     , ListItemIdea(ListItemIdea)
     , FormPage, FormPagePayload, FormPageResult
-    , formAction, redirectOf, makeForm, formPage, redirectFormHandler
+    , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
@@ -38,20 +39,22 @@ module Frontend.Core
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError)
 import Control.Monad.Except.Missing (finally)
-import Data.Set (Set)
+import Control.Monad.Except (MonadError)
+import Control.Monad (when)
+import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
-import Lucid hiding (href_, script_, src_)
+import Data.Version (showVersion)
 import Lucid.Base
+import Lucid hiding (href_, script_, src_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, getFormDataEnv)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -63,6 +66,8 @@ import Lucid.Missing (script_, href_, src_)
 import Types
 
 import qualified Frontend.Path as P
+import qualified Paths_aula as Paths
+-- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
 
 
 -- | FIXME: Could this be a PR for lucid?
@@ -103,6 +108,7 @@ data Frame body
 makeLenses ''Frame
 
 type GetH = Get '[HTML]
+type PostH = Post '[HTML] ()
 type FormHandlerT p a = FormH HTML (FormPageRep p) a
 type FormHandler p = FormHandlerT p ST
 
@@ -117,15 +123,20 @@ class Page p => FormPage p where
     type FormPageResult p = ()
 
     -- | The form action used in form generation
-    formAction :: p -> UriPath
+    formAction :: p -> P.Main
     -- | Calculates a redirect address from the given page
-    redirectOf :: p -> FormPageResult p -> UriPath
+    redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
-    makeForm :: (Monad m) => p -> DF.Form (Html ()) m (FormPagePayload p)
+    makeForm :: ActionM r m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
+    -- | Guard the form, if the 'guardPage' returns an UriPath the page will
+    -- be redirected. It only guards GET handlers.
+    guardPage :: (ActionM r m) => p -> m (Maybe UriPath)
+    guardPage _ = pure Nothing
+
 
 -- | Defines some properties for pages
 class Page p where
@@ -156,7 +167,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath $ P.Login Nothing)
+  if | not isli && isPrivatePage p -> redirect . absoluteUriPath $ relPath P.Login
      | isli     || isPrivatePage p -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
@@ -225,7 +236,11 @@ footerMarkup = do
             ul_ [class_ "main-footer-menu"] $ do
                 li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
                 li_ $ a_ [href_ P.Imprint] "Impressum"
-            span_ [class_ "main-footer-blurb"] "Made with \x2665 by Liqd"
+            span_ [class_ "main-footer-blurb"] $ do
+                "Made with \x2665 by Liqd"
+            span_ [class_ "main-footer-blurb"] $ do
+                toHtmlRaw ("&nbsp;" :: ST)
+                "[v" <> toHtml (showVersion Paths.version) <> "]"
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
@@ -258,7 +273,7 @@ instance Show a => ToHtml (PageShow a) where
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
 -- | FIXME: find better name?
-newtype CommentVotesWidget = VotesWidget (Set CommentVote)
+newtype CommentVotesWidget = VotesWidget CommentVotes
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
@@ -271,11 +286,8 @@ instance ToHtml CommentVotesWidget where
                 toHtml n
                 i_ [class_ "icon-thumbs-o-down"] nil
       where
-        countVotes :: (Eq value) => value -> Lens' vote value -> Set vote -> Int
-        countVotes v l = Set.size . Set.filter ((== v) . view l)
-
-        y = show (countVotes Up   commentVoteValue votes)
-        n = show (countVotes Down commentVoteValue votes)
+        y = show (countCommentVotes Up   votes)
+        n = show (countCommentVotes Down votes)
 
 newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
 
@@ -298,7 +310,7 @@ instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            a_ [href_ $ P.IdeaPath (idea ^. ideaLocation) (P.IdeaModeView $ idea ^. _Id)] $ do
+            a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
@@ -310,7 +322,7 @@ instance ToHtml ListItemIdea where
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-comment-o"] nil
-                            let s = Set.size (idea ^. ideaComments)
+                            let s = idea ^. ideaComments . commentsCount
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
@@ -323,7 +335,7 @@ instance ToHtml ListItemIdea where
                             nil
       where
         numLikes :: Int
-        numLikes = Set.size $ idea ^. ideaLikes
+        numLikes = Map.size $ idea ^. ideaLikes
 
         -- div by zero is caught silently: if there are no voters, the quorum stays 0%.
         -- FIXME: we could assert that values are always between 0..100, but the inconsistent test
@@ -370,15 +382,20 @@ redirectFormHandler
     -> ServerT (FormHandler p) m
 redirectFormHandler getPage processor = getH :<|> postH
   where
+    guard page = do
+        r <- guardPage page
+        when (isJust r) . redirect . absoluteUriPath $ fromJust r
+
     getH = do
         page <- getPage
-        let fa = absoluteUriPath $ formAction page
+        guard page
+        let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         FormPageRep v fa <$> makeFrame page
 
     postH formData = do
         page <- getPage
-        let fa = absoluteUriPath $ formAction page
+        let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
@@ -389,7 +406,7 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
-    processor2 page result = absoluteUriPath . redirectOf page <$> processor result
+    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
 
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a

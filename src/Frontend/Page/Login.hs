@@ -7,9 +7,9 @@
 module Frontend.Page.Login
 where
 
-import qualified Text.Digestive.Form as DF
+import Text.Digestive
 
-import Action (ActionM)
+import Action (ActionM, persistent)
 import qualified Action
 import Frontend.Prelude
 
@@ -19,7 +19,7 @@ import qualified Frontend.Path as U
 -- * page
 
 -- | 16. Home page with login prompt
-data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt Bool LoginDemoHints
+data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt LoginDemoHints
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
@@ -35,29 +35,43 @@ data LoginDemoHints = LoginDemoHints { fromLoginDemoHints :: [User] }
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
+checkLogin :: (v ~ Html (), ActionM r m) => LoginFormData -> m (Result v User)
+checkLogin (LoginFormData uLogin _pass) = do
+    muser <- persistent $ findUserByLogin (UserLogin uLogin)
+    pure $ case muser of
+        Nothing ->
+            Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
+        Just user -> do
+            -- FIXME check password
+            pure user
+
 instance FormPage PageHomeWithLoginPrompt where
-    type FormPagePayload PageHomeWithLoginPrompt = LoginFormData
+    type FormPagePayload PageHomeWithLoginPrompt = User
 
-    formAction _ = relPath $ U.Login Nothing
-    redirectOf _ _ = relPath U.ListSpaces
+    formAction _   = U.Login
+    redirectOf _ _ = U.ListSpaces
 
-    makeForm _ = LoginFormData
-        <$> ("user" .: DF.text Nothing)
-        <*> ("pass" .: DF.text Nothing)
+    makeForm _ = validateM checkLogin $
+        LoginFormData
+        <$> ("user" .: text Nothing)
+        <*> ("pass" .: text Nothing)
 
-    formPage v form p@(PageHomeWithLoginPrompt status loginDemoHints) =
+    formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do
             div_ [class_ "login-register-form"] $ do
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
                 div_ . form $ do
-                    unless status $ do
-                        p_ "Falscher Nutzername und/oder falsches Passwort."
                     inputText_     [placeholder_ "Dein Benutzername"] "user" v
                     inputPassword_ [placeholder_ "Dein Passwort"] "pass" v
                     inputSubmit_   [] "Login"
                     p_ [class_ "text-muted login-register-form-notice"]
                         "Solltest du dein Passwort nicht mehr kennen, melde dich bitte bei den Admins euer Schule."
             toHtml loginDemoHints
+
+    guardPage _ = do
+        -- Redirect from login if the user is already logged in.
+        li <- Action.isLoggedIn
+        pure $ if li then Just $ relPath U.ListSpaces else Nothing
 
 
 instance ToHtml LoginDemoHints where
@@ -78,8 +92,7 @@ instance ToHtml LoginDemoHints where
 
 -- * handlers
 
-login :: (ActionM r action) => Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
-login success = redirectFormHandler getPage makeUserLogin
+login :: (ActionM r action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
+login = redirectFormHandler getPage Action.loginByUser
   where
-    makeUserLogin (LoginFormData user _pass) = Action.login $ UserLogin user
-    getPage = PageHomeWithLoginPrompt success . LoginDemoHints <$> Action.persistent getUsers
+    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> Action.persistent getUsers

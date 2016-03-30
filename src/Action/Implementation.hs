@@ -26,11 +26,7 @@ import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOStat
 import qualified Data.ByteString.Lazy as LBS
 
 import Action
-import Data.UriPath
 import Persistent
-import Types
-
-import qualified Frontend.Path as U
 
 
 -- * concrete monad type
@@ -63,15 +59,10 @@ instance MonadRandom (Action r) where
     getRandomBytes = liftIO . getRandomBytes
 
 instance PersistM r => ActionUserHandler (Action r) where
-    login uLogin = do
-        muser <- persistent $ findUserByLogin uLogin
-        case muser of
-            Nothing ->
-                redirect . absoluteUriPath . relPath . U.Login $ Just False
-            Just user -> do
-                usUserId .= Just (user ^. _Id)
-                sessionToken <- freshSessionToken
-                usSessionToken .= Just sessionToken
+    login uid = do
+        usUserId .= Just uid
+        sessionToken <- freshSessionToken
+        usSessionToken .= Just sessionToken
 
     userState = use
 

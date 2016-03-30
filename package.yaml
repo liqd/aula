@@ -1,5 +1,5 @@
 name:        aula
-version:     0.1.0
+version:     0.2.0
 license:     AGPL
 copyright:   2016-2017 liquid democracy e.V. Berlin
 author: >
@@ -20,7 +20,6 @@ dependencies:
     - thentos-core >=0.4.0
     - aeson
     - aeson-pretty
-    - generic-aeson
     - basic-sop
     - binary
     - bytestring
@@ -34,6 +33,7 @@ dependencies:
     - elocrypt >=0.4.1 && <0.5
     - filepath
     - functor-infix
+    - generic-aeson
     - generics-sop
     - http-client
     - http-types
@@ -55,13 +55,16 @@ dependencies:
     - text
     - time
     - transformers
+    - vector ==0.10.12.3
     - wai
     - wai-app-static
     - warp
-    - vector ==0.10.12.3
+    - yaml
 
 library:
   source-dirs: src
+  other-modules:
+    - Paths_aula
 
 executables:
   aula-server:

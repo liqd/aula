@@ -30,10 +30,13 @@ import Frontend.Prelude as X hiding (get, put)
 
 
 testConfig :: IO Config
-testConfig = (devel & generateDemoData .~ False &) . (listenerPort .~) <$> pop
-  where
-    pop :: IO Int
-    pop = modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
+testConfig = do
+    cfg <- getConfig DontWarnMissing
+    pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
+    cfg & generateDemoData .~ False
+        & listenerPort .~ pop
+        & pure
+
 
 -- | This is where the ports are popped from that the individual tests are run under.
 testConfigPortSource :: MVar [Int]

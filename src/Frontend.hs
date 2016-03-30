@@ -46,6 +46,7 @@ import Persistent
 import Types
 
 import qualified Action
+import qualified Backend
 import qualified Frontend.Path as U
 import qualified Persistent.Implementation.STM
 
@@ -60,11 +61,12 @@ runFrontend cfg = do
     persist <- Persistent.Implementation.STM.mkRunPersist
     let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv persist cfg)
+
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
-        aulaMainOrTestingProxy = Proxy :: Proxy (AulaMain :<|> "testing" :> AulaTesting)
-    app <- serveFAction aulaMainOrTestingProxy stateProxy extendClearanceOnSessionToken runAction
-             (aulaMain :<|> aulaTesting)
+
+    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
+            runAction aulaActions
 
     unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
@@ -73,14 +75,14 @@ runFrontend cfg = do
         unNat persist demoDataGen
 
     -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve aulaTopProxy . aulaTop cfg $ app
+    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
              $ defaultSettings
 
 
--- * driver
+-- * routing tables
 
 type AulaTop
     =  "samples" :> Raw
@@ -114,6 +116,19 @@ aulaTop cfg app =
       , ssRedirectToIndex = True
       }
 
+
+type AulaActions =
+       AulaMain
+  :<|> "api" :> Backend.Api
+  :<|> "testing" :> AulaTesting
+
+aulaActions :: (GenArbitrary r, PersistM r) => ServerT AulaActions (Action r)
+aulaActions =
+       aulaMain
+  :<|> Backend.api
+  :<|> aulaTesting
+
+
 type AulaMain =
        -- view all spaces
        "space" :> GetH (Frame PageRoomsOverview)
@@ -139,9 +154,7 @@ type AulaMain =
   :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
 
        -- login / logout
-       -- FIXME: login should not ask a query parameter whether or not to show a login error, but
-       -- use form validation of some cookie-based message queue.
-  :<|> "login" :> QueryParam "status" Bool :> FormHandler PageHomeWithLoginPrompt
+  :<|> "login" :> FormHandler PageHomeWithLoginPrompt
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
@@ -161,8 +174,8 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
-  :<|> Page.login . fromMaybe True
-  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login Nothing))
+  :<|> Page.login
+  :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
 
 
 type AulaSpace =
@@ -172,6 +185,19 @@ type AulaSpace =
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandlerT EditIdea Idea
+       -- `like' on an idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "like" :> PostH
+       -- vote on an idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
+       -- comment on an idea
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> FormHandlerT CommentIdea Idea
+       -- vote on a comment
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
+                                            :> "vote"    :> Capture "vote" UpDown :> PostH
+       -- vote on a reply of a comment
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
+              :> "reply" :> Capture "reply" (AUID Comment)
+              :> "vote" :> Capture "vote" UpDown :> PostH
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
@@ -180,10 +206,23 @@ type AulaSpace =
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"              :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "all"     :> GetH (Frame ViewTopic)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
-          :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea"
-          :> Capture "idea" (AUID Idea) :> "edit" :> FormHandler EditIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "view" :> GetH (Frame ViewIdea)
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "edit" :> FormHandler EditIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "like" :> PostH
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> FormHandler CommentIdea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> Capture "comment" (AUID Comment)
+               :> "vote" :> Capture "vote" UpDown :> PostH
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> Capture "comment" (AUID Comment)
+               :> "reply" :> Capture "reply" (AUID Comment)
+               :> "vote" :> Capture "vote" UpDown :> PostH
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create"   :> FormHandler CreateIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
@@ -200,14 +239,24 @@ aulaSpace space =
        Page.viewIdeas  space
   :<|> Page.viewIdea
   :<|> Page.editIdea
-  :<|> Page.createIdea (IdeaLocationSpace space)
+  :<|> Action.likeIdea
+  :<|> Action.voteIdea
+  :<|> Page.commentIdea
+  :<|> Action.voteIdeaComment
+  :<|> Action.voteIdeaCommentReply
+  :<|> Page.createIdea  locSpace
 
   :<|> Page.viewTopics  space
   :<|> Page.viewTopic   TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
   :<|> Page.viewTopic   TabAllIdeas
   :<|> const Page.viewIdea
   :<|> const Page.editIdea
-  :<|> Page.createIdea . IdeaLocationTopic space
+  :<|> const Action.likeIdea
+  :<|> const Action.voteIdea
+  :<|> const Page.commentIdea
+  :<|> const Action.voteIdeaComment
+  :<|> const Action.voteIdeaCommentReply
+  :<|> Page.createIdea  . locTopic
   :<|> Page.viewTopic   TabVotingIdeas
   :<|> Page.viewTopic   TabWinningIdeas
   :<|> Page.viewTopic   TabDelegation
@@ -216,6 +265,8 @@ aulaSpace space =
   :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
+  where locSpace = IdeaLocationSpace space
+        locTopic = IdeaLocationTopic space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)

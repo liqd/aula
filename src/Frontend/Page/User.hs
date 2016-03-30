@@ -53,8 +53,8 @@ data UserSettingData = UserSettingData
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
-    formAction _ = relPath U.UserSettings
-    redirectOf _ _ = relPath U.ListSpaces  -- FIXME: Redirect to the right place
+    formAction _ = U.UserSettings
+    redirectOf _ _ = U.ListSpaces  -- FIXME: Redirect to the right place
 
     makeForm (PageUserSettings user) =
         UserSettingData
@@ -64,18 +64,31 @@ instance FormPage PageUserSettings where
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
 
-    formPage v form p = semanticDiv p . form $ do
-        h1_ "Einstellungen"
-        p_ "E-mailadresse (optional)"
-        DF.inputText "email" v >> br_ []
-        h3_ "Passwort andern"
-        p_ "aktualles Passwort"
-        DF.inputText "old-password" v >> br_ []
-        p_ "neues Passwort"
-        DF.inputText "new-password1" v >> br_ []
-        p_ "neues Passwort bestatigen"
-        DF.inputText "new-password2" v >> br_ []
-        DF.inputSubmit "ANDERUNGEN SPEICHERN"
+    formPage v form p = do
+        semanticDiv p $ do
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "Einstellungen"
+                    form $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "E-mailadresse (optional)"
+                            inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
+                                "email" v
+                        h2_ [class_ "label-header"] "Passwort andern"
+                        label_ $ do
+                            span_ [class_ "label-text"] "aktualles Passwort"
+                            inputPassword_ [class_ "m-small"]
+                                "old-password" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "neues Passwort"
+                            inputPassword_ [class_ "m-small"]
+                                "new-password1" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "neues Passwort bestatigen"
+                            inputPassword_ [class_ "m-small"]
+                                "new-password2" v
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "Änderungen speichern"
 
 
 userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings) action
@@ -139,7 +152,7 @@ createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = join . persistent $ do
     -- FIXME: 404
-    Just user <- findInById dbUsers userId
+    Just user <- findUser userId
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
     return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
 
@@ -191,5 +204,5 @@ delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExce
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
 delegatedVotes userId = join . persistent $ do
     -- FIXME: 404
-    Just user <- findInById dbUsers userId
+    Just user <- findUser userId
     return $ makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes

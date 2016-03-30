@@ -26,7 +26,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
-import Config (Config, devel)
+import Config (Config, getConfig, WarnMissing(DontWarnMissing))
 import Frontend.Core
 import Frontend.Page
 import qualified Persistent.Implementation.STM
@@ -56,12 +56,14 @@ spec = do
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
-        , H (PageComment <$> arb)
+        , H (CommentWidget <$> arb)
+        , H (CommentReplyWidget <$> arb)
         ]
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME
           F (arb :: Gen EditIdea)
-        , F (arb :: Gen PageHomeWithLoginPrompt)
+        , F (arb :: Gen CommentIdea)
+--      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen EditTopic)
@@ -122,10 +124,10 @@ instance PayloadToEnv ProtoIdea where
         "idea-text"     -> pure [TextInput d]
         "idea-category" -> pure [TextInput . cs . show . fromEnum $ c]
 
-instance PayloadToEnv LoginFormData where
-    payloadToEnvMapping _ (LoginFormData name pass) = \case
-        "user" -> pure [TextInput name]
-        "pass" -> pure [TextInput pass]
+instance PayloadToEnv User where
+    payloadToEnvMapping _ u = \case
+        "user" -> pure [TextInput $ u ^. userLogin . fromUserLogin]
+        "pass" -> pure []
 
 ideaCheckboxValue iids path =
     if path `elem` (("idea-" <>) . show <$> iids)
@@ -174,6 +176,10 @@ instance PayloadToEnv EditUserPayload where
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
+instance PayloadToEnv Document where
+    payloadToEnvMapping _ (Markdown comment) = \case
+        "comment-text" -> pure [TextInput comment]
+
 
 -- * machine room
 
@@ -202,7 +208,7 @@ renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . failOnError $ do
-            v <- getForm (absoluteUriPath $ formAction page) (makeForm page)
+            v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
@@ -217,7 +223,9 @@ runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersis
                           unNat (mkRunAction (ActionEnv rp cfg)) action
 
 failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
-failOnError = fmap (either (error . show) id) . runExceptT . runAction Config.devel
+failOnError pers = do
+    cfg <- getConfig DontWarnMissing
+    fmap (either (error . show) id) . runExceptT $ runAction cfg pers
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
@@ -260,6 +268,9 @@ instance ArbFormPagePayload CreateIdea where
 
 instance ArbFormPagePayload EditIdea where
     arbFormPagePayload (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
+
+instance ArbFormPagePayload CommentIdea where
+    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = arbitrary

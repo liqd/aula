@@ -12,9 +12,11 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
+  , CommentIdea(..)
   , viewIdea
   , createIdea
   , editIdea
+  , commentIdea
   , categoryValues
   )
 where
@@ -24,7 +26,7 @@ import Frontend.Page.Comment
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
@@ -46,21 +48,24 @@ data ViewIdea = ViewIdea Idea (Maybe Phase)
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
-  isPrivatePage _ = True
 
 -- | 6. Create idea
 data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
 
 instance Page CreateIdea where
-  isPrivatePage _ = True
 
 -- | 7. Edit idea
 data EditIdea = EditIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page EditIdea where
-  isPrivatePage _ = True
+
+-- | X. Comment idea
+data CommentIdea = CommentIdea Idea
+  deriving (Eq, Show, Read)
+
+instance Page CommentIdea where
 
 
 -- * templates
@@ -68,22 +73,19 @@ instance Page EditIdea where
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
-        let totalLikes    = Set.size $ idea ^. ideaLikes
-            totalVotes    = Set.size $ idea ^. ideaVotes
-            totalComments = Set.size $ idea ^. ideaComments
+        let totalLikes    = Map.size $ idea ^. ideaLikes
+            totalVotes    = Map.size $ idea ^. ideaVotes
+            totalComments = idea ^. ideaComments . commentsCount
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
-                let ispace  = idea ^. ideaLocation . ideaLocationSpace
-                    mtid = idea ^? ideaTopicId
-
                 a_ [ class_ "btn m-back detail-header-back"
-                   , href_ . U.Space ispace $ maybe U.ListIdeas U.ListTopicIdeas mtid
+                   , href_ . U.listIdeas $ idea ^. ideaLocation
                    ] "Zum Thema"  -- FIXME: link text does not fit for wild ideas.
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [href_ . U.Space ispace $ U.EditIdea (idea ^. _Id)] $ do
+                            a_ [href_ $ U.editIdea idea] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
                             a_ [href_ U.Broken] $ do
@@ -101,6 +103,31 @@ instance ToHtml ViewIdea where
                     totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
                     " / "
                 totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
+
+
+            when False . div_ $ do
+                -- FIXME: needs design/layout
+                -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
+                div_ ">>>>>>>>>>> some phase-specific stuff"
+
+                let postlink mode msg =
+                        form_ [ method_ "POST"
+                              , action_ . absoluteUriPath . relPath
+                                    $ U.IdeaPath (idea ^. ideaLocation) mode
+                              ] $
+                            input_ [ type_ "submit", value_ msg ]
+
+                postlink (U.LikeIdea (idea ^. _Id))         "like this idea"
+                postlink (U.VoteIdea (idea ^. _Id) Yes)     "vote yes on idea"
+                postlink (U.VoteIdea (idea ^. _Id) No)      "vote no on idea"
+                postlink (U.VoteIdea (idea ^. _Id) Neutral) "vote neutral on idea"
+
+                pre_ . toHtml $ ppShow (idea ^. ideaLikes)
+                pre_ . toHtml $ ppShow (idea ^. ideaVotes)
+
+                div_ ">>>>>>>>>>> some phase-specific stuff"
+
+
             div_ [class_ "sub-heading"] $ do
                 when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
                     span_ [class_ "progress-bar m-against"] $ do
@@ -121,10 +148,11 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "heroic-badges"] $ do
                 case idea ^. ideaResult of
-                    NotFeasible -> do
+                    NotFeasible _reason -> do
                         div_ [class_ "m-not-feasable"] $ do
                         i_ [class_ "icon-times"] nil
                         "vom Direktor abgelehnt"
+                        -- FIXME display the _reason (do we? shall we?)
                 when (winningIdea idea) $ do
                     div_ [class_ "m-feasable"] $ do
                         i_ [class_ "icon-check"] nil
@@ -135,8 +163,8 @@ instance ToHtml ViewIdea where
             -- visual vote stats
             {- FIXME plug this in to my nice widget pls
             when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
-                let y = countVotes Yes ideaVoteValue $ idea ^. ideaVotes
-                    n = countVotes No  ideaVoteValue $ idea ^. ideaVotes
+                let y = countIdeaVotes Yes $ idea ^. ideaVotes
+                    n = countIdeaVotes No  $ idea ^. ideaVotes
                 div_ $ do
                     span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
                 div_ $ do
@@ -163,23 +191,22 @@ instance ToHtml ViewIdea where
                                 -- FIXME: singular
                                 -- FIXME: code redundancy!  search for 'totalComments' in this module
                         button_ [ value_ "create_comment"
-                                , class_ "btn-cta comments-header-button"]
+                                , class_ "btn-cta comments-header-button"
+                                , onclick_ (U.commentIdea idea)]
                               "Neuer Verbesserungsvorschlag"
-                        -- FIXME dummy
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        PageComment c ^. html
+                        CommentWidget c ^. html
 
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
     type FormPageResult CreateIdea = Idea
 
-    formAction (CreateIdea loc) = relPath $ U.IdeaPath loc U.IdeaModeCreate
+    formAction (CreateIdea loc) = U.createIdea loc
 
-    redirectOf (CreateIdea _loc) idea =
-        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
+    redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
         ProtoIdea
@@ -256,10 +283,9 @@ instance ToHtml CategoryButton where
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = relPath $ U.IdeaPath (idea ^. ideaLocation) (U.IdeaModeEdit (idea ^. _Id))
+    formAction (EditIdea idea) = U.editIdea idea
 
-    redirectOf (EditIdea idea) _ =
-        relPath . U.Space (idea ^. ideaLocation . ideaLocationSpace) $ U.ViewIdea (idea ^. _Id)
+    redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -293,6 +319,29 @@ instance FormPage EditIdea where
                             button_ [class_ "btn-cta", value_ ""] $ do
                                 i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
                                 "Idee löschen"
+
+instance FormPage CommentIdea where
+    type FormPagePayload CommentIdea = Document
+    type FormPageResult CommentIdea = Comment
+
+    formAction (CommentIdea idea) = U.editIdea idea
+
+    redirectOf (CommentIdea idea) _ = U.viewIdea idea
+
+    makeForm CommentIdea{} =
+        "comment-text" .: (Markdown <$> DF.text Nothing)
+
+    -- FIXME styling
+    formPage v form p@(CommentIdea idea) =
+        semanticDiv p $ do
+            div_ [class_ "container-comment-idea"] $ do
+                h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
+                form $ do
+                    label_ $ do
+                        span_ [class_ "label-text"] "Was möchtest du sagen?"
+                        DF.inputTextArea Nothing Nothing "comment-text" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Kommentar abgeben"
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
@@ -333,3 +382,11 @@ editIdea ideaId =
     newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
                       . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
                       . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+
+commentIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler CommentIdea) m
+commentIdea ideaId =
+    redirectFormHandler
+        (do
+            Just idea <- persistent $ findIdea ideaId  -- FIXME: 404
+            pure $ CommentIdea idea)
+        (currentUserAddDb $ addCommentToIdea ideaId)

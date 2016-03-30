@@ -217,10 +217,10 @@ menulink' targetMenuItem =
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
 
-    formAction _ = relPath $ U.Admin U.AdminDuration
+    formAction _ = U.Admin U.AdminDuration
 
     -- FIXME: Do we redirect to the same page???
-    redirectOf _ _ = relPath $ U.Admin U.AdminDuration
+    redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
         mkDurations
@@ -262,8 +262,8 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
 instance FormPage PageAdminSettingsQuorum where
     type FormPagePayload PageAdminSettingsQuorum = Quorums
 
-    formAction _ = relPath $ U.Admin U.AdminQuorum
-    redirectOf _ _ = relPath $ U.Admin U.AdminQuorum
+    formAction _   = U.Admin U.AdminQuorum
+    redirectOf _ _ = U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
@@ -332,7 +332,26 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
     toHtml = toHtmlRaw
     toHtmlRaw p@PageAdminSettingsGaPUsersCreate =
         adminFrame p . semanticDiv p $ do
-            toHtml (show p)
+            div_ [class_ "admin-container"] $ do
+                form_ $ do -- FIXME
+                    div_ [class_ "col-3-12"] $ do
+                        div_ [class_ "upload-avatar"] $ do
+                            a_ [href_ U.Broken] $ do
+                                i_ [class_ "upload-avatar-icon icon-camera"] nil
+                    div_ [class_ "col-9-12"] $ do
+                        h1_ [class_ "admin-main-heading"] $ do
+                            "UserName" -- FIXME
+                        label_ [class_ "col-6-12"] $ do
+                            span_ [class_ "label-text"] "Nutzerrolle"
+                            -- FIXME inputSelect_ [class_ "m-stretch"] "user-role" v
+                            select_ [class_ "m-stretch"] nil
+                        label_ [class_ "col-6-12"] $ do
+                            span_ [class_ "label-text"] "Klasse"
+                            -- FIXME inputSelect_ [class_ "m-stretch"]  "user-class" v
+                            select_ [class_ "m-stretch"] nil
+                        a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                        div_ [class_ "admin-buttons"] $ do
+                            DF.inputSubmit "speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
@@ -382,10 +401,10 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
     type FormPagePayload PageAdminSettingsGaPUsersEdit = EditUserPayload
 
     formAction (PageAdminSettingsGaPUsersEdit user _classes) =
-        relPath . U.Admin . U.AdminEditUser $ user ^. _Id
+        U.Admin . U.AdminEditUser $ user ^. _Id
 
     redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) _ =
-        relPath . U.Admin . U.AdminAccess $ PermUserView
+        U.Admin . U.AdminAccess $ PermUserView
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (PageAdminSettingsGaPUsersEdit user classes) =
@@ -405,14 +424,13 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
             ClassGuest cl -> Just cl
             _             -> Nothing  -- FIXME: see RoleSelection
 
-
     formPage v form p@(PageAdminSettingsGaPUsersEdit user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
             div_ [class_ "col-3-12"] $ do
                 div_ [class_ "upload-avatar"] $ do
                     a_ [href_ U.Broken] $ do
-                        i_ [class_ "upload-avatar-icon icon-camera"] $ do
-                            avatarImgFromHasMeta user
+                        i_ [class_ "upload-avatar-icon icon-camera"] nil
+                        avatarImgFromHasMeta user
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     toHtml (user ^. userLogin . fromUserLogin)
@@ -532,10 +550,10 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
     type FormPagePayload PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
 
     formAction PageAdminSettingsGaPClassesCreate =
-        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassCreate
+        U.Admin $ U.AdminAccess PermClassCreate
 
     redirectOf PageAdminSettingsGaPClassesCreate _ =
-        relPath . U.TopMain . U.Admin $ U.AdminAccess PermClassView
+        U.Admin $ U.AdminAccess PermClassView
 
     makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
         <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
