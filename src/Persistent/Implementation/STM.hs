@@ -18,7 +18,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
-import Servant (ServantErr)
 import Servant.Server ((:~>)(Nat))
 
 import Types
@@ -27,8 +26,8 @@ import Persistent.Api
 -- FIXME: Remove
 import Test.QuickCheck (generate)
 
-newtype Persist a = Persist (ExceptT ServantErr (ReaderT (TVar AulaData) IO) a)
-  deriving (Functor, Applicative, Monad, MonadError ServantErr)
+newtype Persist a = Persist (ExceptT PersistExcept (ReaderT (TVar AulaData) IO) a)
+  deriving (Functor, Applicative, Monad, MonadError PersistExcept)
 
 persistIO :: IO a -> Persist a
 persistIO = Persist . liftIO
@@ -36,7 +35,7 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
-mkRunPersist :: IO (Persist :~> ExceptT ServantErr IO)
+mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO)
 mkRunPersist = do
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = ExceptT $ runExceptT c `runReaderT` tvar

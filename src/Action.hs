@@ -80,7 +80,7 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv r = ActionEnv
-    { _persistNat :: r :~> ExceptT ServantErr IO
+    { _persistNat :: r :~> ExceptT PersistExcept IO
     , _config     :: Config
     }
 
@@ -90,6 +90,9 @@ instance GetCsrfSecret (ActionEnv r) where
     csrfSecret = config . csrfSecret
 
 -- | Top level errors can happen.
+--
+-- FIXME: this will have a constructor dedicated for PersistExcept, and 'ServantErr' will only be
+-- introduced later.
 newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
     deriving (Eq, Show)
 

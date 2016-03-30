@@ -17,6 +17,7 @@ module Persistent.Api
     , AulaLens
     , AulaGetter
     , AulaSetter
+    , PersistExcept(PersistExcept, unPersistExcept)
 
     , AulaData
     , emptyAulaData
@@ -139,7 +140,12 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
-class (MonadError ServantErr m, Monad m) => PersistM m where
+-- | FIXME: this will have constructors dedicated for specific errors, and 'ServantErr' will only be
+-- introduced later.
+newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
+    deriving (Eq, Show)
+
+class (MonadError PersistExcept m, Monad m) => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
 
