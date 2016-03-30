@@ -27,9 +27,18 @@
         border-bottom: 1px solid $color-grey-light;
         overflow: hidden;
 
-        &:last-child {
+        &:last-child,
+        &:last-of-type {
             border-bottom: 0;
         }
+    }
+
+    .comment-replies {
+        @include rem(margin-top, 20px);
+        @include rem(padding-left, 30px);
+        border-left: 1px solid $color-grey-light;
+        overflow: hidden;
+        width: 100%;
     }
 }
 

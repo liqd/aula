@@ -42,8 +42,8 @@ instance ToHtml CommentWidget where
                     button_ [class_ "btn comment-footer-button"] $ do
                         i_ [class_ "icon-flag"] nil
                         "melden"
-        div_ [class_ "comment-replies"] $ do
-            for_ (comment ^. commentReplies) $ toHtml . CommentReplyWidget
+            div_ [class_ "comment-replies"] $ do
+                for_ (comment ^. commentReplies) $ toHtml . CommentReplyWidget
 
 data CommentReplyWidget = CommentReplyWidget Comment
   deriving (Eq, Show, Read)
@@ -54,7 +54,6 @@ instance ToHtml CommentReplyWidget where
     toHtmlRaw = toHtml
     toHtml p@(CommentReplyWidget comment) = semanticDiv p $ do
         div_ [class_ "comment-reply"] $ do
-            span_ "this is a sub-comment!"
             header_ [class_ "comment-header"] $ do
                 comment ^. commentMeta . to AuthorWidget . html
                 comment ^. commentVotes . to VotesWidget . html
