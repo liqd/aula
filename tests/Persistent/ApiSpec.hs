@@ -8,6 +8,8 @@ module Persistent.ApiSpec where
 import Arbitrary ()
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Data.Functor.Infix ((<$$>))
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
@@ -20,14 +22,14 @@ import Types
 
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
-mkInitial :: IO (Persist :~> IO)
+mkInitial :: IO (Persist :~> ExceptT PersistExcept IO)
 mkInitial = do
     rp <- mkRunPersist
-    unNat rp genInitialTestDb
+    _  <- runExceptT $ unNat rp genInitialTestDb
     return rp
 
 -- | the empty database
-mkEmpty :: IO (Persist :~> IO)
+mkEmpty :: IO (Persist :~> ExceptT PersistExcept IO)
 mkEmpty = mkRunPersist
 
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
@@ -35,11 +37,11 @@ getDbSpec name getXs = do
     describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "returns the empty list" $ \(Nat rp) -> do
-                xs <- rp getXs
+                Right xs <- runExceptT $ rp getXs
                 xs `shouldBe` []
         context "on initial database" . before mkInitial $ do
             it "returns a non-empty list" $ \(Nat rp) -> do
-                xs <- rp getXs
+                Right xs <- runExceptT $ rp getXs
                 length xs `shouldNotBe` 0
 
 addDbSpecProp :: (Foldable f, Arbitrary proto)
@@ -50,11 +52,12 @@ addDbSpecProp :: (Foldable f, Arbitrary proto)
               -> Spec
 addDbSpecProp name getXs addX propX =
     describe name $ do
-        let t = it "adds one" $ \(Nat rp) -> do
-                    before' <- liftIO $ length <$> rp getXs
+        let t :: SpecWith (Persist :~> ExceptT PersistExcept IO)
+            t = it "adds one" $ \(Nat rp) -> do
+                    Right before' <- liftIO $ length <$$> runExceptT (rp getXs)
                     p <- liftIO $ generate arbitrary
-                    r <- liftIO . rp $ addX (frameUserHack, p)
-                    after' <- liftIO $ length <$> rp getXs
+                    Right r <- liftIO . runExceptT . rp $ addX (frameUserHack, p)
+                    Right after' <- liftIO $ length <$$> runExceptT (rp getXs)
                     after' `shouldBe` before' + 1
                     propX p r
 
@@ -74,21 +77,21 @@ findInBySpec name getXs findXBy f change =
         context "on empty database" . before mkEmpty $ do
             it "will come up empty" $ \(Nat rp) -> do
                 rf <- liftIO $ generate arbitrary
-                mu <- liftIO . rp $ findXBy rf
+                Right mu <- liftIO . runExceptT . rp $ findXBy rf
                 mu `shouldBe` Nothing
 
         context "on initial database" . before mkInitial $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \(Nat rp) -> do
-                    x:_ <- liftIO $ rp getXs
+                    Right (x:_) <- liftIO . runExceptT . rp $ getXs
                     let Just y = x ^? f
-                    mu <- liftIO . rp $ findXBy (change y)
+                    Right mu <- liftIO . runExceptT . rp $ findXBy (change y)
                     mu `shouldBe` Nothing
             context "if it exists" $ do
                 it "will come up with the newly added record" $ \(Nat rp) -> do
-                    x:_ <- liftIO $ rp getXs
+                    Right (x:_) <- liftIO . runExceptT . rp $ getXs
                     let Just y = x ^? f
-                    mu <- liftIO . rp $ findXBy y
+                    Right mu <- liftIO . runExceptT . rp $ findXBy y
                     mu `shouldBe` Just x
 
 findAllInBySpec :: (Eq a, Show a) =>
@@ -99,23 +102,23 @@ findAllInBySpec name getXs genKs findAllXBy f change =
     describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "will come up empty" $ \(Nat rp) -> do
-                genK <- liftIO . rp $ genKs
+                Right genK <- liftIO . runExceptT . rp $ genKs
                 rf <- liftIO $ generate genK
-                us <- liftIO . rp $ findAllXBy rf
+                Right us <- liftIO . runExceptT . rp $ findAllXBy rf
                 us `shouldBe` []
 
         context "on initial database" . before mkInitial $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \(Nat rp) -> do
-                    [x] <- liftIO $ rp getXs
+                    Right [x] <- liftIO . runExceptT . rp $ getXs
                     let Just y = x ^? f
-                    us <- liftIO . rp $ findAllXBy (change y)
+                    Right us <- liftIO . runExceptT . rp $ findAllXBy (change y)
                     us `shouldBe` []
             context "if it exists" $ do
                 it "will come up with the newly added record" $ \(Nat rp) -> do
-                    [x] <- liftIO $ rp getXs
+                    Right [x] <- liftIO . runExceptT . rp $ getXs
                     let [y] = x ^.. f
-                    us <- liftIO . rp $ findAllXBy y
+                    Right us <- liftIO . runExceptT . rp $ findAllXBy y
                     us `shouldBe` [x]
 
 -- Given an AUID pick a different one
@@ -146,14 +149,14 @@ spec = do
         getIdeasWithTopic getArbTopicIds findIdeasByTopicId ideaTopicId changeAUID
 
     describe "addIdeaSpace" $ do
-        let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> IO)
+        let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> ExceptT PersistExcept IO)
             test upd ispace = do
                 it ("can add " <> showIdeaSpace ispace) $ \(Nat rp) -> do
-                    let getL = liftIO . rp $ getSpaces
-                        addS = liftIO . rp $ addIdeaSpaceIfNotExists ispace
-                    bef <- getL
-                    addS
-                    aft <- getL
+                    let getL = liftIO . runExceptT . rp $ getSpaces
+                        addS = liftIO . runExceptT . rp $ addIdeaSpaceIfNotExists ispace
+                    Right bef <- getL
+                    Right _   <- addS
+                    Right aft <- getL
                     upd (length bef) `shouldBe` length aft
                     (ispace `elem` aft) `shouldBe` True
 
