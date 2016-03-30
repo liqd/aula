@@ -88,6 +88,7 @@ import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
+import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
@@ -114,6 +115,8 @@ data AulaData = AulaData
   deriving (Eq, Show, Read)
 
 makeLenses ''AulaData
+
+deriveSafeCopy 0 'base ''AulaData
 
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a

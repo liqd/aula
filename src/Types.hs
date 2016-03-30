@@ -21,6 +21,7 @@ import Data.Binary
 import Data.Char
 import Data.Map (Map, fromList)
 import Data.Proxy (Proxy(Proxy))
+import Data.SafeCopy (base, deriveSafeCopy)
 import Data.String
 import Data.String.Conversions
 import Data.Time
@@ -522,7 +523,7 @@ instance HasUriPart PermissionContext where
     uriPart = uriPart . pContextToUriStr
 
 
--- * boilerplate: binary, lens (alpha order)
+-- * boilerplate: binary, lens (alpha order), SafeCopy
 
 instance Binary (AUID a)
 instance Binary Category
@@ -571,8 +572,6 @@ makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
 makeLenses ''Document
-makeLenses ''UserPass
-makeLenses ''UserEmail
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
@@ -583,15 +582,52 @@ makeLenses ''MetaInfo
 makeLenses ''Phase
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
+makeLenses ''ProtoUser
 makeLenses ''Role
 makeLenses ''SchoolClass
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
+makeLenses ''UserEmail
 makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
-makeLenses ''ProtoUser
+makeLenses ''UserPass
+
+deriveSafeCopy 0 'base ''AUID
+deriveSafeCopy 0 'base ''Category
+deriveSafeCopy 0 'base ''Comment
+deriveSafeCopy 0 'base ''CommentVote
+deriveSafeCopy 0 'base ''Delegation
+deriveSafeCopy 0 'base ''DelegationContext
+-- deriveSafeCopy 0 'base ''DelegationNetwork
+deriveSafeCopy 0 'base ''Document
+deriveSafeCopy 0 'base ''DurationDays
+deriveSafeCopy 0 'base ''Idea
+deriveSafeCopy 0 'base ''IdeaLike
+deriveSafeCopy 0 'base ''IdeaLocation
+-- deriveSafeCopy 0 'base ''IdeaLike
+deriveSafeCopy 0 'base ''IdeaResult
+deriveSafeCopy 0 'base ''IdeaResultValue
+deriveSafeCopy 0 'base ''IdeaSpace
+deriveSafeCopy 0 'base ''IdeaVote
+deriveSafeCopy 0 'base ''IdeaVoteValue
+deriveSafeCopy 0 'base ''MetaInfo
+deriveSafeCopy 0 'base ''Phase
+-- deriveSafeCopy 0 'base ''ProtoIdea
+-- deriveSafeCopy 0 'base ''ProtoTopic
+-- deriveSafeCopy 0 'base ''ProtoUser
+deriveSafeCopy 0 'base ''Role
+deriveSafeCopy 0 'base ''SchoolClass
+deriveSafeCopy 0 'base ''Timestamp
+deriveSafeCopy 0 'base ''Topic
+deriveSafeCopy 0 'base ''UpDown
+deriveSafeCopy 0 'base ''User
+deriveSafeCopy 0 'base ''UserEmail
+deriveSafeCopy 0 'base ''UserLogin
+deriveSafeCopy 0 'base ''UserFirstName
+deriveSafeCopy 0 'base ''UserLastName
+deriveSafeCopy 0 'base ''UserPass
 
 class HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
