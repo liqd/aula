@@ -30,9 +30,8 @@ instance ToHtml CommentWidget where
     toHtml p@(CommentWidget comment) = semanticDiv p $ do
         div_ [class_ "comment"] $ do
             commentToHtml comment
-            div_ [class_ "comment-replies"] $
-                for_ (comment ^. commentReplies) $
-                    div_ [class_ "comment-reply"] . commentToHtml
+            div_ [class_ "comment-replies"] . for_ (comment ^. commentReplies) $
+                div_ [class_ "comment-reply"] . commentToHtml
 
 commentToHtml :: Monad m => Comment -> HtmlT m ()
 commentToHtml comment = div_ $ do
