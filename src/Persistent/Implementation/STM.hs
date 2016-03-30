@@ -51,4 +51,3 @@ instance PersistM Persist where
     mkRandomPassword = persistIO mkRandomPasswordIO
 
 -- TODO: we want tests for all of this!
--- TODO: newtype PersistExcept similar to ActionExcept
