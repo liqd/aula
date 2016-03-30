@@ -1,4 +1,3 @@
-{-# LANGUAGE DefaultSignatures           #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
