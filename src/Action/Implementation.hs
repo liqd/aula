@@ -13,7 +13,7 @@ where
 
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
-import Control.Monad.Except (MonadError)
+import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
@@ -50,7 +50,10 @@ instance ActionLog (Action r) where
     logEvent = liftIO . print
 
 instance PersistM r => ActionPersist r (Action r) where
-    persistent r = view persistNat >>= \(Nat rp) -> liftIO $ rp r
+    persistent r = do
+        Nat rp <- view persistNat
+        v  <- liftIO . runExceptT . rp $ r
+        either (throwError . ActionExcept) pure v  -- TODO: is this strict enough?  how can we test this?
 
 instance MonadLIO DCLabel (Action r) where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)

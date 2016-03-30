@@ -46,6 +46,7 @@ where
 import Control.Lens
 import Control.Monad (void)
 import Control.Monad.Except (MonadError)
+import Control.Monad.Trans.Except (ExceptT(ExceptT))
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
@@ -79,7 +80,7 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv r = ActionEnv
-    { _persistNat :: r :~> IO
+    { _persistNat :: r :~> ExceptT ServantErr IO
     , _config     :: Config
     }
 
@@ -110,7 +111,7 @@ class Monad m => ActionLog m where
 -- @r@ is determined by @m@, because @m@ is intended to be the program's
 -- action monad, so @r@ is just the persistent implementation chosen
 -- to be used in the action monad.
-class (PersistM r, Monad m) => ActionPersist r m | m -> r where
+class (PersistM r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> r where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
     -- FIXME: Rename atomically, and only call on
