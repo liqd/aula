@@ -204,9 +204,9 @@ instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
     type FormPageResult CreateIdea = Idea
 
-    formAction (CreateIdea loc) = relPath $ U.createIdea loc
+    formAction (CreateIdea loc) = U.createIdea loc
 
-    redirectOf (CreateIdea _loc) idea = relPath $ U.viewIdea idea
+    redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
         ProtoIdea
@@ -283,9 +283,9 @@ instance ToHtml CategoryButton where
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = relPath $ U.editIdea idea
+    formAction (EditIdea idea) = U.editIdea idea
 
-    redirectOf (EditIdea idea) _ = relPath $ U.viewIdea idea
+    redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -324,9 +324,9 @@ instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = Document
     type FormPageResult CommentIdea = Comment
 
-    formAction (CommentIdea idea) = relPath $ U.editIdea idea
+    formAction (CommentIdea idea) = U.editIdea idea
 
-    redirectOf (CommentIdea idea) _ = relPath $ U.viewIdea idea
+    redirectOf (CommentIdea idea) _ = U.viewIdea idea
 
     makeForm CommentIdea{} =
         "comment-text" .: (Markdown <$> DF.text Nothing)

@@ -123,9 +123,9 @@ class Page p => FormPage p where
     type FormPageResult p = ()
 
     -- | The form action used in form generation
-    formAction :: p -> UriPath
+    formAction :: p -> P.Main
     -- | Calculates a redirect address from the given page
-    redirectOf :: p -> FormPageResult p -> UriPath
+    redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
     makeForm :: ActionM r m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
@@ -389,13 +389,13 @@ redirectFormHandler getPage processor = getH :<|> postH
     getH = do
         page <- getPage
         guard page
-        let fa = absoluteUriPath $ formAction page
+        let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         FormPageRep v fa <$> makeFrame page
 
     postH formData = do
         page <- getPage
-        let fa = absoluteUriPath $ formAction page
+        let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
@@ -406,7 +406,7 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
-    processor2 page result = absoluteUriPath . redirectOf page <$> processor result
+    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
 
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a

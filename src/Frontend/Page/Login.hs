@@ -48,8 +48,8 @@ checkLogin (LoginFormData uLogin _pass) = do
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
 
-    formAction _   = relPath U.Login
-    redirectOf _ _ = relPath U.ListSpaces
+    formAction _   = U.Login
+    redirectOf _ _ = U.ListSpaces
 
     makeForm _ = validateM checkLogin $
         LoginFormData
