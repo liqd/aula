@@ -51,7 +51,6 @@ createRandomNoMeta l = do
 -- Note that no user is getting logged in by this code.
 genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
 genInitialTestDb = do
-    modifyDb id (const emptyAulaData)
     addIdeaSpaceIfNotExists SchoolSpace
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
     addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")

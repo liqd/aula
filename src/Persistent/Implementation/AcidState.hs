@@ -41,11 +41,11 @@ instance GenArbitrary Persist where
 
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = return $
-    Nat (\(Persist c) ->
-            bracket (openLocalState emptyAulaData)
-                    createCheckpointAndClose
-                    (c `runReaderT`)
-        )
+    Nat $ \(Persist c) ->
+        bracket (openLocalState emptyAulaData)
+                createCheckpointAndClose
+                (c `runReaderT`)
+
 instance MonadIO Persist where
     liftIO = persistIO
 
@@ -64,4 +64,4 @@ instance PersistM Persist where
     getDb l = Persist . ReaderT $ fmap (view l) . flip query AskDbM
     modifyDb l f = Persist . ReaderT $ \state -> do
       aulaData <- update state GetDbM
-      update state (PutDbM . (l %~ f) $ aulaData)
+      update state (PutDbM $ l %~ f $ aulaData)

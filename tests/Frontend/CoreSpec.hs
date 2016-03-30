@@ -220,9 +220,7 @@ renderForm (F g) =
 -- via abstraction).
 runAction :: Config -> Action Persistent.Implementation.Persist a -> ExceptT ServantErr IO a
 runAction cfg action = do rp <- liftIO Persistent.Implementation.mkRunPersist
-                          unNat (mkRunAction (ActionEnv rp cfg))
-                                (persistent (modifyDb id (const emptyAulaData))
-                                 >> action)
+                          unNat (mkRunAction (ActionEnv rp cfg)) action
 
 failOnError :: Action Persistent.Implementation.Persist a -> IO a
 failOnError pers = do

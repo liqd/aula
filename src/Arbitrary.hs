@@ -759,9 +759,6 @@ instance Arbitrary DelegationNetwork where
 fishDelegationNetworkUnsafe :: DelegationNetwork
 fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
--- FIXME: make sure that reading the DB (in mkRunPersist) from a file
--- and saving it doesn't break anything here nor accumulate trash.
--- If it does, use in-memory acid-state or STM.
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
     cfg <- Config.getConfig Config.DontWarnMissing
