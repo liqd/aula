@@ -35,7 +35,7 @@ import Control.Exception (ErrorCall(ErrorCall), throwIO)
 import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
-import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson as Aeson
 import Data.Char
 import Data.List as List

@@ -46,7 +46,7 @@ where
 import Control.Lens
 import Control.Monad (void)
 import Control.Monad.Except (MonadError)
-import Control.Monad.Trans.Except (ExceptT(ExceptT))
+import Control.Monad.Trans.Except (ExceptT)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
