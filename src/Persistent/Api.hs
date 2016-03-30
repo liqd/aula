@@ -57,7 +57,9 @@ module Persistent.Api
     , mkMetaInfo
     , mkUserLogin
     , getCurrentTimestamp
+    , getCurrentTimestampIO
     , mkRandomPassword
+    , mkRandomPasswordIO
     , modifyUser
     , getTopics
     , addTopic
@@ -86,7 +88,6 @@ where
 
 import Control.Lens
 import Control.Monad.Error.Class (MonadError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad (unless, replicateM, when)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
@@ -148,16 +149,15 @@ newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
 class (MonadError PersistExcept m, Monad m) => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
-
     getCurrentTimestamp :: m Timestamp
-
-    default getCurrentTimestamp :: MonadIO m => m Timestamp
-    getCurrentTimestamp = Timestamp <$> liftIO getCurrentTime
-
     mkRandomPassword :: m UserPass
 
-    default mkRandomPassword :: MonadIO m => m UserPass
-    mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+getCurrentTimestampIO :: IO Timestamp
+getCurrentTimestampIO = Timestamp <$> getCurrentTime
+
+mkRandomPasswordIO :: IO UserPass
+mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 
 -- | The argument is a consistency check that will throw an error if it fails.
