@@ -10,7 +10,6 @@ ignore "Use camelCase" = Main.ViewIdea_PhaseJury
 ignore "Use camelCase" = Main.ViewIdea_PhaseVoting
 ignore "Use camelCase" = Main.ViewIdea_PhaseResult
 ignore "Use camelCase" = Main.ViewIdea_PhaseFinished
-ignore "Reduce duplication" = Frontend.Page.Comment
 
 ignore "Redundant do"
 ignore "Use const"
