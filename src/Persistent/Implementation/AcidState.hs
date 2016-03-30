@@ -40,10 +40,11 @@ instance GenArbitrary Persist where
     genGen = persistIO . generate
 
 mkRunPersist :: IO (Persist :~> IO)
-mkRunPersist = do
-    bracket (openLocalState emptyAulaData)
-            createCheckpointAndClose
-            (\db -> return $ Nat $ \(Persist c) -> c `runReaderT` db)
+mkRunPersist = return $
+    Nat $ \(Persist c) ->
+        bracket (openLocalState emptyAulaData)
+                createCheckpointAndClose
+                (c `runReaderT`)
 
 instance MonadIO Persist where
     liftIO = persistIO
