@@ -36,17 +36,17 @@ instance ToHtml CommentWidget where
 
 commentToHtml :: Monad m => Comment -> HtmlT m ()
 commentToHtml comment = div_ $ do
-            hr_ []  -- FIXME: comments melt into each other without this.  should be fixed in css.
-            header_ [class_ "comment-header"] $ do
-                comment ^. commentMeta . to AuthorWidget . html
-                comment ^. commentVotes . to VotesWidget . html
-            div_ [class_ "comments-body"] $ do
-                comment ^. commentText . html
-            footer_ [class_ "comment-footer"] $ do
-                div_ [class_ "comment-footer-buttons"] $ do
-                    button_ [class_ "btn comment-footer-button"] $ do
-                        i_ [class_ "icon-reply"] nil
-                        "antworten"
-                    button_ [class_ "btn comment-footer-button"] $ do
-                        i_ [class_ "icon-flag"] nil
-                        "melden"
+    hr_ []  -- FIXME: comments melt into each other without this.  should be fixed in css.
+    header_ [class_ "comment-header"] $ do
+        comment ^. commentMeta . to AuthorWidget . html
+        comment ^. commentVotes . to VotesWidget . html
+    div_ [class_ "comments-body"] $ do
+        comment ^. commentText . html
+    footer_ [class_ "comment-footer"] $ do
+        div_ [class_ "comment-footer-buttons"] $ do
+            button_ [class_ "btn comment-footer-button"] $ do
+                i_ [class_ "icon-reply"] nil
+                "antworten"
+            button_ [class_ "btn comment-footer-button"] $ do
+                i_ [class_ "icon-flag"] nil
+                "melden"
