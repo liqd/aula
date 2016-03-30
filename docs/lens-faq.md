@@ -42,7 +42,7 @@ My guess is that this type is impossible to fulfill. `ideaLocationTopicId` canno
 
 What we have from my previous comment is a `Traversal' IdeaLocation (AUID Topic)`.
 Looking at the main diagram https://hackage.haskell.org/package/lens-4.13 a traversal is weaker than a lens or a prism. A traversal can be turned into a setter or a fold. Assume `t` to be a
-+`Traversal' s a`:
+`Traversal' s a`:
 
 * `s ^.. t` get all the elements as a list: `[a]`
 * `s ^? t` get the first element: `Maybe a`
@@ -50,7 +50,7 @@ Looking at the main diagram https://hackage.haskell.org/package/lens-4.13 a trav
 * `s & t %~ f` modify all the elements with `f`.
 
 Then `ideaTopicId` is the composition of `ideaLocation` (a lens) and `ideaLocationTopicId` (a traversal). However guessing the correct type signature can be difficult. My advice is to omit the type
-+signatures at first. Since a traversal is weaker than a lens the resulting composite is a traversal.
+signatures at first. Since a traversal is weaker than a lens the resulting composite is a traversal.
 
 ```
 ideaTopicId :: Traversal' Idea (AUID Topic)
@@ -58,7 +58,7 @@ ideaTopicId = ideaLocation . ideaLocationTopicId
 ```
 
 What you were getting at with "is it somehow ok to yield a maybe here?" is that we know that there is either no topic id or a single topic id. The traversal is weaker it can be any number of them.
-+A custom lens can be written as:
+A custom lens can be written as:
 
 ```
 ideaLocationMaybeTopicId :: Lens' IdeaLocation (Maybe (AUID Topic))
