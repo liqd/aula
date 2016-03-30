@@ -75,10 +75,10 @@ backLink IdeaLocationSpace{} = "Zum Ideenraum"
 backLink IdeaLocationTopic{} = "Zum Thema"
 
 numberWithUnit :: Monad m => Int -> ST -> ST -> HtmlT m ()
-numberWithUnit i singular plural =
+numberWithUnit i singular_ plural_ =
     toHtml (show i) <>
     toHtmlRaw ("&nbsp;" :: ST) <>
-    toHtml (if i == 1 then singular else plural)
+    toHtml (if i == 1 then singular_ else plural_)
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
