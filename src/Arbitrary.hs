@@ -64,7 +64,7 @@ import Persistent
 import Types
 
 import qualified Frontend.Path as P
-import qualified Persistent.Implementation.STM
+import qualified Persistent.Implementation
 
 
 -- | FIXME: push this upstream to basic-sop.
@@ -763,7 +763,7 @@ fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
     cfg <- Config.getConfig Config.DontWarnMissing
 
-    persist@(Nat pr) <- Persistent.Implementation.STM.mkRunPersist
+    persist@(Nat pr) <- Persistent.Implementation.mkRunPersist
     admin <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         Admin (Just (UserPassInitial "admin")) Nothing

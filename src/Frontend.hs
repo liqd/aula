@@ -48,7 +48,7 @@ import Types
 import qualified Action
 import qualified Backend
 import qualified Frontend.Path as U
-import qualified Persistent.Implementation.STM
+import qualified Persistent.Implementation
 
 
 -- * driver
@@ -58,8 +58,8 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    persist <- Persistent.Implementation.STM.mkRunPersist
-    let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
+    persist <- Persistent.Implementation.mkRunPersist
+    let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv persist cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop

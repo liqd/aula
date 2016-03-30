@@ -29,7 +29,7 @@ import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config (Config, getConfig, WarnMissing(DontWarnMissing))
 import Frontend.Core
 import Frontend.Page
-import qualified Persistent.Implementation.STM
+import qualified Persistent.Implementation
 import Types
 
 import AulaTests
@@ -218,11 +218,11 @@ renderForm (F g) =
 -- infect other code, so they are left alone for now, though in the long run,
 -- abstraction would improve test code as well (separation of concerns
 -- via abstraction).
-runAction :: Config -> Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
-runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
+runAction :: Config -> Action Persistent.Implementation.Persist a -> ExceptT ServantErr IO a
+runAction cfg action = do rp <- liftIO Persistent.Implementation.mkRunPersist
                           unNat (mkRunAction (ActionEnv rp cfg)) action
 
-failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
+failOnError :: Action Persistent.Implementation.Persist a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
     fmap (either (error . show) id) . runExceptT $ runAction cfg pers

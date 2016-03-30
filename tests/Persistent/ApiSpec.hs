@@ -14,7 +14,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Persistent
-import Persistent.Implementation.STM
+import Persistent.Implementation
 import CreateRandom
 import Types
 
