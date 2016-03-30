@@ -14,11 +14,13 @@ module Persistent.Implementation.AcidState
     )
 where
 
+import Control.Exception (bracket)
 import Control.Lens
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (get, put)
 import Data.Acid (AcidState, Query, Update, makeAcidic, openLocalState, query, update)
+import Data.Acid.Local (createCheckpointAndClose)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
@@ -37,11 +39,11 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
--- TODO: call @closeAcidState db@ somewhere
 mkRunPersist :: IO (Persist :~> IO)
 mkRunPersist = do
-    db <- openLocalState emptyAulaData
-    return $ Nat $ \(Persist c) -> c `runReaderT` db
+    bracket (openLocalState emptyAulaData)
+            createCheckpointAndClose
+            (\db -> return $ Nat $ \(Persist c) -> c `runReaderT` db)
 
 instance MonadIO Persist where
     liftIO = persistIO
