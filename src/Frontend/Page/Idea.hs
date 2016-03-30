@@ -74,6 +74,12 @@ backLink :: Monad m => IdeaLocation -> HtmlT m ()
 backLink IdeaLocationSpace{} = "Zum Ideenraum"
 backLink IdeaLocationTopic{} = "Zum Thema"
 
+numberWithUnit :: Monad m => Int -> ST -> ST -> HtmlT m ()
+numberWithUnit i singular plural =
+    toHtml (show i) <>
+    toHtmlRaw ("&nbsp;" :: ST) <>
+    toHtml (if i == 1 then singular else plural)
+
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
@@ -101,12 +107,12 @@ instance ToHtml ViewIdea where
                 idea ^. createdByLogin . fromUserLogin . html
                 " / "
                 when (phase `elem` [Nothing, Just PhaseRefinement]) $ do
-                    totalLikes ^. showed . html <> " Likes"  -- FIXME: singular
-                    " / "
+                    numberWithUnit totalLikes "Like" "Likes"
+                    toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
                 when (phase >= Just PhaseVoting) $ do
-                    totalVotes ^. showed . html <> " Stimmen"  -- FIXME: singular
-                    " / "
-                totalComments ^. showed . html <> " Verbesserungsvorschläge"  -- FIXME: singular
+                    numberWithUnit totalVotes "Stimme" "Stimmen"
+                    toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
+                numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
 
 
             when False . div_ $ do
@@ -191,9 +197,8 @@ instance ToHtml ViewIdea where
                 div_ [class_ "grid"] $ do
                     div_ [class_ "container-narrow"] $ do
                         h2_ [class_ "comments-header-heading"] $ do
-                            totalComments ^. showed . html <> " Verbesserungsvorschläge"
-                                -- FIXME: singular
-                                -- FIXME: code redundancy!  search for 'totalComments' in this module
+                            numberWithUnit totalComments
+                                "Verbesserungsvorschlag" "Verbesserungsvorschläge"
                         button_ [ value_ "create_comment"
                                 , class_ "btn-cta comments-header-button"
                                 , onclick_ (U.commentIdea idea)]
