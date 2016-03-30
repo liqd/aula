@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TypeOperators               #-}
 
-{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.Implementation.STM
     ( Persist
