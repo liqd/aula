@@ -59,12 +59,14 @@ inputText_ attrs ref vw = Lucid.input_ $
 
 inputTextArea_ :: (Monad m) => [Lucid.Attribute]
     -> Maybe Int -> Maybe Int -> ST -> DF.View (HtmlT m ()) -> HtmlT m ()
-inputTextArea_ attrs r c ref view_ = textarea_
-    ([ id_     ref'
-     , name_   ref'
-     ] <> rows' r <> cols' c <> attrs) $
-        toHtmlRaw $ DF.fieldInputText ref view_
+inputTextArea_ attrs r c ref view_ = textarea_ attrs' . toHtmlRaw $ DF.fieldInputText ref view_
   where
+    attrs' = [ id_     ref'
+             , name_   ref'
+             ]
+          <> rows' r <> cols' c
+          <> attrs
+
     ref'           = DF.absoluteRef ref view_
     rows' (Just x) = [rows_ . cs $ show x]
     rows' _        = []
