@@ -1,8 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE OverloadedStrings          #-}
+
 module Action.Dummy
-    ( DummyT(DummyT,unDummyT), Dummy
+    ( DummyT(DummyT, unDummyT), Dummy
     , runDummyT, runDummy
     , notImplemented
     ) where
@@ -11,6 +12,7 @@ import Control.Monad.Except (runExceptT)
 
 import Action
 import Frontend.Prelude
+
 
 newtype DummyT m a = DummyT { unDummyT :: ExceptT ActionExcept m a }
     deriving (Functor, Applicative, Monad, MonadError ActionExcept)
@@ -34,8 +36,8 @@ instance Monad m => PersistM (DummyT m) where
     mkRandomPassword    = notImplemented "PersistM" "mkRandomPassword"
 
 instance Monad m => ActionTempCsvFiles (DummyT m) where
-    popTempCsvFile _        = notImplemented "PersistM" "popTempCsvFile"
-    cleanupTempCsvFiles _   = notImplemented "PersistM" "cleanupTempCsvFiles"
+    popTempCsvFile _      = notImplemented "PersistM" "popTempCsvFile"
+    cleanupTempCsvFiles _ = notImplemented "PersistM" "cleanupTempCsvFiles"
 
 instance Monad m => ActionLog (DummyT m) where
     logEvent _ = pure ()

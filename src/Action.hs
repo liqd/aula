@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeOperators          #-}
+
 -- | The 'Action' module contains an API which
 module Action
     ( -- * constraint types
@@ -88,7 +89,6 @@ instance GetCsrfSecret (ActionEnv r) where
     csrfSecret = config . csrfSecret
 
 -- | Top level errors can happen.
---
 newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
     deriving (Eq, Show)
 
