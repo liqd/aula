@@ -28,7 +28,10 @@ mkInitial = do
 
 -- | the empty database
 mkEmpty :: IO (Persist :~> IO)
-mkEmpty = mkRunPersist
+mkEmpty = do
+    rp <- mkRunPersist
+    unNat rp $ modifyDb id (const emptyAulaData)
+    return rp
 
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
 getDbSpec name getXs = do
