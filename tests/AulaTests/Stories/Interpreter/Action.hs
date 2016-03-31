@@ -7,34 +7,19 @@
 {-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE TemplateHaskell       #-}
 
-{-# OPTIONS_GHC #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module AulaTests.Stories.Interpreter.Action where
 
 import Control.Lens
 import Control.Monad (join, unless)
 import Control.Monad.Free
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.State
-import Data.List
-import Data.String
 import Data.String.Conversions
-import Data.Typeable (Typeable, typeOf)
-import Lucid (Html, ToHtml, toHtml, renderText)
-import Servant (unNat)
-import Servant.Server.Internal.ServantErr
-import Test.Hspec
-import Test.QuickCheck
-import Text.Digestive.Types
-import Text.Digestive.View
-
-import qualified Data.Text.Lazy as LT
 
 import Action
 import Persistent
-import Arbitrary
 import Types
 
 import AulaTests.Stories.DSL
@@ -48,6 +33,7 @@ data ClientState = ClientState {
     }
   deriving (Eq, Show)
 
+initialClientState :: ClientState
 initialClientState = ClientState Nothing Nothing
 
 makeLenses ''ClientState
@@ -82,7 +68,7 @@ runClient (Free (SelectIdeaSpace s k)) = do
 
 runClient (Free (CreateIdea t d c k)) = do
     Just i <- use csIdeaSpace
-    lift $ do
+    _ <- lift $ do
         Action.currentUserAddDb
             Persistent.addIdea
             (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
