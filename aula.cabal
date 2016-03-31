@@ -23,7 +23,7 @@ source-repository head
 flag stm
   description: use the STM implementation of Persistent
   manual: True
-  default: False
+  default: True
 
 library
   hs-source-dirs:

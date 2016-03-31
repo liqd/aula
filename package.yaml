@@ -16,7 +16,7 @@ category:    Web
 flags:
     stm:
         description:  use the STM implementation of Persistent
-        default:      False
+        default:      True
         manual:       True
 
 ghc-options: -Wall
