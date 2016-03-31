@@ -134,7 +134,7 @@ ideaCheckboxValue iids path =
         else "off"
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ iids) path'
+    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ iids _) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title" = pure [TextInput title]
         | path == "desc"  = pure [TextInput desc]
@@ -284,7 +284,7 @@ instance ArbFormPagePayload PageHomeWithLoginPrompt where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload CreateTopic where
-    arbFormPagePayload (CreateTopic space ideas) =
+    arbFormPagePayload (CreateTopic space ideas _timestamp) =
             set protoTopicIdeaSpace space
           . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary

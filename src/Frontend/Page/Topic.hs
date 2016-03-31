@@ -53,7 +53,7 @@ instance Page ViewTopic where
     extraBodyClasses _ = ["m-shadow"]
 
 -- | 10.1 Create topic: Create topic
-data CreateTopic = CreateTopic IdeaSpace [Idea]
+data CreateTopic = CreateTopic IdeaSpace [Idea] Timestamp
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic
@@ -126,17 +126,35 @@ viewTopicHeaderDiv topic tab = do
             toHtml $ topic ^. topicTitle
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
-            when (phase == PhaseRefinement) $
-                a_ [class_ "btn-cta heroic-cta", href_ . U.createIdea $ IdeaLocationTopic space topicId] "+ Neue Idee"
-            when (phase < PhaseResult) .
-                a_  [class_ "btn-cta heroic-cta", href_ . U.Space space $ U.CreateTopicDelegation topicId] $ do
-                    i_ [class_ "icon-bullhorn"] nil
-                    "Stimme Beauftragen"
+            let createIdeaButton = do
+                    a_ [ class_ "btn-cta heroic-cta"
+                       , href_ . U.createIdea $ IdeaLocationTopic space topicId
+                       ]
+                     "+ Neue Idee"
+                delegateVoteButton = do
+                    a_  [ class_ "btn-cta heroic-cta"
+                        , href_ . U.Space space $ U.CreateTopicDelegation topicId
+                        ] $ do
+                      i_ [class_ "icon-bullhorn"] nil
+                      "Stimme Beauftragen"
+
+            case phase of
+                PhaseRefinement _ -> createIdeaButton >> delegateVoteButton
+                PhaseJury         -> delegateVoteButton
+                PhaseVoting     _ -> delegateVoteButton
+                PhaseResult       -> nil
+
         div_ [class_ "heroic-tabs"] $ do
-            tabLink topic tab TabAllIdeas
-            when ((topic ^. topicPhase) >= PhaseVoting) $ tabLink topic tab TabVotingIdeas
-            when ((topic ^. topicPhase) >= PhaseResult) $ tabLink topic tab TabWinningIdeas
-            tabLink topic tab TabDelegation
+            let t1 = tabLink topic tab TabAllIdeas
+                t2 = tabLink topic tab TabVotingIdeas
+                t3 = tabLink topic tab TabWinningIdeas
+                t4 = tabLink topic tab TabDelegation
+
+            case phase of
+                PhaseRefinement _ -> t1
+                PhaseJury         -> t1
+                PhaseVoting     _ -> t1 >> t2
+                PhaseResult       -> t1 >> t2 >> t3 >> t4
   where
     phase   = topic ^. topicPhase
     topicId = topic ^. _Id
@@ -146,19 +164,20 @@ instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
     type FormPageResult CreateTopic = Topic
 
-    formAction (CreateTopic space _) = U.Space space U.CreateTopic
+    formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
 
-    redirectOf (CreateTopic _ _) = U.listTopicIdeas
+    redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
-    makeForm (CreateTopic space ideas) =
+    makeForm (CreateTopic space ideas timestamp) =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
         <*> pure space
         <*> makeFormIdeaSelection ideas
+        <*> pure timestamp
 
-    formPage v form p@(CreateTopic _space ideas) =
+    formPage v form p@(CreateTopic _space ideas _timestamp) =
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -245,7 +264,9 @@ viewTopic tab topicId = makeFrame =<< persistent (do
 createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =
     redirectFormHandler
-        (CreateTopic space <$> persistent (findWildIdeasBySpace space))
+        (CreateTopic space
+            <$> persistent (findWildIdeasBySpace space)
+            <*> persistent phaseEndRefinement)
         (currentUserAddDb addTopic)
 
 editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m

@@ -129,7 +129,7 @@ instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
 
 instance Arbitrary CreateTopic where
-    arbitrary = CreateTopic <$> arb <*> arb
+    arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicPhaseDuration
 
 instance Arbitrary EditTopic where
     arbitrary = EditTopic <$> arb <*> arb <*> arb
@@ -251,9 +251,14 @@ schoolClasses = schoolClass <$> years <*> names
 instance Arbitrary ProtoTopic where
     arbitrary =
         scaleDown garbitrary
-        <**> (set protoTopicTitle <$> arbPhrase)
+        <**> (set protoTopicTitle     <$> arbPhrase)
         <**> (set protoTopicIdeaSpace <$> pure SchoolSpace)
-        <**> (set protoTopicIdeas <$> pure [])
+        <**> (set protoTopicIdeas     <$> pure [])
+        <**> (set protoTopicRefinDays <$> arbTopicPhaseDuration)
+
+-- FIXME: if we don't make this deterministic, tests will fail.
+arbTopicPhaseDuration :: Gen Timestamp
+arbTopicPhaseDuration = pure constantSampleTimestamp
 
 instance Arbitrary Topic where
     arbitrary =

@@ -110,7 +110,7 @@ data AulaData = AulaData
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
     , _dbDelegationMap       :: Delegations
-    , _dbElaborationDuration :: DurationDays
+    , _dbElaborationDuration :: DurationDays  -- FIXME: elaboration and refinement are the same thing.  pick one term!
     , _dbVoteDuration        :: DurationDays
     , _dbSchoolQuorum        :: Percent
     , _dbClassQuorum         :: Percent  -- (there is only one quorum for all classes, see gh#318)
@@ -448,7 +448,7 @@ instance FromProto Topic where
         , _topicDesc      = t ^. protoTopicDesc
         , _topicImage     = t ^. protoTopicImage
         , _topicIdeaSpace = t ^. protoTopicIdeaSpace
-        , _topicPhase     = PhaseRefinement
+        , _topicPhase     = PhaseRefinement $ t ^. protoTopicRefinDays
         }
 
 instance FromProto Delegation where

@@ -19,7 +19,7 @@ import Types hiding (Comment)
 data PhaseChange
     = RefinementPhaseTimeOut
     | RefinementPhaseMarkedByModerator
-    | AllIdeasAreMarked
+    | AllIdeasAreMarked Timestamp
     | VotingPhaseTimeOut
   deriving (Eq, Show)
 
@@ -31,11 +31,15 @@ data PhaseAction
 
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans PhaseRefinement RefinementPhaseTimeOut           = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseRefinement RefinementPhaseMarkedByModerator = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseJury       AllIdeasAreMarked                = Just (PhaseVoting, [])
-phaseTrans PhaseVoting     VotingPhaseTimeOut               = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans _               _                                = Nothing
+phaseTrans (PhaseRefinement _) RefinementPhaseTimeOut
+    = Just (PhaseJury, [JuryPhasePrincipalEmail])
+phaseTrans (PhaseRefinement _) RefinementPhaseMarkedByModerator
+    = Just (PhaseJury, [JuryPhasePrincipalEmail])
+phaseTrans PhaseJury (AllIdeasAreMarked newPhaseDuration)
+    = Just (PhaseVoting newPhaseDuration, [])
+phaseTrans (PhaseVoting _) VotingPhaseTimeOut
+    = Just (PhaseResult, [ResultPhaseModeratorEmail])
+phaseTrans _ _ = Nothing
 
 
 -- * Idea Capabilities
@@ -61,10 +65,10 @@ type IdeaCapabilities = Set IdeaCapability
 ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> IdeaCapabilities
 ideaCapabilities _ i Nothing  r = wildIdeaCap i r
 ideaCapabilities u i (Just p) r = case p of
-    PhaseRefinement -> phaseRefinementCap i r
-    PhaseJury       -> phaseJuryCap i r
-    PhaseVoting     -> phaseVotingCap i r
-    PhaseResult     -> phaseResultCap u i r
+    PhaseRefinement _ -> phaseRefinementCap i r
+    PhaseJury         -> phaseJuryCap i r
+    PhaseVoting     _ -> phaseVotingCap i r
+    PhaseResult       -> phaseResultCap u i r
 
 wildIdeaCap :: Idea -> Role -> IdeaCapabilities
 wildIdeaCap _i = Set.fromList . \case

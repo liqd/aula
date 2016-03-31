@@ -1,5 +1,7 @@
 {-# LANGUAGE ViewPatterns     #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 module Persistent.Idiom
 where
 
@@ -42,3 +44,9 @@ quorum :: PersistM m => Idea -> m Percent
 quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
     SchoolSpace  -> getDb dbSchoolQuorum
     ClassSpace _ -> getDb dbClassQuorum
+
+phaseEndRefinement :: PersistM m => m Timestamp
+phaseEndRefinement = do
+    timestamp <- getCurrentTimestamp
+    _days      <- getDb dbElaborationDuration
+    return timestamp  -- TODO
