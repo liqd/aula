@@ -65,7 +65,7 @@ import Persistent
 import Types
 
 import qualified Frontend.Path as P
-import qualified Persistent.Implementation
+import qualified Persistent.Implementation.STM
 
 
 -- | FIXME: push this upstream to basic-sop.
@@ -766,7 +766,7 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
-    let action :: Action Persistent.Implementation.Persist DelegationNetwork
+    let action :: Action Persistent.Implementation.STM.Persist DelegationNetwork
         action = do
             admin <- persistent . addFirstUser $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
@@ -775,7 +775,9 @@ fishDelegationNetworkIO = do
             fishDelegationNetworkAction
 
     cfg <- Config.getConfig Config.DontWarnMissing
-    (persist, closePersist) <- Persistent.Implementation.mkRunPersist
+    -- We use @Persistent.Implementation.STM@ here to make sure it doesn't rust.
+    -- In either case, it does have to be done in memory, so as not to corrupt the on-disk DB.
+    (persist, closePersist) <- Persistent.Implementation.STM.mkRunPersistInMemory
     v :: Either ServantErr DelegationNetwork
             <- runExceptT (unNat (mkRunAction (ActionEnv persist cfg)) action)
                 `finally` closePersist
