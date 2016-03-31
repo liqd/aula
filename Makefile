@@ -28,7 +28,7 @@ sensei: .phony aula.unregister
 	$(EXEC) sensei $(AULA_SOURCES) tests/Spec.hs $(SENSEI_ARGS)
 
 stories: .phony aula.unregister
-	$(EXEC) sensei $(AULA_SOURCES) tests/AulaTests/Stories.hs $(SENSEI_ARGS)
+	$(EXEC) sensei $(AULA_SOURCES) tests/AulaTests/StoriesSpec.hs $(SENSEI_ARGS)
 
 # aware of aula and thentos sources
 sensei-full: .phony unregister-full

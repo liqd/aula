@@ -7,7 +7,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
-module AulaTests.Stories where
+module AulaTests.StoriesSpec where
 
 import Prelude hiding ((.), id)
 import Control.Category
