@@ -36,8 +36,11 @@ mkEmpty = mkRunPersistInMemory
 
 runP :: (m ~ IO, MonadIO m) => (Persist :~> ExceptT PersistExcept m, m ()) -> Persist a -> m a
 runP (persist, persistClose) m = -- (`liftIO $` here, and remove the `m ~ IO`, `-XGADTs` above?)
-    (runExceptT (unNat persist m) >>= either (throwIO . ErrorCall . show) pure)
-        `finally` persistClose
+    runP' persist m `finally` persistClose
+
+runP' :: (m ~ IO, MonadIO m) => (Persist :~> ExceptT PersistExcept m) -> Persist a -> m a
+runP' persist m =
+    runExceptT (unNat persist m) >>= either (throwIO . ErrorCall . show) pure
 
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
 getDbSpec name getXs = do
@@ -60,12 +63,13 @@ addDbSpecProp :: (Foldable f, Arbitrary proto)
 addDbSpecProp name getXs addX propX =
     describe name $ do
         let t :: SpecWith (Persist :~> ExceptT PersistExcept IO, IO ())
-            t = it "adds one" $ \rp -> do
-                    before' <- liftIO $ length <$> runP rp getXs
+            t = it "adds one" $ \(rp, rpClose) -> do
+                    before' <- liftIO $ length <$> runP' rp getXs
                     p <- liftIO $ generate arbitrary
-                    r <- liftIO . runP rp $ addX (frameUserHack, p)
-                    after' <- liftIO $ length <$> runP rp getXs
+                    r <- liftIO . runP' rp $ addX (frameUserHack, p)
+                    after' <- liftIO $ length <$> runP' rp getXs
                     after' `shouldBe` before' + 1
+                    rpClose
                     propX p r
 
         context "on empty database" . before mkEmpty $ t
@@ -158,12 +162,13 @@ spec = do
     describe "addIdeaSpace" $ do
         let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> ExceptT PersistExcept IO, IO ())
             test upd ispace = do
-                it ("can add " <> showIdeaSpace ispace) $ \rp -> do
-                    let getL = liftIO . runP rp $ getSpaces
-                        addS = liftIO . runP rp $ addIdeaSpaceIfNotExists ispace
+                it ("can add " <> showIdeaSpace ispace) $ \(rp, rpClose) -> do
+                    let getL = liftIO . runP' rp $ getSpaces
+                        addS = liftIO . runP' rp $ addIdeaSpaceIfNotExists ispace
                     bef <- getL
                     addS
                     aft <- getL
+                    rpClose
                     upd (length bef) `shouldBe` length aft
                     (ispace `elem` aft) `shouldBe` True
 
