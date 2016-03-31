@@ -299,6 +299,9 @@ test-suite spec
   other-modules:
       AllModulesSpec
       AulaTests
+      AulaTests.Stories
+      AulaTests.Stories.DSL
+      AulaTests.Stories.Interpreter.Action
       BackendSpec
       Frontend.CoreSpec
       Frontend.Page.FileUploadSpec

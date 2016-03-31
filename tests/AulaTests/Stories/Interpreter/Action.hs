@@ -5,14 +5,19 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 {-# OPTIONS_GHC #-}
 
 module AulaTests.Stories.Interpreter.Action where
 
+import Control.Lens
+import Control.Monad (join, unless)
 import Control.Monad.Free
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except
+import Control.Monad.Trans.State
 import Data.List
 import Data.String
 import Data.String.Conversions
@@ -42,27 +47,51 @@ runLog (Free (Logout k))            = print "logged out"                      >>
 runLog (Free (SelectIdeaSpace s k)) = print ("select idea space: " <> show s) >> runLog k
 runLog (Free (CreateIdea pi k))     = print ("create idea: " <> show pi)      >> runLog k
 
+-- | Client state stores information about the assumptions
+-- of the state of server states, it is also can be used
+-- to simulate web clients state.
+data ClientState = ClientState {
+      _csIdeaSpace :: Maybe IdeaSpace
+    , _csUser      :: Maybe User
+    }
+  deriving (Eq, Show)
+
+initialClientState = ClientState Nothing Nothing
+
+makeLenses ''ClientState
+
 run :: (ActionM r m) => Behavior a -> m a
-run (Pure r) = pure r
+run = flip evalStateT initialClientState . runClient
 
-run (Free (Login l k)) = do
-    Just u <- persistent $ findUserByLogin l
-    Action.login u
-    u' <- currentUser
-    assert (u, u') (u == u')
-    run k
+-- FIXME: Check pre and post conditions
+runClient :: (ActionM r m) => Behavior a -> StateT ClientState m a
+runClient (Pure r) = pure r
 
-run (Free (Logout k)) = do
-    Action.logout >> run k
+runClient (Free (Login l k)) = do
+    join . lift $ do
+        Just u <- persistent $ findUserByLogin l
+        Action.login (u ^. _Id)
+        u' <- currentUser
+        assert (u, u') (u == u')
+        return $ csUser .= Just u'
+    runClient k
 
-run (Free (SelectIdeaSpace s k)) = do
+runClient (Free (Logout k)) = do
+    lift $ do
+        Action.logout
+    runClient k
+
+runClient (Free (SelectIdeaSpace s k)) = do
     let (Right i :: Either String IdeaSpace) = parseIdeaSpace s
-    persistent $ addIdeaSpaceIfNotExists i
-    run k
+    found <- fmap (elem i) . lift $ persistent getSpaces
+    unless found . error $ "No idea space is found" ++ cs s
+    csIdeaSpace .= Just i
+    runClient k
 
-run (Free (CreateIdea pi k)) = do
-    Action.currentUserAddDb Persistent.addIdea pi
-    run k
+runClient (Free (CreateIdea pi k)) = do
+    lift $ do
+        Action.currentUserAddDb Persistent.addIdea pi
+    runClient k
 
 
 -- * helpers

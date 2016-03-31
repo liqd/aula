@@ -44,22 +44,21 @@ import AulaTests.Stories.Interpreter.Action
 
 spec :: Spec
 spec = describe "stories" $ it "works" $ do
-    liftIO $ do
-        print "---------------------------"
-        runAction program
-        print "---------------------------"
+    liftIO $ runAction program
     True `shouldBe` True
+
 
 
 runAction :: Behavior a -> IO a
 runAction program = do
+    config <- Config.getConfig DontWarnMissing
     persist <- Persistent.Implementation.STM.mkRunPersist
 
     let runAction :: Action Persistent.Implementation.STM.Persist :~> IO
-        runAction = Nat (fmap (either (error . show) id) . runExceptT)
-                  . mkRunAction (Action.ActionEnv persist Config.devel)
+        runAction = exceptToFail
+                  . mkRunAction (Action.ActionEnv persist config)
 
-    unNat persist genInitialTestDb
+    unNat (exceptToFail . persist) genInitialTestDb
     unNat runAction $ AulaTests.Stories.Interpreter.Action.run program
 
 
@@ -69,3 +68,6 @@ program = do
     selectIdeaSpace "school"
     createIdea (ProtoIdea "title" (Markdown "desc") CatRule (IdeaLocationSpace SchoolSpace))
     logout
+
+exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
+exceptToFail = Nat (fmap (either (error . show) id) . runExceptT)

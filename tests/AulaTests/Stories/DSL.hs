@@ -59,11 +59,3 @@ selectIdeaSpace n = liftF $ SelectIdeaSpace n ()
 
 createIdea :: ProtoIdea -> Behavior ()
 createIdea pi = liftF $ CreateIdea pi ()
-
-
--- * helpers
-
--- this function can (1) make writing down simple programs more convenient; (2) make implicit things
--- happen in the background, like collecting all the values occurring in binds.
-stepsToBehavior :: [Step ()] -> Behavior ()
-stepsToBehavior = _
