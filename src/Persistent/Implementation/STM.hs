@@ -38,6 +38,7 @@ instance GenArbitrary Persist where
 
 mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkRunPersist = do
+    putStrLn "persistence: stm"  -- FIXME: use logger for this
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = ExceptT $ runExceptT c `runReaderT` tvar
     return (Nat run, return ())

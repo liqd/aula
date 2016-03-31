@@ -51,10 +51,14 @@ mkRunPersistGeneric openState closeState = do
   return (rp, closeState db)
 
 mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersist = mkRunPersistGeneric openLocalState createCheckpointAndClose
+mkRunPersist = do
+    putStrLn "persistence: acid-state (disk)"  -- FIXME: use logger for this
+    mkRunPersistGeneric openLocalState createCheckpointAndClose
 
 mkRunPersistInMemory :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersistInMemory = mkRunPersistGeneric openMemoryState closeAcidState
+mkRunPersistInMemory = do
+    putStrLn "persistence: acid-state (memory)"  -- FIXME: use logger for this
+    mkRunPersistGeneric openMemoryState closeAcidState
 
 instance MonadIO Persist where
     liftIO = persistIO
