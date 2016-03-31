@@ -9,8 +9,8 @@ module Persistent.Implementation
     )
 where
 
-#ifdef PERSISTENT_STM
-import Persistent.Implementation.STM
-#else
+#ifdef PERSISTENT_ACID_STATE
 import Persistent.Implementation.AcidState
+#else
+import Persistent.Implementation.STM
 #endif

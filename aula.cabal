@@ -20,10 +20,10 @@ source-repository head
   type: git
   location: https://github.com/liqd/aula
 
-flag stm
+flag acid-state
   description: use the STM implementation of Persistent
   manual: True
-  default: True
+  default: False
 
 library
   hs-source-dirs:
@@ -75,8 +75,8 @@ library
     , wai-app-static
     , warp
     , yaml
-  if flag(stm)
-    cpp-options: -DPERSISTENT_STM
+  if flag(acid-state)
+    cpp-options: -DPERSISTENT_ACID_STATE
   exposed-modules:
       Action
       Action.Dummy

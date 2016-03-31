@@ -14,9 +14,9 @@ github:      liqd/aula
 category:    Web
 
 flags:
-    stm:
+    acid-state:
         description:  use the STM implementation of Persistent
-        default:      True
+        default:      False
         manual:       True
 
 ghc-options: -Wall
@@ -73,8 +73,8 @@ library:
   other-modules:
     - Paths_aula
   when:
-    condition: flag(stm)
-    cpp-options: -DPERSISTENT_STM
+    condition: flag(acid-state)
+    cpp-options: -DPERSISTENT_ACID_STATE
 
 executables:
   aula-server:
