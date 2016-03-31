@@ -63,7 +63,7 @@ runClient (Free (Logout k)) = do
 runClient (Free (SelectIdeaSpace s k)) = do
     let (Right i :: Either String IdeaSpace) = parseIdeaSpace s
     found <- fmap (elem i) . lift $ persistent getSpaces
-    unless found . error $ "No idea space is found" ++ cs s
+    unless found . error $ "No idea space is found" <> cs s
     csIdeaSpace .= Just i
     runClient k
 
