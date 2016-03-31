@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-{-# OPTIONS_GHC -Wall -Wwarn #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.Implementation
     ( Persist
