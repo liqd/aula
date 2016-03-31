@@ -13,7 +13,7 @@ module Action
     , ActionUserHandler(login, logout, userState)
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), persistNat, persistentClose, config
+    , ActionEnv(..), persistNat, config
 
       -- * user handling
     , loginByUser, loginByName
@@ -71,7 +71,6 @@ userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv r = ActionEnv
     { _persistNat :: r :~> IO
-    , _persistentClose :: IO ()
     , _config     :: Config
     }
 

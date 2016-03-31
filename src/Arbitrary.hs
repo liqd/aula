@@ -31,6 +31,7 @@ module Arbitrary
     ) where
 
 import Control.Applicative ((<**>))
+import Control.Exception (finally)
 import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
@@ -765,13 +766,15 @@ fishDelegationNetworkIO = do
 
     -- Making sure @Persistent.Implementation.STM@ doesn't rust.
     (persist@(Nat pr), pClose) <- Persistent.Implementation.STM.mkRunPersistInMemory
-    admin <- pr . addFirstUser $ ProtoUser
-        (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-        Admin (Just (UserPassInitial "admin")) Nothing
+    let fish = do
+            admin <- pr . addFirstUser $ ProtoUser
+               (Just "admin") (UserFirstName "admin") (UserLastName "admin")
+                Admin (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction $ ActionEnv persist pClose cfg
-    either (error . ppShow) id <$> runExceptT
-        (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
+            let (Nat ac) = mkRunAction $ ActionEnv persist cfg
+            either (error . ppShow) id <$> runExceptT
+                (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
+    fish `finally` pClose
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

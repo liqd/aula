@@ -11,7 +11,7 @@ module Action.Implementation
     )
 where
 
-import Control.Exception (SomeException(SomeException), catch, finally)
+import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class
@@ -80,12 +80,9 @@ instance ActionTempCsvFiles (Action r) where
 mkRunAction :: PersistM r => ActionEnv r -> Action r :~> ExceptT ServantErr IO
 mkRunAction env = Nat run
   where
-    run = withExceptT unActionExcept . ExceptT . pClose . fmap (view _1)
-        . runRWSTflip env userLoggedOut
+    run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
         . runExceptT . unAction . (checkCurrentUser >>)
     runRWSTflip r s comp = runRWST comp r s
-    pClose :: IO a -> IO a
-    pClose = (`finally` view persistentClose env)
 
     checkCurrentUser = do
         isValid <- userState $ to validUserState

@@ -12,6 +12,7 @@
 module Frontend
 where
 
+import Control.Exception (finally)
 import Control.Monad.Trans.Except
 import Lucid hiding (href_)
 import Network.HTTP.Types
@@ -63,30 +64,27 @@ runFrontend cfg = do
     -- But @mkRunPersistInMemory@ is also wrong, because in production
     -- we want to save DB to files.
     -- We should probably parameterize @runFrontend@ by @mkRunPersist@.
-    --
-    -- But even @mkRunPersistInMemory@ fails, because acid-state
-    -- is initialized only at @mkRunPersistInMemory!, but @pClose@
-    -- is called at each @mkRunAction@, which is probably once per request.
-    -- We have to decide how often to close the DB files.
     (persist, pClose) <- Persistent.Implementation.mkRunPersistInMemory
     let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv persist pClose cfg)
+        runAction = mkRunAction (ActionEnv persist cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
-    -- Initial DB written here, before @runAction@ closes the files.
-    unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+        runService = do
+            app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
+                runAction aulaActions
 
-    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
-            runAction aulaActions
+            unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
-    when (cfg ^. generateDemoData) $ do
-        demoDataGen <- mkUniverse
-        unNat persist demoDataGen
+            when (cfg ^. generateDemoData) $ do
+                demoDataGen <- mkUniverse
+                unNat persist demoDataGen
 
-    -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+            -- Note that no user is being logged in anywhere here.
+            runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+
+    runService `finally` pClose
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)

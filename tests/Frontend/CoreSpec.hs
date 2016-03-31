@@ -10,6 +10,7 @@
 module Frontend.CoreSpec where
 
 import Control.Arrow((&&&))
+import Control.Exception (finally)
 import Control.Monad.Trans.Except
 import Data.List
 import Data.String.Conversions
@@ -218,14 +219,15 @@ renderForm (F g) =
 -- infect other code, so they are left alone for now, though in the long run,
 -- abstraction would improve test code as well (separation of concerns
 -- via abstraction).
-runAction :: Config -> Action Persistent.Implementation.Persist a -> ExceptT ServantErr IO a
-runAction cfg action = do (rp, pClose) <- liftIO Persistent.Implementation.mkRunPersistInMemory
-                          unNat (mkRunAction (ActionEnv rp pClose cfg)) action
+runAction :: Config -> Action Persistent.Implementation.Persist a -> IO (ExceptT ServantErr IO a, IO ())
+runAction cfg action = do (rp, pClose) <- Persistent.Implementation.mkRunPersistInMemory
+                          return (unNat (mkRunAction (ActionEnv rp cfg)) action, pClose)
 
 failOnError :: Action Persistent.Implementation.Persist a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
-    fmap (either (error . show) id) . runExceptT $ runAction cfg pers
+    (runA, pClose) <- runAction cfg pers
+    (fmap (either (error . show) id) . runExceptT $ runA) `finally` pClose
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
