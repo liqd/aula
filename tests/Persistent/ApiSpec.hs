@@ -22,6 +22,7 @@ import Persistent.Implementation
 import CreateRandom
 import Types
 
+-- FIXME: use @withPersist@ (instead of @before/it@?)
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: IO (Persist :~> ExceptT PersistExcept IO, IO ())

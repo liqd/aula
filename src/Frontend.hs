@@ -12,7 +12,6 @@
 module Frontend
 where
 
-import Control.Exception (finally)
 import Control.Monad.Trans.Except
 import Lucid hiding (href_)
 import Network.HTTP.Types
@@ -59,39 +58,34 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-  rp <- Persistent.Implementation.mkRunPersist  -- initialization happens here
-  runFrontendGeneric rp cfg
+    withPersist Persistent.Implementation.mkRunPersist
+                (runFrontendGeneric cfg)
 
 -- | Run the frontend with the given persitence implementation
 -- (e.g., in-memory or on-disk) and config.
---
--- The contract is that persistence have been initialized before entering
--- @runFrontendGeneric@. It's closed via pClose inside @runFrontendGeneric@.
-runFrontendGeneric :: (Persistent.Implementation.Persist :~> ExceptT PersistExcept IO, IO ())
-                   -> Config
+runFrontendGeneric :: Config
+                   -> (Persistent.Implementation.Persist :~> ExceptT PersistExcept IO)
                    -> IO ()
-runFrontendGeneric (persist, pClose) cfg = do
+runFrontendGeneric cfg rp = do
     let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv persist cfg)
+        runAction = mkRunAction (ActionEnv rp cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
-        runService = do
-            app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
-                runAction aulaActions
+    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
+        runAction aulaActions
 
-            Right _ <- runExceptT $ unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+    Right _ <- runExceptT $ unNat rp genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
-            when (cfg ^. generateDemoData) $ do  -- FIXME: move to non-production code.
-                demoDataGen <- mkUniverse
-                Right _ <- runExceptT $ unNat persist demoDataGen
-                return ()
+    when (cfg ^. generateDemoData) $ do  -- FIXME: move to non-production code.
+        demoDataGen <- mkUniverse
+        Right _ <- runExceptT $ unNat rp demoDataGen
+        return ()
 
-            -- Note that no user is being logged in anywhere here.
-            runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+    -- Note that no user is being logged in anywhere here.
+    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
 
-    runService `finally` pClose
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)

@@ -85,8 +85,8 @@ mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
 
 runFrontendSafeFork :: Config -> IO ThreadId
 runFrontendSafeFork cfg = do
-    rp <- Persistent.Implementation.mkRunPersistInMemory  -- initialization happens here
-    threadId <- forkIO $ runFrontendGeneric rp cfg
+    threadId <- forkIO $ withPersist Persistent.Implementation.mkRunPersistInMemory
+                                     (runFrontendGeneric cfg)
     let loop = catch
           (Network.Wreq.get $ mkServerUri cfg "/")
           (\(_ :: HttpException) -> threadDelay 4900 >> loop)

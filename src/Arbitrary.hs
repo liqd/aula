@@ -31,7 +31,7 @@ module Arbitrary
     ) where
 
 import Control.Applicative ((<**>))
-import Control.Exception (ErrorCall(ErrorCall), throwIO, finally)
+import Control.Exception (ErrorCall(ErrorCall), throwIO)
 import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
@@ -777,11 +777,13 @@ fishDelegationNetworkIO = do
     cfg <- Config.getConfig Config.DontWarnMissing
     -- We use @Persistent.Implementation.STM@ here to make sure it doesn't rust.
     -- In either case, it does have to be done in memory, so as not to corrupt the on-disk DB.
-    (persist, closePersist) <- Persistent.Implementation.STM.mkRunPersistInMemory
-    v :: Either ServantErr DelegationNetwork
-            <- runExceptT (unNat (mkRunAction (ActionEnv persist cfg)) action)
-                `finally` closePersist
-    either (throwIO . ErrorCall . ppShow) pure v
+    withPersist
+        Persistent.Implementation.STM.mkRunPersistInMemory
+        (\rp -> do
+            v :: Either ServantErr DelegationNetwork
+                <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
+            either (throwIO . ErrorCall . ppShow) pure v
+        )
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

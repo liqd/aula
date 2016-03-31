@@ -17,6 +17,7 @@ module Persistent.Api
     , AulaGetter
     , AulaSetter
     , PersistExcept(PersistExcept, unPersistExcept)
+    , withPersist
 
     , AulaData
     , emptyAulaData
@@ -85,6 +86,7 @@ module Persistent.Api
     )
 where
 
+import Control.Exception (finally)
 import Control.Lens
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad (unless, replicateM, when)
@@ -161,6 +163,12 @@ getCurrentTimestampIO = Timestamp <$> getCurrentTime
 
 mkRandomPasswordIO :: IO UserPass
 mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+
+withPersist :: IO (rp, IO ()) -> (rp -> IO a) -> IO a
+withPersist mkRunP m = do
+    (rp, rpClose) <- mkRunP  -- initialization happens here
+    m rp `finally` rpClose  -- closing happens here
 
 
 -- | The argument is a consistency check that will throw an error if it fails.
