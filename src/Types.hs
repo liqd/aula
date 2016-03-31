@@ -60,6 +60,8 @@ lowerFirst (x:xs) = toLower x : xs
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
 
+-- | Percentage values from 0 to 100, used in quorum computations.
+type Percent = Int
 
 -- * prototypes for types
 
@@ -92,7 +94,6 @@ data Idea = Idea
     , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Comments
     , _ideaLikes      :: IdeaLikes
-    , _ideaQuorumOk   :: Bool  -- ^ number of likes / number of voters >= gobally configured quorum.
     , _ideaVotes      :: IdeaVotes
     , _ideaResult     :: Maybe IdeaResult
     }
@@ -167,8 +168,9 @@ data IdeaResult = IdeaResult
 instance SOP.Generic IdeaResult
 
 data IdeaResultValue
-    = NotFeasible { _ideaResultReason :: Document }
-    | Winning
+    = NotFeasible { _ideaResultNotFeasibleReason :: Document }
+    | Feasible    { _ideaResultFeasibleReason    :: Maybe Document }
+    | Winning     { _ideaResultCreatorStatement  :: Maybe Document }
     | NotEnoughVotes
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -276,7 +278,6 @@ data Phase =
   | PhaseJury          -- ^ 3. "Prüfungsphase"
   | PhaseVoting        -- ^ 4. "Abstimmungsphase"
   | PhaseResult        -- ^ 5. "Ergebnisphase"
-  | PhaseFinished      -- ^ 6. "Beendet"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 instance SOP.Generic Phase
@@ -287,7 +288,6 @@ phaseName = \case
     PhaseJury       -> "Prüfungsphase"
     PhaseVoting     -> "Abstimmungsphase"
     PhaseResult     -> "Ergebnisphase"
-    PhaseFinished   -> "Beendet"
 
 
 -- * user

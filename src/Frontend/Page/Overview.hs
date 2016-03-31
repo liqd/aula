@@ -144,7 +144,6 @@ instance ToHtml PageIdeasInDiscussion where
                                       PhaseResult        -> "theme_ergf.png"
                                       PhaseVoting        -> "theme_abs.png"
                                       PhaseRefinement    -> "theme_aus.png"
-                                      PhaseFinished      -> "theme_fin.png"  -- FIXME: png file missing
                                  , class_ "theme-grid-item-image"
                                  ]
                             div_ [class_ "theme-grid-item-text"] $ do

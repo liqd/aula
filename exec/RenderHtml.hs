@@ -50,7 +50,6 @@ pages f =
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseJury))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseVoting))
     , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseResult))
-    , f (Proxy :: Proxy (ToHtmlDefault ViewIdea_PhaseFinished))
     , f (Proxy :: Proxy (ToHtmlForm    CreateIdea))
     , f (Proxy :: Proxy (ToHtmlForm    EditIdea))
     , f (Proxy :: Proxy (ToHtmlDefault PageUserProfileCreatedIdeas))
@@ -129,6 +128,7 @@ instance (ToHtml p) => ToHtml' (ToHtmlSpecial p) where
 instance Arbitrary (ToHtmlSpecial ViewIdea) where
     arbitrary = ToHtmlSpecial <$> (ViewIdea <$> i <*> p)
       where
+        i :: Gen Idea
         i = Idea <$> arb
                  <*> arbPhrase
                  <*> arb
@@ -136,7 +136,6 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                  <*> arb
                  <*> (aMapFromList <$> vectorOf 5 arb)  -- comments
                  <*> (aMapFromList <$> vectorOf 5 arb)  -- likes
-                 <*> arb
                  <*> pure nil  -- votes
                  <*> pure Nothing
         -- FIXME: how do we generate one page per phase here?
@@ -198,9 +197,6 @@ newtype ViewIdea_PhaseVoting = ViewIdea_PhaseVoting Idea
 newtype ViewIdea_PhaseResult = ViewIdea_PhaseResult Idea
   deriving (Eq, Ord, Show, Read)
 
-newtype ViewIdea_PhaseFinished = ViewIdea_PhaseFinished Idea
-  deriving (Eq, Ord, Show, Read)
-
 
 instance ToHtml ViewIdea_PhaseNone where
     toHtmlRaw = toHtml
@@ -222,10 +218,6 @@ instance ToHtml ViewIdea_PhaseResult where
     toHtmlRaw = toHtml
     toHtml (ViewIdea_PhaseResult idea) = toHtml $ ViewIdea idea (Just PhaseResult)
 
-instance ToHtml ViewIdea_PhaseFinished where
-    toHtmlRaw = toHtml
-    toHtml (ViewIdea_PhaseFinished idea) = toHtml $ ViewIdea idea (Just PhaseFinished)
-
 
 instance Arbitrary ViewIdea_PhaseNone where
     arbitrary = ViewIdea_PhaseNone <$> pure constantSampleIdea
@@ -241,9 +233,6 @@ instance Arbitrary ViewIdea_PhaseVoting where
 
 instance Arbitrary ViewIdea_PhaseResult where
     arbitrary = ViewIdea_PhaseResult <$> pure constantSampleIdea
-
-instance Arbitrary ViewIdea_PhaseFinished where
-    arbitrary = ViewIdea_PhaseFinished <$> pure constantSampleIdea
 
 
 instance Page ViewIdea_PhaseNone where
@@ -267,11 +256,6 @@ instance Page ViewIdea_PhaseVoting where
     extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
 
 instance Page ViewIdea_PhaseResult where
-    isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
-    extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
-    extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing
-
-instance Page ViewIdea_PhaseFinished where
     isPrivatePage    _ = isPrivatePage    $ ViewIdea undefined Nothing
     extraPageHeaders _ = extraPageHeaders $ ViewIdea undefined Nothing
     extraBodyClasses _ = extraBodyClasses $ ViewIdea undefined Nothing

@@ -948,7 +948,6 @@ constantSampleIdea = Idea
                     }
               }
           ]
-    , _ideaQuorumOk = True
     , _ideaVotes = nil
     , _ideaResult =
         Just
@@ -963,7 +962,7 @@ constantSampleIdea = Idea
                   , _metaChangedBy = AUID 0
                   , _metaChangedAt = constantSampleTimestamp
                   }
-            , _ideaResultValue = Winning
+            , _ideaResultValue = Winning Nothing
             }
     }
 
