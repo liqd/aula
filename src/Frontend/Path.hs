@@ -13,8 +13,8 @@ module Frontend.Path
     , AdminPs(..)
     , IdeaMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
-    , likeIdea, voteIdea, voteCommentIdea, voteCommentIdeaReply, isPostOnly
-    , isBroken
+    , likeIdea, voteIdea, voteCommentIdea, voteCommentIdeaReply, voteCommentWithContext
+    , replyCommentIdea, commentOrReplyIdea, isPostOnly, isBroken
     )
 where
 
@@ -25,7 +25,8 @@ import Data.UriPath
 import qualified Generics.SOP as SOP
 
 import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
-             , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment)
+             , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
+             , CommentContext(..))
 
 data Top =
     Top
@@ -128,6 +129,15 @@ voteIdea idea = IdeaPath (idea ^. ideaLocation) . VoteIdea (idea ^. _Id)
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
+replyCommentIdea :: Idea -> Comment -> Main
+replyCommentIdea idea comment =
+    IdeaPath (idea ^. ideaLocation) $ ReplyCommentIdea (idea ^. _Id) (comment ^. _Id)
+
+commentOrReplyIdea :: Idea -> Maybe Comment -> Main
+commentOrReplyIdea idea = \case
+    Nothing      -> commentIdea idea
+    Just comment -> replyCommentIdea idea comment
+
 voteCommentIdea :: Idea -> Comment -> UpDown -> Main
 voteCommentIdea idea comment =
     IdeaPath (idea ^. ideaLocation) . VoteCommentIdea (idea ^. _Id) (comment ^. _Id)
@@ -136,6 +146,12 @@ voteCommentIdeaReply :: Idea -> Comment -> Comment -> UpDown -> Main
 voteCommentIdeaReply idea comment reply =
     IdeaPath (idea ^. ideaLocation) .
     VoteCommentIdeaReply (idea ^. _Id) (comment ^. _Id) (reply ^. _Id)
+
+voteCommentWithContext :: CommentContext -> Comment -> UpDown -> Main
+voteCommentWithContext (CommentContext idea mcomment) =
+    case mcomment of
+        Nothing      -> voteCommentIdea idea
+        Just comment -> voteCommentIdeaReply idea comment
 
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
@@ -154,6 +170,8 @@ ideaMode (LikeIdea i)                   root = root </> "idea" </> uriPart i </>
 ideaMode (VoteIdea i v)                 root = root </> "idea" </> uriPart i </> "vote"
                                                     </> uriPart v
 ideaMode (CommentIdea i)                root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (ReplyCommentIdea i c)         root = root </> "idea" </> uriPart i </> "comment"
+                                                    </> uriPart c </> "reply"
 ideaMode (VoteCommentIdea i c v)        root = root </> "idea" </> uriPart i </> "comment"
                                                     </> uriPart c </> "vote" </> uriPart v
 ideaMode (VoteCommentIdeaReply i c r v) root = root </> "idea" </> uriPart i </> "comment"
@@ -220,6 +238,7 @@ data IdeaMode =
     | LikeIdea (AUID Idea)
     | VoteIdea (AUID Idea) IdeaVoteValue
     | CommentIdea (AUID Idea)
+    | ReplyCommentIdea (AUID Idea) (AUID Comment)
     | VoteCommentIdea (AUID Idea) (AUID Comment) UpDown
     | VoteCommentIdeaReply (AUID Idea) (AUID Comment) (AUID Comment) UpDown
   deriving (Eq, Ord, Show, Read, Generic)

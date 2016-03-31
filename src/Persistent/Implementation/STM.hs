@@ -9,6 +9,7 @@
 module Persistent.Implementation.STM
     ( Persist
     , mkRunPersist
+    , mkRunPersistInMemory
     )
 where
 
@@ -35,11 +36,15 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
-mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO)
+mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkRunPersist = do
+    putStrLn "persistence: stm"  -- FIXME: use logger for this
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = ExceptT $ runExceptT c `runReaderT` tvar
-    return $ Nat run
+    return (Nat run, return ())
+
+mkRunPersistInMemory :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
+mkRunPersistInMemory = mkRunPersist
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $

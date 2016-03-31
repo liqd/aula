@@ -20,32 +20,36 @@ where
 
 import Types
 import Frontend.Prelude
+import qualified Frontend.Path as U
 
-
-data CommentWidget = CommentWidget Comment
+data CommentWidget = CommentWidget Idea Comment
   deriving (Eq, Show, Read)
 
 instance ToHtml CommentWidget where
     toHtmlRaw = toHtml
-    toHtml p@(CommentWidget comment) = semanticDiv p $ do
+    toHtml p@(CommentWidget idea comment) = semanticDiv p $ do
         div_ [class_ "comment"] $ do
-            commentToHtml comment
+            commentToHtml (CommentContext idea Nothing) comment
+            let context = CommentContext idea (Just comment)
             div_ [class_ "comment-replies"] . for_ (comment ^. commentReplies) $
-                div_ [class_ "comment-reply"] . commentToHtml
+                div_ [class_ "comment-reply"] . commentToHtml context
 
-commentToHtml :: Monad m => Comment -> HtmlT m ()
-commentToHtml comment = div_ $ do
+commentToHtml :: Monad m => CommentContext -> Comment -> HtmlT m ()
+commentToHtml context comment = div_ $ do
     hr_ []  -- FIXME: comments melt into each other without this.  should be fixed in css.
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
-        comment ^. commentVotes . to VotesWidget . html
+        VotesWidget context comment ^. html
     div_ [class_ "comments-body"] $ do
         comment ^. commentText . html
     footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
-            button_ [class_ "btn comment-footer-button"] $ do
+            button_ [class_ "btn comment-footer-button", onclick_ $ U.replyCommentIdea idea parent] $ do
                 i_ [class_ "icon-reply"] nil
                 "antworten"
             button_ [class_ "btn comment-footer-button"] $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
+  where
+    idea = context ^. parentIdea
+    parent = fromMaybe comment $ context ^. parentComment

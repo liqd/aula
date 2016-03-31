@@ -48,7 +48,7 @@ import Types
 import qualified Action
 import qualified Backend
 import qualified Frontend.Path as U
-import qualified Persistent.Implementation.STM
+import qualified Persistent.Implementation
 
 
 -- * driver
@@ -58,25 +58,34 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    persist <- Persistent.Implementation.STM.mkRunPersist
-    let runAction :: Action Persistent.Implementation.STM.Persist :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv persist cfg)
+    withPersist Persistent.Implementation.mkRunPersist
+                (runFrontendGeneric cfg)
+
+-- | Run the frontend with the given persitence implementation
+-- (e.g., in-memory or on-disk) and config.
+runFrontendGeneric :: Config
+                   -> (Persistent.Implementation.Persist :~> ExceptT PersistExcept IO)
+                   -> IO ()
+runFrontendGeneric cfg rp = do
+    let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
+        runAction = mkRunAction (ActionEnv rp cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
-            runAction aulaActions
+        runAction aulaActions
 
-    Right _ <- runExceptT $ unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+    Right _ <- runExceptT $ unNat rp genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
-    when (cfg ^. generateDemoData) $ do
+    when (cfg ^. generateDemoData) $ do  -- FIXME: move to non-production code.
         demoDataGen <- mkUniverse
-        Right _ <- runExceptT $ unNat persist demoDataGen
+        Right _ <- runExceptT $ unNat rp demoDataGen
         return ()
 
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+
   where
     settings = setHost (fromString $ cfg ^. listenerInterface)
              . setPort (cfg ^. listenerPort)
@@ -192,6 +201,9 @@ type AulaSpace =
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
        -- comment on an idea
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> FormHandlerT CommentIdea Idea
+       -- reply on a comment
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
+                                            :> "reply"   :> FormHandlerT CommentIdea Idea
        -- vote on a comment
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
                                             :> "vote"    :> Capture "vote" UpDown :> PostH
@@ -219,6 +231,9 @@ type AulaSpace =
                :> "comment" :> FormHandler CommentIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
                :> "comment" :> Capture "comment" (AUID Comment)
+               :> "reply" :> FormHandlerT CommentIdea Idea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> Capture "comment" (AUID Comment)
                :> "vote" :> Capture "vote" UpDown :> PostH
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
                :> "comment" :> Capture "comment" (AUID Comment)
@@ -243,6 +258,7 @@ aulaSpace space =
   :<|> Action.likeIdea
   :<|> Action.voteIdea
   :<|> Page.commentIdea
+  :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
   :<|> Page.createIdea  locSpace
@@ -255,6 +271,7 @@ aulaSpace space =
   :<|> const Action.likeIdea
   :<|> const Action.voteIdea
   :<|> const Page.commentIdea
+  :<|> const Page.replyCommentIdea
   :<|> const Action.voteIdeaComment
   :<|> const Action.voteIdeaCommentReply
   :<|> Page.createIdea  . locTopic

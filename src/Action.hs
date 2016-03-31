@@ -14,7 +14,7 @@ module Action
     , ActionUserHandler(login, logout, userState)
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), config, persistNat
+    , ActionEnv(..), persistNat, config
 
       -- * user handling
     , loginByUser, loginByName

@@ -35,6 +35,8 @@ import Lucid.Missing ()
 import Persistent ()
 import Persistent.Api ()
 import Persistent.Idiom ()
+import Persistent.Implementation ()
+import Persistent.Implementation.AcidState ()
 import Persistent.Implementation.STM ()
 import Types ()
 

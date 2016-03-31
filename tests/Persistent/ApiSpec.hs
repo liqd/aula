@@ -8,7 +8,7 @@
 module Persistent.ApiSpec where
 
 import Arbitrary ()
-import Control.Exception (ErrorCall(ErrorCall), throwIO)
+import Control.Exception (ErrorCall(ErrorCall), throwIO, finally)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
@@ -18,24 +18,29 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Persistent
-import Persistent.Implementation.STM
+import Persistent.Implementation
 import CreateRandom
 import Types
 
+-- FIXME: use @withPersist@ (instead of @before/it@?)
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
-mkInitial :: IO (Persist :~> ExceptT PersistExcept IO)
+mkInitial :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkInitial = do
-    rp <- mkRunPersist
+    (rp, rpClose) <- mkRunPersistInMemory
     runP rp genInitialTestDb
-    return rp
+    return (rp, rpClose)
 
 -- | the empty database
-mkEmpty :: IO (Persist :~> ExceptT PersistExcept IO)
-mkEmpty = mkRunPersist
+mkEmpty :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
+mkEmpty = mkRunPersistInMemory
+
+runPclose :: (m ~ IO, MonadIO m) => (Persist :~> ExceptT PersistExcept m, m ()) -> Persist a -> m a
+runPclose (persist, persistClose) m = -- (`liftIO $` here, and remove the `m ~ IO`, `-XGADTs` above?)
+    runP persist m `finally` persistClose
 
 runP :: (m ~ IO, MonadIO m) => (Persist :~> ExceptT PersistExcept m) -> Persist a -> m a
-runP persist m = -- (`liftIO $` here, and remove the `m ~ IO`, `-XGADTs` above?)
+runP persist m =
     runExceptT (unNat persist m) >>= either (throwIO . ErrorCall . show) pure
 
 getDbSpec :: (Eq a, Show a) => String -> Persist [a] -> Spec
@@ -43,11 +48,11 @@ getDbSpec name getXs = do
     describe name $ do
         context "on empty database" . before mkEmpty $ do
             it "returns the empty list" $ \rp -> do
-                xs <- runP rp getXs
+                xs <- runPclose rp getXs
                 xs `shouldBe` []
         context "on initial database" . before mkInitial $ do
             it "returns a non-empty list" $ \rp -> do
-                xs <- runP rp getXs
+                xs <- runPclose rp getXs
                 length xs `shouldNotBe` 0
 
 addDbSpecProp :: (Foldable f, Arbitrary proto)
@@ -58,13 +63,14 @@ addDbSpecProp :: (Foldable f, Arbitrary proto)
               -> Spec
 addDbSpecProp name getXs addX propX =
     describe name $ do
-        let t :: SpecWith (Persist :~> ExceptT PersistExcept IO)
-            t = it "adds one" $ \rp -> do
+        let t :: SpecWith (Persist :~> ExceptT PersistExcept IO, IO ())
+            t = it "adds one" $ \(rp, rpClose) -> do
                     before' <- liftIO $ length <$> runP rp getXs
                     p <- liftIO $ generate arbitrary
                     r <- liftIO . runP rp $ addX (frameUserHack, p)
                     after' <- liftIO $ length <$> runP rp getXs
                     after' `shouldBe` before' + 1
+                    rpClose
                     propX p r
 
         context "on empty database" . before mkEmpty $ t
@@ -81,23 +87,26 @@ findInBySpec :: (Eq a, Show a, Arbitrary k) =>
 findInBySpec name getXs findXBy f change =
     describe name $ do
         context "on empty database" . before mkEmpty $ do
-            it "will come up empty" $ \rp -> do
+            it "will come up empty" $ \(rp, rpClose) -> do
                 rf <- liftIO $ generate arbitrary
                 mu <- liftIO . runP rp $ findXBy rf
+                rpClose
                 mu `shouldBe` Nothing
 
         context "on initial database" . before mkInitial $ do
             context "if it does not exist" $ do
-                it "will come up empty" $ \rp -> do
+                it "will come up empty" $ \(rp, rpClose) -> do
                     (x:_) <- liftIO . runP rp $ getXs
                     let Just y = x ^? f
                     mu <- liftIO . runP rp $ findXBy (change y)
+                    rpClose
                     mu `shouldBe` Nothing
             context "if it exists" $ do
-                it "will come up with the newly added record" $ \rp -> do
+                it "will come up with the newly added record" $ \(rp, rpClose) -> do
                     (x:_) <- liftIO . runP rp $ getXs
                     let Just y = x ^? f
                     mu <- liftIO . runP rp $ findXBy y
+                    rpClose
                     mu `shouldBe` Just x
 
 findAllInBySpec :: (Eq a, Show a) =>
@@ -107,24 +116,27 @@ findAllInBySpec :: (Eq a, Show a) =>
 findAllInBySpec name getXs genKs findAllXBy f change =
     describe name $ do
         context "on empty database" . before mkEmpty $ do
-            it "will come up empty" $ \rp -> do
+            it "will come up empty" $ \(rp, rpClose) -> do
                 genK <- liftIO . runP rp $ genKs
                 rf <- liftIO $ generate genK
                 us <- liftIO . runP rp $ findAllXBy rf
+                rpClose
                 us `shouldBe` []
 
         context "on initial database" . before mkInitial $ do
             context "if it does not exist" $ do
-                it "will come up empty" $ \rp -> do
+                it "will come up empty" $ \(rp, rpClose) -> do
                     [x] <- liftIO . runP rp $ getXs
                     let Just y = x ^? f
                     us <- liftIO . runP rp $ findAllXBy (change y)
+                    rpClose
                     us `shouldBe` []
             context "if it exists" $ do
-                it "will come up with the newly added record" $ \rp -> do
+                it "will come up with the newly added record" $ \(rp, rpClose) -> do
                     [x] <- liftIO . runP rp $ getXs
                     let [y] = x ^.. f
                     us <- liftIO . runP rp $ findAllXBy y
+                    rpClose
                     us `shouldBe` [x]
 
 -- Given an AUID pick a different one
@@ -155,14 +167,15 @@ spec = do
         getIdeasWithTopic getArbTopicIds findIdeasByTopicId ideaTopicId changeAUID
 
     describe "addIdeaSpace" $ do
-        let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> ExceptT PersistExcept IO)
+        let test :: (Int -> Int) -> IdeaSpace -> SpecWith (Persist :~> ExceptT PersistExcept IO, IO ())
             test upd ispace = do
-                it ("can add " <> showIdeaSpace ispace) $ \rp -> do
+                it ("can add " <> showIdeaSpace ispace) $ \(rp, rpClose) -> do
                     let getL = liftIO . runP rp $ getSpaces
                         addS = liftIO . runP rp $ addIdeaSpaceIfNotExists ispace
                     bef <- getL
                     addS
                     aft <- getL
+                    rpClose
                     upd (length bef) `shouldBe` length aft
                     (ispace `elem` aft) `shouldBe` True
 
