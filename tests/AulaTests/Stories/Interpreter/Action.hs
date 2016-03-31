@@ -80,9 +80,12 @@ runClient (Free (SelectIdeaSpace s k)) = do
     csIdeaSpace .= Just i
     runClient k
 
-runClient (Free (CreateIdea pi k)) = do
+runClient (Free (CreateIdea t d c k)) = do
+    Just i <- use csIdeaSpace
     lift $ do
-        Action.currentUserAddDb Persistent.addIdea pi
+        Action.currentUserAddDb
+            Persistent.addIdea
+            (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
     runClient k
 
 

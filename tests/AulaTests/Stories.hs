@@ -66,7 +66,7 @@ program :: Behavior ()
 program = do
     login "admin"
     selectIdeaSpace "school"
-    createIdea (ProtoIdea "title" (Markdown "desc") CatRule (IdeaLocationSpace SchoolSpace))
+    createIdea "title" "desc" CatRule
     logout
 
 exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
