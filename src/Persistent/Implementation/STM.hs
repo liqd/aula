@@ -6,12 +6,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
-module Persistent.Implementation.STM
-    ( Persist
-    , mkRunPersist
-    , mkRunPersistInMemory
-    )
-where
+module Persistent.Implementation.STM (mkRunPersistSTM) where
 
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVar, modifyTVar')
 import Control.Lens
@@ -21,7 +16,6 @@ import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
-import Config
 import Persistent.Api
 import Types
 
@@ -37,15 +31,14 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
-mkRunPersist :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersist cfg = do
-    logger cfg "persistence: stm"
+mkRunPersistSTM :: IO RunPersist
+mkRunPersistSTM = do
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = ExceptT $ runExceptT c `runReaderT` tvar
-    return (Nat run, return ())
-
-mkRunPersistInMemory :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersistInMemory = mkRunPersist
+    return $ RunPersist { _rpDesc  = "STM (ephemeral)"
+                        , _rpNat   = Nat run
+                        , _rpClose = return ()
+                        }
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $

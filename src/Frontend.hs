@@ -43,12 +43,12 @@ import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Testing
 import Persistent
+import Persistent.Implementation
 import Types
 
 import qualified Action
 import qualified Backend
 import qualified Frontend.Path as U
-import qualified Persistent.Implementation
 
 
 -- * driver
@@ -56,25 +56,20 @@ import qualified Persistent.Implementation
 extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
 extendClearanceOnSessionToken _ = pure () -- FIXME
 
+-- | Note that the config specific which persitence implementation to use.
 runFrontend :: Config -> IO ()
-runFrontend cfg = do
-    withPersist (Persistent.Implementation.mkRunPersist cfg)
-                (runFrontendGeneric cfg)
+runFrontend cfg = withPersist (mkRunPersist cfg) (runFrontend' cfg)
 
--- | Run the frontend with the given persitence implementation
--- (e.g., in-memory or on-disk) and config.
-runFrontendGeneric :: Config
-                   -> (Persistent.Implementation.Persist :~> ExceptT PersistExcept IO)
-                   -> IO ()
-runFrontendGeneric cfg rp = do
-    let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
+runFrontend' :: forall r. (PersistM r, GenArbitrary r) => Config -> RunPersistNat IO r -> IO ()
+runFrontend' cfg rp = do
+    let runAction :: Action r :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv rp cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
-        runAction aulaActions
+             runAction aulaActions
 
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
