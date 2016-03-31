@@ -26,13 +26,13 @@ import Types
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkInitial = do
-    rp <- mkRunPersist
+    rp <- mkRunPersistInMemory
     runP rp genInitialTestDb
     return rp
 
 -- | the empty database
 mkEmpty :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkEmpty = mkRunPersist
+mkEmpty = mkRunPersistInMemory
 
 runP :: (m ~ IO, MonadIO m) => (Persist :~> ExceptT PersistExcept m, m ()) -> Persist a -> m a
 runP (persist, persistClose) m = -- (`liftIO $` here, and remove the `m ~ IO`, `-XGADTs` above?)
