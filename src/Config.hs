@@ -9,7 +9,6 @@ module Config
     ( Config
     , WarnMissing(WarnMissing, DontWarnMissing)
     , dbPath
-    , generateDemoData
     , htmlStatic
     , listenerInterface
     , listenerPort
@@ -49,7 +48,6 @@ data Config = Config
     , _listenerPort :: Int
     , _htmlStatic :: FilePath
     , _cfgCsrfSecret :: CsrfSecret
-    , _generateDemoData :: Bool
     }
   deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -66,7 +64,6 @@ defaultConfig = Config
     , _htmlStatic = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
-    , _generateDemoData = True
     }
 
 data WarnMissing = WarnMissing | DontWarnMissing

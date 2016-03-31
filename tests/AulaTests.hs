@@ -34,8 +34,7 @@ testConfig :: IO Config
 testConfig = do
     cfg <- getConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
-    cfg & generateDemoData .~ False
-        & listenerPort .~ pop
+    cfg & listenerPort .~ pop
         & pure
 
 
