@@ -218,6 +218,13 @@ data UpDown = Up | Down
 
 instance SOP.Generic UpDown
 
+data CommentContext = CommentContext
+    { _parentIdea    :: Idea
+    , _parentComment :: Maybe Comment
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentContext
 
 -- * idea space, topic, phase
 
@@ -571,6 +578,7 @@ makePrisms ''PermissionContext
 
 makeLenses ''Category
 makeLenses ''Comment
+makeLenses ''CommentContext
 makeLenses ''CommentVote
 makeLenses ''Delegation
 makeLenses ''DelegationContext

@@ -17,6 +17,7 @@ module Frontend.Page.Idea
   , createIdea
   , editIdea
   , commentIdea
+  , replyCommentIdea
   , categoryValues
   )
 where
@@ -62,7 +63,7 @@ data EditIdea = EditIdea Idea
 instance Page EditIdea where
 
 -- | X. Comment idea
-data CommentIdea = CommentIdea Idea
+data CommentIdea = CommentIdea Idea (Maybe Comment)
   deriving (Eq, Show, Read)
 
 instance Page CommentIdea where
@@ -86,6 +87,9 @@ instance ToHtml ViewIdea where
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
+            votingButton v =
+                postButton_ [class_ "btn-cta voting-button"]
+                            (U.voteIdea idea v)
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -120,17 +124,10 @@ instance ToHtml ViewIdea where
                 -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
                 div_ ">>>>>>>>>>> some phase-specific stuff"
 
-                let postlink mode msg =
-                        form_ [ method_ "POST"
-                              , action_ . absoluteUriPath . relPath
-                                    $ U.IdeaPath (idea ^. ideaLocation) mode
-                              ] $
-                            input_ [ type_ "submit", value_ msg ]
-
-                postlink (U.LikeIdea (idea ^. _Id))         "like this idea"
-                postlink (U.VoteIdea (idea ^. _Id) Yes)     "vote yes on idea"
-                postlink (U.VoteIdea (idea ^. _Id) No)      "vote no on idea"
-                postlink (U.VoteIdea (idea ^. _Id) Neutral) "vote neutral on idea"
+                postLink_ [] (U.likeIdea idea)         "like this idea"
+                postLink_ [] (U.voteIdea idea Yes)     "vote yes on idea"
+                postLink_ [] (U.voteIdea idea No)      "vote no on idea"
+                postLink_ [] (U.voteIdea idea Neutral) "vote neutral on idea"
 
                 pre_ . toHtml $ ppShow (idea ^. ideaLikes)
                 pre_ . toHtml $ ppShow (idea ^. ideaVotes)
@@ -150,9 +147,9 @@ instance ToHtml ViewIdea where
 
                     -- buttons
                     when (phase == Just PhaseVoting) . div_ [class_ "voting-buttons"] $ do
-                        button_ [class_ "btn-cta voting-button", value_ "yes"]     "dafür"   -- FIXME
-                        button_ [class_ "btn-cta voting-button", value_ "neutral"] "neutral" -- FIXME
-                        button_ [class_ "btn-cta voting-button", value_ "no"]      "dagegen" -- FIXME
+                        votingButton Yes     "dafür"
+                        votingButton Neutral "neutral"
+                        votingButton No      "dagegen"
 
             {- FIXME: data model is not clear yet.  read process specs again!
 
@@ -206,7 +203,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget c ^. html
+                        CommentWidget idea c ^. html
 
 
 instance FormPage CreateIdea where
@@ -332,15 +329,15 @@ instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = Document
     type FormPageResult CommentIdea = Comment
 
-    formAction (CommentIdea idea) = U.editIdea idea
+    formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
 
-    redirectOf (CommentIdea idea) _ = U.viewIdea idea
+    redirectOf (CommentIdea idea _) _ = U.viewIdea idea
 
     makeForm CommentIdea{} =
         "comment-text" .: (Markdown <$> DF.text Nothing)
 
     -- FIXME styling
-    formPage v form p@(CommentIdea idea) =
+    formPage v form p@(CommentIdea idea _mcomment) =
         semanticDiv p $ do
             div_ [class_ "container-comment-idea"] $ do
                 h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
@@ -396,5 +393,14 @@ commentIdea ideaId =
     redirectFormHandler
         (do
             Just idea <- persistent $ findIdea ideaId  -- FIXME: 404
-            pure $ CommentIdea idea)
+            pure $ CommentIdea idea Nothing)
         (currentUserAddDb $ addCommentToIdea ideaId)
+
+replyCommentIdea :: ActionM r m => AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
+replyCommentIdea ideaId commentId =
+    redirectFormHandler
+        (do
+            Just idea    <- persistent $ findIdea ideaId  -- FIXME: 404
+            let Just comment = idea ^. ideaComments . at commentId -- FIXME: 404
+            pure $ CommentIdea idea (Just comment))
+        (currentUserAddDb $ addReplyToIdeaComment ideaId commentId)

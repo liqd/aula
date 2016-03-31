@@ -62,7 +62,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import Lucid.Missing (script_, href_, src_)
+import Lucid.Missing (script_, href_, src_, postButton_)
 import Types
 
 import qualified Frontend.Path as P
@@ -273,21 +273,23 @@ instance Show a => ToHtml (PageShow a) where
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
 -- | FIXME: find better name?
-newtype CommentVotesWidget = VotesWidget CommentVotes
+data CommentVotesWidget = VotesWidget CommentContext Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget votes) = semanticDiv p $ do
+    toHtml p@(VotesWidget context comment) = semanticDiv p $ do
         div_ [class_ "comment-votes"] $ do
-            span_ [class_ "comment-vote-up"] $ do
-                toHtml y
-                i_ [class_ "icon-thumbs-o-up"] nil
-            span_ [class_ "comment-vote-down"] $ do
-                toHtml n
-                i_ [class_ "icon-thumbs-o-down"] nil
+            voteButton Up
+            voteButton Down
       where
-        y = show (countCommentVotes Up   votes)
-        n = show (countCommentVotes Down votes)
+        votes = comment ^. commentVotes
+        voteButton v = do
+            span_ [class_ $ "comment-vote-" <> vs] $ do
+                countCommentVotes v votes ^. showed . html
+                -- FIXME style
+                postButton_ [class_ "btn"] (P.voteCommentWithContext context comment v) $
+                    i_ [class_ $ "icon-thumbs-o-" <> vs] nil
+          where vs = cs . lowerFirst $ show v
 
 newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
 
