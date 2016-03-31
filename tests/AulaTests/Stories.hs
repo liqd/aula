@@ -29,8 +29,8 @@ import AulaTests.Stories.Interpreter.Action
 
 spec :: Spec
 spec = describe "stories" . it "works" $ do
-    liftIO $ runProgram simpleTest
-    True `shouldBe` True
+    x <- liftIO $ runProgram simpleTest
+    x `shouldBe` ()
 
 
 
@@ -56,6 +56,7 @@ simpleTest = do
     createIdea "idea1" "desc" CatRule
     likeIdea "idea1"
     createTopic "idea1" "topic1" "desc"
+    timeoutTopic "topic1"
     logout
 
 exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m

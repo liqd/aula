@@ -27,12 +27,16 @@ type TopicDescription = ST
 -- * the dsl ("the action sentences")
 
 data Step a where
+    -- User actions
     Login            :: UserLogin -> a -> Step a
     Logout           :: a -> Step a
     SelectIdeaSpace  :: IdeaSpaceName -> a -> Step a
     CreateIdea       :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     LikeIdea         :: IdeaTitle -> a -> Step a
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
+
+    -- System events, these events probably need a test support, API, etc...
+    TimeoutTopic     :: TopicTitle -> a -> Step a
   deriving Functor
 
 type Behavior = Free Step
@@ -54,3 +58,6 @@ likeIdea title = liftF $ LikeIdea title ()
 
 createTopic :: IdeaTitle -> TopicTitle -> TopicDescription -> Behavior ()
 createTopic ititle ttitle tdesc = liftF $ CreateTopic ititle ttitle tdesc ()
+
+timeoutTopic :: TopicTitle -> Behavior ()
+timeoutTopic title = liftF $ TimeoutTopic title ()

@@ -87,11 +87,19 @@ runClient (Free (CreateTopic it tt td k)) = do
             (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] phaseEnd)
     runClient k
 
+-- FIXME: Handle Voting phase timeouts
+runClient (Free (TimeoutTopic t k)) = do
+    Just topic <- findTopicByTitle t
+    _ <- lift $ Action.topicInRefinementTimedOut (topic ^. _Id)
+    runClient k
 
 -- * helpers
 
 findIdeaByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
 findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ persistent getIdeas
+
+findTopicByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
+findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ persistent getTopics
 
 assert :: (Show msg, ActionM r m) => msg -> Bool -> m ()
 assert _ True  = return ()
