@@ -140,10 +140,10 @@ instance ToHtml PageIdeasInDiscussion where
                            , href_ . U.listIdeas $ IdeaLocationTopic space (topic ^. _Id)
                            ] $ do
                             img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
-                                      PhaseJury          -> "theme_pruf.png"
-                                      PhaseResult        -> "theme_ergf.png"
-                                      PhaseVoting        -> "theme_abs.png"
-                                      PhaseRefinement    -> "theme_aus.png"
+                                      PhaseRefinement _ -> "theme_aus.png"
+                                      PhaseJury         -> "theme_pruf.png"
+                                      PhaseVoting     _ -> "theme_abs.png"
+                                      PhaseResult       -> "theme_ergf.png"
                                  , class_ "theme-grid-item-image"
                                  ]
                             div_ [class_ "theme-grid-item-text"] $ do

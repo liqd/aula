@@ -110,14 +110,21 @@ instance ToHtml ViewIdea where
                 "von "
                 idea ^. createdByLogin . fromUserLogin . html
                 " / "
-                when (phase `elem` [Nothing, Just PhaseRefinement]) $ do
-                    numberWithUnit totalLikes "Like" "Likes"
-                    toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
-                when (phase >= Just PhaseVoting) $ do
-                    numberWithUnit totalVotes "Stimme" "Stimmen"
-                    toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
-                numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
+                let l = do
+                        numberWithUnit totalLikes "Like" "Likes"
+                        toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
+                    v = do
+                        numberWithUnit totalVotes "Stimme" "Stimmen"
+                        toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
+                    c = do
+                        numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
 
+                case phase of
+                    Nothing                  -> l >> c
+                    Just (PhaseRefinement _) -> c
+                    Just PhaseJury           -> c
+                    Just (PhaseVoting _)     -> v >> c
+                    Just PhaseResult         -> v >> c
 
             when False . div_ $ do
                 -- FIXME: needs design/layout
@@ -136,20 +143,29 @@ instance ToHtml ViewIdea where
 
 
             div_ [class_ "sub-heading"] $ do
-                when (phase >= Just PhaseVoting) . div_ [class_ "voting-widget"] $ do
-                    span_ [class_ "progress-bar m-against"] $ do
-                        span_ [ class_ "progress-bar-progress"
-                        -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
-                              , style_ "width: 75%"
-                              ] $ do
-                            span_ [class_ "progress-bar-votes-for"] "6"
-                            span_ [class_ "progress-bar-votes-against"] "12"
+                let voteBar :: Html () -> Html ()
+                    voteBar bs = div_ [class_ "voting-widget"] $ do
+                        span_ [class_ "progress-bar m-against"] $ do
+                            span_ [ class_ "progress-bar-progress"
+                                    -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
+                                  , style_ "width: 75%"
+                                  ] $ do
+                                span_ [class_ "progress-bar-votes-for"] "6"
+                                span_ [class_ "progress-bar-votes-against"] "12"
+                        bs
 
-                    -- buttons
-                    when (phase == Just PhaseVoting) . div_ [class_ "voting-buttons"] $ do
+                    buttons :: Html ()
+                    buttons = div_ [class_ "voting-buttons"] $ do
                         votingButton Yes     "dafür"
                         votingButton Neutral "neutral"
                         votingButton No      "dagegen"
+
+                case phase of
+                    Nothing                  -> nil
+                    Just (PhaseRefinement _) -> nil
+                    Just PhaseJury           -> nil
+                    Just (PhaseVoting _)     -> toHtml $ voteBar nil
+                    Just PhaseResult         -> toHtml $ voteBar buttons
 
             {- FIXME: data model is not clear yet.  read process specs again!
 

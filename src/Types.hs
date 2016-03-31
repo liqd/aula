@@ -272,6 +272,7 @@ data ProtoTopic = ProtoTopic
     , _protoTopicImage     :: URL
     , _protoTopicIdeaSpace :: IdeaSpace
     , _protoTopicIdeas     :: [AUID Idea]
+    , _protoTopicRefinDays :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -282,20 +283,20 @@ type instance Proto Topic = ProtoTopic
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseRefinement    -- ^ 2. "Ausarbeitungsphase"
-  | PhaseJury          -- ^ 3. "Prüfungsphase"
-  | PhaseVoting        -- ^ 4. "Abstimmungsphase"
-  | PhaseResult        -- ^ 5. "Ergebnisphase"
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+    PhaseRefinement Timestamp  -- ^ 2. "Ausarbeitungsphase"
+  | PhaseJury                  -- ^ 3. "Prüfungsphase"
+  | PhaseVoting     Timestamp  -- ^ 4. "Abstimmungsphase"
+  | PhaseResult                -- ^ 5. "Ergebnisphase"
+  deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
-    PhaseRefinement -> "Ausarbeitungsphase"
-    PhaseJury       -> "Prüfungsphase"
-    PhaseVoting     -> "Abstimmungsphase"
-    PhaseResult     -> "Ergebnisphase"
+    PhaseRefinement _ -> "Ausarbeitungsphase"
+    PhaseJury         -> "Prüfungsphase"
+    PhaseVoting     _ -> "Abstimmungsphase"
+    PhaseResult       -> "Ergebnisphase"
 
 
 -- * user

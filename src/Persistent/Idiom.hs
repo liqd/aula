@@ -1,9 +1,13 @@
-{-# LANGUAGE ViewPatterns     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns        #-}
+
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.Idiom
 where
 
 import Control.Lens
+import Data.Time
 
 import qualified Data.Map as Map (size)
 
@@ -42,3 +46,13 @@ quorum :: PersistM m => Idea -> m Percent
 quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
     SchoolSpace  -> getDb dbSchoolQuorum
     ClassSpace _ -> getDb dbClassQuorum
+
+-- | Return the current system time with the day set to the date on which refinement phases opened
+-- today end.  When running the phase change trigger at midnight, find all dates that lie in the
+-- past.
+phaseEndRefinement :: PersistM m => m Timestamp
+phaseEndRefinement = do
+    Timestamp timestamp <- getCurrentTimestamp
+    DurationDays (days :: Int) <- getDb dbElaborationDuration
+    let day' :: Integer = toModifiedJulianDay (utctDay timestamp) + fromIntegral days
+    return . Timestamp $ timestamp { utctDay = ModifiedJulianDay day' }

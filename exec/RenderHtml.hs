@@ -204,7 +204,7 @@ instance ToHtml ViewIdea_PhaseNone where
 
 instance ToHtml ViewIdea_PhaseRefinement where
     toHtmlRaw = toHtml
-    toHtml (ViewIdea_PhaseRefinement idea) = toHtml $ ViewIdea idea (Just PhaseRefinement)
+    toHtml (ViewIdea_PhaseRefinement idea) = toHtml $ ViewIdea idea (Just (PhaseRefinement (error "ToHtml ViewIdea_PhaseRefinement")))
 
 instance ToHtml ViewIdea_PhaseJury where
     toHtmlRaw = toHtml
@@ -212,7 +212,7 @@ instance ToHtml ViewIdea_PhaseJury where
 
 instance ToHtml ViewIdea_PhaseVoting where
     toHtmlRaw = toHtml
-    toHtml (ViewIdea_PhaseVoting idea) = toHtml $ ViewIdea idea (Just PhaseVoting)
+    toHtml (ViewIdea_PhaseVoting idea) = toHtml $ ViewIdea idea (Just (PhaseVoting (error "ToHtml ViewIdea_PhaseVoting")))
 
 instance ToHtml ViewIdea_PhaseResult where
     toHtmlRaw = toHtml
