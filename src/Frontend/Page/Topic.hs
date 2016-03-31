@@ -264,7 +264,7 @@ viewTopic tab topicId = makeFrame =<< persistent (do
 createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =
     redirectFormHandler
-        (CreateTopic space
+        (persistent $ CreateTopic space
             <$> persistent (findWildIdeasBySpace space)
             <*> persistent phaseEndRefinement)
         (currentUserAddDb addTopic)
