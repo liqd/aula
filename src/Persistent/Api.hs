@@ -17,6 +17,7 @@ module Persistent.Api
     , AulaGetter
     , AulaSetter
     , PersistExcept(PersistExcept, unPersistExcept)
+    , withPersist
     , persistError
 
     , AulaData
@@ -85,6 +86,7 @@ module Persistent.Api
     )
 where
 
+import Control.Exception (finally)
 import Control.Lens
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad (unless, replicateM, when)
@@ -92,9 +94,11 @@ import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
+import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
+import Data.Typeable (Typeable)
 import Servant (ServantErr, err500, errBody)
 
 import qualified Data.Map as Map
@@ -116,9 +120,11 @@ data AulaData = AulaData
     , _dbClassQuorum         :: Percent  -- (there is only one quorum for all classes, see gh#318)
     , _dbLastId              :: Integer
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Typeable)
 
 makeLenses ''AulaData
+
+deriveSafeCopy 0 'base ''AulaData
 
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
@@ -160,6 +166,12 @@ getCurrentTimestampIO = Timestamp <$> getCurrentTime
 
 mkRandomPasswordIO :: IO UserPass
 mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+
+withPersist :: IO (rp, IO ()) -> (rp -> IO a) -> IO a
+withPersist mkRunP m = do
+    (rp, rpClose) <- mkRunP  -- initialization happens here
+    m rp `finally` rpClose  -- closing happens here
 
 
 -- | The argument is a consistency check that will throw an error if it fails.

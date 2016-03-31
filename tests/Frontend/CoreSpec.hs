@@ -10,6 +10,7 @@
 module Frontend.CoreSpec where
 
 import Control.Arrow((&&&))
+import Control.Exception (finally)
 import Control.Monad.Trans.Except
 import Data.List
 import Data.String.Conversions
@@ -29,7 +30,7 @@ import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config (Config, getConfig, WarnMissing(DontWarnMissing))
 import Frontend.Core
 import Frontend.Page
-import qualified Persistent.Implementation.STM
+import qualified Persistent.Implementation
 import Types
 
 import AulaTests
@@ -217,14 +218,17 @@ renderForm (F g) =
 -- infect other code, so they are left alone for now, though in the long run,
 -- abstraction would improve test code as well (separation of concerns
 -- via abstraction).
-runAction :: Config -> Action Persistent.Implementation.STM.Persist a -> ExceptT ServantErr IO a
-runAction cfg action = do rp <- liftIO Persistent.Implementation.STM.mkRunPersist
-                          unNat (mkRunAction (ActionEnv rp cfg)) action
+--
+-- FIXME: simplify, inline and then use @withPersist@.
+runAction :: Config -> Action Persistent.Implementation.Persist a -> IO (ExceptT ServantErr IO a, IO ())
+runAction cfg action = do (rp, rpClose) <- Persistent.Implementation.mkRunPersistInMemory
+                          return (unNat (mkRunAction (ActionEnv rp cfg)) action, rpClose)
 
-failOnError :: Action Persistent.Implementation.STM.Persist a -> IO a
+failOnError :: Action Persistent.Implementation.Persist a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
-    fmap (either (error . show) id) . runExceptT $ runAction cfg pers
+    (runA, rpClose) <- runAction cfg pers
+    (fmap (either (error . show) id) . runExceptT $ runA) `finally` rpClose
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --

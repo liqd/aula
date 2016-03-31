@@ -13,6 +13,12 @@ maintainer:  matthias.fischmann@liqd.net
 github:      liqd/aula
 category:    Web
 
+flags:
+    acid-state:
+        description:  use the STM implementation of Persistent
+        default:      False
+        manual:       True
+
 ghc-options: -Wall
 
 dependencies:
@@ -20,6 +26,7 @@ dependencies:
     - thentos-core >=0.4.0
     - aeson
     - aeson-pretty
+    - acid-state
     - basic-sop
     - binary
     - bytestring
@@ -65,6 +72,9 @@ library:
   source-dirs: src
   other-modules:
     - Paths_aula
+  when:
+    condition: flag(acid-state)
+    cpp-options: -DPERSISTENT_ACID_STATE
 
 executables:
   aula-server:

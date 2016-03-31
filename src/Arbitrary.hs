@@ -774,11 +774,16 @@ fishDelegationNetworkIO = do
             Action.loginByUser admin
             fishDelegationNetworkAction
 
-    cfg     <- Config.getConfig Config.DontWarnMissing
-    persist <- Persistent.Implementation.STM.mkRunPersist
-    v :: Either ServantErr DelegationNetwork
-            <- runExceptT $ unNat (mkRunAction (ActionEnv persist cfg)) action
-    either (throwIO . ErrorCall . ppShow) pure v
+    cfg <- Config.getConfig Config.DontWarnMissing
+    -- We use @Persistent.Implementation.STM@ here to make sure it doesn't rust.
+    -- In either case, it does have to be done in memory, so as not to corrupt the on-disk DB.
+    withPersist
+        Persistent.Implementation.STM.mkRunPersistInMemory
+        (\rp -> do
+            v :: Either ServantErr DelegationNetwork
+                <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
+            either (throwIO . ErrorCall . ppShow) pure v
+        )
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

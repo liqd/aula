@@ -16,3 +16,4 @@ packages/
 /pwd.log
 *.tix
 /aula.yaml
+/state/AulaData/
