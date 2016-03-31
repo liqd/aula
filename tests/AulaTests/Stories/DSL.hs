@@ -37,6 +37,8 @@ import Types
 type IdeaSpaceName = ST
 type IdeaTitle = ST
 type IdeaDescription = ST
+type TopicTitle = ST
+type TopicDescription = ST
 
 
 -- * the dsl ("the action sentences")
@@ -47,6 +49,7 @@ data Step a where
     SelectIdeaSpace  :: IdeaSpaceName -> a -> Step a
     CreateIdea       :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     LikeIdea         :: IdeaTitle -> a -> Step a
+    CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
   deriving Functor
 
 type Behavior = Free Step
@@ -65,3 +68,6 @@ createIdea title desc cat = liftF $ CreateIdea title desc cat ()
 
 likeIdea :: IdeaTitle -> Behavior ()
 likeIdea title = liftF $ LikeIdea title ()
+
+createTopic :: IdeaTitle -> TopicTitle -> TopicDescription -> Behavior ()
+createTopic ititle ttitle tdesc = liftF $ CreateTopic ititle ttitle tdesc ()

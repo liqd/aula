@@ -40,7 +40,7 @@ initialClientState = ClientState Nothing Nothing
 makeLenses ''ClientState
 
 run :: (ActionM r m) => Behavior a -> m a
-run = flip evalStateT initialClientState . runClient
+run = fmap fst . flip runStateT initialClientState . runClient
 
 -- FIXME: Check pre and post conditions
 runClient :: (ActionM r m) => Behavior a -> StateT ClientState m a
@@ -69,20 +69,29 @@ runClient (Free (SelectIdeaSpace s k)) = do
 
 runClient (Free (CreateIdea t d c k)) = do
     Just i <- use csIdeaSpace
-    _ <- lift $ do
-        Action.currentUserAddDb
-            Persistent.addIdea
-            (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
+    _ <- lift $ Action.createIdea
+        (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
     runClient k
 
 runClient (Free (LikeIdea t k)) = do
-    Just idea <- fmap (find ((t ==) . view ideaTitle)) . lift $ persistent getIdeas
+    Just idea <- findIdeaByTitle t
+    _ <- lift $ Action.likeIdea (idea ^. _Id)
+    runClient k
+
+runClient (Free (CreateTopic it tt td k)) = do
+    Just idea <- findIdeaByTitle it
+    Just ideaSpace <- use csIdeaSpace
     _ <- lift $ do
-        Action.likeIdea (idea ^. _Id)
+        phaseEnd <- persistent phaseEndRefinement
+        Action.createTopic
+            (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] phaseEnd)
     runClient k
 
 
 -- * helpers
+
+findIdeaByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
+findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ persistent getIdeas
 
 assert :: (Show msg, ActionM r m) => msg -> Bool -> m ()
 assert _ True  = return ()

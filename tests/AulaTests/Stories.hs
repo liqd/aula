@@ -52,7 +52,7 @@ spec = describe "stories" $ it "works" $ do
 runAction :: Behavior a -> IO a
 runAction program = do
     config <- Config.getConfig DontWarnMissing
-    persist <- Persistent.Implementation.STM.mkRunPersist
+    (persist, _close) <- Persistent.Implementation.STM.mkRunPersist
 
     let runAction :: Action Persistent.Implementation.STM.Persist :~> IO
         runAction = exceptToFail
@@ -66,8 +66,9 @@ program :: Behavior ()
 program = do
     login "admin"
     selectIdeaSpace "school"
-    createIdea "title" "desc" CatRule
-    likeIdea "title"
+    createIdea "idea1" "desc" CatRule
+    likeIdea "idea1"
+    createTopic "idea1" "topic1" "desc"
     logout
 
 exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
