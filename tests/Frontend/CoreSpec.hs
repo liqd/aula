@@ -56,7 +56,7 @@ spec = do
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
-        , H (CommentWidget <$> arb)
+        , H (CommentWidget <$> arb <*> arb)
         ]
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME

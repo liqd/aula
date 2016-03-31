@@ -16,6 +16,8 @@ module Lucid.Missing
     , src_
     , href_
     , onclick_
+    , postLink_
+    , postButton_
     )
   where
 
@@ -97,3 +99,15 @@ href_ = Lucid.href_ . absoluteUriPath . relPath
 
 onclick_ :: HasPath p => p -> Lucid.Attribute
 onclick_ p = Lucid.onclick_ ("location.href='" <> absoluteUriPath (relPath p) <> "'")
+
+formMethodPost_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
+formMethodPost_ attrs path =
+    Lucid.form_ $ [ Lucid.method_ "POST"
+                  , Lucid.action_ (absoluteUriPath (relPath path))
+                  ] <> attrs
+
+postLink_ :: HasPath p => [Lucid.Attribute] -> p -> ST -> Monad m => Lucid.HtmlT m ()
+postLink_ attrs path = formMethodPost_ [] path . inputSubmit_ attrs
+
+postButton_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
+postButton_ attrs path = formMethodPost_ [] path . Lucid.button_ ([ type_ "submit" ] <> attrs)

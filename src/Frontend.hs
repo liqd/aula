@@ -192,6 +192,9 @@ type AulaSpace =
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
        -- comment on an idea
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> FormHandlerT CommentIdea Idea
+       -- reply on a comment
+  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
+                                            :> "reply"   :> FormHandlerT CommentIdea Idea
        -- vote on a comment
   :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
                                             :> "vote"    :> Capture "vote" UpDown :> PostH
@@ -219,6 +222,9 @@ type AulaSpace =
                :> "comment" :> FormHandler CommentIdea
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
                :> "comment" :> Capture "comment" (AUID Comment)
+               :> "reply" :> FormHandlerT CommentIdea Idea
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
+               :> "comment" :> Capture "comment" (AUID Comment)
                :> "vote" :> Capture "vote" UpDown :> PostH
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
                :> "comment" :> Capture "comment" (AUID Comment)
@@ -243,6 +249,7 @@ aulaSpace space =
   :<|> Action.likeIdea
   :<|> Action.voteIdea
   :<|> Page.commentIdea
+  :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
   :<|> Page.createIdea  locSpace
@@ -255,6 +262,7 @@ aulaSpace space =
   :<|> const Action.likeIdea
   :<|> const Action.voteIdea
   :<|> const Page.commentIdea
+  :<|> const Page.replyCommentIdea
   :<|> const Action.voteIdeaComment
   :<|> const Action.voteIdeaCommentReply
   :<|> Page.createIdea  . locTopic

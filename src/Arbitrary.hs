@@ -117,7 +117,7 @@ instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
 
 instance Arbitrary CommentIdea where
-    arbitrary = CommentIdea <$> arb
+    arbitrary = CommentIdea <$> arb <*> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
