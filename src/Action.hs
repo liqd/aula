@@ -24,6 +24,7 @@ module Action
     , currentUser
     , modifyCurrentUser
     , isLoggedIn
+    , topicInRefinementTimedOut
     , validUserState
     , validLoggedIn
 
@@ -44,24 +45,26 @@ module Action
 where
 
 import Control.Lens
-import Control.Monad (void)
-import Control.Monad.Except (MonadError)
+import Control.Monad (join, void)
+import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (ExceptT)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
+import Debug.Trace
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
+import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
+import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
+import Config (Config)
+import LifeCycle
 import Persistent
 import Types
-import Config (Config)
-import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
-import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 
 
 -- * constraint types
@@ -186,6 +189,28 @@ isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
 
 
+-- * Phase Transitions
+
+topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInRefinementTimedOut tid =
+    join . persistent $ do
+        Just topic <- findTopic tid -- FIXME: Not found
+        case phaseTrans (topic ^. topicPhase) RefinementPhaseTimeOut of
+            Nothing -> throwError $ persistError "Invalid phase transition"
+            Just (phase', actions) -> do
+                setTopicPhase tid phase'
+                return $ mapM_ (phaseAction topic) actions
+
+setTopicPhase :: PersistM m => AUID Topic -> Phase -> m ()
+setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
+
+phaseAction :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
+phaseAction _ JuryPhasePrincipalEmail =
+    traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
+phaseAction _ ResultPhaseModeratorEmail =
+    traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
+
+
 -- * Action Helpers
 
 validLoggedIn :: UserState -> Bool
@@ -193,6 +218,7 @@ validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 
 validUserState :: UserState -> Bool
 validUserState us = us == userLoggedOut || validLoggedIn us
+
 
 -- * vote handling
 

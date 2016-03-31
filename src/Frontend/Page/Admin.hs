@@ -284,13 +284,13 @@ instance FormPage PageAdminSettingsQuorum where
         DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
-adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum) saveQuorum
+adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum_) saveQuorum
   where
     saveQuorum (Quorums school clss) = persistent $ do
         modifyDb dbSchoolQuorum (const school)
         modifyDb dbClassQuorum (const clss)
 
-    quorum = persistent $
+    quorum_ = persistent $
         Quorums <$> getDb dbSchoolQuorum
                 <*> getDb dbClassQuorum
 

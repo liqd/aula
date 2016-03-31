@@ -18,6 +18,7 @@ module Persistent.Api
     , AulaSetter
     , PersistExcept(PersistExcept, unPersistExcept)
     , withPersist
+    , persistError
 
     , AulaData
     , emptyAulaData
@@ -35,7 +36,6 @@ module Persistent.Api
     , getIdeas
     , getWildIdeas
     , getIdeasWithTopic
-    , getNumVotersForIdea
     , addIdeaSpaceIfNotExists
     , addIdea
     , modifyIdea
@@ -99,7 +99,7 @@ import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
 import Data.Typeable (Typeable)
-import Servant (ServantErr)
+import Servant (ServantErr, err500, errBody)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -116,8 +116,8 @@ data AulaData = AulaData
     , _dbDelegationMap       :: Delegations
     , _dbElaborationDuration :: DurationDays
     , _dbVoteDuration        :: DurationDays
-    , _dbSchoolQuorum        :: Int
-    , _dbClassQuorum         :: Int
+    , _dbSchoolQuorum        :: Percent
+    , _dbClassQuorum         :: Percent  -- (there is only one quorum for all classes, see gh#318)
     , _dbLastId              :: Integer
     }
   deriving (Eq, Show, Read, Typeable)
@@ -150,6 +150,9 @@ emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 -- introduced later.
 newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
     deriving (Eq, Show)
+
+persistError :: String -> PersistExcept
+persistError msg = PersistExcept err500 {errBody = cs msg}
 
 class (MonadError PersistExcept m, Monad m) => PersistM m where
     getDb :: AulaGetter a -> m a
@@ -233,20 +236,6 @@ getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
 
 getIdeasWithTopic :: PersistM m => m [Idea]
 getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
-
--- | Users can like an idea / vote on it iff they are students with access to the idea's space.
-getNumVotersForIdea :: PersistM m => Idea -> m (Idea, Int)
-getNumVotersForIdea idea = (idea,) . length . filter hasAccess <$> getUsers
-  where
-    hasAccess u = case idea ^. ideaLocation . ideaLocationSpace of
-        SchoolSpace   -> isStudent u
-        ClassSpace cl -> u `isStudentInClass` cl
-
-    isStudent (view userRole -> (Student _)) = True
-    isStudent _                              = False
-
-    isStudentInClass (view userRole -> (Student cl')) cl = cl' == cl
-    isStudentInClass _ _ = False
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
 addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
@@ -460,7 +449,6 @@ instance FromProto Idea where
         , _ideaLocation = i ^. protoIdeaLocation
         , _ideaComments = nil
         , _ideaLikes    = nil
-        , _ideaQuorumOk = False
         , _ideaVotes    = nil
         , _ideaResult   = Nothing
         }

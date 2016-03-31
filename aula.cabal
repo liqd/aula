@@ -101,9 +101,11 @@ library
       Frontend.Page.User
       Frontend.Path
       Frontend.Prelude
+      LifeCycle
       Lucid.Missing
       Persistent
       Persistent.Api
+      Persistent.Idiom
       Persistent.Implementation
       Persistent.Implementation.AcidState
       Persistent.Implementation.STM
