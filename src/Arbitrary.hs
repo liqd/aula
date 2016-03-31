@@ -64,7 +64,7 @@ import Persistent
 import Types
 
 import qualified Frontend.Path as P
-import qualified Persistent.Implementation
+import qualified Persistent.Implementation.STM
 
 
 -- | FIXME: push this upstream to basic-sop.
@@ -763,12 +763,13 @@ fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
     cfg <- Config.getConfig Config.DontWarnMissing
 
-    persist@(Nat pr) <- Persistent.Implementation.mkRunPersistInMemory
+    -- Making sure @Persistent.Implementation.STM@ doesn't rust.
+    (persist@(Nat pr), pClose) <- Persistent.Implementation.STM.mkRunPersistInMemory
     admin <- pr . addFirstUser $ ProtoUser
         (Just "admin") (UserFirstName "admin") (UserLastName "admin")
         Admin (Just (UserPassInitial "admin")) Nothing
 
-    let (Nat ac) = mkRunAction $ ActionEnv persist cfg
+    let (Nat ac) = mkRunAction $ ActionEnv persist pClose cfg
     either (error . ppShow) id <$> runExceptT
         (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
 

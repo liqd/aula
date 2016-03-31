@@ -15,7 +15,6 @@ module Persistent.Implementation.AcidState
     )
 where
 
-import Control.Exception (bracket)
 import Control.Lens
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (ask)
@@ -43,18 +42,16 @@ instance GenArbitrary Persist where
 
 mkRunPersistGeneric :: (AulaData -> IO (AcidState AulaData))
                     -> (AcidState AulaData -> IO ())
-                    -> IO (Persist :~> IO)
-mkRunPersistGeneric openState closeState = return $
-    Nat (\(Persist c) ->
-            bracket (openState emptyAulaData)
-                    closeState
-                    (c `runReaderT`)
-        )
+                    -> IO (Persist :~> IO, IO ())
+mkRunPersistGeneric openState closeState = do
+  db <- openState emptyAulaData
+  let rp = Nat (\(Persist c) -> c `runReaderT` db)
+  return (rp, closeState db)
 
-mkRunPersist :: IO (Persist :~> IO)
+mkRunPersist :: IO (Persist :~> IO, IO ())
 mkRunPersist = mkRunPersistGeneric openLocalState createCheckpointAndClose
 
-mkRunPersistInMemory :: IO (Persist :~> IO)
+mkRunPersistInMemory :: IO (Persist :~> IO, IO ())
 mkRunPersistInMemory = mkRunPersistGeneric openMemoryState closeAcidState
 
 instance MonadIO Persist where

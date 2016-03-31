@@ -219,8 +219,8 @@ renderForm (F g) =
 -- abstraction would improve test code as well (separation of concerns
 -- via abstraction).
 runAction :: Config -> Action Persistent.Implementation.Persist a -> ExceptT ServantErr IO a
-runAction cfg action = do rp <- liftIO Persistent.Implementation.mkRunPersistInMemory
-                          unNat (mkRunAction (ActionEnv rp cfg)) action
+runAction cfg action = do (rp, pClose) <- liftIO Persistent.Implementation.mkRunPersistInMemory
+                          unNat (mkRunAction (ActionEnv rp pClose cfg)) action
 
 failOnError :: Action Persistent.Implementation.Persist a -> IO a
 failOnError pers = do

@@ -58,19 +58,28 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    -- TODO: this is wrong, because this is also used for tests and then
-    -- tests may break the DB stored in files.
-    persist <- Persistent.Implementation.mkRunPersist
+    -- TODO: @mkRunPersist@ here would be wrong, because this is also
+    -- used for tests and then tests may break the DB stored in files.
+    -- But @mkRunPersistInMemory@ is also wrong, because in production
+    -- we want to save DB to files.
+    -- We should probably parameterize @runFrontend@ by @mkRunPersist@.
+    --
+    -- But even @mkRunPersistInMemory@ fails, because acid-state
+    -- is initialized only at @mkRunPersistInMemory!, but @pClose@
+    -- is called at each @mkRunAction@, which is probably once per request.
+    -- We have to decide how often to close the DB files.
+    (persist, pClose) <- Persistent.Implementation.mkRunPersistInMemory
     let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv persist cfg)
+        runAction = mkRunAction (ActionEnv persist pClose cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
+    -- Initial DB written here, before @runAction@ closes the files.
+    unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
+
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
             runAction aulaActions
-
-    unNat persist genInitialTestDb -- FIXME: Remove Bootstrapping DB
 
     when (cfg ^. generateDemoData) $ do
         demoDataGen <- mkUniverse

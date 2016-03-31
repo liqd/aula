@@ -34,13 +34,13 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
-mkRunPersist :: IO (Persist :~> IO)
+mkRunPersist :: IO (Persist :~> IO, IO ())
 mkRunPersist = do
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = c `runReaderT` tvar
-    return $ Nat run
+    return (Nat run, return ())
 
-mkRunPersistInMemory :: IO (Persist :~> IO)
+mkRunPersistInMemory :: IO (Persist :~> IO, IO ())
 mkRunPersistInMemory = mkRunPersist
 
 instance MonadIO Persist where
