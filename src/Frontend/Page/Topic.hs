@@ -265,8 +265,8 @@ createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =
     redirectFormHandler
         (persistent $ CreateTopic space
-            <$> persistent (findWildIdeasBySpace space)
-            <*> persistent phaseEndRefinement)
+            <$> findWildIdeasBySpace space
+            <*> phaseEndRefinement)
         (currentUserAddDb addTopic)
 
 editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
