@@ -11,7 +11,7 @@ module AulaTests.StoriesSpec where
 
 import Prelude hiding ((.), id)
 import Control.Category
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad (join)
 import Control.Monad.Trans.Except
 import Servant
 import Test.Hspec
@@ -21,43 +21,36 @@ import CreateRandom
 import Action.Implementation
 import Config
 import Persistent.Implementation.STM
-import Types
 
 import AulaTests.Stories.DSL
 import AulaTests.Stories.Interpreter.Action
+import AulaTests.Stories.Tests
 
 
 spec :: Spec
-spec = describe "stories" . it "works" $ do
-    x <- liftIO $ runProgram simpleTest
-    x `shouldBe` ()
+spec = describe "stories" $ do
+    story_ "Topic in refinement phase times out" topicTimeoutStory
 
 
+-- | Runs the 'Behavior' represented story with the 'Action' interpreter,
+-- calculates the result and compares to the expected value.
+story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
+story name program expected = it name $ do
+    join $ do
+        config <- Config.getConfig DontWarnMissing
+        (persist, closePersist) <- Persistent.Implementation.STM.mkRunPersist
 
-runProgram :: Behavior a -> IO a
-runProgram program = do
-    config <- Config.getConfig DontWarnMissing
-    (persist, closePersist) <- Persistent.Implementation.STM.mkRunPersist
+        let runAction :: Action Persistent.Implementation.STM.Persist :~> IO
+            runAction = exceptToFail
+                      . mkRunAction (Action.ActionEnv persist config)
 
-    let runAction :: Action Persistent.Implementation.STM.Persist :~> IO
-        runAction = exceptToFail
-                  . mkRunAction (Action.ActionEnv persist config)
+        unNat (exceptToFail . persist) genInitialTestDb
+        a <- unNat runAction $ AulaTests.Stories.Interpreter.Action.run program
+        closePersist
+        return $ a `shouldBe` expected
+  where
+    exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
+    exceptToFail = Nat (fmap (either (error . show) id) . runExceptT)
 
-    unNat (exceptToFail . persist) genInitialTestDb
-    a <- unNat runAction $ AulaTests.Stories.Interpreter.Action.run program
-    closePersist
-    return a
-
-
-simpleTest :: Behavior ()
-simpleTest = do
-    login "admin"
-    selectIdeaSpace "school"
-    createIdea "idea1" "desc" CatRule
-    likeIdea "idea1"
-    createTopic "idea1" "topic1" "desc"
-    timeoutTopic "topic1"
-    logout
-
-exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
-exceptToFail = Nat (fmap (either (error . show) id) . runExceptT)
+story_ :: String -> Behavior () -> Spec
+story_ msg program = story msg program ()
