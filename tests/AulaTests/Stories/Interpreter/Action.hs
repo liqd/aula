@@ -39,14 +39,6 @@ import Types
 
 import AulaTests.Stories.DSL
 
-
-runLog :: Behavior a -> IO a
-runLog (Pure r)                     = pure r
-runLog (Free (Login l k))           = print ("logged in: " <> show l)         >> runLog k
-runLog (Free (Logout k))            = print "logged out"                      >> runLog k
-runLog (Free (SelectIdeaSpace s k)) = print ("select idea space: " <> show s) >> runLog k
-runLog (Free (CreateIdea pi k))     = print ("create idea: " <> show pi)      >> runLog k
-
 -- | Client state stores information about the assumptions
 -- of the state of server states, it is also can be used
 -- to simulate web clients state.
