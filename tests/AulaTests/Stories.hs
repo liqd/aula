@@ -67,6 +67,7 @@ program = do
     login "admin"
     selectIdeaSpace "school"
     createIdea "title" "desc" CatRule
+    likeIdea "title"
     logout
 
 exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m

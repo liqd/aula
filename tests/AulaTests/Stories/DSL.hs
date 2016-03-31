@@ -44,6 +44,7 @@ data Step a where
     Logout           :: a -> Step a
     SelectIdeaSpace  :: IdeaSpaceName -> a -> Step a
     CreateIdea       :: ST -> ST -> Category -> a -> Step a
+    LikeIdea         :: ST -> a -> Step a
   deriving Functor
 
 type Behavior = Free Step
@@ -59,3 +60,6 @@ selectIdeaSpace n = liftF $ SelectIdeaSpace n ()
 
 createIdea :: ST -> ST -> Category -> Behavior ()
 createIdea title desc cat = liftF $ CreateIdea title desc cat ()
+
+likeIdea :: ST -> Behavior ()
+likeIdea title = liftF $ LikeIdea title ()

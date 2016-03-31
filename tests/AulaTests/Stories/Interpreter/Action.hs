@@ -16,6 +16,7 @@ import Control.Monad (join, unless)
 import Control.Monad.Free
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
+import Data.List (find)
 import Data.String.Conversions
 
 import Action
@@ -72,6 +73,12 @@ runClient (Free (CreateIdea t d c k)) = do
         Action.currentUserAddDb
             Persistent.addIdea
             (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
+    runClient k
+
+runClient (Free (LikeIdea t k)) = do
+    Just idea <- fmap (find ((t ==) . view ideaTitle)) . lift $ persistent getIdeas
+    _ <- lift $ do
+        Action.likeIdea (idea ^. _Id)
     runClient k
 
 
