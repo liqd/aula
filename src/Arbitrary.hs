@@ -31,7 +31,7 @@ module Arbitrary
     ) where
 
 import Control.Applicative ((<**>))
-import Control.Exception (finally)
+import Control.Exception (ErrorCall(ErrorCall), throwIO, finally)
 import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
@@ -45,7 +45,7 @@ import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -65,7 +65,7 @@ import Persistent
 import Types
 
 import qualified Frontend.Path as P
-import qualified Persistent.Implementation.STM
+import qualified Persistent.Implementation
 
 
 -- | FIXME: push this upstream to basic-sop.
@@ -179,7 +179,7 @@ instance Arbitrary PageStaticTermsOfUse where
     arbitrary = pure PageStaticTermsOfUse
 
 instance Arbitrary PageHomeWithLoginPrompt where
-    arbitrary = PageHomeWithLoginPrompt <$> arb <*> (LoginDemoHints <$> arb)
+    arbitrary = PageHomeWithLoginPrompt <$> (LoginDemoHints <$> arb)
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
@@ -355,6 +355,10 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- * path
 
 instance Arbitrary P.Main where
+    -- FIXME: Remove Broken
+    arbitrary = suchThat garbitrary (not . P.isBroken)
+
+instance Arbitrary P.IdeaMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.Space where
@@ -762,19 +766,20 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
-    cfg <- Config.getConfig Config.DontWarnMissing
-
-    -- Making sure @Persistent.Implementation.STM@ doesn't rust.
-    (persist@(Nat pr), pClose) <- Persistent.Implementation.STM.mkRunPersistInMemory
-    let fish = do
-            admin <- pr . addFirstUser $ ProtoUser
-               (Just "admin") (UserFirstName "admin") (UserLastName "admin")
+    let action :: Action Persistent.Implementation.Persist DelegationNetwork
+        action = do
+            admin <- persistent . addFirstUser $ ProtoUser
+                (Just "admin") (UserFirstName "admin") (UserLastName "admin")
                 Admin (Just (UserPassInitial "admin")) Nothing
+            Action.loginByUser admin
+            fishDelegationNetworkAction
 
-            let (Nat ac) = mkRunAction $ ActionEnv persist cfg
-            either (error . ppShow) id <$> runExceptT
-                (ac (Action.loginByUser admin >> fishDelegationNetworkAction))
-    fish `finally` pClose
+    cfg <- Config.getConfig Config.DontWarnMissing
+    (persist, closePersist) <- Persistent.Implementation.mkRunPersist
+    v :: Either ServantErr DelegationNetwork
+            <- runExceptT (unNat (mkRunAction (ActionEnv persist cfg)) action)
+                `finally` closePersist
+    either (throwIO . ErrorCall . ppShow) pure v
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

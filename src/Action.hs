@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeOperators          #-}
+
 -- | The 'Action' module contains an API which
 module Action
     ( -- * constraint types
@@ -19,6 +20,7 @@ module Action
     , loginByUser, loginByName
     , userLoggedOut
     , currentUserAddDb
+    , currentUserAddDb_
     , currentUser
     , modifyCurrentUser
     , isLoggedIn
@@ -28,6 +30,12 @@ module Action
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken
 
+      -- * vote handling
+    , likeIdea
+    , voteIdea
+    , voteIdeaComment
+    , voteIdeaCommentReply
+
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
 
@@ -36,7 +44,9 @@ module Action
 where
 
 import Control.Lens
+import Control.Monad (void)
 import Control.Monad.Except (MonadError)
+import Control.Monad.Trans.Except (ExceptT)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
@@ -70,7 +80,7 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv r = ActionEnv
-    { _persistNat :: r :~> IO
+    { _persistNat :: r :~> ExceptT PersistExcept IO
     , _config     :: Config
     }
 
@@ -81,6 +91,8 @@ instance GetCsrfSecret (ActionEnv r) where
 
 -- | Top level errors can happen.
 --
+-- FIXME: this will have a constructor dedicated for PersistExcept, and 'ServantErr' will only be
+-- introduced later.
 newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
     deriving (Eq, Show)
 
@@ -102,7 +114,7 @@ class Monad m => ActionLog m where
 -- @r@ is determined by @m@, because @m@ is intended to be the program's
 -- action monad, so @r@ is just the persistent implementation chosen
 -- to be used in the action monad.
-class (PersistM r, Monad m) => ActionPersist r m | m -> r where
+class (PersistM r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> r where
     -- | Run @Persist@ computation in the action monad.
     -- Authorization of the action should happen here.
     -- FIXME: Rename atomically, and only call on
@@ -154,6 +166,10 @@ currentUserAddDb addA protoA = do
     cUser <- currentUser
     persistent $ addA (cUser, protoA)
 
+currentUserAddDb_ :: (ActionPersist r m, ActionUserHandler m) =>
+                    (UserWithProto a -> r a) -> Proto a -> m ()
+currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
+
 -- | Returns the current user
 currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
 currentUser = do
@@ -178,6 +194,22 @@ validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 validUserState :: UserState -> Bool
 validUserState us = us == userLoggedOut || validLoggedIn us
 
+-- * vote handling
+
+likeIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> m ()
+likeIdea ideaId = currentUserAddDb_ (addLikeToIdea ideaId) ()
+
+voteIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
+voteIdea = currentUserAddDb_ . addVoteToIdea
+
+voteIdeaComment :: (ActionPersist r m, ActionUserHandler m)
+                => AUID Idea -> AUID Comment -> UpDown -> m ()
+voteIdeaComment ideaId commentId = currentUserAddDb_ (addCommentVoteToIdeaComment ideaId commentId)
+
+voteIdeaCommentReply :: (ActionPersist r m, ActionUserHandler m)
+                     => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
+voteIdeaCommentReply ideaId commentId replyId =
+    currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
 -- * csv temp files
 

@@ -16,6 +16,7 @@
 
 module Frontend.Core
     ( GetH
+    , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
     , Beside(Beside)
@@ -107,6 +108,7 @@ data Frame body
 makeLenses ''Frame
 
 type GetH = Get '[HTML]
+type PostH = Post '[HTML] ()
 type FormHandlerT p a = FormH HTML (FormPageRep p) a
 type FormHandler p = FormHandlerT p ST
 
@@ -121,9 +123,9 @@ class Page p => FormPage p where
     type FormPageResult p = ()
 
     -- | The form action used in form generation
-    formAction :: p -> UriPath
+    formAction :: p -> P.Main
     -- | Calculates a redirect address from the given page
-    redirectOf :: p -> FormPageResult p -> UriPath
+    redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
     makeForm :: ActionM r m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
@@ -165,7 +167,7 @@ makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m,
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect $ absoluteUriPath (relPath $ P.Login Nothing)
+  if | not isli && isPrivatePage p -> redirect . absoluteUriPath $ relPath P.Login
      | isli     || isPrivatePage p -> flip Frame p <$> currentUser
      | otherwise                   -> return $ PublicFrame p
 
@@ -308,7 +310,7 @@ instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            a_ [href_ $ P.IdeaPath (idea ^. ideaLocation) (P.IdeaModeView $ idea ^. _Id)] $ do
+            a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
@@ -387,13 +389,13 @@ redirectFormHandler getPage processor = getH :<|> postH
     getH = do
         page <- getPage
         guard page
-        let fa = absoluteUriPath $ formAction page
+        let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         FormPageRep v fa <$> makeFrame page
 
     postH formData = do
         page <- getPage
-        let fa = absoluteUriPath $ formAction page
+        let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
@@ -404,7 +406,7 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
-    processor2 page result = absoluteUriPath . redirectOf page <$> processor result
+    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
 
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a

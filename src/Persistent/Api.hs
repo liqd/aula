@@ -1,4 +1,4 @@
-{-# LANGUAGE DefaultSignatures           #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
 {-# LANGUAGE OverloadedStrings           #-}
@@ -16,6 +16,7 @@ module Persistent.Api
     , AulaLens
     , AulaGetter
     , AulaSetter
+    , PersistExcept(PersistExcept, unPersistExcept)
 
     , AulaData
     , emptyAulaData
@@ -43,6 +44,7 @@ module Persistent.Api
     , findIdeasByUserId
     , findWildIdeasBySpace
     , addLikeToIdea
+    , addVoteToIdea
     , addCommentToIdea
     , addReplyToIdeaComment
     , addCommentVoteToIdeaComment
@@ -54,7 +56,9 @@ module Persistent.Api
     , mkMetaInfo
     , mkUserLogin
     , getCurrentTimestamp
+    , getCurrentTimestampIO
     , mkRandomPassword
+    , mkRandomPasswordIO
     , modifyUser
     , getTopics
     , addTopic
@@ -82,7 +86,7 @@ module Persistent.Api
 where
 
 import Control.Lens
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Error.Class (MonadError)
 import Control.Monad (unless, replicateM, when)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
@@ -93,6 +97,7 @@ import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
 import Data.Typeable (Typeable)
+import Servant (ServantErr)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -139,19 +144,23 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
-class Monad m => PersistM m where
+-- | FIXME: this will have constructors dedicated for specific errors, and 'ServantErr' will only be
+-- introduced later.
+newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
+    deriving (Eq, Show)
+
+class (MonadError PersistExcept m, Monad m) => PersistM m where
     getDb :: AulaGetter a -> m a
     modifyDb :: AulaSetter a -> (a -> a) -> m ()
-
     getCurrentTimestamp :: m Timestamp
-
-    default getCurrentTimestamp :: MonadIO m => m Timestamp
-    getCurrentTimestamp = Timestamp <$> liftIO getCurrentTime
-
     mkRandomPassword :: m UserPass
 
-    default mkRandomPassword :: MonadIO m => m UserPass
-    mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+getCurrentTimestampIO :: IO Timestamp
+getCurrentTimestampIO = Timestamp <$> getCurrentTime
+
+mkRandomPasswordIO :: IO UserPass
+mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 
 -- | The argument is a consistency check that will throw an error if it fails.
@@ -316,10 +325,18 @@ findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . v
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
--- | FIXME: Same user can like the same idea more than once.
+-- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addLikeToIdea :: User -> AUID Idea -> PersistM m => m IdeaLike
-addLikeToIdea cUser iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes) (cUser, ())
+addLikeToIdea :: AUID Idea -> AddDb m IdeaLike
+addLikeToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes)
+
+instance FromProto IdeaVote where
+    fromProto = flip IdeaVote
+
+-- | FIXME: Same user can vote on the same idea more than once (Issue #308).
+-- FIXME: Check also that the given idea exists and is in the right phase.
+addVoteToIdea :: AUID Idea -> AddDb m IdeaVote
+addVoteToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m

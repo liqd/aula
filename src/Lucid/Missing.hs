@@ -9,6 +9,7 @@
 module Lucid.Missing
     ( script_
     , inputText_
+    , inputTextArea_
     , inputSelect_
     , inputPassword_
     , inputSubmit_
@@ -55,6 +56,22 @@ inputText_ attrs ref vw = Lucid.input_ $
     ] <> attrs
   where
     ref' = DF.absoluteRef ref vw
+
+inputTextArea_ :: (Monad m) => [Lucid.Attribute]
+    -> Maybe Int -> Maybe Int -> ST -> DF.View (HtmlT m ()) -> HtmlT m ()
+inputTextArea_ attrs r c ref view_ = textarea_ attrs' . toHtmlRaw $ DF.fieldInputText ref view_
+  where
+    attrs' = [ id_     ref'
+             , name_   ref'
+             ]
+          <> rows' r <> cols' c
+          <> attrs
+
+    ref'           = DF.absoluteRef ref view_
+    rows' (Just x) = [rows_ . cs $ show x]
+    rows' _        = []
+    cols' (Just x) = [cols_ . cs $ show x]
+    cols' _        = []
 
 inputPassword_ :: [Lucid.Attribute] -> ST -> DF.View v -> Monad m => Lucid.HtmlT m ()
 inputPassword_ attrs ref vw = input_ $

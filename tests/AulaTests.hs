@@ -33,7 +33,9 @@ testConfig :: IO Config
 testConfig = do
     cfg <- getConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
-    return (cfg & generateDemoData .~ False & listenerPort .~ pop)
+    cfg & generateDemoData .~ False
+        & listenerPort .~ pop
+        & pure
 
 
 -- | This is where the ports are popped from that the individual tests are run under.

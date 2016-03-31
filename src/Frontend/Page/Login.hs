@@ -19,7 +19,7 @@ import qualified Frontend.Path as U
 -- * page
 
 -- | 16. Home page with login prompt
-data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt Bool LoginDemoHints
+data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt LoginDemoHints
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
@@ -48,21 +48,19 @@ checkLogin (LoginFormData uLogin _pass) = do
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
 
-    formAction _ = relPath $ U.Login Nothing
-    redirectOf _ _ = relPath U.ListSpaces
+    formAction _   = U.Login
+    redirectOf _ _ = U.ListSpaces
 
     makeForm _ = validateM checkLogin $
         LoginFormData
         <$> ("user" .: text Nothing)
         <*> ("pass" .: text Nothing)
 
-    formPage v form p@(PageHomeWithLoginPrompt status loginDemoHints) =
+    formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do
             div_ [class_ "login-register-form"] $ do
                 h1_ [class_ "main-heading"] "Willkommen bei Aula"
                 div_ . form $ do
-                    unless status $ do
-                        span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
                     inputText_     [placeholder_ "Dein Benutzername"] "user" v
                     inputPassword_ [placeholder_ "Dein Passwort"] "pass" v
                     inputSubmit_   [] "Login"
@@ -94,7 +92,7 @@ instance ToHtml LoginDemoHints where
 
 -- * handlers
 
-login :: (ActionM r action) => Bool -> ServerT (FormHandler PageHomeWithLoginPrompt) action
-login success = redirectFormHandler getPage Action.loginByUser
+login :: (ActionM r action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
+login = redirectFormHandler getPage Action.loginByUser
   where
-    getPage = PageHomeWithLoginPrompt success . LoginDemoHints <$> Action.persistent getUsers
+    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> Action.persistent getUsers

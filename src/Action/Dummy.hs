@@ -1,8 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE OverloadedStrings          #-}
+
 module Action.Dummy
-    ( DummyT(DummyT,unDummyT), Dummy
+    ( DummyT(DummyT, unDummyT), Dummy
     , runDummyT, runDummy
     , notImplemented
     ) where
@@ -10,7 +11,9 @@ module Action.Dummy
 import Control.Monad.Except (runExceptT)
 
 import Action
+import Persistent.Implementation.STM (Persist)
 import Frontend.Prelude
+
 
 newtype DummyT m a = DummyT { unDummyT :: ExceptT ActionExcept m a }
     deriving (Functor, Applicative, Monad, MonadError ActionExcept)
@@ -27,21 +30,15 @@ notImplemented :: Monad m => String -> String -> DummyT m a
 notImplemented meth cl = throwError500 $ unlines
     ["Method ", meth, " from class ", cl, " not implemented for instance Dummy"]
 
-instance Monad m => PersistM (DummyT m) where
-    getDb _             = notImplemented "PersistM" "getDb"
-    modifyDb _ _        = notImplemented "PersistM" "modifyDb"
-    getCurrentTimestamp = notImplemented "PersistM" "getCurrentTimestamp"
-    mkRandomPassword    = notImplemented "PersistM" "mkRandomPassword"
-
 instance Monad m => ActionTempCsvFiles (DummyT m) where
-    popTempCsvFile _        = notImplemented "PersistM" "popTempCsvFile"
-    cleanupTempCsvFiles _   = notImplemented "PersistM" "cleanupTempCsvFiles"
+    popTempCsvFile _      = notImplemented "PersistM" "popTempCsvFile"
+    cleanupTempCsvFiles _ = notImplemented "PersistM" "cleanupTempCsvFiles"
 
 instance Monad m => ActionLog (DummyT m) where
     logEvent _ = pure ()
 
-instance Monad m => ActionPersist (DummyT m) (DummyT m) where
-    persistent = id
+instance Monad m => ActionPersist Persist (DummyT m) where
+    persistent _ = notImplemented "ActionPersist" "persistent"
 
 instance Monad m => ActionError (DummyT m)
 
@@ -50,4 +47,4 @@ instance Monad m => ActionUserHandler (DummyT m) where
     logout      = pure ()
     userState _ = notImplemented "ActionUserHandler" "userState"
 
-instance Monad m => ActionM (DummyT m) (DummyT m)
+instance Monad m => ActionM Persist (DummyT m)

@@ -58,7 +58,6 @@ spec = do
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
         , H (CommentWidget <$> arb)
-        , H (CommentReplyWidget <$> arb)
         ]
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME
@@ -209,7 +208,7 @@ renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
         len <- run . failOnError $ do
-            v <- getForm (absoluteUriPath $ formAction page) (makeForm page)
+            v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
