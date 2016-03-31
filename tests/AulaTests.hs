@@ -28,6 +28,7 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Prelude as X hiding (get, put)
 
+import qualified Persistent.Implementation (mkRunPersistInMemory)
 
 testConfig :: IO Config
 testConfig = do
@@ -84,7 +85,8 @@ mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
 
 runFrontendSafeFork :: Config -> IO ThreadId
 runFrontendSafeFork cfg = do
-    threadId <- forkIO $ runFrontend cfg
+    rp <- Persistent.Implementation.mkRunPersistInMemory  -- initialization happens here
+    threadId <- forkIO $ runFrontendGeneric rp cfg
     let loop = catch
           (Network.Wreq.get $ mkServerUri cfg "/")
           (\(_ :: HttpException) -> threadDelay 4900 >> loop)

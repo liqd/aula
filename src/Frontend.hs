@@ -59,12 +59,18 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    -- TODO: @mkRunPersist@ here would be wrong, because this is also
-    -- used for tests and then tests may break the DB stored in files.
-    -- But @mkRunPersistInMemory@ is also wrong, because in production
-    -- we want to save DB to files.
-    -- We should probably parameterize @runFrontend@ by @mkRunPersist@.
-    (persist, pClose) <- Persistent.Implementation.mkRunPersistInMemory
+  rp <- Persistent.Implementation.mkRunPersist  -- initialization happens here
+  runFrontendGeneric rp cfg
+
+-- | Run the frontend with the given persitence implementation
+-- (e.g., in-memory or on-disk) and config.
+--
+-- The contract is that persistence have been initialized before entering
+-- @runFrontendGeneric@. It's closed via pClose inside @runFrontendGeneric@.
+runFrontendGeneric :: (Persistent.Implementation.Persist :~> ExceptT PersistExcept IO, IO ())
+                   -> Config
+                   -> IO ()
+runFrontendGeneric (persist, pClose) cfg = do
     let runAction :: Action Persistent.Implementation.Persist :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv persist cfg)
 
