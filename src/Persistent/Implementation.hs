@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-{-# OPTIONS_GHC -Wall -Wwarn -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wall -Wwarn #-}
 
 module Persistent.Implementation
     ( Persist
@@ -9,10 +9,8 @@ module Persistent.Implementation
     )
 where
 
-#ifdef USE_STM
+#ifdef PERSISTENT_STM
 import Persistent.Implementation.STM
-#elif USE_ACID_STATE
-import Persistent.Implementation.AcidState
 #else
 import Persistent.Implementation.AcidState
 #endif

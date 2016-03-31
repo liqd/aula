@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.10.0.
+-- This file has been generated from package.yaml by hpack version 0.11.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -19,6 +19,11 @@ cabal-version:  >= 1.10
 source-repository head
   type: git
   location: https://github.com/liqd/aula
+
+flag stm
+  description: use the STM implementation of Persistent
+  manual: True
+  default: False
 
 library
   hs-source-dirs:
@@ -70,6 +75,8 @@ library
     , wai-app-static
     , warp
     , yaml
+  if flag(stm)
+    cpp-options: -DPERSISTENT_STM
   exposed-modules:
       Action
       Action.Dummy
