@@ -13,6 +13,7 @@ module Frontend
 where
 
 import Control.Monad.Trans.Except
+import GHC.TypeLits (Symbol)
 import Lucid hiding (href_)
 import Network.HTTP.Types
 import Network.Wai
@@ -138,26 +139,55 @@ aulaActions =
   :<|> Backend.api
   :<|> aulaTesting
 
+data Reply
+
+type family Singular    a :: Symbol
+type family Plural      a :: Symbol
+type family CaptureData a
+
+type instance Singular Comment       = "comment"
+type instance Singular Idea          = "idea"
+type instance Singular IdeaSpace     = "space"
+type instance Singular IdeaVoteValue = "vote"
+type instance Singular Reply         = "reply"
+type instance Singular SchoolClass   = "class"
+type instance Singular Topic         = "topic"
+type instance Singular UpDown        = "vote"
+type instance Singular User          = "user"
+
+type instance CaptureData Comment       = AUID Comment
+type instance CaptureData Idea          = AUID Idea
+type instance CaptureData IdeaSpace     = IdeaSpace
+type instance CaptureData IdeaVoteValue = IdeaVoteValue
+type instance CaptureData Reply         = AUID Comment
+type instance CaptureData SchoolClass   = SchoolClass
+type instance CaptureData Topic         = AUID Topic
+type instance CaptureData UpDown        = UpDown
+type instance CaptureData User          = AUID User
+
+infixr 9 ::>
+type (::>) a b = Singular a :> Capture (Singular a) (CaptureData a) :> b
 
 type AulaMain =
        -- view all spaces
        "space" :> GetH (Frame PageRoomsOverview)
+
        -- enter one space
-  :<|> "space" :> Capture "space" IdeaSpace :> AulaSpace
+  :<|> IdeaSpace ::> AulaSpace
 
        -- view all users
   :<|> "user" :> GetH (Frame (PageShow [User]))
-       -- enter user profile
 
-  :<|> "user" :> Capture "user" (AUID User) :> AulaUser
+       -- enter user profile
+  :<|> User ::> AulaUser
   :<|> "user" :> "settings" :> FormHandler PageUserSettings
+
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
   :<|> "delegation" :> "edit" :> FormHandlerT PageDelegateVote () --FIXME: Correct page type
   :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
-
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
@@ -187,73 +217,53 @@ aulaMain =
   :<|> Page.login
   :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
 
-
-type AulaSpace =
-       -- browse wild ideas in an idea space
-       "ideas" :> GetH (Frame PageIdeasOverview)
+type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "view" :> GetH (Frame ViewIdea)
+    =  Idea ::> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "edit" :> FormHandlerT EditIdea Idea
+  :<|> Idea ::> "edit" :> FormHandlerT EditIdea Idea
        -- `like' on an idea
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "like" :> PostH
+  :<|> Idea ::> "like" :> PostH
        -- vote on an idea
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
+  :<|> Idea ::> IdeaVoteValue ::> PostH
        -- comment on an idea
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> FormHandlerT CommentIdea Idea
+  :<|> Idea ::> "comment" :> FormHandlerT CommentIdea Idea
        -- reply on a comment
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
-                                            :> "reply"   :> FormHandlerT CommentIdea Idea
+  :<|> Idea ::> Comment ::> "reply" :> FormHandlerT CommentIdea Idea
        -- vote on a comment
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
-                                            :> "vote"    :> Capture "vote" UpDown :> PostH
+  :<|> Idea ::> Comment ::> UpDown ::> PostH
        -- vote on a reply of a comment
-  :<|> "idea" :> Capture "idea" (AUID Idea) :> "comment" :> Capture "comment" (AUID Comment)
-              :> "reply" :> Capture "reply" (AUID Comment)
-              :> "vote" :> Capture "vote" UpDown :> PostH
+  :<|> Idea ::> Comment ::> Reply ::> UpDown ::> PostH
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
+type TopicApi
        -- browse topics in an idea space
-  :<|> "topic" :> GetH (Frame PageIdeasInDiscussion)
+    = "topic" :> GetH (Frame PageIdeasInDiscussion)
+  :<|> Topic ::> IdeaApi
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas"              :> GetH (Frame ViewTopic)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "all"     :> GetH (Frame ViewTopic)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "view" :> GetH (Frame ViewIdea)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "edit" :> FormHandler EditIdea
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "like" :> PostH
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "vote" :> Capture "vote" IdeaVoteValue :> PostH
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "comment" :> FormHandler CommentIdea
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "comment" :> Capture "comment" (AUID Comment)
-               :> "reply" :> FormHandlerT CommentIdea Idea
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "comment" :> Capture "comment" (AUID Comment)
-               :> "vote" :> Capture "vote" UpDown :> PostH
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> Capture "idea" (AUID Idea)
-               :> "comment" :> Capture "comment" (AUID Comment)
-               :> "reply" :> Capture "reply" (AUID Comment)
-               :> "vote" :> Capture "vote" UpDown :> PostH
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "create"   :> FormHandler CreateIdea
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "ideas" :> "winning" :> GetH (Frame ViewTopic)
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "delegations"        :> GetH (Frame ViewTopic)
+       -- FIXME: use query parameters to filter only the voting/winning ideas.
+       -- This should go along with the filtering by categories.
+  :<|> Topic ::> "ideas"              :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "all"     :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "winning" :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
 
        -- create new topic
-  :<|> "topic" :> "create" :> FormHandler CreateTopic
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "idea" :> "move"   :> FormHandler EditTopic
-  :<|> "topic" :> Capture "topic" (AUID Topic)
-               :> "delegation" :> "create" :> FormHandler PageDelegateVote
+  :<|> "topic" :> "create"     :> FormHandler CreateTopic
+  :<|> Topic  ::> "idea"       :> "move"   :> FormHandler EditTopic
+  :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
 
-aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
-aulaSpace space =
-       Page.viewIdeas  space
-  :<|> Page.viewIdea
+type AulaSpace
+    =  IdeaApi
+       -- browse wild ideas in an idea space
+  :<|> "ideas" :> GetH (Frame PageIdeasOverview)
+  :<|> TopicApi
+
+ideaApi :: PersistM r => IdeaLocation -> ServerT IdeaApi (Action r)
+ideaApi loc
+    =  Page.viewIdea
   :<|> Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteIdea
@@ -261,30 +271,27 @@ aulaSpace space =
   :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
-  :<|> Page.createIdea  locSpace
+  :<|> Page.createIdea loc
 
-  :<|> Page.viewTopics  space
-  :<|> Page.viewTopic   TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> Page.viewTopic   TabAllIdeas
-  :<|> const Page.viewIdea
-  :<|> const Page.editIdea
-  :<|> const Action.likeIdea
-  :<|> const Action.voteIdea
-  :<|> const Page.commentIdea
-  :<|> const Page.replyCommentIdea
-  :<|> const Action.voteIdeaComment
-  :<|> const Action.voteIdeaCommentReply
-  :<|> Page.createIdea  . locTopic
-  :<|> Page.viewTopic   TabVotingIdeas
-  :<|> Page.viewTopic   TabWinningIdeas
-  :<|> Page.viewTopic   TabDelegation
+topicApi :: PersistM r => IdeaSpace -> ServerT TopicApi (Action r)
+topicApi space
+    =  Page.viewTopics space
+  :<|> ideaApi       . IdeaLocationTopic space
+  :<|> Page.viewTopic  TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> Page.viewTopic  TabAllIdeas
+  :<|> Page.viewTopic  TabVotingIdeas
+  :<|> Page.viewTopic  TabWinningIdeas
+  :<|> Page.viewTopic  TabDelegation
 
   :<|> Page.createTopic space
   :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
-  where locSpace = IdeaLocationSpace space
-        locTopic = IdeaLocationTopic space
+aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
+aulaSpace space
+    =  ideaApi        (IdeaLocationSpace space)
+  :<|> Page.viewIdeas space
+  :<|> topicApi       space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
@@ -306,8 +313,8 @@ type AulaAdmin =
   :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
   :<|> "access" :> "perm-class-view"   :> GetH (Frame PageAdminSettingsGaPClassesView)
   :<|> "access" :> "perm-class-create" :> FormHandler PageAdminSettingsGaPClassesCreate
-  :<|> "user" :> Capture "user" (AUID User) :> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit
-  :<|> "class" :> Capture "class" SchoolClass :> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
+  :<|> User ::> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit
+  :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
