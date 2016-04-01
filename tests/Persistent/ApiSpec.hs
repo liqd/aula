@@ -7,7 +7,6 @@
 
 module Persistent.ApiSpec where
 
-import Arbitrary ()
 import Control.Exception (ErrorCall(ErrorCall), throwIO, finally)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
@@ -17,9 +16,10 @@ import Servant.Server
 import Test.Hspec
 import Test.QuickCheck
 
+import Arbitrary ()
+import CreateRandom
 import Persistent
 import Persistent.Implementation
-import CreateRandom
 import Types
 
 import AulaTests (testConfig)

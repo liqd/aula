@@ -45,11 +45,11 @@ instance FromJSON CsrfSecret where
 
 
 data Config = Config
-    { _dbPath :: FilePath
+    { _dbPath            :: FilePath
     , _listenerInterface :: String
-    , _listenerPort :: Int
-    , _htmlStatic :: FilePath
-    , _cfgCsrfSecret :: CsrfSecret
+    , _listenerPort      :: Int
+    , _htmlStatic        :: FilePath
+    , _cfgCsrfSecret     :: CsrfSecret
     , _logLevel          :: Bool  -- (see 'logger' below)
     }
   deriving (Show, Generic, ToJSON, FromJSON)
@@ -61,12 +61,12 @@ instance GetCsrfSecret Config where
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _dbPath = "./aula.db"
+    { _dbPath            = "./aula.db"  -- FIXME: use this for acid-state!
     , _listenerInterface = "0.0.0.0"
-    , _listenerPort = 8080
-    , _htmlStatic = "./static"
+    , _listenerPort      = 8080
+    , _htmlStatic        = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
-    , _cfgCsrfSecret = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logLevel          = False
     }
 

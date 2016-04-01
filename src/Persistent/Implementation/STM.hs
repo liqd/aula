@@ -21,9 +21,9 @@ import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
-import Types
 import Config
 import Persistent.Api
+import Types
 
 -- FIXME: Remove
 import Test.QuickCheck (generate)
