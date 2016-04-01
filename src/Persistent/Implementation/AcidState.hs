@@ -70,8 +70,16 @@ askDbM = ask
 getDbM :: Update AulaData AulaData
 getDbM = get
 
-putDbM :: DbField a -> a -> Update AulaData ()
-putDbM l = (dbFieldTraversal l .=)
+-- FIXME:
+-- putDbM :: DbField a -> a -> Update AulaData ()
+-- putDbM l = (dbFieldTraversal l .=)
+--
+-- First step
+-- putDbM :: DbField Idea -> Idea -> Update AulaData ()
+-- putDbM l = (dbFieldTraversal l .=)
+
+putDbM :: AulaData -> Update AulaData ()
+putDbM = put
 
 makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDbM]
 
@@ -79,7 +87,8 @@ instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM
     modifyDb l f = Persist . ExceptT . ReaderT $ \state -> fmap Right $ do
       db <- update state GetDbM
-      update state (PutDbM l (db & dbFieldTraversal l %~ f))
+      -- FIXME update state (PutDbM l (db ^? dbFieldTraversal l %~ _Just . f))
+      update state (PutDbM (db & dbFieldTraversal l %~ f))
 
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO
