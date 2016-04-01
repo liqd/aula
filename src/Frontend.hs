@@ -58,7 +58,7 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    withPersist Persistent.Implementation.mkRunPersist
+    withPersist (Persistent.Implementation.mkRunPersist cfg)
                 (runFrontendGeneric cfg)
 
 -- | Run the frontend with the given persitence implementation

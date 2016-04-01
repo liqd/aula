@@ -16,10 +16,12 @@ module Config
     , aulaRoot
     , setCurrentDirectoryToAulaRoot
     , getSamplesPath
+    , logger
     )
 where
 
 import Control.Lens
+import Control.Monad (when)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -43,11 +45,12 @@ instance FromJSON CsrfSecret where
 
 
 data Config = Config
-    { _dbPath :: FilePath
+    { _dbPath            :: FilePath
     , _listenerInterface :: String
-    , _listenerPort :: Int
-    , _htmlStatic :: FilePath
-    , _cfgCsrfSecret :: CsrfSecret
+    , _listenerPort      :: Int
+    , _htmlStatic        :: FilePath
+    , _cfgCsrfSecret     :: CsrfSecret
+    , _logLevel          :: Bool  -- (see 'logger' below)
     }
   deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -58,12 +61,13 @@ instance GetCsrfSecret Config where
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _dbPath = "./aula.db"
+    { _dbPath            = "./state/AulaData"
     , _listenerInterface = "0.0.0.0"
-    , _listenerPort = 8080
-    , _htmlStatic = "./static"
+    , _listenerPort      = 8080
+    , _htmlStatic        = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
-    , _cfgCsrfSecret = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _logLevel          = False
     }
 
 data WarnMissing = WarnMissing | DontWarnMissing
@@ -93,7 +97,8 @@ getConfig warnMissing = configFilePath >>= maybe (msg1 >> dflt) decodeFileDflt
 
     f :: [String] -> IO ()
     f msgs = case warnMissing of
-        WarnMissing     -> hPutStrLn stderr . unlines $ [""] <> msgs <> ["", cs $ encode defaultConfig]
+        WarnMissing     -> logger (logLevel .~ True $ defaultConfig)
+                         . unlines $ [""] <> msgs <> ["", cs $ encode defaultConfig]
         DontWarnMissing -> pure ()
 
 configFilePath :: IO (Maybe FilePath)
@@ -110,3 +115,10 @@ getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
   where
     var = "AULA_SAMPLES"
     msg = "please set $" <> var <> " to a path (will be created if n/a)"
+
+
+-- * logging
+
+-- | FIXME: this will become more sophisticated.  related: #65
+logger :: Config -> String -> IO ()
+logger cfg = when (cfg ^. logLevel) . hPutStrLn stderr

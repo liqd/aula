@@ -21,8 +21,9 @@ import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
-import Types
+import Config
 import Persistent.Api
+import Types
 
 -- FIXME: Remove
 import Test.QuickCheck (generate)
@@ -36,14 +37,14 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
-mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersist = do
-    putStrLn "persistence: stm"  -- FIXME: use logger for this
+mkRunPersist :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
+mkRunPersist cfg = do
+    logger cfg "persistence: stm"
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = ExceptT $ runExceptT c `runReaderT` tvar
     return (Nat run, return ())
 
-mkRunPersistInMemory :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
+mkRunPersistInMemory :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkRunPersistInMemory = mkRunPersist
 
 instance PersistM Persist where
