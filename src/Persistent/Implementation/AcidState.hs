@@ -67,8 +67,8 @@ instance MonadIO Persist where
 askDbM :: Query AulaData AulaData
 askDbM = ask
 
-getDbM :: DbField a -> Update AulaData a
-getDbM l = use (dbFieldTraversal l)
+getDbM :: Update AulaData AulaData
+getDbM = get
 
 putDbM :: DbField a -> a -> Update AulaData ()
 putDbM l = (dbFieldTraversal l .=)
@@ -78,8 +78,8 @@ makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDbM]
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM
     modifyDb l f = Persist . ExceptT . ReaderT $ \state -> fmap Right $ do
-      adata <- update state (GetDbM l)
-      update state (PutDbM l (f adata))
+      db <- update state GetDbM
+      update state (PutDbM l (db & dbFieldTraversal l %~ f))
 
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO
