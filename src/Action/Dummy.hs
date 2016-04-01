@@ -6,7 +6,7 @@
 
 module Action.Dummy
     ( DummyT(DummyT, unDummyT), Dummy
-    , runDummyT, runDummy
+    , runDummyT, runDummy, runDummyIO
     , notImplemented
     ) where
 
@@ -25,6 +25,9 @@ runDummyT = runExceptT . unDummyT
 
 runDummy :: Dummy e a -> Either e a
 runDummy = runIdentity . runDummyT
+
+runDummyIO :: Show e => DummyT e IO a -> IO a
+runDummyIO m = either (fail . show) pure =<< runDummyT m
 
 notImplemented :: (Monad m, ThrowError500 e) => String -> String -> DummyT e m a
 notImplemented meth cl = throwError500 $ unlines
