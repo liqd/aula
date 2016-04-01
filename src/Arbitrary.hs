@@ -783,7 +783,7 @@ fishDelegationNetworkIO = do
     -- We use @Persistent.Implementation.STM@ here to make sure it doesn't rust.
     -- In either case, it does have to be done in memory, so as not to corrupt the on-disk DB.
     withPersist
-        Persistent.Implementation.STM.mkRunPersistInMemory
+        (Persistent.Implementation.STM.mkRunPersistInMemory cfg)
         (\rp -> do
             v :: Either ServantErr DelegationNetwork
                 <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)

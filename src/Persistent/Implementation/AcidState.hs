@@ -27,6 +27,7 @@ import Data.Acid.Memory (openMemoryState)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
+import Config
 import Persistent.Api
 import Types
 
@@ -50,14 +51,14 @@ mkRunPersistGeneric openState closeState = do
   let rp = Nat (\(Persist c) -> ExceptT $ runExceptT c `runReaderT` db)
   return (rp, closeState db)
 
-mkRunPersist :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersist = do
-    putStrLn "persistence: acid-state (disk)"  -- FIXME: use logger for this
+mkRunPersist :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
+mkRunPersist cfg = do
+    logger cfg "persistence: acid-state (disk)"
     mkRunPersistGeneric openLocalState createCheckpointAndClose
 
-mkRunPersistInMemory :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersistInMemory = do
-    putStrLn "persistence: acid-state (memory)"  -- FIXME: use logger for this
+mkRunPersistInMemory :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
+mkRunPersistInMemory cfg = do
+    logger cfg "persistence: acid-state (memory)"
     mkRunPersistGeneric openMemoryState closeAcidState
 
 instance MonadIO Persist where

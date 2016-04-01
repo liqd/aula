@@ -11,5 +11,5 @@ main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
     cfg <- getConfig WarnMissing
-    putStrLn $ "running aula with config " <> show cfg  -- FIXME use logger for this
+    logger cfg $ "running aula with config " <> show cfg
     runFrontend cfg

@@ -37,12 +37,12 @@ spec = describe "stories" $ do
 story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
-        config <- Config.getConfig DontWarnMissing
-        (persist, closePersist) <- Persistent.Implementation.STM.mkRunPersist
+        cfg <- Config.getConfig DontWarnMissing
+        (persist, closePersist) <- Persistent.Implementation.STM.mkRunPersist cfg
 
         let runAction :: Action Persistent.Implementation.STM.Persist :~> IO
             runAction = exceptToFail
-                      . mkRunAction (Action.ActionEnv persist config)
+                      . mkRunAction (Action.ActionEnv persist cfg)
 
         unNat (exceptToFail . persist) genInitialTestDb
         a <- unNat runAction $ AulaTests.Stories.Interpreter.Action.run program

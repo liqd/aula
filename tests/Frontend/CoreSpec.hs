@@ -221,7 +221,7 @@ renderForm (F g) =
 --
 -- FIXME: simplify, inline and then use @withPersist@.
 runAction :: Config -> Action Persistent.Implementation.Persist a -> IO (ExceptT ServantErr IO a, IO ())
-runAction cfg action = do (rp, rpClose) <- Persistent.Implementation.mkRunPersistInMemory
+runAction cfg action = do (rp, rpClose) <- Persistent.Implementation.mkRunPersistInMemory cfg
                           return (unNat (mkRunAction (ActionEnv rp cfg)) action, rpClose)
 
 failOnError :: Action Persistent.Implementation.Persist a -> IO a

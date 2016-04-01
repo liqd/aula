@@ -95,7 +95,7 @@ mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
 
 runFrontendSafeFork :: Config -> IO ThreadId
 runFrontendSafeFork cfg = do
-    threadId <- forkIO $ withPersist Persistent.Implementation.mkRunPersistInMemory
+    threadId <- forkIO $ withPersist (Persistent.Implementation.mkRunPersistInMemory cfg)
                                      (runFrontendGeneric cfg)
     let loop = catch
           (Network.Wreq.get $ mkServerUri cfg "/")

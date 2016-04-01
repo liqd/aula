@@ -22,18 +22,21 @@ import Persistent.Implementation
 import CreateRandom
 import Types
 
+import AulaTests (testConfig)
+
+
 -- FIXME: use @withPersist@ (instead of @before/it@?)
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkInitial = do
-    (rp, rpClose) <- mkRunPersistInMemory
+    (rp, rpClose) <- mkEmpty
     runP rp genInitialTestDb
     return (rp, rpClose)
 
 -- | the empty database
 mkEmpty :: IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkEmpty = mkRunPersistInMemory
+mkEmpty = testConfig >>= mkRunPersistInMemory
 
 runPclose :: (m ~ IO, MonadIO m) => (Persist :~> ExceptT PersistExcept m, m ()) -> Persist a -> m a
 runPclose (persist, persistClose) m = -- (`liftIO $` here, and remove the `m ~ IO`, `-XGADTs` above?)
