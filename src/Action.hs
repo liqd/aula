@@ -36,8 +36,7 @@ module Action
     , voteIdea
     , voteIdeaComment
     , voteIdeaCommentReply
-    , markFeasible
-    , markNotFeasible
+    , markIdea
 
       -- * page handling
     , createTopic
@@ -197,15 +196,20 @@ isLoggedIn = userState $ to validLoggedIn
 
 -- * Phase Transitions
 
+topicPhaseChange
+    :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseChange -> r (m ())
+topicPhaseChange topic change = do
+    case phaseTrans (topic ^. topicPhase) change of
+        Nothing -> throwError $ persistError "Invalid phase transition"
+        Just (phase', actions) -> do
+            setTopicPhase (topic ^. _Id) phase'
+            return $ mapM_ (phaseAction topic) actions
+
 topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
 topicInRefinementTimedOut tid =
     join . persistent $ do
         Just topic <- findTopic tid -- FIXME: Not found
-        case phaseTrans (topic ^. topicPhase) RefinementPhaseTimeOut of
-            Nothing -> throwError $ persistError "Invalid phase transition"
-            Just (phase', actions) -> do
-                setTopicPhase tid phase'
-                return $ mapM_ (phaseAction topic) actions
+        topicPhaseChange topic RefinementPhaseTimeOut
 
 setTopicPhase :: PersistM m => AUID Topic -> Phase -> m ()
 setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
@@ -218,17 +222,24 @@ phaseAction _ ResultPhaseModeratorEmail =
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throw an exception
 -- FIXME: Authorization
-markFeasible :: (ActionPersist r m, ActionUserHandler m) => Idea -> Maybe Document -> m IdeaResult
-markFeasible idea reason = do
-    persistent $ checkPhaseJury idea
-    currentUserAddDb (addIdeaResult (idea ^. _Id)) (Feasible reason)
+-- FIXME: Compute value in one persistent computation
+-- FIXME: Only Feasible and NotFeasible cases are allowed
+markIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
+markIdea iid ideaResultValue = do
+    topic <- persistent $ do
+        Just idea <- findIdea iid -- FIXME: 404
+        Just topic <- ideaTopic idea
+        checkPhaseJury topic
+        return topic
+    currentUserAddDb (addIdeaResult iid) ideaResultValue
+    join . persistent $ do
+        allMarked <- checkAllIdeasMarked topic
+        if allMarked
+            then topicPhaseChange topic =<< AllIdeasAreMarked <$> phaseEndVote
+            else emptyComputation
+  where
+    emptyComputation = return (return ())
 
--- | Mark idea as not feasible if the idea is in the Jury phase, if not throw an exception
--- FIXME: Authorization
-markNotFeasible :: (ActionPersist r m, ActionUserHandler m) => Idea -> Document -> m IdeaResult
-markNotFeasible idea reason = do
-    persistent $ checkPhaseJury idea
-    currentUserAddDb (addIdeaResult (idea ^. _Id)) (NotFeasible reason)
 
 -- * Page Handling
 
