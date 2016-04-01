@@ -261,7 +261,7 @@ addDb l (cUser, pa) = do
     modifyAMap l (a ^. _Id) (const a)
     return a
 
-addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb m a
+addDbValue :: (HasMetaInfo a, FromProto a) => DbField a -> AddDb m a
 addDbValue l (cUser, pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb l (const a)
@@ -432,7 +432,8 @@ instance FromProto IdeaResult where
 
 addIdeaResult :: AUID Idea -> AddDb m IdeaResult
 addIdeaResult iid =
-    addDbValue (dbIdeaMap . at iid . _Just . ideaResult . _Just)
+    -- TODO
+    addDbValue (error "dbIdeaMap . at iid . _Just . ideaResult . _Just")
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
