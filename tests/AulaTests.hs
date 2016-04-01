@@ -73,7 +73,7 @@ withServer action = do
                         & redirects   .~ 0
         query sess = Query (Sess.postWith opts sess . mkServerUri cfg)
                            (Sess.getWith opts sess . mkServerUri cfg)
-        init q = do
+        initialize q = do
             resp
                <- post q "/api/manage-state/create-init"
                     [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
@@ -85,7 +85,7 @@ withServer action = do
         (runFrontendSafeFork cfg)
         killThread
         (const . Sess.withSession $ \sess -> do
-            init $ query sess
+            initialize $ query sess
             action $ query sess)
 
 mkServerUri :: Config -> String -> String
