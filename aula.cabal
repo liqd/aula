@@ -40,6 +40,7 @@ library
     , bytestring
     , case-insensitive
     , cassava
+    , cereal
     , containers
     , cookie
     , digestive-functors
@@ -131,6 +132,7 @@ executable aula-html-dummies
     , bytestring
     , case-insensitive
     , cassava
+    , cereal
     , containers
     , cookie
     , digestive-functors
@@ -190,6 +192,7 @@ executable aula-server
     , bytestring
     , case-insensitive
     , cassava
+    , cereal
     , containers
     , cookie
     , digestive-functors
@@ -247,6 +250,7 @@ test-suite spec
     , bytestring
     , case-insensitive
     , cassava
+    , cereal
     , containers
     , cookie
     , digestive-functors
