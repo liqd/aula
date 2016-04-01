@@ -39,7 +39,6 @@ import Action.Implementation (Action, mkRunAction)
 import Config
 import CreateRandom
 import Data.UriPath
-import DemoData
 import Frontend.Core
 import Frontend.Page as Page
 import Persistent
@@ -75,13 +74,6 @@ runFrontendGeneric cfg rp = do
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
         runAction aulaActions
-
-    Right _ <- runExceptT $ unNat rp genInitialTestDb -- FIXME: Remove Bootstrapping DB
-
-    when (cfg ^. generateDemoData) $ do  -- FIXME: move to non-production code.
-        demoDataGen <- mkUniverse
-        Right _ <- runExceptT $ unNat rp demoDataGen
-        return ()
 
     -- Note that no user is being logged in anywhere here.
     runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
