@@ -1,5 +1,5 @@
 
-status       | Build Status                                                                                          | more info
+status       | build btatus                                                                                          | more info
 ------------ |-------------------------------------------------------------------------------------------------------|--------------------------------
 experimental | [![Build Status](https://travis-ci.org/liqd/aula.svg?branch=master)](https://travis-ci.org/liqd/aula) | http://aula-blog.website/
 
