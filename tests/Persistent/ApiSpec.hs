@@ -80,12 +80,12 @@ addDbSpecProp name getXs addX propX =
         context "on empty database" . before (mkEmpty cfg) $ t
         context "on initial database" . before (mkInitial cfg) $ t
 
-addDbSpec :: (Foldable f, Arbitrary proto) =>
-             Config -> String -> Persist (f a) -> ((User, proto) -> Persist a) -> Spec
+addDbSpec :: (Foldable f, Arbitrary proto, PersistM r) =>
+             Config -> String -> r (f a) -> ((User, proto) -> r a) -> Spec
 addDbSpec cfg name getXs addX = addDbSpecProp cfg name getXs addX (\_ _ -> passes)
 
-findInBySpec :: (Eq a, Show a, Arbitrary k) =>
-                Config -> String -> Persist [a] -> (k -> Persist (Maybe a)) ->
+findInBySpec :: (Eq a, Show a, Arbitrary k, PersistM r) =>
+                Config -> String -> r [a] -> (k -> r (Maybe a)) ->
                 Fold a k -> (k -> k) ->
                 Spec
 findInBySpec cfg name getXs findXBy f change =
@@ -113,8 +113,8 @@ findInBySpec cfg name getXs findXBy f change =
                     rpClose
                     mu `shouldBe` Just x
 
-findAllInBySpec :: (Eq a, Show a, PersistM m) =>
-                    Config -> String -> m [a] -> m (Gen k) -> (k -> m [a]) ->
+findAllInBySpec :: (Eq a, Show a, PersistM r) =>
+                    Config -> String -> r [a] -> r (Gen k) -> (k -> r [a]) ->
                     Fold a k -> (k -> k) ->
                     Spec
 findAllInBySpec cfg name getXs genKs findAllXBy f change =
