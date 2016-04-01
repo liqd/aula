@@ -104,6 +104,7 @@ tests:
       - base >=4.8 && <4.9
       - binary >= 0.7.5 && <0.8
       - digestive-functors >= 0.8 && <0.9
+      - free
       - hspec
       - hspec-wai
       - lens

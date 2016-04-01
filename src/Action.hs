@@ -37,6 +37,10 @@ module Action
     , voteIdeaComment
     , voteIdeaCommentReply
 
+      -- * page handling
+    , createTopic
+    , createIdea
+
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
 
@@ -209,6 +213,15 @@ phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
 phaseAction _ ResultPhaseModeratorEmail =
     traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
+
+
+-- * Page Handling
+
+createIdea :: (ActionPersist r m, ActionUserHandler m) => ProtoIdea -> m Idea
+createIdea = currentUserAddDb addIdea
+
+createTopic :: (ActionPersist r m, ActionUserHandler m) => ProtoTopic -> m Topic
+createTopic = currentUserAddDb addTopic
 
 
 -- * Action Helpers

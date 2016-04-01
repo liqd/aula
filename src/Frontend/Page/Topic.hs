@@ -19,10 +19,11 @@ module Frontend.Page.Topic
     , editTopic )
 where
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUserAddDb)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept)
 import Control.Exception (assert)
 import Frontend.Prelude hiding (moveIdeasToLocation)
 
+import qualified Action (createTopic)
 import qualified Persistent
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -267,7 +268,7 @@ createTopic space =
         (persistent $ CreateTopic space
             <$> findWildIdeasBySpace space
             <*> phaseEndRefinement)
-        (currentUserAddDb addTopic)
+        Action.createTopic
 
 editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
 editTopic topicId = redirectFormHandler getPage editTopicPostHandler

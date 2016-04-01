@@ -26,6 +26,7 @@ import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persiste
 import Frontend.Page.Comment
 import Frontend.Prelude
 
+import qualified Action (createIdea)
 import qualified Frontend.Path as U
 import qualified Data.Map as Map
 import qualified Text.Digestive.Form as DF
@@ -392,7 +393,7 @@ viewIdea ideaId = makeFrame =<< persistent (do
     pure $ ViewIdea idea phase)
 
 createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
-createIdea loc = redirectFormHandler (pure $ CreateIdea loc) (currentUserAddDb addIdea)
+createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
 
 editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =

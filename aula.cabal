@@ -285,6 +285,7 @@ test-suite spec
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
     , digestive-functors >= 0.8 && <0.9
+    , free
     , hspec
     , hspec-wai
     , lens
@@ -299,6 +300,10 @@ test-suite spec
   other-modules:
       AllModulesSpec
       AulaTests
+      AulaTests.Stories.DSL
+      AulaTests.Stories.Interpreter.Action
+      AulaTests.Stories.Tests
+      AulaTests.StoriesSpec
       BackendSpec
       Frontend.CoreSpec
       Frontend.Page.FileUploadSpec
