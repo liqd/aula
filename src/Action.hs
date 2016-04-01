@@ -25,6 +25,7 @@ module Action
     , modifyCurrentUser
     , isLoggedIn
     , topicInRefinementTimedOut
+    , topicInVotingTimedOut
     , validUserState
     , validLoggedIn
 
@@ -205,11 +206,17 @@ topicPhaseChange topic change = do
             setTopicPhase (topic ^. _Id) phase'
             return $ mapM_ (phaseAction topic) actions
 
-topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
-topicInRefinementTimedOut tid =
+topicTimeout :: (ActionPersist r m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout phaseChange tid =
     join . persistent $ do
         Just topic <- findTopic tid -- FIXME: Not found
-        topicPhaseChange topic RefinementPhaseTimeOut
+        topicPhaseChange topic phaseChange
+
+topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
+
+topicInVotingTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 setTopicPhase :: PersistM m => AUID Topic -> Phase -> m ()
 setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
