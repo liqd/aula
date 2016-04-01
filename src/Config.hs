@@ -61,7 +61,7 @@ instance GetCsrfSecret Config where
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _dbPath            = "./aula.db"  -- FIXME: use this for acid-state!
+    { _dbPath            = "./state/AulaData"
     , _listenerInterface = "0.0.0.0"
     , _listenerPort      = 8080
     , _htmlStatic        = "./static"

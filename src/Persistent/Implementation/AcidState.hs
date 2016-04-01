@@ -22,7 +22,7 @@ import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (get, put)
 import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, update)
-import Data.Acid.Local (openLocalState, createCheckpointAndClose)
+import Data.Acid.Local (openLocalStateFrom, createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
@@ -54,7 +54,7 @@ mkRunPersistGeneric openState closeState = do
 mkRunPersist :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkRunPersist cfg = do
     logger cfg "persistence: acid-state (disk)"
-    mkRunPersistGeneric openLocalState createCheckpointAndClose
+    mkRunPersistGeneric (openLocalStateFrom $ cfg ^. dbPath) createCheckpointAndClose
 
 mkRunPersistInMemory :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
 mkRunPersistInMemory cfg = do
