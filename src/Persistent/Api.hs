@@ -98,7 +98,8 @@ import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
-import Data.SafeCopy (base, deriveSafeCopy)
+import Data.Serialize (Serialize,get,put)
+import Data.SafeCopy (SafeCopy, base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
@@ -159,6 +160,13 @@ data DbField a where
 
     -- AMap specific
     DbAt :: DbField (AMap a) -> AUID a -> DbField a
+
+-- TODO
+-- deriveSafeCopy 0 'base ''DbField
+instance Serialize (DbField a) where
+    put = error "Serialize (DbField a) TODO"
+    get = error "Serialize (DbField a) TODO"
+instance SafeCopy (DbField a) where
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
 dbFieldTraversal = \case
