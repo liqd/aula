@@ -82,7 +82,7 @@ module Persistent.Api
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
-    , ideaPhase
+    , addIdeaResult
     )
 where
 
@@ -208,6 +208,12 @@ addDb l (cUser, pa) = do
                 <> "to target exactly 1 field not " <> show len
     a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb l $ at (a ^. _Id) .~ Just a
+    return a
+
+addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb m a
+addDbValue l (cUser, pa) = do
+    a <- fromProto pa <$> nextMetaInfo cUser
+    modifyDb l (const a)
     return a
 
 findIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m (Maybe a)
@@ -374,6 +380,13 @@ addCommentVoteToIdeaCommentReply iid cid rid =
                      . at cid . _Just . commentReplies
                      . at rid . _Just . commentVotes)
 
+instance FromProto IdeaResult where
+    fromProto = flip IdeaResult
+
+addIdeaResult :: AUID Idea -> AddDb m IdeaResult
+addIdeaResult iid =
+    addDbValue (dbIdeaMap . at iid . _Just . ideaResult . _Just)
+
 nextId :: PersistM m => m (AUID a)
 nextId = do
     modifyDb dbLastId (+1)
@@ -479,12 +492,3 @@ mkMetaInfo cUser now oid = MetaInfo
 
 nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
 nextMetaInfo cUser = mkMetaInfo cUser <$> getCurrentTimestamp <*> nextId
-
-ideaPhase :: Idea -> PersistM m => m (Maybe Phase)
-ideaPhase idea = case idea ^. ideaLocation of
-    IdeaLocationSpace _ ->
-        pure Nothing
-    IdeaLocationTopic _ topicId -> do
-        -- (failure to match the following can only be caused by an inconsistent state)
-        Just topic <- findTopic topicId
-        pure . Just $ topic ^. topicPhase

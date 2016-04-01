@@ -7,6 +7,8 @@ module Persistent.Idiom
 where
 
 import Control.Lens
+import Control.Monad (when)
+import Control.Monad.Except (throwError)
 import Data.Time
 
 import qualified Data.Map as Map (size)
@@ -56,3 +58,19 @@ phaseEndRefinement = do
     DurationDays (days :: Int) <- getDb dbElaborationDuration
     let day' :: Integer = toModifiedJulianDay (utctDay timestamp) + fromIntegral days
     return . Timestamp $ timestamp { utctDay = ModifiedJulianDay day' }
+
+-- | Returns the Just phase of an idea if the idea is assocaited with a topic, Nothing
+-- if the idea is a wild idea, or throws an error if the topic is missing.
+ideaPhase :: PersistM m => Idea -> m (Maybe Phase)
+ideaPhase idea = case idea ^. ideaLocation of
+    IdeaLocationSpace _ ->
+        pure Nothing
+    IdeaLocationTopic _ topicId -> do
+        -- (failure to match the following can only be caused by an inconsistent state)
+        Just topic <- findTopic topicId
+        pure . Just $ topic ^. topicPhase
+
+checkPhaseJury :: PersistM m => Idea -> m ()
+checkPhaseJury idea = do
+    Just phase <- ideaPhase idea
+    when (phase /= PhaseJury) . throwError $ persistError "Idea is not in the jury phase"

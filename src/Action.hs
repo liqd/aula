@@ -36,6 +36,8 @@ module Action
     , voteIdea
     , voteIdeaComment
     , voteIdeaCommentReply
+    , markFeasible
+    , markNotFeasible
 
       -- * page handling
     , createTopic
@@ -214,6 +216,19 @@ phaseAction _ JuryPhasePrincipalEmail =
 phaseAction _ ResultPhaseModeratorEmail =
     traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
 
+-- | Mark idea as feasible if the idea is in the Jury phase, if not throw an exception
+-- FIXME: Authorization
+markFeasible :: (ActionPersist r m, ActionUserHandler m) => Idea -> Maybe Document -> m IdeaResult
+markFeasible idea reason = do
+    persistent $ checkPhaseJury idea
+    currentUserAddDb (addIdeaResult (idea ^. _Id)) (Feasible reason)
+
+-- | Mark idea as not feasible if the idea is in the Jury phase, if not throw an exception
+-- FIXME: Authorization
+markNotFeasible :: (ActionPersist r m, ActionUserHandler m) => Idea -> Document -> m IdeaResult
+markNotFeasible idea reason = do
+    persistent $ checkPhaseJury idea
+    currentUserAddDb (addIdeaResult (idea ^. _Id)) (NotFeasible reason)
 
 -- * Page Handling
 
