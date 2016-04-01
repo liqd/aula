@@ -4,6 +4,8 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE ViewPatterns          #-}
+
 module AulaTests
     ( module AulaTests
     , module X
@@ -71,11 +73,20 @@ withServer action = do
                         & redirects   .~ 0
         query sess = Query (Sess.postWith opts sess . mkServerUri cfg)
                            (Sess.getWith opts sess . mkServerUri cfg)
+        init q = do
+            resp
+               <- post q "/api/manage-state/create-init"
+                    [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+            case resp of
+                (view (responseStatus . statusCode) -> 204) -> pure ()
+                _ -> error $ "withServer: init failed: " <> show resp
 
     bracket
         (runFrontendSafeFork cfg)
         killThread
-        (const . Sess.withSession $ action . query)
+        (const . Sess.withSession $ \sess -> do
+            init $ query sess
+            action $ query sess)
 
 mkServerUri :: Config -> String -> String
 mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
