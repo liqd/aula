@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
+{-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
@@ -18,7 +19,7 @@ module Persistent.Api
     , AulaGetter
     , AulaSetter
     , DbField(..)
-    , dbFieldSetter
+    , dbFieldTraversal
     , PersistExcept(PersistExcept, unPersistExcept)
     , withPersist
     , persistError
@@ -135,45 +136,51 @@ type AulaGetter a = Getter AulaData a
 type AulaSetter a = Setter' AulaData a
 type AulaTraversal a = Traversal' AulaData a
 
-
 data DbField a where
     DbSpaceSet :: DbField (Set IdeaSpace)
-    DbIdeaMap :: DbField Ideas  -- TODO: are these needed? e.g., for removal? or union of two maps?
-    DbIdea :: AUID Idea -> DbField Idea
-    DbUserMap :: DbField Users
-    DbUser :: AUID User -> DbField User
-    DbTopicMap :: DbField Topics
-    DbTopic :: AUID Topic -> DbField Topic
-    DbDelegationMap :: DbField Delegations
-    DbDelegation :: AUID Delegation -> DbField Delegation
+    DbIdeas :: DbField Ideas
+    DbUsers :: DbField Users
+    DbTopics :: DbField Topics
+    DbDelegations :: DbField Delegations
     DbElaborationDuration :: DbField DurationDays
     DbVoteDuration :: DbField DurationDays
     DbSchoolQuorum :: DbField Percent
     DbClassQuorum :: DbField Percent
     DbLastId :: DbField Integer
-    DbCompleteAulaData :: DbField AulaData
--- TODO: add more like that, pity it's not composable; or is it?
-    DbIdeaComment :: AUID Idea -> AUID Comment -> DbField Comment
 
-dbFieldSetter :: DbField a -> AulaSetter a
-dbFieldSetter DbSpaceSet = dbSpaceSet
-dbFieldSetter DbIdeaMap = dbIdeaMap
-dbFieldSetter (DbIdea iid) = dbIdeaMap . at iid . _Just
-dbFieldSetter DbUserMap = dbUserMap
-dbFieldSetter (DbUser iid) = dbUserMap . at iid . _Just
-dbFieldSetter DbTopicMap = dbTopicMap
-dbFieldSetter (DbTopic iid) = dbTopicMap . at iid . _Just
-dbFieldSetter DbDelegationMap = dbDelegationMap
-dbFieldSetter (DbDelegation iid) = dbDelegationMap . at iid . _Just
-dbFieldSetter DbElaborationDuration = dbElaborationDuration
-dbFieldSetter DbVoteDuration = dbVoteDuration
-dbFieldSetter DbSchoolQuorum = dbSchoolQuorum
-dbFieldSetter DbClassQuorum = dbClassQuorum
-dbFieldSetter DbLastId = dbLastId
-dbFieldSetter DbCompleteAulaData = id
--- TODO: add more like that, pity it's not composable; or is it?
-dbFieldSetter (DbIdeaComment iid cid) = dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just
+    -- Idea specific
+    DbIdeaLikes :: DbField Idea -> DbField IdeaLikes
+    DbIdeaVotes :: DbField Idea -> DbField IdeaVotes
+    DbIdeaComments :: DbField Idea -> DbField Comments
 
+    -- Comment specific
+    DbCommentReplies :: DbField Comment -> DbField Comments
+    DbCommentVotes :: DbField Comment -> DbField CommentVotes
+
+    -- AMap specific
+    DbAt :: DbField (AMap a) -> AUID a -> DbField a
+
+dbFieldTraversal :: DbField a -> AulaTraversal a
+dbFieldTraversal = \case
+    DbSpaceSet -> dbSpaceSet
+    DbIdeas -> dbIdeaMap
+    DbUsers -> dbUserMap
+    DbTopics -> dbTopicMap
+    DbDelegations -> dbDelegationMap
+    DbElaborationDuration -> dbElaborationDuration
+    DbVoteDuration -> dbVoteDuration
+    DbSchoolQuorum -> dbSchoolQuorum
+    DbClassQuorum -> dbClassQuorum
+    DbLastId -> dbLastId
+
+    DbIdeaLikes l -> dbFieldTraversal l . ideaLikes
+    DbIdeaVotes l -> dbFieldTraversal l . ideaVotes
+    DbIdeaComments l -> dbFieldTraversal l . ideaComments
+
+    DbCommentReplies l -> dbFieldTraversal l . commentReplies
+    DbCommentVotes l -> dbFieldTraversal l . commentVotes
+
+    DbAt l i -> dbFieldTraversal l . at i . _Just
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -242,16 +249,16 @@ type AddDb m a = UserWithProto a -> PersistM m => m a
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: (HasMetaInfo a, FromProto a) => (AUID a -> DbField a) -> AddDb m a
+addDb :: (HasMetaInfo a, FromProto a) => DbField (AMap a) -> AddDb m a
 addDb l (cUser, pa) = do
-    a <- fromProto pa <$> nextMetaInfo cUser
     assertPersistM $ do
         db <- getDb id
-        let len = undefined + 17 -- TODO: lengthOf (dbFieldSetter (l $ a ^. _Id) *and then go one level up*) db
+        let len = lengthOf (dbFieldTraversal l) db
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    modifyDb (l $ a ^. _Id) (const a)
+    a <- fromProto pa <$> nextMetaInfo cUser
+    modifyAMap l (a ^. _Id) (const a)
     return a
 
 addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb m a
@@ -294,7 +301,7 @@ addIdeaSpaceIfNotExists ispace = do
     unless exists $ modifyDb DbSpaceSet (Set.insert ispace)
 
 addIdea :: AddDb m Idea
-addIdea = addDb DbIdea
+addIdea = addDb DbIdeas
 
 findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
 findIdea = findInById dbIdeaMap
@@ -303,14 +310,17 @@ findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
+modifyAMap :: DbField (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
+modifyAMap l = modifyDb . DbAt l
+
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
-modifyIdea = modifyDb . DbIdea
+modifyIdea = modifyAMap DbIdeas
 
 modifyUser :: AUID User -> (User -> User) -> PersistM m => m ()
-modifyUser = modifyDb . DbUser
+modifyUser = modifyAMap DbUsers
 
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
-modifyTopic = modifyDb . DbTopic
+modifyTopic = modifyAMap DbTopics
 
 findUser :: AUID User -> PersistM m => m (Maybe User)
 findUser = findInById dbUserMap
@@ -328,7 +338,7 @@ moveIdeasToLocation ideaIds location =
 
 addTopic :: AddDb m Topic
 addTopic pt = do
-    t <- addDb DbTopic pt
+    t <- addDb DbTopics pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
@@ -338,7 +348,7 @@ addTopic pt = do
     return t
 
 addDelegation :: AddDb m Delegation
-addDelegation = addDb DbDelegation
+addDelegation = addDb DbDelegations
 
 findDelegationsByContext :: DelegationContext -> PersistM m => m [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
@@ -372,7 +382,7 @@ instance FromProto IdeaLike where
 -- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb m IdeaLike
-addLikeToIdea iid = undefined -- TODO: addDb (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea = addDb . DbIdeaLikes . DbAt DbIdeas
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
@@ -380,7 +390,7 @@ instance FromProto IdeaVote where
 -- | FIXME: Same user can vote on the same idea more than once (Issue #308).
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb m IdeaVote
-addVoteToIdea iid = undefined -- TODO: addDb (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea = addDb . DbIdeaVotes . DbAt DbIdeas
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -392,14 +402,13 @@ instance FromProto Comment where
 
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: AUID Idea -> AddDb m Comment
-addCommentToIdea iid = undefined -- TODO: addDb (dbIdeaMap . at iid . _Just . ideaComments)
+addCommentToIdea = addDb . DbIdeaComments . DbAt DbIdeas
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
-addReplyToIdeaComment iid cid =
-    undefined -- TODO: addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies)
+addReplyToIdeaComment iid = addDb . DbCommentReplies . DbAt (DbIdeaComments (DbAt DbIdeas iid))
 
 instance FromProto CommentVote where
     fromProto = flip CommentVote
@@ -408,18 +417,15 @@ instance FromProto CommentVote where
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
-addCommentVoteToIdeaComment iid cid =
-    undefined -- TODO: addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
+addCommentVoteToIdeaComment iid = addDb . DbCommentVotes . DbAt (DbIdeaComments (DbAt DbIdeas iid))
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
 addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb m CommentVote
-addCommentVoteToIdeaCommentReply iid cid rid =
-    undefined -- TODO: addDb (dbIdeaMap . at iid . _Just . ideaComments
---                     . at cid . _Just . commentReplies
---                     . at rid . _Just . commentVotes)
+addCommentVoteToIdeaCommentReply iid cid =
+    addDb . DbCommentVotes . DbAt (DbCommentReplies (DbAt (DbIdeaComments (DbAt DbIdeas iid)) cid))
 
 instance FromProto IdeaResult where
     fromProto = flip IdeaResult
@@ -453,7 +459,7 @@ addUser (cUser, proto) = do
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
     let user = userFromProto metainfo uLogin uPassword proto
-    modifyDb (DbUser $ user ^. _Id) (const user)
+    modifyUser (user ^. _Id) (const user)
     return user
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
@@ -469,7 +475,7 @@ addFirstUser proto = do
         metainfo = mkMetaInfo cUser now uid
         user = userFromProto metainfo uLogin uPassword proto
 
-    modifyDb (DbUser $ user ^. _Id) (const user)
+    modifyUser (user ^. _Id) (const user)
     return user
 
 mkUserLogin :: ProtoUser -> PersistM m => m UserLogin

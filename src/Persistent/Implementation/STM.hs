@@ -51,7 +51,7 @@ instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $
         fmap (Right . view l) . atomically . readTVar
     modifyDb l f = Persist . ExceptT . ReaderT $
-        \state -> fmap Right . atomically $ modifyTVar' state (dbFieldSetter l %~ f)
+        \state -> fmap Right . atomically $ modifyTVar' state (dbFieldTraversal l %~ f)
 
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO

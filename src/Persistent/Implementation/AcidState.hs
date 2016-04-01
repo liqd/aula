@@ -68,10 +68,10 @@ askDbM :: Query AulaData AulaData
 askDbM = ask
 
 getDbM :: DbField a -> Update AulaData a
-getDbM l = use (dbFieldSetter l)
+getDbM l = use (dbFieldTraversal l)
 
 putDbM :: DbField a -> a -> Update AulaData ()
-putDbM l = (dbFieldSetter l .=)
+putDbM l = (dbFieldTraversal l .=)
 
 makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDbM]
 
