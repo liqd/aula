@@ -42,6 +42,7 @@ import CreateRandom
 import Data.UriPath
 import Frontend.Core
 import Frontend.Page as Page
+import Frontend.Testing
 import Persistent
 import Types
 
@@ -337,6 +338,7 @@ type AulaTesting =
   :<|> "undefined" :> GetH ()
   :<|> "error500" :> GetH ()
   :<|> "error303" :> GetH ()
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "timeout" :> GetH ()
 
 aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
 aulaTesting =
@@ -353,6 +355,7 @@ aulaTesting =
   :<|> undefined
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
+  :<|> makeTopicTimeout
 
 data Page404 = Page404
 
