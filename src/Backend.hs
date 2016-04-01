@@ -42,7 +42,7 @@ delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
 -- * persistent state management (for demo operation)
 
 type ManageStateApi =
-       "whipe"       :> Post '[JSON] ()
+       "wipe"        :> Post '[JSON] ()
   :<|> "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
 
