@@ -154,6 +154,7 @@ data DbField a where
     DbIdeaLikes :: DbField Idea -> DbField IdeaLikes
     DbIdeaVotes :: DbField Idea -> DbField IdeaVotes
     DbIdeaComments :: DbField Idea -> DbField Comments
+    DbIdeaResult :: DbField Idea -> DbField (Maybe IdeaResult)
 
     -- Comment specific
     DbCommentReplies :: DbField Comment -> DbField Comments
@@ -446,7 +447,7 @@ instance FromProto IdeaResult where
 addIdeaResult :: AUID Idea -> AddDb m IdeaResult
 addIdeaResult iid =
     -- TODO
-    addDbValue (error "dbIdeaMap . at iid . _Just . ideaResult . _Just")
+    addDbValue (DbJust . DbIdeaResult . DbJust . (`DbAt` iid) $ DbIdeas)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
