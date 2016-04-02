@@ -32,7 +32,6 @@ dependencies:
     - bytestring
     - case-insensitive
     - cassava
-    - cereal
     - containers
     - cookie
     - digestive-functors
