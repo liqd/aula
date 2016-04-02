@@ -785,7 +785,7 @@ fishDelegationNetworkIO = do
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
             either (throwIO . ErrorCall . ppShow) pure v
-    withPersist (mkRunPersist cfg) runAction
+    withPersist cfg runAction
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

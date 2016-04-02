@@ -40,7 +40,7 @@ story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
         cfg <- (persistenceImpl .~ STM) <$> Config.getConfig DontWarnMissing
-        withPersist' cfg $ \(persist :: RunPersistNat IO r) -> do
+        withPersist cfg $ \(persist :: RunPersistNat IO r) -> do
 
             let runAction :: Action r :~> IO
                 runAction = exceptToFail

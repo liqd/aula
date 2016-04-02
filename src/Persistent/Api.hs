@@ -21,7 +21,7 @@ module Persistent.Api
     , RunPersistNat
     , RunPersistT(..)
     , RunPersist
-    , withPersist
+    , withPersist'
 
     , AulaData
     , emptyAulaData
@@ -187,8 +187,10 @@ data RunPersistT m =
 
 type RunPersist = RunPersistT IO
 
-withPersist :: IO RunPersist -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
-withPersist mkRunP m = do
+-- | A more low-level variant of 'Persistent.Implementation.withPersist' with the implementation
+-- explicit as parameter.
+withPersist' :: IO RunPersist -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
+withPersist' mkRunP m = do
     RunPersist desc rp close <- mkRunP -- initialization happens here
     putStrLn $ "persistence: " <> desc -- FIXME: use logger for this
     m rp `finally` close               -- closing happens here

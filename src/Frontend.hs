@@ -58,7 +58,7 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 -- | Note that the config specific which persitence implementation to use.
 runFrontend :: Config -> IO ()
-runFrontend cfg = withPersist (mkRunPersist cfg) (runFrontend' cfg)
+runFrontend cfg = withPersist cfg (runFrontend' cfg)
 
 runFrontend' :: forall r. (PersistM r, GenArbitrary r) => Config -> RunPersistNat IO r -> IO ()
 runFrontend' cfg rp = do
