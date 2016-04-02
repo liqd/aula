@@ -25,6 +25,8 @@ import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, u
                  ,EventResult, EventState, UpdateEvent)
 import Data.Acid.Local (openLocalStateFrom, createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
+import Data.Monoid
+import Data.Set (Set)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
@@ -72,6 +74,12 @@ getDbM :: Update AulaData AulaData  -- TODO: i think there is a way in acid-stat
                                     -- into updates.  using that may make this unnecessary.
 getDbM = get
 
+putDb :: AulaData -> Update AulaData ()
+putDb = put
+
+putDbSpaceSet :: Set IdeaSpace -> Update AulaData ()
+putDbSpaceSet = (dbSpaceSet .=)
+
 putDbIdea :: AUID Idea -> Maybe Idea -> Update AulaData ()
 putDbIdea i = (dbIdeaMap . at i .=)
 
@@ -81,28 +89,55 @@ putDbUser i = (dbUserMap . at i .=)
 putDbTopic :: AUID Topic -> Maybe Topic -> Update AulaData ()
 putDbTopic i = (dbTopicMap . at i .=)
 
-putDb :: AulaData -> Update AulaData ()
-putDb = put
+putDbDelegation :: AUID Delegation -> Maybe Delegation -> Update AulaData ()
+putDbDelegation i = (dbDelegationMap . at i .=)
 
-makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDb, 'putDbIdea, 'putDbUser, 'putDbTopic]
+putDbElaborationDuration :: DurationDays -> Update AulaData ()
+putDbElaborationDuration = (dbElaborationDuration .=)
+
+putDbVoteDuration :: DurationDays -> Update AulaData ()
+putDbVoteDuration = (dbVoteDuration .=)
+
+putDbSchoolQuorum :: Percent -> Update AulaData ()
+putDbSchoolQuorum = (dbSchoolQuorum .=)
+
+putDbClassQuorum :: Percent -> Update AulaData ()
+putDbClassQuorum = (dbClassQuorum .=)
+
+putDbLastId :: Integer -> Update AulaData ()
+putDbLastId = (dbLastId .=)
+
+makeAcidic ''AulaData [ 'askDbM, 'getDbM, 'putDb, 'putDbSpaceSet, 'putDbIdea, 'putDbUser
+                      , 'putDbTopic, 'putDbDelegation, 'putDbElaborationDuration
+                      , 'putDbVoteDuration, 'putDbSchoolQuorum, 'putDbClassQuorum
+                      , 'putDbLastId ]
 
 type ModifyDb a = (a -> a) -> AulaData -> AcidState AulaData -> IO ()
 
 applyAulaEvent :: (UpdateEvent event, EventState event ~ AulaData, EventResult event ~ ())
-               => (AUID a -> Maybe a -> event)
-               -> DbLens (AMap a)
-               -> AUID a -> Traversal' (Maybe a) b -> ModifyDb b
-applyAulaEvent event l i t f db state = update state (event i (r & t %~ f))
-  where r = db ^. dbLens l . at i
+               => (a -> event)
+               -> DbLens a
+               -> Traversal' a b -> ModifyDb b
+applyAulaEvent event l t f db state = update state (event (r & t %~ f))
+  where r = db ^. dbLens l
 
 modifyDbTraversal :: DbTraversal a -> ModifyDb a
 modifyDbTraversal l@(ll :.: t) =
     case ll of
-        DbAt DbIdeas  i -> applyAulaEvent PutDbIdea  DbIdeas  i t
-        DbAt DbUsers  i -> applyAulaEvent PutDbUser  DbUsers  i t
-        DbAt DbTopics i -> applyAulaEvent PutDbTopic DbTopics i t
-        _               -> \f db state -> update state (PutDb (db & dbTraversal l %~ f))
-        -- TODO@mf: is this all?  how?
+        DbAt DbIdeas       i  -> applyAulaEvent (PutDbIdea i) ll t
+        DbAt DbUsers       i  -> applyAulaEvent (PutDbUser i) ll t
+        DbAt DbTopics      i  -> applyAulaEvent (PutDbTopic i) ll t
+        DbAt DbDelegations i  -> applyAulaEvent (PutDbDelegation i) ll t
+        DbSpaceSet            -> applyAulaEvent PutDbSpaceSet ll t
+        DbElaborationDuration -> applyAulaEvent PutDbElaborationDuration ll t
+        DbVoteDuration        -> applyAulaEvent PutDbVoteDuration ll t
+        DbSchoolQuorum        -> applyAulaEvent PutDbSchoolQuorum ll t
+        DbClassQuorum         -> applyAulaEvent PutDbClassQuorum ll t
+        DbLastId              -> applyAulaEvent PutDbLastId ll t
+        DbId                  -> updatePutDb
+        _                     -> \f db state -> fail ("ACID-STATE TODO " <> show ll) >> updatePutDb f db state
+  where
+    updatePutDb = \f db state -> update state (PutDb (db & dbTraversal l %~ f))
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM
