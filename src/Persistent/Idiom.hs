@@ -92,8 +92,7 @@ checkPhaseJury topic =
 checkAllIdeasMarked :: PersistM m => Topic -> m Bool
 checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
   where
-    -- FIXME: Better lens expression
-    isMarkedIdea i = case fmap (view ideaResultValue) (view ideaResult i) of
+    isMarkedIdea i = case i ^? ideaResult . _Just . ideaResultValue of
         Just (NotFeasible _) -> True
         Just (Feasible _)    -> True
         _                    -> False
