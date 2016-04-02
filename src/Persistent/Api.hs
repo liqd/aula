@@ -138,60 +138,56 @@ type AulaSetter a = Setter' AulaData a
 type AulaTraversal a = Traversal' AulaData a
 
 data DbField a where
-    DbId :: DbField AulaData
-    DbSpaceSet :: DbField (Set IdeaSpace)  -- TODO: alignment
-    DbIdeas :: DbField Ideas
-    DbUsers :: DbField Users
-    DbTopics :: DbField Topics
-    DbDelegations :: DbField Delegations
-    DbElaborationDuration :: DbField DurationDays
-    DbVoteDuration :: DbField DurationDays
-    DbSchoolQuorum :: DbField Percent
-    DbClassQuorum :: DbField Percent
-    DbLastId :: DbField Integer
+    DbId    :: DbField AulaData
+    DbJust  :: DbField (Maybe a) -> DbField a
+    DbAt    :: DbField (AMap a) -> AUID a -> DbField (Maybe a)
+
+    DbSpaceSet              :: DbField (Set IdeaSpace)
+    DbIdeas                 :: DbField Ideas
+    DbUsers                 :: DbField Users
+    DbTopics                :: DbField Topics
+    DbDelegations           :: DbField Delegations
+    DbElaborationDuration   :: DbField DurationDays
+    DbVoteDuration          :: DbField DurationDays
+    DbSchoolQuorum          :: DbField Percent
+    DbClassQuorum           :: DbField Percent
+    DbLastId                :: DbField Integer
 
     -- Idea specific
-    DbIdeaLikes :: DbField Idea -> DbField IdeaLikes
-    DbIdeaVotes :: DbField Idea -> DbField IdeaVotes
-    DbIdeaComments :: DbField Idea -> DbField Comments
-    DbIdeaResult :: DbField Idea -> DbField (Maybe IdeaResult)
+    DbIdeaLikes     :: DbField Idea -> DbField IdeaLikes
+    DbIdeaVotes     :: DbField Idea -> DbField IdeaVotes
+    DbIdeaComments  :: DbField Idea -> DbField Comments
+    DbIdeaResult    :: DbField Idea -> DbField (Maybe IdeaResult)
 
     -- Comment specific
-    DbCommentReplies :: DbField Comment -> DbField Comments
-    DbCommentVotes :: DbField Comment -> DbField CommentVotes
-
-    -- AMap specific
-    DbAt :: DbField (AMap a) -> AUID a -> DbField (Maybe a)
-
-    -- @Maybe@ specific
-    DbJust :: DbField (Maybe a) -> DbField a
+    DbCommentReplies    :: DbField Comment -> DbField Comments
+    DbCommentVotes      :: DbField Comment -> DbField CommentVotes
 
 deriving instance Show (DbField a)
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
 dbFieldTraversal = \case
-    DbId -> id
-    DbSpaceSet -> dbSpaceSet  -- TODO: alignment
-    DbIdeas -> dbIdeaMap
-    DbUsers -> dbUserMap
-    DbTopics -> dbTopicMap
-    DbDelegations -> dbDelegationMap
-    DbElaborationDuration -> dbElaborationDuration
-    DbVoteDuration -> dbVoteDuration
-    DbSchoolQuorum -> dbSchoolQuorum
-    DbClassQuorum -> dbClassQuorum
-    DbLastId -> dbLastId
+    DbId                    -> id
+    DbAt l i                -> dbFieldTraversal l . at i
+    DbJust l                -> dbFieldTraversal l . _Just
 
-    DbIdeaLikes l -> dbFieldTraversal l . ideaLikes
-    DbIdeaVotes l -> dbFieldTraversal l . ideaVotes
-    DbIdeaComments l -> dbFieldTraversal l . ideaComments
+    DbSpaceSet              -> dbSpaceSet
+    DbIdeas                 -> dbIdeaMap
+    DbUsers                 -> dbUserMap
+    DbTopics                -> dbTopicMap
+    DbDelegations           -> dbDelegationMap
+    DbElaborationDuration   -> dbElaborationDuration
+    DbVoteDuration          -> dbVoteDuration
+    DbSchoolQuorum          -> dbSchoolQuorum
+    DbClassQuorum           -> dbClassQuorum
+    DbLastId                -> dbLastId
 
-    DbCommentReplies l -> dbFieldTraversal l . commentReplies
-    DbCommentVotes l -> dbFieldTraversal l . commentVotes
+    DbIdeaLikes l           -> dbFieldTraversal l . ideaLikes
+    DbIdeaVotes l           -> dbFieldTraversal l . ideaVotes
+    DbIdeaComments l        -> dbFieldTraversal l . ideaComments
 
-    DbAt l i -> dbFieldTraversal l . at i
-
-    DbJust l -> dbFieldTraversal l . _Just
+    DbCommentReplies l      -> dbFieldTraversal l . commentReplies
+    DbCommentVotes l        -> dbFieldTraversal l . commentVotes
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -445,9 +441,7 @@ instance FromProto IdeaResult where
     fromProto = flip IdeaResult
 
 addIdeaResult :: AUID Idea -> AddDb m IdeaResult
-addIdeaResult iid =
-    -- TODO
-    addDbValue (DbJust . DbIdeaResult . DbJust . (`DbAt` iid) $ DbIdeas)
+addIdeaResult iid = addDbValue (DbJust . DbIdeaResult . DbJust . (`DbAt` iid) $ DbIdeas)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do

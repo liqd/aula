@@ -72,14 +72,6 @@ getDbM :: Update AulaData AulaData  -- TODO: i think there is a way in acid-stat
                                     -- into updates.  using that may make this unnecessary.
 getDbM = get
 
--- TODO:
--- putDbM :: DbField a -> a -> Update AulaData ()
--- putDbM l = (dbFieldTraversal l .=)
---
--- First step
--- putDbM :: DbField Idea -> Idea -> Update AulaData ()
--- putDbM l = (dbFieldTraversal l .=)
-
 putDbIdea :: AUID Idea -> Maybe Idea -> Update AulaData ()
 putDbIdea i = (dbIdeaMap . at i .=)
 
