@@ -232,13 +232,13 @@ phaseAction _ ResultPhaseModeratorEmail =
 -- FIXME: Compute value in one persistent computation
 -- FIXME: Only Feasible and NotFeasible cases are allowed
 markIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
-markIdea iid ideaResultValue = do
+markIdea iid rv = do
     topic <- persistent $ do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
         checkPhaseJury topic
         return topic
-    currentUserAddDb (addIdeaResult iid) ideaResultValue
+    _ <- currentUserAddDb (addIdeaResult iid) rv
     join . persistent $ do
         allMarked <- checkAllIdeasMarked topic
         if allMarked
