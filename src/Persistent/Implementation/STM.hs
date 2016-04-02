@@ -35,10 +35,10 @@ mkRunPersistSTM :: IO RunPersist
 mkRunPersistSTM = do
     tvar <- newTVarIO emptyAulaData
     let run (Persist c) = ExceptT $ runExceptT c `runReaderT` tvar
-    return $ RunPersist { _rpDesc  = "STM (ephemeral)"
-                        , _rpNat   = Nat run
-                        , _rpClose = return ()
-                        }
+    pure RunPersist { _rpDesc  = "STM (ephemeral)"
+                    , _rpNat   = Nat run
+                    , _rpClose = pure ()
+                    }
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $

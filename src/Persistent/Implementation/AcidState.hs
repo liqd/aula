@@ -49,10 +49,10 @@ mkRunPersistGeneric desc openState closeState = do
   db <- openState emptyAulaData
   let run :: Persist a -> ExceptT PersistExcept IO a
       run (Persist c) = ExceptT $ runExceptT c `runReaderT` db
-  return $ RunPersist { _rpDesc  = desc
-                      , _rpNat   = Nat run
-                      , _rpClose = closeState db
-                      }
+  pure RunPersist { _rpDesc  = desc
+                  , _rpNat   = Nat run
+                  , _rpClose = closeState db
+                  }
 
 mkRunPersistOnDisk :: Config -> IO RunPersist
 mkRunPersistOnDisk cfg =

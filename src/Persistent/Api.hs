@@ -177,13 +177,13 @@ mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5
 
 type RunPersistNat m r = r :~> ExceptT PersistExcept m
 
-data RunPersistT m where
-    RunPersist :: forall m r.
-                  (PersistM r, GenArbitrary r) =>
+data RunPersistT m =
+    forall r. (PersistM r, GenArbitrary r) =>
+        RunPersist
                   { _rpDesc  :: String
                   , _rpNat   :: RunPersistNat m r
                   , _rpClose :: m ()
-                  } -> RunPersistT m
+                  }
 
 type RunPersist = RunPersistT IO
 
