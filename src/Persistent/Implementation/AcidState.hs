@@ -68,10 +68,11 @@ instance MonadIO Persist where
 askDbM :: Query AulaData AulaData
 askDbM = ask
 
-getDbM :: Update AulaData AulaData
+getDbM :: Update AulaData AulaData  -- TODO: i think there is a way in acid-state to cast queries
+                                    -- into updates.  using that may make this unnecessary.
 getDbM = get
 
--- FIXME:
+-- TODO:
 -- putDbM :: DbField a -> a -> Update AulaData ()
 -- putDbM l = (dbFieldTraversal l .=)
 --
@@ -104,11 +105,12 @@ applyAulaEvent event l f db state =
 
 modifyDbField :: ModifyDbField a
 modifyDbField l =
-    case l of
+    case l of  -- TODO: use lambda-case
         DbAt DbIdeas  i -> applyAulaEvent (PutDbIdea  i) l
         DbAt DbUsers  i -> applyAulaEvent (PutDbUser  i) l
         DbAt DbTopics i -> applyAulaEvent (PutDbTopic i) l
         _               -> \f db state -> update state (PutDb (db & dbFieldTraversal l %~ f))
+        -- TODO@mf: is this all?  how?
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM

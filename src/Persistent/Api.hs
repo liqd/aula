@@ -137,7 +137,7 @@ type AulaSetter a = Setter' AulaData a
 type AulaTraversal a = Traversal' AulaData a
 
 data DbField a where
-    DbSpaceSet :: DbField (Set IdeaSpace)
+    DbSpaceSet :: DbField (Set IdeaSpace)  -- TODO: alignment
     DbIdeas :: DbField Ideas
     DbUsers :: DbField Users
     DbTopics :: DbField Topics
@@ -166,7 +166,7 @@ data DbField a where
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
 dbFieldTraversal = \case
-    DbSpaceSet -> dbSpaceSet
+    DbSpaceSet -> dbSpaceSet  -- TODO: alignment
     DbIdeas -> dbIdeaMap
     DbUsers -> dbUserMap
     DbTopics -> dbTopicMap
@@ -319,6 +319,8 @@ findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 modifyAMap :: DbField (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
 modifyAMap l = modifyDb . DbJust . DbAt l
 
+-- | FIXME: consider only using `modifyAMap`, and delete these specializations?  at least we should
+-- move them to a separate section.
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap DbIdeas
 
