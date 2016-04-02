@@ -20,8 +20,6 @@ import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
-import Text.Show.Pretty (ppShow)
-import System.IO
 
 import Config
 import Persistent.Api
@@ -53,13 +51,7 @@ instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $
         fmap (Right . view l) . atomically . readTVar
     modifyDb l f = Persist . ExceptT . ReaderT $
-        \state -> do
-            hPutStrLn stderr ("modifyTVar'debug: " ++ show l)
-            before_ <- atomically $ readTVar state
-            v <- fmap Right . atomically $ modifyTVar' state (dbFieldTraversal l %~ f)
-            after_ <- atomically $ readTVar state
-            hPutStrLn stderr ("modifyTVar'debug: " ++ ppShow (before_, after_))
-            return v
+        \state -> fmap Right . atomically $ modifyTVar' state (dbFieldTraversal l %~ f)
 
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO
