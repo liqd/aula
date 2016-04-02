@@ -104,13 +104,13 @@ findInBySpec imp name getXs findXBy f change =
         context "on initial database" . before (mkInitial imp) $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
-                    (x:_) <- runP rp $ getXs
+                    (x:_) <- runP rp getXs
                     let Just y = x ^? f
                     mu <- runP rp $ findXBy (change y)
                     mu `shouldBe` Nothing)
             context "if it exists" $ do
                 it "will come up with the newly added record" $ \rp' -> runPclose rp' (\rp -> do
-                    (x:_) <- runP rp $ getXs
+                    (x:_) <- runP rp getXs
                     let Just y = x ^? f
                     mu <- runP rp $ findXBy y
                     mu `shouldBe` Just x)
@@ -123,7 +123,7 @@ findAllInBySpec imp name getXs genKs findAllXBy f change =
     describe name $ do
         context "on empty database" . before (mkEmpty imp) $ do
             it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
-                genK <- runP rp $ genKs
+                genK <- runP rp genKs
                 rf <- liftIO $ generate genK
                 us <- runP rp $ findAllXBy rf
                 us `shouldBe` [])
@@ -131,13 +131,13 @@ findAllInBySpec imp name getXs genKs findAllXBy f change =
         context "on initial database" . before (mkInitial imp) $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
-                    [x] <- runP rp $ getXs
+                    [x] <- runP rp getXs
                     let Just y = x ^? f
                     us <- runP rp $ findAllXBy (change y)
                     us `shouldBe` [])
             context "if it exists" $ do
                 it "will come up with the newly added record" $ \rp' -> runPclose rp' (\rp -> do
-                    [x] <- runP rp $ getXs
+                    [x] <- runP rp getXs
                     let [y] = x ^.. f
                     us <- runP rp $ findAllXBy y
                     us `shouldBe` [x])
