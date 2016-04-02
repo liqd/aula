@@ -323,37 +323,6 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
 
-type AulaTesting =
-       "idea"  :> CreateRandom Idea
-  :<|> "space" :> CreateRandom IdeaSpace
-  :<|> "topic" :> CreateRandom Topic
-
-  :<|> "ideas"  :> GetH (Frame (PageShow [Idea]))
-  :<|> "spaces" :> GetH (Frame (PageShow [IdeaSpace]))
-  :<|> "topics" :> GetH (Frame (PageShow [Topic]))
-  :<|> "users"  :> GetH (Frame (PageShow [User]))
-
-  :<|> "random-password" :> GetH (PageShow UserPass)
-  :<|> "undefined" :> GetH ()
-  :<|> "error500" :> GetH ()
-  :<|> "error303" :> GetH ()
-
-aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
-aulaTesting =
-       createRandom DbIdeaMap
-  :<|> createRandomNoMeta DbSpaceSet
-  :<|> createRandom DbTopicMap
-
-  :<|> (PublicFrame . PageShow <$> Action.persistent getIdeas)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
-
-  :<|> (PageShow <$> Action.persistent mkRandomPassword)
-  :<|> undefined
-  :<|> throwError500 "testing error500"
-  :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
-
 data Page404 = Page404
 
 instance Page Page404 where
