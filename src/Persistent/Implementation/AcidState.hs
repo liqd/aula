@@ -105,7 +105,7 @@ applyAulaEvent event l f db state =
 
 modifyDbField :: ModifyDbField a
 modifyDbField l =
-    case l of  -- TODO: use lambda-case
+    case l of
         DbAt DbIdeas  i -> applyAulaEvent (PutDbIdea  i) l
         DbAt DbUsers  i -> applyAulaEvent (PutDbUser  i) l
         DbAt DbTopics i -> applyAulaEvent (PutDbTopic i) l
