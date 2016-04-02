@@ -158,7 +158,10 @@ data DbField a where
     DbCommentVotes :: DbField Comment -> DbField CommentVotes
 
     -- AMap specific
-    DbAt :: DbField (AMap a) -> AUID a -> DbField a
+    DbAt :: DbField (AMap a) -> AUID a -> DbField (Maybe a)
+
+    -- @Maybe@ specific
+    DbJust :: DbField (Maybe a) -> DbField a
 
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
@@ -181,7 +184,9 @@ dbFieldTraversal = \case
     DbCommentReplies l -> dbFieldTraversal l . commentReplies
     DbCommentVotes l -> dbFieldTraversal l . commentVotes
 
-    DbAt l i -> dbFieldTraversal l . at i . _Just
+    DbAt l i -> dbFieldTraversal l . at i
+
+    DbJust l -> dbFieldTraversal l . _Just
 
 dbSpaces :: AulaGetter [IdeaSpace]
 dbSpaces = dbSpaceSet . to Set.elems
@@ -312,7 +317,7 @@ findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
 modifyAMap :: DbField (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
-modifyAMap l = modifyDb . DbAt l
+modifyAMap l = modifyDb . DbJust . DbAt l
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
 modifyIdea = modifyAMap DbIdeas
@@ -383,7 +388,7 @@ instance FromProto IdeaLike where
 -- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb m IdeaLike
-addLikeToIdea = addDb . DbIdeaLikes . DbAt DbIdeas
+addLikeToIdea = addDb . DbIdeaLikes . DbJust . DbAt DbIdeas
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
@@ -391,7 +396,7 @@ instance FromProto IdeaVote where
 -- | FIXME: Same user can vote on the same idea more than once (Issue #308).
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb m IdeaVote
-addVoteToIdea = addDb . DbIdeaVotes . DbAt DbIdeas
+addVoteToIdea = addDb . DbIdeaVotes . DbJust . DbAt DbIdeas
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -403,13 +408,13 @@ instance FromProto Comment where
 
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: AUID Idea -> AddDb m Comment
-addCommentToIdea = addDb . DbIdeaComments . DbAt DbIdeas
+addCommentToIdea = addDb . DbIdeaComments . DbJust . DbAt DbIdeas
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
-addReplyToIdeaComment iid = addDb . DbCommentReplies . DbAt (DbIdeaComments (DbAt DbIdeas iid))
+addReplyToIdeaComment iid = addDb . DbCommentReplies . DbJust . DbAt (DbIdeaComments . DbJust $ DbAt DbIdeas iid)
 
 instance FromProto CommentVote where
     fromProto = flip CommentVote
@@ -418,7 +423,7 @@ instance FromProto CommentVote where
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
-addCommentVoteToIdeaComment iid = addDb . DbCommentVotes . DbAt (DbIdeaComments (DbAt DbIdeas iid))
+addCommentVoteToIdeaComment iid = addDb . DbCommentVotes . DbJust . DbAt (DbIdeaComments . DbJust $ DbAt DbIdeas iid)
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
@@ -426,7 +431,8 @@ addCommentVoteToIdeaComment iid = addDb . DbCommentVotes . DbAt (DbIdeaComments 
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
 addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb m CommentVote
 addCommentVoteToIdeaCommentReply iid cid =
-    addDb . DbCommentVotes . DbAt (DbCommentReplies (DbAt (DbIdeaComments (DbAt DbIdeas iid)) cid))
+    addDb . DbCommentVotes . DbJust .
+        DbAt (DbCommentReplies . DbJust $ DbAt (DbIdeaComments . DbJust $ DbAt DbIdeas iid) cid)
 
 instance FromProto IdeaResult where
     fromProto = flip IdeaResult
