@@ -1,4 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
+
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.Implementation (mkRunPersist, withPersist')
@@ -8,7 +9,7 @@ import Control.Lens
 import Config
 import Persistent.Api
 import Persistent.Implementation.AcidState
-import Persistent.Implementation.STM as STM
+import Persistent.Implementation.STM
 import Types
 
 withPersist' :: Config -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
