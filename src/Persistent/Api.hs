@@ -473,7 +473,7 @@ addUser (cUser, proto) = do
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
     let user = userFromProto metainfo uLogin uPassword proto
-    modifyUser (user ^. _Id) (const user)
+    modifyDb (DbAt DbUsers (user ^. _Id)) (const $ Just user)
     return user
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
@@ -489,7 +489,7 @@ addFirstUser proto = do
         metainfo = mkMetaInfo cUser now uid
         user = userFromProto metainfo uLogin uPassword proto
 
-    modifyUser (user ^. _Id) (const user)
+    modifyDb (DbAt DbUsers (user ^. _Id)) (const $ Just user)
     return user
 
 mkUserLogin :: ProtoUser -> PersistM m => m UserLogin
