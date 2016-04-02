@@ -83,8 +83,8 @@ ideaTopic idea = case idea ^. ideaLocation of
 ideaPhase :: PersistM m => Idea -> m (Maybe Phase)
 ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
-checkPhaseJury :: PersistM m => Topic -> m ()
-checkPhaseJury topic =
+checkInPhaseJury :: PersistM m => Topic -> m ()
+checkInPhaseJury topic =
     when (topic ^. topicPhase /= PhaseJury) . throwError $
         persistError "Idea is not in the jury phase"
 
