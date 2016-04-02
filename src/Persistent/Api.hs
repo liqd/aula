@@ -163,6 +163,28 @@ data DbField a where
     -- @Maybe@ specific
     DbJust :: DbField (Maybe a) -> DbField a
 
+instance Show (DbField a) where
+    show (DbSpaceSet) = "(DbSpaceSet)"
+    show (DbIdeas) = "(DbIdeas)"
+    show (DbUsers) = "(DbUsers)"
+    show (DbTopics) = "(DbTopics)"
+    show (DbDelegations) = "(DbDelegations)"
+    show (DbElaborationDuration) = "(DbElaborationDuration)"
+    show (DbVoteDuration) = "(DbVoteDuration)"
+    show (DbSchoolQuorum) = "(DbSchoolQuorum)"
+    show (DbClassQuorum) = "(DbClassQuorum)"
+    show (DbLastId) = "(DbLastId)"
+
+    show (DbIdeaLikes _) = "(DbIdeaLikes)"
+    show (DbIdeaVotes _) = "(DbIdeaVotes)"
+    show (DbIdeaComments _) = "(DbIdeaComments)"
+    show (DbCommentReplies _) = "(DbCommentReplies)"
+    show (DbCommentVotes _) = "(DbCommentVotes)"
+
+    show (DbAt _ _) = "(DbAt)"
+    show (DbJust _) = "(DbJust)"
+
+
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
 dbFieldTraversal = \case
