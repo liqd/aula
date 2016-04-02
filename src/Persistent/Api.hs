@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
+{-# LANGUAGE StandaloneDeriving          #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TupleSections               #-}
 {-# LANGUAGE TypeOperators               #-}
@@ -164,6 +165,7 @@ data DbField a where
     -- @Maybe@ specific
     DbJust :: DbField (Maybe a) -> DbField a
 
+deriving instance Show (DbField a)
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
 dbFieldTraversal = \case
