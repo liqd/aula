@@ -249,8 +249,8 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
   where
     saveDurations :: ActionM r m => Durations -> m ()
     saveDurations (Durations elab vote) = persistent $ do
-        modifyDb DbElaborationDuration (const elab)
-        modifyDb DbVoteDuration        (const vote)
+        modifyDb (DbElaborationDuration :.: id) (const elab)
+        modifyDb (DbVoteDuration        :.: id) (const vote)
 
     durations :: ActionM r m => m Durations
     durations = persistent $
@@ -287,8 +287,8 @@ adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
 adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum_) saveQuorum
   where
     saveQuorum (Quorums school clss) = persistent $ do
-        modifyDb DbSchoolQuorum (const school)
-        modifyDb DbClassQuorum (const clss)
+        modifyDb (DbSchoolQuorum :.: id) (const school)
+        modifyDb (DbClassQuorum :.: id) (const clss)
 
     quorum_ = persistent $
         Quorums <$> getDb dbSchoolQuorum

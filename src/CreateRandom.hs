@@ -27,7 +27,7 @@ type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
 createRandom
     :: ( Arbitrary (Proto a), Show a, FromProto a, Typeable a, HasMetaInfo a
        , ActionUserHandler m, ActionPersist r m, GenArbitrary m)
-    => DbField (AMap a) -> m (Frame (ST `Beside` PageShow a))
+    => DbLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
 createRandom l = do
    cUser <- currentUser
    x <- persistent . addDb l . (,) cUser =<< genArbitrary
@@ -38,10 +38,10 @@ createRandom l = do
 createRandomNoMeta
     :: ( Arbitrary a, Ord a, Show a, Typeable a
        , ActionPersist r m, GenArbitrary m)
-    => DbField (Set a) -> m (Frame (ST `Beside` PageShow a))
+    => DbLens (Set a) -> m (Frame (ST `Beside` PageShow a))
 createRandomNoMeta l = do
    x <- genArbitrary
-   persistent $ modifyDb l (insert x)
+   persistent $ modifyDb (l :.: id) (insert x)
    return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
                                      `Beside` PageShow x))
 

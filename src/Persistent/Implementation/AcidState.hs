@@ -86,28 +86,28 @@ putDb = put
 
 makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDb, 'putDbIdea, 'putDbUser, 'putDbTopic]
 
-type ModifyDbField a = DbField a -> (a -> a) -> AulaData -> AcidState AulaData -> IO ()
+type ModifyDb a = (a -> a) -> AulaData -> AcidState AulaData -> IO ()
 
 applyAulaEvent :: (UpdateEvent event, EventState event ~ AulaData, EventResult event ~ ())
-               => (a -> event) -> ModifyDbField a
-applyAulaEvent event l f db state =
-    case db ^? dbFieldTraversal l of
-        Just r  -> update state (event $ f r)
-        Nothing -> pure ()
+               => (AUID a -> Maybe a -> event)
+               -> DbLens (AMap a)
+               -> AUID a -> Traversal' (Maybe a) b -> ModifyDb b
+applyAulaEvent event l i t f db state = update state (event i (r & t %~ f))
+  where r = db ^. dbLens l . at i
 
-modifyDbField :: ModifyDbField a
-modifyDbField l =
-    case l of
-        DbAt DbIdeas  i -> applyAulaEvent (PutDbIdea  i) l
-        DbAt DbUsers  i -> applyAulaEvent (PutDbUser  i) l
-        DbAt DbTopics i -> applyAulaEvent (PutDbTopic i) l
-        _               -> \f db state -> update state (PutDb (db & dbFieldTraversal l %~ f))
+modifyDbTraversal :: DbTraversal a -> ModifyDb a
+modifyDbTraversal l@(ll :.: t) =
+    case ll of
+        DbAt DbIdeas  i -> applyAulaEvent PutDbIdea  DbIdeas  i t
+        DbAt DbUsers  i -> applyAulaEvent PutDbUser  DbUsers  i t
+        DbAt DbTopics i -> applyAulaEvent PutDbTopic DbTopics i t
+        _               -> \f db state -> update state (PutDb (db & dbTraversal l %~ f))
         -- TODO@mf: is this all?  how?
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM
     modifyDb l f = Persist . ExceptT . ReaderT $ \state -> fmap Right $ do
       db <- update state GetDbM
-      modifyDbField l f db state
+      modifyDbTraversal l f db state
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO

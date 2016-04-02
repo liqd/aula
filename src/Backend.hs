@@ -50,4 +50,4 @@ manageStateApi :: (MonadIO m, GenArbitrary r, ActionM r m) => ServerT ManageStat
 manageStateApi =
        persistent genInitialTestDb
   :<|> (liftIO mkUniverse >>= persistent)
-  :<|> persistent (modifyDb DbId (const emptyAulaData))
+  :<|> persistent (modifyDb (DbId :.: id) (const emptyAulaData))
