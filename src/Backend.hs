@@ -10,9 +10,9 @@ where
 import Control.Monad.IO.Class
 import Action
 import Arbitrary
-import DemoData
-import CreateRandom
-import Persistent.Api
+-- import DemoData
+-- import CreateRandom
+-- import Persistent.Api
 import Servant
 import Types
 
@@ -21,11 +21,11 @@ import Types
 
 type Api =
        "delegations" :> DelegationsApi
-  :<|> "manage-state" :> ManageStateApi
+--  :<|> "manage-state" :> ManageStateApi  TODO
 
 api :: (MonadIO m, GenArbitrary r, ActionM r m) => ServerT Api m
 api =  delegationsApi
-  :<|> manageStateApi
+--  :<|> manageStateApi
 
 
 -- * delegations
@@ -41,6 +41,7 @@ delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
 
 -- * persistent state management (for demo operation)
 
+{-
 type ManageStateApi =
        "wipe"        :> Post '[JSON] ()
   :<|> "create-init" :> Post '[JSON] ()
@@ -51,3 +52,4 @@ manageStateApi =
        persistent (modifyDb id (const emptyAulaData))
   :<|> persistent genInitialTestDb
   :<|> (liftIO mkUniverse >>= persistent)
+-}

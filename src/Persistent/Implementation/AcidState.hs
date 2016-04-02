@@ -21,7 +21,8 @@ import Control.Monad.Except (MonadError)
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (get, put)
-import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, update)
+import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, update
+                 ,EventResult, EventState, UpdateEvent)
 import Data.Acid.Local (openLocalStateFrom, createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
@@ -78,17 +79,41 @@ getDbM = get
 -- putDbM :: DbField Idea -> Idea -> Update AulaData ()
 -- putDbM l = (dbFieldTraversal l .=)
 
-putDbM :: AulaData -> Update AulaData ()
-putDbM = put
+putDbIdea :: AUID Idea -> Maybe Idea -> Update AulaData ()
+putDbIdea i = (dbIdeaMap . at i .=)
 
-makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDbM]
+putDbUser :: AUID User -> Maybe User -> Update AulaData ()
+putDbUser i = (dbUserMap . at i .=)
+
+putDbTopic :: AUID Topic -> Maybe Topic -> Update AulaData ()
+putDbTopic i = (dbTopicMap . at i .=)
+
+putDb :: AulaData -> Update AulaData ()
+putDb = put
+
+makeAcidic ''AulaData ['askDbM, 'getDbM, 'putDb, 'putDbIdea, 'putDbUser, 'putDbTopic]
+
+type ModifyDbField a = DbField a -> (a -> a) -> AulaData -> AcidState AulaData -> IO ()
+
+applyAulaEvent :: (UpdateEvent event, EventState event ~ AulaData, EventResult event ~ ())
+               => (a -> event) -> ModifyDbField a
+applyAulaEvent event l f db state =
+    case db ^? dbFieldTraversal l of
+        Just r  -> update state (event $ f r)
+        Nothing -> pure ()
+
+modifyDbField :: ModifyDbField a
+modifyDbField l =
+    case l of
+        DbAt DbIdeas  i -> applyAulaEvent (PutDbIdea  i) l
+        DbAt DbUsers  i -> applyAulaEvent (PutDbUser  i) l
+        DbAt DbTopics i -> applyAulaEvent (PutDbTopic i) l
+        _               -> \f db state -> update state (PutDb (db & dbFieldTraversal l %~ f))
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM
     modifyDb l f = Persist . ExceptT . ReaderT $ \state -> fmap Right $ do
       db <- update state GetDbM
-      -- FIXME update state (PutDbM l (db ^? dbFieldTraversal l %~ _Just . f))
-      update state (PutDbM (db & dbFieldTraversal l %~ f))
-
+      modifyDbField l f db state
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO
