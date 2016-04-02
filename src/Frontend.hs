@@ -26,7 +26,6 @@ import Network.Wai.Application.Static
     , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
     )
 import Servant
-import Servant.Missing (throwError500, throwServantErr)
 import System.FilePath (addTrailingPathSeparator)
 
 import qualified Data.ByteString.Builder as Builder
@@ -323,48 +322,6 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPUserEdit
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
-
-type AulaTesting =
-       "idea"  :> CreateRandom Idea
-  :<|> "space" :> CreateRandom IdeaSpace
-  :<|> "topic" :> CreateRandom Topic
-
-  :<|> "ideas"  :> GetH (Frame (PageShow [Idea]))
-  :<|> "spaces" :> GetH (Frame (PageShow [IdeaSpace]))
-  :<|> "topics" :> GetH (Frame (PageShow [Topic]))
-  :<|> "users"  :> GetH (Frame (PageShow [User]))
-
-  :<|> "random-password" :> GetH (PageShow UserPass)
-  :<|> "undefined" :> GetH ()
-  :<|> "error500" :> GetH ()
-  :<|> "error303" :> GetH ()
-  :<|> "topic" :> Capture "topic" (AUID Topic) :> "timeout" :> GetH ()
-
-aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
-aulaTesting =
-       createRandom dbIdeaMap
-  :<|> createRandomNoMeta dbSpaceSet
-  :<|> createRandom dbTopicMap
-
-  :<|> (PublicFrame . PageShow <$> Action.persistent getIdeas)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
-
-  :<|> (PageShow <$> Action.persistent mkRandomPassword)
-  :<|> undefined
-  :<|> throwError500 "testing error500"
-  :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
-  :<|> makeTopicTimeout
-
-data Page404 = Page404
-
-instance Page Page404 where
-    isPrivatePage _ = False
-
-instance ToHtml Page404 where
-    toHtmlRaw = toHtml
-    toHtml Page404 = div_ $ p_ "404"
 
 catch404 :: Middleware
 catch404 app req cont = app req $ \resp -> cont $ f resp
