@@ -82,10 +82,12 @@ module Persistent.Api
     , dbIdeaMap
     , dbUserMap
     , dbTopicMap
+    , dbDelegationMap
     , dbElaborationDuration
     , dbVoteDuration
     , dbSchoolQuorum
     , dbClassQuorum
+    , dbLastId
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
