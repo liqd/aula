@@ -24,8 +24,6 @@ module Action
     , currentUser
     , modifyCurrentUser
     , isLoggedIn
-    , topicInRefinementTimedOut
-    , topicInVotingTimedOut
     , validUserState
     , validLoggedIn
 
@@ -38,6 +36,10 @@ module Action
     , voteIdeaComment
     , voteIdeaCommentReply
     , markIdea
+
+      -- * topic handling
+    , topicInRefinementTimedOut
+    , topicInVotingTimedOut
 
       -- * page handling
     , createTopic
@@ -153,7 +155,7 @@ instance ThrowServantErr ActionExcept where
 class MonadError ActionExcept m => ActionError m
 
 
--- * Action Combinators
+-- * User Handling
 
 loginByUser :: ActionUserHandler m => User -> m ()
 loginByUser = login . view _Id
@@ -194,6 +196,12 @@ modifyCurrentUser f = currentUserId >>= persistent . (`modifyUser` f)
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
 
+validLoggedIn :: UserState -> Bool
+validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
+
+validUserState :: UserState -> Bool
+validUserState us = us == userLoggedOut || validLoggedIn us
+
 
 -- * Phase Transitions
 
@@ -212,12 +220,6 @@ topicTimeout phaseChange tid =
         Just topic <- findTopic tid -- FIXME: Not found
         topicPhaseChange topic phaseChange
 
-topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
-topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
-
-topicInVotingTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
-topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
-
 setTopicPhase :: PersistM m => AUID Topic -> Phase -> m ()
 setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
 
@@ -226,6 +228,33 @@ phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
 phaseAction _ ResultPhaseModeratorEmail =
     traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
+
+
+-- * Page Handling
+
+createIdea :: (ActionPersist r m, ActionUserHandler m) => ProtoIdea -> m Idea
+createIdea = currentUserAddDb addIdea
+
+createTopic :: (ActionPersist r m, ActionUserHandler m) => ProtoTopic -> m Topic
+createTopic = currentUserAddDb addTopic
+
+
+-- * Vote Handling
+
+likeIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> m ()
+likeIdea ideaId = currentUserAddDb_ (addLikeToIdea ideaId) ()
+
+voteIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
+voteIdea = currentUserAddDb_ . addVoteToIdea
+
+voteIdeaComment :: (ActionPersist r m, ActionUserHandler m)
+                => AUID Idea -> AUID Comment -> UpDown -> m ()
+voteIdeaComment ideaId commentId = currentUserAddDb_ (addCommentVoteToIdeaComment ideaId commentId)
+
+voteIdeaCommentReply :: (ActionPersist r m, ActionUserHandler m)
+                     => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
+voteIdeaCommentReply ideaId commentId replyId =
+    currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throw an exception
 -- FIXME: Authorization
@@ -248,40 +277,13 @@ markIdea iid rv = do
     emptyComputation = return (return ())
 
 
--- * Page Handling
+-- * Topic handling
 
-createIdea :: (ActionPersist r m, ActionUserHandler m) => ProtoIdea -> m Idea
-createIdea = currentUserAddDb addIdea
+topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-createTopic :: (ActionPersist r m, ActionUserHandler m) => ProtoTopic -> m Topic
-createTopic = currentUserAddDb addTopic
-
-
--- * Action Helpers
-
-validLoggedIn :: UserState -> Bool
-validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
-
-validUserState :: UserState -> Bool
-validUserState us = us == userLoggedOut || validLoggedIn us
-
-
--- * vote handling
-
-likeIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> m ()
-likeIdea ideaId = currentUserAddDb_ (addLikeToIdea ideaId) ()
-
-voteIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
-voteIdea = currentUserAddDb_ . addVoteToIdea
-
-voteIdeaComment :: (ActionPersist r m, ActionUserHandler m)
-                => AUID Idea -> AUID Comment -> UpDown -> m ()
-voteIdeaComment ideaId commentId = currentUserAddDb_ (addCommentVoteToIdeaComment ideaId commentId)
-
-voteIdeaCommentReply :: (ActionPersist r m, ActionUserHandler m)
-                     => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
-voteIdeaCommentReply ideaId commentId replyId =
-    currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
+topicInVotingTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 -- * csv temp files
 
