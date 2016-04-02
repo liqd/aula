@@ -264,7 +264,7 @@ addDb l (cUser, pa) = do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
     a <- fromProto pa <$> nextMetaInfo cUser
-    modifyAMap l (a ^. _Id) (const a)
+    modifyDb (DbAt l (a ^. _Id)) (const $ Just a)
     return a
 
 addDbValue :: (HasMetaInfo a, FromProto a) => DbField a -> AddDb m a
