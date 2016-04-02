@@ -12,7 +12,7 @@ import Action
 import Arbitrary
 import DemoData
 import CreateRandom
--- import Persistent.Api
+import Persistent.Api
 import Servant
 import Types
 
@@ -44,10 +44,10 @@ delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
 type ManageStateApi =
        "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
---  :<|> "wipe"        :> Post '[JSON] ()  TODO
+  :<|> "wipe"        :> Post '[JSON] ()
 
 manageStateApi :: (MonadIO m, GenArbitrary r, ActionM r m) => ServerT ManageStateApi m
 manageStateApi =
        persistent genInitialTestDb
   :<|> (liftIO mkUniverse >>= persistent)
---  :<|> persistent (modifyDb id (const emptyAulaData))  TODO
+  :<|> persistent (modifyDb DbId (const emptyAulaData))

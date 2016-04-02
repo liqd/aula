@@ -137,6 +137,7 @@ type AulaSetter a = Setter' AulaData a
 type AulaTraversal a = Traversal' AulaData a
 
 data DbField a where
+    DbId :: DbField AulaData
     DbSpaceSet :: DbField (Set IdeaSpace)  -- TODO: alignment
     DbIdeas :: DbField Ideas
     DbUsers :: DbField Users
@@ -164,6 +165,7 @@ data DbField a where
     DbJust :: DbField (Maybe a) -> DbField a
 
 instance Show (DbField a) where
+    show (DbId) = "(DbId)"
     show (DbSpaceSet) = "(DbSpaceSet)"
     show (DbIdeas) = "(DbIdeas)"
     show (DbUsers) = "(DbUsers)"
@@ -183,11 +185,13 @@ instance Show (DbField a) where
 
     show (DbAt _ _) = "(DbAt)"
     show (DbJust _) = "(DbJust)"
+    show (DbTraversal _ _) = "(DbTraversal _ _)"
 
 
 
 dbFieldTraversal :: DbField a -> AulaTraversal a
 dbFieldTraversal = \case
+    DbId -> id
     DbSpaceSet -> dbSpaceSet  -- TODO: alignment
     DbIdeas -> dbIdeaMap
     DbUsers -> dbUserMap
