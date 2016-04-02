@@ -101,6 +101,7 @@ library
       Frontend.Page.User
       Frontend.Path
       Frontend.Prelude
+      Frontend.Testing
       LifeCycle
       Lucid.Missing
       Persistent

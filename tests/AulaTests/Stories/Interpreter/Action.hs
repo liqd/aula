@@ -82,9 +82,9 @@ runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace
     _ <- lift $ do
-        phaseEnd <- persistent phaseEndRefinement
+        end <- persistent phaseEndRefinement
         Action.createTopic
-            (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] phaseEnd)
+            (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end)
     runClient k
 
 -- FIXME: Handle Voting phase timeouts
