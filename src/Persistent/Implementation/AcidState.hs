@@ -47,11 +47,10 @@ mkRunPersistGeneric :: String
                     -> (AcidState AulaData -> IO ())
                     -> IO RunPersist
 mkRunPersistGeneric desc openState closeState = do
-    db <- openState emptyAulaData
+    st <- openState emptyAulaData
     pure RunPersist { _rpDesc  = desc
-                    , _rpQNat  = _  -- \(AQuery q) -> _  -- query  db _ -- <$> q
-                    , _rpUNat  = _  -- fmap (update db)
-                    , _rpClose = closeState db
+                    , _rpState = st
+                    , _rpClose = closeState st
                     }
 
 mkRunPersistOnDisk :: Config -> IO RunPersist

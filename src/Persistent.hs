@@ -4,6 +4,7 @@
 -- high level combinators.
 module Persistent (
       module Persistent.Api
+    , module Persistent.Implementation
     )
 where
 

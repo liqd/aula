@@ -50,20 +50,10 @@ import Persistent.Pure
 import Persistent.Idiom
 
 
--- | well, not really 'Nat' any more.  too many constraints.
-type RunPersistNat m r a = r a -> ExceptT PersistExcept m a
-
-type PersistC  a r = (MethodState a ~ AulaData, MethodResult a ~ r)
-type PersistCQ a r = (a ~ Query  AulaData r, QueryEvent  a, PersistC a r)
-type PersistCU a r = (a ~ Update AulaData r, UpdateEvent a, PersistC a r)
-
-
 data RunPersistT m =
-      forall q u r. (PersistCQ q r, PersistCU u r) =>
         RunPersist
                   { _rpDesc  :: String
-                  , _rpQNat  :: RunPersistNat m AQuery  q
-                  , _rpUNat  :: RunPersistNat m AUpdate u
+                  , _rpState :: AcidState AulaData
                   , _rpClose :: m ()
                   }
 

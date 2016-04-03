@@ -11,7 +11,7 @@ module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
-    , ActionPersist(persistent)
+    , ActionPersist(aquery, aupdate)
     , ActionUserHandler(login, logout, userState)
     , ActionError
     , ActionExcept(..)
@@ -111,7 +111,7 @@ newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
 makePrisms ''ActionExcept
 
 class ( ActionLog m
-      , ActionPersist r m
+      , ActionPersist m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
@@ -121,16 +121,10 @@ class Monad m => ActionLog m where
     -- | Log events
     logEvent :: ST -> m ()
 
--- | A monad that can include actions changing a persistent state.
---
--- @r@ is determined by @m@, because @m@ is intended to be the program's
--- action monad, so @r@ is just the persistent implementation chosen
--- to be used in the action monad.
-class (Monad m, MonadError ActionExcept m) => ActionPersist RunPersist m where
-    -- | Run "Persistent" computation in the 'Action' monad.
-    query :: r a -> m a  -- TODO: rename to atomic
-
-class (ActionPersist AQuery m, ActionPersist AUpdate m) => ActionPersistM m
+-- | A monad that can run acid-state.
+class (Monad m, MonadError ActionExcept m) => ActionPersist m where
+    aquery  :: AQuery  a -> m a
+    aupdate :: AUpdate a -> m a
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -160,9 +154,9 @@ class MonadError ActionExcept m => ActionError m
 loginByUser :: ActionUserHandler m => User -> m ()
 loginByUser = login . view _Id
 
-loginByName :: (ActionPersistM m, ActionUserHandler m) => UserLogin -> m ()
+loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
 loginByName n = do
-    Just u <- persistent (findUserByLogin n)  -- FIXME: handle 'Nothing'
+    Just u <- aquery (findUserByLogin n)  -- FIXME: handle 'Nothing'
     loginByUser u
 
 -- | Returns the current user ID
@@ -171,27 +165,27 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
-currentUserAddDb :: (ActionPersist r m, ActionUserHandler m) =>
-                    (UserWithProto a -> r a) -> Proto a -> m a
+currentUserAddDb :: (ActionPersist m, ActionUserHandler m) =>
+                    (UserWithProto a -> AUpdate a) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
-    persistent $ addA (cUser, protoA)
+    aupdate $ addA (cUser, protoA)
 
-currentUserAddDb_ :: (ActionPersist r m, ActionUserHandler m) =>
-                    (UserWithProto a -> r a) -> Proto a -> m ()
+currentUserAddDb_ :: (ActionPersist m, ActionUserHandler m) =>
+                    (UserWithProto a -> AUpdate a) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 
 -- | Returns the current user
-currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
+currentUser :: (ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
-    muser <- persistent . findUser =<< currentUserId
+    muser <- aquery . findUser =<< currentUserId
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) -> m ()
-modifyCurrentUser f = currentUserId >>= persistent . (`modifyUser` f)
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
+modifyCurrentUser f = currentUserId >>= aupdate . (`modifyUser` f)
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
@@ -206,21 +200,21 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 -- * Phase Transitions
 
 topicPhaseChange
-    :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseChange -> r (m ())
+    :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseChange -> r (m ())
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
-            persistent $ setTopicPhase (topic ^. _Id) phase'
+            aupdate $ setTopicPhase (topic ^. _Id) phase'
             return $ mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist r m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionPersist m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid =
-    join . persistent $ do
+    join . aupdate $ do
         Just topic <- findTopic tid -- FIXME: Not found
         topicPhaseChange topic phaseChange
 
-phaseAction :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
+phaseAction :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
 phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
 phaseAction _ ResultPhaseModeratorEmail =
@@ -229,26 +223,26 @@ phaseAction _ ResultPhaseModeratorEmail =
 
 -- * Page Handling
 
-createIdea :: (ActionPersist r m, ActionUserHandler m) => ProtoIdea -> m Idea
+createIdea :: (ActionPersist m, ActionUserHandler m) => ProtoIdea -> m Idea
 createIdea = currentUserAddDb addIdea
 
-createTopic :: (ActionPersist r m, ActionUserHandler m) => ProtoTopic -> m Topic
+createTopic :: (ActionPersist m, ActionUserHandler m) => ProtoTopic -> m Topic
 createTopic = currentUserAddDb addTopic
 
 
 -- * Vote Handling
 
-likeIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> m ()
+likeIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> m ()
 likeIdea ideaId = currentUserAddDb_ (addLikeToIdea ideaId) ()
 
-voteIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
+voteIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
 voteIdea = currentUserAddDb_ . addVoteToIdea
 
-voteIdeaComment :: (ActionPersist r m, ActionUserHandler m)
+voteIdeaComment :: (ActionPersist m, ActionUserHandler m)
                 => AUID Idea -> AUID Comment -> UpDown -> m ()
 voteIdeaComment ideaId commentId = currentUserAddDb_ (addCommentVoteToIdeaComment ideaId commentId)
 
-voteIdeaCommentReply :: (ActionPersist r m, ActionUserHandler m)
+voteIdeaCommentReply :: (ActionPersist m, ActionUserHandler m)
                      => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
 voteIdeaCommentReply ideaId commentId replyId =
     currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
@@ -258,15 +252,15 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- FIXME: Compute value in one persistent computation
 -- FIXME: Only Feasible and NotFeasible cases are allowed (this may be best achieved by refactoring
 --        the IdeaResultValue type).
-markIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
+markIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
 markIdea iid rv = do
-    topic <- persistent $ do
+    topic <- aupdate $ do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
         checkInPhaseJury topic
         return topic
     _ <- currentUserAddDb (addIdeaResult iid) rv
-    join . persistent $ do
+    join . aupdate $ do
         allMarked <- checkAllIdeasMarked topic
         if allMarked
             then topicPhaseChange topic =<< AllIdeasAreMarked <$> phaseEndVote
@@ -277,10 +271,10 @@ markIdea iid rv = do
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 -- * csv temp files
