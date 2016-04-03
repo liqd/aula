@@ -125,12 +125,9 @@ class Monad m => ActionLog m where
 -- @r@ is determined by @m@, because @m@ is intended to be the program's
 -- action monad, so @r@ is just the persistent implementation chosen
 -- to be used in the action monad.
-class (PersistM r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> r where
-    -- | Run @Persist@ computation in the action monad.
-    -- Authorization of the action should happen here.
-    -- FIXME: Rename atomically, and only call on
-    -- complex computations.
-    persistent :: r a -> m a
+class (Monad r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> r where
+    -- | Run "Persistent" computation in the 'Action' monad.
+    persistent :: r a -> m a  -- TODO: rename to atomic
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
