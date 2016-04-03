@@ -257,6 +257,7 @@ adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) 
         Durations <$> getDb dbElaborationDuration
                   <*> getDb dbVoteDuration
 
+
 -- ** Quorum
 
 instance FormPage PageAdminSettingsQuorum where

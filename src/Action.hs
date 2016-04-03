@@ -115,7 +115,7 @@ class ( ActionLog m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
-      ) => ActionM r m
+      ) => ActionM m
 
 class Monad m => ActionLog m where
     -- | Log events
@@ -271,6 +271,7 @@ topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
 topicInVotingTimedOut :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
+
 
 -- * csv temp files
 
