@@ -7,6 +7,7 @@ where
 
 import Control.Lens
 import Config
+import Persistent.Api
 import Persistent.Pure
 import Persistent.Implementation.AcidState
 import Types
