@@ -57,15 +57,15 @@ import qualified Generics.Generic.Aeson as Aeson
 
 import Action
 import Action.Implementation
-import qualified Config
+import Config
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude ((.~), ppShow, view, join)
 import Persistent
+import Persistent.Implementation
 import Types
 
 import qualified Frontend.Path as P
-import qualified Persistent.Implementation.STM
 
 
 -- | FIXME: push this upstream to basic-sop.
@@ -771,7 +771,7 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
-    let action :: Action Persistent.Implementation.STM.Persist DelegationNetwork
+    let action :: (GenArbitrary r, PersistM r) => Action r DelegationNetwork
         action = do
             admin <- persistent . addFirstUser $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
@@ -779,16 +779,13 @@ fishDelegationNetworkIO = do
             Action.loginByUser admin
             fishDelegationNetworkAction
 
-    cfg <- Config.getConfig Config.DontWarnMissing
-    -- We use @Persistent.Implementation.STM@ here to make sure it doesn't rust.
-    -- In either case, it does have to be done in memory, so as not to corrupt the on-disk DB.
-    withPersist
-        (Persistent.Implementation.STM.mkRunPersistInMemory cfg)
-        (\rp -> do
-            v :: Either ServantErr DelegationNetwork
-                <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
+    -- We use @STM@ here to make sure it doesn't rust.
+    cfg <- (persistenceImpl .~ STM) <$> Config.getConfig Config.DontWarnMissing
+    let runAction :: (GenArbitrary r, PersistM r) => RunPersistNat IO r -> IO DelegationNetwork
+        runAction rp = do
+            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
             either (throwIO . ErrorCall . ppShow) pure v
-        )
+    withPersist cfg runAction
 
 fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing

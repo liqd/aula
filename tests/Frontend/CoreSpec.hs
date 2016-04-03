@@ -10,12 +10,10 @@
 module Frontend.CoreSpec where
 
 import Control.Arrow((&&&))
-import Control.Exception (finally)
 import Control.Monad.Trans.Except
 import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
-import Servant.Server.Internal.ServantErr
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
 import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
 import Text.Digestive.Types
@@ -25,12 +23,12 @@ import qualified Data.Text.Lazy as LT
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
+import Action.Dummy (unDummyT, DummyT)
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
-import Config (Config, getConfig, WarnMissing(DontWarnMissing))
+import Config
 import Frontend.Core
 import Frontend.Page
-import qualified Persistent.Implementation
 import Types
 
 import AulaTests
@@ -212,23 +210,11 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
--- | Run the given action for testing.
---
--- FUTUREWORK: Abstraction leaks in tests are not dangerous and they don't
--- infect other code, so they are left alone for now, though in the long run,
--- abstraction would improve test code as well (separation of concerns
--- via abstraction).
---
--- FIXME: simplify, inline and then use @withPersist@.
-runAction :: Config -> Action Persistent.Implementation.Persist a -> IO (ExceptT ServantErr IO a, IO ())
-runAction cfg action = do (rp, rpClose) <- Persistent.Implementation.mkRunPersistInMemory cfg
-                          return (unNat (mkRunAction (ActionEnv rp cfg)) action, rpClose)
-
-failOnError :: Action Persistent.Implementation.Persist a -> IO a
+failOnError :: Action (DummyT PersistExcept IO) a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
-    (runA, rpClose) <- runAction cfg pers
-    (fmap (either (error . show) id) . runExceptT $ runA) `finally` rpClose
+    fmap (either (error . show) id) . runExceptT .
+        unNat (mkRunAction (ActionEnv (Nat unDummyT) cfg)) $ pers
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --

@@ -9,8 +9,7 @@
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Persistent.Implementation.AcidState
-    ( Persist
-    , mkRunPersist
+    ( mkRunPersistOnDisk
     , mkRunPersistInMemory
     )
 where
@@ -43,23 +42,24 @@ persistIO = Persist . liftIO
 instance GenArbitrary Persist where
     genGen = persistIO . generate
 
-mkRunPersistGeneric :: (AulaData -> IO (AcidState AulaData))
+mkRunPersistGeneric :: String -> (AulaData -> IO (AcidState AulaData))
                     -> (AcidState AulaData -> IO ())
-                    -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersistGeneric openState closeState = do
+                    -> IO RunPersist
+mkRunPersistGeneric desc openState closeState = do
   db <- openState emptyAulaData
-  let rp = Nat (\(Persist c) -> ExceptT $ runExceptT c `runReaderT` db)
-  return (rp, closeState db)
+  let run :: Persist a -> ExceptT PersistExcept IO a
+      run (Persist c) = ExceptT $ runExceptT c `runReaderT` db
+  pure RunPersist { _rpDesc  = desc
+                  , _rpNat   = Nat run
+                  , _rpClose = closeState db
+                  }
 
-mkRunPersist :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersist cfg = do
-    logger cfg "persistence: acid-state (disk)"
-    mkRunPersistGeneric (openLocalStateFrom $ cfg ^. dbPath) createCheckpointAndClose
+mkRunPersistOnDisk :: Config -> IO RunPersist
+mkRunPersistOnDisk cfg =
+    mkRunPersistGeneric "acid-state (disk)" (openLocalStateFrom $ cfg ^. dbPath) createCheckpointAndClose
 
-mkRunPersistInMemory :: Config -> IO (Persist :~> ExceptT PersistExcept IO, IO ())
-mkRunPersistInMemory cfg = do
-    logger cfg "persistence: acid-state (memory)"
-    mkRunPersistGeneric openMemoryState closeAcidState
+mkRunPersistInMemory :: IO RunPersist
+mkRunPersistInMemory = mkRunPersistGeneric "acid-state (memory)" openMemoryState closeAcidState
 
 instance MonadIO Persist where
     liftIO = persistIO

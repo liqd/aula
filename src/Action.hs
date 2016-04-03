@@ -54,7 +54,7 @@ where
 
 import Control.Lens
 import Control.Monad (join, void)
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (MonadError)
 import Control.Monad.Trans.Except (ExceptT)
 import Data.Char (ord)
 import Data.Maybe (isJust)
@@ -209,7 +209,7 @@ topicPhaseChange
     :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseChange -> r (m ())
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
-        Nothing -> throwError $ persistError "Invalid phase transition"
+        Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
             setTopicPhase (topic ^. _Id) phase'
             return $ mapM_ (phaseAction topic) actions

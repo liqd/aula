@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
 {-# LANGUAGE OverloadedStrings           #-}
@@ -17,8 +18,10 @@ module Persistent.Api
     , AulaGetter
     , AulaSetter
     , PersistExcept(PersistExcept, unPersistExcept)
-    , withPersist
-    , persistError
+    , RunPersistNat
+    , RunPersistT(..)
+    , RunPersist
+    , withPersist'
 
     , AulaData
     , emptyAulaData
@@ -89,6 +92,7 @@ where
 import Control.Exception (finally)
 import Control.Lens
 import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Except (ExceptT)
 import Control.Monad (unless, replicateM, when)
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
@@ -99,7 +103,9 @@ import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Time.Clock (getCurrentTime)
 import Data.Typeable (Typeable)
-import Servant (ServantErr, err500, errBody)
+import Servant (ServantErr)
+import Servant.Missing (ThrowError500(..))
+import Servant.Server ((:~>))
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -151,8 +157,10 @@ emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
     deriving (Eq, Show)
 
-persistError :: String -> PersistExcept
-persistError msg = PersistExcept err500 {errBody = cs msg}
+makePrisms ''PersistExcept
+
+instance ThrowError500 PersistExcept where
+    error500 = _PersistExcept . error500
 
 class (MonadError PersistExcept m, Monad m) => PersistM m where
     getDb :: AulaGetter a -> m a
@@ -167,11 +175,25 @@ getCurrentTimestampIO = Timestamp <$> getCurrentTime
 mkRandomPasswordIO :: IO UserPass
 mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
+type RunPersistNat m r = r :~> ExceptT PersistExcept m
 
-withPersist :: IO (rp, IO ()) -> (rp -> IO a) -> IO a
-withPersist mkRunP m = do
-    (rp, rpClose) <- mkRunP  -- initialization happens here
-    m rp `finally` rpClose  -- closing happens here
+data RunPersistT m =
+    forall r. (PersistM r, GenArbitrary r) =>
+        RunPersist
+                  { _rpDesc  :: String
+                  , _rpNat   :: RunPersistNat m r
+                  , _rpClose :: m ()
+                  }
+
+type RunPersist = RunPersistT IO
+
+-- | A more low-level variant of 'Persistent.Implementation.withPersist' with the implementation
+-- explicit as parameter.
+withPersist' :: IO RunPersist -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
+withPersist' mkRunP m = do
+    RunPersist desc rp close <- mkRunP -- initialization happens here
+    putStrLn $ "persistence: " <> desc -- FIXME: use logger for this
+    m rp `finally` close               -- closing happens here
 
 
 -- | The argument is a consistency check that will throw an error if it fails.

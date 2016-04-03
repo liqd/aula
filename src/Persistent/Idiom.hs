@@ -8,8 +8,8 @@ where
 
 import Control.Lens
 import Control.Monad (when)
-import Control.Monad.Except (throwError)
 import Data.Time
+import Servant.Missing
 
 import qualified Data.Map as Map (size)
 
@@ -85,8 +85,7 @@ ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
 checkInPhaseJury :: PersistM m => Topic -> m ()
 checkInPhaseJury topic =
-    when (topic ^. topicPhase /= PhaseJury) . throwError $
-        persistError "Idea is not in the jury phase"
+    when (topic ^. topicPhase /= PhaseJury) $ throwError500 "Idea is not in the jury phase"
 
 -- | Checks if all ideas associated with the topic are marked, feasible or not feasible.
 checkAllIdeasMarked :: PersistM m => Topic -> m Bool

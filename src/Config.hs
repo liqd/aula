@@ -8,10 +8,12 @@
 module Config
     ( Config
     , WarnMissing(WarnMissing, DontWarnMissing)
+    , PersistenceImpl(..)
     , dbPath
     , htmlStatic
     , listenerInterface
     , listenerPort
+    , persistenceImpl
     , getConfig
     , aulaRoot
     , setCurrentDirectoryToAulaRoot
@@ -43,6 +45,8 @@ instance ToJSON CsrfSecret where
 instance FromJSON CsrfSecret where
   parseJSON o = CsrfSecret . (cs :: String -> SBS) <$> parseJSON o
 
+data PersistenceImpl = AcidStateInMem | AcidStateOnDisk | STM
+  deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON, Enum, Bounded)
 
 data Config = Config
     { _dbPath            :: FilePath
@@ -51,6 +55,7 @@ data Config = Config
     , _htmlStatic        :: FilePath
     , _cfgCsrfSecret     :: CsrfSecret
     , _logLevel          :: Bool  -- (see 'logger' below)
+    , _persistenceImpl   :: PersistenceImpl
     }
   deriving (Show, Generic, ToJSON, FromJSON)
 
@@ -68,6 +73,7 @@ defaultConfig = Config
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logLevel          = False
+    , _persistenceImpl   = STM
     }
 
 data WarnMissing = WarnMissing | DontWarnMissing

@@ -1,16 +1,23 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE Rank2Types #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
-module Persistent.Implementation
-    ( Persist
-    , mkRunPersist
-    , mkRunPersistInMemory
-    )
+module Persistent.Implementation (mkRunPersist, withPersist)
 where
 
-#ifdef PERSISTENT_ACID_STATE
+import Control.Lens
+import Config
+import Persistent.Api
 import Persistent.Implementation.AcidState
-#else
 import Persistent.Implementation.STM
-#endif
+import Types
+
+withPersist :: Config -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
+withPersist cfg = withPersist' (mkRunPersist cfg)
+
+mkRunPersist :: Config -> IO RunPersist
+mkRunPersist cfg =
+    case cfg ^. persistenceImpl of
+        STM             -> mkRunPersistSTM
+        AcidStateInMem  -> mkRunPersistInMemory
+        AcidStateOnDisk -> mkRunPersistOnDisk cfg
