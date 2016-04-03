@@ -37,7 +37,6 @@ import Persistent ()
 import Persistent.Idiom ()
 import Persistent.Implementation ()
 import Persistent.Implementation.AcidState ()
-import Persistent.Implementation.STM ()
 import Persistent.Pure ()
 import Types ()
 

@@ -101,7 +101,6 @@ library
       Persistent.Idiom
       Persistent.Implementation
       Persistent.Implementation.AcidState
-      Persistent.Implementation.STM
       Persistent.Pure
       Types
   other-modules:
