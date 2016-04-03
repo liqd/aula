@@ -30,6 +30,8 @@ module Persistent.Pure
     -- TODO: get some structure into this export list.
     -- FIXME: consider removing Purescript.Idiom and doing everything here.
 
+    , liftAQuery
+
     , askDb
     , getDb
     , addDb
@@ -158,7 +160,7 @@ emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 -- * transactions
 
 -- | 'Query' for 'AulaData', Can throw 'PersistExcept'.
-newtype AQuery a = AQuery (ExceptT PersistExcept (Query AulaData) a)
+newtype AQuery a = AQuery { _unAQuery :: ExceptT PersistExcept (Query AulaData) a }
   deriving ( Functor
            , Applicative
            , Monad
@@ -167,7 +169,7 @@ newtype AQuery a = AQuery (ExceptT PersistExcept (Query AulaData) a)
            )
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
-newtype AUpdate a = AUpdate (ExceptT PersistExcept (Update AulaData) a)
+newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaData) a }
   deriving ( Functor
            , Applicative
            , Monad
