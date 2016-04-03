@@ -21,7 +21,7 @@ import qualified Action
 import CreateRandom
 import Action.Implementation
 import Config
-import Persistent.Api
+import Persistent.Pure
 import Persistent.Implementation
 
 import AulaTests.Stories.DSL

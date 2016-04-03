@@ -98,11 +98,11 @@ library
       LifeCycle
       Lucid.Missing
       Persistent
-      Persistent.Api
       Persistent.Idiom
       Persistent.Implementation
       Persistent.Implementation.AcidState
       Persistent.Implementation.STM
+      Persistent.Pure
       Types
   other-modules:
       Paths_aula

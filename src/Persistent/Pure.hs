@@ -11,7 +11,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
-module Persistent.Api
+module Persistent.Pure
     ( PersistM
     , AMap
     , AulaLens

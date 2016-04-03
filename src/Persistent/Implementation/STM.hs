@@ -16,7 +16,7 @@ import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
-import Persistent.Api
+import Persistent.Pure
 import Types
 
 -- FIXME: Remove

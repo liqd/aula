@@ -27,7 +27,7 @@ import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
 import Servant.Server ((:~>)(Nat))
 
 import Config
-import Persistent.Api
+import Persistent.Pure
 import Types
 
 -- FIXME: Remove

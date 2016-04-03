@@ -12,7 +12,7 @@ import Action
 import Arbitrary
 import DemoData
 import CreateRandom
-import Persistent.Api
+import Persistent.Pure
 import Servant
 import Types
 

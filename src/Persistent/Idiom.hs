@@ -14,7 +14,7 @@ import Servant.Missing
 import qualified Data.Map as Map (size)
 
 import Types
-import Persistent.Api
+import Persistent.Pure
 
 
 -- | Number of likes / number of voters >= gobally configured quorum.
