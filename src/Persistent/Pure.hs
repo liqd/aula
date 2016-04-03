@@ -11,24 +11,29 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
+-- | This module exports acid-state transactions.  It introduces a state type 'AulaData' and 'Query'
+-- and 'Update' operations on that state.  (To be more specific, two new types for queries and
+-- pudates are defined that specific to 'AulaData' and introduce exceptions.)
+--
+-- Serializability happens outside of this module.
 module Persistent.Pure
-    ( PersistM
+    ( AulaData
     , AMap
     , AulaLens
     , AulaGetter
     , AulaSetter
-    , PersistExcept(PersistExcept, unPersistExcept)
-    , RunPersistNat
-    , RunPersistT(..)
-    , RunPersist
-    , withPersist'
-
-    , AulaData
     , emptyAulaData
 
+    , AQuery, AUpdate
+    , PersistExcept(PersistExcept, unPersistExcept)
+
+    -- TODO: get some structure into this export list.
+
+    , askDb
     , getDb
     , addDb
     , modifyDb
+    , modifyDb_
     , findIn
     , findInBy
     , findInById
@@ -59,10 +64,6 @@ module Persistent.Pure
     , addFirstUser
     , mkMetaInfo
     , mkUserLogin
-    , getCurrentTimestamp
-    , getCurrentTimestampIO
-    , mkRandomPassword
-    , mkRandomPasswordIO
     , modifyUser
     , getTopics
     , addTopic
@@ -89,23 +90,21 @@ module Persistent.Pure
     )
 where
 
-import Control.Exception (finally)
 import Control.Lens
-import Control.Monad.Error.Class (MonadError)
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except (MonadError, ExceptT(ExceptT))
+import Control.Monad.Reader (MonadReader, ask)
+import Control.Monad.State (MonadState, state, get, modify)
 import Control.Monad (unless, replicateM, when)
-import Data.Elocrypt (mkPassword)
+import Data.Acid (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
-import Data.Time.Clock (getCurrentTime)
 import Data.Typeable (Typeable)
-import Servant (ServantErr)
 import Servant.Missing (ThrowError500(..))
-import Servant.Server ((:~>))
+import Servant (ServantErr)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -113,6 +112,8 @@ import qualified Data.Text as ST
 
 import Types
 
+
+-- * state type
 
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
@@ -152,6 +153,49 @@ dbTopics = dbTopicMap . to Map.elems
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
+
+-- * transactions
+
+-- | 'Query' for 'AulaData', Can throw 'PersistExcept'.
+newtype AQuery a = AQuery (ExceptT PersistExcept (Query AulaData) a)
+  deriving ( Functor
+           , Applicative
+           , Monad
+           , MonadError PersistExcept
+           , MonadReader AulaData
+           )
+
+-- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
+newtype AUpdate a = AUpdate (ExceptT PersistExcept (Update AulaData) a)
+  deriving ( Functor
+           , Applicative
+           , Monad
+           , MonadError PersistExcept
+           , MonadState AulaData
+           )
+
+-- (AQuery, AUpdate could be replaced by constraints in this module)
+
+askDb :: AulaGetter a -> AQuery a  -- TODO: inline
+askDb l = view l <$> ask
+
+getDb :: AulaGetter a -> AUpdate a  -- TODO: inline
+getDb l = view l <$> get
+
+-- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
+-- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
+modifyDb :: AulaLens a -> (a -> a) -> AUpdate a
+modifyDb l f = AUpdate . ExceptT . fmap Right $ state (\s -> (f $ s ^. l, l %~ f $ s))
+
+modifyDb_ :: AulaSetter a -> (a -> a) -> AUpdate ()
+modifyDb_ l f = AUpdate . ExceptT . fmap Right $ modify (l %~ f)
+
+liftAQuery :: AQuery a -> AUpdate a
+liftAQuery (AQuery (ExceptT check)) = AUpdate . ExceptT $ liftQuery check
+
+
+-- * exceptions
+
 -- | FIXME: this will have constructors dedicated for specific errors, and 'ServantErr' will only be
 -- introduced later.
 newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
@@ -162,56 +206,25 @@ makePrisms ''PersistExcept
 instance ThrowError500 PersistExcept where
     error500 = _PersistExcept . error500
 
-class (MonadError PersistExcept m, Monad m) => PersistM m where
-    getDb :: AulaGetter a -> m a
-    modifyDb :: AulaSetter a -> (a -> a) -> m ()
-    getCurrentTimestamp :: m Timestamp
-    mkRandomPassword :: m UserPass
 
-
-getCurrentTimestampIO :: IO Timestamp
-getCurrentTimestampIO = Timestamp <$> getCurrentTime
-
-mkRandomPasswordIO :: IO UserPass
-mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
-
-type RunPersistNat m r = r :~> ExceptT PersistExcept m
-
-data RunPersistT m =
-    forall r. (PersistM r, GenArbitrary r) =>
-        RunPersist
-                  { _rpDesc  :: String
-                  , _rpNat   :: RunPersistNat m r
-                  , _rpClose :: m ()
-                  }
-
-type RunPersist = RunPersistT IO
-
--- | A more low-level variant of 'Persistent.Implementation.withPersist' with the implementation
--- explicit as parameter.
-withPersist' :: IO RunPersist -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
-withPersist' mkRunP m = do
-    RunPersist desc rp close <- mkRunP -- initialization happens here
-    putStrLn $ "persistence: " <> desc -- FIXME: use logger for this
-    m rp `finally` close               -- closing happens here
-
+-- * state interface
 
 -- | The argument is a consistency check that will throw an error if it fails.
 --
 -- This can be equipped with a switch for performance, but if at all possible it would be nice to
 -- run the checks even in production.
-assertPersistM :: PersistM m => m () -> m ()
-assertPersistM check = check
+assertAulaDataM :: AQuery () -> AUpdate ()
+assertAulaDataM check = liftAQuery check
 
 
-type AddDb m a = UserWithProto a -> PersistM m => m a
+type AddDb a = UserWithProto a -> AUpdate a
 
 -- | @addDb l (u, p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
 -- The record is computed from the prototype @p@, the current time and the given user @u@.
 -- The record is added at the location pointed by the traversal @l@.
 --
--- It is expected that @l@ points to exactly one target (checked by 'assertPersistM').
+-- It is expected that @l@ points to exactly one target (checked by 'assertAulaDataM').
 --
 -- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
 -- above at the expense of pushing the burden towards cases where the traversal is only a
@@ -220,94 +233,94 @@ type AddDb m a = UserWithProto a -> PersistM m => m a
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb m a
+addDb :: forall a. (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
 addDb l (cUser, pa) = do
-    assertPersistM $ do
-        db <- getDb id
-        let len = lengthOf l db
+    assertAulaDataM $ do
+        len <- lengthOf l <$> askDb id
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    a <- fromProto pa <$> nextMetaInfo cUser
-    modifyDb l $ at (a ^. _Id) .~ Just a
+    -- FIXME: reduce code: call 'addDbValue' instead of the following three lines.  (this is another lens puzzle)
+    a :: a <- fromProto pa <$> nextMetaInfo cUser
+    modifyDb_ l $ at (a ^. _Id) .~ Just a
     return a
 
-addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb m a
+addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb a
 addDbValue l (cUser, pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser
-    modifyDb l (const a)
+    modifyDb_ l (const a)
     return a
 
-findIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m (Maybe a)
-findIn l p = find p <$> getDb l
+findIn :: AulaGetter [a] -> (a -> Bool) -> AQuery (Maybe a)
+findIn l p = find p <$> askDb l
 
-findAllIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m [a]
-findAllIn l p = filter p <$> getDb l
+findAllIn :: AulaGetter [a] -> (a -> Bool) -> AQuery [a]
+findAllIn l p = filter p <$> askDb l
 
-findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m (Maybe a)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> AQuery (Maybe a)
 findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
-findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> PersistM m => m [a]
+findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> AQuery [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> PersistM m => m (Maybe a)
-findInById l i = getDb (l . at i)
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> AQuery (Maybe a)
+findInById l i = askDb (l . at i)
 
-getSpaces :: PersistM m => m [IdeaSpace]
-getSpaces = getDb dbSpaces
+getSpaces :: AQuery [IdeaSpace]
+getSpaces = askDb dbSpaces
 
-getIdeas :: PersistM m => m [Idea]
-getIdeas = getDb dbIdeas
+getIdeas :: AQuery [Idea]
+getIdeas = askDb dbIdeas
 
-getWildIdeas :: PersistM m => m [Idea]
+getWildIdeas :: AQuery [Idea]
 getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
 
-getIdeasWithTopic :: PersistM m => m [Idea]
+getIdeasWithTopic :: AQuery [Idea]
 getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
-addIdeaSpaceIfNotExists :: IdeaSpace -> PersistM m => m ()
+addIdeaSpaceIfNotExists :: IdeaSpace -> AUpdate ()
 addIdeaSpaceIfNotExists ispace = do
-    exists <- (ispace `elem`) <$> getSpaces
-    unless exists $ modifyDb dbSpaceSet (Set.insert ispace)
+    exists <- (ispace `elem`) <$> liftAQuery getSpaces
+    unless exists $ modifyDb_ dbSpaceSet (Set.insert ispace)
 
-addIdea :: AddDb m Idea
+addIdea :: AddDb Idea
 addIdea = addDb dbIdeaMap
 
-findIdea :: AUID Idea -> PersistM m => m (Maybe Idea)
+findIdea :: AUID Idea -> AQuery (Maybe Idea)
 findIdea = findInById dbIdeaMap
 
-findIdeasByUserId :: AUID User -> PersistM m => m [Idea]
+findIdeasByUserId :: AUID User -> AQuery [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> PersistM m => m ()
-modifyAMap l ident = modifyDb (l . at ident . _Just)
+modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> AUpdate ()
+modifyAMap l ident = modifyDb_ (l . at ident . _Just)
 
-modifyIdea :: AUID Idea -> (Idea -> Idea) -> PersistM m => m ()
+modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> PersistM m => m ()
+modifyUser :: AUID User -> (User -> User) -> AUpdate ()
 modifyUser = modifyAMap dbUserMap
 
-modifyTopic :: AUID Topic -> (Topic -> Topic) -> PersistM m => m ()
+modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> PersistM m => m (Maybe User)
+findUser :: AUID User -> AQuery (Maybe User)
 findUser = findInById dbUserMap
 
-getUsers :: PersistM m => m [User]
-getUsers = getDb dbUsers
+getUsers :: AQuery [User]
+getUsers = askDb dbUsers
 
-getTopics :: PersistM m => m [Topic]
-getTopics = getDb dbTopics
+getTopics :: AQuery [Topic]
+getTopics = askDb dbTopics
 
-moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> PersistM m => m ()
+moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
 moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaLocation .~ location
 
-addTopic :: AddDb m Topic
+addTopic :: AddDb Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
@@ -318,33 +331,33 @@ addTopic pt = do
     moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) (topicIdeaLocation t)
     return t
 
-addDelegation :: AddDb m Delegation
+addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap
 
-findDelegationsByContext :: DelegationContext -> PersistM m => m [Delegation]
+findDelegationsByContext :: DelegationContext -> AQuery [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
-    <$> getDb dbDelegationMap
+    <$> askDb dbDelegationMap
 
-findUserByLogin :: UserLogin -> PersistM m => m (Maybe User)
+findUserByLogin :: UserLogin -> AQuery (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
-findTopic :: AUID Topic -> PersistM m => m (Maybe Topic)
+findTopic :: AUID Topic -> AQuery (Maybe Topic)
 findTopic = findInById dbTopicMap
 
-findTopicsBySpace :: IdeaSpace -> PersistM m => m [Topic]
+findTopicsBySpace :: IdeaSpace -> AQuery [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
-findIdeasByTopicId :: AUID Topic -> PersistM m => m [Idea]
+findIdeasByTopicId :: AUID Topic -> AQuery [Idea]
 findIdeasByTopicId tid = do
     mt <- findTopic tid
     case mt of
         Nothing -> pure []
         Just t  -> findIdeasByTopic t
 
-findIdeasByTopic :: Topic -> PersistM m => m [Idea]
+findIdeasByTopic :: Topic -> AQuery [Idea]
 findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
-findWildIdeasBySpace :: IdeaSpace -> PersistM m => m [Idea]
+findWildIdeasBySpace :: IdeaSpace -> AQuery [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
 instance FromProto IdeaLike where
@@ -352,7 +365,7 @@ instance FromProto IdeaLike where
 
 -- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addLikeToIdea :: AUID Idea -> AddDb m IdeaLike
+addLikeToIdea :: AUID Idea -> AddDb IdeaLike
 addLikeToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes)
 
 instance FromProto IdeaVote where
@@ -360,7 +373,7 @@ instance FromProto IdeaVote where
 
 -- | FIXME: Same user can vote on the same idea more than once (Issue #308).
 -- FIXME: Check also that the given idea exists and is in the right phase.
-addVoteToIdea :: AUID Idea -> AddDb m IdeaVote
+addVoteToIdea :: AUID Idea -> AddDb IdeaVote
 addVoteToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
@@ -372,13 +385,13 @@ instance FromProto Comment where
 
 
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addCommentToIdea :: AUID Idea -> AddDb m Comment
+addCommentToIdea :: AUID Idea -> AddDb Comment
 addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m Comment
+addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb Comment
 addReplyToIdeaComment iid cid =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies)
 
@@ -388,7 +401,7 @@ instance FromProto CommentVote where
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb m CommentVote
+addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb CommentVote
 addCommentVoteToIdeaComment iid cid =
     addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
 
@@ -396,7 +409,7 @@ addCommentVoteToIdeaComment iid cid =
 -- * the given @AUID Idea@ MUST be in the DB.
 -- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
-addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb m CommentVote
+addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb CommentVote
 addCommentVoteToIdeaCommentReply iid cid rid =
     addDb (dbIdeaMap . at iid . _Just . ideaComments
                      . at cid . _Just . commentReplies
@@ -405,14 +418,12 @@ addCommentVoteToIdeaCommentReply iid cid rid =
 instance FromProto IdeaResult where
     fromProto = flip IdeaResult
 
-addIdeaResult :: AUID Idea -> AddDb m IdeaResult
+addIdeaResult :: AUID Idea -> AddDb IdeaResult
 addIdeaResult iid =
     addDbValue (dbIdeaMap . at iid . _Just . ideaResult . _Just)
 
-nextId :: PersistM m => m (AUID a)
-nextId = do
-    modifyDb dbLastId (+1)
-    AUID <$> getDb dbLastId
+nextId :: AUpdate (AUID a)
+nextId = AUID <$> modifyDb dbLastId (+1)
 
 -- | No 'FromProto' instance, since this is more complex, due to the possible
 -- auto-generating of logins and passwords.
@@ -428,20 +439,19 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
-addUser :: AddDb m User
-addUser (cUser, proto) = do
+addUser :: UserPass -> AddDb User
+addUser defaultPass (cUser, proto) = do
     metainfo  <- nextMetaInfo cUser
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
-    uPassword <- maybe mkRandomPassword pure (proto ^. protoUserPassword)
+    let uPassword = fromMaybe defaultPass $ proto ^. protoUserPassword
     let user = userFromProto metainfo uLogin uPassword proto
-    modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
+    modifyDb_ dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
-addFirstUser :: Proto User -> PersistM m => m User
-addFirstUser proto = do
-    now <- getCurrentTimestamp
+addFirstUser :: Timestamp -> Proto User -> AUpdate User
+addFirstUser now proto = do
     uid <- nextId
     let uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
         uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
@@ -450,17 +460,17 @@ addFirstUser proto = do
         metainfo = mkMetaInfo cUser now uid
         user = userFromProto metainfo uLogin uPassword proto
 
-    modifyDb dbUserMap $ at (user ^. _Id) .~ Just user
+    modifyDb_ dbUserMap $ at (user ^. _Id) .~ Just user
     return user
 
-mkUserLogin :: ProtoUser -> PersistM m => m UserLogin
+mkUserLogin :: ProtoUser -> AUpdate UserLogin
 mkUserLogin protoUser = pick (gen firstn lastn)
   where
     firstn :: ST = protoUser ^. protoUserFirstName . fromUserFirstName
     lastn  :: ST = protoUser ^. protoUserLastName  . fromUserLastName
 
-    pick :: [ST] -> PersistM m => m UserLogin
-    pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< findUserByLogin l
+    pick :: [ST] -> AUpdate UserLogin
+    pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
     pick []                    = error "impossible.  (well, unlikely.)"
 
     gen :: ST -> ST -> [ST]
@@ -512,5 +522,7 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: PersistM m => User -> m (MetaInfo a)
-nextMetaInfo cUser = mkMetaInfo cUser <$> getCurrentTimestamp <*> nextId
+nextMetaInfo :: User -> AUpdate (MetaInfo a)
+nextMetaInfo cUser = mkMetaInfo cUser now <$> nextId
+  where
+    now = undefined  -- TODO: #307
