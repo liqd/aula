@@ -126,9 +126,9 @@ class Monad m => ActionLog m where
 -- @r@ is determined by @m@, because @m@ is intended to be the program's
 -- action monad, so @r@ is just the persistent implementation chosen
 -- to be used in the action monad.
-class (Monad r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> r where
+class (Monad m, MonadError ActionExcept m) => ActionPersist RunPersist m where
     -- | Run "Persistent" computation in the 'Action' monad.
-    persistent :: r a -> m a  -- TODO: rename to atomic
+    query :: r a -> m a  -- TODO: rename to atomic
 
 class (ActionPersist AQuery m, ActionPersist AUpdate m) => ActionPersistM m
 
@@ -293,3 +293,15 @@ decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
+
+
+
+{-
+
+getCurrentTimestampIO :: AUpdate Timestamp
+getCurrentTimestampIO = Timestamp <$> getCurrentTime
+
+mkRandomPasswordIO :: AUpdate UserPass
+mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+-}

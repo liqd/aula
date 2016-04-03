@@ -1,6 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 
-{-# OPTIONS_GHC -Wall -Werror #-}
+-- {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.Implementation (mkRunPersist, withPersist, withPersist')
 where

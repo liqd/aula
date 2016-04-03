@@ -24,7 +24,7 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
-    , AQuery, AUpdate
+    , AQuery(AQuery), AUpdate(AUpdate)  -- TODO: can we get this abstract?  do we want to?
     , PersistExcept(PersistExcept, unPersistExcept)
 
     -- TODO: get some structure into this export list.

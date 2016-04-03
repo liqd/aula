@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE FlexibleInstances           #-}
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -13,8 +14,7 @@
 -- {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Persistent.Api
-    ( RunPersistNat
-    , RunPersistT(..)
+    ( RunPersistT(..)
     , RunPersist
     , module Persistent.Pure
     , module Persistent.Idiom
@@ -27,6 +27,7 @@ import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (ExceptT)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid
+import Data.Acid.Core
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
 import Data.List (nub)
@@ -49,26 +50,24 @@ import Persistent.Pure
 import Persistent.Idiom
 
 
-type RunPersistNat m r = r :~> ExceptT PersistExcept m
+-- | well, not really 'Nat' any more.  too many constraints.
+type RunPersistNat m r a = r a -> ExceptT PersistExcept m a
+
+type PersistC  a r = (MethodState a ~ AulaData, MethodResult a ~ r)
+type PersistCQ a r = (a ~ Query  AulaData r, QueryEvent  a, PersistC a r)
+type PersistCU a r = (a ~ Update AulaData r, UpdateEvent a, PersistC a r)
+
 
 data RunPersistT m =
-    forall r. -- (PersistM r, GenArbitrary r) =>
+      forall q u r. (PersistCQ q r, PersistCU u r) =>
         RunPersist
                   { _rpDesc  :: String
-                  , _rpNat   :: RunPersistNat m r
+                  , _rpQNat  :: RunPersistNat m AQuery  q
+                  , _rpUNat  :: RunPersistNat m AUpdate u
                   , _rpClose :: m ()
                   }
 
 type RunPersist = RunPersistT IO
 
 
-
-{-
-
-getCurrentTimestampIO :: AUpdate Timestamp
-getCurrentTimestampIO = Timestamp <$> getCurrentTime
-
-mkRandomPasswordIO :: AUpdate UserPass
-mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
-
--}
+$(makeAcidic ''AulaData [])
