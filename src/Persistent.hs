@@ -8,3 +8,4 @@ module Persistent (
 where
 
 import Persistent.Api
+import Persistent.Implementation

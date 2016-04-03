@@ -20,7 +20,7 @@ withPersist cfg = withPersist' (mkRunPersist cfg)
 withPersist' :: IO RunPersist -> (forall r. (PersistM r, GenArbitrary r) => RunPersistNat IO r -> IO a) -> IO a
 withPersist' mkRunP m = do
     RunPersist desc rp close <- mkRunP -- initialization happens here
-    putStrLn $ "persistence: " <> desc -- FIXME: use logger for this
+    putStrLn $ "persistence: " <> desc -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
     m rp `finally` close               -- closing happens here
 
 mkRunPersist :: Config -> IO RunPersist

@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
@@ -90,14 +91,14 @@ makeLenses ''UserState
 userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
-data ActionEnv r = ActionEnv
-    { _persistNat :: r :~> ExceptT PersistExcept IO
-    , _config     :: Config
+data ActionEnv = ActionEnv
+    { _persistNat :: RunPersist  -- TODO: rename to _envRunPersist
+    , _config     :: Config      -- TODO: rename to _envConfig
     }
 
 makeLenses ''ActionEnv
 
-instance GetCsrfSecret (ActionEnv r) where
+instance GetCsrfSecret ActionEnv where
     csrfSecret = config . csrfSecret
 
 -- | Top level errors can happen.
@@ -129,6 +130,8 @@ class (Monad r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> 
     -- | Run "Persistent" computation in the 'Action' monad.
     persistent :: r a -> m a  -- TODO: rename to atomic
 
+class (ActionPersist AQuery m, ActionPersist AUpdate m) => ActionPersistM m
+
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
 
@@ -157,7 +160,7 @@ class MonadError ActionExcept m => ActionError m
 loginByUser :: ActionUserHandler m => User -> m ()
 loginByUser = login . view _Id
 
-loginByName :: (ActionPersist r m, ActionUserHandler m) => UserLogin -> m ()
+loginByName :: (ActionPersistM m, ActionUserHandler m) => UserLogin -> m ()
 loginByName n = do
     Just u <- persistent (findUserByLogin n)  -- FIXME: handle 'Nothing'
     loginByUser u
@@ -208,7 +211,7 @@ topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
-            setTopicPhase (topic ^. _Id) phase'
+            persistent $ setTopicPhase (topic ^. _Id) phase'
             return $ mapM_ (phaseAction topic) actions
 
 topicTimeout :: (ActionPersist r m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()

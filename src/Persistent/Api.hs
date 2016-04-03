@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE FlexibleInstances           #-}
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
@@ -9,7 +10,7 @@
 {-# LANGUAGE TypeOperators               #-}
 {-# LANGUAGE ViewPatterns                #-}
 
-{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
+-- {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Persistent.Api
     ( RunPersistNat
@@ -46,3 +47,28 @@ import qualified Data.Text as ST
 import Types
 import Persistent.Pure
 import Persistent.Idiom
+
+
+type RunPersistNat m r = r :~> ExceptT PersistExcept m
+
+data RunPersistT m =
+    forall r. -- (PersistM r, GenArbitrary r) =>
+        RunPersist
+                  { _rpDesc  :: String
+                  , _rpNat   :: RunPersistNat m r
+                  , _rpClose :: m ()
+                  }
+
+type RunPersist = RunPersistT IO
+
+
+
+{-
+
+getCurrentTimestampIO :: AUpdate Timestamp
+getCurrentTimestampIO = Timestamp <$> getCurrentTime
+
+mkRandomPasswordIO :: AUpdate UserPass
+mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+-}
