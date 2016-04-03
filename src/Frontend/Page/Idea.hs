@@ -22,10 +22,14 @@ module Frontend.Page.Idea
   )
 where
 
-import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persistent, currentUserAddDb)
+import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
+              , currentUserAddDb, aquery, amquery, aupdate
+              )
 import Frontend.Page.Comment
-import Frontend.Prelude
+import Frontend.Prelude hiding (editIdea)
+import Persistent.Api hiding (EditIdea)
 
+import qualified Persistent.Api as Persistent
 import qualified Action (createIdea)
 import qualified Frontend.Path as U
 import qualified Data.Map as Map
@@ -130,6 +134,7 @@ instance ToHtml ViewIdea where
             when False . div_ $ do
                 -- FIXME: needs design/layout
                 -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
+                -- this can probably be fixed with a simple click-handler (thanks, @np!).
                 div_ ">>>>>>>>>>> some phase-specific stuff"
 
                 postLink_ [] (U.likeIdea idea)         "like this idea"
@@ -384,40 +389,37 @@ categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 -- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
 -- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.
 -- on the bright side, it makes shorter uri paths possible.)
-viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
+viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
-viewIdea ideaId = makeFrame =<< persistent (do
-    -- FIXME: 404
-    Just idea <- findIdea ideaId
-    phase <- ideaPhase idea
+viewIdea ideaId = makeFrame =<< (do
+    idea  :: Idea        <- amquery $ findIdea ideaId
+    phase :: Maybe Phase <- aquery $ ideaPhase idea
     pure $ ViewIdea idea phase)
 
-createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
+createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
 
-editIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler EditIdea) m
+-- | FIXME: there is a race condition if several edits happen concurrently.  this can happen if
+-- student and moderator edit an idea at the same time.  One solution would be to carry a
+-- 'last-changed' timestamp in the edit form, and check for it before writing the edits.
+editIdea :: ActionM m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =
     redirectFormHandler
-        (EditIdea . (\ (Just idea) -> idea) <$> persistent (findIdea ideaId))
-        (persistent . modifyIdea ideaId . newIdea)
-  where
-    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
-                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
-                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+        (EditIdea <$> amquery (findIdea ideaId))
+        (aupdate . Persistent.EditIdea ideaId)
 
-commentIdea :: ActionM r m => AUID Idea -> ServerT (FormHandler CommentIdea) m
+commentIdea :: ActionM m => AUID Idea -> ServerT (FormHandler CommentIdea) m
 commentIdea ideaId =
     redirectFormHandler
-        (do
-            Just idea <- persistent $ findIdea ideaId  -- FIXME: 404
-            pure $ CommentIdea idea Nothing)
-        (currentUserAddDb $ addCommentToIdea ideaId)
+        (CommentIdea <$> amquery (findIdea ideaId) <*> pure Nothing)
+        (currentUserAddDb $ AddCommentToIdea ideaId)
 
-replyCommentIdea :: ActionM r m => AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
+replyCommentIdea :: ActionM m => AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
 replyCommentIdea ideaId commentId =
     redirectFormHandler
-        (do
-            Just idea    <- persistent $ findIdea ideaId  -- FIXME: 404
-            let Just comment = idea ^. ideaComments . at commentId -- FIXME: 404
-            pure $ CommentIdea idea (Just comment))
-        (currentUserAddDb $ addReplyToIdeaComment ideaId commentId)
+        (amquery $ do
+            midea <- findIdea ideaId
+            pure $ do idea <- midea
+                      comment <- idea ^. ideaComments . at commentId
+                      pure $ CommentIdea idea (Just comment))
+        (currentUserAddDb $ AddReplyToIdeaComment ideaId commentId)

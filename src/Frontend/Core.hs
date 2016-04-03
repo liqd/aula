@@ -127,14 +127,14 @@ class Page p => FormPage p where
     -- | Calculates a redirect address from the given page
     redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
-    makeForm :: ActionM r m => p -> DF.Form (Html ()) m (FormPagePayload p)
+    makeForm :: ActionM m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
     -- | Guard the form, if the 'guardPage' returns an UriPath the page will
     -- be redirected. It only guards GET handlers.
-    guardPage :: (ActionM r m) => p -> m (Maybe UriPath)
+    guardPage :: (ActionM m) => p -> m (Maybe UriPath)
     guardPage _ = pure Nothing
 
 
@@ -163,7 +163,7 @@ instance Page p => Page (Frame p) where
     isPrivatePage    = isPrivatePage    . view frameBody
     extraPageHeaders = extraPageHeaders . view frameBody
 
-makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
@@ -378,7 +378,7 @@ instance FormPage p => ToHtml (FormPageRep p) where
 -- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
 -- the `resourcet` engine and it's use pattern.
 redirectFormHandler
-    :: (FormPage p, Page p, ActionM r m)
+    :: (FormPage p, Page p, ActionM m)
     => m p                       -- ^ Page representation
     -> (FormPagePayload p -> m (FormPageResult p)) -- ^ Processor for the form result
     -> ServerT (FormHandler p) m

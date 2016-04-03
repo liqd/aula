@@ -29,7 +29,7 @@ library
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -62,6 +62,7 @@ library
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers
@@ -102,7 +103,8 @@ library
       Persistent.Idiom
       Persistent.Implementation
       Persistent.Implementation.AcidState
-      Persistent.Implementation.STM
+      Persistent.Pure
+      Persistent.TemplateHaskell
       Types
   other-modules:
       Paths_aula
@@ -118,7 +120,7 @@ executable aula-html-dummies
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -151,6 +153,7 @@ executable aula-html-dummies
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers
@@ -177,7 +180,7 @@ executable aula-server
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -210,6 +213,7 @@ executable aula-server
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers
@@ -234,7 +238,7 @@ test-suite spec
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -267,6 +271,7 @@ test-suite spec
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers

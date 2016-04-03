@@ -32,7 +32,6 @@ module Arbitrary
 
 import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
-import Control.Lens (set, (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
@@ -60,8 +59,8 @@ import Action.Implementation
 import Config
 import Frontend.Core
 import Frontend.Page
-import Frontend.Prelude ((.~), ppShow, view, join)
-import Persistent
+import Frontend.Prelude (set, (^.), (.~), (?~), ppShow, view, join)
+import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent.Implementation
 import Types
 
@@ -134,8 +133,8 @@ instance Arbitrary CreateTopic where
 instance Arbitrary EditTopic where
     arbitrary = EditTopic <$> arb <*> arb <*> arb
 
-instance Arbitrary TopicFormPayload where
-    arbitrary = TopicFormPayload <$> arbPhrase <*> arb <*> arb
+instance Arbitrary EditTopicData where
+    arbitrary = EditTopicData <$> arbPhrase <*> arb <*> arb
 
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
@@ -209,10 +208,16 @@ instance Arbitrary IdeaVote where
 instance Arbitrary IdeaVoteValue where
     arbitrary = garbitrary
 
-instance Arbitrary IdeaResult where
+instance Arbitrary IdeaJuryResult where
     arbitrary = garbitrary
 
-instance Arbitrary IdeaResultValue where
+instance Arbitrary IdeaVoteResult where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaJuryResultValue where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaVoteResultValue where
     arbitrary = garbitrary
 
 instance Arbitrary DelegationContext where
@@ -399,7 +404,7 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
-instance GenArbitrary r => GenArbitrary (Action r) where
+instance GenArbitrary Action where
     genGen = liftIO . generate
 
 
@@ -749,7 +754,7 @@ fishAvatars =
     , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
     ]
 
-mkFishUser :: (GenArbitrary r, ActionM r m) => Maybe SchoolClass -> URL -> m User
+mkFishUser :: (GenArbitrary m, ActionM m) => Maybe SchoolClass -> URL -> m User
 mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
     let first_last = cs . takeBaseName . cs $ avatar
         (fnam, lnam) = case ST.findIndex (== '_') first_last of
@@ -757,10 +762,10 @@ mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -
             Just i -> ( UserFirstName $ ST.take i first_last
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
-    role <- Student <$> maybe (persistent genArbitrary) pure mSchoolClass
+    role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
-    (userAvatar .~ Just avatar) <$> currentUserAddDb addUser pu
+    (userAvatar ?~ avatar) <$> currentUserAddDb (AddUser (UserPassInitial "streng geheim!")) pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
@@ -771,36 +776,36 @@ fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
 
 fishDelegationNetworkIO :: IO DelegationNetwork
 fishDelegationNetworkIO = do
-    let action :: (GenArbitrary r, PersistM r) => Action r DelegationNetwork
+    let action :: Action DelegationNetwork
         action = do
-            admin <- persistent . addFirstUser $ ProtoUser
+            now <- getCurrentTimestamp
+            admin <- aupdate . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
                 Admin (Just (UserPassInitial "admin")) Nothing
             Action.loginByUser admin
             fishDelegationNetworkAction
 
-    -- We use @STM@ here to make sure it doesn't rust.
-    cfg <- (persistenceImpl .~ STM) <$> Config.getConfig Config.DontWarnMissing
-    let runAction :: (GenArbitrary r, PersistM r) => RunPersistNat IO r -> IO DelegationNetwork
+    -- We use @AcidStateInMem@ here to make sure it doesn't rust.
+    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig Config.DontWarnMissing
+    let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
             either (throwIO . ErrorCall . ppShow) pure v
     withPersist cfg runAction
 
-fishDelegationNetworkAction :: (GenArbitrary r, ActionM r m) => m DelegationNetwork
+fishDelegationNetworkAction :: (GenArbitrary m, ActionM m) => m DelegationNetwork
 fishDelegationNetworkAction = fishDelegationNetworkAction' Nothing
 
-fishDelegationNetworkAction' :: Maybe SchoolClass -> (GenArbitrary r, ActionM r m) => m DelegationNetwork
+fishDelegationNetworkAction' :: Maybe SchoolClass -> (GenArbitrary m, ActionM m) => m DelegationNetwork
 fishDelegationNetworkAction' mSchoolClass = do
     users <- mkFishUser mSchoolClass `mapM` List.take 25 fishAvatars
-    cUser <- currentUser
     let -- invariants:
         -- - u1 and u2 are in the same class or ctx is school.
         -- - no cycles  -- FIXME: not implemented!
-        mkdel :: (GenArbitrary r, ActionM r m) => m [Delegation]
+        mkdel :: (GenArbitrary m, ActionM m) => m [Delegation]
         mkdel = do
             ctx :: DelegationContext
-                <- DlgCtxIdeaSpace . ClassSpace <$> maybe (persistent genArbitrary) pure mSchoolClass
+                <- DlgCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
             let fltr u = ctx == DlgCtxIdeaSpace SchoolSpace
                       || case u ^. userRole of
                              Student cl -> ctx == DlgCtxIdeaSpace (ClassSpace cl)
@@ -810,10 +815,10 @@ fishDelegationNetworkAction' mSchoolClass = do
 
             if List.null users'
                 then pure []
-                else persistent $ do
+                else do
                     u1  <- genGen $ elements users'
                     u2  <- genGen $ elements users'
-                    (:[]) <$> addDelegation (cUser, ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> currentUserAddDb AddDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel
 
@@ -956,10 +961,10 @@ constantSampleIdea = Idea
               }
           ]
     , _ideaVotes = nil
-    , _ideaResult =
+    , _ideaJuryResult =
         Just
-          IdeaResult
-            { _ideaResultMeta =
+          IdeaJuryResult
+            { _ideaJuryResultMeta =
                 MetaInfo
                   { _metaId = AUID 0
                   , _metaCreatedBy = AUID 0
@@ -969,8 +974,9 @@ constantSampleIdea = Idea
                   , _metaChangedBy = AUID 0
                   , _metaChangedAt = constantSampleTimestamp
                   }
-            , _ideaResultValue = Winning Nothing
+            , _ideaJuryResultValue = Feasible Nothing
             }
+    , _ideaVoteResult = Nothing -- FIXME: Good test data
     }
 
 constantSampleComments :: [Comment]

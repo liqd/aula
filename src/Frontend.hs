@@ -20,7 +20,7 @@ import Network.Wai
     ( Application, Middleware, Response
     , responseStatus, responseHeaders, responseBuilder
     )
-import Network.Wai.Handler.Warp (runSettings, setHost, setPort, defaultSettings)
+import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort, defaultSettings)
 import Network.Wai.Application.Static
     ( StaticSettings
     , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
@@ -34,7 +34,7 @@ import Thentos.Prelude
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
-import Action (UserState, ActionEnv(..), logout)
+import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
 import Config
 import CreateRandom
@@ -43,7 +43,7 @@ import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Testing
 import Persistent
-import Persistent.Implementation
+import Persistent.Api
 import Types
 
 import qualified Action
@@ -56,13 +56,15 @@ import qualified Frontend.Path as U
 extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
 extendClearanceOnSessionToken _ = pure () -- FIXME
 
--- | Note that the config specific which persitence implementation to use.
+-- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()
 runFrontend cfg = withPersist cfg (runFrontend' cfg)
 
-runFrontend' :: forall r. (PersistM r, GenArbitrary r) => Config -> RunPersistNat IO r -> IO ()
+-- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
+-- logged in.)
+runFrontend' :: Config -> RunPersist -> IO ()
 runFrontend' cfg rp = do
-    let runAction :: Action r :~> ExceptT ServantErr IO
+    let runAction :: Action :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv rp cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
@@ -71,13 +73,12 @@ runFrontend' cfg rp = do
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
              runAction aulaActions
 
-    -- Note that no user is being logged in anywhere here.
-    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+    let settings :: Warp.Settings
+        settings = setHost (fromString $ cfg ^. listenerInterface)
+                 . setPort (cfg ^. listenerPort)
+                 $ Warp.defaultSettings
 
-  where
-    settings = setHost (fromString $ cfg ^. listenerInterface)
-             . setPort (cfg ^. listenerPort)
-             $ defaultSettings
+    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
 
 
 -- * routing tables
@@ -120,7 +121,7 @@ type AulaActions =
   :<|> "api" :> Backend.Api
   :<|> "testing" :> AulaTesting
 
-aulaActions :: (GenArbitrary r, PersistM r) => ServerT AulaActions (Action r)
+aulaActions :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT AulaActions m
 aulaActions =
        aulaMain
   :<|> Backend.api
@@ -185,12 +186,12 @@ type AulaMain =
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
-aulaMain :: PersistM r => ServerT AulaMain (Action r)
+aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
        Page.viewRooms
   :<|> aulaSpace
 
-  :<|> (Frame frameUserHack . PageShow <$> Action.persistent getUsers)
+  :<|> (Frame frameUserHack . PageShow <$> Action.aquery getUsers)
   :<|> aulaUser
   :<|> Page.userSettings
   :<|> aulaAdmin
@@ -208,7 +209,7 @@ type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)
     =  Idea ::> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> Idea ::> "edit" :> FormHandlerT EditIdea Idea
+  :<|> Idea ::> "edit" :> FormHandlerT Page.EditIdea Idea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH
        -- vote on an idea
@@ -239,7 +240,7 @@ type TopicApi
 
        -- create new topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
-  :<|> Topic  ::> "idea"       :> "move"   :> FormHandler EditTopic
+  :<|> Topic  ::> "idea"       :> "move"   :> FormHandler Page.EditTopic
   :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
 
 type AulaSpace
@@ -248,7 +249,7 @@ type AulaSpace
   :<|> "ideas" :> GetH (Frame PageIdeasOverview)
   :<|> TopicApi
 
-ideaApi :: PersistM r => IdeaLocation -> ServerT IdeaApi (Action r)
+ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
     =  Page.viewIdea
   :<|> Page.editIdea
@@ -260,7 +261,7 @@ ideaApi loc
   :<|> Action.voteIdeaCommentReply
   :<|> Page.createIdea loc
 
-topicApi :: PersistM r => IdeaSpace -> ServerT TopicApi (Action r)
+topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
     =  Page.viewTopics space
   :<|> ideaApi       . IdeaLocationTopic space
@@ -274,7 +275,7 @@ topicApi space
   :<|> Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
-aulaSpace :: PersistM r => IdeaSpace -> ServerT AulaSpace (Action r)
+aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi        (IdeaLocationSpace space)
   :<|> Page.viewIdeas space
@@ -284,7 +285,7 @@ type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
 
-aulaUser :: PersistM r => AUID User -> ServerT AulaUser (Action r)
+aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser user =
        Page.createdIdeas   user
   :<|> Page.delegatedVotes user
@@ -306,7 +307,7 @@ type AulaAdmin =
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
 
 
-aulaAdmin :: PersistM r => ServerT AulaAdmin (Action r)
+aulaAdmin :: ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        Page.adminDurations
   :<|> Page.adminQuorum

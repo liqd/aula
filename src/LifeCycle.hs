@@ -128,8 +128,10 @@ onFeasibleIdea i cs = if isFeasibleIdea i then cs else []
 -- >>>     Just (Feasible _) -> True
 -- >>>     _ -> False
 isFeasibleIdea :: Idea -> Bool
-isFeasibleIdea (view ideaResult -> (Just (view ideaResultValue -> Feasible _))) = True
-isFeasibleIdea _                                                                = False
+isFeasibleIdea (view ideaJuryResult -> (Just (view ideaJuryResultValue -> Feasible _)))
+    = True
+isFeasibleIdea _
+    = False
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
