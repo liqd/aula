@@ -54,7 +54,7 @@ module Action
 where
 
 import Control.Lens
-import Control.Monad (join, void)
+import Control.Monad (join, void, when)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Trans.Except (ExceptT)
 import Data.Char (ord)
@@ -200,19 +200,18 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 -- * Phase Transitions
 
 topicPhaseChange
-    :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseChange -> r (m ())
+    :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
             aupdate $ setTopicPhase (topic ^. _Id) phase'
-            return $ mapM_ (phaseAction topic) actions
+            mapM_ (phaseAction topic) actions
 
 topicTimeout :: (ActionPersist m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()
-topicTimeout phaseChange tid =
-    join . aupdate $ do
-        Just topic <- findTopic tid -- FIXME: Not found
-        topicPhaseChange topic phaseChange
+topicTimeout phaseChange tid = do
+    Just topic <- aquery $ findTopic tid -- FIXME: Not found
+    topicPhaseChange topic phaseChange
 
 phaseAction :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
 phaseAction _ JuryPhasePrincipalEmail =
@@ -254,19 +253,15 @@ voteIdeaCommentReply ideaId commentId replyId =
 --        the IdeaResultValue type).
 markIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
 markIdea iid rv = do
-    topic <- aupdate $ do
-        Just idea <- findIdea iid -- FIXME: 404
+    topic <- aquery $ do
+        Just idea  <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
         checkInPhaseJury topic
         return topic
     _ <- currentUserAddDb (addIdeaResult iid) rv
-    join . aupdate $ do
-        allMarked <- checkAllIdeasMarked topic
-        if allMarked
-            then topicPhaseChange topic =<< AllIdeasAreMarked <$> phaseEndVote
-            else emptyComputation
-  where
-    emptyComputation = return (return ())
+    allMarked <- aquery $ checkAllIdeasMarked topic
+    when allMarked $ do
+        topicPhaseChange topic =<< AllIdeasAreMarked <$> aquery phaseEndVote
 
 
 -- * Topic handling
