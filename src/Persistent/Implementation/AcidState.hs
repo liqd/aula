@@ -20,8 +20,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (ask)
-import Control.Monad.State (get, put)
-import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, update
+import Control.Monad.State (put)
+import Data.Acid (AcidState, Query, Update, closeAcidState, makeAcidic, query, update, liftQuery
                  ,EventResult, EventState, UpdateEvent)
 import Data.Acid.Local (openLocalStateFrom, createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
@@ -70,10 +70,6 @@ instance MonadIO Persist where
 askDbM :: Query AulaData AulaData
 askDbM = ask
 
-getDbM :: Update AulaData AulaData  -- TODO: i think there is a way in acid-state to cast queries
-                                    -- into updates.  using that may make this unnecessary.
-getDbM = get
-
 putDb :: AulaData -> Update AulaData ()
 putDb = put
 
@@ -107,19 +103,21 @@ putDbClassQuorum = (dbClassQuorum .=)
 putDbLastId :: Integer -> Update AulaData ()
 putDbLastId = (dbLastId .=)
 
-makeAcidic ''AulaData [ 'askDbM, 'getDbM, 'putDb, 'putDbSpaceSet, 'putDbIdea, 'putDbUser
+makeAcidic ''AulaData [ 'askDbM, 'putDb, 'putDbSpaceSet, 'putDbIdea, 'putDbUser
                       , 'putDbTopic, 'putDbDelegation, 'putDbElaborationDuration
                       , 'putDbVoteDuration, 'putDbSchoolQuorum, 'putDbClassQuorum
                       , 'putDbLastId ]
 
-type ModifyDb a = (a -> a) -> AulaData -> AcidState AulaData -> IO ()
+type ModifyDb a = (a -> a) -> AcidState AulaData -> IO ()
 
 applyAulaEvent :: (UpdateEvent event, EventState event ~ AulaData, EventResult event ~ ())
                => (a -> event)
                -> DbLens a
                -> Traversal' a b -> ModifyDb b
-applyAulaEvent event l t f db state = update state (event (r & t %~ f))
-  where r = db ^. dbLens l
+applyAulaEvent event l t f state = update state $ do  -- TODO: this is not an acid-state transaction.  for once, f can't be serialized!
+    db <- liftQuery askDbM
+    let r = db ^. dbLens l
+    event (r & t %~ f)
 
 modifyDbTraversal :: DbTraversal a -> ModifyDb a
 modifyDbTraversal l@(ll :.: t) =
@@ -134,6 +132,7 @@ modifyDbTraversal l@(ll :.: t) =
         DbSchoolQuorum        -> applyAulaEvent PutDbSchoolQuorum ll t
         DbClassQuorum         -> applyAulaEvent PutDbClassQuorum ll t
         DbLastId              -> applyAulaEvent PutDbLastId ll t
+        -- TODO: remove the following two lines
         DbId                  -> updatePutDb
         _                     -> \f db state -> fail ("ACID-STATE TODO " <> show ll) >> updatePutDb f db state
   where
@@ -141,8 +140,6 @@ modifyDbTraversal l@(ll :.: t) =
 
 instance PersistM Persist where
     getDb l = Persist . ExceptT . ReaderT $ fmap (Right . view l) . flip query AskDbM
-    modifyDb l f = Persist . ExceptT . ReaderT $ \state -> fmap Right $ do
-      db <- update state GetDbM
-      modifyDbTraversal l f db state
+    modifyDb l f = Persist . ExceptT . ReaderT $ fmap Right . modifyDbTraversal l f
     getCurrentTimestamp = persistIO getCurrentTimestampIO
     mkRandomPassword = persistIO mkRandomPasswordIO
