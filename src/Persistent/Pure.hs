@@ -28,6 +28,7 @@ module Persistent.Pure
     , PersistExcept(PersistExcept, unPersistExcept)
 
     -- TODO: get some structure into this export list.
+    -- FIXME: consider removing Purescript.Idiom and doing everything here.
 
     , askDb
     , getDb
