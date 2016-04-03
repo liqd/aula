@@ -259,16 +259,14 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throw an exception
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
--- FIXME: Only Feasible and NotFeasible cases are allowed (this may be best achieved by refactoring
---        the IdeaResultValue type).
-markIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
+markIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdea iid rv = do
     topic <- persistent $ do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
         checkInPhaseJury topic
         return topic
-    _ <- currentUserAddDb (addIdeaResult iid) rv
+    _ <- currentUserAddDb (addIdeaJuryResult iid) rv
     join . persistent $ do
         allMarked <- checkAllIdeasMarked topic
         if allMarked

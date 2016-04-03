@@ -96,7 +96,8 @@ data Idea = Idea
     , _ideaComments   :: Comments
     , _ideaLikes      :: IdeaLikes
     , _ideaVotes      :: IdeaVotes
-    , _ideaResult     :: Maybe IdeaResult
+    , _ideaJuryResult :: Maybe IdeaJuryResult  -- invariant: phase of containing topic > JuryPhsae
+    , _ideaVoteResult :: Maybe IdeaVoteResult  -- invariant: phase of containing topic > VotingPhase
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -160,24 +161,39 @@ data IdeaVoteValue = Yes | No | Neutral
 
 instance SOP.Generic IdeaVoteValue
 
-data IdeaResult = IdeaResult
-    { _ideaResultMeta   :: MetaInfo IdeaResult
-    , _ideaResultValue  :: IdeaResultValue
+data IdeaJuryResult = IdeaJuryResult
+    { _ideaJuryResultMeta   :: MetaInfo IdeaJuryResult
+    , _ideaJuryResultValue  :: IdeaJuryResultValue
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic IdeaResult
+instance SOP.Generic IdeaJuryResult
 
-data IdeaResultValue
+data IdeaJuryResultValue
     = NotFeasible { _ideaResultNotFeasibleReason :: Document }
     | Feasible    { _ideaResultFeasibleReason    :: Maybe Document }
-    | Winning     { _ideaResultCreatorStatement  :: Maybe Document }
-    | NotEnoughVotes
   deriving (Eq, Ord, Show, Read, Generic)
 
-type instance Proto IdeaResult = IdeaResultValue
+type instance Proto IdeaJuryResult = IdeaJuryResultValue
 
-instance SOP.Generic IdeaResultValue
+instance SOP.Generic IdeaJuryResultValue
+
+data IdeaVoteResult = IdeaVoteResult
+    { _ideaVoteResultMeta   :: MetaInfo IdeaVoteResult
+    , _ideaVoteResultValue  :: IdeaVoteResultValue
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaVoteResult
+
+data IdeaVoteResultValue
+    = Winning     { _ideaResultCreatorStatement  :: Maybe Document }
+    | EnoughVotes
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaVoteResultValue
+
+type instance Proto IdeaVoteResult = IdeaVoteResultValue
 
 
 -- * comment
@@ -550,8 +566,10 @@ instance Binary Role
 instance Binary Idea
 instance Binary IdeaLocation
 instance Binary IdeaLike
-instance Binary IdeaResult
-instance Binary IdeaResultValue
+instance Binary IdeaJuryResult
+instance Binary IdeaJuryResultValue
+instance Binary IdeaVoteResult
+instance Binary IdeaVoteResultValue
 instance Binary IdeaSpace
 instance Binary IdeaVote
 instance Binary IdeaVoteValue
@@ -568,7 +586,8 @@ instance Binary UserLastName
 makePrisms ''IdeaLocation
 makePrisms ''Category
 makePrisms ''IdeaVoteValue
-makePrisms ''IdeaResultValue
+makePrisms ''IdeaJuryResultValue
+makePrisms ''IdeaVoteResultValue
 makePrisms ''UpDown
 makePrisms ''IdeaSpace
 makePrisms ''Phase
@@ -588,7 +607,8 @@ makeLenses ''Document
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
-makeLenses ''IdeaResult
+makeLenses ''IdeaJuryResult
+makeLenses ''IdeaVoteResult
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''MetaInfo
@@ -620,8 +640,10 @@ deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation
 -- deriveSafeCopy 0 'base ''IdeaLike
-deriveSafeCopy 0 'base ''IdeaResult
-deriveSafeCopy 0 'base ''IdeaResultValue
+deriveSafeCopy 0 'base ''IdeaJuryResult
+deriveSafeCopy 0 'base ''IdeaVoteResult
+deriveSafeCopy 0 'base ''IdeaJuryResultValue
+deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaSpace
 deriveSafeCopy 0 'base ''IdeaVote
 deriveSafeCopy 0 'base ''IdeaVoteValue
@@ -664,16 +686,17 @@ instance HasMetaInfo CommentVote where metaInfo = commentVoteMeta
 instance HasMetaInfo Delegation where metaInfo = delegationMeta
 instance HasMetaInfo Idea where metaInfo = ideaMeta
 instance HasMetaInfo IdeaLike where metaInfo = likeMeta
-instance HasMetaInfo IdeaResult where metaInfo = ideaResultMeta
+instance HasMetaInfo IdeaJuryResult where metaInfo = ideaJuryResultMeta
+instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
 instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
 
 notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea = has $ ideaResult . _Just . ideaResultValue . _NotFeasible
+notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
 
 winningIdea :: Idea -> Bool
-winningIdea = has $ ideaResult . _Just . ideaResultValue . _Winning
+winningIdea = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
 
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace

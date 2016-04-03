@@ -209,10 +209,16 @@ instance Arbitrary IdeaVote where
 instance Arbitrary IdeaVoteValue where
     arbitrary = garbitrary
 
-instance Arbitrary IdeaResult where
+instance Arbitrary IdeaJuryResult where
     arbitrary = garbitrary
 
-instance Arbitrary IdeaResultValue where
+instance Arbitrary IdeaVoteResult where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaJuryResultValue where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaVoteResultValue where
     arbitrary = garbitrary
 
 instance Arbitrary DelegationContext where
@@ -956,10 +962,10 @@ constantSampleIdea = Idea
               }
           ]
     , _ideaVotes = nil
-    , _ideaResult =
+    , _ideaJuryResult =
         Just
-          IdeaResult
-            { _ideaResultMeta =
+          IdeaJuryResult
+            { _ideaJuryResultMeta =
                 MetaInfo
                   { _metaId = AUID 0
                   , _metaCreatedBy = AUID 0
@@ -969,8 +975,9 @@ constantSampleIdea = Idea
                   , _metaChangedBy = AUID 0
                   , _metaChangedAt = constantSampleTimestamp
                   }
-            , _ideaResultValue = Winning Nothing
+            , _ideaJuryResultValue = Feasible Nothing
             }
+    , _ideaVoteResult = Nothing -- FIXME: Good test data
     }
 
 constantSampleComments :: [Comment]

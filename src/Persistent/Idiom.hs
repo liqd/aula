@@ -91,7 +91,7 @@ checkInPhaseJury topic =
 checkAllIdeasMarked :: PersistM m => Topic -> m Bool
 checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
   where
-    isMarkedIdea i = case i ^? ideaResult . _Just . ideaResultValue of
+    isMarkedIdea i = case i ^? ideaJuryResult . _Just . ideaJuryResultValue of
         Just (NotFeasible _) -> True
         Just (Feasible _)    -> True
         _                    -> False

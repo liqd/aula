@@ -85,7 +85,7 @@ module Persistent.Api
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
-    , addIdeaResult
+    , addIdeaJuryResult
     )
 where
 
@@ -402,12 +402,12 @@ addCommentVoteToIdeaCommentReply iid cid rid =
                      . at cid . _Just . commentReplies
                      . at rid . _Just . commentVotes)
 
-instance FromProto IdeaResult where
-    fromProto = flip IdeaResult
+instance FromProto IdeaJuryResult where
+    fromProto = flip IdeaJuryResult
 
-addIdeaResult :: AUID Idea -> AddDb m IdeaResult
-addIdeaResult iid =
-    addDbValue (dbIdeaMap . at iid . _Just . ideaResult . _Just)
+addIdeaJuryResult :: AUID Idea -> AddDb m IdeaJuryResult
+addIdeaJuryResult iid =
+    addDbValue (dbIdeaMap . at iid . _Just . ideaJuryResult . _Just)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
@@ -485,7 +485,8 @@ instance FromProto Idea where
         , _ideaComments = nil
         , _ideaLikes    = nil
         , _ideaVotes    = nil
-        , _ideaResult   = Nothing
+        , _ideaJuryResult = Nothing
+        , _ideaVoteResult = Nothing
         }
 
 instance FromProto Topic where
