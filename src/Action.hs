@@ -220,9 +220,6 @@ topicTimeout phaseChange tid =
         Just topic <- findTopic tid -- FIXME: Not found
         topicPhaseChange topic phaseChange
 
-setTopicPhase :: PersistM m => AUID Topic -> Phase -> m ()
-setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
-
 phaseAction :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
 phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()

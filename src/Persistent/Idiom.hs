@@ -96,3 +96,6 @@ checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
         Just (NotFeasible _) -> True
         Just (Feasible _)    -> True
         _                    -> False
+
+setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
+setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
