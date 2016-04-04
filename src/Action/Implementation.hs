@@ -24,6 +24,7 @@ import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Acid as Acid
 
 import Action
 import Persistent
@@ -32,37 +33,40 @@ import Persistent
 -- * concrete monad type
 
 -- | The actions a user can perform.
-newtype Action r a = MkAction { unAction :: ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a }
+newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv () UserState IO) a }
     deriving ( Functor
              , Applicative
              , Monad
              , MonadError ActionExcept
-             , MonadReader (ActionEnv r)
+             , MonadReader ActionEnv
              , MonadState UserState
              , MonadIO
              )
 
-instance ActionError (Action r)
+instance ActionError Action
 
-instance PersistM r => ActionM r (Action r)
-
-instance ActionLog (Action r) where
+instance ActionLog Action where
     logEvent = liftIO . print
 
-instance PersistM r => ActionPersist r (Action r) where
-    persistent r = do
-        Nat rp <- view persistNat
-        v  <- liftIO . runExceptT . rp $ r
+-- | FIXME: test this (particularly strictness and exceptions)
+instance ActionPersist Action where
+    aquery (AQuery q) = do
+        rp <- view persistNat
+        v  <- liftIO . runExceptT $ Acid.query (rp ^. rpState) <$> q
         either (throwError . ActionExcept . unPersistExcept) pure v
-            -- FIXME: is this strict enough?  how can we test this?
 
-instance MonadLIO DCLabel (Action r) where
+    aupdate (AUpdate u) = do
+        rp <- view persistNat
+        v  <- liftIO . runExceptT $ Acid.update (rp ^. rpState) u
+        either (throwError . ActionExcept . unPersistExcept) pure v
+
+instance MonadLIO DCLabel Action where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
 
-instance MonadRandom (Action r) where
+instance MonadRandom Action where
     getRandomBytes = liftIO . getRandomBytes
 
-instance PersistM r => ActionUserHandler (Action r) where
+instance ActionUserHandler Action where
     login uid = do
         usUserId .= Just uid
         sessionToken <- freshSessionToken
@@ -72,7 +76,7 @@ instance PersistM r => ActionUserHandler (Action r) where
 
     logout = put userLoggedOut
 
-instance ActionTempCsvFiles (Action r) where
+instance ActionTempCsvFiles Action where
     popTempCsvFile = liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
@@ -81,7 +85,7 @@ instance ActionTempCsvFiles (Action r) where
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.
-mkRunAction :: PersistM r => ActionEnv r -> Action r :~> ExceptT ServantErr IO
+mkRunAction :: ActionEnv -> Action :~> ExceptT ServantErr IO
 mkRunAction env = Nat run
   where
     run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut

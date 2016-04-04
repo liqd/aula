@@ -67,6 +67,7 @@ import Servant.Missing
 import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
+import qualified Data.Acid as Acid
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
@@ -123,8 +124,8 @@ class Monad m => ActionLog m where
 
 -- | A monad that can run acid-state.
 class (Monad m, MonadError ActionExcept m) => ActionPersist m where
-    aquery  :: AQuery  a -> m a
-    aupdate :: AUpdate a -> m a
+    aquery  :: Acid.QueryEvent  a => AQuery  a -> m a
+    aupdate :: Acid.UpdateEvent a => AUpdate a -> m a
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken

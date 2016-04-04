@@ -14,7 +14,7 @@
 -- {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Persistent.Api
-    ( RunPersistT(..)
+    ( RunPersistT(..), rpDesc, rpState, rpClose
     , RunPersist
     , module Persistent.Pure
     , module Persistent.Idiom
@@ -56,6 +56,8 @@ data RunPersistT m =
                   , _rpState :: AcidState AulaData
                   , _rpClose :: m ()
                   }
+
+makeLenses ''RunPersistT
 
 type RunPersist = RunPersistT IO
 
