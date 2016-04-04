@@ -28,6 +28,7 @@ import Control.Exception (finally)
 import Control.Lens
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (ExceptT)
+import Control.Monad.Reader (ask)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid hiding (makeAcidic)
 import Data.Acid.Core
@@ -68,5 +69,7 @@ makeLenses ''RunPersistT
 
 type RunPersist = RunPersistT IO
 
+askDb :: Query AulaData AulaData
+askDb = ask
 
-$(makeAcidic ''AulaData [])  -- ['findUser, 'findUserByLogin, 'modifyUser])
+$(makeAcidic ''AulaData ['askDb, 'modifyUser, 'setTopicPhase])  -- ['findUser, 'findUserByLogin, 'modifyUser])
