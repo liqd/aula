@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -13,6 +14,7 @@ module Frontend.Page.Topic
     , ViewTopicTab(..)
     , CreateTopic(..)
     , EditTopic(..)
+    , IdeaFilterApi
     , viewTopic
     , createTopic
     , editTopic )
@@ -31,12 +33,18 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- * types
 
+type IdeaFilterApi = QueryParam "category" Category
+type IdeaFilterQuery = Maybe Category
+
 data ViewTopicTab
-  = TabAllIdeas
-  | TabVotingIdeas
-  | TabWinningIdeas
+  = TabAllIdeas     { _viewTopicTabFilter :: IdeaFilterQuery }
+  | TabVotingIdeas  { _viewTopicTabFilter :: IdeaFilterQuery }
+  | TabWinningIdeas { _viewTopicTabFilter :: IdeaFilterQuery }
   | TabDelegation
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read)
+
+makeLenses ''ViewTopicTab
+makePrisms ''ViewTopicTab
 
 -- | 4 Topic overview
 -- * 4.1 Topic overview: Refinement phase
@@ -70,10 +78,10 @@ instance Page EditTopic
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabAllIdeas     -> go "tab-ideas"       U.listTopicIdeas        "Alle Ideen"
-    TabVotingIdeas  -> g' "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
-    TabWinningIdeas -> g' "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
-    TabDelegation   -> g' "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
+    TabAllIdeas     _ -> go "tab-ideas"       U.listTopicIdeas        "Alle Ideen"
+    TabVotingIdeas  _ -> g' "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
+    TabWinningIdeas _ -> g' "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
+    TabDelegation     -> g' "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
   where
     space = topic ^. topicIdeaSpace
     go ident uri =
@@ -145,10 +153,14 @@ viewTopicHeaderDiv topic tab = do
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab TabAllIdeas
-                t2 = tabLink topic tab TabVotingIdeas
-                t3 = tabLink topic tab TabWinningIdeas
+            let t1 = tabLink topic tab (TabAllIdeas Nothing)
+                t2 = tabLink topic tab (TabVotingIdeas Nothing)
+                t3 = tabLink topic tab (TabWinningIdeas Nothing)
                 t4 = tabLink topic tab TabDelegation
+
+              -- FIXME: we could see if we have any filter settings to save from another tab here.
+              -- but if we did that, it would be nice to not lose the settings when moving back and
+              -- forth between delegation and idea tabs, either.
 
             case phase of
                 PhaseRefinement _ -> t1
@@ -255,7 +267,12 @@ viewTopic tab topicId = makeFrame =<< equery (do
     delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
     case tab of
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
-        _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
+        _ -> do
+            let fltr = case tab ^? viewTopicTabFilter . _Just of
+                          Just cat -> filter ((== cat) . view ideaCategory)
+                          Nothing  -> id
+            ideas <- fltr <$> findIdeasByTopic topic
+            ViewTopicIdeas tab topic <$> (getNumVotersForIdea `mapM` ideas))
 
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =

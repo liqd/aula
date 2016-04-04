@@ -133,6 +133,15 @@ data Category =
 
 instance SOP.Generic Category
 
+instance FromHttpApiData Category where
+    parseUrlPiece "rule"        = Right CatRule
+    parseUrlPiece "equipment"   = Right CatEquipment
+    parseUrlPiece "class"       = Right CatClass
+    parseUrlPiece "time"        = Right CatTime
+    parseUrlPiece "environment" = Right CatEnvironment
+    parseUrlPiece _             = Left "no parse"
+
+
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
     { _likeMeta  :: MetaInfo IdeaLike

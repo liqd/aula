@@ -97,7 +97,11 @@ instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
 instance Arbitrary ViewTopicTab where
-    arbitrary = elements [minBound..]
+    arbitrary = elements [ TabAllIdeas Nothing
+                         , TabVotingIdeas Nothing
+                         , TabWinningIdeas Nothing
+                         , TabDelegation
+                         ]
 
 instance Arbitrary ViewTopic where
     arbitrary = do
