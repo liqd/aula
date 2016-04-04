@@ -202,8 +202,8 @@ currentUser = do
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => (User -> User) -> m ()
-modifyCurrentUser f = currentUserId >>= aupdate . (`modifyUser` f)
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => ModifyUserOp -> m ()
+modifyCurrentUser op = currentUserId >>= aupdate . (`ModifyUser` op)
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn

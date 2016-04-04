@@ -68,7 +68,7 @@ module Persistent.Pure
     , addFirstUser
     , mkMetaInfo
     , mkUserLogin
-    , modifyUser
+    , modifyUser, ModifyUserOp(..)
     , getTopics
     , addTopic
     , modifyTopic
@@ -314,8 +314,13 @@ modifyAMap l ident = modifyDb_ (l . at ident . _Just)
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> AUpdate ()
-modifyUser = modifyAMap dbUserMap
+modifyUser :: AUID User -> ModifyUserOp -> Update AulaData ()
+modifyUser uid = modifyAMap dbUserMap uid . modifyUserOp
+
+data ModifyUserOp = ModifyUserSetEmail UserEmail
+
+modifyUserOp :: ModifyUserOp -> (User -> User)
+modifyUserOp (ModifyUserSetEmail email) = userEmail .~ Just email
 
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
@@ -540,3 +545,6 @@ nextMetaInfo :: User -> AUpdate (MetaInfo a)
 nextMetaInfo cUser = mkMetaInfo cUser now <$> nextId
   where
     now = undefined  -- TODO: #307
+
+
+deriveSafeCopy 0 'base ''ModifyUserOp

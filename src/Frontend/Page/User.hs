@@ -96,7 +96,7 @@ userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
     -- FIXME: Set the password
     changeUser (UserSettingData email _oldPass _newPass1 _newPass2) = do
-        modifyCurrentUser (maybe id (\ e -> userEmail .~ Just e) email)
+        maybe nil (modifyCurrentUser (ModifyUserSetEmail e)) email
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
 userHeaderDiv _user =
