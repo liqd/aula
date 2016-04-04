@@ -25,7 +25,7 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
-    , AQuery{-(AQuery)-}, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
+    , AEvent, AQuery{-(AQuery)-}, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
@@ -167,6 +167,8 @@ data WhoWhen = WhoWhen
     }
 
 makeLenses ''WhoWhen
+
+type AEvent = Event AulaData
 
 -- | 'Query' for 'AulaData'.  Doesn't contain the 'WhoWhen' context,
 -- because that would make the stack contain two readers.
