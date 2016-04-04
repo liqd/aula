@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE FlexibleInstances           #-}
 {-# LANGUAGE GADTs                       #-}
@@ -14,11 +15,13 @@
 -- {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Persistent.Api
+{-
     ( RunPersistT(..), rpDesc, rpState, rpClose
     , RunPersist
     , module Persistent.Pure
     , module Persistent.Idiom
     )
+-}
 where
 
 import Control.Exception (finally)
@@ -62,4 +65,4 @@ makeLenses ''RunPersistT
 type RunPersist = RunPersistT IO
 
 
-$(makeAcidic ''AulaData [])
+$(makeAcidic ''AulaData ['findUser])

@@ -74,6 +74,9 @@ import qualified Data.Vector as V
 import Config (Config)
 import LifeCycle
 import Persistent
+import Persistent.Api
+import Persistent.Pure
+import Persistent.Idiom
 import Types
 
 

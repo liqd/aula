@@ -10,7 +10,7 @@ import Control.Exception
 import Control.Lens
 import Control.Monad (when)
 import Data.Time
-import Servant.Missing
+-- import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map (size)
 
@@ -86,7 +86,7 @@ ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
 checkInPhaseJury :: Topic -> AQuery ()
 checkInPhaseJury topic =
-    when (topic ^. topicPhase /= PhaseJury) $ throwError500 "Idea is not in the jury phase"
+    when (topic ^. topicPhase /= PhaseJury) $ error {- TODO: throwError500 -} "Idea is not in the jury phase"
 
 -- | Checks if all ideas associated with the topic are marked, feasible or not feasible.
 checkAllIdeasMarked :: Topic -> AQuery Bool

@@ -24,7 +24,8 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
-    , AQuery(AQuery), AUpdate(AUpdate)  -- TODO: can we get this abstract?  do we want to?
+    -- , AQuery(AQuery), AUpdate(AUpdate)  -- TODO: can we get this abstract?  do we want to?
+    , AQuery, AUpdate
     , PersistExcept(PersistExcept, unPersistExcept)
 
     -- TODO: get some structure into this export list.
@@ -94,9 +95,9 @@ module Persistent.Pure
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError, ExceptT(ExceptT))
-import Control.Monad.Reader (MonadReader, ask)
-import Control.Monad.State (MonadState, state, get, modify)
+-- import Control.Monad.Except (MonadError, ExceptT(ExceptT))
+import Control.Monad.Reader ({- MonadReader, -} ask)
+import Control.Monad.State ({- MonadState, -} state, get, modify)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
@@ -159,6 +160,11 @@ emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
 -- * transactions
 
+{-
+
+-- TODO: type synonyms just to get things working again; the newtypes above will require a variant
+-- of makeAcidic.
+
 -- | 'Query' for 'AulaData', Can throw 'PersistExcept'.
 newtype AQuery a = AQuery { _unAQuery :: ExceptT PersistExcept (Query AulaData) a }
   deriving ( Functor
@@ -176,8 +182,13 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaDa
            , MonadError PersistExcept
            , MonadState AulaData
            )
+-}
 
 -- (AQuery, AUpdate could be replaced by constraints in this module)
+
+type AQuery = Query AulaData
+type AUpdate = Update AulaData
+
 
 askDb :: AulaGetter a -> AQuery a  -- TODO: inline
 askDb l = view l <$> ask
@@ -188,13 +199,13 @@ getDb l = view l <$> get
 -- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
 -- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
 modifyDb :: AulaLens a -> (a -> a) -> AUpdate a
-modifyDb l f = AUpdate . ExceptT . fmap Right $ state (\s -> (f $ s ^. l, l %~ f $ s))
+modifyDb l f = {- AUpdate . ExceptT . fmap Right $ -} state (\s -> (f $ s ^. l, l %~ f $ s))
 
 modifyDb_ :: AulaSetter a -> (a -> a) -> AUpdate ()
-modifyDb_ l f = AUpdate . ExceptT . fmap Right $ modify (l %~ f)
+modifyDb_ l f = {- AUpdate . ExceptT . fmap Right $ -} modify (l %~ f)
 
 liftAQuery :: AQuery a -> AUpdate a
-liftAQuery (AQuery (ExceptT check)) = AUpdate . ExceptT $ liftQuery check
+liftAQuery = liftQuery  -- (AQuery (ExceptT check)) = AUpdate . ExceptT $ liftQuery check
 
 
 -- * exceptions
@@ -309,7 +320,7 @@ modifyUser = modifyAMap dbUserMap
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> AQuery (Maybe User)
+findUser :: AUID User -> Query AulaData (Maybe User)
 findUser = findInById dbUserMap
 
 getUsers :: AQuery [User]
