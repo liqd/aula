@@ -29,7 +29,7 @@ import Control.Lens
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (ExceptT)
 import Control.Monad (unless, replicateM, when)
-import Data.Acid
+import Data.Acid hiding (makeAcidic)
 import Data.Acid.Core
 import Data.Elocrypt (mkPassword)
 import Data.Foldable (find, for_)
@@ -51,6 +51,7 @@ import qualified Data.Text as ST
 import Types
 import Persistent.Pure
 import Persistent.Idiom
+import Persistent.TemplateHaskell (makeAcidic)
 
 
 deriveSafeCopy 0 'base ''ModifyUserOp

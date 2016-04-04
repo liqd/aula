@@ -1,21 +1,26 @@
+-- This is based on Data.Acid.TemplateHaskell commit c0151c5da26dc4e126eb9134a9156c717bcbd75d
+-- Changes are marked `Aula change`
 {-# LANGUAGE TemplateHaskell, CPP #-}
 {- Holy crap this code is messy. -}
-module Data.Acid.TemplateHaskell
+module Persistent.TemplateHaskell
     ( makeAcidic
     ) where
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Ppr
 
-import Data.Acid.Core
-import Data.Acid.Common
+import Data.Acid hiding (makeAcidic)
+import Data.Acid.Advanced (IsAcidic(acidEvents), Event(..), Method, MethodResult, MethodState)
+
+-- Aula change
+import Persistent.Pure
 
 import Data.List ((\\), nub)
-import Data.Maybe (mapMaybe)
+-- import Data.Maybe (mapMaybe)
 import Data.SafeCopy
 import Data.Typeable
 import Data.Char
-import Control.Applicative
+-- import Control.Applicative
 import Control.Monad
 
 {-| Create the control structures required for acid states
@@ -60,7 +65,7 @@ makeAcidic stateName eventNames
 makeAcidic' :: [Name] -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
 makeAcidic' eventNames stateName tyvars constructors
     = do events <- sequence [ makeEvent eventName | eventName <- eventNames ]
-         acidic <- makeIsAcidic eventNames stateName tyvars constructors
+         acidic <- makeIsAcidic eventNames stateName tyvars -- constructors
          return $ acidic : concat events
 
 makeEvent :: Name -> Q [Dec]
@@ -82,7 +87,8 @@ getEventType eventName
 
 --instance (SafeCopy key, Typeable key, SafeCopy val, Typeable val) => IsAcidic State where
 --  acidEvents = [ UpdateEvent (\(MyUpdateEvent arg1 arg2 -> myUpdateEvent arg1 arg2) ]
-makeIsAcidic eventNames stateName tyvars constructors
+makeIsAcidic :: [Name] -> Name -> [TyVarBndr] -> Q Dec
+makeIsAcidic eventNames stateName tyvars -- constructors
     = do types <- mapM getEventType eventNames
          stateType' <- stateType
          let preds = [ ''SafeCopy, ''Typeable ]

@@ -53,6 +53,7 @@ dependencies:
     - servant-server
     - stm
     - string-conversions
+    - template-haskell
     - text
     - time
     - transformers
