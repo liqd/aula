@@ -129,7 +129,7 @@ class Monad m => ActionLog m where
 
 -- | A monad that can run acid-state.
 class (MonadError ActionExcept m) => ActionPersist m where
-    aquery  :: (HasAQuery  ev a) => ev -> m a
+    aquery  :: AQuery a -> m a
     aupdate :: (HasAUpdate ev a) => ev -> m a
 
 instance HasSessionCsrfToken UserState where
@@ -162,7 +162,7 @@ loginByUser = login . view _Id
 
 loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
 loginByName n = do
-    Just u <- aquery $ FindUserByLogin n  -- FIXME: handle 'Nothing'
+    Just u <- aquery $ findUserByLogin n  -- FIXME: handle 'Nothing'
     loginByUser u
 
 -- | Returns the current user ID
@@ -190,7 +190,7 @@ currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 -- | Returns the current user
 currentUser :: (ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
-    muser <- aquery . FindUser =<< currentUserId
+    muser <- aquery . findUser =<< currentUserId
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"

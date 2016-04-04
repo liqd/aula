@@ -25,20 +25,18 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
-    , AQuery(AQuery), AUpdate(AUpdate)
+    , AQuery{-(AQuery)-}, AEQuery, AUpdate(AUpdate)
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
     , PersistExcept(PersistExcept, unPersistExcept)
     , HasAUpdate
-    , HasAQuery
 
     -- TODO: get some structure into this export list.
     -- FIXME: consider removing Purescript.Idiom and doing everything here.
 
     , liftAQuery
 
-    , getDb
     , addDb
     , modifyDb
     , modifyDb_
@@ -100,8 +98,8 @@ where
 
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT))
-import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), ask, asks)
-import Control.Monad.State (MonadState, state, get, modify)
+import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), runReader, ask, asks)
+import Control.Monad.State (MonadState, state, gets, modify)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
@@ -170,16 +168,12 @@ data WhoWhen = WhoWhen
 
 makeLenses ''WhoWhen
 
--- | 'Query' for 'AulaData', Can throw 'PersistExcept'.  Doesn't contain the 'WhoWhen' context,
+-- | 'Query' for 'AulaData'.  Doesn't contain the 'WhoWhen' context,
 -- because that would make the stack contain two readers.
-newtype AQuery a = AQuery { _unAQuery :: ExceptT PersistExcept
-                                             (Query AulaData) a }
-  deriving ( Functor
-           , Applicative
-           , Monad
-           , MonadError PersistExcept
-           , MonadReader AulaData
-           )
+type AQuery a = forall m. MonadReader AulaData m => m a
+
+-- | Same as 'AQuery' but can throw 'PersistExcept'.
+type AEQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) => m a
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
 newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
@@ -200,18 +194,7 @@ aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData)
              => (ev -> AUpdate (EventResult ev)) -> AEvent
 aUpdateEvent f = UpdateEvent $ runAUpdate . f
 
-type HasAUpdate ev a =
-    ( ev ~ AUpdate a, UpdateEvent ev
-    , MethodState ev ~ AulaData, MethodResult ev ~ a
-    )
-
-type HasAQuery  ev a =
-    ( ev ~ AQuery a, QueryEvent  ev
-    , MethodState ev ~ AulaData, MethodResult ev ~ a
-    )
-
-getDb :: AulaGetter a -> AUpdate a  -- TODO: inline
-getDb l = view l <$> get
+type HasAUpdate ev a = (UpdateEvent ev, MethodState ev ~ AulaData, MethodResult ev ~ a)
 
 -- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
 -- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
@@ -224,8 +207,7 @@ modifyDb_ l f = AUpdate . ReaderT . const . ExceptT . fmap Right
               $ modify (l %~ f)
 
 liftAQuery :: AQuery a -> AUpdate a
-liftAQuery (AQuery (ExceptT check)) = AUpdate . ReaderT . const . ExceptT $ liftQuery check
-
+liftAQuery m = gets (runReader m)
 
 -- * exceptions
 

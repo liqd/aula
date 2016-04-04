@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns        #-}
 
@@ -10,7 +12,7 @@ import Control.Exception
 import Control.Lens
 import Control.Monad (when)
 import Data.Time
--- import Servant.Missing (throwError500)
+import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map (size)
 
@@ -84,9 +86,9 @@ ideaTopic idea = case idea ^. ideaLocation of
 ideaPhase :: Idea -> AQuery (Maybe Phase)
 ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
-checkInPhaseJury :: Topic -> AQuery ()
+checkInPhaseJury :: Topic -> AEQuery ()
 checkInPhaseJury topic =
-    when (topic ^. topicPhase /= PhaseJury) $ error {- TODO: throwError500 -} "Idea is not in the jury phase"
+    when (topic ^. topicPhase /= PhaseJury) $ throwError500 "Idea is not in the jury phase"
 
 -- | Checks if all ideas associated with the topic are marked, feasible or not feasible.
 checkAllIdeasMarked :: Topic -> AQuery Bool
