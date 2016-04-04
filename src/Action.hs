@@ -217,7 +217,7 @@ topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
-            aupdate $ setTopicPhase (topic ^. _Id) phase'
+            aupdate $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
 topicTimeout :: (ActionPersist m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()

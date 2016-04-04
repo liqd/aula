@@ -53,6 +53,9 @@ import Persistent.Pure
 import Persistent.Idiom
 
 
+deriveSafeCopy 0 'base ''ModifyUserOp
+deriveSafeCopy 0 'base ''AulaData
+
 data RunPersistT m =
         RunPersist
                   { _rpDesc  :: String
@@ -65,4 +68,4 @@ makeLenses ''RunPersistT
 type RunPersist = RunPersistT IO
 
 
-$(makeAcidic ''AulaData ['findUser, 'findUserByLogin, 'modifyUser])
+$(makeAcidic ''AulaData [])  -- ['findUser, 'findUserByLogin, 'modifyUser])

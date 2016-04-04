@@ -25,8 +25,9 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
-    -- , AQuery(AQuery), AUpdate(AUpdate)  -- TODO: can we get this abstract?  do we want to?
-    , AQuery, AUpdate
+    , AQuery(AQuery), AUpdate(AUpdate)
+    , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
+
     , PersistExcept(PersistExcept, unPersistExcept)
     , HasAUpdate
     , HasAQuery
@@ -98,16 +99,15 @@ module Persistent.Pure
 where
 
 import Control.Lens
--- import Control.Monad.Except (MonadError, ExceptT(ExceptT))
-import Control.Monad.Reader ({- MonadReader, -} ask)
-import Control.Monad.State ({- MonadState, -} state, get, modify)
+import Control.Monad.Except (MonadError, ExceptT(ExceptT))
+import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), ask)
+import Control.Monad.State (MonadState, state, get, modify)
 import Control.Monad (unless, replicateM, when)
-import Data.Acid  -- (Query, Update, liftQuery)
 import Data.Acid.Core
+import Data.Acid  -- (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
-import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Typeable (Typeable)
@@ -139,8 +139,6 @@ data AulaData = AulaData
 
 makeLenses ''AulaData
 
-deriveSafeCopy 0 'base ''AulaData
-
 type AulaLens a = Lens' AulaData a
 type AulaGetter a = Getter AulaData a
 type AulaSetter a = Setter' AulaData a
@@ -164,13 +162,17 @@ emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
 
 -- * transactions
 
-{-
+data WhoWhen = WhoWhen
+    { _whoWhenTimestamp :: Timestamp
+    , _whoWhenUID       :: AUID User
+    }
 
--- TODO: type synonyms just to get things working again; the newtypes above will require a variant
--- of makeAcidic.
+makeLenses ''WhoWhen
 
--- | 'Query' for 'AulaData', Can throw 'PersistExcept'.
-newtype AQuery a = AQuery { _unAQuery :: ExceptT PersistExcept (Query AulaData) a }
+-- | 'Query' for 'AulaData', Can throw 'PersistExcept'.  Doesn't contain the 'WhoWhen' context,
+-- because that would make the stack contain two readers.
+newtype AQuery a = AQuery { _unAQuery :: ExceptT PersistExcept
+                                             (Query AulaData) a }
   deriving ( Functor
            , Applicative
            , Monad
@@ -179,19 +181,16 @@ newtype AQuery a = AQuery { _unAQuery :: ExceptT PersistExcept (Query AulaData) 
            )
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
-newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaData) a }
+newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
+                                                (ExceptT PersistExcept
+                                                    (Update AulaData)) a }
   deriving ( Functor
            , Applicative
            , Monad
            , MonadError PersistExcept
            , MonadState AulaData
+           , MonadReader WhoWhen
            )
--}
-
--- (AQuery, AUpdate could be replaced by constraints in this module)
-
-type AQuery = Query AulaData
-type AUpdate = Update AulaData
 
 type HasAUpdate ev a =
     ( ev ~ AUpdate a, UpdateEvent ev
@@ -213,13 +212,15 @@ getDb l = view l <$> get
 -- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
 -- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
 modifyDb :: AulaLens a -> (a -> a) -> AUpdate a
-modifyDb l f = {- AUpdate . ExceptT . fmap Right $ -} state (\s -> (f $ s ^. l, l %~ f $ s))
+modifyDb l f = AUpdate . ReaderT . const . ExceptT . fmap Right
+             $ state (\s -> (f $ s ^. l, l %~ f $ s))
 
 modifyDb_ :: AulaSetter a -> (a -> a) -> AUpdate ()
-modifyDb_ l f = {- AUpdate . ExceptT . fmap Right $ -} modify (l %~ f)
+modifyDb_ l f = AUpdate . ReaderT . const . ExceptT . fmap Right
+              $ modify (l %~ f)
 
 liftAQuery :: AQuery a -> AUpdate a
-liftAQuery = liftQuery  -- (AQuery (ExceptT check)) = AUpdate . ExceptT $ liftQuery check
+liftAQuery (AQuery (ExceptT check)) = AUpdate . ReaderT . const . ExceptT $ liftQuery check
 
 
 -- * exceptions
@@ -327,7 +328,7 @@ modifyAMap l ident = modifyDb_ (l . at ident . _Just)
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> ModifyUserOp -> Update AulaData ()
+modifyUser :: AUID User -> ModifyUserOp -> AUpdate ()
 modifyUser uid = modifyAMap dbUserMap uid . modifyUserOp
 
 data ModifyUserOp = ModifyUserSetEmail UserEmail
@@ -338,7 +339,7 @@ modifyUserOp (ModifyUserSetEmail email) = userEmail .~ Just email
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> Query AulaData (Maybe User)
+findUser :: AUID User -> AQuery (Maybe User)
 findUser = findInById dbUserMap
 
 getUsers :: AQuery [User]
@@ -370,7 +371,7 @@ findDelegationsByContext :: DelegationContext -> AQuery [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
     <$> askDb dbDelegationMap
 
-findUserByLogin :: UserLogin -> Query AulaData (Maybe User)
+findUserByLogin :: UserLogin -> AQuery (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
 findTopic :: AUID Topic -> AQuery (Maybe Topic)
@@ -555,9 +556,4 @@ mkMetaInfo cUser now oid = MetaInfo
     }
 
 nextMetaInfo :: User -> AUpdate (MetaInfo a)
-nextMetaInfo cUser = mkMetaInfo cUser now <$> nextId
-  where
-    now = undefined  -- TODO: #307
-
-
-deriveSafeCopy 0 'base ''ModifyUserOp
+nextMetaInfo cUser = mkMetaInfo cUser <$> (view whoWhenTimestamp <$> ask) <*> nextId
