@@ -15,7 +15,8 @@ import Language.Haskell.TH.Ppr
 import Data.Acid hiding (makeAcidic)
 import Data.Acid.Advanced (IsAcidic(acidEvents), Event(..), Method, MethodResult, MethodState)
 
-import Persistent.Pure
+import Types (UserWithProto)
+import Persistent.Pure (AulaData, AUpdate, AddDb, aUpdateEvent)
 
 import Data.List ((\\), nub)
 -- import Data.Maybe (mapMaybe)
@@ -324,12 +325,14 @@ analyseType eventName t
       in (tyvars, cxt, args, stateType, resultType, isUpdate)
     where getArgs ForallT{} = error $ "Event has an invalid type signature: Nested forall: " ++ show eventName
           getArgs (AppT (AppT ArrowT a) b) = a : getArgs b
+          getArgs (AppT (ConT con) a)
+            | con == ''AddDb = [AppT (ConT ''UserWithProto) a]
           getArgs _ = []
 
           findMonad (AppT (AppT ArrowT _a) b)
               = findMonad b
           findMonad (AppT (ConT con) result)
-              | con == ''AUpdate = (ConT ''AulaData, result, True)
+              | con `elem` [''AUpdate, ''AddDb] = (ConT ''AulaData, result, True)
           findMonad (AppT (AppT (ConT con) state) result)
               | con == ''Query  = (state, result, False)
           findMonad _ = error $ "Event has an invalid type signature: Not an Update or a Query: " ++ show eventName
