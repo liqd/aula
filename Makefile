@@ -68,3 +68,7 @@ seito-docker-hack:
 
 wc:
 	find src tests -name '*.hs' | xargs wc
+
+content:
+	curl -XPOST http://localhost:8080/api/manage-state/create-init
+	curl -XPOST http://localhost:8080/api/manage-state/create-demo
