@@ -13,7 +13,7 @@ where
 
 import Control.Exception (SomeException(SomeException), catch)
 import Control.Lens
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (MonadError) -- , throwError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
@@ -50,15 +50,14 @@ instance ActionLog Action where
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
-    aquery (AQuery q) = do
+    aqueryDb = do
         rp <- view persistNat
-        v  <- liftIO . runExceptT $ Acid.query (rp ^. rpState) <$> q
-        either (throwError . ActionExcept . unPersistExcept) pure v
+        liftIO $ Acid.query (rp ^. rpState) AskDb
 
-    aupdate (AUpdate u) = do
+    aupdate ev = do
         rp <- view persistNat
-        v  <- liftIO . runExceptT $ Acid.update (rp ^. rpState) u
-        either (throwError . ActionExcept . unPersistExcept) pure v
+        liftIO $ Acid.update (rp ^. rpState) ev
+        -- either (throwError . ActionExcept . unPersistExcept) pure v
 
 instance MonadLIO DCLabel Action where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)

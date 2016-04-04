@@ -25,7 +25,7 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
-    , AQuery{-(AQuery)-}, AEQuery, AUpdate(AUpdate)
+    , AQuery{-(AQuery)-}, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
@@ -174,6 +174,8 @@ type AQuery a = forall m. MonadReader AulaData m => m a
 
 -- | Same as 'AQuery' but can throw 'PersistExcept'.
 type AEQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) => m a
+
+type AMQuery a = AQuery (Maybe a)
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
 newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen

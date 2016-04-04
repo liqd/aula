@@ -3,6 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE Rank2Types             #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -12,7 +13,7 @@ module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
-    , ActionPersist(aquery, aupdate)
+    , ActionPersist(aqueryDb, aquery, aequery, amquery, aupdate)
     , ActionUserHandler(login, logout, userState)
     , ActionError
     , ActionExcept(..)
@@ -55,9 +56,10 @@ module Action
 where
 
 import Control.Lens
-import Control.Monad (join, void, when)
-import Control.Monad.Except (MonadError)
-import Control.Monad.Trans.Except (ExceptT)
+import Control.Monad (void, when)
+import Control.Monad.Reader (runReader, runReaderT, ask)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
@@ -68,15 +70,12 @@ import Servant.Missing
 import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
-import qualified Data.Acid as Acid
-import qualified Data.Acid.Core as Acid
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
 import Config (Config)
 import LifeCycle
 import Persistent
-import Persistent.Api
 import Persistent.Pure
 import Persistent.Idiom
 import Types
@@ -109,9 +108,10 @@ instance GetCsrfSecret ActionEnv where
 
 -- | Top level errors can happen.
 --
--- FIXME: this will have a constructor dedicated for PersistExcept, and 'ServantErr' will only be
--- introduced later.
-newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
+-- FIXME: 'ServantErr' should be abstracted away.
+data ActionExcept
+    = ActionExcept { unActionExcept :: ServantErr }
+    | ActionPersistExcept PersistExcept
     deriving (Eq, Show)
 
 makePrisms ''ActionExcept
@@ -129,8 +129,19 @@ class Monad m => ActionLog m where
 
 -- | A monad that can run acid-state.
 class (MonadError ActionExcept m) => ActionPersist m where
-    aquery  :: AQuery a -> m a
-    aupdate :: (HasAUpdate ev a) => ev -> m a
+    aqueryDb :: m AulaData
+    aupdate  :: HasAUpdate ev a => ev -> m a
+
+    aquery :: AQuery a -> m a
+    aquery q = runReader q <$> aqueryDb
+
+    amquery :: AMQuery a -> m a
+    amquery q = maybe (throwError500 "FIXME amquery") pure =<< aquery q
+
+    aequery :: AEQuery a -> m a
+    aequery q = do
+        db <- aquery ask
+        either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -171,26 +182,21 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
-currentUserAddDb :: ( Acid.UpdateEvent (AUpdate a)
-                    , Acid.MethodState (AUpdate a) ~ AulaData
-                    , Acid.MethodResult (AUpdate a) ~ a
-                    , ActionPersist m, ActionUserHandler m) =>
-                    (UserWithProto a -> AUpdate a) -> Proto a -> m a
+currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
+                    (UserWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
     aupdate $ addA (cUser, protoA)
 
-currentUserAddDb_ :: ( Acid.UpdateEvent (AUpdate a)
-                     , Acid.MethodState (AUpdate a) ~ AulaData
-                     , Acid.MethodResult (AUpdate a) ~ a
-                     , ActionPersist m, ActionUserHandler m) =>
-                    (UserWithProto a -> AUpdate a) -> Proto a -> m ()
+currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
+                     (UserWithProto a -> ev) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 
 -- | Returns the current user
 currentUser :: (ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
-    muser <- aquery . findUser =<< currentUserId
+    uid <- currentUserId
+    muser <- aquery (findUser uid)
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
@@ -265,7 +271,7 @@ voteIdeaCommentReply ideaId commentId replyId =
 --        the IdeaResultValue type).
 markIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
 markIdea iid rv = do
-    topic <- aquery $ do
+    topic <- aequery $ do
         Just idea  <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
         checkInPhaseJury topic
