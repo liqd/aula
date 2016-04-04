@@ -100,6 +100,11 @@ runClient (Free (MarkIdea t v k)) = do
         Right v' -> Action.markIdeaInResultPhase (idea ^. _Id) v'
     runClient k
 
+runClient (Free (VoteIdea t v k)) = do
+    Just idea <- findIdeaByTitle t
+    _ <- lift $ Action.voteIdea (idea ^. _Id) v
+    runClient k
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Idea)

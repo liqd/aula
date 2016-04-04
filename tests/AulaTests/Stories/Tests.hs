@@ -25,4 +25,5 @@ topicTimeoutStory = do
     createTopic idea1 "topic1" "desc"
     timeoutTopic "topic1"
     markIdea idea1 (Left $ Feasible Nothing)
+    voteIdea idea1 Yes
     logout

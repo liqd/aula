@@ -35,6 +35,7 @@ data Step a where
     LikeIdea         :: IdeaTitle -> a -> Step a
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
+    VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -65,3 +66,6 @@ timeoutTopic title = liftF $ TimeoutTopic title ()
 
 markIdea :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> Behavior ()
 markIdea title value = liftF $ MarkIdea title value ()
+
+voteIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
+voteIdea title vote = liftF $ VoteIdea title vote ()
