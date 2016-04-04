@@ -20,25 +20,14 @@ module Persistent.Implementation.AcidState
     )
 where
 
-import Control.Exception (assert)
 import Control.Lens
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Except  -- (MonadError)
-import Control.Monad.Trans.Except  -- (ExceptT(ExceptT), runExceptT)
-import Control.Monad.Reader (ask)
-import Control.Monad.State (get, put)
-import Data.Acid  -- (AcidState, Query, Update, closeAcidState, makeAcidic, query, update)
-import Data.Acid.Core
-import Data.Acid.Local (openLocalStateFrom, createCheckpointAndClose)
+import Data.Acid
+import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
-import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT)
-import Servant.Server ((:~>)(Nat))
 
 import Config
 import Persistent.Pure
-import Persistent.Idiom
 import Persistent.Api
-import Types
 
 
 mkRunPersistGeneric :: String
