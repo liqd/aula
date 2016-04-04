@@ -47,8 +47,8 @@ getNumVotersForIdea idea = (,) idea . length <$> getVotersForIdea idea
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> AQuery Percent
 quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
-    SchoolSpace  -> askDb dbSchoolQuorum
-    ClassSpace _ -> askDb dbClassQuorum
+    SchoolSpace  -> view dbSchoolQuorum
+    ClassSpace _ -> view dbClassQuorum
 
 -- | Return the current system time with the day set to the date on which phases opened
 -- today end.  When running the phase change trigger at midnight, find all dates that lie in the
@@ -61,12 +61,12 @@ phaseEnd days = do
 
 phaseEndRefinement :: AQuery Timestamp
 phaseEndRefinement = do
-    DurationDays (days :: Int) <- askDb dbElaborationDuration
+    DurationDays (days :: Int) <- view dbElaborationDuration
     phaseEnd days
 
 phaseEndVote :: AQuery Timestamp
 phaseEndVote = do
-    DurationDays (days :: Int) <- askDb dbVoteDuration
+    DurationDays (days :: Int) <- view dbVoteDuration
     phaseEnd days
 
 

@@ -37,7 +37,6 @@ module Persistent.Pure
 
     , liftAQuery
 
-    , askDb
     , getDb
     , addDb
     , modifyDb
@@ -100,7 +99,7 @@ where
 
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT))
-import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), ask)
+import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), ask, asks)
 import Control.Monad.State (MonadState, state, get, modify)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
@@ -202,10 +201,6 @@ type HasAQuery  ev a =
     , MethodState ev ~ AulaData, MethodResult ev ~ a
     )
 
-
-askDb :: AulaGetter a -> AQuery a  -- TODO: inline
-askDb l = view l <$> ask
-
 getDb :: AulaGetter a -> AUpdate a  -- TODO: inline
 getDb l = view l <$> get
 
@@ -265,7 +260,7 @@ type AddDb a = UserWithProto a -> AUpdate a
 addDb :: forall a. (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
 addDb l (cUser, pa) = do
     assertAulaDataM $ do
-        len <- lengthOf l <$> askDb id
+        len <- asks (lengthOf l)
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
@@ -280,10 +275,10 @@ addDbValue l (cUser, pa) = do
     return a
 
 findIn :: AulaGetter [a] -> (a -> Bool) -> AQuery (Maybe a)
-findIn l p = find p <$> askDb l
+findIn l = views l . find
 
 findAllIn :: AulaGetter [a] -> (a -> Bool) -> AQuery [a]
-findAllIn l p = filter p <$> askDb l
+findAllIn l = views l . filter
 
 findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> AQuery (Maybe a)
 findInBy l f b = findIn l (\x -> x ^? f == Just b)
@@ -292,13 +287,13 @@ findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> AQuery [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
 findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> AQuery (Maybe a)
-findInById l i = askDb (l . at i)
+findInById l i = view (l . at i)
 
 getSpaces :: AQuery [IdeaSpace]
-getSpaces = askDb dbSpaces
+getSpaces = view dbSpaces
 
 getIdeas :: AQuery [Idea]
-getIdeas = askDb dbIdeas
+getIdeas = view dbIdeas
 
 getWildIdeas :: AQuery [Idea]
 getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
@@ -343,10 +338,10 @@ findUser :: AUID User -> AQuery (Maybe User)
 findUser = findInById dbUserMap
 
 getUsers :: AQuery [User]
-getUsers = askDb dbUsers
+getUsers = view dbUsers
 
 getTopics :: AQuery [Topic]
-getTopics = askDb dbTopics
+getTopics = view dbTopics
 
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
 moveIdeasToLocation ideaIds location =
@@ -369,7 +364,7 @@ addDelegation = addDb dbDelegationMap
 
 findDelegationsByContext :: DelegationContext -> AQuery [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
-    <$> askDb dbDelegationMap
+    <$> view dbDelegationMap
 
 findUserByLogin :: UserLogin -> AQuery (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
