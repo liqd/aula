@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeOperators               #-}
 {-# LANGUAGE ViewPatterns                #-}
 
--- {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Persistent.Api
 {-
