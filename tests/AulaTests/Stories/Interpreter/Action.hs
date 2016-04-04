@@ -93,6 +93,13 @@ runClient (Free (TimeoutTopic t k)) = do
     _ <- lift $ Action.topicInRefinementTimedOut (topic ^. _Id)
     runClient k
 
+runClient (Free (MarkIdea t v k)) = do
+    Just idea <- findIdeaByTitle t
+    _ <- lift $ case v of
+        Left v'  -> Action.markIdeaInJuryPhase (idea ^. _Id) v'
+        Right v' -> Action.markIdeaInResultPhase (idea ^. _Id) v'
+    runClient k
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Idea)

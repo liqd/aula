@@ -291,7 +291,7 @@ markIdeaInResultPhase iid rv = do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
         checkInPhase (PhaseResult ==) topic
-    currentUserAddDb (addIdeaVoteResult iid) rv
+    _ <- currentUserAddDb (addIdeaVoteResult iid) rv
     return ()
 
 -- * Topic handling

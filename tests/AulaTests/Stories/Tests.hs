@@ -17,10 +17,12 @@ import AulaTests.Stories.DSL
 -- FIXME: Idea, Topic creation should be done by different users.
 topicTimeoutStory :: Behavior ()
 topicTimeoutStory = do
+    let idea1 = "idea1"
     login "admin"
     selectIdeaSpace "school"
-    createIdea "idea1" "desc" CatRule
-    likeIdea "idea1"
-    createTopic "idea1" "topic1" "desc"
+    createIdea idea1 "desc" CatRule
+    likeIdea idea1
+    createTopic idea1 "topic1" "desc"
     timeoutTopic "topic1"
+    markIdea idea1 (Left $ Feasible Nothing)
     logout
