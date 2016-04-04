@@ -69,6 +69,7 @@ import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfTo
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
 import qualified Data.Acid as Acid
+import qualified Data.Acid.Core as Acid
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
@@ -176,20 +177,26 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
-currentUserAddDb :: (ActionPersist m, ActionUserHandler m) =>
+currentUserAddDb :: ( Acid.UpdateEvent (AUpdate a)
+                    , Acid.MethodState (AUpdate a) ~ AulaData
+                    , Acid.MethodResult (AUpdate a) ~ a
+                    , ActionPersist m, ActionUserHandler m) =>
                     (UserWithProto a -> AUpdate a) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
     aupdate $ addA (cUser, protoA)
 
-currentUserAddDb_ :: (ActionPersist m, ActionUserHandler m) =>
+currentUserAddDb_ :: ( Acid.UpdateEvent (AUpdate a)
+                     , Acid.MethodState (AUpdate a) ~ AulaData
+                     , Acid.MethodResult (AUpdate a) ~ a
+                     , ActionPersist m, ActionUserHandler m) =>
                     (UserWithProto a -> AUpdate a) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 
 -- | Returns the current user
 currentUser :: (ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
-    muser <- aquery . findUser =<< currentUserId
+    muser <- aquery . FindUser =<< currentUserId
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
