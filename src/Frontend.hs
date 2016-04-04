@@ -318,6 +318,15 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
 
+data Page404 = Page404
+
+instance Page Page404 where
+    isPrivatePage _ = False
+
+instance ToHtml Page404 where
+    toHtmlRaw = toHtml
+    toHtml Page404 = div_ $ p_ "404"
+
 catch404 :: Middleware
 catch404 app req cont = app req $ \resp -> cont $ f resp
   where

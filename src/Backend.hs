@@ -42,12 +42,12 @@ delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
 -- * persistent state management (for demo operation)
 
 type ManageStateApi =
-       "wipe"        :> Post '[JSON] ()
-  :<|> "create-init" :> Post '[JSON] ()
+       "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
+  :<|> "wipe"        :> Post '[JSON] ()
 
 manageStateApi :: (MonadIO m, GenArbitrary r, ActionM r m) => ServerT ManageStateApi m
 manageStateApi =
-       persistent (modifyDb id (const emptyAulaData))
-  :<|> persistent genInitialTestDb
+       persistent genInitialTestDb
   :<|> (liftIO mkUniverse >>= persistent)
+  :<|> persistent (modifyDb (DbId :.: id) (const emptyAulaData))
