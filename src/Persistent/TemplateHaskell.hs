@@ -318,7 +318,7 @@ analyseType eventName t
                                   (binds, [], t'')
                                 ForallT binds cxt' t'' ->
                                   (binds, cxt', t'')
-                                _ -> ([], [], t')
+                                _ -> ([], [], t)
           args = getArgs t'
           (stateType, resultType, isUpdate) = findMonad t'
       in (tyvars, cxt, args, stateType, resultType, isUpdate)
