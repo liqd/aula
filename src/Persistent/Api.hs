@@ -65,4 +65,4 @@ makeLenses ''RunPersistT
 type RunPersist = RunPersistT IO
 
 
-$(makeAcidic ''AulaData ['findUser])
+$(makeAcidic ''AulaData ['findUser, 'findUserByLogin])

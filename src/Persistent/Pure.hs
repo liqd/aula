@@ -352,7 +352,7 @@ findDelegationsByContext :: DelegationContext -> AQuery [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
     <$> askDb dbDelegationMap
 
-findUserByLogin :: UserLogin -> AQuery (Maybe User)
+findUserByLogin :: UserLogin -> Query AulaData (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
 findTopic :: AUID Topic -> AQuery (Maybe Topic)

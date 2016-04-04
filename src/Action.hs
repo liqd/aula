@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 
 -- | The 'Action' module contains an API which
@@ -127,8 +128,14 @@ class Monad m => ActionLog m where
 
 -- | A monad that can run acid-state.
 class (Monad m, MonadError ActionExcept m) => ActionPersist m where
-    aquery  :: Acid.QueryEvent  a => AQuery  a -> m a
-    aupdate :: Acid.UpdateEvent a => AUpdate a -> m a
+    aquery  :: ( Acid.QueryEvent ev
+               , Acid.EventState ev ~ AulaData, Acid.EventResult ev ~ a
+               )
+            => ev -> m a
+    aupdate :: ( Acid.UpdateEvent ev
+               , Acid.EventState ev ~ AulaData, Acid.EventResult ev ~ a
+               )
+            => ev -> m a
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -160,7 +167,7 @@ loginByUser = login . view _Id
 
 loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
 loginByName n = do
-    Just u <- aquery (findUserByLogin n)  -- FIXME: handle 'Nothing'
+    Just u <- aquery $ FindUserByLogin n  -- FIXME: handle 'Nothing'
     loginByUser u
 
 -- | Returns the current user ID

@@ -1,6 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 
--- {-# OPTIONS_GHC -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.Implementation (mkRunPersist)
 where
@@ -8,9 +8,7 @@ where
 import Control.Lens
 import Config
 import Persistent.Api
-import Persistent.Pure
 import Persistent.Implementation.AcidState
-import Types
 
 mkRunPersist :: Config -> IO RunPersist
 mkRunPersist cfg =

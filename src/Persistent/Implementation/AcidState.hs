@@ -1,6 +1,5 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE FlexibleContexts            #-}
-{-# LANGUAGE UndecidableInstances            #-}
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
