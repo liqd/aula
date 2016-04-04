@@ -193,8 +193,8 @@ makeEventHandler eventName eventType
     = do assertTyVarsOk
          vars <- replicateM (length args) (newName "arg")
          let lamClause = conP eventStructName [varP var | var <- vars ]
-         conE constr `appE` lamE [lamClause] (foldl appE (varE eventName) (map varE vars))
-    where constr = if isUpdate then 'UpdateEvent else 'QueryEvent
+         mkEvent `appE` lamE [lamClause] (foldl appE (varE eventName) (map varE vars))
+    where mkEvent = if isUpdate then varE 'aUpdateEvent else conE 'QueryEvent
           (tyvars, _cxt, args, stateType, _resultType, isUpdate) = analyseType eventName eventType
           eventStructName = mkName (structName (nameBase eventName))
           structName [] = []
@@ -328,8 +328,9 @@ analyseType eventName t
 
           findMonad (AppT (AppT ArrowT _a) b)
               = findMonad b
+          findMonad (AppT (ConT con) result)
+              | con == ''AUpdate = (ConT ''AulaData, result, True)
           findMonad (AppT (AppT (ConT con) state) result)
-              | con == ''Update = (state, result, True)
               | con == ''Query  = (state, result, False)
           findMonad _ = error $ "Event has an invalid type signature: Not an Update or a Query: " ++ show eventName
 
