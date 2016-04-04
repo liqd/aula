@@ -627,8 +627,8 @@ deriveSafeCopy 0 'base ''IdeaVote
 deriveSafeCopy 0 'base ''IdeaVoteValue
 deriveSafeCopy 0 'base ''MetaInfo
 deriveSafeCopy 0 'base ''Phase
--- deriveSafeCopy 0 'base ''ProtoIdea
--- deriveSafeCopy 0 'base ''ProtoTopic
+deriveSafeCopy 0 'base ''ProtoIdea
+deriveSafeCopy 0 'base ''ProtoTopic
 -- deriveSafeCopy 0 'base ''ProtoUser
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass

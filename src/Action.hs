@@ -203,7 +203,7 @@ currentUser = do
 
 -- | Modify the current user.
 modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => ModifyUserOp -> m ()
-modifyCurrentUser op = currentUserId >>= aupdate . (`ModifyUser` op)
+modifyCurrentUser up = currentUserId >>= aupdate . (`ModifyUser` up)
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
@@ -241,28 +241,28 @@ phaseAction _ ResultPhaseModeratorEmail =
 -- * Page Handling
 
 createIdea :: (ActionPersist m, ActionUserHandler m) => ProtoIdea -> m Idea
-createIdea = currentUserAddDb addIdea
+createIdea = currentUserAddDb AddIdea
 
 createTopic :: (ActionPersist m, ActionUserHandler m) => ProtoTopic -> m Topic
-createTopic = currentUserAddDb addTopic
+createTopic = currentUserAddDb AddTopic
 
 
 -- * Vote Handling
 
 likeIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> m ()
-likeIdea ideaId = currentUserAddDb_ (addLikeToIdea ideaId) ()
+likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 
 voteIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
-voteIdea = currentUserAddDb_ . addVoteToIdea
+voteIdea = currentUserAddDb_ . AddVoteToIdea
 
 voteIdeaComment :: (ActionPersist m, ActionUserHandler m)
                 => AUID Idea -> AUID Comment -> UpDown -> m ()
-voteIdeaComment ideaId commentId = currentUserAddDb_ (addCommentVoteToIdeaComment ideaId commentId)
+voteIdeaComment ideaId commentId = currentUserAddDb_ (AddCommentVoteToIdeaComment ideaId commentId)
 
 voteIdeaCommentReply :: (ActionPersist m, ActionUserHandler m)
                      => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
 voteIdeaCommentReply ideaId commentId replyId =
-    currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
+    currentUserAddDb_ (AddCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throw an exception
 -- FIXME: Authorization
@@ -276,11 +276,10 @@ markIdea iid rv = do
         Just topic <- ideaTopic idea
         checkInPhaseJury topic
         return topic
-    _ <- currentUserAddDb (addIdeaResult iid) rv
+    _ <- currentUserAddDb (AddIdeaResult iid) rv
     allMarked <- aquery $ checkAllIdeasMarked topic
     when allMarked $ do
         topicPhaseChange topic =<< AllIdeasAreMarked <$> aquery phaseEndVote
-
 
 -- * Topic handling
 

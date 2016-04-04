@@ -51,4 +51,12 @@ type RunPersist = RunPersistT IO
 askDb :: Query AulaData AulaData
 askDb = ask
 
-$(makeAcidic ''AulaData ['askDb, 'modifyUser, 'setTopicPhase])  -- ['findUser, 'findUserByLogin, 'modifyUser])
+$(makeAcidic ''AulaData
+    [ 'askDb, 'modifyUser, 'setTopicPhase
+    , 'addIdea
+    , 'addTopic
+    , 'addIdeaResult
+    , 'addLikeToIdea
+    , 'addVoteToIdea
+    , 'addCommentVoteToIdeaComment
+    , 'addCommentVoteToIdeaCommentReply])
