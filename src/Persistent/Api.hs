@@ -86,6 +86,7 @@ module Persistent.Api
     , addDelegation
     , findDelegationsByContext
     , addIdeaJuryResult
+    , addIdeaVoteResult
     )
 where
 
@@ -408,6 +409,13 @@ instance FromProto IdeaJuryResult where
 addIdeaJuryResult :: AUID Idea -> AddDb m IdeaJuryResult
 addIdeaJuryResult iid =
     addDbValue (dbIdeaMap . at iid . _Just . ideaJuryResult . _Just)
+
+instance FromProto IdeaVoteResult where
+    fromProto = flip IdeaVoteResult
+
+addIdeaVoteResult :: AUID Idea -> AddDb m IdeaVoteResult
+addIdeaVoteResult iid =
+    addDbValue (dbIdeaMap . at iid . _Just . ideaVoteResult . _Just)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
