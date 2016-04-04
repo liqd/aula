@@ -26,6 +26,7 @@ module Persistent.Pure
     , emptyAulaData
 
     , AQuery(AQuery), AUpdate(AUpdate)
+    , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
     , PersistExcept(PersistExcept, unPersistExcept)
@@ -103,6 +104,7 @@ import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), ask, asks)
 import Control.Monad.State (MonadState, state, get, modify)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
+import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid  -- (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
 import Data.List (nub)
@@ -190,6 +192,13 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
            , MonadState AulaData
            , MonadReader WhoWhen
            )
+
+runAUpdate :: AUpdate r -> Update AulaData r
+runAUpdate = error "TODO"
+
+aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData)
+             => (ev -> AUpdate (EventResult ev)) -> AEvent
+aUpdateEvent f = UpdateEvent $ runAUpdate . f
 
 type HasAUpdate ev a =
     ( ev ~ AUpdate a, UpdateEvent ev
