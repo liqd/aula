@@ -16,8 +16,9 @@ module Frontend.Page.Overview
 where
 
 import Action
-import Persistent
+import Frontend.Page.Category
 import Frontend.Prelude
+import Persistent
 
 import qualified Frontend.Path as U
 import qualified Data.Text as ST
@@ -103,20 +104,7 @@ instance ToHtml PageIdeasOverview where
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
-        div_ [class_ "icon-list"] $ do
-            ul_ $ do
-                -- FIXME: these buttons should filter the ideas by category
-                -- FIXME: also, there should be a way to generate these with something like @f `mapM_` [minBound..]@
-                li_ [class_ "icon-rules"] $ do
-                    a_ [href_ U.Broken] "Regeln"
-                li_ [class_ "icon-equipment"] $ do
-                    a_ [href_ U.Broken] "Ausstattung"
-                li_ [class_ "icon-teaching"] $ do
-                    a_ [href_ U.Broken] "Unterricht"
-                li_ [class_ "icon-time"] $ do
-                    a_ [href_ U.Broken] "Zeit"
-                li_ [class_ "icon-environment"] $ do
-                    a_ [href_ U.Broken] "Umgebung"
+        categoryFilterButtons
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
                 ListItemIdea True Nothing numVoters idea ^. html

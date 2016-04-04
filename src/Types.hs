@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
@@ -57,6 +58,11 @@ justIf x b = if b then Just x else Nothing
 lowerFirst :: String -> String
 lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
+
+toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
+toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
+    then Just $ toEnum i
+    else Nothing
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
