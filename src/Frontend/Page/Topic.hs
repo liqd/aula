@@ -264,9 +264,10 @@ viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
 viewTopic tab topicId = makeFrame =<< equery (do
     topic <- maybe404 =<< findTopic topicId
-    delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
     case tab of
-        TabDelegation -> pure $ ViewTopicDelegations topic delegations
+        TabDelegation -> do
+            delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
+            pure $ ViewTopicDelegations topic delegations
         _ -> do
             let fltr = case tab ^? viewTopicTabFilter . _Just of
                           Just cat -> filter ((== cat) . view ideaCategory)

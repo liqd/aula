@@ -225,9 +225,9 @@ type IdeaApi
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
-type TopicApi
+type TopicApi =
        -- browse topics in an idea space
-    = "topic" :> GetH (Frame PageIdeasInDiscussion)
+       "topic" :> GetH (Frame PageIdeasInDiscussion)
   :<|> Topic ::> IdeaApi
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 

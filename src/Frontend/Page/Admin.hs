@@ -215,7 +215,7 @@ instance FormPage PageAdminSettingsDurations where
             span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
             inputText_  [class_ "input-number input-appendee"] "vote-duration" v
             span_ [class_ "input-helper"] "Tage"
-        DF.inputSubmit "AENDERUNGEN SPIECHERN"
+        DF.inputSubmit "Änderungen speichern"
 
 adminDurations :: ActionM m => ServerT (FormHandler PageAdminSettingsDurations) m
 adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> query (view dbDurations))
@@ -247,7 +247,7 @@ instance FormPage PageAdminSettingsQuorum where
             span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
             inputText_ [class_ "input-number input-appendee"] "class-quorum" v
             span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
-        DF.inputSubmit "AENDERUNGEN SPIECHERN"
+        DF.inputSubmit "Änderungen speichern"
 
 adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
 adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> query (view dbQuorums))
