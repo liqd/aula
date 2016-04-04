@@ -29,7 +29,7 @@ library
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -118,7 +118,7 @@ executable aula-html-dummies
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -177,7 +177,7 @@ executable aula-server
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -234,7 +234,7 @@ test-suite spec
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
