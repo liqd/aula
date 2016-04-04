@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
@@ -27,6 +28,8 @@ module Persistent.Pure
     -- , AQuery(AQuery), AUpdate(AUpdate)  -- TODO: can we get this abstract?  do we want to?
     , AQuery, AUpdate
     , PersistExcept(PersistExcept, unPersistExcept)
+    , HasAUpdate
+    , HasAQuery
 
     -- TODO: get some structure into this export list.
     -- FIXME: consider removing Purescript.Idiom and doing everything here.
@@ -99,7 +102,8 @@ import Control.Lens
 import Control.Monad.Reader ({- MonadReader, -} ask)
 import Control.Monad.State ({- MonadState, -} state, get, modify)
 import Control.Monad (unless, replicateM, when)
-import Data.Acid (Query, Update, liftQuery)
+import Data.Acid  -- (Query, Update, liftQuery)
+import Data.Acid.Core
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
@@ -189,6 +193,16 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaDa
 type AQuery = Query AulaData
 type AUpdate = Update AulaData
 
+type HasAUpdate ev a =
+    ( ev ~ AUpdate a, UpdateEvent ev
+    , MethodState ev ~ AulaData, MethodResult ev ~ a
+    )
+
+type HasAQuery  ev a =
+    ( ev ~ AQuery a, QueryEvent  ev
+    , MethodState ev ~ AulaData, MethodResult ev ~ a
+    )
+
 
 askDb :: AulaGetter a -> AQuery a  -- TODO: inline
 askDb l = view l <$> ask
@@ -254,7 +268,6 @@ addDb l (cUser, pa) = do
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    -- FIXME: reduce code: call 'addDbValue' instead of the following three lines.  (this is another lens puzzle)
     a :: a <- fromProto pa <$> nextMetaInfo cUser
     modifyDb_ l $ at (a ^. _Id) .~ Just a
     return a

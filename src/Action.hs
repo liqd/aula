@@ -128,15 +128,9 @@ class Monad m => ActionLog m where
     logEvent :: ST -> m ()
 
 -- | A monad that can run acid-state.
-class (Monad m, MonadError ActionExcept m) => ActionPersist m where
-    aquery  :: ( Acid.QueryEvent ev
-               , Acid.EventState ev ~ AulaData, Acid.EventResult ev ~ a
-               )
-            => ev -> m a
-    aupdate :: ( Acid.UpdateEvent ev
-               , Acid.EventState ev ~ AulaData, Acid.EventResult ev ~ a
-               )
-            => ev -> m a
+class (MonadError ActionExcept m) => ActionPersist m where
+    aquery  :: (HasAQuery  ev a) => ev -> m a
+    aupdate :: (HasAUpdate ev a) => ev -> m a
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
