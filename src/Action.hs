@@ -277,8 +277,8 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- FIXME: Compute value in one persistent computation
 markIdeaInJuryPhase :: AUID Idea -> IdeaJuryResultValue -> AUpdate ()
 markIdeaInJuryPhase iid rv = do
-    idea  <- liftAMQuery $ findIdea iid
-    topic <- liftAMQuery $ ideaTopic idea
+    idea  <- maybe404 =<< findIdea iid
+    topic <- maybe404 =<< ideaTopic idea
     checkInPhase (PhaseJury ==) idea topic
     addIdeaJuryResult iid rv
     checkCloseJuryPhase topic
