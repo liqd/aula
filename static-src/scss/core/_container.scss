@@ -20,6 +20,10 @@ body, html {
 .container-narrow {
     @extend .col-8-12;
     margin: 0 auto;
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        width: 100%;
+    }
 }
 
 .m-shadow {
@@ -46,5 +50,12 @@ body.m-shadow {
 .popup-page {
     .main-heading {
         text-align: left;
+    }
+}
+
+@media screen and (max-width: $tablet-breakpoint) {
+    .grid .grid {
+        margin: 0;
+        padding: 0;
     }
 }
