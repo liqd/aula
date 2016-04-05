@@ -19,7 +19,7 @@ import Data.Acid hiding (makeAcidic)
 import Data.Acid.Advanced (IsAcidic(acidEvents), Event(..), Method, MethodResult, MethodState)
 
 import Types (UserWithProto)
-import Persistent.Pure (AulaData, AUpdate, AddDb, aUpdateEvent)
+import Persistent.Pure (AulaData, AUpdate, AddDb, PersistExcept, aUpdateEvent)
 
 import Data.List ((\\), nub)
 -- import Data.Maybe (mapMaybe)
@@ -320,7 +320,9 @@ analyseType eventName t
           findMonad (AppT (AppT ArrowT _a) b)
               = findMonad b
           findMonad (AppT (ConT con) result)
-              | con `elem` [''AUpdate, ''AddDb] = (ConT ''AulaData, result, True)
+              | con `elem` [''AUpdate, ''AddDb] = (ConT ''AulaData,
+                                                   ConT ''Either `AppT`
+                                                   ConT ''PersistExcept `AppT` result, True)
           findMonad (AppT (AppT (ConT con) state) result)
               | con == ''Query  = (state, result, False)
           findMonad _ = error $ "Event has an invalid type signature: Not an Update or a Query: " <> show eventName

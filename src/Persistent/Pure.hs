@@ -29,7 +29,7 @@ module Persistent.Pure
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
-    , PersistExcept(PersistExcept, unPersistExcept)
+    , PersistExcept(..), _PersistError500, _PersistError404, _PersistErrorNotImplemented
     , HasAUpdate
 
     -- TODO: get some structure into this export list.
@@ -97,8 +97,8 @@ module Persistent.Pure
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError, ExceptT(ExceptT))
-import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), runReader, ask, asks)
+import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
+import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), runReader, runReaderT, ask, asks)
 import Control.Monad.State (MonadState, state, gets, modify)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
@@ -107,11 +107,11 @@ import Data.Acid  -- (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
+import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Typeable (Typeable)
 import Servant.Missing (ThrowError500(..))
-import Servant (ServantErr)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -191,14 +191,14 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
            , MonadReader WhoWhen
            )
 
-runAUpdate :: AUpdate r -> Update AulaData r
-runAUpdate = error "TODO"
+runAUpdate :: AUpdate r -> Update AulaData (Either PersistExcept r)
+runAUpdate (AUpdate m) = runExceptT (runReaderT m (error "WhoWhen"))
 
-aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData)
-             => (ev -> AUpdate (EventResult ev)) -> AEvent
+aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData, EventResult ev ~ Either PersistExcept a)
+             => (ev -> AUpdate a) -> AEvent
 aUpdateEvent f = UpdateEvent $ runAUpdate . f
 
-type HasAUpdate ev a = (UpdateEvent ev, MethodState ev ~ AulaData, MethodResult ev ~ a)
+type HasAUpdate ev a = (UpdateEvent ev, MethodState ev ~ AulaData, MethodResult ev ~ Either PersistExcept a)
 
 -- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
 -- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
@@ -217,14 +217,18 @@ liftAQuery m = gets (runReader m)
 
 -- | FIXME: this will have constructors dedicated for specific errors, and 'ServantErr' will only be
 -- introduced later.
-newtype PersistExcept = PersistExcept { unPersistExcept :: ServantErr }
+data PersistExcept
+    = PersistError500 { persistErrorMessage :: String }
+    | PersistError404 { persistErrorMessage :: String }
+    | PersistErrorNotImplemented { persistErrorMessage :: String }
     deriving (Eq, Show)
 
 makePrisms ''PersistExcept
 
 instance ThrowError500 PersistExcept where
-    error500 = _PersistExcept . error500
+    error500 = _PersistError500
 
+deriveSafeCopy 0 'base ''PersistExcept
 
 -- * state interface
 
@@ -495,6 +499,7 @@ mkUserLogin protoUser = pick (gen firstn lastn)
     pick :: [ST] -> AUpdate UserLogin
     pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
     pick []                    = error "impossible.  (well, unlikely.)"
+                                 -- ^ FIXME: use throwError(500) here?
 
     gen :: ST -> ST -> [ST]
     gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise
