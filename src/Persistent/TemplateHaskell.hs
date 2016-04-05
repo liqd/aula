@@ -11,6 +11,7 @@ module Persistent.TemplateHaskell
     ) where
 
 import Prelude hiding (pred)
+import Data.Monoid ((<>))
 import Language.Haskell.TH hiding (cxt)
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Ppr
