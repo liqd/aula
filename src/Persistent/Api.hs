@@ -24,9 +24,11 @@ module Persistent.Api
 -}
 where
 
+import Control.Exception (finally)
 import Control.Lens
 import Control.Monad.Reader (ask)
 import Data.Acid hiding (makeAcidic)
+import Data.Monoid
 import Data.SafeCopy (base, deriveSafeCopy)
 
 import Persistent.Pure
@@ -47,6 +49,14 @@ makeLenses ''RunPersistT
 
 type RunPersist = RunPersistT IO
 
+-- | A more low-level variant of 'Persistent.Implementation.withPersist' with the implementation
+-- explicit as parameter.
+withPersist' :: IO RunPersist -> (AcidState AulaData -> IO a) -> IO a
+withPersist' mkRunP m = do
+    RunPersist desc acidState close <- mkRunP -- initialization happens here
+    putStrLn $ "persistence: " <> desc        -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
+    m acidState `finally` close               -- closing happens here
+
 askDb :: Query AulaData AulaData
 askDb = ask
 
@@ -57,6 +67,8 @@ $(makeAcidic ''AulaData
     , 'addUser
     , 'addIdeaJuryResult
     , 'addIdeaVoteResult
+    , 'addFirstUser
+    , 'addDelegation
     , 'addLikeToIdea
     , 'addVoteToIdea
     , 'addCommentToIdea

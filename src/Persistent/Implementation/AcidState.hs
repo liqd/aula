@@ -14,6 +14,7 @@
 module Persistent.Implementation.AcidState
     ( mkRunPersistOnDisk
     , mkRunPersistInMemory
+    , AcidState
     )
 where
 
