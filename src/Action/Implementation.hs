@@ -57,7 +57,7 @@ instance ActionPersist Action where
     aupdate ev = do
         rp <- view persistNat
         v <- liftIO $ Acid.update (rp ^. rpState) ev
-        either (throwError . ActionExcept . unPersistExcept) pure v
+        either (throwError . ActionPersistExcept) pure v
 
 instance MonadLIO DCLabel Action where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
