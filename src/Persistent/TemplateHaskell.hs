@@ -89,7 +89,7 @@ getEventType eventName
          case eventInfo of
            VarI _name eventType _decl _fixity
              -> return eventType
-           _ -> error $ "Events must be functions: " ++ show eventName
+           _ -> error $ "Events must be functions: " <> show eventName
 
 --instance (SafeCopy key, Typeable key, SafeCopy val, Typeable val) => IsAcidic State where
 --  acidEvents = [ UpdateEvent (\(MyUpdateEvent arg1 arg2 -> myUpdateEvent arg1 arg2) ]
@@ -100,7 +100,7 @@ makeIsAcidic eventNames stateName tyvars -- constructors
          let preds = [ ''SafeCopy, ''Typeable ]
              ty = appT (conT ''IsAcidic) stateType
              handlers = zipWith makeEventHandler eventNames types
-             cxtFromEvents = nub $ concat $ zipWith (eventCxts stateType' tyvars) eventNames types
+             cxtFromEvents = nub . concat $ zipWith (eventCxts stateType' tyvars) eventNames types
          cxts' <- mkCxtFromTyVars preds tyvars cxtFromEvents
          instanceD (return cxts') ty
                    [ valD (varP 'acidEvents) (normalB (listE handlers)) [] ]
@@ -244,7 +244,7 @@ makeSafeCopyInstance eventName eventType
 
          putVars <- replicateM (length args) (newName "arg")
          let putClause = conP eventStructName [varP var | var <- putVars ]
-             putExp    = doE $ [ noBindS $ appE (varE 'safePut) (varE var) | var <- putVars ] ++
+             putExp    = doE $ [ noBindS $ appE (varE 'safePut) (varE var) | var <- putVars ] <>
                                [ noBindS $ appE (varE 'return) (tupE []) ]
 
          instanceD (mkCxtFromTyVars preds tyvars context)
@@ -259,7 +259,7 @@ makeSafeCopyInstance eventName eventType
 
 mkCxtFromTyVars :: [Name] -> [TyVarBndr] -> [Pred] -> CxtQ
 mkCxtFromTyVars preds tyvars extraContext
-    = TH.cxt $ [ conT classPred `appT` varT tyvar | tyvar <- allTyVarBndrNames tyvars, classPred <- preds ] ++
+    = TH.cxt $ [ conT classPred `appT` varT tyvar | tyvar <- allTyVarBndrNames tyvars, classPred <- preds ] <>
             map return extraContext
 
 {-
@@ -311,7 +311,7 @@ analyseType eventName t
           args = getArgs t'
           (stateType, resultType, isUpdate) = findMonad t'
       in (tyvars, cxt, args, stateType, resultType, isUpdate)
-    where getArgs ForallT{} = error $ "Event has an invalid type signature: Nested forall: " ++ show eventName
+    where getArgs ForallT{} = error $ "Event has an invalid type signature: Nested forall: " <> show eventName
           getArgs (AppT (AppT ArrowT a) b) = a : getArgs b
           getArgs (AppT (ConT con) a)
             | con == ''AddDb = [AppT (ConT ''UserWithProto) a]
@@ -323,14 +323,14 @@ analyseType eventName t
               | con `elem` [''AUpdate, ''AddDb] = (ConT ''AulaData, result, True)
           findMonad (AppT (AppT (ConT con) state) result)
               | con == ''Query  = (state, result, False)
-          findMonad _ = error $ "Event has an invalid type signature: Not an Update or a Query: " ++ show eventName
+          findMonad _ = error $ "Event has an invalid type signature: Not an Update or a Query: " <> show eventName
 
 -- | find the type variables
 -- | e.g. State a b  ==> [a,b]
 findTyVars :: Type -> [Name]
 findTyVars (ForallT _ _ a) = findTyVars a
 findTyVars (VarT n)   = [n]
-findTyVars (AppT a b) = findTyVars a ++ findTyVars b
+findTyVars (AppT a b) = findTyVars a <> findTyVars b
 findTyVars (SigT a _) = findTyVars a
 findTyVars _          = []
 
@@ -340,4 +340,4 @@ tyVarBndrName (PlainTV n)    = n
 tyVarBndrName (KindedTV n _) = n
 
 allTyVarBndrNames :: [TyVarBndr] -> [Name]
-allTyVarBndrNames tyvars = map tyVarBndrName tyvars
+allTyVarBndrNames = map tyVarBndrName
