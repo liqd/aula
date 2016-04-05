@@ -1,16 +1,13 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GADTs                       #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
 {-# LANGUAGE MultiParamTypeClasses       #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
-{-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TupleSections               #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE TypeOperators               #-}
-{-# LANGUAGE ViewPatterns                #-}
 
 -- {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 

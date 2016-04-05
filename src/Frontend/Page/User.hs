@@ -95,6 +95,8 @@ userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings) act
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
     -- FIXME: Set the password
+    -- FIXME: move this changeUser function to Persistent.Pure, call it setUser and make it an
+    -- update instead of changing modifyUser.
     changeUser (UserSettingData email _oldPass _newPass1 _newPass2) = do
         maybe nil (modifyCurrentUser (ModifyUserSetEmail e)) email
 

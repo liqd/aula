@@ -1,8 +1,11 @@
--- This is based on Data.Acid.TemplateHaskell commit c0151c5da26dc4e126eb9134a9156c717bcbd75d
--- See the commits for changes
 {-# LANGUAGE TemplateHaskell, CPP #-}
+
 {-# OPTIONS_GHC -Wwarn #-}
-{- Holy crap this code is messy. -}
+
+-- | This is based on Data.Acid.TemplateHaskell commit c0151c5da26dc4e126eb9134a9156c717bcbd75d
+-- See the commits for changes
+--
+-- Holy crap this code is messy.
 module Persistent.TemplateHaskell
     ( makeAcidic
     ) where

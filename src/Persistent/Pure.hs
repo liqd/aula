@@ -233,7 +233,7 @@ instance ThrowError500 PersistExcept where
 -- This can be equipped with a switch for performance, but if at all possible it would be nice to
 -- run the checks even in production.
 assertAulaDataM :: AQuery () -> AUpdate ()
-assertAulaDataM check = liftAQuery check
+assertAulaDataM = liftAQuery
 
 
 type AddDb a = UserWithProto a -> AUpdate a
@@ -323,7 +323,7 @@ modifyUser uid = modifyAMap dbUserMap uid . modifyUserOp
 
 data ModifyUserOp = ModifyUserSetEmail UserEmail
 
-modifyUserOp :: ModifyUserOp -> (User -> User)
+modifyUserOp :: ModifyUserOp -> User -> User
 modifyUserOp (ModifyUserSetEmail email) = userEmail .~ Just email
 
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
