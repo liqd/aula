@@ -280,7 +280,7 @@ markIdeaInJuryPhase iid rv = do
     emptyComputation = return (return ())
 
 -- | Mark idea as winner or not enough votes if the idea is in the Result phase,
--- if not trhows an exception.
+-- if not throws an exception.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
 markIdeaInResultPhase
