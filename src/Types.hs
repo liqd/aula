@@ -96,8 +96,8 @@ data Idea = Idea
     , _ideaComments   :: Comments
     , _ideaLikes      :: IdeaLikes
     , _ideaVotes      :: IdeaVotes
-    , _ideaJuryResult :: Maybe IdeaJuryResult  -- invariant: phase of containing topic > JuryPhsae
-    , _ideaVoteResult :: Maybe IdeaVoteResult  -- invariant: phase of containing topic > VotingPhase
+    , _ideaJuryResult :: Maybe IdeaJuryResult  -- invariant: isJust => phase of containing topic > JuryPhsae
+    , _ideaVoteResult :: Maybe IdeaVoteResult  -- invariant: isJust => phase of containing topic > VotingPhase
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -188,7 +188,7 @@ instance SOP.Generic IdeaVoteResult
 
 data IdeaVoteResultValue
     = Winning     { _ideaResultCreatorStatement  :: Maybe Document }
-    | EnoughVotes
+    | EnoughVotes Bool
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVoteResultValue
