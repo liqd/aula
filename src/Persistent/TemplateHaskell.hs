@@ -154,12 +154,7 @@ eventCxts targetStateType targetTyVars eventName eventType =
     where
       -- | rename the type variables in a Pred
       unify :: [(Name, Name)] -> Pred -> Pred
-#if MIN_VERSION_template_haskell(2,10,0)
       unify table p = rename p table p -- in 2.10.0: type Pred = Type
-#else
-      unify table p@(ClassP n tys) = ClassP n (map (rename p table) tys)
-      unify table p@(EqualP a b)   = EqualP (rename p table a) (rename p table b)
-#endif
 
       -- | rename the type variables in a Type
       rename :: Pred -> [(Name, Name)] -> Type -> Type
@@ -264,13 +259,8 @@ makeSafeCopyInstance eventName eventType
 
 mkCxtFromTyVars :: [Name] -> [TyVarBndr] -> [Pred] -> CxtQ
 mkCxtFromTyVars preds tyvars extraContext
-#if MIN_VERSION_template_haskell(2,10,0)
     = TH.cxt $ [ conT classPred `appT` varT tyvar | tyvar <- allTyVarBndrNames tyvars, classPred <- preds ] ++
             map return extraContext
-#else
-    = TH.cxt $ [ classP classPred [varT tyvar] | tyvar <- allTyVarBndrNames tyvars, classPred <- preds ] ++
-            map return extraContext
-#endif
 
 {-
 instance (SafeCopy key, Typeable key
@@ -285,13 +275,8 @@ makeMethodInstance eventName eventType
              structType = foldl appT (conT eventStructName) (map varT (allTyVarBndrNames tyvars))
          instanceD (mkCxtFromTyVars preds tyvars context)
                    (return ty)
-#if __GLASGOW_HASKELL__ >= 707
                    [ tySynInstD ''MethodResult (tySynEqn [structType] (return resultType))
                    , tySynInstD ''MethodState  (tySynEqn [structType] (return stateType))
-#else
-                   [ tySynInstD ''MethodResult [structType] (return resultType)
-                   , tySynInstD ''MethodState  [structType] (return stateType)
-#endif
                    ]
     where (tyvars, context, _args, stateType, resultType, _isUpdate) = analyseType eventName eventType
           eventStructName = mkName (structName (nameBase eventName))
