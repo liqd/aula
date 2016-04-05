@@ -138,6 +138,7 @@ instance Arbitrary (ToHtmlSpecial ViewIdea) where
                  <*> (aMapFromList <$> vectorOf 5 arb)  -- likes
                  <*> pure nil  -- votes
                  <*> pure Nothing
+                 <*> pure Nothing
         -- FIXME: how do we generate one page per phase here?
         p = pure Nothing
 

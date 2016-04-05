@@ -133,6 +133,7 @@ instance ToHtml ViewIdea where
             when False . div_ $ do
                 -- FIXME: needs design/layout
                 -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
+                -- this can probably be fixed with a simple click-handler (thanks, @np!).
                 div_ ">>>>>>>>>>> some phase-specific stuff"
 
                 postLink_ [] (U.likeIdea idea)         "like this idea"

@@ -22,6 +22,7 @@ import Data.String.Conversions
 import Action
 import Persistent
 import Types
+import Frontend.Testing as Action (makeTopicTimeout)
 
 import AulaTests.Stories.DSL
 
@@ -90,7 +91,19 @@ runClient (Free (CreateTopic it tt td k)) = do
 -- FIXME: Handle Voting phase timeouts
 runClient (Free (TimeoutTopic t k)) = do
     Just topic <- findTopicByTitle t
-    _ <- lift $ Action.topicInRefinementTimedOut (topic ^. _Id)
+    _ <- lift $ Action.makeTopicTimeout (topic ^. _Id)
+    runClient k
+
+runClient (Free (MarkIdea t v k)) = do
+    Just idea <- findIdeaByTitle t
+    _ <- lift $ case v of
+        Left v'  -> Action.markIdeaInJuryPhase (idea ^. _Id) v'
+        Right v' -> Action.markIdeaInResultPhase (idea ^. _Id) v'
+    runClient k
+
+runClient (Free (VoteIdea t v k)) = do
+    Just idea <- findIdeaByTitle t
+    _ <- lift $ Action.voteIdea (idea ^. _Id) v
     runClient k
 
 -- * helpers
