@@ -5,6 +5,10 @@
 
     .admin-menu-header, > ul {
         @include rem(padding, 20px 25px);
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            padding: 0;
+        }
     }
 
     > ul li {
@@ -26,6 +30,20 @@
                 @include rem(margin, 5px 0 0 20px);
             }
         }
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            @include rem(margin-right, 15px);
+            display: inline-block;
+            margin-bottom: 0;
+        }
+    }
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        @include rem(margin-bottom, 20px);
+        @include rem(padding-bottom, 10px);
+        background: transparent;
+        border-bottom: 2px solid $color-grey-light;
+        height: auto;
     }
 }
 
@@ -33,6 +51,13 @@
     @include rem(margin-bottom, 40px);
     background: $color-brand1;
     color: white;
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        @include rem(font-size, $font-size-normal);
+        background: transparent;
+        color: $color-text;
+        margin-bottom: 0;
+    }
 }
 
 .admin-body, .admin-menu {
@@ -45,6 +70,12 @@
 
     .label-text {
         font-weight: bold;
+    }
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        margin: 0;
+        padding: 0;
+        width: 100%;
     }
 }
 
