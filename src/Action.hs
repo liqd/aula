@@ -140,7 +140,7 @@ class (MonadError ActionExcept m) => ActionPersist m where
     amquery :: forall a. (Typeable a) => AMQuery a -> m a
     amquery q = maybe (throwError e) pure =<< aquery q
       where
-        e = ActionPersistExcept . PersistError404 . show . typeRep $ (undefined :: a)
+        e = ActionPersistExcept . PersistError404 . show . typeRep $ (Proxy :: Proxy a)
 
     aequery :: AEQuery a -> m a
     aequery q = do
