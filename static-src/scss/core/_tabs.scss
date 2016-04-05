@@ -47,5 +47,11 @@
         &.tab-item-topics a {
             @include svg(badge_aufdemtisch);
         }
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            a {
+                background-image: none !important;
+            }
+        }
     }
 }
