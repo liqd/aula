@@ -233,10 +233,12 @@ addDb l (cUser, pa) = do
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
-addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb m a
-addDbValue l (cUser, pa) = do
+addDbAppValue
+    :: (HasMetaInfo a, FromProto a, Applicative ap)
+    => AulaTraversal (ap a) -> AddDb m a
+addDbAppValue l (cUser, pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser
-    modifyDb l (const a)
+    modifyDb l (const (pure a))
     return a
 
 findIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m (Maybe a)
@@ -408,14 +410,14 @@ instance FromProto IdeaJuryResult where
 
 addIdeaJuryResult :: AUID Idea -> AddDb m IdeaJuryResult
 addIdeaJuryResult iid =
-    addDbValue (dbIdeaMap . at iid . _Just . ideaJuryResult . _Just)
+    addDbAppValue (dbIdeaMap . at iid . _Just . ideaJuryResult)
 
 instance FromProto IdeaVoteResult where
     fromProto = flip IdeaVoteResult
 
 addIdeaVoteResult :: AUID Idea -> AddDb m IdeaVoteResult
 addIdeaVoteResult iid =
-    addDbValue (dbIdeaMap . at iid . _Just . ideaVoteResult . _Just)
+    addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
