@@ -83,9 +83,15 @@ ideaTopic idea = case idea ^. ideaLocation of
 ideaPhase :: PersistM m => Idea -> m (Maybe Phase)
 ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
-checkInPhase :: PersistM m => (Phase -> Bool) -> Topic -> m ()
-checkInPhase phase topic =
-    unless (phase (topic ^. topicPhase)) $ throwError500 "Idea is not in the correct phase."
+checkInPhase :: PersistM m => (Phase -> Bool) -> Idea -> Topic -> m ()
+checkInPhase isPhase idea topic =
+    unless (isPhase phase) $ throwError500 msg
+  where
+    phase = topic ^. topicPhase
+    msg = unwords
+        [ "Idea", show (idea ^. _Id), "is not in the correct phase."
+        , "Current phase:", show phase
+        ]
 
 -- | Checks if all ideas associated with the topic are marked, feasible or not feasible.
 checkAllIdeasMarked :: PersistM m => Topic -> m Bool

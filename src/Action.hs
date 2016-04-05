@@ -268,7 +268,7 @@ markIdeaInJuryPhase iid rv = do
     topic <- persistent $ do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
-        checkInPhase (PhaseJury ==) topic
+        checkInPhase (PhaseJury ==) idea topic
         return topic
     _ <- currentUserAddDb (addIdeaJuryResult iid) rv
     join . persistent $ do
@@ -290,7 +290,7 @@ markIdeaInResultPhase iid rv = do
     persistent $ do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
-        checkInPhase (PhaseResult ==) topic
+        checkInPhase (PhaseResult ==) idea topic
     _ <- currentUserAddDb (addIdeaVoteResult iid) rv
     return ()
 
