@@ -16,6 +16,7 @@ module Action
     , ActionLog(logEvent)
     , ActionPersist(aqueryDb, aquery, aequery, amquery, aupdate)
     , ActionUserHandler(login, logout, userState)
+    , ActionRandomPassword(mkRandomPassword)
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), persistNat, config
@@ -78,8 +79,6 @@ import qualified Data.Vector as V
 import Config (Config)
 import LifeCycle
 import Persistent
-import Persistent.Pure
-import Persistent.Idiom
 import Types
 
 
@@ -123,6 +122,7 @@ class ( ActionLog m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
+      , ActionRandomPassword m
       ) => ActionM m
 
 class Monad m => ActionLog m where
@@ -146,6 +146,9 @@ class (MonadError ActionExcept m) => ActionPersist m where
     aequery q = do
         db <- aquery ask
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
+
+class ActionRandomPassword m where
+    mkRandomPassword :: m UserPass
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -206,8 +209,9 @@ currentUser = do
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist m, ActionUserHandler m) => ModifyUserOp -> m ()
-modifyCurrentUser up = currentUserId >>= aupdate . (`ModifyUser` up)
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
+                  => (AUID User -> ev) -> m a
+modifyCurrentUser ev = currentUserId >>= aupdate . ev
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
@@ -244,27 +248,27 @@ phaseAction _ ResultPhaseModeratorEmail =
 
 -- * Page Handling
 
-createIdea :: (ActionPersist m, ActionUserHandler m) => ProtoIdea -> m Idea
+type Create  a = forall m. (ActionPersist m, ActionUserHandler m) => Proto a -> m a
+type Create_ a = forall m. (ActionPersist m, ActionUserHandler m) => Proto a -> m ()
+
+createIdea :: Create Idea
 createIdea = currentUserAddDb AddIdea
 
-createTopic :: (ActionPersist m, ActionUserHandler m) => ProtoTopic -> m Topic
+createTopic :: Create Topic
 createTopic = currentUserAddDb AddTopic
-
 
 -- * Vote Handling
 
 likeIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> m ()
 likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 
-voteIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
+voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea = currentUserAddDb_ . AddVoteToIdea
 
-voteIdeaComment :: (ActionPersist m, ActionUserHandler m)
-                => AUID Idea -> AUID Comment -> UpDown -> m ()
+voteIdeaComment :: AUID Idea -> AUID Comment -> Create_ CommentVote
 voteIdeaComment ideaId commentId = currentUserAddDb_ (AddCommentVoteToIdeaComment ideaId commentId)
 
-voteIdeaCommentReply :: (ActionPersist m, ActionUserHandler m)
-                     => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
+voteIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
 voteIdeaCommentReply ideaId commentId replyId =
     currentUserAddDb_ (AddCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
@@ -280,7 +284,7 @@ markIdea iid rv = do
         Just topic <- ideaTopic idea
         checkInPhaseJury topic
         return topic
-    _ <- currentUserAddDb (AddIdeaResult iid) rv
+    currentUserAddDb_ (AddIdeaResult iid) rv
     allMarked <- aquery $ checkAllIdeasMarked topic
     when allMarked $ do
         topicPhaseChange topic =<< AllIdeasAreMarked <$> aquery phaseEndVote
@@ -311,8 +315,4 @@ decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
 
 getCurrentTimestampIO :: AUpdate Timestamp
 getCurrentTimestampIO = Timestamp <$> getCurrentTime
-
-mkRandomPasswordIO :: AUpdate UserPass
-mkRandomPasswordIO = UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
-
 -}

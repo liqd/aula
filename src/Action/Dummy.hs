@@ -45,6 +45,9 @@ instance Monad m => ActionPersist (DummyT ActionExcept m) where
 
 instance Monad m => ActionError (DummyT ActionExcept m)
 
+instance Monad m => ActionRandomPassword (DummyT ActionExcept m) where
+    mkRandomPassword = notImplemented "ActionRandomPassword" "mkRandomPassword"
+
 instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
     login _     = pure ()
     logout      = pure ()

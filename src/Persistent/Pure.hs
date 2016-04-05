@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE ImpredicativeTypes          #-}
+{-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
@@ -70,7 +71,9 @@ module Persistent.Pure
     , addFirstUser
     , mkMetaInfo
     , mkUserLogin
-    , modifyUser, ModifyUserOp(..)
+    , modifyUser
+    , setUserEmail
+    , setUserRole
     , getTopics
     , addTopic
     , modifyTopic
@@ -89,13 +92,16 @@ module Persistent.Pure
     , dbVoteDuration
     , dbSchoolQuorum
     , dbClassQuorum
+    , dbDurations
+    , dbQuorums
+    , dbSettings
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
     , addIdeaResult
-
-    , saveDurations
     , editIdea
+    , saveDurations
+    , saveQuorums
     )
 where
 
@@ -131,10 +137,7 @@ data AulaData = AulaData
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
     , _dbDelegationMap       :: Delegations
-    , _dbElaborationDuration :: DurationDays  -- FIXME: elaboration and refinement are the same thing.  pick one term!
-    , _dbVoteDuration        :: DurationDays
-    , _dbSchoolQuorum        :: Percent
-    , _dbClassQuorum         :: Percent  -- (there is only one quorum for all classes, see gh#318)
+    , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
   deriving (Eq, Show, Read, Typeable)
@@ -159,7 +162,7 @@ dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil nil 21 21 30 3 0
+emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
 
 
 -- * transactions
@@ -328,13 +331,14 @@ modifyAMap l ident = modifyDb_ (l . at ident . _Just)
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
 modifyIdea = modifyAMap dbIdeaMap
 
-modifyUser :: AUID User -> ModifyUserOp -> AUpdate ()
-modifyUser uid = modifyAMap dbUserMap uid . modifyUserOp
+modifyUser :: AUID User -> (User -> User) -> AUpdate ()
+modifyUser uid = modifyAMap dbUserMap uid
 
-data ModifyUserOp = ModifyUserSetEmail UserEmail
+setUserEmail :: AUID User -> UserEmail -> AUpdate ()
+setUserEmail uid = modifyUser uid . (userEmail ?~)
 
-modifyUserOp :: ModifyUserOp -> User -> User
-modifyUserOp (ModifyUserSetEmail email) = userEmail .~ Just email
+setUserRole :: AUID User -> Role -> AUpdate ()
+setUserRole uid = modifyUser uid . set userRole
 
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
@@ -559,17 +563,31 @@ mkMetaInfo cUser now oid = MetaInfo
 nextMetaInfo :: User -> AUpdate (MetaInfo a)
 nextMetaInfo cUser = mkMetaInfo cUser <$> (view whoWhenTimestamp <$> ask) <*> nextId
 
-
-saveDurations :: DurationDays -> DurationDays -> AUpdate ()
-saveDurations elab vote = do
-    _ <- modifyDb dbElaborationDuration (const elab)
-    _ <- modifyDb dbVoteDuration        (const vote)
-    pure ()
-
-
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()
 editIdea ideaId = modifyIdea ideaId . newIdea
   where
     newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
                       . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
                       . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+
+dbDurations :: Lens' AulaData Durations
+dbQuorums   :: Lens' AulaData Quorums
+
+dbDurations = dbSettings . durations
+dbQuorums   = dbSettings . quorums
+
+dbElaborationDuration :: Lens' AulaData DurationDays
+dbVoteDuration        :: Lens' AulaData DurationDays
+dbSchoolQuorum        :: Lens' AulaData Percent
+dbClassQuorum         :: Lens' AulaData Percent
+
+dbElaborationDuration = dbDurations . elaborationPhase
+dbVoteDuration        = dbDurations . votingPhase
+dbSchoolQuorum        = dbQuorums   . schoolQuorumPercentage
+dbClassQuorum         = dbQuorums   . classQuorumPercentage
+
+saveDurations :: Durations -> AUpdate ()
+saveDurations = (dbDurations .=)
+
+saveQuorums :: Quorums -> AUpdate ()
+saveQuorums = (dbQuorums .=)

@@ -34,7 +34,6 @@ import Persistent.Idiom
 import Persistent.TemplateHaskell (makeAcidic)
 
 
-deriveSafeCopy 0 'base ''ModifyUserOp
 deriveSafeCopy 0 'base ''AulaData
 
 data RunPersistT m =
@@ -52,14 +51,19 @@ askDb :: Query AulaData AulaData
 askDb = ask
 
 $(makeAcidic ''AulaData
-    [ 'askDb, 'modifyUser, 'setTopicPhase
+    [ 'askDb, 'setUserEmail, 'setUserRole, 'setTopicPhase
     , 'addIdea
     , 'addTopic
+    , 'addUser
     , 'addIdeaResult
     , 'addLikeToIdea
     , 'addVoteToIdea
+    , 'addCommentToIdea
+    , 'addReplyToIdeaComment
     , 'addCommentVoteToIdeaComment
     , 'addCommentVoteToIdeaCommentReply
-    , 'saveDurations
+    , 'addIdeaSpaceIfNotExists
     , 'editIdea
+    , 'saveDurations
+    , 'saveQuorums
     ])

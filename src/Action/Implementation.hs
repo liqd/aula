@@ -17,6 +17,8 @@ import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
+import Data.Elocrypt (mkPassword)
+import Data.String.Conversions (cs)
 import Prelude
 import Servant
 import Servant.Missing
@@ -26,6 +28,7 @@ import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOStat
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Acid as Acid
 
+import Types
 import Action
 import Persistent
 
@@ -64,6 +67,9 @@ instance MonadLIO DCLabel Action where
 
 instance MonadRandom Action where
     getRandomBytes = liftIO . getRandomBytes
+
+instance ActionRandomPassword Action where
+    mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 instance ActionUserHandler Action where
     login uid = do
