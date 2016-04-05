@@ -35,7 +35,8 @@ module Action
     , voteIdea
     , voteIdeaComment
     , voteIdeaCommentReply
-    , markIdea
+    , markIdeaInJuryPhase
+    , markIdeaInResultPhase
 
       -- * topic handling
     , topicInRefinementTimedOut
@@ -256,19 +257,20 @@ voteIdeaCommentReply :: (ActionPersist r m, ActionUserHandler m)
 voteIdeaCommentReply ideaId commentId replyId =
     currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
--- | Mark idea as feasible if the idea is in the Jury phase, if not throw an exception
+-- | Mark idea as feasible if the idea is in the Jury phase, if not throws an exception.
+-- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
--- FIXME: Only Feasible and NotFeasible cases are allowed (this may be best achieved by refactoring
---        the IdeaResultValue type).
-markIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaResultValue -> m ()
-markIdea iid rv = do
+markIdeaInJuryPhase
+    :: (ActionPersist r m, ActionUserHandler m)
+    => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase iid rv = do
     topic <- persistent $ do
         Just idea <- findIdea iid -- FIXME: 404
         Just topic <- ideaTopic idea
-        checkInPhaseJury topic
+        checkInPhase (PhaseJury ==) idea topic
         return topic
-    _ <- currentUserAddDb (addIdeaResult iid) rv
+    _ <- currentUserAddDb (addIdeaJuryResult iid) rv
     join . persistent $ do
         allMarked <- checkAllIdeasMarked topic
         if allMarked
@@ -277,6 +279,20 @@ markIdea iid rv = do
   where
     emptyComputation = return (return ())
 
+-- | Mark idea as winner or not enough votes if the idea is in the Result phase,
+-- if not throws an exception.
+-- FIXME: Authorization
+-- FIXME: Compute value in one persistent computation
+markIdeaInResultPhase
+    :: (ActionPersist r m, ActionUserHandler m)
+    => AUID Idea -> IdeaVoteResultValue -> m ()
+markIdeaInResultPhase iid rv = do
+    persistent $ do
+        Just idea <- findIdea iid -- FIXME: 404
+        Just topic <- ideaTopic idea
+        checkInPhase (PhaseResult ==) idea topic
+    _ <- currentUserAddDb (addIdeaVoteResult iid) rv
+    return ()
 
 -- * Topic handling
 

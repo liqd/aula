@@ -7,7 +7,7 @@ module Persistent.Idiom
 where
 
 import Control.Lens
-import Control.Monad (when)
+import Control.Monad (unless)
 import Data.Time
 import Servant.Missing
 
@@ -83,15 +83,21 @@ ideaTopic idea = case idea ^. ideaLocation of
 ideaPhase :: PersistM m => Idea -> m (Maybe Phase)
 ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
-checkInPhaseJury :: PersistM m => Topic -> m ()
-checkInPhaseJury topic =
-    when (topic ^. topicPhase /= PhaseJury) $ throwError500 "Idea is not in the jury phase"
+checkInPhase :: PersistM m => (Phase -> Bool) -> Idea -> Topic -> m ()
+checkInPhase isPhase idea topic =
+    unless (isPhase phase) $ throwError500 msg
+  where
+    phase = topic ^. topicPhase
+    msg = unwords
+        [ "Idea", show (idea ^. _Id), "is not in the correct phase."
+        , "Current phase:", show phase
+        ]
 
 -- | Checks if all ideas associated with the topic are marked, feasible or not feasible.
 checkAllIdeasMarked :: PersistM m => Topic -> m Bool
 checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
   where
-    isMarkedIdea i = case i ^? ideaResult . _Just . ideaResultValue of
+    isMarkedIdea i = case i ^? ideaJuryResult . _Just . ideaJuryResultValue of
         Just (NotFeasible _) -> True
         Just (Feasible _)    -> True
         _                    -> False

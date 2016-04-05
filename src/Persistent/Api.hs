@@ -85,7 +85,8 @@ module Persistent.Api
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
-    , addIdeaResult
+    , addIdeaJuryResult
+    , addIdeaVoteResult
     )
 where
 
@@ -232,10 +233,12 @@ addDb l (cUser, pa) = do
     modifyDb l $ at (a ^. _Id) .~ Just a
     return a
 
-addDbValue :: (HasMetaInfo a, FromProto a) => AulaTraversal a -> AddDb m a
-addDbValue l (cUser, pa) = do
+addDbAppValue
+    :: (HasMetaInfo a, FromProto a, Applicative ap)
+    => AulaTraversal (ap a) -> AddDb m a
+addDbAppValue l (cUser, pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser
-    modifyDb l (const a)
+    modifyDb l (const (pure a))
     return a
 
 findIn :: AulaGetter [a] -> (a -> Bool) -> PersistM m => m (Maybe a)
@@ -402,12 +405,19 @@ addCommentVoteToIdeaCommentReply iid cid rid =
                      . at cid . _Just . commentReplies
                      . at rid . _Just . commentVotes)
 
-instance FromProto IdeaResult where
-    fromProto = flip IdeaResult
+instance FromProto IdeaJuryResult where
+    fromProto = flip IdeaJuryResult
 
-addIdeaResult :: AUID Idea -> AddDb m IdeaResult
-addIdeaResult iid =
-    addDbValue (dbIdeaMap . at iid . _Just . ideaResult . _Just)
+addIdeaJuryResult :: AUID Idea -> AddDb m IdeaJuryResult
+addIdeaJuryResult iid =
+    addDbAppValue (dbIdeaMap . at iid . _Just . ideaJuryResult)
+
+instance FromProto IdeaVoteResult where
+    fromProto = flip IdeaVoteResult
+
+addIdeaVoteResult :: AUID Idea -> AddDb m IdeaVoteResult
+addIdeaVoteResult iid =
+    addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
 nextId :: PersistM m => m (AUID a)
 nextId = do
@@ -485,7 +495,8 @@ instance FromProto Idea where
         , _ideaComments = nil
         , _ideaLikes    = nil
         , _ideaVotes    = nil
-        , _ideaResult   = Nothing
+        , _ideaJuryResult = Nothing
+        , _ideaVoteResult = Nothing
         }
 
 instance FromProto Topic where
