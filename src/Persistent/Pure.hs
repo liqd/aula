@@ -46,6 +46,7 @@ module Persistent.Pure
     , findInById
     , findAllIn
     , findAllInBy
+    , maybe404
 
     , getSpaces
     , getIdeas
@@ -198,6 +199,9 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
            , MonadState AulaData
            , MonadReader WhoWhen
            )
+
+maybe404 :: forall m a. (MonadError PersistExcept m, Typeable a) => Maybe a -> m a
+maybe404 = maybe (throwError . PersistError404 . show . typeRep $ (Proxy :: Proxy a)) pure
 
 runAUpdate :: AUpdate r -> Update AulaData (Either PersistExcept r)
 runAUpdate (AUpdate m) = runExceptT (runReaderT m (error "WhoWhen"))

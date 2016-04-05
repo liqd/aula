@@ -14,7 +14,7 @@ module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
-    , ActionPersist(aqueryDb, aquery, aequery, amquery, aupdate)
+    , ActionPersist(aqueryDb, aquery, aequery, amquery, aupdate), maybe404
     , ActionUserHandler(login, logout, userState)
     , ActionRandomPassword(mkRandomPassword)
     , ActionError
@@ -59,7 +59,7 @@ where
 
 import Control.Lens
 import Control.Monad (void, when)
-import Control.Monad.Reader (runReader, runReaderT, ask)
+import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
@@ -137,14 +137,12 @@ class (MonadError ActionExcept m) => ActionPersist m where
     aquery :: AQuery a -> m a
     aquery q = runReader q <$> aqueryDb
 
-    amquery :: forall a. (Typeable a) => AMQuery a -> m a
-    amquery q = maybe (throwError e) pure =<< aquery q
-      where
-        e = ActionPersistExcept . PersistError404 . show . typeRep $ (Proxy :: Proxy a)
+    amquery :: Typeable a => AMQuery a -> m a
+    amquery q = aequery (maybe404 =<< q)
 
     aequery :: AEQuery a -> m a
     aequery q = do
-        db <- aquery ask
+        db <- aqueryDb
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
 class ActionRandomPassword m where
