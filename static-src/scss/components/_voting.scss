@@ -51,8 +51,9 @@ $progress-bar-height: 5px;
 .voting-buttons {
     @include rem(margin-top, 50px);
 
-    .voting-button {
+    .voting-button, form {
         @include rem(margin-right, 15px);
+        display: inline-block;
 
         &:last-child {
             margin-right: 0;
