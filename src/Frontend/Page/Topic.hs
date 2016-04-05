@@ -13,7 +13,6 @@ module Frontend.Page.Topic
     , ViewTopicTab(..)
     , CreateTopic(..)
     , EditTopic(..)
-    , TopicFormPayload(..)
     , viewTopic
     , createTopic
     , editTopic )
@@ -21,10 +20,10 @@ where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept)
 import Control.Exception (assert)
-import Frontend.Prelude hiding (moveIdeasToLocation)
+import Frontend.Prelude hiding (moveIdeasToLocation, EditTopic, editTopic)
 
 import qualified Action (createTopic)
-import qualified Persistent
+import qualified Persistent (EditTopic(EditTopic))
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -203,22 +202,18 @@ createOrEditTopic v ideas = do
     footer_ [class_ "form-footer"] $ do
         DF.inputSubmit "Veröffentlichen"
 
--- Edit topic description and add ideas to topic.
-data TopicFormPayload = TopicFormPayload ST Document [AUID Idea]
-  deriving (Eq, Show)
-
 
 instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
-    type FormPagePayload EditTopic = TopicFormPayload
+    type FormPagePayload EditTopic = EditTopicData
 
     formAction (EditTopic space topic _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
 
     redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
 
     makeForm (EditTopic _space topic ideas) =
-        TopicFormPayload
+        EditTopicData
         <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
         <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
         <*> makeFormIdeaSelection ideas
@@ -253,34 +248,28 @@ makeFormIdeaSelection ideas =
 
 -- * handlers
 
-viewTopic :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = makeFrame =<< persistent (do
-    Just topic <- findTopic topicId  -- FIXME: 404
+viewTopic tab topicId = makeFrame =<< aequery (do
+    topic <- maybe404 =<< findTopic topicId
     delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
     case tab of
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
         _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
-createTopic :: ActionM r m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
+createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =
     redirectFormHandler
-        (persistent $ CreateTopic space
+        (aquery $ CreateTopic space
             <$> findWildIdeasBySpace space
             <*> phaseEndRefinement)
         Action.createTopic
 
-editTopic :: ActionM r m => AUID Topic -> ServerT (FormHandler EditTopic) m
-editTopic topicId = redirectFormHandler getPage editTopicPostHandler
+editTopic :: ActionM m => AUID Topic -> ServerT (FormHandler EditTopic) m
+editTopic topicId = redirectFormHandler getPage (aupdate . Persistent.EditTopic topicId)
   where
-    getPage = persistent $ do
-        -- FIXME: 404
-        Just topic <- findTopic topicId
-        let space = view topicIdeaSpace topic
+    getPage = aequery $ do
+        topic <- maybe404 =<< findTopic topicId
+        let space = topic ^. topicIdeaSpace
         ideas <- findWildIdeasBySpace space
         pure $ EditTopic space topic ideas
-
-    editTopicPostHandler (TopicFormPayload title desc ideas) = persistent $ do
-        Just space <- view topicIdeaSpace <$$> findTopic topicId  -- FIXME: 404
-        Persistent.modifyTopic topicId (set topicTitle title . set topicDesc desc)
-        Persistent.moveIdeasToLocation ideas (IdeaLocationTopic space topicId)

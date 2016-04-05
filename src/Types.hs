@@ -282,6 +282,16 @@ instance SOP.Generic ProtoTopic
 
 type instance Proto Topic = ProtoTopic
 
+-- Edit topic description and add ideas to topic.
+data EditTopicData = EditTopicData
+    { _editTopicTitle    :: ST
+    , _editTopicDesc     :: Document
+    , _editTopicAddIdeas :: [AUID Idea]
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EditTopicData
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
@@ -623,6 +633,7 @@ makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
 makeLenses ''Document
 makeLenses ''Durations
+makeLenses ''EditTopicData
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
@@ -657,6 +668,7 @@ deriveSafeCopy 0 'base ''DelegationContext
 deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
+deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation

@@ -78,6 +78,7 @@ module Persistent.Pure
     , setUserRole
     , getTopics
     , addTopic
+    , editTopic
     , modifyTopic
     , moveIdeasToLocation
     , findTopic
@@ -352,6 +353,13 @@ setUserPass _uid _oldPass newPass1 newPass2 = do
 
 setUserRole :: AUID User -> Role -> AUpdate ()
 setUserRole uid = modifyUser uid . set userRole
+
+editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
+editTopic topicId (EditTopicData title desc ideas) = do
+    topic <- maybe404 =<< liftAQuery (findTopic topicId)
+    let space = topic ^. topicIdeaSpace
+    modifyTopic topicId (set topicTitle title . set topicDesc desc)
+    moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
