@@ -22,7 +22,8 @@ module Frontend.Page.Idea
   )
 where
 
-import Action (ActionM, ActionPersist, ActionUserHandler, ActionExcept, persistent, currentUserAddDb)
+import Action -- (ActionM, ActionPersist, ActionUserHandler, ActionExcept, currentUserAddDb)
+import Persistent
 import Frontend.Page.Comment
 import Frontend.Prelude
 
@@ -386,10 +387,9 @@ categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist r m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
-viewIdea ideaId = makeFrame =<< persistent (do
-    -- FIXME: 404
-    Just idea <- findIdea ideaId
-    phase <- ideaPhase idea
+viewIdea ideaId = makeFrame =<< (do
+    idea  :: Idea        <- amquery $ findIdea ideaId
+    phase :: Maybe Phase <- aquery $ ideaPhase idea
     pure $ ViewIdea idea phase)
 
 createIdea :: ActionM r m => IdeaLocation -> ServerT (FormHandler CreateIdea) m

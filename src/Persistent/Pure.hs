@@ -81,6 +81,7 @@ module Persistent.Pure
     , dbIdeas
     , dbUsers
     , dbTopics
+    , dbSpaces
     , dbSpaceSet
     , dbIdeaMap
     , dbUserMap
@@ -179,6 +180,7 @@ type AQuery a = forall m. MonadReader AulaData m => m a
 -- | Same as 'AQuery' but can throw 'PersistExcept'.
 type AEQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) => m a
 
+-- | This shortcut for 'AEQuery' that throws the appropriate 'PersistExcept' on 'Nothing'.
 type AMQuery a = AQuery (Maybe a)
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
@@ -221,7 +223,9 @@ liftAQuery m = gets (runReader m)
 -- introduced later.
 data PersistExcept
     = PersistError500 { persistErrorMessage :: String }
+        -- FIXME: rename to PersistExceptInternal; drop ThrowError500 instance for something prismatic just for PersistExcept
     | PersistError404 { persistErrorMessage :: String }
+        -- FIXME: rename to PersistExceptNotFound
     | PersistErrorNotImplemented { persistErrorMessage :: String }
     deriving (Eq, Show)
 
