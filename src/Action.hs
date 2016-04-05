@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE Rank2Types             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
@@ -63,6 +64,7 @@ import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
+import Data.Typeable (Typeable, typeRep)
 import Debug.Trace
 import Prelude hiding (log)
 import Servant
@@ -135,8 +137,10 @@ class (MonadError ActionExcept m) => ActionPersist m where
     aquery :: AQuery a -> m a
     aquery q = runReader q <$> aqueryDb
 
-    amquery :: AMQuery a -> m a
-    amquery q = maybe (throwError500 "FIXME amquery") pure =<< aquery q
+    amquery :: forall a. (Typeable a) => AMQuery a -> m a
+    amquery q = maybe (throwError e) pure =<< aquery q
+      where
+        e = ActionPersistExcept . PersistError404 . show . typeRep $ (undefined :: a)
 
     aequery :: AEQuery a -> m a
     aequery q = do
