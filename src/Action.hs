@@ -224,8 +224,7 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange
-    :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: Topic -> PhaseChange -> AUpdate ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -233,12 +232,12 @@ topicPhaseChange topic change = do
             aupdate $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: PhaseChange -> AUID Topic -> AUpdate ()
 topicTimeout phaseChange tid = do
     Just topic <- aquery $ findTopic tid -- FIXME: Not found
     topicPhaseChange topic phaseChange
 
-phaseAction :: (ActionPersist m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
+phaseAction :: Topic -> PhaseAction -> AUpdate ()
 phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
 phaseAction _ ResultPhaseModeratorEmail =
@@ -255,6 +254,7 @@ createIdea = currentUserAddDb AddIdea
 
 createTopic :: Create Topic
 createTopic = currentUserAddDb AddTopic
+
 
 -- * Vote Handling
 
@@ -275,32 +275,32 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase
-    :: (ActionPersist r m, ActionUserHandler m)
-    => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase :: AUID Idea -> IdeaJuryResultValue -> AUpdate ()
 markIdeaInJuryPhase iid rv = do
-    topic <- persistent $ do
-        Just idea <- findIdea iid -- FIXME: 404
-        Just topic <- ideaTopic idea
-        checkInPhase (PhaseJury ==) idea topic
-        return topic
-    aupdate $ AddIdeaJuryResult iid rv
+    idea  <- liftAMQuery $ findIdea iid
+    topic <- liftAMQuery $ ideaTopic idea
+    checkInPhase (PhaseJury ==) idea topic
+    addIdeaJuryResult iid rv
+    checkCloseJuryPhase topic
+
+checkCloseJuryPhase :: Topic -> AUpdate ()
+checkCloseJuryPhase topic = do
     allMarked <- aquery $ checkAllIdeasMarked topic
     when allMarked $ do
         topicPhaseChange topic =<< AllIdeasAreMarked <$> aquery phaseEndVote
+
+-- TODO: this entire section should probably move to Persistent.Pure.
 
 -- | Mark idea as winner or not enough votes if the idea is in the Result phase,
 -- if not throws an exception.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInResultPhase
-    :: (ActionPersist r m, ActionUserHandler m)
-    => AUID Idea -> IdeaVoteResultValue -> m ()
+markIdeaInResultPhase :: AUID Idea -> IdeaVoteResultValue -> AUpdate ()
 markIdeaInResultPhase iid rv = do
-    idea <- amquery $ findIdea iid
+    idea  <- amquery $ findIdea iid
     topic <- amquery $ ideaTopic idea
     checkInPhase (PhaseResult ==) idea topic
-    aupdate $ addIdeaVoteResult iid rv
+    aupdate $ AddIdeaVoteResult iid rv
     return ()
 
 

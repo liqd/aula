@@ -101,12 +101,11 @@ module Persistent.Pure
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
-    , addIdeaResult
+    , addIdeaJuryResult
+    , addIdeaVoteResult
     , editIdea
     , saveDurations
     , saveQuorums
-    , addIdeaJuryResult
-    , addIdeaVoteResult
     )
 where
 
@@ -478,14 +477,14 @@ addCommentVoteToIdeaCommentReply iid cid rid =
 instance FromProto IdeaJuryResult where
     fromProto = flip IdeaJuryResult
 
-addIdeaJuryResult :: AUID Idea -> AddDb m IdeaJuryResult
+addIdeaJuryResult :: AUID Idea -> AddDb IdeaJuryResult
 addIdeaJuryResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaJuryResult)
 
 instance FromProto IdeaVoteResult where
     fromProto = flip IdeaVoteResult
 
-addIdeaVoteResult :: AUID Idea -> AddDb m IdeaVoteResult
+addIdeaVoteResult :: AUID Idea -> AddDb IdeaVoteResult
 addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
@@ -564,7 +563,8 @@ instance FromProto Idea where
         , _ideaComments = nil
         , _ideaLikes    = nil
         , _ideaVotes    = nil
-        , _ideaResult   = Nothing
+        , _ideaJuryResult = Nothing
+        , _ideaVoteResult = Nothing
         }
 
 instance FromProto Topic where
