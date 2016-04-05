@@ -32,12 +32,6 @@ notImplemented :: (Monad m, ThrowError500 e) => String -> String -> DummyT e m a
 notImplemented meth cl = throwError500 $ unlines
     ["Method ", meth, " from class ", cl, " not implemented for instance Dummy"]
 
-instance Monad m => PersistM (DummyT PersistExcept m) where
-    getDb _             = notImplemented "PersistM" "getDb"
-    modifyDb _ _        = notImplemented "PersistM" "modifyDb"
-    getCurrentTimestamp = notImplemented "PersistM" "getCurrentTimestamp"
-    mkRandomPassword    = notImplemented "PersistM" "mkRandomPassword"
-
 instance Monad m => ActionTempCsvFiles (DummyT ActionExcept m) where
     popTempCsvFile _      = notImplemented "PersistM" "popTempCsvFile"
     cleanupTempCsvFiles _ = notImplemented "PersistM" "cleanupTempCsvFiles"
@@ -45,8 +39,9 @@ instance Monad m => ActionTempCsvFiles (DummyT ActionExcept m) where
 instance Monad m => ActionLog (DummyT ActionExcept m) where
     logEvent _ = pure ()
 
-instance Monad m => ActionPersist (DummyT PersistExcept m) (DummyT ActionExcept m) where
-    persistent _ = notImplemented "ActionPersist" "persistent"
+instance Monad m => ActionPersist (DummyT ActionExcept m) where
+    aqueryDb = notImplemented "ActionPersist" "aqueryDb"
+    aupdate _ = notImplemented "ActionPersist" "aupdate"
 
 instance Monad m => ActionError (DummyT ActionExcept m)
 
@@ -55,4 +50,4 @@ instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
     logout      = pure ()
     userState _ = notImplemented "ActionUserHandler" "userState"
 
-instance Monad m => ActionM (DummyT PersistExcept m) (DummyT ActionExcept m)
+instance Monad m => ActionM (DummyT ActionExcept m)
