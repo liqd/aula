@@ -73,6 +73,7 @@ module Persistent.Pure
     , mkUserLogin
     , modifyUser
     , setUserEmail
+    , setUserPass
     , setUserRole
     , getTopics
     , addTopic
@@ -336,6 +337,13 @@ modifyUser uid = modifyAMap dbUserMap uid
 
 setUserEmail :: AUID User -> UserEmail -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)
+
+setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()
+setUserPass _uid _oldPass newPass1 newPass2 = do
+    when (newPass1 /= newPass2) $ throwError500 "passwords do not match!"
+    -- FIXME: check _oldPass
+    -- FIXME: set newPass1
+    return ()
 
 setUserRole :: AUID User -> Role -> AUpdate ()
 setUserRole uid = modifyUser uid . set userRole

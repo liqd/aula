@@ -91,14 +91,15 @@ instance FormPage PageUserSettings where
                             DF.inputSubmit "Änderungen speichern"
 
 
-userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings) action
+userSettings :: forall action. (ActionM action) => ServerT (FormHandler PageUserSettings) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
-    -- FIXME: Set the password
-    -- FIXME: move this changeUser function to Persistent.Pure, call it setUser and make it an
-    -- update instead of changing modifyUser.
-    changeUser (UserSettingData email _oldPass _newPass1 _newPass2) = do
-        maybe nil (modifyCurrentUser (ModifyUserSetEmail email)) email
+    changeUser :: UserSettingData -> action ()
+    changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
+        uid <- view _Id <$> currentUser
+        maybe (pure ()) (aupdate . SetUserEmail uid) memail
+        aupdate $ SetUserPass uid oldPass newPass1 newPass2
+        pure ()
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
 userHeaderDiv _user =
@@ -150,13 +151,12 @@ instance ToHtml PageUserProfileCreatedIdeas where
 -- that ensures data consistency, as other persistent computations
 -- can interleave if the compute partial results in more than
 -- one round. Same applies here like 'STM' and 'IO'.
-createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
-createdIdeas userId = join . persistent $ do
-    -- FIXME: 404
-    Just user <- findUser userId
+createdIdeas userId = makeFrame =<< (amquery $ do
+    muser <- findUser userId
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
-    return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
+    pure $ PageUserProfileCreatedIdeas <$> muser <*> pure ideasAndNumVoters)
 
 
 -- ** User Profile: Delegated Votes
@@ -203,9 +203,9 @@ renderDelegations _ = do
                         a_ [href_ U.Broken] "UserName, "
                         a_ [href_ U.Broken] "UserName"
 
-delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+delegatedVotes :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
-delegatedVotes userId = join . persistent $ do
-    -- FIXME: 404
-    Just user <- findUser userId
-    return $ makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes
+delegatedVotes userId = makeFrame =<< (do
+    let dv = []  -- FIXME
+    user :: User <- amquery $ findUser userId
+    pure $ PageUserProfileDelegatedVotes user dv)
