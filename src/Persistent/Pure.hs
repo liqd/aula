@@ -81,7 +81,6 @@ module Persistent.Pure
     , dbIdeas
     , dbUsers
     , dbTopics
-    , dbSpaces
     , dbSpaceSet
     , dbIdeaMap
     , dbUserMap
