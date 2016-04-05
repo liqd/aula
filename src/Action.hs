@@ -65,7 +65,7 @@ import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.String.Conversions (ST, LBS)
-import Data.Typeable (Typeable, typeRep)
+import Data.Typeable (Typeable)
 import Debug.Trace
 import Prelude hiding (log)
 import Servant

@@ -108,7 +108,7 @@ module Persistent.Pure
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
+import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), runReader, runReaderT, ask, asks)
 import Control.Monad.State (MonadState, state, gets, modify)
 import Control.Monad (unless, replicateM, when)
@@ -117,11 +117,12 @@ import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid  -- (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
 import Data.List (nub)
-import Data.Maybe (fromMaybe)
+import Data.Maybe
+import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
-import Data.Typeable (Typeable)
+import Data.Typeable (Typeable, typeRep)
 import Servant.Missing (ThrowError500(..))
 
 import qualified Data.Map as Map
