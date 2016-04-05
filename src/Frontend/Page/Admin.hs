@@ -23,6 +23,7 @@ import qualified Thentos.Types
 
 import Action
 import Frontend.Prelude
+import Persistent
 
 import qualified Frontend.Path as U
 
@@ -248,14 +249,12 @@ adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations
 adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) saveDurations
   where
     saveDurations :: ActionM r m => Durations -> m ()
-    saveDurations (Durations elab vote) = persistent $ do
-        modifyDb dbElaborationDuration (const elab)
-        modifyDb dbVoteDuration        (const vote)
+    saveDurations (Durations elab vote) = aupdate $ SaveDurations elab vote
 
     durations :: ActionM r m => m Durations
-    durations = persistent $
-        Durations <$> getDb dbElaborationDuration
-                  <*> getDb dbVoteDuration
+    durations = do
+        db <- aqueryDb
+        pure $ Durations (db ^. dbElaborationDuration) (db ^. dbVoteDuration)
 
 
 -- ** Quorum

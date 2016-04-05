@@ -93,6 +93,8 @@ module Persistent.Pure
     , addDelegation
     , findDelegationsByContext
     , addIdeaResult
+
+    , saveDurations
     )
 where
 
@@ -552,3 +554,10 @@ mkMetaInfo cUser now oid = MetaInfo
 
 nextMetaInfo :: User -> AUpdate (MetaInfo a)
 nextMetaInfo cUser = mkMetaInfo cUser <$> (view whoWhenTimestamp <$> ask) <*> nextId
+
+
+saveDurations :: DurationDays -> DurationDays -> AUpdate ()
+saveDurations elab vote = do
+    _ <- modifyDb dbElaborationDuration (const elab)
+    _ <- modifyDb dbVoteDuration        (const vote)
+    pure ()
