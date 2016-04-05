@@ -17,9 +17,10 @@ module Action
     , ActionPersist(aqueryDb, aquery, aequery, amquery, aupdate), maybe404
     , ActionUserHandler(login, logout, userState)
     , ActionRandomPassword(mkRandomPassword)
+    , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), persistNat, config
+    , ActionEnv(..), persistNat, config, currentTime
 
       -- * user handling
     , loginByUser, loginByName
@@ -99,8 +100,9 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv = ActionEnv
-    { _persistNat :: RunPersist  -- TODO: rename to _envRunPersist
-    , _config     :: Config      -- TODO: rename to _envConfig
+    { _persistNat  :: RunPersist  -- TODO: rename to _envRunPersist
+    , _currentTime :: Timestamp
+    , _config      :: Config      -- TODO: rename to _envConfig
     }
 
 makeLenses ''ActionEnv
@@ -124,6 +126,7 @@ class ( ActionLog m
       , ActionError m
       , ActionTempCsvFiles m
       , ActionRandomPassword m
+      , ActionCurrentTimestamp m
       ) => ActionM m
 
 class Monad m => ActionLog m where
@@ -148,6 +151,9 @@ class (MonadError ActionExcept m) => ActionPersist m where
 
 class ActionRandomPassword m where
     mkRandomPassword :: m UserPass
+
+class ActionCurrentTimestamp m where
+    getCurrentTimestamp :: m Timestamp
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -323,12 +329,3 @@ decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
-
-
-
-{-
-
-getCurrentTimestampIO :: AUpdate Timestamp
-getCurrentTimestampIO = Timestamp <$> getCurrentTime
-
--}

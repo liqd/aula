@@ -19,6 +19,7 @@ import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Elocrypt (mkPassword)
 import Data.String.Conversions (cs)
+import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
@@ -70,6 +71,9 @@ instance MonadRandom Action where
 
 instance ActionRandomPassword Action where
     mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+instance ActionCurrentTimestamp Action where
+    getCurrentTimestamp = liftIO $ Timestamp <$> getCurrentTime
 
 instance ActionUserHandler Action where
     login uid = do
