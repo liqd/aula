@@ -98,7 +98,7 @@ userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
     -- FIXME: move this changeUser function to Persistent.Pure, call it setUser and make it an
     -- update instead of changing modifyUser.
     changeUser (UserSettingData email _oldPass _newPass1 _newPass2) = do
-        maybe nil (modifyCurrentUser (ModifyUserSetEmail e)) email
+        maybe nil (modifyCurrentUser (ModifyUserSetEmail email)) email
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
 userHeaderDiv _user =
@@ -157,6 +157,7 @@ createdIdeas userId = join . persistent $ do
     Just user <- findUser userId
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
     return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
+
 
 -- ** User Profile: Delegated Votes
 

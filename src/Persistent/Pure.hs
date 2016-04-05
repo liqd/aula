@@ -95,6 +95,7 @@ module Persistent.Pure
     , addIdeaResult
 
     , saveDurations
+    , editIdea
     )
 where
 
@@ -564,3 +565,11 @@ saveDurations elab vote = do
     _ <- modifyDb dbElaborationDuration (const elab)
     _ <- modifyDb dbVoteDuration        (const vote)
     pure ()
+
+
+editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()
+editIdea ideaId = modifyIdea ideaId . newIdea
+  where
+    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
+                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
+                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))

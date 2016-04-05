@@ -61,4 +61,5 @@ $(makeAcidic ''AulaData
     , 'addCommentVoteToIdeaComment
     , 'addCommentVoteToIdeaCommentReply
     , 'saveDurations
+    , 'editIdea
     ])
