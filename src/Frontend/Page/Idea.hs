@@ -410,7 +410,7 @@ commentIdea :: ActionM m => AUID Idea -> ServerT (FormHandler CommentIdea) m
 commentIdea ideaId =
     redirectFormHandler
         (CommentIdea <$> amquery (findIdea ideaId) <*> pure Nothing)
-        undefined  -- TODO: (currentUserAddDb $ addCommentToIdea ideaId)
+        (aupdate $ addCommentToIdea ideaId)
 
 replyCommentIdea :: ActionM m => AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
 replyCommentIdea ideaId commentId =
@@ -419,4 +419,4 @@ replyCommentIdea ideaId commentId =
             idea <- amquery $ findIdea ideaId
             let Just comment = idea ^. ideaComments . at commentId  -- TODO: 404
             pure $ CommentIdea idea (Just comment))
-        undefined  -- TODO: (currentUserAddDb $ addReplyToIdeaComment ideaId commentId)
+        (aupdate $ addReplyToIdeaComment ideaId commentId)
