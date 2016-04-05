@@ -8,22 +8,28 @@ for(p in pops) {
 }
 
 function addPopEvents(el) {
-    el.onmouseenter = function() {
+    el.onclick = function() {
         toggleMenu(el);
     }
 
     el.onmouseleave = function() {
-        toggleMenu(el);
+        toggleMenu(el, true);
     }
 }
 
 
-function toggleMenu(el) {
+function toggleMenu(el, out) {
     if(el.className.indexOf("m-open") > -1) {
         removeClass(el, "m-open");
     } else {
-        addClass(el, "m-open");
+        if(!out) addClass(el, "m-open");
     }
+}
+
+// Mobile menu
+
+document.getElementById("mobile-menu-button").onclick = function() {
+    toggleMenu(document.getElementById("main-header"));
 }
 
 // JS detection

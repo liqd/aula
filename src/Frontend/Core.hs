@@ -192,9 +192,11 @@ pageFrame p mUser bdy = do
         footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
-headerMarkup mUser = header_ [class_ "main-header"] $ do
+headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
     div_ [class_ "grid"] $ do
         a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
+        button_ [id_ "mobile-menu-button"] $ do
+            i_ [class_ "icon-bars", title_ "Menu"] nil
         case mUser of
             Just _usr -> do
                 ul_ [class_ "main-header-menu"] $ do
@@ -208,7 +210,8 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                 Just usr -> do
                     div_ [class_ "pop-menu"] $ do
                         div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
-                        "Hi " <> (usr ^. userLogin . fromUserLogin . html)
+                        span_ [class_ "user-name"] $ do
+                            "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
