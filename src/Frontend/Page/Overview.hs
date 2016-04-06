@@ -16,6 +16,7 @@ module Frontend.Page.Overview
 where
 
 import Action
+import Persistent
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
@@ -45,18 +46,21 @@ data ActiveTab = WildIdeas | Topics
 
 -- * actions
 
-viewRooms :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+viewRooms :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => m (Frame PageRoomsOverview)
-viewRooms = makeFrame =<< persistent (PageRoomsOverview <$> getSpaces)
+viewRooms = makeFrame =<< (PageRoomsOverview <$> aquery getSpaces)
 
-viewIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasOverview)
-viewIdeas space = makeFrame =<< persistent
-    (PageIdeasOverview space <$> (findWildIdeasBySpace space >>= mapM getNumVotersForIdea))
+viewIdeas space = makeFrame =<<
+    (PageIdeasOverview space <$> aquery (do
+        is  <- findWildIdeasBySpace space
+        ivs <- getNumVotersForIdea `mapM` is
+        pure ivs))
 
-viewTopics :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+viewTopics :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasInDiscussion)
-viewTopics space = makeFrame =<< persistent (PageIdeasInDiscussion space <$> findTopicsBySpace space)
+viewTopics space = makeFrame =<< (PageIdeasInDiscussion space <$> aquery (findTopicsBySpace space))
 
 
 -- * templates

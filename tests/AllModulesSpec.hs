@@ -34,11 +34,11 @@ import Frontend.Testing ()
 import LifeCycle ()
 import Lucid.Missing ()
 import Persistent ()
-import Persistent.Api ()
 import Persistent.Idiom ()
+import Persistent.Api ()
 import Persistent.Implementation ()
 import Persistent.Implementation.AcidState ()
-import Persistent.Implementation.STM ()
+import Persistent.Pure ()
 import Types ()
 
 spec :: Spec

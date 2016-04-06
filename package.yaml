@@ -20,7 +20,7 @@ dependencies:
     - thentos-core >=0.4.0
     - aeson
     - aeson-pretty
-    - acid-state
+    - acid-state >=0.14
     - basic-sop
     - binary
     - bytestring
@@ -53,6 +53,7 @@ dependencies:
     - servant-server
     - stm
     - string-conversions
+    - template-haskell
     - text
     - time
     - transformers

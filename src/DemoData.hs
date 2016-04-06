@@ -9,15 +9,17 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Monad (zipWithM_, void)
-import Control.Lens (Getter, (^.), (?~), set, re, pre)
+import Control.Monad (zipWithM_)
+import Control.Lens (Getter, (^.), set, re, pre)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
 
 import Arbitrary hiding (generate)
-import Persistent
+import Persistent.Api
+import Action
 import Types
+import CreateRandom (sometime)
 
 import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
@@ -50,6 +52,7 @@ numberOfReplies = 2000
 
 numberOfCommentVotes :: Int
 numberOfCommentVotes = 5000
+
 
 -- * Generators
 
@@ -106,10 +109,11 @@ ideaStudentPair ideas students = do
     student <- elements $ relatedStudents idea students
     return (idea, student)
 
-genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m IdeaLike)
+
+genLike :: [Idea] -> [User] -> forall m . ActionM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    return $ addLikeToIdea (idea ^. _Id) (student, ())
+    return $ addWithUser (AddLikeToIdea (idea ^. _Id)) student ()
 
 arbDocument :: Gen Document
 arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
@@ -120,58 +124,62 @@ data CommentInContext = CommentInContext
     , _cicComment :: Comment
     }
 
-genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
+genComment :: [Idea] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    fmap (CommentInContext idea Nothing) .
-        addCommentToIdea (idea ^. _Id) . (,) student <$> arbDocument
+    let event = AddCommentToIdea (idea ^. _Id)
+        getResult = fmap (CommentInContext idea Nothing)
+    getResult . addWithUser event student <$> arbDocument
 
-genReply :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
+genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
     CommentInContext idea Nothing comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    fmap (CommentInContext idea (Just comment)) .
-        addReplyToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arbDocument
+    let event = AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id)
+        getResult = fmap (CommentInContext idea (Just comment))
+    getResult . addWithUser event student <$> arbDocument
 
-genCommentVote :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentVote)
+genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do
     CommentInContext idea mparent comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    case mparent of
-        Nothing ->
-            addCommentVoteToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arb
-        Just parent ->
-            addCommentVoteToIdeaCommentReply (idea ^. _Id) (parent ^. _Id) (comment ^. _Id) . (,) student <$> arb
+    let action = case mparent of
+            Nothing ->
+                addWithUser $ AddCommentVoteToIdeaComment
+                    (idea ^. _Id) (comment ^. _Id)
+            Just parent ->
+                addWithUser $ AddCommentVoteToIdeaCommentReply
+                    (idea ^. _Id) (parent ^. _Id) (comment ^. _Id)
+    action student <$> arb
 
-updateAvatar :: User -> URL -> forall m . PersistM m => m ()
-updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
+updateAvatar :: User -> URL -> forall m . ActionM m => m ()
+updateAvatar user url = aupdate $ SetUserAvatar (user ^. _Id) url
 
 
 -- * Universe
 
-mkUniverse :: forall m . PersistM m => IO (m ())
-mkUniverse = do
-    r <- newQCGen
-    return (universe r)
+mkUniverse :: forall m . ActionM m => IO (m ())
+mkUniverse = universe <$> newQCGen
 
-universe :: QCGen -> forall m . PersistM m => m ()
-universe rnd = void $ do
+universe :: QCGen -> forall m . ActionM m => m ()
+universe rnd = do
 
-    admin <- addFirstUser =<< gen rnd genFirstUser
+    admin <- aupdate . AddFirstUser sometime =<< gen rnd genFirstUser
+    loginByUser admin
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
-    mapM_ addIdeaSpaceIfNotExists ideaSpaces
+    mapM_ (aupdate . AddIdeaSpaceIfNotExists) ideaSpaces
     let classes = mapMaybe ideaSpaceToSchoolClass ideaSpaces
     assert' (not $ null classes)
 
     students' <- generate numberOfStudents rnd (genStudent classes)
-    students  <- mapM (addUser . (,) admin) students'
+    students  <- mapM (currentUserAddDb (AddUser (UserPassInitial "geheim"))) students'
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics  <- mapM (addTopic . (,) admin) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
+    topics  <- mapM (currentUserAddDb AddTopic) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
 
-    ideas  <- mapM (addIdea . (,) admin) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
+    ideas  <- mapM (currentUserAddDb AddIdea) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
     sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
 
@@ -181,6 +189,7 @@ universe rnd = void $ do
 
     sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
 
+    pure ()
   where
     assert' p = assert p $ return ()
 
