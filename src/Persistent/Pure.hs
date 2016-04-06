@@ -107,6 +107,7 @@ module Persistent.Pure
     , editIdea
     , saveDurations
     , saveQuorums
+    , dangerousResetAulaData
     )
 where
 
@@ -626,3 +627,6 @@ saveDurations = (dbDurations .=)
 
 saveQuorums :: Quorums -> AUpdate ()
 saveQuorums = (dbQuorums .=)
+
+dangerousResetAulaData :: AUpdate ()
+dangerousResetAulaData = modifyDb_ id (const emptyAulaData)

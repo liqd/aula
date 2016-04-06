@@ -7,12 +7,13 @@
 module Backend
 where
 
-import Control.Monad.IO.Class
 import Action
 import Arbitrary
-import DemoData
+import Control.Monad.IO.Class
+import Control.Monad (join)
 import CreateRandom
-import Persistent.Pure
+import DemoData
+import Persistent
 import Servant
 import Types
 
@@ -23,7 +24,7 @@ type Api =
        "delegations" :> DelegationsApi
   :<|> "manage-state" :> ManageStateApi
 
-api :: (MonadIO m, GenArbitrary r, ActionM r m) => ServerT Api m
+api :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT Api m
 api =  delegationsApi
   :<|> manageStateApi
 
@@ -35,7 +36,7 @@ type DelegationsApi = Get '[JSON] DelegationNetwork
 -- | FIXME: This is all a bit silly: the new end-point logs in admin implicitly; the returned
 -- delegation networks are generated on top of the existing data; testing doesn't really test
 -- anything.  But it is self-contained and a good basis to continue from.
-delegationsApi :: (GenArbitrary r, ActionM r m) => ServerT DelegationsApi m
+delegationsApi :: (GenArbitrary m, ActionM m) => ServerT DelegationsApi m
 delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
 
 
@@ -46,8 +47,8 @@ type ManageStateApi =
   :<|> "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
 
-manageStateApi :: (MonadIO m, GenArbitrary r, ActionM r m) => ServerT ManageStateApi m
+manageStateApi :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
-       persistent (modifyDb id (const emptyAulaData))
-  :<|> persistent genInitialTestDb
-  :<|> (liftIO mkUniverse >>= persistent)
+       aupdate DangerousResetAulaData
+  :<|> genInitialTestDb
+  :<|> join (liftIO mkUniverse)
