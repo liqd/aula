@@ -59,12 +59,12 @@ spec = do
         ]
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME
-          F (arb :: Gen EditIdea)
+          F (arb :: Gen Frontend.Page.EditIdea)
         , F (arb :: Gen CommentIdea)
 --      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
-        , F (arb :: Gen EditTopic)
+        , F (arb :: Gen Frontend.Page.EditTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
@@ -102,7 +102,7 @@ selectValue ref v xs x = case find test choices of Just (i, _, _) -> value i
 
 -- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
 class PayloadToEnv a where
-    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action r [FormInput]
+    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action [FormInput]
 
 -- | When context dependent data is constructed via forms with the 'pure' combinator
 -- in the form description, in the digestive functors libarary an empty path will
@@ -112,7 +112,7 @@ class PayloadToEnv a where
 -- Example:
 --
 -- >>> ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
-payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env (Action r)
+payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env Action
 payloadToEnv _ _ [""]       = pure []
 payloadToEnv v a ["", path] = payloadToEnvMapping v a path
 
@@ -141,8 +141,8 @@ instance PayloadToEnv ProtoTopic where
       where
         path :: String = cs path'
 
-instance PayloadToEnv TopicFormPayload where
-    payloadToEnvMapping _ (TopicFormPayload title (Markdown desc) iids) path'
+instance PayloadToEnv EditTopicData where
+    payloadToEnvMapping _ (EditTopicData title (Markdown desc) iids) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title"           = pure [TextInput title]
         | path == "desc"            = pure [TextInput desc]
@@ -214,7 +214,10 @@ failOnError :: Action (DummyT PersistExcept IO) a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
     fmap (either (error . show) id) . runExceptT .
-        unNat (mkRunAction (ActionEnv (Nat unDummyT) cfg)) $ pers
+        unNat (mkRunAction (ActionEnv (Nat unDummyT)
+            (error "time!!")   -- TODO
+            cfg)) $ pers
+
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
@@ -255,8 +258,9 @@ class FormPage p => ArbFormPagePayload p where
 instance ArbFormPagePayload CreateIdea where
     arbFormPagePayload (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
 
-instance ArbFormPagePayload EditIdea where
-    arbFormPagePayload (EditIdea idea) = set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
+instance ArbFormPagePayload Frontend.Page.EditIdea where
+    arbFormPagePayload (Frontend.Page.EditIdea idea) =
+        set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPagePayload CommentIdea where
     arbFormPagePayload _ = arbitrary
@@ -279,9 +283,9 @@ instance ArbFormPagePayload CreateTopic where
           . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
 
-instance ArbFormPagePayload EditTopic where
-    arbFormPagePayload (EditTopic _space _topicid ideas) =
-        TopicFormPayload
+instance ArbFormPagePayload Frontend.Page.EditTopic where
+    arbFormPagePayload (Frontend.Page.EditTopic _space _topicid ideas) =
+        EditTopicData
         <$> arbPhrase
         <*> arbitrary
         -- FIXME: Generate a sublist from the given ideas
