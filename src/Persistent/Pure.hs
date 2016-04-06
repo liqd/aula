@@ -116,8 +116,8 @@ where
 
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
-import Control.Monad.Reader (MonadReader, ReaderT, runReader, runReaderT, asks)
-import Control.Monad.State (MonadState, gets)
+import Control.Monad.Reader (MonadReader, runReader, asks)
+import Control.Monad.State (MonadState, gets, state, modify)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
@@ -203,13 +203,12 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaDa
            , Monad
            , MonadError PersistExcept
            , MonadState AulaData
-           , MonadReader WhoWhen
            )
 
 maybe404 :: forall m a. (MonadError PersistExcept m, Typeable a) => Maybe a -> m a
 maybe404 = maybe (throwError . PersistError404 . show . typeRep $ (Proxy :: Proxy a)) pure
 
-runAUpdate :: AUpdate a -> WhoWhen -> Update AulaData (Either PersistExcept a)
+runAUpdate :: AUpdate a -> Update AulaData (Either PersistExcept a)
 runAUpdate = runExceptT . _unAUpdate
 
 aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData, EventResult ev ~ Either PersistExcept a)
@@ -221,11 +220,11 @@ type HasAUpdate ev a = (UpdateEvent ev, MethodState ev ~ AulaData, MethodResult 
 -- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
 -- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
 modifyDb :: AulaLens a -> (a -> a) -> AUpdate a
-modifyDb l f = AUpdate . ReaderT . const . ExceptT . fmap Right
+modifyDb l f = AUpdate . ExceptT . fmap Right
              $ state (\s -> (f $ s ^. l, l %~ f $ s))
 
 modifyDb_ :: AulaSetter a -> (a -> a) -> AUpdate ()
-modifyDb_ l f = AUpdate . ReaderT . const . ExceptT . fmap Right
+modifyDb_ l f = AUpdate . ExceptT . fmap Right
               $ modify (l %~ f)
 
 liftAQuery :: AQuery a -> AUpdate a
