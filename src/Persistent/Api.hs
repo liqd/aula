@@ -44,7 +44,7 @@ askDb :: Query AulaData AulaData
 askDb = ask
 
 $(makeAcidic ''AulaData
-    [ 'askDb, 'setUserEmail, 'setUserPass, 'setUserRole, 'setTopicPhase
+    [ 'askDb, 'setUserEmail, 'setUserPass, 'setUserRole, 'setUserAvatar, 'setTopicPhase
     , 'addIdea
     , 'addTopic
     , 'addUser

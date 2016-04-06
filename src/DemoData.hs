@@ -19,6 +19,7 @@ import Arbitrary hiding (generate)
 import Persistent
 import Action
 import Types
+import CreateRandom (sometime)
 
 import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
@@ -151,34 +152,34 @@ genCommentVote comments_in_context students = do
                     (idea ^. _Id) (parent ^. _Id) (comment ^. _Id))
     withUser student . action <$> arb
 
-updateAvatar :: User -> URL -> forall m . PersistM m => m ()
-updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
+updateAvatar :: User -> URL -> forall m . ActionM m => m ()
+updateAvatar user url = aupdate $ SetUserAvatar (user ^. _Id) url
 
 
 -- * Universe
 
-{-
 mkUniverse :: forall m . ActionM m => IO (m ())
 mkUniverse = universe <$> newQCGen
 
 universe :: QCGen -> forall m . ActionM m => m ()
-universe rnd = void $ do
+universe rnd = do
 
-    admin <- addFirstUser =<< gen rnd genFirstUser
+    admin <- aupdate . AddFirstUser sometime =<< gen rnd genFirstUser
+    loginByUser admin
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
-    mapM_ addIdeaSpaceIfNotExists ideaSpaces
+    mapM_ (aupdate . AddIdeaSpaceIfNotExists) ideaSpaces
     let classes = mapMaybe ideaSpaceToSchoolClass ideaSpaces
     assert' (not $ null classes)
 
     students' <- generate numberOfStudents rnd (genStudent classes)
-    students  <- mapM (addUser . (,) admin) students'
+    students  <- mapM (currentUserAddDb (AddUser (UserPassInitial "geheim"))) students'
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics  <- mapM (addTopic . (,) admin) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
+    topics  <- mapM (currentUserAddDb AddTopic) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
 
-    ideas  <- mapM (addIdea . (,) admin) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
+    ideas  <- mapM (currentUserAddDb AddIdea) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
     sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
 
@@ -188,9 +189,9 @@ universe rnd = void $ do
 
     sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
 
+    pure ()
   where
     assert' p = assert p $ return ()
--}
 
 
 -- * Helpers

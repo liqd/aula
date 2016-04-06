@@ -76,6 +76,7 @@ module Persistent.Pure
     , setUserEmail
     , setUserPass
     , setUserRole
+    , setUserAvatar
     , getTopics
     , addTopic
     , editTopic
@@ -354,6 +355,9 @@ setUserPass _uid _oldPass newPass1 newPass2 = do
 
 setUserRole :: AUID User -> Role -> AUpdate ()
 setUserRole uid = modifyUser uid . set userRole
+
+setUserAvatar :: AUID User -> URL -> AUpdate ()
+setUserAvatar uid = modifyUser uid . set userAvatar . Just
 
 editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
 editTopic topicId (EditTopicData title desc ideas) = do
