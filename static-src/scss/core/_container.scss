@@ -45,6 +45,16 @@ body.m-shadow {
     @include rem(padding-top, $main-menu-height);
     overflow: visible;
     min-height: 100%;
+
+    @media screen and (max-width: $desktop-breakpoint) {
+        @include rem(padding-left, 22px);
+        @include rem(padding-right, 22px);
+    }
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        margin: 0;
+        min-height: 1px;
+    }
 }
 
 .popup-page {
