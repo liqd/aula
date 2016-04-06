@@ -23,7 +23,6 @@ withPersist' mkRunP m = do
     putStrLn $ "persistence: " <> desc -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
     m rp `finally` close  -- closing happens here
 
--- TODO: give this a different name.
 mkRunPersist :: Config -> IO RunPersist
 mkRunPersist cfg =
     case cfg ^. persistenceImpl of

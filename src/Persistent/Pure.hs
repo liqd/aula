@@ -18,6 +18,9 @@
 -- pudates are defined that specific to 'AulaData' and introduce exceptions.)
 --
 -- Serializability happens outside of this module.
+--
+-- FIXME: get some structure into the export list.
+-- FIXME: consider removing Purescript.Idiom and doing everything here.
 module Persistent.Pure
     ( AulaData
     , AMap
@@ -27,18 +30,15 @@ module Persistent.Pure
     , emptyAulaData
 
     , EnvWith(..), EnvWithProto, envUser, envNow, envWith
-    , AEvent, AQuery{-(AQuery)-}, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
+    , AEvent, AQuery, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
     , runAUpdate
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
-    , PersistExcept(..), _PersistError500, _PersistError404, _PersistErrorNotImplemented
+    , PersistExcept(..)
+    , _PersistError500, _PersistError404, _PersistErrorNotImplemented
     , runPersistExcept
     , HasAUpdate
-
-    -- TODO: get some structure into this export list.
-    -- FIXME: consider removing Purescript.Idiom and doing everything here.
-
     , liftAQuery
 
     , addDb

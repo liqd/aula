@@ -20,7 +20,7 @@ module Action
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), persistNat, config
+    , ActionEnv(..), envRunPersist, envConfig
 
       -- * user handling
     , loginByUser, loginByName
@@ -103,14 +103,14 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv = ActionEnv
-    { _persistNat  :: RunPersist  -- TODO: rename to _envRunPersist
-    , _config      :: Config      -- TODO: rename to _envConfig
+    { _envRunPersist :: RunPersist
+    , _envConfig     :: Config
     }
 
 makeLenses ''ActionEnv
 
 instance GetCsrfSecret ActionEnv where
-    csrfSecret = config . csrfSecret
+    csrfSecret = envConfig . csrfSecret
 
 -- | Top level errors can happen.
 --

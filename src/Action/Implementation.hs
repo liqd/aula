@@ -54,11 +54,11 @@ instance ActionLog Action where
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
-    aqueryDb = liftIO =<< view (persistNat . rpQuery)
+    aqueryDb = liftIO =<< view (envRunPersist . rpQuery)
 
     aupdate ev =
         either (throwError . ActionPersistExcept) pure
-            =<< liftIO =<< views (persistNat . rpUpdate) ($ ev)
+            =<< liftIO =<< views (envRunPersist . rpUpdate) ($ ev)
 
 instance MonadLIO DCLabel Action where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
