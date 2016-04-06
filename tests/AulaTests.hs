@@ -68,7 +68,7 @@ withServer :: (Query -> IO a) -> IO a
 withServer action = do
     cfg <- testConfig
 
-    let opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
+    let opts = defaults & checkStatus ?~ doNotThrowExceptionsOnErrorCodes
                         & redirects   .~ 0
         query sess = Query (Sess.postWith opts sess . mkServerUri cfg)
                            (Sess.getWith opts sess . mkServerUri cfg)

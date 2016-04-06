@@ -28,7 +28,8 @@ spec = describe "file upload" $ do
             classPart = partString (fileUploadPath ".classname") "7a"
 
             filePart :: Part
-            filePart = (partFileName .~ Just "x.csv") . (partContentType .~ Just "text/csv") $ p
+            filePart = p & partFileName ?~ "x.csv"
+                         & partContentType ?~ "text/csv"
               where
                 p = partString (fileUploadPath ".file") $ unlines
                         [ "Vorname;Nachname;email;Login-Name"

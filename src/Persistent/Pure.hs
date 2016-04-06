@@ -42,8 +42,6 @@ module Persistent.Pure
     , liftAQuery
 
     , addDb
-    , modifyDb
-    , modifyDb_
     , findIn
     , findInBy
     , findInById
@@ -117,7 +115,7 @@ where
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, runReader, asks)
-import Control.Monad.State (MonadState, gets, state, modify)
+import Control.Monad.State (MonadState, gets, put)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
@@ -216,16 +214,6 @@ aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData, EventResult ev ~ Eith
 aUpdateEvent f = UpdateEvent $ runAUpdate . f
 
 type HasAUpdate ev a = (UpdateEvent ev, MethodState ev ~ AulaData, MethodResult ev ~ Either PersistExcept a)
-
--- | FIXME: lens puzzle!  the function passed to 'state' here runs both 'f' and 'l' twice.  there
--- should be a shortcut, something like '%~', but return in a pair of new state plus new focus.
-modifyDb :: AulaLens a -> (a -> a) -> AUpdate a
-modifyDb l f = AUpdate . ExceptT . fmap Right
-             $ state (\s -> (f $ s ^. l, l %~ f $ s))
-
-modifyDb_ :: AulaSetter a -> (a -> a) -> AUpdate ()
-modifyDb_ l f = AUpdate . ExceptT . fmap Right
-              $ modify (l %~ f)
 
 liftAQuery :: AQuery a -> AUpdate a
 liftAQuery m = gets (runReader m)
@@ -329,14 +317,13 @@ addDb l (EnvWith cUser now pa) = do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
     a :: a <- fromProto pa <$> nextMetaInfo cUser now
-    modifyDb_ l $ at (a ^. _Id) .~ Just a
-    return a
+    l . at (a ^. _Id) <?= a
 
 addDbAppValue :: (HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser now
-    modifyDb_ l (const (pure a))
-    return a
+    l .= pure a
+    pure a
 
 findIn :: AulaGetter [a] -> (a -> Bool) -> AQuery (Maybe a)
 findIn l = views l . find
@@ -369,7 +356,7 @@ getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
 addIdeaSpaceIfNotExists :: IdeaSpace -> AUpdate ()
 addIdeaSpaceIfNotExists ispace = do
     exists <- (ispace `elem`) <$> liftAQuery getSpaces
-    unless exists $ modifyDb_ dbSpaceSet (Set.insert ispace)
+    unless exists $ dbSpaceSet %= Set.insert ispace
 
 addIdea :: AddDb Idea
 addIdea = addDb dbIdeaMap
@@ -382,7 +369,7 @@ findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
 modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> AUpdate ()
-modifyAMap l ident = modifyDb_ (l . at ident . _Just)
+modifyAMap l ident = (l . at ident . _Just %=)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
 modifyIdea = modifyAMap dbIdeaMap
@@ -541,7 +528,7 @@ addIdeaVoteResult iid =
 
 
 nextId :: AUpdate (AUID a)
-nextId = AUID <$> modifyDb dbLastId (+1)
+nextId = AUID <$> (dbLastId <+= 1)
 
 -- | No 'FromProto' instance, since this is more complex, due to the possible
 -- auto-generating of logins and passwords.
@@ -563,8 +550,7 @@ addUser defaultPass (EnvWith cUser now proto) = do
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     let uPassword = fromMaybe defaultPass $ proto ^. protoUserPassword
     let user = userFromProto metainfo uLogin uPassword proto
-    modifyDb_ dbUserMap $ at (user ^. _Id) .~ Just user
-    return user
+    dbUserMap . at (user ^. _Id) <?= user
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
 -- name and password must be 'Just' in the proto user.
@@ -578,8 +564,7 @@ addFirstUser now proto = do
         metainfo = mkMetaInfo cUser now uid
         user = userFromProto metainfo uLogin uPassword proto
 
-    modifyDb_ dbUserMap $ at (user ^. _Id) .~ Just user
-    return user
+    dbUserMap . at (user ^. _Id) <?= user
 
 mkUserLogin :: ProtoUser -> AUpdate UserLogin
 mkUserLogin protoUser = pick (gen firstn lastn)
@@ -675,4 +660,4 @@ saveQuorums :: Quorums -> AUpdate ()
 saveQuorums = (dbQuorums .=)
 
 dangerousResetAulaData :: AUpdate ()
-dangerousResetAulaData = modifyDb_ id (const emptyAulaData)
+dangerousResetAulaData = put emptyAulaData
