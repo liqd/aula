@@ -23,7 +23,6 @@ import qualified Data.Text.Lazy as LT
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
-import Action.Dummy
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config
@@ -213,7 +212,7 @@ renderForm (F g) =
 runFailOnError :: Action a -> PropertyM IO a
 runFailOnError action = run $ do
     cfg <- getConfig DontWarnMissing
-    let env :: ActionEnv = ActionEnv (Nat unDummyT) cfg
+    let env :: ActionEnv = ActionEnv (error "Dummy RunPersist") cfg
     fmap (either (error . show) id) . runExceptT . unNat (mkRunAction env) $ action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
