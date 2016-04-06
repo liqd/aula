@@ -41,6 +41,7 @@ import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
+import Data.Time (getCurrentTime)
 import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
@@ -790,7 +791,8 @@ fishDelegationNetworkIO = do
     cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig Config.DontWarnMissing
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
-            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
+            now <- Timestamp <$> getCurrentTime
+            v <- runExceptT (unNat (mkRunAction (ActionEnv rp now cfg)) action)
             either (throwIO . ErrorCall . ppShow) pure v
     withPersist cfg runAction
 

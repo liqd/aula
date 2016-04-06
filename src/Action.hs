@@ -121,7 +121,9 @@ data ActionExcept
 
 makePrisms ''ActionExcept
 
-class ( ActionLog m  -- FIXME: use `type ActionM m = (ActionLog ...)` instead.  do it everywhere.
+-- (This could be @type ActionM m = (ActionLog m, ...)@ (which would be nicer because then we didn't
+-- have to instantiate it explicitly), except for the 'ActionM' instance in Dummy.hs)
+class ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
