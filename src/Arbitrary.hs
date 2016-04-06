@@ -41,7 +41,6 @@ import Data.Char
 import Data.List as List
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
-import Data.Time (getCurrentTime)
 import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)

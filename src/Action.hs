@@ -196,18 +196,20 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
-addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
-               (UserWithProto a -> ev) -> User -> Proto a -> m a
-addWithUser addA user protoA = aupdate $ addA (user, protoA)
+addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
+               (EnvWithProto a -> ev) -> User -> Proto a -> m a
+addWithUser addA user protoA = do
+    now <- getCurrentTimestamp
+    aupdate $ addA (EnvWith user now protoA)
 
-currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
-                    (UserWithProto a -> ev) -> Proto a -> m a
+currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
+                    (EnvWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
     addWithUser addA cUser protoA
 
-currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
-                     (UserWithProto a -> ev) -> Proto a -> m ()
+currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
+                     (EnvWithProto a -> ev) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 
 -- | Returns the current user
@@ -258,8 +260,8 @@ phaseAction _ ResultPhaseModeratorEmail =
 
 -- * Page Handling
 
-type Create  a = forall m. (ActionPersist m, ActionUserHandler m) => Proto a -> m a
-type Create_ a = forall m. (ActionPersist m, ActionUserHandler m) => Proto a -> m ()
+type Create  a = forall m. (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => Proto a -> m a
+type Create_ a = forall m. (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => Proto a -> m ()
 
 createIdea :: Create Idea
 createIdea = currentUserAddDb AddIdea
@@ -270,7 +272,7 @@ createTopic = currentUserAddDb AddTopic
 
 -- * Vote Handling
 
-likeIdea :: (ActionPersist m, ActionUserHandler m) => AUID Idea -> m ()
+likeIdea :: (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => AUID Idea -> m ()
 likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
