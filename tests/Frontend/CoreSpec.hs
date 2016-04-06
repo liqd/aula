@@ -23,7 +23,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
-import Action.Dummy (unDummyT, DummyT)
+import Action.Dummy
 import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config
@@ -210,7 +210,7 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
-failOnError :: Action (DummyT PersistExcept IO) a -> IO a
+failOnError :: Dummy e a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
     fmap (either (error . show) id) . runExceptT .

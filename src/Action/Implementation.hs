@@ -97,7 +97,7 @@ instance ActionTempCsvFiles Action where
 mkRunAction :: ActionEnv -> Action :~> ExceptT ServantErr IO
 mkRunAction env = Nat run
   where
-    run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
+    run = withExceptT runActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
         . runExceptT . unAction . (checkCurrentUser >>)
     runRWSTflip r s comp = runRWST comp r s
 
@@ -106,3 +106,7 @@ mkRunAction env = Nat run
         unless isValid $ do
             logout
             throwError500 "Invalid internal user session state"
+
+runActionExcept :: ActionExcept -> ServantErr
+runActionExcept (ActionExcept e) = e
+runActionExcept (ActionPersistExcept pe) = runPersistExcept pe

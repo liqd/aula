@@ -31,6 +31,7 @@ module Persistent.Pure
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
     , PersistExcept(..), _PersistError500, _PersistError404, _PersistErrorNotImplemented
+    , runPersistExcept
     , HasAUpdate
 
     -- TODO: get some structure into this export list.
@@ -122,11 +123,11 @@ import Data.Acid  -- (Query, Update, liftQuery)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe
-import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Typeable (Typeable, typeRep)
+import Servant
 import Servant.Missing (ThrowError500(..))
 
 import qualified Data.Map as Map
@@ -248,6 +249,12 @@ instance ThrowError500 PersistExcept where
     error500 = _PersistError500
 
 deriveSafeCopy 0 'base ''PersistExcept
+
+runPersistExcept :: PersistExcept -> ServantErr
+runPersistExcept (PersistError500 msg)            = err500 { errBody = cs msg }
+runPersistExcept (PersistError404 msg)            = err404 { errBody = cs msg }
+runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
+
 
 -- * state interface
 
