@@ -322,6 +322,11 @@ phaseName = \case
     PhaseVoting     _ -> "Abstimmungsphase"
     PhaseResult       -> "Ergebnisphase"
 
+followingPhase :: Phase -> Phase -> Bool
+followingPhase (PhaseRefinement _) PhaseJury       = True
+followingPhase PhaseJury           (PhaseVoting _) = True
+followingPhase (PhaseVoting _)     PhaseResult     = True
+followingPhase _                   _               = False
 
 -- * user
 
