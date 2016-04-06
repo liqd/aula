@@ -121,16 +121,15 @@ data ActionExcept
 
 makePrisms ''ActionExcept
 
--- (This could be @type ActionM m = (ActionLog m, ...)@ (which would be nicer because then we didn't
--- have to instantiate it explicitly), except for the 'ActionM' instance in Dummy.hs)
-class ( ActionLog m
+type ActionM m =
+      ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
       , ActionRandomPassword m
       , ActionCurrentTimestamp m
-      ) => ActionM m
+      )
 
 class Monad m => ActionLog m where
     -- | Log events

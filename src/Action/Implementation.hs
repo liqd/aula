@@ -45,7 +45,6 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              , MonadReader ActionEnv
              , MonadState UserState
              , MonadIO
-             , ActionM
              )
 
 instance ActionError Action
