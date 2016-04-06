@@ -25,6 +25,7 @@ import Data.String.Conversions
 
 import Action
 import Persistent
+import Persistent.Api
 import Types
 import Frontend.Testing as Action (makeTopicTimeout)
 
@@ -47,8 +48,10 @@ makeLenses ''ClientState
 run :: (ActionM m) => Behavior a -> m a
 run = fmap fst . flip runStateT initialClientState . runClient
 
+type ActionClient m a = StateT ClientState m a
+
 -- FIXME: Check pre and post conditions
-runClient :: (ActionM m) => Behavior a -> StateT ClientState m a
+runClient :: (ActionM m) => Behavior a -> ActionClient m a
 runClient (Pure r) = pure r
 
 runClient (Free (Login l k)) = do
@@ -143,7 +146,7 @@ runClient (Free (VoteIdea t v k)) = do
 runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $
-        currentUserAddDb (addCommentToIdea (idea ^. _Id)) (Markdown c)
+        currentUserAddDb (AddCommentToIdea (idea ^. _Id)) (Markdown c)
     postcondition $ do
         Just idea' <- findIdeaByTitle t
         let Just _comment = findCommentByText idea' c
@@ -153,10 +156,10 @@ runClient (Free (CommentIdea t c k)) = do
 
 -- * helpers
 
-findIdeaByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
+findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)
 findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ query getIdeas
 
-findTopicByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
+findTopicByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Topic)
 findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ query getTopics
 
 findCommentByText :: Idea -> CommentText -> Maybe Comment
