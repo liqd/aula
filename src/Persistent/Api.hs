@@ -31,9 +31,10 @@ deriveSafeCopy 0 'base ''AulaData
 
 data RunPersistT m =
         RunPersist
-                  { _rpDesc  :: String
-                  , _rpState :: AcidState AulaData
-                  , _rpClose :: m ()
+                  { _rpDesc   :: String
+                  , _rpQuery  :: m AulaData
+                  , _rpUpdate :: forall ev. (UpdateEvent ev, EventState ev ~ AulaData) => ev -> m (EventResult ev)
+                  , _rpClose  :: m ()
                   }
 
 makeLenses ''RunPersistT

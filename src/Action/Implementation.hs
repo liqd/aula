@@ -27,7 +27,6 @@ import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.Acid as Acid
 
 import Types
 import Action
@@ -54,14 +53,11 @@ instance ActionLog Action where
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
-    aqueryDb = do
-        rp <- view persistNat
-        liftIO $ Acid.query (rp ^. rpState) AskDb
+    aqueryDb = liftIO =<< view (persistNat . rpQuery)
 
-    aupdate ev = do
-        rp <- view persistNat
-        v <- liftIO $ Acid.update (rp ^. rpState) ev
-        either (throwError . ActionPersistExcept) pure v
+    aupdate ev =
+        either (throwError . ActionPersistExcept) pure
+            =<< liftIO =<< views (persistNat . rpUpdate) ($ ev)
 
 instance MonadLIO DCLabel Action where
     liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
