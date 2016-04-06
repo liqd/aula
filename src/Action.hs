@@ -294,7 +294,7 @@ markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     idea  <- amquery $ findIdea iid
     topic <- amquery $ ideaTopic idea
-    -- FIXME: should this be one transaction?
+    -- FIXME: should this be one transaction?  or the two above as well?
     aequery $ checkInPhase (PhaseJury ==) idea topic
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
@@ -317,6 +317,21 @@ markIdeaInResultPhase iid rv = do
     topic <- amquery $ ideaTopic idea
     aequery $ checkInPhase (PhaseResult ==) idea topic
     currentUserAddDb_ (AddIdeaVoteResult iid) rv
+    return ()
+
+-- | Mark idea as winner or not enough votes if the idea is in the Result phase,
+-- if not throws an exception.
+-- FIXME: Authorization
+-- FIXME: Compute value in one persistent computation
+markIdeaInResultPhase
+    :: (ActionPersist r m, ActionUserHandler m)
+    => AUID Idea -> IdeaVoteResultValue -> m ()
+markIdeaInResultPhase iid rv = do
+    persistent $ do
+        Just idea <- findIdea iid -- FIXME: 404
+        Just topic <- ideaTopic idea
+        checkInPhase (PhaseResult ==) idea topic
+    _ <- currentUserAddDb (addIdeaVoteResult iid) rv
     return ()
 
 

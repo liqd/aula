@@ -591,14 +591,14 @@ adminUsernameHack = UserLogin "admin"
 
 instance FromProto Idea where
     fromProto i m = Idea
-        { _ideaMeta     = m
-        , _ideaTitle    = i ^. protoIdeaTitle
-        , _ideaDesc     = i ^. protoIdeaDesc
-        , _ideaCategory = i ^. protoIdeaCategory
-        , _ideaLocation = i ^. protoIdeaLocation
-        , _ideaComments = nil
-        , _ideaLikes    = nil
-        , _ideaVotes    = nil
+        { _ideaMeta       = m
+        , _ideaTitle      = i ^. protoIdeaTitle
+        , _ideaDesc       = i ^. protoIdeaDesc
+        , _ideaCategory   = i ^. protoIdeaCategory
+        , _ideaLocation   = i ^. protoIdeaLocation
+        , _ideaComments   = nil
+        , _ideaLikes      = nil
+        , _ideaVotes      = nil
         , _ideaJuryResult = Nothing
         , _ideaVoteResult = Nothing
         }

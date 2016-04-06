@@ -8,6 +8,10 @@
     background:     url(/static/images/header_wild_ideas_left.png) no-repeat left top,
                     url(/static/images/header_wild_ideas_right.png) no-repeat right top,
                     white;
+    @media screen and (max-width: $tablet-breakpoint) {
+        background: url(/static/images/header_wild_ideas_left.png) no-repeat center center;
+        background-size: cover;
+    }
 }
 
 .ideas-list-img-container {

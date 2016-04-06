@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_368acfed106b6f7e88f022c62dabc0ef.eot");
-  src: url("../icons/fontcustom_368acfed106b6f7e88f022c62dabc0ef.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_368acfed106b6f7e88f022c62dabc0ef.woff") format("woff"),
-       url("../icons/fontcustom_368acfed106b6f7e88f022c62dabc0ef.ttf") format("truetype"),
-       url("../icons/fontcustom_368acfed106b6f7e88f022c62dabc0ef.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_4575c68369ec5818660eb3d7e6c981ef.eot");
+  src: url("../icons/fontcustom_4575c68369ec5818660eb3d7e6c981ef.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_4575c68369ec5818660eb3d7e6c981ef.woff") format("woff"),
+       url("../icons/fontcustom_4575c68369ec5818660eb3d7e6c981ef.ttf") format("truetype"),
+       url("../icons/fontcustom_4575c68369ec5818660eb3d7e6c981ef.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,13 +16,14 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_368acfed106b6f7e88f022c62dabc0ef.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_4575c68369ec5818660eb3d7e6c981ef.svg#fontcustom") format("svg");
   }
 }
 
 [data-icon]:before { content: attr(data-icon); }
 
 [data-icon]:before,
+.icon-bars:before,
 .icon-bolt:before,
 .icon-bullhorn:before,
 .icon-camera:before,
@@ -58,6 +59,7 @@
   font-smoothing: antialiased;
 }
 
+.icon-bars:before { content: "\f118"; }
 .icon-bolt:before { content: "\f102"; }
 .icon-bullhorn:before { content: "\f112"; }
 .icon-camera:before { content: "\f110"; }
@@ -80,6 +82,7 @@
 .icon-trash-o:before { content: "\f117"; }
 .icon-voting:before { content: "\f108"; }
 
+$font-fontcustom-bars: "\f118";
 $font-fontcustom-bolt: "\f102";
 $font-fontcustom-bullhorn: "\f112";
 $font-fontcustom-camera: "\f110";
