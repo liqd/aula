@@ -17,6 +17,7 @@ import Data.String.Conversions ((<>))
 
 import Arbitrary hiding (generate)
 import Persistent
+import Action
 import Types
 
 import Test.QuickCheck.Gen hiding (generate)
@@ -50,6 +51,7 @@ numberOfReplies = 2000
 
 numberOfCommentVotes :: Int
 numberOfCommentVotes = 5000
+
 
 -- * Generators
 
@@ -106,10 +108,11 @@ ideaStudentPair ideas students = do
     student <- elements $ relatedStudents idea students
     return (idea, student)
 
-genLike :: [Idea] -> [User] -> forall m . PersistM m => Gen (m IdeaLike)
+
+genLike :: [Idea] -> [User] -> forall m . ActionM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    return $ addLikeToIdea (idea ^. _Id) (student, ())
+    return $ currentUserAddDb (AddLikeToIdea (idea ^. _Id)) ()
 
 arbDocument :: Gen Document
 arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
@@ -120,28 +123,33 @@ data CommentInContext = CommentInContext
     , _cicComment :: Comment
     }
 
-genComment :: [Idea] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
+genComment :: [Idea] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    fmap (CommentInContext idea Nothing) .
-        addCommentToIdea (idea ^. _Id) . (,) student <$> arbDocument
+    let action = currentUserAddDb (AddCommentToIdea (idea ^. _Id))
+        getResult = fmap (CommentInContext idea Nothing)
+    getResult . withUser student . action <$> arbDocument
 
-genReply :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentInContext)
+genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
     CommentInContext idea Nothing comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    fmap (CommentInContext idea (Just comment)) .
-        addReplyToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arbDocument
+    let action = currentUserAddDb (AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id))
+        getResult = fmap (CommentInContext idea (Just comment))
+    getResult . withUser student . action <$> arbDocument
 
-genCommentVote :: [CommentInContext] -> [User] -> forall m . PersistM m => Gen (m CommentVote)
+genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do
     CommentInContext idea mparent comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    case mparent of
-        Nothing ->
-            addCommentVoteToIdeaComment (idea ^. _Id) (comment ^. _Id) . (,) student <$> arb
-        Just parent ->
-            addCommentVoteToIdeaCommentReply (idea ^. _Id) (parent ^. _Id) (comment ^. _Id) . (,) student <$> arb
+    let action = case mparent of
+            Nothing ->
+                currentUserAddDb (AddCommentVoteToIdeaComment
+                    (idea ^. _Id) (comment ^. _Id))
+            Just parent ->
+                currentUserAddDb (AddCommentVoteToIdeaCommentReply
+                    (idea ^. _Id) (parent ^. _Id) (comment ^. _Id))
+    withUser student . action <$> arb
 
 updateAvatar :: User -> URL -> forall m . PersistM m => m ()
 updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
@@ -149,12 +157,11 @@ updateAvatar user url = modifyUser (user ^. _Id) (userAvatar ?~ url)
 
 -- * Universe
 
-mkUniverse :: forall m . PersistM m => IO (m ())
-mkUniverse = do
-    r <- newQCGen
-    return (universe r)
+{-
+mkUniverse :: forall m . ActionM m => IO (m ())
+mkUniverse = universe <$> newQCGen
 
-universe :: QCGen -> forall m . PersistM m => m ()
+universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = void $ do
 
     admin <- addFirstUser =<< gen rnd genFirstUser
@@ -183,6 +190,7 @@ universe rnd = void $ do
 
   where
     assert' p = assert p $ return ()
+-}
 
 
 -- * Helpers
@@ -200,3 +208,10 @@ generate n rnd g =
 
 userIdeaLocation :: Getter User (Maybe IdeaLocation)
 userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocationSpace
+
+withUser :: (ActionM m) => User -> m a -> m a
+withUser u m = do
+    loginByUser u
+    v <- m
+    logout
+    return v
