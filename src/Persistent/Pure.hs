@@ -197,9 +197,7 @@ type AEQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) 
 type AMQuery a = AQuery (Maybe a)
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
-newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
-                                                (ExceptT PersistExcept
-                                                    (Update AulaData)) a }
+newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaData) a }
   deriving ( Functor
            , Applicative
            , Monad
@@ -211,8 +209,8 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
 maybe404 :: forall m a. (MonadError PersistExcept m, Typeable a) => Maybe a -> m a
 maybe404 = maybe (throwError . PersistError404 . show . typeRep $ (Proxy :: Proxy a)) pure
 
-runAUpdate :: AUpdate r -> Update AulaData (Either PersistExcept r)
-runAUpdate (AUpdate m) = runExceptT (runReaderT m (error "WhoWhen"))
+runAUpdate :: AUpdate a -> WhoWhen -> Update AulaData (Either PersistExcept a)
+runAUpdate = runExceptT . _unAUpdate
 
 aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData, EventResult ev ~ Either PersistExcept a)
              => (ev -> AUpdate a) -> AEvent
