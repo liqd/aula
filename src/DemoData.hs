@@ -16,7 +16,7 @@ import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
 
 import Arbitrary hiding (generate)
-import Persistent
+import Persistent.Api
 import Action
 import Types
 import CreateRandom (sometime)

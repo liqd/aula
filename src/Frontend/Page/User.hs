@@ -11,6 +11,7 @@ where
 import Action
 import qualified Frontend.Path as P
 import Frontend.Prelude
+import Persistent.Api
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF

@@ -26,9 +26,10 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, aquery, amquery, aupdate
               )
 import Frontend.Page.Comment
-import Frontend.Prelude hiding (EditIdea, editIdea)
+import Frontend.Prelude hiding (editIdea)
+import Persistent.Api hiding (EditIdea)
 
-import qualified Persistent
+import qualified Persistent.Api as Persistent
 import qualified Action (createIdea)
 import qualified Frontend.Path as U
 import qualified Data.Map as Map

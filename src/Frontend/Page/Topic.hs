@@ -20,10 +20,10 @@ where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept)
 import Control.Exception (assert)
-import Frontend.Prelude hiding (moveIdeasToLocation, EditTopic, editTopic)
+import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
 import qualified Action (createTopic)
-import qualified Persistent (EditTopic(EditTopic))
+import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF

@@ -23,6 +23,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Thentos.Types
 
 import Action
+import Persistent.Api
 import Frontend.Prelude
 
 import qualified Frontend.Path as U

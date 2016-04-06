@@ -13,6 +13,7 @@ import Thentos.Prelude
 
 import Action
 import Persistent
+import Persistent.Api
 import Types
 import Arbitrary ()
 

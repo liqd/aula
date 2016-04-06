@@ -43,6 +43,7 @@ import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Testing
 import Persistent
+import Persistent.Api
 import Types
 
 import qualified Action

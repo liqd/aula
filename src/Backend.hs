@@ -13,7 +13,7 @@ import Control.Monad.IO.Class
 import Control.Monad (join)
 import CreateRandom
 import DemoData
-import Persistent
+import Persistent.Api
 import Servant
 import Types
 

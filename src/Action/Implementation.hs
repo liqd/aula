@@ -31,6 +31,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Types
 import Action
 import Persistent
+import Persistent.Api
 
 
 -- * concrete monad type
