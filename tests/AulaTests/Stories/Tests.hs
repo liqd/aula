@@ -23,6 +23,7 @@ topicTimeoutStory = do
     selectIdeaSpace "school"
     createIdea idea1 "desc" CatRule
     likeIdea idea1
+    commentIdea idea1 "This is a comment"
     createTopic idea1 topic1 "desc"
     timeoutTopic topic1
     markIdea idea1 (Left $ Feasible Nothing)

@@ -20,7 +20,7 @@ import Control.Monad.Free
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
 import Data.List (find)
-import qualified Data.Map as Map (size)
+import qualified Data.Map as Map (elems, size)
 import Data.String.Conversions
 
 import Action
@@ -140,6 +140,17 @@ runClient (Free (VoteIdea t v k)) = do
         noOfVotes' `shouldBe` (noOfVotes + 1)
     runClient k
 
+runClient (Free (CommentIdea t c k)) = do
+    Just idea <- precondition $ findIdeaByTitle t
+    _ <- step . lift $
+        currentUserAddDb (addCommentToIdea (idea ^. _Id)) (Markdown c)
+    postcondition $ do
+        Just idea' <- findIdeaByTitle t
+        let Just _comment = findCommentByText idea' c
+        return ()
+    runClient k
+
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
@@ -147,6 +158,9 @@ findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ query getIdea
 
 findTopicByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
 findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ query getTopics
+
+findCommentByText :: Idea -> CommentText -> Maybe Comment
+findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments
 
 assert :: (Show msg, Monad m) => msg -> Bool -> m ()
 assert _ True  = return ()

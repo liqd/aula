@@ -22,6 +22,7 @@ type IdeaTitle = ST
 type IdeaDescription = ST
 type TopicTitle = ST
 type TopicDescription = ST
+type CommentText = ST
 
 
 -- * the dsl ("the action sentences")
@@ -36,6 +37,7 @@ data Step a where
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
     VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
+    CommentIdea      :: IdeaTitle -> CommentText -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -69,3 +71,6 @@ markIdea title value = liftF $ MarkIdea title value ()
 
 voteIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
 voteIdea title vote = liftF $ VoteIdea title vote ()
+
+commentIdea :: IdeaTitle -> CommentText -> Behavior ()
+commentIdea title text = liftF $ CommentIdea title text ()
