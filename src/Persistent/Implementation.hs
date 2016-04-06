@@ -19,7 +19,7 @@ withPersist = withPersist' . mkRunPersist
 -- explicit as parameter.
 withPersist' :: IO RunPersist -> (RunPersist -> IO a) -> IO a
 withPersist' mkRunP m = do
-    rp@(RunPersist desc _ close) <- mkRunP  -- initialization happens here
+    rp@(RunPersist desc _ _ close) <- mkRunP  -- initialization happens here
     putStrLn $ "persistence: " <> desc -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
     m rp `finally` close  -- closing happens here
 

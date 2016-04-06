@@ -34,9 +34,10 @@ mkRunPersistGeneric :: String
                     -> IO RunPersist
 mkRunPersistGeneric desc openState closeState = do
     st <- openState emptyAulaData
-    pure RunPersist { _rpDesc  = desc
-                    , _rpState = st
-                    , _rpClose = closeState st
+    pure RunPersist { _rpDesc   = desc
+                    , _rpQuery  = query st AskDb
+                    , _rpUpdate = update st
+                    , _rpClose  = closeState st
                     }
 
 mkRunPersistOnDisk :: Config -> IO RunPersist
