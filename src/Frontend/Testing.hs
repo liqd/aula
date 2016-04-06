@@ -21,11 +21,7 @@ import Action.Implementation
 
 
 type AulaTesting =
-       "idea"  :> CreateRandom Idea
-  :<|> "space" :> CreateRandom IdeaSpace
-  :<|> "topic" :> CreateRandom Topic
-
-  :<|> "ideas"  :> GetH (Frame (PageShow [Idea]))
+       "ideas"  :> GetH (Frame (PageShow [Idea]))
   :<|> "spaces" :> GetH (Frame (PageShow [IdeaSpace]))
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
@@ -36,13 +32,9 @@ type AulaTesting =
   :<|> "error303" :> GetH ()
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "timeout" :> GetH ()
 
-aulaTesting :: (GenArbitrary r, PersistM r) => ServerT AulaTesting (Action r)
+aulaTesting :: (GenArbitrary r, ActionM r) => ServerT AulaTesting (Action r)
 aulaTesting =
-       createRandom dbIdeaMap
-  :<|> createRandomNoMeta dbSpaceSet
-  :<|> createRandom dbTopicMap
-
-  :<|> (PublicFrame . PageShow <$> Action.persistent getIdeas)
+       (PublicFrame . PageShow <$> Action.persistent getIdeas)
   :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
   :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
