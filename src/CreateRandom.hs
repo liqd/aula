@@ -21,7 +21,7 @@ import Arbitrary ()
 -- plus one extra user for logging test.
 --
 -- Note that no user is getting logged in by this code.
-genInitialTestDb :: (MonadIO m, ActionM m) => m ()
+genInitialTestDb :: (ActionPersist m) => m ()
 genInitialTestDb = do
     aupdate $ AddIdeaSpaceIfNotExists SchoolSpace
     aupdate $ AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
@@ -37,49 +37,40 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         }
 
-    loginByUser user1
-
-    user2 <- currentUserAddDb (AddUser (UserPassInitial "geheim")) ProtoUser
+    user2 <- aupdate $ (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
         , _protoUserRole      = Admin
         , _protoUserPassword  = Just (UserPassInitial "geheim")
         , _protoUserEmail     = Nothing
-        }
+        }))
 
-    _wildIdea <- currentUserAddDb AddIdea ProtoIdea
+    _wildIdea <- aupdate $ AddIdea (EnvWith user1 sometime ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
             , _protoIdeaDesc     = Markdown "wild-idea-desc"
             , _protoIdeaCategory = CatRule
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
-            }
+            })
 
-    logout
-    loginByUser user2
-
-    topicIdea <- currentUserAddDb AddIdea ProtoIdea
+    topicIdea <- aupdate $ AddIdea (EnvWith user2 sometime ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
             , _protoIdeaDesc     = Markdown "topic-idea-desc"
             , _protoIdeaCategory = CatRule
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
-            }
+            })
 
-    logout
-    loginByUser user1
-
-    topic <- currentUserAddDb AddTopic ProtoTopic
+    topic <- aupdate $ AddTopic (EnvWith user1 sometime ProtoTopic
         { _protoTopicTitle     = "topic-title"
         , _protoTopicDesc      = Markdown "topic-desc"
         , _protoTopicImage     = ""
         , _protoTopicIdeaSpace = SchoolSpace
         , _protoTopicIdeas     = []
         , _protoTopicRefinDays = sometime
-        }
+        })
 
     aupdate $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
-    logout
     return ()
 
 
