@@ -14,15 +14,17 @@ import Control.Category
 import Control.Lens
 import Control.Monad (join)
 import Control.Monad.Trans.Except
+import Data.Time (getCurrentTime)
 import Servant
 import Test.Hspec
 
-import qualified Action
-import CreateRandom
 import Action.Implementation
 import Config
-import Persistent.Pure
-import Persistent.Implementation
+import CreateRandom (genInitialTestDb)
+import Types
+
+import qualified Action
+import qualified Persistent
 
 import AulaTests.Stories.DSL
 import AulaTests.Stories.Interpreter.Action
@@ -39,15 +41,17 @@ spec = describe "stories" $ do
 story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
-        cfg <- (persistenceImpl .~ STM) <$> Config.getConfig DontWarnMissing
-        withPersist cfg $ \(persist :: RunPersistNat IO r) -> do
+        cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig DontWarnMissing
+        now <- Timestamp <$> getCurrentTime
+        Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
 
-            let runAction :: Action r :~> IO
+            let runAction :: Action :~> IO
                 runAction = exceptToFail
-                        . mkRunAction (Action.ActionEnv persist cfg)
+                        . mkRunAction (Action.ActionEnv persist now cfg)
 
-            unNat (exceptToFail . persist) genInitialTestDb
-            a <- unNat runAction $ AulaTests.Stories.Interpreter.Action.run program
+            a <- unNat runAction $ do
+                  genInitialTestDb
+                  AulaTests.Stories.Interpreter.Action.run program
             return $ a `shouldBe` expected
   where
     exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m

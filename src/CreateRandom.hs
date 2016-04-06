@@ -20,7 +20,7 @@ import Arbitrary ()
 -- plus one extra user for logging test.
 --
 -- Note that no user is getting logged in by this code.
-genInitialTestDb :: (ActionM m, GenArbitrary m) => m ()
+genInitialTestDb :: (ActionM m) => m ()
 genInitialTestDb = do
     pure ()  -- TODO recover this, but make it deterministic.
     {-

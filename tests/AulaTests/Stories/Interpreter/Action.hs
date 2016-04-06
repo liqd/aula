@@ -40,16 +40,16 @@ initialClientState = ClientState Nothing Nothing
 
 makeLenses ''ClientState
 
-run :: (ActionM r m) => Behavior a -> m a
+run :: (ActionM m) => Behavior a -> m a
 run = fmap fst . flip runStateT initialClientState . runClient
 
 -- FIXME: Check pre and post conditions
-runClient :: (ActionM r m) => Behavior a -> StateT ClientState m a
+runClient :: (ActionM m) => Behavior a -> StateT ClientState m a
 runClient (Pure r) = pure r
 
 runClient (Free (Login l k)) = do
     join . lift $ do
-        Just u <- persistent $ findUserByLogin l
+        u <- amquery $ findUserByLogin l
         Action.login (u ^. _Id)
         u' <- currentUser
         assert (u, u') (u == u')
@@ -63,7 +63,7 @@ runClient (Free (Logout k)) = do
 
 runClient (Free (SelectIdeaSpace s k)) = do
     let (Right i :: Either String IdeaSpace) = parseIdeaSpace s
-    found <- fmap (elem i) . lift $ persistent getSpaces
+    found <- fmap (elem i) . lift $ aquery getSpaces
     unless found . error $ "No idea space is found" <> cs s
     csIdeaSpace .= Just i
     runClient k
@@ -83,7 +83,7 @@ runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace
     _ <- lift $ do
-        end <- persistent phaseEndRefinement
+        end <- aquery phaseEndRefinement
         Action.createTopic
             (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end)
     runClient k
@@ -108,13 +108,13 @@ runClient (Free (VoteIdea t v k)) = do
 
 -- * helpers
 
-findIdeaByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
-findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ persistent getIdeas
+findIdeaByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
+findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ aquery getIdeas
 
-findTopicByTitle :: (ActionM r m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
-findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ persistent getTopics
+findTopicByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
+findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ aquery getTopics
 
-assert :: (Show msg, ActionM r m) => msg -> Bool -> m ()
+assert :: (Show msg, ActionM m) => msg -> Bool -> m ()
 assert _ True  = return ()
 assert msg False = error $ "assertion failed: " <> show msg
     -- FIXME: give source code location of the call.
