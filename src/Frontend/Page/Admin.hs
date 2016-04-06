@@ -250,7 +250,7 @@ instance FormPage PageAdminSettingsQuorum where
         DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
-adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> (aquery $ view dbQuorums))
+adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> aquery (view dbQuorums))
                                   (aupdate . SaveQuorums)
 
 

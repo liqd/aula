@@ -53,7 +53,7 @@ viewRooms = makeFrame =<< (PageRoomsOverview <$> aquery getSpaces)
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasOverview)
 viewIdeas space = makeFrame =<<
-    (PageIdeasOverview space <$> (aquery $ do
+    (PageIdeasOverview space <$> aquery (do
         is  <- findWildIdeasBySpace space
         ivs <- getNumVotersForIdea `mapM` is
         pure ivs))

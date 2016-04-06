@@ -24,9 +24,9 @@ import Arbitrary ()
 genInitialTestDb :: (ActionPersist m) => m ()
 genInitialTestDb = do
     aupdate $ AddIdeaSpaceIfNotExists SchoolSpace
-    aupdate $ AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
-    aupdate $ AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
-    aupdate $ AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
+    aupdate . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
+    aupdate . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
+    aupdate . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
 
     user1 <- aupdate $ AddFirstUser sometime ProtoUser
         { _protoUserLogin     = Just "admin"
@@ -37,7 +37,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         }
 
-    user2 <- aupdate $ (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
+    user2 <- aupdate (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"

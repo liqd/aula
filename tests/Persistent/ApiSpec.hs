@@ -25,7 +25,7 @@ import Persistent
 import Persistent.Api
 import Types
 
-import qualified Action as Action
+import qualified Action
 import qualified Action.Implementation as Action
 
 import AulaTests (testConfig)

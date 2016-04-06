@@ -375,7 +375,7 @@ modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
 modifyIdea = modifyAMap dbIdeaMap
 
 modifyUser :: AUID User -> (User -> User) -> AUpdate ()
-modifyUser uid = modifyAMap dbUserMap uid
+modifyUser = modifyAMap dbUserMap
 
 setUserEmail :: AUID User -> UserEmail -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)

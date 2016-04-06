@@ -22,7 +22,7 @@ import Config
 import CreateRandom (genInitialTestDb)
 
 import qualified Action
-import qualified Persistent as Persistent
+import qualified Persistent
 import qualified Persistent.Api as Persistent
 
 import AulaTests.Stories.DSL

@@ -2,13 +2,8 @@
 
 -- | Placeholder module for separate DSL and other
 -- high level combinators.
-module Persistent
-    ( module Persistent.Pure
-    , module Persistent.Idiom
-    , module Persistent.Implementation
-    )
-where
+module Persistent (module X) where
 
-import Persistent.Pure
-import Persistent.Idiom
-import Persistent.Implementation
+import Persistent.Pure           as X
+import Persistent.Idiom          as X
+import Persistent.Implementation as X
