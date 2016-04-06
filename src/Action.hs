@@ -300,8 +300,6 @@ checkCloseJuryPhase topic = do
         days <- aquery phaseEndVote
         topicPhaseChange topic (AllIdeasAreMarked days)
 
--- TODO: this entire section should probably move to Persistent.Pure.
-
 -- | Mark idea as winner or not enough votes if the idea is in the Result phase,
 -- if not throws an exception.
 -- FIXME: Authorization

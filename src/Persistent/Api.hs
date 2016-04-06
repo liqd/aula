@@ -51,11 +51,13 @@ type RunPersist = RunPersistT IO
 
 -- | A more low-level variant of 'Persistent.Implementation.withPersist' with the implementation
 -- explicit as parameter.
-withPersist' :: IO RunPersist -> (AcidState AulaData -> IO a) -> IO a
+--
+-- TODO: move to "Persistent.Implementation"?  or move both @withPersist*@s here?
+withPersist' :: IO RunPersist -> (RunPersist -> IO a) -> IO a
 withPersist' mkRunP m = do
-    RunPersist desc acidState close <- mkRunP -- initialization happens here
-    putStrLn $ "persistence: " <> desc        -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
-    m acidState `finally` close               -- closing happens here
+    rp@(RunPersist desc _ close) <- mkRunP  -- initialization happens here
+    putStrLn $ "persistence: " <> desc -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
+    m rp `finally` close  -- closing happens here
 
 askDb :: Query AulaData AulaData
 askDb = ask
