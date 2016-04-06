@@ -9,8 +9,8 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Monad (zipWithM_, void)
-import Control.Lens (Getter, (^.), (?~), set, re, pre)
+import Control.Monad (zipWithM_)
+import Control.Lens (Getter, (^.), set, re, pre)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -113,7 +113,7 @@ ideaStudentPair ideas students = do
 genLike :: [Idea] -> [User] -> forall m . ActionM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    return $ currentUserAddDb (AddLikeToIdea (idea ^. _Id)) ()
+    return $ addWithUser (AddLikeToIdea (idea ^. _Id)) student ()
 
 arbDocument :: Gen Document
 arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
@@ -127,17 +127,17 @@ data CommentInContext = CommentInContext
 genComment :: [Idea] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    let action = currentUserAddDb (AddCommentToIdea (idea ^. _Id))
+    let event = AddCommentToIdea (idea ^. _Id)
         getResult = fmap (CommentInContext idea Nothing)
-    getResult . withUser student . action <$> arbDocument
+    getResult . addWithUser event student <$> arbDocument
 
 genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
     CommentInContext idea Nothing comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    let action = currentUserAddDb (AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id))
+    let event = AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id)
         getResult = fmap (CommentInContext idea (Just comment))
-    getResult . withUser student . action <$> arbDocument
+    getResult . addWithUser event student <$> arbDocument
 
 genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do
@@ -145,12 +145,12 @@ genCommentVote comments_in_context students = do
     (_, student) <- ideaStudentPair [idea] students
     let action = case mparent of
             Nothing ->
-                currentUserAddDb (AddCommentVoteToIdeaComment
-                    (idea ^. _Id) (comment ^. _Id))
+                addWithUser $ AddCommentVoteToIdeaComment
+                    (idea ^. _Id) (comment ^. _Id)
             Just parent ->
-                currentUserAddDb (AddCommentVoteToIdeaCommentReply
-                    (idea ^. _Id) (parent ^. _Id) (comment ^. _Id))
-    withUser student . action <$> arb
+                addWithUser $ AddCommentVoteToIdeaCommentReply
+                    (idea ^. _Id) (parent ^. _Id) (comment ^. _Id)
+    action student <$> arb
 
 updateAvatar :: User -> URL -> forall m . ActionM m => m ()
 updateAvatar user url = aupdate $ SetUserAvatar (user ^. _Id) url
@@ -209,10 +209,3 @@ generate n rnd g =
 
 userIdeaLocation :: Getter User (Maybe IdeaLocation)
 userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocationSpace
-
-withUser :: (ActionM m) => User -> m a -> m a
-withUser u m = do
-    loginByUser u
-    v <- m
-    logout
-    return v

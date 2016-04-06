@@ -25,6 +25,7 @@ module Action
       -- * user handling
     , loginByUser, loginByName
     , userLoggedOut
+    , addWithUser
     , currentUserAddDb
     , currentUserAddDb_
     , currentUser
@@ -196,11 +197,15 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
+addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
+               (UserWithProto a -> ev) -> User -> Proto a -> m a
+addWithUser addA user protoA = aupdate $ addA (user, protoA)
+
 currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
                     (UserWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
-    aupdate $ addA (cUser, protoA)
+    addWithUser addA cUser protoA
 
 currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionUserHandler m) =>
                      (UserWithProto a -> ev) -> Proto a -> m ()
