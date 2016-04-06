@@ -290,7 +290,7 @@ markIdeaInJuryPhase iid rv = do
     topic <- amquery $ ideaTopic idea
     -- FIXME: should this be one transaction?
     aequery $ checkInPhase (PhaseJury ==) idea topic
-    currentUserAddDb (AddIdeaJuryResult iid) rv
+    currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
 checkCloseJuryPhase :: ActionM m => Topic -> m ()
@@ -310,7 +310,7 @@ markIdeaInResultPhase iid rv = do
     idea  <- amquery $ findIdea iid
     topic <- amquery $ ideaTopic idea
     aequery $ checkInPhase (PhaseResult ==) idea topic
-    currentUserAddDb (AddIdeaVoteResult iid) rv
+    currentUserAddDb_ (AddIdeaVoteResult iid) rv
     return ()
 
 
