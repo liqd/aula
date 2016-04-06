@@ -15,7 +15,7 @@ import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
 import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
-import Test.QuickCheck.Monadic (assert, monadicIO, run, pick)
+import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)
 import Text.Digestive.Types
 import Text.Digestive.View
 
@@ -205,17 +205,16 @@ testForm fg = renderForm fg >> postToForm fg
 renderForm :: FormGen -> Spec
 renderForm (F g) =
     it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
-        len <- run . failOnError $ do
+        len <- runFailOnError $ do
             v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
-failOnError :: Dummy e a -> IO a
-failOnError pers = do
+runFailOnError :: Action a -> PropertyM IO a
+runFailOnError action = run $ do
     cfg <- getConfig DontWarnMissing
-    fmap (either (error . show) id) . runExceptT .
-        unNat (mkRunAction (ActionEnv (error "(Nat unDummyT)") cfg)) $ pers  -- TODO
-
+    let env :: ActionEnv = ActionEnv (Nat unDummyT) cfg
+    fmap (either (error . show) id) . runExceptT . unNat (mkRunAction env) $ action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --
@@ -236,15 +235,13 @@ postToForm (F g) = do
         payload <- pick (arbFormPagePayload page)
 
         let frm = makeForm page
-        env <- run' $ (`payloadToEnv` payload) <$> getForm "" frm
+        env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
 
-        (_, Just payload') <- run' $ postForm "" frm (\_ -> pure env)
+        (_, Just payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
         liftIO $ payload' `shouldBe` payload
 
     it (show (typeOf g) <> " (process *in*valid form input)") $
         pendingWith "not implemented."  -- FIXME
-    where
-        run' = run . failOnError
 
 -- | Arbitrary test data generation for the 'FormPagePayload' type.
 --
