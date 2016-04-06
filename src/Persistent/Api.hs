@@ -63,4 +63,5 @@ $(makeAcidic ''AulaData
     , 'editTopic
     , 'saveDurations
     , 'saveQuorums
+    , 'moveIdeasToLocation
     ])
