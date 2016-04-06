@@ -26,7 +26,9 @@ module Persistent.Pure
     , AulaSetter
     , emptyAulaData
 
+    , EnvWith(..), EnvWithProto, envUser, envNow, envWith
     , AEvent, AQuery{-(AQuery)-}, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
+    , runAUpdate
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
@@ -114,8 +116,8 @@ where
 
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
-import Control.Monad.Reader (MonadReader, ReaderT(ReaderT), runReader, runReaderT, ask, asks)
-import Control.Monad.State (MonadState, state, gets, modify)
+import Control.Monad.Reader (MonadReader, ReaderT, runReader, runReaderT, asks)
+import Control.Monad.State (MonadState, gets)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
@@ -195,9 +197,7 @@ type AEQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) 
 type AMQuery a = AQuery (Maybe a)
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
-newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
-                                                (ExceptT PersistExcept
-                                                    (Update AulaData)) a }
+newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaData) a }
   deriving ( Functor
            , Applicative
            , Monad
@@ -209,8 +209,8 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ReaderT WhoWhen
 maybe404 :: forall m a. (MonadError PersistExcept m, Typeable a) => Maybe a -> m a
 maybe404 = maybe (throwError . PersistError404 . show . typeRep $ (Proxy :: Proxy a)) pure
 
-runAUpdate :: AUpdate r -> Update AulaData (Either PersistExcept r)
-runAUpdate (AUpdate m) = runExceptT (runReaderT m (error "WhoWhen"))
+runAUpdate :: AUpdate a -> WhoWhen -> Update AulaData (Either PersistExcept a)
+runAUpdate = runExceptT . _unAUpdate
 
 aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData, EventResult ev ~ Either PersistExcept a)
              => (ev -> AUpdate a) -> AEvent
@@ -265,12 +265,52 @@ runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
 assertAulaDataM :: AQuery () -> AUpdate ()
 assertAulaDataM = liftAQuery
 
+{-
+    This type carries the information needed to add (or update) something to the DB,
+    namely the current user, the current time and the last parameter depends on the
+    application.
 
-type AddDb a = UserWithProto a -> AUpdate a
+    It can be thought of as the type @Meta a@ but with only the information we cannot
+    compute from the current state or input data. Also unlike @Meta@ which is embedded
+    in all our types (@Idea@, @Topic@), @EnvWith@ is surrunding the data.
 
--- | @addDb l (u, p)@ adds a record to the DB.
+    See also @EnvWithProto@.
+-}
+data EnvWith a = EnvWith
+    { _envUser :: User
+    , _envNow  :: Timestamp
+    , _envWith :: a
+    }
+
+makeLenses ''EnvWith
+
+deriveSafeCopy 0 'base ''EnvWith
+
+{-
+    The type @EnvWithProto a@ is a synonym for @EnvWith (Proto a)@.
+    Since @Proto a@ collects all the (non-meta) information about the creation an @a@ record,
+    @EnvWithProto a@ contains all the information to create an @a@.
+-}
+type EnvWithProto a = EnvWith (Proto a)
+
+{-
+    Functions of type @AddDb a@ are commonly partial applications of @addDb@.
+    Thus such a function still lacks the @EnvWithProto a@, namely some meta-data and the @Proto a@,
+    combinators such as @addWithUser@ and @currentUserAddDb@ deal with building and providing the
+    meta-data. On subtelty introduced by AcidState is that instead of using directly the functions
+    of type @AddDb@ one must use their event counter part.
+    For instance @addIdea@ has type @AddDb Idea@, namely @EnvWithProto Idea -> AUpdate Idea@
+    while @AddIdea@ has type @EnvWithProto Idea -> AddIdea@.
+    Here are some examples:
+    * @currentUserAddDb AddIdea someUser@
+    * @addWithUser AddIdea someUser someProtoIdea@
+    * @addWithUser (AddLikeToIdea someIdeaId) someUser ()@
+-}
+type AddDb a = EnvWithProto a -> AUpdate a
+
+-- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
--- The record is computed from the prototype @p@, the current time and the given user @u@.
+-- The record is computed from the prototype @p@, the current time @now@ and the given user @u@.
 -- The record is added at the location pointed by the traversal @l@.
 --
 -- It is expected that @l@ points to exactly one target (checked by 'assertAulaDataM').
@@ -283,19 +323,19 @@ type AddDb a = UserWithProto a -> AUpdate a
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
 addDb :: forall a. (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDb l (cUser, pa) = do
+addDb l (EnvWith cUser now pa) = do
     assertAulaDataM $ do
         len <- asks (lengthOf l)
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    a :: a <- fromProto pa <$> nextMetaInfo cUser
+    a :: a <- fromProto pa <$> nextMetaInfo cUser now
     modifyDb_ l $ at (a ^. _Id) .~ Just a
     return a
 
 addDbAppValue :: (HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
-addDbAppValue l (cUser, pa) = do
-    a <- fromProto pa <$> nextMetaInfo cUser
+addDbAppValue l (EnvWith cUser now pa) = do
+    a <- fromProto pa <$> nextMetaInfo cUser now
     modifyDb_ l (const (pure a))
     return a
 
@@ -399,7 +439,7 @@ addTopic pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    moveIdeasToLocation (pt ^. _2 . protoTopicIdeas) (topicIdeaLocation t)
+    moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation t)
     return t
 
 addDelegation :: AddDb Delegation
@@ -519,8 +559,8 @@ userFromProto metainfo uLogin uPassword proto = User
     }
 
 addUser :: UserPass -> AddDb User
-addUser defaultPass (cUser, proto) = do
-    metainfo  <- nextMetaInfo cUser
+addUser defaultPass (EnvWith cUser now proto) = do
+    metainfo  <- nextMetaInfo cUser now
     uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
     let uPassword = fromMaybe defaultPass $ proto ^. protoUserPassword
     let user = userFromProto metainfo uLogin uPassword proto
@@ -603,8 +643,8 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: User -> AUpdate (MetaInfo a)
-nextMetaInfo cUser = mkMetaInfo cUser <$> (view whoWhenTimestamp <$> ask) <*> nextId
+nextMetaInfo :: User -> Timestamp -> AUpdate (MetaInfo a)
+nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()
 editIdea ideaId = modifyIdea ideaId . newIdea

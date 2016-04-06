@@ -76,10 +76,6 @@ type Percent = Int
 -- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
 
--- | FIXME: it would be nice to have the creator in a reader in the persist monad rather than as an
--- explicit parameter (note this type synonym is isomorphic to an explicit argument).
-type UserWithProto a = (User, Proto a)
-
 -- | The method how a 't' value is calculated from its prototype
 -- and a metainfo to that.
 class FromProto t where
