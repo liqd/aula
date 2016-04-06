@@ -15,7 +15,7 @@ module AulaTests.Stories.Interpreter.Action
 where
 
 import Control.Lens
-import Control.Monad (join, unless, when)
+import Control.Monad (join, unless)
 import Control.Monad.Free
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
@@ -148,14 +148,14 @@ findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ query getIdea
 findTopicByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
 findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ query getTopics
 
-assert :: (Show msg, ActionM m) => msg -> Bool -> m ()
+assert :: (Show msg, Monad m) => msg -> Bool -> m ()
 assert _ True  = return ()
 assert msg False = error $ "assertion failed: " <> show msg
     -- FIXME: give source code location of the call.
 
 shouldBe :: (Monad m, Eq a, Show a) => a -> a -> m ()
-shouldBe actual expected =
-    when (actual /= expected) . fail $ show (actual, expected)
+shouldBe actual expected = assert (actual, expected) (actual == expected)
+    -- FIXME: give source code location of the call.
 
 -- ** Denotations for test step sections
 
