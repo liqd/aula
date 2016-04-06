@@ -12,12 +12,10 @@ import Servant
 import Servant.Missing (throwError500)
 import Thentos.Prelude
 
-import CreateRandom
 import Frontend.Core
 import Persistent
 import Types
 import Action
-import Action.Implementation
 
 
 type AulaTesting =
@@ -32,14 +30,14 @@ type AulaTesting =
   :<|> "error303" :> GetH ()
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "timeout" :> GetH ()
 
-aulaTesting :: (GenArbitrary r, ActionM r) => ServerT AulaTesting (Action r)
+aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
-       (PublicFrame . PageShow <$> Action.persistent getIdeas)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getSpaces)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getTopics)
-  :<|> (PublicFrame . PageShow <$> Action.persistent getUsers)
+       (PublicFrame . PageShow <$> Action.aquery getIdeas)
+  :<|> (PublicFrame . PageShow <$> Action.aquery getSpaces)
+  :<|> (PublicFrame . PageShow <$> Action.aquery getTopics)
+  :<|> (PublicFrame . PageShow <$> Action.aquery getUsers)
 
-  :<|> (PageShow <$> Action.persistent mkRandomPassword)
+  :<|> (PageShow <$> mkRandomPassword)
   :<|> undefined
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
@@ -55,9 +53,9 @@ instance ToHtml Page404 where
     toHtml Page404 = div_ $ p_ "404"
 
 -- | Make a topic timeout if the timeout is applicable.
-makeTopicTimeout :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+makeTopicTimeout :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
 makeTopicTimeout tid = do
-    Just topic <- persistent $ findTopic tid -- FIXME: 404
+    topic <- amquery $ findTopic tid
     case topic ^. topicPhase of
         PhaseRefinement _ -> topicInRefinementTimedOut tid
         PhaseVoting     _ -> topicInVotingTimedOut tid

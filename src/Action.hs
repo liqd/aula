@@ -232,7 +232,7 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange :: ActionM m => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionPersist m, ActionError m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -240,12 +240,12 @@ topicPhaseChange topic change = do
             aupdate $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: ActionM m => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionPersist m, ActionError m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
-    Just topic <- aquery $ findTopic tid -- FIXME: Not found
+    topic <- amquery $ findTopic tid
     topicPhaseChange topic phaseChange
 
-phaseAction :: ActionM m => Topic -> PhaseAction -> m ()
+phaseAction :: (Monad m) => Topic -> PhaseAction -> m ()
 phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
 phaseAction _ ResultPhaseModeratorEmail =
@@ -315,10 +315,10 @@ markIdeaInResultPhase iid rv = do
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPersist m, ActionError m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPersist m, ActionError m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 
