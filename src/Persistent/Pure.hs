@@ -267,6 +267,17 @@ runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
 assertAulaDataM :: AQuery () -> AUpdate ()
 assertAulaDataM = liftAQuery
 
+{-
+    This type carries the information needed to add (or update) something to the DB,
+    namely the current user, the current time and the last parameter depends on the
+    application.
+
+    It can be thought of as the type @Meta a@ but with only the information we cannot
+    compute from the current state or input data. Also unlike @Meta@ which is embedded
+    in all our types (@Idea@, @Topic@), @EnvWith@ is surrunding the data.
+
+    See also @EnvWithProto@.
+-}
 data EnvWith a = EnvWith
     { _envUser :: User
     , _envNow  :: Timestamp
@@ -277,13 +288,31 @@ makeLenses ''EnvWith
 
 deriveSafeCopy 0 'base ''EnvWith
 
+{-
+    The type @EnvWithProto a@ is a synonym for @EnvWith (Proto a)@.
+    Since @Proto a@ collects all the (non-meta) information about the creation an @a@ record,
+    @EnvWithProto a@ contains all the information to create an @a@.
+-}
 type EnvWithProto a = EnvWith (Proto a)
 
+{-
+    Functions of type @AddDb a@ are commonly partial applications of @addDb@.
+    Thus such a function still lacks the @EnvWithProto a@, namely some meta-data and the @Proto a@,
+    combinators such as @addWithUser@ and @currentUserAddDb@ deal with building and providing the
+    meta-data. On subtelty introduced by AcidState is that instead of using directly the functions
+    of type @AddDb@ one must use their event counter part.
+    For instance @addIdea@ has type @AddDb Idea@, namely @EnvWithProto Idea -> AUpdate Idea@
+    while @AddIdea@ has type @EnvWithProto Idea -> AddIdea@.
+    Here are some examples:
+    * @currentUserAddDb AddIdea someUser@
+    * @addWithUser AddIdea someUser someProtoIdea@
+    * @addWithUser (AddLikeToIdea someIdeaId) someUser ()@
+-}
 type AddDb a = EnvWithProto a -> AUpdate a
 
--- | @addDb l (u, p)@ adds a record to the DB.
+-- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
--- The record is computed from the prototype @p@, the current time and the given user @u@.
+-- The record is computed from the prototype @p@, the current time @now@ and the given user @u@.
 -- The record is added at the location pointed by the traversal @l@.
 --
 -- It is expected that @l@ points to exactly one target (checked by 'assertAulaDataM').
