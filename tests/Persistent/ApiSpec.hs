@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -8,17 +9,21 @@
 
 module Persistent.ApiSpec where
 
-import Arbitrary ()
 import Control.Exception (ErrorCall(ErrorCall), throwIO, finally)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Control.Monad.Trans.Except (runExceptT)
+import Data.Acid
+import Data.Acid.Core
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
 import Test.QuickCheck
 
+import Arbitrary ()
+import Action  -- TODO: qualified
+import Action.Implementation  -- TODO: qualified
 import CreateRandom
 import Config
 import Persistent
@@ -43,27 +48,35 @@ import AulaTests (testConfig)
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
 mkInitial :: PersistenceImpl -> IO RunPersist
-mkInitial imp = do
-    rp <- mkEmpty imp
-    runA rp genInitialTestDb
-    pure rp
+mkInitial = mkState MkStateInitial
 
 -- | the empty database
 mkEmpty :: PersistenceImpl -> IO RunPersist
-mkEmpty imp = do
-    cfg <- (persistenceImpl .~ imp) <$> testConfig
-    mkRunPersist cfg
+mkEmpty = mkState MkStateEmpty
 
-runPclose = withPersist' . pure
+data MkStateSetup = MkStateEmpty | MkStateInitial
+  deriving (Eq, Show)
 
-runQ :: MonadIO m => RunPersist -> AQuery a -> m a
+mkState :: MkStateSetup -> PersistenceImpl -> IO RunPersist
+mkState setup impl = do
+    cfg <- (persistenceImpl .~ impl) <$> testConfig
+    rp  <- mkRunPersist cfg
+    case setup of
+        MkStateEmpty   -> pure ()
+        MkStateInitial -> runA cfg rp genInitialTestDb
+    pure rp
+
+runA :: Config -> RunPersist -> Action a -> IO a
+runA cfg rp = fmap (either (error . show) id) . runExceptT . unNat (mkRunAction (ActionEnv rp cfg))
+
+runPclose = withPersist' . pure  -- FIXME: remove!
+
+runQ :: (MonadIO m) => RunPersist -> AQuery a -> m a
 runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery
 
-runU :: (MonadIO m) => RunPersist -> AUpdate a -> m a
+runU :: (MonadIO m, HasAUpdate ev a) => RunPersist -> ev -> m (Either PersistExcept a)
 runU rp u = liftIO $ (rp ^. rpUpdate) u
 
-runA :: (MonadIO m, ActionM n) => RunPersist -> n a -> m a
-runA rp m = error "TODO runA"
 
 getDbSpec :: (Eq a, Show a) => PersistenceImpl -> String -> AQuery [a] -> Spec
 getDbSpec imp name getXs = do
@@ -77,13 +90,13 @@ getDbSpec imp name getXs = do
                 xs <- runQ rp getXs
                 length xs `shouldNotBe` 0)
 
-addDbSpecProp :: forall f proto a.
-                 (Foldable f, Arbitrary proto)
+addDbSpecProp :: forall f proto ev a.
+                 (Foldable f, Arbitrary proto, HasAUpdate ev a)
               => PersistenceImpl
               -> String
               -> AQuery (f a)
-              -> (EnvWith proto -> AUpdate a)
-              -> (proto -> a -> Expectation)
+              -> (EnvWith proto -> ev)
+              -> (proto -> Either PersistExcept a -> Expectation)
               -> Spec
 addDbSpecProp imp name getXs addX propX =
     describe name $ do
@@ -99,8 +112,8 @@ addDbSpecProp imp name getXs addX propX =
         context "on empty database" . before (mkEmpty imp) $ t
         context "on initial database" . before (mkInitial imp) $ t
 
-addDbSpec :: (Foldable f, Arbitrary proto) =>
-             PersistenceImpl -> String -> AQuery (f a) -> (EnvWith proto -> AUpdate a) -> Spec
+addDbSpec :: (Foldable f, Arbitrary proto, HasAUpdate ev a)
+          => PersistenceImpl -> String -> AQuery (f a) -> (EnvWith proto -> ev) -> Spec
 addDbSpec imp name getXs addX = addDbSpecProp imp name getXs addX (\_ _ -> passes)
 
 findInBySpec :: (Eq a, Show a, Arbitrary k) =>
@@ -172,15 +185,15 @@ spec = do
 persistApiSpec :: PersistenceImpl -> Spec
 persistApiSpec imp = do
     getDbSpec imp "getIdeas" getIdeas
-    addDbSpec imp "addIdea"  getIdeas addIdea
+    addDbSpec imp "addIdea"  getIdeas AddIdea
     getDbSpec imp "getWildIdeas"      getWildIdeas
     getDbSpec imp "getIdeasWithTopic" getIdeasWithTopic
 
     getDbSpec imp "getUsers" getUsers
-    addDbSpec imp "addUsers" getUsers (addUser (error "UserPass"))
+    addDbSpec imp "addUsers" getUsers (AddUser (error "UserPass"))
 
     getDbSpec imp "getTopics" getTopics
-    addDbSpec imp "addTopics" getTopics addTopic
+    addDbSpec imp "addTopics" getTopics AddTopic
 
     findInBySpec imp "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec imp "findTopic" getTopics findTopic _Id changeAUID
@@ -197,7 +210,7 @@ persistApiSpec imp = do
             test upd ispace = do
                 it ("can add " <> showIdeaSpace ispace) $ \rp' -> runPclose rp' (\rp -> do
                     let getL = runQ rp getSpaces
-                        addS = runU rp $ addIdeaSpaceIfNotExists ispace
+                        addS = runU rp $ AddIdeaSpaceIfNotExists ispace
                     bef <- getL
                     addS
                     aft <- getL
@@ -213,14 +226,15 @@ persistApiSpec imp = do
 
     regression imp
 
+
 -- * Regression suite
 
 regression :: PersistenceImpl -> Spec
 regression imp = describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp imp
-            "addIdea" getIdeas addIdea
-            (\p i -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
+            "addIdea" getIdeas AddIdea
+            (\p (Right i) -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
 
 
 -- * Expectations
