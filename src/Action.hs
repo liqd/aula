@@ -28,6 +28,7 @@ module Action
     , currentUserAddDb
     , currentUserAddDb_
     , currentUser
+    , currentUserId
     , modifyCurrentUser
     , isLoggedIn
     , validUserState

@@ -96,7 +96,7 @@ userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
     changeUser :: UserSettingData -> action ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
-        uid <- view _Id <$> currentUser
+        uid <- currentUserId
         maybe (pure ()) (aupdate . SetUserEmail uid) memail
         aupdate $ SetUserPass uid oldPass newPass1 newPass2
         pure ()
