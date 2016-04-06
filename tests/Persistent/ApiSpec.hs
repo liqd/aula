@@ -32,24 +32,24 @@ import AulaTests (testConfig)
 
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
-mkInitial :: PersistenceImpl -> IO RunPersist
+mkInitial :: PersistenceImpl -> (RunPersist -> IO a) -> IO a
 mkInitial = mkState MkStateInitial
 
 -- | the empty database
-mkEmpty :: PersistenceImpl -> IO RunPersist
+mkEmpty :: PersistenceImpl -> (RunPersist -> IO a) -> IO a
 mkEmpty = mkState MkStateEmpty
 
 data MkStateSetup = MkStateEmpty | MkStateInitial
   deriving (Eq, Show)
 
-mkState :: MkStateSetup -> PersistenceImpl -> IO RunPersist
-mkState setup impl = do
+mkState :: MkStateSetup -> PersistenceImpl -> (RunPersist -> IO a) -> IO a
+mkState setup impl k = do
     cfg <- (persistenceImpl .~ impl) <$> testConfig
-    rp  <- mkRunPersist cfg
-    case setup of
-        MkStateEmpty   -> pure ()
-        MkStateInitial -> runA cfg rp genInitialTestDb
-    pure rp
+    withPersist cfg $ \rp ->
+        case setup of
+            MkStateEmpty   -> pure ()
+            MkStateInitial -> runA cfg rp genInitialTestDb
+        k rp
 
 runA :: Config -> RunPersist -> Action.Action a -> IO a
 runA cfg rp = fmap (either (error . show) id)
@@ -65,11 +65,11 @@ runU rp u = liftIO $ (rp ^. rpUpdate) u
 getDbSpec :: (Eq a, Show a) => PersistenceImpl -> String -> AQuery [a] -> Spec
 getDbSpec imp name getXs = do
     describe name $ do
-        context "on empty database" . before (mkEmpty imp) $ do
+        context "on empty database" . around (mkEmpty imp) $ do
             it "returns the empty list" $ \rp -> do
                 xs <- runQ rp getXs
                 xs `shouldBe` []
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             it "returns a non-empty list" $ \rp -> do
                 xs <- runQ rp getXs
                 length xs `shouldNotBe` 0
@@ -93,8 +93,8 @@ addDbSpecProp imp name getXs addX propX =
                     after' `shouldBe` before' + 1
                     propX p r
 
-        context "on empty database" . before (mkEmpty imp) $ t
-        context "on initial database" . before (mkInitial imp) $ t
+        context "on empty database" . around (mkEmpty imp) $ t
+        context "on initial database" . around (mkInitial imp) $ t
 
 addDbSpec :: (Foldable f, Arbitrary proto, HasAUpdate ev a)
           => PersistenceImpl -> String -> AQuery (f a) -> (EnvWith proto -> ev) -> Spec
@@ -106,13 +106,13 @@ findInBySpec :: (Eq a, Show a, Arbitrary k) =>
                 Spec
 findInBySpec imp name getXs findXBy f change =
     describe name $ do
-        context "on empty database" . before (mkEmpty imp) $ do
+        context "on empty database" . around (mkEmpty imp) $ do
             it "will come up empty" $ \rp -> do
                 rf <- liftIO $ generate arbitrary
                 mu <- runQ rp $ findXBy rf
                 mu `shouldBe` Nothing
 
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \rp -> do
                     (x:_) <- runQ rp getXs
@@ -132,14 +132,14 @@ findAllInBySpec :: (Eq a, Show a) =>
                     Spec
 findAllInBySpec imp name getXs genKs findAllXBy f change =
     describe name $ do
-        context "on empty database" . before (mkEmpty imp) $ do
+        context "on empty database" . around (mkEmpty imp) $ do
             it "will come up empty" $ \rp -> do
                 genK <- runQ rp genKs
                 rf <- liftIO $ generate genK
                 us <- runQ rp $ findAllXBy rf
                 us `shouldBe` []
 
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             context "if it does not exist" $ do
                 it "will come up empty" $ \rp -> do
                     [x] <- runQ rp getXs
@@ -201,10 +201,10 @@ persistApiSpec imp = do
                     upd (length bef) `shouldBe` length aft
                     (ispace `elem` aft) `shouldBe` True
 
-        context "on empty database" . before (mkEmpty imp) $ do
+        context "on empty database" . around (mkEmpty imp) $ do
             test (+1) SchoolSpace
             test (+1) (ClassSpace (SchoolClass 2016 "7a"))
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             test id SchoolSpace
             test id (ClassSpace (SchoolClass 2016 "7a"))
 
