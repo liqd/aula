@@ -214,9 +214,7 @@ failOnError :: Dummy e a -> IO a
 failOnError pers = do
     cfg <- getConfig DontWarnMissing
     fmap (either (error . show) id) . runExceptT .
-        unNat (mkRunAction (ActionEnv (Nat unDummyT)
-            (error "time!!")   -- TODO
-            cfg)) $ pers
+        unNat (mkRunAction (ActionEnv (error "(Nat unDummyT)") cfg)) $ pers  -- TODO
 
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.

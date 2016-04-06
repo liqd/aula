@@ -791,8 +791,7 @@ fishDelegationNetworkIO = do
     cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig Config.DontWarnMissing
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
-            now <- Timestamp <$> getCurrentTime
-            v <- runExceptT (unNat (mkRunAction (ActionEnv rp now cfg)) action)
+            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
             either (throwIO . ErrorCall . ppShow) pure v
     withPersist cfg runAction
 

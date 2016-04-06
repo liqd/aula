@@ -20,7 +20,7 @@ module Action
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), persistNat, config, currentTime
+    , ActionEnv(..), persistNat, config
 
       -- * user handling
     , loginByUser, loginByName
@@ -103,7 +103,6 @@ userLoggedOut = UserState Nothing Nothing Nothing
 
 data ActionEnv = ActionEnv
     { _persistNat  :: RunPersist  -- TODO: rename to _envRunPersist
-    , _currentTime :: Timestamp
     , _config      :: Config      -- TODO: rename to _envConfig
     }
 

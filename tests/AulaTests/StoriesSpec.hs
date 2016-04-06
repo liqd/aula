@@ -14,14 +14,12 @@ import Control.Category
 import Control.Lens
 import Control.Monad (join)
 import Control.Monad.Trans.Except
-import Data.Time (getCurrentTime)
 import Servant
 import Test.Hspec
 
 import Action.Implementation
 import Config
 import CreateRandom (genInitialTestDb)
-import Types
 
 import qualified Action
 import qualified Persistent
@@ -42,12 +40,11 @@ story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
         cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig DontWarnMissing
-        now <- Timestamp <$> getCurrentTime
         Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO
                 runAction = exceptToFail
-                        . mkRunAction (Action.ActionEnv persist now cfg)
+                        . mkRunAction (Action.ActionEnv persist cfg)
 
             a <- unNat runAction $ do
                   genInitialTestDb

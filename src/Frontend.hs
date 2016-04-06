@@ -64,8 +64,7 @@ runFrontend cfg = withPersist cfg (runFrontend' cfg)
 runFrontend' :: Config -> RunPersist -> IO ()
 runFrontend' cfg rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv rp (error "no system time!") cfg)
-            -- TODO: system time: we need to be careful to not fix it at server start time.
+        runAction = mkRunAction (ActionEnv rp cfg)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
