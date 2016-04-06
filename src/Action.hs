@@ -121,7 +121,7 @@ data ActionExcept
 
 makePrisms ''ActionExcept
 
-class ( ActionLog m
+class ( ActionLog m  -- FIXME: use `type ActionM m = (ActionLog ...)` instead.  do it everywhere.
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
@@ -231,7 +231,7 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange :: Topic -> PhaseChange -> AUpdate ()
+topicPhaseChange :: ActionM m => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -239,12 +239,12 @@ topicPhaseChange topic change = do
             aupdate $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: PhaseChange -> AUID Topic -> AUpdate ()
+topicTimeout :: ActionM m => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     Just topic <- aquery $ findTopic tid -- FIXME: Not found
     topicPhaseChange topic phaseChange
 
-phaseAction :: Topic -> PhaseAction -> AUpdate ()
+phaseAction :: ActionM m => Topic -> PhaseAction -> m ()
 phaseAction _ JuryPhasePrincipalEmail =
     traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
 phaseAction _ ResultPhaseModeratorEmail =
@@ -282,19 +282,21 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase :: AUID Idea -> IdeaJuryResultValue -> AUpdate ()
+markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
-    idea  <- maybe404 =<< findIdea iid
-    topic <- maybe404 =<< ideaTopic idea
-    checkInPhase (PhaseJury ==) idea topic
-    addIdeaJuryResult iid rv
+    idea  <- amquery $ findIdea iid
+    topic <- amquery $ ideaTopic idea
+    -- FIXME: should this be one transaction?
+    aequery $ checkInPhase (PhaseJury ==) idea topic
+    currentUserAddDb (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
-checkCloseJuryPhase :: Topic -> AUpdate ()
+checkCloseJuryPhase :: ActionM m => Topic -> m ()
 checkCloseJuryPhase topic = do
     allMarked <- aquery $ checkAllIdeasMarked topic
-    when allMarked $ do
-        topicPhaseChange topic =<< AllIdeasAreMarked <$> aquery phaseEndVote
+    when allMarked $ do  -- FIXME: should this be one transaction?
+        days <- aquery phaseEndVote
+        topicPhaseChange topic (AllIdeasAreMarked days)
 
 -- TODO: this entire section should probably move to Persistent.Pure.
 
@@ -302,21 +304,22 @@ checkCloseJuryPhase topic = do
 -- if not throws an exception.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInResultPhase :: AUID Idea -> IdeaVoteResultValue -> AUpdate ()
+-- FIXME: redundant code between this and 'markIdeaInJuryPhase'.
+markIdeaInResultPhase :: ActionM m => AUID Idea -> IdeaVoteResultValue -> m ()
 markIdeaInResultPhase iid rv = do
     idea  <- amquery $ findIdea iid
     topic <- amquery $ ideaTopic idea
-    checkInPhase (PhaseResult ==) idea topic
-    aupdate $ AddIdeaVoteResult iid rv
+    aequery $ checkInPhase (PhaseResult ==) idea topic
+    currentUserAddDb (AddIdeaVoteResult iid) rv
     return ()
 
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 

@@ -755,7 +755,7 @@ fishAvatars =
     , "tetraodontiformes/thumnails/tetraodon_nigroviridis.gif"
     ]
 
-mkFishUser :: ActionM m => Maybe SchoolClass -> URL -> m User
+mkFishUser :: (GenArbitrary m, ActionM m) => Maybe SchoolClass -> URL -> m User
 mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -> avatar) = do
     let first_last = cs . takeBaseName . cs $ avatar
         (fnam, lnam) = case ST.findIndex (== '_') first_last of
@@ -766,7 +766,7 @@ mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -
     role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
-    (userAvatar .~ Just avatar) <$> currentUserAddDb AddUser pu
+    (userAvatar .~ Just avatar) <$> currentUserAddDb (AddUser (UserPassInitial "streng geheim!")) pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
