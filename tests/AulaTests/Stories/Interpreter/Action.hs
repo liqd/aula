@@ -189,7 +189,7 @@ shouldBe :: (Monad m, Eq a, Show a) => a -> a -> m ()
 shouldBe actual expected = assert (actual, expected) (actual == expected)
     -- FIXME: give source code location of the call.
 
--- ** Denotations for test step sections
+-- ** Notations for test step sections
 
 precondition :: Monad m => m a -> m a
 precondition = id
