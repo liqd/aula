@@ -10,24 +10,21 @@ module Persistent.TemplateHaskell
     ( makeAcidic
     ) where
 
-import Prelude hiding (pred)
-import Data.Monoid ((<>))
-import Language.Haskell.TH hiding (cxt)
+import           Control.Monad
+import           Data.Acid.Advanced (IsAcidic(acidEvents), Event(..), Method, MethodResult, MethodState)
+import           Data.Acid hiding (makeAcidic)
+import           Data.Char
+import           Data.List ((\\), nub)
+import           Data.Monoid ((<>))
+import           Data.SafeCopy
+import           Data.Typeable
 import qualified Language.Haskell.TH as TH
-import Language.Haskell.TH.Ppr
-
-import Data.Acid hiding (makeAcidic)
-import Data.Acid.Advanced (IsAcidic(acidEvents), Event(..), Method, MethodResult, MethodState)
+import           Language.Haskell.TH hiding (cxt)
+import           Language.Haskell.TH.Ppr
+import           Prelude hiding (pred)
 
 import Persistent.Pure (AulaData, AUpdate, AddDb, EnvWithProto, PersistExcept, aUpdateEvent)
 
-import Data.List ((\\), nub)
--- import Data.Maybe (mapMaybe)
-import Data.SafeCopy
-import Data.Typeable
-import Data.Char
--- import Control.Applicative
-import Control.Monad
 
 {-| Create the control structures required for acid states
     using Template Haskell.

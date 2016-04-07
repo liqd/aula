@@ -161,9 +161,10 @@ updateAvatar user url = aupdate $ SetUserAvatar (user ^. _Id) url
 mkUniverse :: forall m . ActionM m => IO (m ())
 mkUniverse = universe <$> newQCGen
 
+-- | This type change will generate a lot of transactions.  (Maybe we can find a better trade-off
+-- for transaction granularity here that speeds things up considerably.)
 universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
-
     admin <- aupdate . AddFirstUser sometime =<< gen rnd genFirstUser
     loginByUser admin
 
@@ -190,8 +191,9 @@ universe rnd = do
     sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
 
     pure ()
-  where
-    assert' p = assert p $ return ()
+
+assert' :: Bool -> m ()
+assert' p = assert p $ return ()
 
 
 -- * Helpers

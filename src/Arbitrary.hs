@@ -765,7 +765,7 @@ mkFishUser mSchoolClass (("http://zierfischverzeichnis.de/klassen/pisces/" <>) -
     role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     -- FIXME: change avatar in the database, not just in the user returned from this function!
-    (userAvatar ?~ avatar) <$> currentUserAddDb (AddUser (UserPassInitial "streng geheim!")) pu
+    (userAvatar ?~ avatar) <$> currentUserAddDb (AddUser (UserPassInitial "dummy password")) pu
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
