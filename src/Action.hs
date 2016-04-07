@@ -137,6 +137,8 @@ class Monad m => ActionLog m where
     logEvent :: ST -> m ()
 
 -- | A monad that can run acid-state.
+--
+-- See 'AQuery', 'AEQuery', 'AUpdate' in "Persistent.Pure" for more a deeper understanging of this.
 class (MonadError ActionExcept m) => ActionPersist m where
     aqueryDb :: m AulaData
     aupdate  :: HasAUpdate ev a => ev -> m a
