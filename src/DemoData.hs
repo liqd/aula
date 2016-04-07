@@ -192,7 +192,7 @@ universe rnd = do
 
     pure ()
 
-assert' :: Bool -> m ()
+assert' :: Monad m => Bool -> m ()
 assert' p = assert p $ return ()
 
 
