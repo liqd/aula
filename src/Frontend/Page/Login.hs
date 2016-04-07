@@ -9,7 +9,8 @@ where
 
 import Text.Digestive
 
-import Action (ActionM, persistent)
+import Action (ActionM, query)
+import Persistent
 import qualified Action
 import Frontend.Prelude
 
@@ -35,9 +36,9 @@ data LoginDemoHints = LoginDemoHints { fromLoginDemoHints :: [User] }
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
-checkLogin :: (v ~ Html (), ActionM r m) => LoginFormData -> m (Result v User)
+checkLogin :: (v ~ Html (), ActionM m) => LoginFormData -> m (Result v User)
 checkLogin (LoginFormData uLogin _pass) = do
-    muser <- persistent $ findUserByLogin (UserLogin uLogin)
+    muser <- query $ findUserByLogin (UserLogin uLogin)
     pure $ case muser of
         Nothing ->
             Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
@@ -92,7 +93,7 @@ instance ToHtml LoginDemoHints where
 
 -- * handlers
 
-login :: (ActionM r action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
+login :: (ActionM action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
 login = redirectFormHandler getPage Action.loginByUser
   where
-    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> Action.persistent getUsers
+    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> query getUsers

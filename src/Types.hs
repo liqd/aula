@@ -59,7 +59,9 @@ lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
-  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
+  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
+
+instance SOP.Generic DurationDays
 
 -- | Percentage values from 0 to 100, used in quorum computations.
 type Percent = Int
@@ -73,10 +75,6 @@ type Percent = Int
 --
 -- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
-
--- | FIXME: it would be nice to have the creator in a reader in the persist monad rather than as an
--- explicit parameter (note this type synonym is isomorphic to an explicit argument).
-type UserWithProto a = (User, Proto a)
 
 -- | The method how a 't' value is calculated from its prototype
 -- and a metainfo to that.
@@ -296,6 +294,16 @@ instance SOP.Generic ProtoTopic
 
 type instance Proto Topic = ProtoTopic
 
+-- Edit topic description and add ideas to topic.
+data EditTopicData = EditTopicData
+    { _editTopicTitle    :: ST
+    , _editTopicDesc     :: Document
+    , _editTopicAddIdeas :: [AUID Idea]
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EditTopicData
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
@@ -417,6 +425,37 @@ data DelegationNetwork = DelegationNetwork
 
 instance SOP.Generic DelegationNetwork
 
+-- | Elaboration and Voting phase durations
+-- FIXME: elaboration and refinement are the same thing.  pick one term!
+data Durations = Durations
+    { _elaborationPhase :: DurationDays
+    , _votingPhase      :: DurationDays
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Durations
+
+data Quorums = Quorums
+    { _schoolQuorumPercentage :: Int
+    , _classQuorumPercentage  :: Int -- (there is only one quorum for all classes, see gh#318)
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Quorums
+
+data Settings = Settings
+    { _durations :: Durations
+    , _quorums   :: Quorums
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Settings
+
+defaultSettings :: Settings
+defaultSettings = Settings
+    { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
+    , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 3 }
+    }
 
 -- * aula-specific helper types
 
@@ -582,6 +621,10 @@ instance Binary User
 instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
+instance Binary DurationDays
+instance Binary Durations
+instance Binary Quorums
+instance Binary Settings
 
 makePrisms ''IdeaLocation
 makePrisms ''Category
@@ -604,6 +647,8 @@ makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
 makeLenses ''Document
+makeLenses ''Durations
+makeLenses ''EditTopicData
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
@@ -613,11 +658,13 @@ makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''MetaInfo
 makeLenses ''Phase
+makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
 makeLenses ''Role
 makeLenses ''SchoolClass
+makeLenses ''Settings
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
@@ -626,6 +673,7 @@ makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
+makeLenses ''Quorums
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
@@ -636,6 +684,8 @@ deriveSafeCopy 0 'base ''DelegationContext
 -- deriveSafeCopy 0 'base ''DelegationNetwork
 deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
+deriveSafeCopy 0 'base ''Durations
+deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation
@@ -649,11 +699,13 @@ deriveSafeCopy 0 'base ''IdeaVote
 deriveSafeCopy 0 'base ''IdeaVoteValue
 deriveSafeCopy 0 'base ''MetaInfo
 deriveSafeCopy 0 'base ''Phase
--- deriveSafeCopy 0 'base ''ProtoIdea
--- deriveSafeCopy 0 'base ''ProtoTopic
--- deriveSafeCopy 0 'base ''ProtoUser
+deriveSafeCopy 0 'base ''ProtoDelegation
+deriveSafeCopy 0 'base ''ProtoIdea
+deriveSafeCopy 0 'base ''ProtoTopic
+deriveSafeCopy 0 'base ''ProtoUser
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
+deriveSafeCopy 0 'base ''Settings
 deriveSafeCopy 0 'base ''Timestamp
 deriveSafeCopy 0 'base ''Topic
 deriveSafeCopy 0 'base ''UpDown
@@ -663,6 +715,7 @@ deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
+deriveSafeCopy 0 'base ''Quorums
 
 class HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
