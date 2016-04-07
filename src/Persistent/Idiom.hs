@@ -74,7 +74,7 @@ phaseEndVote = do
 
 -- | Returns the Just topic of an idea if the idea is assocaited with a topic, Nothing
 -- if the idea is a wild idea, or throws an error if the topic is missing.
-ideaTopic :: Idea -> Query (Maybe Topic)
+ideaTopic :: Idea -> MQuery Topic
 ideaTopic idea = case idea ^. ideaLocation of
     IdeaLocationSpace _ ->
         pure Nothing
@@ -83,7 +83,7 @@ ideaTopic idea = case idea ^. ideaLocation of
         Just topic <- findTopic topicId
         pure $ Just topic
 
-ideaPhase :: Idea -> Query (Maybe Phase)
+ideaPhase :: Idea -> MQuery Phase
 ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
 checkInPhase :: (Phase -> Bool) -> Idea -> Topic -> EQuery ()

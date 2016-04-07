@@ -326,19 +326,19 @@ addDbAppValue l (EnvWith cUser now pa) = do
     l .= pure a
     pure a
 
-findIn :: AulaGetter [a] -> (a -> Bool) -> Query (Maybe a)
+findIn :: AulaGetter [a] -> (a -> Bool) -> MQuery a
 findIn l = views l . find
 
 findAllIn :: AulaGetter [a] -> (a -> Bool) -> Query [a]
 findAllIn l = views l . filter
 
-findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query (Maybe a)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> MQuery a
 findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> Query (Maybe a)
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> MQuery a
 findInById l i = view (l . at i)
 
 getSpaces :: Query [IdeaSpace]
@@ -362,7 +362,7 @@ addIdeaSpaceIfNotExists ispace = do
 addIdea :: AddDb Idea
 addIdea = addDb dbIdeaMap
 
-findIdea :: AUID Idea -> Query (Maybe Idea)
+findIdea :: AUID Idea -> MQuery Idea
 findIdea = findInById dbIdeaMap
 
 findIdeasByUserId :: AUID User -> Query [Idea]
@@ -404,7 +404,7 @@ editTopic topicId (EditTopicData title desc ideas) = do
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> Query (Maybe User)
+findUser :: AUID User -> MQuery User
 findUser = findInById dbUserMap
 
 getUsers :: Query [User]
@@ -436,10 +436,10 @@ findDelegationsByContext :: DelegationContext -> Query [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
     <$> view dbDelegationMap
 
-findUserByLogin :: UserLogin -> Query (Maybe User)
+findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
 
-findTopic :: AUID Topic -> Query (Maybe Topic)
+findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap
 
 findTopicsBySpace :: IdeaSpace -> Query [Topic]
