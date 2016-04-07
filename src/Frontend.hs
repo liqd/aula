@@ -232,10 +232,10 @@ type TopicApi =
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> Topic ::> "ideas"              :> IdeaFilterApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "all"     :> IdeaFilterApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "voting"  :> IdeaFilterApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "winning" :> IdeaFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> GetH (Frame ViewTopic)
   :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
 
        -- create new topic

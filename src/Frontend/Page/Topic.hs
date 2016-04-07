@@ -14,7 +14,7 @@ module Frontend.Page.Topic
     , ViewTopicTab(..)
     , CreateTopic(..)
     , EditTopic(..)
-    , IdeaFilterApi
+    , IdeasFilterApi
     , viewTopic
     , createTopic
     , editTopic )
@@ -22,6 +22,7 @@ where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept)
 import Control.Exception (assert)
+import Frontend.Page.Category
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
 import qualified Action (createTopic)
@@ -33,13 +34,13 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- * types
 
-type IdeaFilterApi = QueryParam "category" Category
-type IdeaFilterQuery = Maybe Category
+type IdeasFilterApi = QueryParam "category" Category
+type IdeasFilterQuery = Maybe Category
 
 data ViewTopicTab
-  = TabAllIdeas     { _viewTopicTabFilter :: IdeaFilterQuery }
-  | TabVotingIdeas  { _viewTopicTabFilter :: IdeaFilterQuery }
-  | TabWinningIdeas { _viewTopicTabFilter :: IdeaFilterQuery }
+  = TabAllIdeas     { _viewTopicTabFilter :: IdeasFilterQuery }
+  | TabVotingIdeas  { _viewTopicTabFilter :: IdeasFilterQuery }
+  | TabWinningIdeas { _viewTopicTabFilter :: IdeasFilterQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -107,6 +108,7 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
+            categoryFilterButtons (topicIdeaLocation topic)
             div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
                 i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
                 ul_ [class_ "pop-menu-list"] $ do

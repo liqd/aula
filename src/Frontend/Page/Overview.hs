@@ -104,7 +104,7 @@ instance ToHtml PageIdeasOverview where
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
-        categoryFilterButtons
+        categoryFilterButtons (IdeaLocationSpace space)
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
                 ListItemIdea True Nothing numVoters idea ^. html

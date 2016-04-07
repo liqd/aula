@@ -29,7 +29,7 @@ import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw)
-import Servant.API (FromHttpApiData(parseUrlPiece))
+import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
 import Text.Read (readMaybe)
 
 import qualified Data.Text as ST
@@ -140,12 +140,21 @@ data Category =
 instance SOP.Generic Category
 
 instance FromHttpApiData Category where
-    parseUrlPiece "rule"        = Right CatRule
-    parseUrlPiece "equipment"   = Right CatEquipment
-    parseUrlPiece "class"       = Right CatClass
-    parseUrlPiece "time"        = Right CatTime
-    parseUrlPiece "environment" = Right CatEnvironment
-    parseUrlPiece _             = Left "no parse"
+    parseUrlPiece = \case
+        "rules"       -> Right CatRule
+        "equipment"   -> Right CatEquipment
+        "teaching"    -> Right CatClass
+        "time"        -> Right CatTime
+        "environment" -> Right CatEnvironment
+        _             -> Left "no parse"
+
+instance ToHttpApiData Category where
+    toUrlPiece = \case
+        CatRule        -> "rules"
+        CatEquipment   -> "equipment"
+        CatClass       -> "teaching"
+        CatTime        -> "time"
+        CatEnvironment -> "environment"
 
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?

@@ -14,6 +14,7 @@ where
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
+import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
@@ -64,9 +65,11 @@ instance ToHtml CategoryButton where
         span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
     toHtml (CategoryButton CatEnvironment) = li_ [class_ "icon-environment"] $
         span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
-      -- FIXME: do something with [minBound..] here.
+      -- TODO: do something with [minBound..] here.
 
 
+-- TODO: rename to categoryTOUIString; move to Types; have all mappings to and from string in one
+-- place.
 categoryToValue :: IsString s => Category -> s
 categoryToValue CatRule        = "Regel"
 categoryToValue CatEquipment   = "Ausstattung"
@@ -78,18 +81,13 @@ categoryValues :: IsString s => [(Category, s)]
 categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 
 
-categoryFilterButtons :: Monad m => HtmlT m ()
-categoryFilterButtons = div_ [class_ "icon-list"] $ do
-    ul_ $ do
-        -- FIXME: these buttons should filter the ideas by category
-        -- FIXME: do something with [minBound..] here.
-        li_ [class_ "icon-rules"] $ do
-            a_ [href_ U.Broken] "Regeln"
-        li_ [class_ "icon-equipment"] $ do
-            a_ [href_ U.Broken] "Ausstattung"
-        li_ [class_ "icon-teaching"] $ do
-            a_ [href_ U.Broken] "Unterricht"
-        li_ [class_ "icon-time"] $ do
-            a_ [href_ U.Broken] "Zeit"
-        li_ [class_ "icon-environment"] $ do
-            a_ [href_ U.Broken] "Umgebung"
+linkToCategory :: IdeaLocation -> Category -> ST
+linkToCategory loc cat =
+       (absoluteUriPath . relPath . U.listIdeas $ loc)
+    <> "?category=" <> toUrlPiece cat
+
+categoryFilterButtons :: Monad m => IdeaLocation -> HtmlT m ()
+categoryFilterButtons loc = div_ [class_ "icon-list"] $ do
+    ul_ . for_ [minBound..] $ \cat ->
+        li_ [class_ $ "icon-" <> toUrlPiece cat] $
+            a_ [Lucid.href_ $ linkToCategory loc cat] (categoryToValue cat)
