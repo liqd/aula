@@ -41,7 +41,6 @@ dependencies:
     - lens
     - lucid
     - mtl
-    - postgresql-simple
     - pretty-show
     - process
     - QuickCheck

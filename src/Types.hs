@@ -33,7 +33,6 @@ import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
 import Text.Read (readMaybe)
 
 import qualified Data.Text as ST
-import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 import qualified Generics.SOP as SOP
 
@@ -414,7 +413,7 @@ instance SOP.Generic UserPass
 
 -- | FIXME: replace with structured email type.
 newtype UserEmail = UserEmail { fromUserEmail :: ST }
-    deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
+    deriving (Eq, Ord, Show, Read, CSV.FromField, Generic)
 
 -- | "Beauftragung"
 data Delegation = Delegation

@@ -50,7 +50,6 @@ library
     , lens
     , lucid
     , mtl
-    , postgresql-simple
     , pretty-show
     , process
     , QuickCheck
@@ -142,7 +141,6 @@ executable aula-html-dummies
     , lens
     , lucid
     , mtl
-    , postgresql-simple
     , pretty-show
     , process
     , QuickCheck
@@ -202,7 +200,6 @@ executable aula-server
     , lens
     , lucid
     , mtl
-    , postgresql-simple
     , pretty-show
     , process
     , QuickCheck
@@ -260,7 +257,6 @@ test-suite spec
     , lens
     , lucid
     , mtl
-    , postgresql-simple
     , pretty-show
     , process
     , QuickCheck
