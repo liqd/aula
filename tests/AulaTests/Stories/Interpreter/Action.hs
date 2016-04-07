@@ -128,8 +128,8 @@ runClient (Free (MarkIdea t v k)) = do
     postcondition $ do
         Just idea' <- findIdeaByTitle t
         case v of
-            Left  v' -> (idea' ^? ideaJuryResult . _Just . ideaJuryResultValue) `shouldBe` (Just v')
-            Right v' -> (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue) `shouldBe` (Just v')
+            Left  v' -> (idea' ^? ideaJuryResult . _Just . ideaJuryResultValue) `shouldBe` Just v'
+            Right v' -> (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue) `shouldBe` Just v'
     runClient k
 
 runClient (Free (VoteIdea t v k)) = do
@@ -147,10 +147,7 @@ runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $
         currentUserAddDb (AddCommentToIdea (idea ^. _Id)) (Markdown c)
-    postcondition $ do
-        Just idea' <- findIdeaByTitle t
-        let Just _comment = findCommentByText idea' c
-        return ()
+    postcondition $ checkIdeaComment t c
     runClient k
 
 runClient (Free (CommentOnComment t cp c k)) = do
@@ -162,11 +159,9 @@ runClient (Free (CommentOnComment t cp c k)) = do
         currentUserAddDb
             (AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id))
             (Markdown c)
-    postcondition $ do
-        Just idea' <- findIdeaByTitle t
-        let Just _comment = findCommentByText idea' c
-        return ()
+    postcondition $ checkIdeaComment t c
     runClient k
+
 
 -- * helpers
 
@@ -178,6 +173,12 @@ findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ query getTo
 
 findCommentByText :: Idea -> CommentText -> Maybe Comment
 findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments
+
+checkIdeaComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m ()
+checkIdeaComment t c = do
+    Just idea' <- findIdeaByTitle t
+    let Just _comment = findCommentByText idea' c
+    return ()
 
 assert :: (Show msg, Monad m) => msg -> Bool -> m ()
 assert _ True  = return ()
