@@ -34,9 +34,6 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- * types
 
-type IdeasFilterApi = QueryParam "category" Category
-type IdeasFilterQuery = Maybe Category
-
 data ViewTopicTab
   = TabAllIdeas     { _viewTopicTabFilter :: IdeasFilterQuery }
   | TabVotingIdeas  { _viewTopicTabFilter :: IdeasFilterQuery }
@@ -271,10 +268,8 @@ viewTopic tab topicId = makeFrame =<< equery (do
             delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
             pure $ ViewTopicDelegations topic delegations
         _ -> do
-            let fltr = case tab ^? viewTopicTabFilter . _Just of
-                          Just cat -> filter ((== cat) . view ideaCategory)
-                          Nothing  -> id
-            ideas <- fltr <$> findIdeasByTopic topic
+            ideas <- ideasFilterQuery (tab ^? viewTopicTabFilter . _Just)
+                  <$> findIdeasByTopic topic
             ViewTopicIdeas tab topic <$> (getNumVotersForIdea `mapM` ideas))
 
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m

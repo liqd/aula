@@ -246,7 +246,7 @@ type TopicApi =
 type AulaSpace
     =  IdeaApi
        -- browse wild ideas in an idea space
-  :<|> "ideas" :> GetH (Frame PageIdeasOverview)
+  :<|> "ideas" :> IdeasFilterApi :> GetH (Frame PageIdeasOverview)
   :<|> TopicApi
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m

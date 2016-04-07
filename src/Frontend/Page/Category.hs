@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -18,6 +19,15 @@ import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
+
+
+type IdeasFilterApi = QueryParam "category" Category
+type IdeasFilterQuery = Maybe Category
+
+ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
+ideasFilterQuery = \case
+    (Just cat) -> filter ((== cat) . view ideaCategory)
+    Nothing    -> id
 
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep

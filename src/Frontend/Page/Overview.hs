@@ -52,10 +52,10 @@ viewRooms :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
 viewRooms = makeFrame =<< (PageRoomsOverview <$> query getSpaces)
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => IdeaSpace -> m (Frame PageIdeasOverview)
-viewIdeas space = makeFrame =<<
+    => IdeaSpace -> IdeasFilterQuery -> m (Frame PageIdeasOverview)
+viewIdeas space mcat = makeFrame =<<
     (PageIdeasOverview space <$> query (do
-        is  <- findWildIdeasBySpace space
+        is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
         ivs <- getNumVotersForIdea `mapM` is
         pure ivs))
 
