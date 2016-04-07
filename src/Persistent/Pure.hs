@@ -14,10 +14,10 @@
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 -- | This module exports acid-state transactions.  It introduces a state type 'AulaData' and 'Query'
--- and 'Update' operations on that state.  (To be more specific, two new types for queries and
--- pudates are defined that specific to 'AulaData' and introduce exceptions.)
+-- and 'Update' operations on that state.  (To be more specific, a few new types for queries and
+-- updates are defined that specific to 'AulaData' and introduce exceptions.)
 --
--- Serializability happens outside of this module.
+-- Serialization happens outside of this module.
 --
 -- FIXME: get some structure into the export list.
 -- FIXME: consider removing Purescript.Idiom and doing everything here.
