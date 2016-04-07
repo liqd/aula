@@ -36,6 +36,8 @@ testConfig = do
     cfg <- getConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     cfg & listenerPort .~ pop
+        & dbPath       .~ "./state/AulaData_Tests"
+              -- (in case somebody accidentally tests on a production system.  :)
         & pure
 
 
