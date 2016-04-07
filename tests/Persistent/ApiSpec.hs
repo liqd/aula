@@ -55,14 +55,14 @@ runA :: Config -> RunPersist -> Action.Action a -> IO a
 runA cfg rp = fmap (either (error . show) id)
             . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg))
 
-runQ :: (MonadIO m) => RunPersist -> AQuery a -> m a
+runQ :: (MonadIO m) => RunPersist -> Query a -> m a
 runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery
 
 runU :: (MonadIO m, HasAUpdate ev a) => RunPersist -> ev -> m (Either PersistExcept a)
 runU rp u = liftIO $ (rp ^. rpUpdate) u
 
 
-getDbSpec :: (Eq a, Show a) => PersistenceImpl -> String -> AQuery [a] -> Spec
+getDbSpec :: (Eq a, Show a) => PersistenceImpl -> String -> Query [a] -> Spec
 getDbSpec imp name getXs = do
     describe name $ do
         context "on empty database" . around (mkEmpty imp) $ do
@@ -78,7 +78,7 @@ addDbSpecProp :: forall f proto ev a.
                  (Foldable f, Arbitrary proto, HasAUpdate ev a)
               => PersistenceImpl
               -> String
-              -> AQuery (f a)
+              -> Query (f a)
               -> (EnvWith proto -> ev)
               -> (proto -> Either PersistExcept a -> Expectation)
               -> Spec
@@ -97,11 +97,11 @@ addDbSpecProp imp name getXs addX propX =
         context "on initial database" . around (mkInitial imp) $ t
 
 addDbSpec :: (Foldable f, Arbitrary proto, HasAUpdate ev a)
-          => PersistenceImpl -> String -> AQuery (f a) -> (EnvWith proto -> ev) -> Spec
+          => PersistenceImpl -> String -> Query (f a) -> (EnvWith proto -> ev) -> Spec
 addDbSpec imp name getXs addX = addDbSpecProp imp name getXs addX (\_ _ -> passes)
 
 findInBySpec :: (Eq a, Show a, Arbitrary k) =>
-                PersistenceImpl -> String -> AQuery [a] -> (k -> AQuery (Maybe a)) ->
+                PersistenceImpl -> String -> Query [a] -> (k -> Query (Maybe a)) ->
                 Fold a k -> (k -> k) ->
                 Spec
 findInBySpec imp name getXs findXBy f change =
@@ -127,7 +127,7 @@ findInBySpec imp name getXs findXBy f change =
                     mu `shouldBe` Just x
 
 findAllInBySpec :: (Eq a, Show a) =>
-                    PersistenceImpl -> String -> AQuery [a] -> AQuery (Gen k) -> (k -> AQuery [a]) ->
+                    PersistenceImpl -> String -> Query [a] -> Query (Gen k) -> (k -> Query [a]) ->
                     Fold a k -> (k -> k) ->
                     Spec
 findAllInBySpec imp name getXs genKs findAllXBy f change =
@@ -184,7 +184,7 @@ persistApiSpec imp = do
 
     let elements' [] = arbitrary
         elements' xs = elements xs
-        getArbTopicIds :: AQuery (Gen (AUID Topic))
+        getArbTopicIds :: Query (Gen (AUID Topic))
         getArbTopicIds = elements' . map (view _Id) <$> getTopics
     findAllInBySpec imp "findIdeasByTopicId"
         getIdeasWithTopic getArbTopicIds findIdeasByTopicId ideaTopicId changeAUID

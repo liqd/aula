@@ -19,12 +19,14 @@ where
 
 import Control.Lens
 import Control.Monad.Reader (ask)
-import Data.Acid hiding (makeAcidic)
+import Data.Acid hiding (Query, Update, makeAcidic)
 import Data.SafeCopy (base, deriveSafeCopy)
 
 import Persistent.Pure
 import Persistent.Idiom
 import Persistent.TemplateHaskell (makeAcidic)
+
+import qualified Data.Acid as Acid
 
 
 deriveSafeCopy 0 'base ''AulaData
@@ -41,7 +43,7 @@ makeLenses ''RunPersistT
 
 type RunPersist = RunPersistT IO
 
-askDb :: Query AulaData AulaData
+askDb :: Acid.Query AulaData AulaData
 askDb = ask
 
 $(makeAcidic ''AulaData

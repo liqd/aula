@@ -250,7 +250,7 @@ makeFormIdeaSelection ideas =
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = makeFrame =<< aequery (do
+viewTopic tab topicId = makeFrame =<< equery (do
     topic <- maybe404 =<< findTopic topicId
     delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
     case tab of
@@ -260,7 +260,7 @@ viewTopic tab topicId = makeFrame =<< aequery (do
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =
     redirectFormHandler
-        (aquery $ CreateTopic space
+        (query $ CreateTopic space
             <$> findWildIdeasBySpace space
             <*> phaseEndRefinement)
         Action.createTopic
@@ -268,7 +268,7 @@ createTopic space =
 editTopic :: ActionM m => AUID Topic -> ServerT (FormHandler EditTopic) m
 editTopic topicId = redirectFormHandler getPage (aupdate . Persistent.EditTopic topicId)
   where
-    getPage = aequery $ do
+    getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
         ideas <- findWildIdeasBySpace space

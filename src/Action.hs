@@ -14,7 +14,7 @@ module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
-    , ActionPersist(aqueryDb, aquery, aequery, amquery, aupdate), maybe404
+    , ActionPersist(aqueryDb, query, equery, mquery, aupdate), maybe404
     , ActionUserHandler(login, logout, userState)
     , ActionRandomPassword(mkRandomPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
@@ -138,19 +138,19 @@ class Monad m => ActionLog m where
 
 -- | A monad that can run acid-state.
 --
--- See 'AQuery', 'AEQuery', 'AUpdate' in "Persistent.Pure" for more a deeper understanging of this.
+-- See 'Query', 'EQuery', 'AUpdate' in "Persistent.Pure" for more a deeper understanging of this.
 class (MonadError ActionExcept m) => ActionPersist m where
     aqueryDb :: m AulaData
     aupdate  :: HasAUpdate ev a => ev -> m a
 
-    aquery :: AQuery a -> m a
-    aquery q = runReader q <$> aqueryDb
+    query :: Query a -> m a
+    query q = runReader q <$> aqueryDb
 
-    amquery :: Typeable a => AMQuery a -> m a
-    amquery q = aequery (maybe404 =<< q)
+    mquery :: Typeable a => MQuery a -> m a
+    mquery q = equery (maybe404 =<< q)
 
-    aequery :: AEQuery a -> m a
-    aequery q = do
+    equery :: EQuery a -> m a
+    equery q = do
         db <- aqueryDb
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
@@ -190,7 +190,7 @@ loginByUser = login . view _Id
 
 loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
 loginByName n = do
-    Just u <- aquery $ findUserByLogin n  -- FIXME: handle 'Nothing'
+    Just u <- query $ findUserByLogin n  -- FIXME: handle 'Nothing'
     loginByUser u
 
 -- | Returns the current user ID
@@ -219,7 +219,7 @@ currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 currentUser :: (ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
     uid <- currentUserId
-    muser <- aquery (findUser uid)
+    muser <- query (findUser uid)
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
@@ -251,7 +251,7 @@ topicPhaseChange topic change = do
 
 topicTimeout :: (ActionPersist m, ActionError m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
-    topic <- amquery $ findTopic tid
+    topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
 
 phaseAction :: (Monad m) => Topic -> PhaseAction -> m ()
@@ -294,18 +294,18 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- FIXME: Compute value in one persistent computation
 markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
-    idea  <- amquery $ findIdea iid
-    topic <- amquery $ ideaTopic idea
+    idea  <- mquery $ findIdea iid
+    topic <- mquery $ ideaTopic idea
     -- FIXME: should this be one transaction?  or the two above as well?
-    aequery $ checkInPhase (PhaseJury ==) idea topic
+    equery $ checkInPhase (PhaseJury ==) idea topic
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
 checkCloseJuryPhase :: ActionM m => Topic -> m ()
 checkCloseJuryPhase topic = do
-    allMarked <- aquery $ checkAllIdeasMarked topic
+    allMarked <- query $ checkAllIdeasMarked topic
     when allMarked $ do  -- FIXME: should this be one transaction?
-        days <- aquery phaseEndVote
+        days <- query phaseEndVote
         topicPhaseChange topic (AllIdeasAreMarked days)
 
 -- | Mark idea as winner or not enough votes if the idea is in the Result phase,
@@ -315,9 +315,9 @@ checkCloseJuryPhase topic = do
 -- FIXME: redundant code between this and 'markIdeaInJuryPhase'.
 markIdeaInResultPhase :: ActionM m => AUID Idea -> IdeaVoteResultValue -> m ()
 markIdeaInResultPhase iid rv = do
-    idea  <- amquery $ findIdea iid
-    topic <- amquery $ ideaTopic idea
-    aequery $ checkInPhase (PhaseResult ==) idea topic
+    idea  <- mquery $ findIdea iid
+    topic <- mquery $ ideaTopic idea
+    equery $ checkInPhase (PhaseResult ==) idea topic
     currentUserAddDb_ (AddIdeaVoteResult iid) rv
     return ()
 

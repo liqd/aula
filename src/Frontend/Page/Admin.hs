@@ -218,7 +218,7 @@ instance FormPage PageAdminSettingsDurations where
         DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminDurations :: ActionM m => ServerT (FormHandler PageAdminSettingsDurations) m
-adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> aquery (view dbDurations))
+adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> query (view dbDurations))
                                      (aupdate . SaveDurations)
 
 
@@ -250,7 +250,7 @@ instance FormPage PageAdminSettingsQuorum where
         DF.inputSubmit "AENDERUNGEN SPIECHERN"
 
 adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
-adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> aquery (view dbQuorums))
+adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> query (view dbQuorums))
                                   (aupdate . SaveQuorums)
 
 
@@ -424,7 +424,7 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
 
 adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
-    makeFrame =<< PageAdminSettingsGaPUsersView <$> aquery getUsers
+    makeFrame =<< PageAdminSettingsGaPUsersView <$> query getUsers
 
 adminSettingsGaPUsersCreate :: ActionM m => m (Frame PageAdminSettingsGaPUsersCreate)
 adminSettingsGaPUsersCreate =
@@ -432,12 +432,12 @@ adminSettingsGaPUsersCreate =
 
 adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClassesView)
 adminSettingsGaPClassesView =
-    makeFrame =<< PageAdminSettingsGaPClassesView <$> aquery getSchoolClasses
+    makeFrame =<< PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
-    editUserPage = aquery $
+    editUserPage = query $
         PageAdminSettingsGaPUsersEdit
         <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
         <*> getSchoolClasses
@@ -453,7 +453,7 @@ isClassInRole clss (Student clss')    = clss == clss'
 isClassInRole clss (ClassGuest clss') = clss == clss'
 isClassInRole _    _                  = False
 
-getSchoolClasses :: AQuery [SchoolClass]
+getSchoolClasses :: Query [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
   where
     toClass (ClassSpace clss) = Just clss
@@ -464,7 +464,7 @@ adminSettingsGaPClassesEdit clss =
     makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
   where
     -- FIXME: the following two lines should be happening in "Persistent.Api".
-    usersInClass = filter isUserInClass <$> aquery getUsers
+    usersInClass = filter isUserInClass <$> query getUsers
     isUserInClass = isClassInRole clss . view userRole
 
 
@@ -495,7 +495,7 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         makeText (ClassSpace (SchoolClass _year name)) = toHtml name
 
 adminEventsProtocol :: ActionM m => m (Frame PageAdminSettingsEventsProtocol)
-adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> aquery getSpaces)
+adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> query getSpaces)
 
 
 -- * Classes Create

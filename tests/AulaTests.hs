@@ -58,7 +58,7 @@ bodyShouldContain body l = l ^. responseBody . to cs `shouldContain` body
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
 
-data Query = Query
+data WreqQuery = WreqQuery
     { post :: forall a. Postable a => String -> a -> IO (Response LBS)
     , get  :: String -> IO (Response LBS)
     }
@@ -66,14 +66,14 @@ data Query = Query
 doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
-withServer :: (Query -> IO a) -> IO a
+withServer :: (WreqQuery -> IO a) -> IO a
 withServer action = do
     cfg <- testConfig
 
     let opts = defaults & checkStatus ?~ doNotThrowExceptionsOnErrorCodes
                         & redirects   .~ 0
-        query sess = Query (Sess.postWith opts sess . mkServerUri cfg)
-                           (Sess.getWith opts sess . mkServerUri cfg)
+        wreqQuery sess = WreqQuery (Sess.postWith opts sess . mkServerUri cfg)
+                                   (Sess.getWith opts sess . mkServerUri cfg)
         initialize q = do
             resp
                <- post q "/api/manage-state/create-init"
@@ -86,8 +86,8 @@ withServer action = do
         (runFrontendSafeFork cfg)
         killThread
         (const . Sess.withSession $ \sess -> do
-            initialize $ query sess
-            action $ query sess)
+            initialize $ wreqQuery sess
+            action     $ wreqQuery sess)
 
 mkServerUri :: Config -> String -> String
 mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)

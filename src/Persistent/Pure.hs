@@ -30,7 +30,7 @@ module Persistent.Pure
     , emptyAulaData
 
     , EnvWith(..), EnvWithProto, envUser, envNow, envWith
-    , AEvent, AQuery, AEQuery, AMQuery, AUpdate(AUpdate), AddDb
+    , AEvent, Query, EQuery, MQuery, AUpdate(AUpdate), AddDb
     , runAUpdate
     , aUpdateEvent
     , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
@@ -119,7 +119,7 @@ import Control.Monad.State (MonadState, gets, put)
 import Control.Monad (unless, replicateM, when)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
-import Data.Acid  -- (Query, Update, liftQuery)
+import Data.Acid (UpdateEvent, EventState, EventResult)
 import Data.Foldable (find, for_)
 import Data.List (nub)
 import Data.Maybe
@@ -130,8 +130,9 @@ import Data.Typeable (Typeable, typeRep)
 import Servant
 import Servant.Missing (ThrowError500(..))
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.Acid as Acid
+import qualified Data.Map  as Map
+import qualified Data.Set  as Set
 import qualified Data.Text as ST
 
 import Types
@@ -186,16 +187,16 @@ type AEvent = Event AulaData
 
 -- | 'Query' for 'AulaData'.  Doesn't contain the 'WhoWhen' context,
 -- because that would make the stack contain two readers.
-type AQuery a = forall m. MonadReader AulaData m => m a
+type Query a = forall m. MonadReader AulaData m => m a
 
--- | Same as 'AQuery' but can throw 'PersistExcept'.
-type AEQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) => m a
+-- | Same as 'Query' but can throw 'PersistExcept'.
+type EQuery a = forall m. (MonadError PersistExcept m, MonadReader AulaData m) => m a
 
--- | This shortcut for 'AEQuery' that throws the appropriate 'PersistExcept' on 'Nothing'.
-type AMQuery a = AQuery (Maybe a)
+-- | This shortcut for 'EQuery' that throws the appropriate 'PersistExcept' on 'Nothing'.
+type MQuery a = Query (Maybe a)
 
 -- | 'Update' for 'AulaData'.  Can throw 'PersistExcept'.
-newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaData) a }
+newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Acid.Update AulaData) a }
   deriving ( Functor
            , Applicative
            , Monad
@@ -206,7 +207,7 @@ newtype AUpdate a = AUpdate { _unAUpdate :: ExceptT PersistExcept (Update AulaDa
 maybe404 :: forall m a. (MonadError PersistExcept m, Typeable a) => Maybe a -> m a
 maybe404 = maybe (throwError . PersistError404 . show . typeRep $ (Proxy :: Proxy a)) pure
 
-runAUpdate :: AUpdate a -> Update AulaData (Either PersistExcept a)
+runAUpdate :: AUpdate a -> Acid.Update AulaData (Either PersistExcept a)
 runAUpdate = runExceptT . _unAUpdate
 
 aUpdateEvent :: (UpdateEvent ev, EventState ev ~ AulaData, EventResult ev ~ Either PersistExcept a)
@@ -215,7 +216,7 @@ aUpdateEvent f = UpdateEvent $ runAUpdate . f
 
 type HasAUpdate ev a = (UpdateEvent ev, MethodState ev ~ AulaData, MethodResult ev ~ Either PersistExcept a)
 
-liftAQuery :: AQuery a -> AUpdate a
+liftAQuery :: Query a -> AUpdate a
 liftAQuery m = gets (runReader m)
 
 -- * exceptions
@@ -249,7 +250,7 @@ runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
 --
 -- This can be equipped with a switch for performance, but if at all possible it would be nice to
 -- run the checks even in production.
-assertAulaDataM :: AQuery () -> AUpdate ()
+assertAulaDataM :: Query () -> AUpdate ()
 assertAulaDataM = liftAQuery
 
 {-
@@ -325,31 +326,31 @@ addDbAppValue l (EnvWith cUser now pa) = do
     l .= pure a
     pure a
 
-findIn :: AulaGetter [a] -> (a -> Bool) -> AQuery (Maybe a)
+findIn :: AulaGetter [a] -> (a -> Bool) -> Query (Maybe a)
 findIn l = views l . find
 
-findAllIn :: AulaGetter [a] -> (a -> Bool) -> AQuery [a]
+findAllIn :: AulaGetter [a] -> (a -> Bool) -> Query [a]
 findAllIn l = views l . filter
 
-findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> AQuery (Maybe a)
+findInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query (Maybe a)
 findInBy l f b = findIn l (\x -> x ^? f == Just b)
 
-findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> AQuery [a]
+findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> AQuery (Maybe a)
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> Query (Maybe a)
 findInById l i = view (l . at i)
 
-getSpaces :: AQuery [IdeaSpace]
+getSpaces :: Query [IdeaSpace]
 getSpaces = view dbSpaces
 
-getIdeas :: AQuery [Idea]
+getIdeas :: Query [Idea]
 getIdeas = view dbIdeas
 
-getWildIdeas :: AQuery [Idea]
+getWildIdeas :: Query [Idea]
 getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
 
-getIdeasWithTopic :: AQuery [Idea]
+getIdeasWithTopic :: Query [Idea]
 getIdeasWithTopic = filter (not . isWild . view ideaLocation) <$> getIdeas
 
 -- | If idea space already exists, do nothing.  Otherwise, create it.
@@ -361,10 +362,10 @@ addIdeaSpaceIfNotExists ispace = do
 addIdea :: AddDb Idea
 addIdea = addDb dbIdeaMap
 
-findIdea :: AUID Idea -> AQuery (Maybe Idea)
+findIdea :: AUID Idea -> Query (Maybe Idea)
 findIdea = findInById dbIdeaMap
 
-findIdeasByUserId :: AUID User -> AQuery [Idea]
+findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
@@ -403,13 +404,13 @@ editTopic topicId (EditTopicData title desc ideas) = do
 modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
 modifyTopic = modifyAMap dbTopicMap
 
-findUser :: AUID User -> AQuery (Maybe User)
+findUser :: AUID User -> Query (Maybe User)
 findUser = findInById dbUserMap
 
-getUsers :: AQuery [User]
+getUsers :: Query [User]
 getUsers = view dbUsers
 
-getTopics :: AQuery [Topic]
+getTopics :: Query [Topic]
 getTopics = view dbTopics
 
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
@@ -431,30 +432,30 @@ addTopic pt = do
 addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap
 
-findDelegationsByContext :: DelegationContext -> AQuery [Delegation]
+findDelegationsByContext :: DelegationContext -> Query [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
     <$> view dbDelegationMap
 
-findUserByLogin :: UserLogin -> AQuery (Maybe User)
+findUserByLogin :: UserLogin -> Query (Maybe User)
 findUserByLogin = findInBy dbUsers userLogin
 
-findTopic :: AUID Topic -> AQuery (Maybe Topic)
+findTopic :: AUID Topic -> Query (Maybe Topic)
 findTopic = findInById dbTopicMap
 
-findTopicsBySpace :: IdeaSpace -> AQuery [Topic]
+findTopicsBySpace :: IdeaSpace -> Query [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
-findIdeasByTopicId :: AUID Topic -> AQuery [Idea]
+findIdeasByTopicId :: AUID Topic -> Query [Idea]
 findIdeasByTopicId tid = do
     mt <- findTopic tid
     case mt of
         Nothing -> pure []
         Just t  -> findIdeasByTopic t
 
-findIdeasByTopic :: Topic -> AQuery [Idea]
+findIdeasByTopic :: Topic -> Query [Idea]
 findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
-findWildIdeasBySpace :: IdeaSpace -> AQuery [Idea]
+findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
 instance FromProto IdeaLike where

@@ -32,10 +32,10 @@ type AulaTesting =
 
 aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
-       (PublicFrame . PageShow <$> Action.aquery getIdeas)
-  :<|> (PublicFrame . PageShow <$> Action.aquery getSpaces)
-  :<|> (PublicFrame . PageShow <$> Action.aquery getTopics)
-  :<|> (PublicFrame . PageShow <$> Action.aquery getUsers)
+       (PublicFrame . PageShow <$> Action.query getIdeas)
+  :<|> (PublicFrame . PageShow <$> Action.query getSpaces)
+  :<|> (PublicFrame . PageShow <$> Action.query getTopics)
+  :<|> (PublicFrame . PageShow <$> Action.query getUsers)
 
   :<|> (PageShow <$> mkRandomPassword)
   :<|> undefined
@@ -55,7 +55,7 @@ instance ToHtml Page404 where
 -- | Make a topic timeout if the timeout is applicable.
 makeTopicTimeout :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
 makeTopicTimeout tid = do
-    topic <- amquery $ findTopic tid
+    topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
         PhaseRefinement _ -> topicInRefinementTimedOut tid
         PhaseVoting     _ -> topicInVotingTimedOut tid

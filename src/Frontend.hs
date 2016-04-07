@@ -191,7 +191,7 @@ aulaMain =
        Page.viewRooms
   :<|> aulaSpace
 
-  :<|> (Frame frameUserHack . PageShow <$> Action.aquery getUsers)
+  :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
   :<|> aulaUser
   :<|> Page.userSettings
   :<|> aulaAdmin

@@ -21,7 +21,7 @@ import Persistent.Pure
 
 
 -- | Number of likes / number of voters >= gobally configured quorum.
-ideaQuorumOk :: AUID Idea -> AQuery Bool
+ideaQuorumOk :: AUID Idea -> Query Bool
 ideaQuorumOk iid = do
     Just idea <- findIdea iid -- FIXME: Not found
     numVoters <- length <$> getVotersForIdea idea
@@ -29,7 +29,7 @@ ideaQuorumOk iid = do
     ((numVotes * 100 `div` numVoters) >=) <$> quorum idea
 
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
-getVotersForIdea :: Idea -> AQuery [User]
+getVotersForIdea :: Idea -> Query [User]
 getVotersForIdea idea = filter hasAccess <$> getUsers
   where
     hasAccess u = case idea ^. ideaLocation . ideaLocationSpace of
@@ -43,11 +43,11 @@ getVotersForIdea idea = filter hasAccess <$> getUsers
     isStudentInClass _ _ = False
 
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
-getNumVotersForIdea :: Idea -> AQuery (Idea, Int)
+getNumVotersForIdea :: Idea -> Query (Idea, Int)
 getNumVotersForIdea idea = (,) idea . length <$> getVotersForIdea idea
 
 -- | Calculate the quorum for a given idea.
-quorum :: Idea -> AQuery Percent
+quorum :: Idea -> Query Percent
 quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
     SchoolSpace  -> view dbSchoolQuorum
     ClassSpace _ -> view dbClassQuorum
@@ -55,18 +55,18 @@ quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
 -- | Return the current system time with the day set to the date on which phases opened
 -- today end.  When running the phase change trigger at midnight, find all dates that lie in the
 -- past.
-phaseEnd :: Int -> AQuery Timestamp
+phaseEnd :: Int -> Query Timestamp
 phaseEnd days = do
     Timestamp timestamp <- assert False $ error "see github issue #307"
     let day' :: Integer = toModifiedJulianDay (utctDay timestamp) + fromIntegral days
     return . Timestamp $ timestamp { utctDay = ModifiedJulianDay day' }
 
-phaseEndRefinement :: AQuery Timestamp
+phaseEndRefinement :: Query Timestamp
 phaseEndRefinement = do
     DurationDays (days :: Int) <- view dbElaborationDuration
     phaseEnd days
 
-phaseEndVote :: AQuery Timestamp
+phaseEndVote :: Query Timestamp
 phaseEndVote = do
     DurationDays (days :: Int) <- view dbVoteDuration
     phaseEnd days
@@ -74,7 +74,7 @@ phaseEndVote = do
 
 -- | Returns the Just topic of an idea if the idea is assocaited with a topic, Nothing
 -- if the idea is a wild idea, or throws an error if the topic is missing.
-ideaTopic :: Idea -> AQuery (Maybe Topic)
+ideaTopic :: Idea -> Query (Maybe Topic)
 ideaTopic idea = case idea ^. ideaLocation of
     IdeaLocationSpace _ ->
         pure Nothing
@@ -83,10 +83,10 @@ ideaTopic idea = case idea ^. ideaLocation of
         Just topic <- findTopic topicId
         pure $ Just topic
 
-ideaPhase :: Idea -> AQuery (Maybe Phase)
+ideaPhase :: Idea -> Query (Maybe Phase)
 ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
 
-checkInPhase :: (Phase -> Bool) -> Idea -> Topic -> AEQuery ()
+checkInPhase :: (Phase -> Bool) -> Idea -> Topic -> EQuery ()
 checkInPhase isPhase idea topic =
     unless (isPhase phase) $ throwError500 msg
   where
@@ -97,7 +97,7 @@ checkInPhase isPhase idea topic =
         ]
 
 -- | Checks if all ideas associated with the topic are marked, feasible or not feasible.
-checkAllIdeasMarked :: Topic -> AQuery Bool
+checkAllIdeasMarked :: Topic -> Query Bool
 checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
   where
     isMarkedIdea i = case i ^? ideaJuryResult . _Just . ideaJuryResultValue of

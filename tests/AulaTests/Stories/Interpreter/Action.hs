@@ -49,7 +49,7 @@ runClient (Pure r) = pure r
 
 runClient (Free (Login l k)) = do
     join . lift $ do
-        u <- amquery $ findUserByLogin l
+        u <- mquery $ findUserByLogin l
         Action.login (u ^. _Id)
         u' <- currentUser
         assert (u, u') (u == u')
@@ -63,7 +63,7 @@ runClient (Free (Logout k)) = do
 
 runClient (Free (SelectIdeaSpace s k)) = do
     let (Right i :: Either String IdeaSpace) = parseIdeaSpace s
-    found <- fmap (elem i) . lift $ aquery getSpaces
+    found <- fmap (elem i) . lift $ query getSpaces
     unless found . error $ "No idea space is found" <> cs s
     csIdeaSpace .= Just i
     runClient k
@@ -83,7 +83,7 @@ runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace
     _ <- lift $ do
-        end <- aquery phaseEndRefinement
+        end <- query phaseEndRefinement
         Action.createTopic
             (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end)
     runClient k
@@ -109,10 +109,10 @@ runClient (Free (VoteIdea t v k)) = do
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Idea)
-findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ aquery getIdeas
+findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ query getIdeas
 
 findTopicByTitle :: (ActionM m) => IdeaTitle -> StateT ClientState m (Maybe Topic)
-findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ aquery getTopics
+findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ query getTopics
 
 assert :: (Show msg, ActionM m) => msg -> Bool -> m ()
 assert _ True  = return ()

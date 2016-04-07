@@ -23,7 +23,7 @@ module Frontend.Page.Idea
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, aquery, amquery, aupdate
+              , currentUserAddDb, query, mquery, aupdate
               )
 import Frontend.Page.Comment
 import Frontend.Prelude hiding (editIdea)
@@ -392,8 +392,8 @@ categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
 viewIdea ideaId = makeFrame =<< (do
-    idea  :: Idea        <- amquery $ findIdea ideaId
-    phase :: Maybe Phase <- aquery $ ideaPhase idea
+    idea  :: Idea        <- mquery $ findIdea ideaId
+    phase :: Maybe Phase <- query $ ideaPhase idea
     pure $ ViewIdea idea phase)
 
 createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
@@ -405,19 +405,19 @@ createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
 editIdea :: ActionM m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =
     redirectFormHandler
-        (EditIdea <$> amquery (findIdea ideaId))
+        (EditIdea <$> mquery (findIdea ideaId))
         (aupdate . Persistent.EditIdea ideaId)
 
 commentIdea :: ActionM m => AUID Idea -> ServerT (FormHandler CommentIdea) m
 commentIdea ideaId =
     redirectFormHandler
-        (CommentIdea <$> amquery (findIdea ideaId) <*> pure Nothing)
+        (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (currentUserAddDb $ AddCommentToIdea ideaId)
 
 replyCommentIdea :: ActionM m => AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
 replyCommentIdea ideaId commentId =
     redirectFormHandler
-        (amquery $ do
+        (mquery $ do
             midea <- findIdea ideaId
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId

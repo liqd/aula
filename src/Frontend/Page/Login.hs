@@ -9,7 +9,7 @@ where
 
 import Text.Digestive
 
-import Action (ActionM, aquery)
+import Action (ActionM, query)
 import Persistent
 import qualified Action
 import Frontend.Prelude
@@ -38,7 +38,7 @@ data LoginFormData = LoginFormData ST ST
 
 checkLogin :: (v ~ Html (), ActionM m) => LoginFormData -> m (Result v User)
 checkLogin (LoginFormData uLogin _pass) = do
-    muser <- aquery $ findUserByLogin (UserLogin uLogin)
+    muser <- query $ findUserByLogin (UserLogin uLogin)
     pure $ case muser of
         Nothing ->
             Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
@@ -96,4 +96,4 @@ instance ToHtml LoginDemoHints where
 login :: (ActionM action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
 login = redirectFormHandler getPage Action.loginByUser
   where
-    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> aquery getUsers
+    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> query getUsers
