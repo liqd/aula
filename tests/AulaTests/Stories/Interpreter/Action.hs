@@ -153,6 +153,20 @@ runClient (Free (CommentIdea t c k)) = do
         return ()
     runClient k
 
+runClient (Free (CommentOnComment t cp c k)) = do
+    (idea, comment) <- precondition $ do
+        Just idea <- findIdeaByTitle t
+        let Just comment = findCommentByText idea cp
+        return (idea, comment)
+    _ <- step . lift $
+        currentUserAddDb
+            (AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id))
+            (Markdown c)
+    postcondition $ do
+        Just idea' <- findIdeaByTitle t
+        let Just _comment = findCommentByText idea' c
+        return ()
+    runClient k
 
 -- * helpers
 
