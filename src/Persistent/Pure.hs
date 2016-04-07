@@ -20,7 +20,15 @@
 -- Serialization happens outside of this module.
 --
 -- FIXME: get some structure into the export list.
--- FIXME: consider removing Purescript.Idiom and doing everything here.
+-- FIXME: about Persistent.Idioms we could:
+-- * remove it and do everything in Persistent.Pure
+-- * use a different split:
+--   + Persistent.Query
+--   + Persistent.Update
+-- * or:
+--   + Persistent.User
+--   + Persistent.Idea
+--   + Persistent.Topic
 module Persistent.Pure
     ( AulaData
     , AMap
