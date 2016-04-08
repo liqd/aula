@@ -117,7 +117,7 @@ runClient (Free (TimeoutTopic t k)) = do
         Just topic' <- findTopicByTitle t
         let phase1 = topic ^. topicPhase
         let phase2 = topic' ^. topicPhase
-        unless (phase1 `followingPhase` phase2) . fail $ show (phase1, phase2)
+        unless (phase2 `followsPhase` phase1) . fail $ show (phase1, phase2)
     runClient k
 
 runClient (Free (MarkIdea t v k)) = do
