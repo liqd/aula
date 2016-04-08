@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 
 module Config
-    ( Config
+    ( Config(Config), SmtpConfig(SmtpConfig)
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , dbPath
@@ -19,6 +19,11 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , getSamplesPath
     , logger
+    , smtpConfig
+    , senderName
+    , senderEmail
+    , sendmailPath
+    , sendmailArgs
     )
 where
 
@@ -49,6 +54,17 @@ instance FromJSON CsrfSecret where
 data PersistenceImpl = AcidStateInMem | AcidStateOnDisk
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON, Enum, Bounded)
 
+data SmtpConfig = SmtpConfig
+    { _senderName   :: String
+    , _senderEmail  :: String
+    , _sendmailPath :: String
+    , _sendmailArgs :: [String]
+   -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
+    }
+  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+
+makeLenses ''SmtpConfig
+
 data Config = Config
     { _dbPath            :: FilePath
     , _listenerInterface :: String
@@ -57,13 +73,21 @@ data Config = Config
     , _cfgCsrfSecret     :: CsrfSecret
     , _logLevel          :: Bool  -- (see 'logger' below)
     , _persistenceImpl   :: PersistenceImpl
+    , _smtpConfig        :: SmtpConfig
     }
-  deriving (Show, Generic, ToJSON, FromJSON)
+  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
 makeLenses ''Config
 
 instance GetCsrfSecret Config where
     csrfSecret = pre cfgCsrfSecret
+
+defaultSmtpConfig :: SmtpConfig
+defaultSmtpConfig = SmtpConfig
+    { _senderName   = "Aula Notifications"
+    , _senderEmail  = "aula@example.com"
+    , _sendmailPath = "/usr/bin/sendmail"
+    , _sendmailArgs = ["-t"] }
 
 defaultConfig :: Config
 defaultConfig = Config
@@ -75,6 +99,7 @@ defaultConfig = Config
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logLevel          = False
     , _persistenceImpl   = AcidStateInMem
+    , _smtpConfig        = defaultSmtpConfig
     }
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
