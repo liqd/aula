@@ -84,6 +84,7 @@ import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfTo
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
 import qualified Data.Csv as Csv
+import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
@@ -283,14 +284,35 @@ phaseAction :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseAction -> m 
 phaseAction t = \case
     JuryPhasePrincipalEmail ->
         sendMailToRole Principal EmailMessage
-            { _msgSubject = "[Aula Notifications] Topic in result phase"
-            , _msgBody = "Dear principal, " <> topicTemplate <> " needs your jury input."
+            { _msgSubject = "[Aula] Thema in der Prüfungsphase"
+            , _msgBody = ST.unlines $
+                  [ "Liebe Schulleitung,"
+                  , ""
+                  , "das Thema:"
+                  , ""
+                  , "    " <> topicTemplate
+                  , ""
+                  , "hat die Prüfungsphase erreicht und bedarf Ihrer Aufmerksamkeit."
+                  , ""
+                  , "hochachtungsvoll,"
+                  , "Ihr Aula-Benachrichtigungsdienst"
+                  ]
             , _msgHtml = Nothing -- Not supported yet
             }
     ResultPhaseModeratorEmail ->
         sendMailToRole Moderator EmailMessage
-            { _msgSubject = "[Aula Notifications] Topic in result phase"
-            , _msgBody = "Dear moderator, " <> topicTemplate <> " is now in result phase."
+            { _msgSubject = "[Aula] Thema in der Ergebnisphase"
+            , _msgBody = ST.unlines $
+                  [ "Liebe Moderatoren,"
+                  , ""
+                  , "das Thema:"
+                  , "    " <> topicTemplate
+                  , ""
+                  , "hat die Ergebnisphase erreicht und bedarf Ihrer Aufmerksamkeit."
+                  , ""
+                  , "hochachtungsvoll,"
+                  , "Ihr Aula-Benachrichtigungsdienst"
+                  ]
             , _msgHtml = Nothing -- Not supported yet
             }
   where
