@@ -18,7 +18,6 @@ module Frontend.Page.Idea
   , editIdea
   , commentIdea
   , replyCommentIdea
-  , categoryValues
   )
 where
 
@@ -274,7 +273,7 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
-        <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
+        <*> ("idea-category" .: DF.choice categoryUiTexts (Just $ idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
     -- FIXME: factor out code common with CreateIdea.

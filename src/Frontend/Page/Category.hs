@@ -10,6 +10,17 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Frontend.Page.Category
+    ( CategoryLabel(CategoryLabel)
+    , IdeasFilterApi
+    , IdeasFilterQuery
+    , categoryFilterButtons
+    , categoryToUiText
+    , categoryUiTexts
+    , formPageSelectCategory
+    , ideasFilterQuery
+    , linkToCategory
+    , makeFormSelectCategory
+    )
 where
 
 import Frontend.Prelude
@@ -78,15 +89,15 @@ instance ToHtml CategoryButton where
 
 -- TODO: rename to categoryTOUIString; move to Types; have all mappings to and from string in one
 -- place.
-categoryToValue :: IsString s => Category -> s
-categoryToValue CatRule        = "Regel"
-categoryToValue CatEquipment   = "Ausstattung"
-categoryToValue CatClass       = "Unterricht"
-categoryToValue CatTime        = "Zeit"
-categoryToValue CatEnvironment = "Umgebung"
+categoryToUiText :: IsString s => Category -> s
+categoryToUiText CatRule        = "Regel"
+categoryToUiText CatEquipment   = "Ausstattung"
+categoryToUiText CatClass       = "Unterricht"
+categoryToUiText CatTime        = "Zeit"
+categoryToUiText CatEnvironment = "Umgebung"
 
-categoryValues :: IsString s => [(Category, s)]
-categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
+categoryUiTexts :: IsString s => [(Category, s)]
+categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
 linkToCategory :: IdeaLocation -> Category -> ST
@@ -98,4 +109,4 @@ categoryFilterButtons :: Monad m => IdeaLocation -> HtmlT m ()
 categoryFilterButtons loc = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat ->
         li_ [class_ $ "icon-" <> toUrlPiece cat] $
-            a_ [Lucid.href_ $ linkToCategory loc cat] (categoryToValue cat)
+            a_ [Lucid.href_ $ linkToCategory loc cat] (categoryToUiText cat)
