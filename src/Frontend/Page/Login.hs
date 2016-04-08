@@ -84,9 +84,19 @@ instance ToHtml LoginDemoHints where
             table_ [class_ "admin-table", style_ "padding: 30px"] $ do
                 tr_ $ do
                     th_ "login"
+                    th_ "rolle"
+                    th_ "klasse"
                     th_ "password"
                 (\u -> tr_ $ do
                     td_ . toHtml $ u ^. userLogin . fromUserLogin
+                    td_ . toHtml $ (roleLabel $ u ^. userRole :: ST)
+                    td_ $ case u ^. userRole of
+                              Student     c -> toHtml $ showSchoolClass c
+                              ClassGuest  c -> toHtml $ showSchoolClass c
+                              SchoolGuest   -> nil
+                              Moderator     -> nil
+                              Principal     -> nil
+                              Admin         -> nil
                     td_ . toHtml . (\case (UserPassInitial s) -> s; s -> cs $ show s) $ u ^. userPassword)
                   `mapM_` users
 

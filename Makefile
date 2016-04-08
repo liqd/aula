@@ -25,14 +25,14 @@ unregister-full:
 
 # only aware of aula sources
 sensei: .phony aula.unregister
-	$(EXEC) sensei $(AULA_SOURCES) tests/Spec.hs $(SENSEI_ARGS)
+	$(EXEC) sensei $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
 
 stories: .phony aula.unregister
-	$(EXEC) sensei $(AULA_SOURCES) tests/AulaTests/StoriesSpec.hs $(SENSEI_ARGS)
+	$(EXEC) sensei $(AULA_SOURCES) tests/AulaTests/StoriesSpec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
 
 # aware of aula and thentos sources
 sensei-full: .phony unregister-full
-	$(EXEC) sensei $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_ARGS)
+	$(EXEC) sensei $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
 
 seito: .phony
 	sleep 0.2 && seito

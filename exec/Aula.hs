@@ -10,6 +10,6 @@ import Config
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
-    cfg <- getConfig WarnMissing
+    cfg <- getConfig CrashMissing
     logger cfg $ "running aula with config " <> show cfg
     runFrontend cfg

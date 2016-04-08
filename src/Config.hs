@@ -7,7 +7,7 @@
 
 module Config
     ( Config
-    , WarnMissing(WarnMissing, DontWarnMissing)
+    , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , dbPath
     , htmlStatic
@@ -22,6 +22,7 @@ module Config
     )
 where
 
+import Control.Exception (throwIO, ErrorCall(ErrorCall))
 import Control.Lens
 import Control.Monad (when)
 import Data.Functor.Infix ((<$$>))
@@ -76,36 +77,38 @@ defaultConfig = Config
     , _persistenceImpl   = AcidStateInMem
     }
 
-data WarnMissing = WarnMissing | DontWarnMissing
+data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
 getConfig :: WarnMissing -> IO Config
-getConfig warnMissing = configFilePath >>= maybe (msg1 >> dflt) decodeFileDflt
+getConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
   where
     dflt :: IO Config
     dflt = pure defaultConfig
 
     decodeFileDflt :: FilePath -> IO Config
-    decodeFileDflt fp = decodeFileEither fp >>= either (\emsg -> msg2 (show emsg) >> dflt) pure
+    decodeFileDflt fp = decodeFileEither fp >>= either (\emsg -> errr (msgParseError emsg) >> dflt) pure
 
-    msg1 :: IO ()
-    msg1 = f
-        [ "no config file found ($AULA_ROOT_PATH not set)."
+    msgAulaPathNotSet :: [String]
+    msgAulaPathNotSet =
+        [ "no config file found: $AULA_ROOT_PATH not set."
         , "to fix this, write the following lines to $AULA_ROOT_PATH/aula.yaml:"
         ]
 
-    msg2 :: String -> IO ()
-    msg2 emsg = f
+    msgParseError :: Show a => a -> [String]
+    msgParseError emsg =
         [ "could not read config file:"
-        , emsg
+        , show emsg
         , "to fix this, write the following lines to $AULA_ROOT_PATH/aula.yaml:"
         ]
 
-    f :: [String] -> IO ()
-    f msgs = case warnMissing of
-        WarnMissing     -> logger (logLevel .~ True $ defaultConfig)
-                         . unlines $ [""] <> msgs <> ["", cs $ encode defaultConfig]
+    errr :: [String] -> IO ()
+    errr msgH = case warnMissing of
         DontWarnMissing -> pure ()
+        WarnMissing     -> logger (logLevel .~ True $ defaultConfig) msgs
+        CrashMissing    -> throwIO . ErrorCall $ msgs
+      where
+        msgs = unlines $ [""] <> msgH <> ["", cs $ encode defaultConfig]
 
 configFilePath :: IO (Maybe FilePath)
 configFilePath = (</> "aula.yaml") <$$> aulaRoot
