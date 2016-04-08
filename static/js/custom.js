@@ -48,10 +48,14 @@ if(imageSelect) {
         for (b2 = 0; b2 < buttons.length; ++b2) {
             removeClass(buttons[b2].parentNode, "m-active");
             if (b2 == b1) {
-                addClass(buttons[b2].parentNode, "m-active");
+                if (hidden.value === "") {
+                    addClass(buttons[b2].parentNode, "m-active");
+                    hidden.value = b1;
+                } else {
+                    hidden.value = "";
+                }
             }
         }
-        hidden.value = b1;
     };
 
     for (b = 0; b < buttons.length; ++b) {
