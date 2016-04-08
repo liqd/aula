@@ -40,6 +40,7 @@ makeFormSelectCategory = DF.validate f $ DF.text Nothing
       . (toEnumMay <=< readMay)
       . cs
 
+-- | see also: static/js/custom.js.
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
 formPageSelectCategory v = do
     label_ $ do
@@ -48,9 +49,6 @@ formPageSelectCategory v = do
         DF.inputHidden "idea-category" v
         div_ [class_ "icon-list m-inline category-image-select"] $ do
             ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
-                -- FIXME: select a category for the newly created idea.  this
-                -- needs to be tested.  see also: static/js/custom.js.
-
 
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
