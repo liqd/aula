@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -18,13 +16,13 @@ module Frontend.Page.Idea
   , editIdea
   , commentIdea
   , replyCommentIdea
-  , categoryValues
   )
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, query, mquery, aupdate
               )
+import Frontend.Page.Category
 import Frontend.Page.Comment
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
@@ -35,7 +33,6 @@ import qualified Frontend.Path as U
 import qualified Data.Map as Map
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Text.Digestive.Types as DF
 
 
 -- * types
@@ -206,10 +203,13 @@ instance ToHtml ViewIdea where
             idea ^. ideaDesc . html
 
             div_ [class_ "view-category"] $ do
-                h2_ [class_ "sub-header"] "Diese Idee gehört zur Kategorie"
-                div_ [class_ "icon-list m-inline"] $ do
-                    ul_ $ do
-                        toHtml $ CategoryLabel (idea ^. ideaCategory)
+                case idea ^. ideaCategory of
+                    Nothing -> do
+                        h2_ [class_ "sub-header"] "Diese Idee gehört zu keiner Kategorie"
+                    Just cat -> do
+                        h2_ [class_ "sub-header"] "Diese Idee gehört zur Kategorie"
+                        div_ [class_ "icon-list m-inline"] .
+                            ul_ . toHtml $ CategoryLabel cat
 
         -- comments
         section_ [class_ "comments"] $ do
@@ -241,73 +241,10 @@ instance FormPage CreateIdea where
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-        <*> ("idea-category" .: makeFormSelectCategory)
+        <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage v form p = do
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Idee erstellen"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                            inputTextArea_
-                                [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
-                                Nothing Nothing "idea-text" v
-                        formPageSelectCategory v
-                        DF.inputSubmit "Idee veröffentlichen"
-
--- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
--- subform src/Frontend/Page/Topic.hs`.)
-makeFormSelectCategory :: (Monad m) => DF.Form (Html ()) m Category
-makeFormSelectCategory = DF.validate f $ DF.text Nothing
-  where
-    f :: ST -> DF.Result (Html ()) Category
-    f = maybe (DF.Error "bad category identifier") DF.Success
-      . (toEnumMay <=< readMay)
-      . cs
-
-formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
-formPageSelectCategory v = do
-    label_ $ do
-        span_ [class_ "label-text"]
-            "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-        DF.inputHidden "idea-category" v
-        div_ [class_ "icon-list m-inline category-image-select"] $ do
-            ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
-                -- FIXME: select a category for the newly created idea.  this
-                -- needs to be tested.  see also: static/js/custom.js.
-
-
-newtype CategoryButton = CategoryButton Category
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
-
-newtype CategoryLabel = CategoryLabel Category
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
-
-instance ToHtml CategoryLabel where
-    toHtmlRaw = toHtml
-    toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
-        -- FIXME: something without the `li_` elem?
-
-instance ToHtml CategoryButton where
-    toHtmlRaw = toHtml
-    toHtml (CategoryButton CatRule) = li_ [class_ "icon-rules"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
-    toHtml (CategoryButton CatEquipment) = li_ [class_ "icon-equipment"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
-    toHtml (CategoryButton CatClass) = li_ [class_ "icon-teaching"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
-    toHtml (CategoryButton CatTime) = li_ [class_ "icon-time"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
-    toHtml (CategoryButton CatEnvironment) = li_ [class_ "icon-environment"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
-
+    formPage = createOrEditPage False
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -320,33 +257,36 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
-        <*> ("idea-category" .: DF.choice categoryValues (Just $ idea ^. ideaCategory))
+        <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
     -- FIXME: factor out code common with CreateIdea.
     -- FIXME: category choice should look like in CreateIdea.
-    formPage v form p@(EditIdea _idea) =
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Deine Idee"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                            inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
-                                Nothing Nothing "idea-text" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            DF.inputSelect "idea-category" v -- FIXME should be pictures but it xplodes
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Idee veröffentlichen"
-                            button_ [class_ "btn-cta", value_ ""] $ do
-                                i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
-                                "Idee löschen"
+    formPage = createOrEditPage True
+
+createOrEditPage :: (Monad m, Typeable page, Page page) =>
+    Bool -> View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
+createOrEditPage showDeleteButton v form p = semanticDiv p $ do
+    div_ [class_ "container-main popup-page"] $ do
+        div_ [class_ "container-narrow"] $ do
+            h1_ [class_ "main-heading"] "Deine Idee"
+            form $ do
+                label_ $ do
+                    span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
+                    inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                        "title" v
+                label_ $ do
+                    span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
+                    inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                        Nothing Nothing "idea-text" v
+                formPageSelectCategory v
+                footer_ [class_ "form-footer"] $ do
+                    DF.inputSubmit "Idee veröffentlichen"
+                    when showDeleteButton .
+                        button_ [class_ "btn-cta", value_ ""] $ do
+                            i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
+                            "Idee löschen"
+
 
 instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = Document
@@ -370,19 +310,6 @@ instance FormPage CommentIdea where
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "comment-text" v
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Kommentar abgeben"
-
-toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
-toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
-
-categoryToValue :: IsString s => Category -> s
-categoryToValue CatRule        = "Regel"
-categoryToValue CatEquipment   = "Ausstattung"
-categoryToValue CatClass       = "Unterricht"
-categoryToValue CatTime        = "Zeit"
-categoryToValue CatEnvironment = "Umgebung"
-
-categoryValues :: IsString s => [(Category, s)]
-categoryValues = (\c -> (c, categoryToValue c)) <$> [minBound..]
 
 
 -- * handlers

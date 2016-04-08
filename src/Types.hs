@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
@@ -28,7 +29,7 @@ import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw)
-import Servant.API (FromHttpApiData(parseUrlPiece))
+import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
 import Text.Read (readMaybe)
 
 import qualified Data.Text as ST
@@ -57,6 +58,11 @@ justIf x b = if b then Just x else Nothing
 lowerFirst :: String -> String
 lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
+
+toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
+toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
+    then Just $ toEnum i
+    else Nothing
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
@@ -89,7 +95,7 @@ data Idea = Idea
     { _ideaMeta       :: MetaInfo Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
-    , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
+    , _ideaCategory   :: Maybe Category
     , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Comments
     , _ideaLikes      :: IdeaLikes
@@ -113,7 +119,7 @@ instance SOP.Generic IdeaLocation
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
     , _protoIdeaDesc       :: Document
-    , _protoIdeaCategory   :: Category
+    , _protoIdeaCategory   :: Maybe Category
     , _protoIdeaLocation   :: IdeaLocation
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -124,14 +130,32 @@ type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
-    CatRule         -- ^ "Regel"
+    CatRules        -- ^ "Regel"
   | CatEquipment    -- ^ "Ausstattung"
-  | CatClass        -- ^ "Unterricht"
+  | CatTeaching     -- ^ "Unterricht"
   | CatTime         -- ^ "Zeit"
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 instance SOP.Generic Category
+
+instance FromHttpApiData Category where
+    parseUrlPiece = \case
+        "rules"       -> Right CatRules
+        "equipment"   -> Right CatEquipment
+        "teaching"    -> Right CatTeaching
+        "time"        -> Right CatTime
+        "environment" -> Right CatEnvironment
+        _             -> Left "no parse"
+
+instance ToHttpApiData Category where
+    toUrlPiece = \case
+        CatRules       -> "rules"
+        CatEquipment   -> "equipment"
+        CatTeaching    -> "teaching"
+        CatTime        -> "time"
+        CatEnvironment -> "environment"
+
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike

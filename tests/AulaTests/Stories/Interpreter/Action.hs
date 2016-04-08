@@ -85,7 +85,7 @@ runClient (Free (CreateIdea t d c k)) = do
     Nothing <- precondition $ findIdeaByTitle t
     Just i <- use csIdeaSpace
     _ <- step . lift $ Action.createIdea
-        (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
+        (ProtoIdea t (Markdown d) (Just c) (IdeaLocationSpace i))
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
 

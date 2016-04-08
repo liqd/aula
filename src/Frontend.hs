@@ -225,17 +225,17 @@ type IdeaApi
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
-type TopicApi
+type TopicApi =
        -- browse topics in an idea space
-    = "topic" :> GetH (Frame PageIdeasInDiscussion)
+       "topic" :> GetH (Frame PageIdeasInDiscussion)
   :<|> Topic ::> IdeaApi
+       -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
+
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-       -- FIXME: use query parameters to filter only the voting/winning ideas.
-       -- This should go along with the filtering by categories.
-  :<|> Topic ::> "ideas"              :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "all"     :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "voting"  :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "winning" :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> GetH (Frame ViewTopic)
   :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
 
        -- create new topic
@@ -246,7 +246,7 @@ type TopicApi
 type AulaSpace
     =  IdeaApi
        -- browse wild ideas in an idea space
-  :<|> "ideas" :> GetH (Frame PageIdeasOverview)
+  :<|> "ideas" :> IdeasFilterApi :> GetH (Frame PageIdeasOverview)
   :<|> TopicApi
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
@@ -264,12 +264,13 @@ ideaApi loc
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
     =  Page.viewTopics space
-  :<|> ideaApi       . IdeaLocationTopic space
-  :<|> Page.viewTopic  TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> Page.viewTopic  TabAllIdeas
-  :<|> Page.viewTopic  TabVotingIdeas
-  :<|> Page.viewTopic  TabWinningIdeas
-  :<|> Page.viewTopic  TabDelegation
+  :<|> ideaApi        . IdeaLocationTopic space
+
+  :<|> flip (Page.viewTopic . TabAllIdeas)  -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> flip (Page.viewTopic . TabAllIdeas)
+  :<|> flip (Page.viewTopic . TabVotingIdeas)
+  :<|> flip (Page.viewTopic . TabWinningIdeas)
+  :<|> Page.viewTopic TabDelegation
 
   :<|> Page.createTopic space
   :<|> Page.editTopic

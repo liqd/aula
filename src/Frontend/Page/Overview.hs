@@ -16,7 +16,7 @@ module Frontend.Page.Overview
 where
 
 import Action
-import Persistent
+import Frontend.Page.Category
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
@@ -30,7 +30,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview IdeaSpace [(Idea, Int)]
+data PageIdeasOverview = PageIdeasOverview IdeaSpace IdeasFilterQuery [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -51,10 +51,10 @@ viewRooms :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
 viewRooms = makeFrame =<< (PageRoomsOverview <$> query getSpaces)
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => IdeaSpace -> m (Frame PageIdeasOverview)
-viewIdeas space = makeFrame =<<
-    (PageIdeasOverview space <$> query (do
-        is  <- findWildIdeasBySpace space
+    => IdeaSpace -> IdeasFilterQuery -> m (Frame PageIdeasOverview)
+viewIdeas space mcat = makeFrame =<<
+    (PageIdeasOverview space mcat <$> query (do
+        is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
         ivs <- getNumVotersForIdea `mapM` is
         pure ivs))
 
@@ -93,7 +93,7 @@ instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview space ideaAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview space filterQuery ideaAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -103,20 +103,7 @@ instance ToHtml PageIdeasOverview where
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
-        div_ [class_ "icon-list"] $ do
-            ul_ $ do
-                -- FIXME: these buttons should filter the ideas by category
-                -- FIXME: also, there should be a way to generate these with something like @f `mapM_` [minBound..]@
-                li_ [class_ "icon-rules"] $ do
-                    a_ [href_ U.Broken] "Regeln"
-                li_ [class_ "icon-equipment"] $ do
-                    a_ [href_ U.Broken] "Ausstattung"
-                li_ [class_ "icon-teaching"] $ do
-                    a_ [href_ U.Broken] "Unterricht"
-                li_ [class_ "icon-time"] $ do
-                    a_ [href_ U.Broken] "Zeit"
-                li_ [class_ "icon-environment"] $ do
-                    a_ [href_ U.Broken] "Umgebung"
+        categoryFilterButtons (IdeaLocationSpace space) filterQuery
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
                 ListItemIdea True Nothing numVoters idea ^. html

@@ -41,7 +41,7 @@ where
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
-import Control.Monad (when)
+import Control.Monad (when, replicateM_)
 import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
@@ -241,8 +241,7 @@ footerMarkup = do
                 li_ $ a_ [href_ P.Imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
-            span_ [class_ "main-footer-blurb"] $ do
-                toHtmlRaw ("&nbsp;" :: ST)
+                replicateM_ 5 $ toHtmlRaw ("&nbsp;" :: ST)
                 "[v" <> toHtml (showVersion Paths.version) <> "]"
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
