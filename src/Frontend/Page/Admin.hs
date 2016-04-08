@@ -310,7 +310,7 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
                             select_ [class_ "m-stretch"] nil
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
-                            DF.inputSubmit "speichern"
+                            DF.inputSubmit "Speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
