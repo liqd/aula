@@ -80,7 +80,7 @@ backLink IdeaLocationTopic{} = "Zum Thema"
 numberWithUnit :: Monad m => Int -> ST -> ST -> HtmlT m ()
 numberWithUnit i singular_ plural_ =
     toHtml (show i) <>
-    toHtmlRaw ("&nbsp;" :: ST) <>
+    toHtmlRaw nbsp <>
     toHtml (if i == 1 then singular_ else plural_)
 
 instance ToHtml ViewIdea where
@@ -114,10 +114,10 @@ instance ToHtml ViewIdea where
                 " / "
                 let l = do
                         numberWithUnit totalLikes "Like" "Likes"
-                        toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
+                        toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")  -- FIXME: html?
                     v = do
                         numberWithUnit totalVotes "Stimme" "Stimmen"
-                        toHtmlRaw (" &nbsp; / &nbsp; " :: ST)
+                        toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")  -- FIXME: html?
                     c = do
                         numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
 

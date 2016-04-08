@@ -62,7 +62,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import Lucid.Missing (script_, href_, src_, postButton_)
+import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
@@ -241,7 +241,7 @@ footerMarkup = do
                 li_ $ a_ [href_ P.Imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
-                replicateM_ 5 $ toHtmlRaw ("&nbsp;" :: ST)
+                replicateM_ 5 $ toHtmlRaw nbsp
                 "[v" <> toHtml (showVersion Paths.version) <> "]"
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
