@@ -689,6 +689,7 @@ instance Binary Settings
 
 makePrisms ''IdeaLocation
 makePrisms ''Category
+makePrisms ''Document
 makePrisms ''IdeaVoteValue
 makePrisms ''IdeaJuryResultValue
 makePrisms ''IdeaVoteResultValue
