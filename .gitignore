@@ -17,4 +17,3 @@ packages/
 *.tix
 /aula.yaml
 /state/AulaData/
-/static/demo/
