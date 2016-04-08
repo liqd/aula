@@ -49,6 +49,6 @@ type ManageStateApi =
 
 manageStateApi :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
-       aupdate DangerousResetAulaData
+       update DangerousResetAulaData
   :<|> genInitialTestDb
   :<|> join (liftIO mkUniverse)

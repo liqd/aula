@@ -576,7 +576,7 @@ mkFishUser mSchoolClass avatarPath = do
     role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
     user <- currentUserAddDb (AddUser (UserPassInitial "dummy password")) pu
-    aupdate $ SetUserAvatar (user ^. _Id) avatarPath
+    update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
 
 instance Arbitrary DelegationNetwork where
@@ -591,7 +591,7 @@ fishDelegationNetworkIO = do
     let action :: Action DelegationNetwork
         action = do
             now <- getCurrentTimestamp
-            admin <- aupdate . AddFirstUser now $ ProtoUser
+            admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
                 Admin (Just (UserPassInitial "admin")) Nothing
             Action.loginByUser admin

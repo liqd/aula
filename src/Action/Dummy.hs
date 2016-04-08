@@ -40,8 +40,8 @@ instance Monad m => ActionLog (DummyT ActionExcept m) where
     logEvent _ = pure ()
 
 instance Monad m => ActionPersist (DummyT ActionExcept m) where
-    aqueryDb = notImplemented "ActionPersist" "aqueryDb"
-    aupdate _ = notImplemented "ActionPersist" "aupdate"
+    queryDb = notImplemented "ActionPersist" "queryDb"
+    update _ = notImplemented "ActionPersist" "update"
 
 instance Monad m => ActionError (DummyT ActionExcept m)
 
