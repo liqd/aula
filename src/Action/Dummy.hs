@@ -57,3 +57,6 @@ instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
 instance Monad m => MonadReader ActionEnv (DummyT ActionExcept m) where
     ask = notImplemented "MonadReader" "ask"
     local _ _ = notImplemented "MonadReader" "local"
+
+instance Monad m => HasSendMail ActionExcept ActionEnv (DummyT ActionExcept m) where
+    sendMailToAddress _ _ = notImplemented "HasSendMail" "sendMailToAddress"

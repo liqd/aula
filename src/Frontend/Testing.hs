@@ -54,7 +54,7 @@ instance ToHtml Page404 where
     toHtml Page404 = div_ $ p_ "404"
 
 -- | Make a topic timeout if the timeout is applicable.
-makeTopicTimeout :: (ActionPersist m, ActionUserHandler m) => AUID Topic -> m ()
+makeTopicTimeout :: (ActionPersist m, ActionUserHandler m, ActionSendMail m) => AUID Topic -> m ()
 makeTopicTimeout tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of

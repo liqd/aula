@@ -47,6 +47,7 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              , MonadIO
              )
 
+instance HasSendMail ActionExcept ActionEnv Action
 
 instance ActionLog Action where
     logEvent = liftIO . print
@@ -106,3 +107,4 @@ mkRunAction env = Nat run
 runActionExcept :: ActionExcept -> ServantErr
 runActionExcept (ActionExcept e) = e
 runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
+runActionExcept (ActionSendMailExcept e) = error500 # show e

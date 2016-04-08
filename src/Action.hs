@@ -3,6 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE Rank2Types             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TemplateHaskell        #-}
@@ -18,6 +19,7 @@ module Action
     , ActionUserHandler(login, logout, userState)
     , ActionRandomPassword(mkRandomPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
+    , ActionSendMail
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), envRunPersist, envConfig
@@ -58,6 +60,9 @@ module Action
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
 
     , MonadServantErr, ThrowServantErr(..)
+
+    , module Action.Smtp
+    , sendMailToRole
     )
 where
 
@@ -68,9 +73,10 @@ import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
+import Data.Monoid
 import Data.String.Conversions (ST, LBS)
 import Data.Typeable (Typeable)
-import Debug.Trace
+import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
@@ -80,7 +86,10 @@ import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
+import Action.Smtp
 import Config (Config, GetConfig(..))
+import Data.UriPath (absoluteUriPath, relPath)
+import Frontend.Path (listTopicIdeas)
 import LifeCycle
 import Persistent
 import Persistent.Api
@@ -121,9 +130,15 @@ instance GetConfig ActionEnv where
 data ActionExcept
     = ActionExcept { unActionExcept :: ServantErr }
     | ActionPersistExcept PersistExcept
+    | ActionSendMailExcept SendMailError
     deriving (Eq, Show)
 
 makePrisms ''ActionExcept
+
+instance ThrowSendMailError ActionExcept where
+    _SendMailError = _ActionSendMailExcept
+
+type ActionSendMail = HasSendMail ActionExcept ActionEnv
 
 type ActionM m =
       ( ActionLog m
@@ -133,6 +148,7 @@ type ActionM m =
       , ActionTempCsvFiles m
       , ActionRandomPassword m
       , ActionCurrentTimestamp m
+      , ActionSendMail m
       )
 
 class Monad m => ActionLog m where
@@ -244,7 +260,7 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionPersist m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -252,16 +268,34 @@ topicPhaseChange topic change = do
             aupdate $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionPersist m, ActionSendMail m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
 
-phaseAction :: (Monad m) => Topic -> PhaseAction -> m ()
-phaseAction _ JuryPhasePrincipalEmail =
-    traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
-phaseAction _ ResultPhaseModeratorEmail =
-    traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
+sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage -> m ()
+sendMailToRole role msg = do
+    users <- query $ findUsersByRole role
+    forM_ users $ \user ->
+        sendMailToUser [] user msg
+
+phaseAction :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseAction -> m ()
+phaseAction t = \case
+    JuryPhasePrincipalEmail ->
+        sendMailToRole Principal EmailMessage
+            { _msgSubject = "[Aula Notifications] Topic in result phase"
+            , _msgBody = "Dear principal, " <> topicTemplate <> " needs your jury input."
+            , _msgHtml = Nothing -- Not supported yet
+            }
+    ResultPhaseModeratorEmail ->
+        sendMailToRole Moderator EmailMessage
+            { _msgSubject = "[Aula Notifications] Topic in result phase"
+            , _msgBody = "Dear moderator, " <> topicTemplate <> " is now in result phase."
+            , _msgHtml = Nothing -- Not supported yet
+            }
+  where
+    topicTemplate = "the topic titled \"" <> t ^. topicTitle <> "\" at URL " <> absPath (listTopicIdeas t)
+    absPath p = "FIXME: http.../" <> absoluteUriPath (relPath p)
 
 
 -- * Page Handling
@@ -326,10 +360,10 @@ markIdeaInResultPhase iid rv = do
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 

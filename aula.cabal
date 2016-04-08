@@ -76,6 +76,7 @@ library
       Action
       Action.Dummy
       Action.Implementation
+      Action.Smtp
       Arbitrary
       Backend
       Config
