@@ -243,24 +243,7 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage v form p = do
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Idee erstellen"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                            inputTextArea_
-                                [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
-                                Nothing Nothing "idea-text" v
-                        formPageSelectCategory v
-                        DF.inputSubmit "Idee veröffentlichen"
-
+    formPage = createOrEditPage False
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -278,8 +261,11 @@ instance FormPage EditIdea where
 
     -- FIXME: factor out code common with CreateIdea.
     -- FIXME: category choice should look like in CreateIdea.
-    formPage v form p@(EditIdea _idea) =
-        semanticDiv p $ do
+    formPage = createOrEditPage True
+
+createOrEditPage :: (Monad m, Typeable page, Page page) =>
+    Bool -> View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
+createOrEditPage showDeleteButton v form p = semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Deine Idee"
@@ -295,9 +281,11 @@ instance FormPage EditIdea where
                         formPageSelectCategory v
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Idee veröffentlichen"
-                            button_ [class_ "btn-cta", value_ ""] $ do
-                                i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
-                                "Idee löschen"
+                            when showDeleteButton $
+                                button_ [class_ "btn-cta", value_ ""] $ do
+                                    i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
+                                    "Idee löschen"
+
 
 instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = Document

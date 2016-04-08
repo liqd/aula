@@ -18,7 +18,6 @@ where
 import Action
 import Frontend.Page.Category
 import Frontend.Prelude
-import Persistent
 
 import qualified Frontend.Path as U
 import qualified Data.Text as ST
