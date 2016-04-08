@@ -75,7 +75,7 @@ instance ToHtml CategoryLabel where
 
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
-    toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] $
+    toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
         span_ [ class_ "icon-list-button"
               , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
               ] $ categoryToUiText cat
@@ -94,7 +94,7 @@ categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 linkToCategory :: IdeaLocation -> Maybe Category -> ST
 linkToCategory loc mcat =
        (absoluteUriPath . relPath . U.listIdeas $ loc)
-    <> (maybe nil (("?category=" <>) . toUrlPiece) mcat)
+    <> maybe nil (("?category=" <>) . toUrlPiece) mcat
 
 categoryFilterButtons :: Monad m => IdeaLocation -> IdeasFilterQuery -> HtmlT m ()
 categoryFilterButtons loc filterQuery = div_ [class_ "icon-list"] $ do
