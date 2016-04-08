@@ -25,6 +25,7 @@ where
 
 import Frontend.Prelude
 
+import qualified Data.Text as ST
 import qualified Frontend.Path as U
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -90,13 +91,20 @@ categoryUiTexts :: IsString s => [(Category, s)]
 categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
-linkToCategory :: IdeaLocation -> Category -> ST
-linkToCategory loc cat =
+linkToCategory :: IdeaLocation -> Maybe Category -> ST
+linkToCategory loc mcat =
        (absoluteUriPath . relPath . U.listIdeas $ loc)
-    <> "?category=" <> toUrlPiece cat
+    <> (maybe nil (("?category=" <>) . toUrlPiece) mcat)
 
-categoryFilterButtons :: Monad m => IdeaLocation -> HtmlT m ()
-categoryFilterButtons loc = div_ [class_ "icon-list"] $ do
-    ul_ . for_ [minBound..] $ \cat ->
-        li_ [class_ $ "icon-" <> toUrlPiece cat] $
-            a_ [Lucid.href_ $ linkToCategory loc cat] (categoryToUiText cat)
+categoryFilterButtons :: Monad m => IdeaLocation -> IdeasFilterQuery -> HtmlT m ()
+categoryFilterButtons loc filterQuery = div_ [class_ "icon-list"] $ do
+    ul_ . for_ [minBound..] $ \cat -> do
+        li_ [ class_ . ST.unwords $
+                ("icon-" <> toUrlPiece cat) :
+                [ "m-active" | filterQuery == Just cat ]
+            ] $
+            let filterQuery' = if filterQuery == Just cat
+                  then Nothing
+                  else Just cat
+            in a_ [Lucid.href_ $ linkToCategory loc filterQuery']
+                (categoryToUiText cat)

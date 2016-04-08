@@ -105,7 +105,7 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
-            categoryFilterButtons (topicIdeaLocation topic)
+            categoryFilterButtons (topicIdeaLocation topic) (tab ^? viewTopicTabFilter . _Just)
             div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
                 i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
                 ul_ [class_ "pop-menu-list"] $ do
