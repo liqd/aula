@@ -295,7 +295,7 @@ phaseAction t = \case
             }
   where
     topicTemplate = "the topic titled \"" <> t ^. topicTitle <> "\" at URL " <> absPath (listTopicIdeas t)
-    absPath p = "FIXME: http.../" <> absoluteUriPath (relPath p)
+    absPath p = "FIXME: http.../" <> absoluteUriPath (relPath p)  -- TODO!
 
 
 -- * Page Handling
