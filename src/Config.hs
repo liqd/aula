@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds    #-}
 {-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE OverloadedStrings  #-}
@@ -7,6 +8,7 @@
 
 module Config
     ( Config(Config), SmtpConfig(SmtpConfig)
+    , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , dbPath
@@ -30,6 +32,7 @@ where
 import Control.Exception (throwIO, ErrorCall(ErrorCall))
 import Control.Lens
 import Control.Monad (when)
+import Control.Monad.Reader (MonadReader)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -78,6 +81,17 @@ data Config = Config
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
 makeLenses ''Config
+
+class GetConfig r where
+    getConfig :: Getter r Config
+
+    viewConfig :: MonadReader r m => m Config
+    viewConfig = view getConfig
+
+type MonadReaderConfig r m = (MonadReader r m, GetConfig r)
+
+instance GetConfig Config where
+    getConfig = id
 
 instance GetCsrfSecret Config where
     csrfSecret = pre cfgCsrfSecret

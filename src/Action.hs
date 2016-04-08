@@ -80,7 +80,7 @@ import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 import qualified Data.Csv as Csv
 import qualified Data.Vector as V
 
-import Config (Config)
+import Config (Config, GetConfig(..))
 import LifeCycle
 import Persistent
 import Persistent.Api
@@ -111,6 +111,9 @@ makeLenses ''ActionEnv
 
 instance GetCsrfSecret ActionEnv where
     csrfSecret = envConfig . csrfSecret
+
+instance GetConfig ActionEnv where
+    getConfig = envConfig
 
 -- | Top level errors can happen.
 --

@@ -55,3 +55,7 @@ instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
     login _     = pure ()
     logout      = pure ()
     userState _ = notImplemented "ActionUserHandler" "userState"
+
+instance Monad m => MonadReader ActionEnv (DummyT ActionExcept m) where
+    ask = notImplemented "MonadReader" "ask"
+    local _ _ = notImplemented "MonadReader" "local"
