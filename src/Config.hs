@@ -19,6 +19,7 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , getSamplesPath
     , logger
+    , releaseVersion
     )
 where
 
@@ -29,6 +30,7 @@ import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String.Conversions (SBS, cs)
+import Data.Version (showVersion)
 import Data.Yaml
 import GHC.Generics
 import System.Directory
@@ -36,6 +38,9 @@ import System.Environment
 import System.FilePath ((</>))
 import System.IO (hPutStrLn, stderr)
 import Thentos.Frontend.CSRF (GetCsrfSecret(..), CsrfSecret(..))
+
+import qualified Paths_aula as Paths
+-- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
 
 
 -- | FIXME: move this instance upstream and remove -fno-warn-orphans for this module.
@@ -131,3 +136,9 @@ getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
 -- | FIXME: this will become more sophisticated.  related: #65
 logger :: Config -> String -> IO ()
 logger cfg = when (cfg ^. logLevel) . hPutStrLn stderr
+
+
+-- * release version
+
+releaseVersion :: String
+releaseVersion = "[v" <> showVersion Paths.version <> "]"
