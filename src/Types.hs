@@ -58,6 +58,9 @@ lowerFirst :: String -> String
 lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
 
+lowerCase :: String -> String
+lowerCase = map toLower
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -166,6 +169,13 @@ data IdeaJuryResult = IdeaJuryResult
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaJuryResult
+
+data IdeaJuryResultType
+    = IdeaNotFeasible
+    | IdeaFeasible
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaJuryResultType
 
 data IdeaJuryResultValue
     = NotFeasible { _ideaResultNotFeasibleReason :: Document }
@@ -797,6 +807,16 @@ instance FromHttpApiData IdeaVoteValue where
 
 instance HasUriPart IdeaVoteValue where
     uriPart = fromString . lowerFirst . show
+
+-- TODO: Do not use the Show instance
+instance FromHttpApiData IdeaJuryResultType where
+    parseUrlPiece = \case
+      "IdeaNotFeasible" -> Right IdeaNotFeasible
+      "IdeaFeasible"    -> Right IdeaFeasible
+      _                 -> Left "TODO: BLAH"
+
+instance HasUriPart IdeaJuryResultType where
+    uriPart = fromString . show
 
 instance HasUriPart UpDown where
     uriPart = fromString . lowerFirst . show

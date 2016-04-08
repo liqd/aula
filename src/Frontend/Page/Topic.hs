@@ -108,7 +108,7 @@ instance ToHtml ViewTopic where
                         a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
 
             for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
+                ListItemIdea IdeaInViewTopic (Just (topic ^. topicPhase)) numVoters idea Principal ^. html -- TODO: Add user
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do

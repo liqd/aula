@@ -22,7 +22,7 @@ module Frontend.Core
     , Beside(Beside)
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
-    , ListItemIdea(ListItemIdea)
+    , ListItemIdeaContext(..), ListItemIdea(ListItemIdea)
     , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
     , AuthorWidget(AuthorWidget)
@@ -47,7 +47,8 @@ import Data.String.Conversions
 import Data.Typeable
 import Data.Version (showVersion)
 import Lucid.Base
-import Lucid hiding (href_, script_, src_)
+import Lucid hiding (href_, script_, src_, onclick_)
+import Lucid.Missing (onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, getFormDataEnv)
@@ -303,18 +304,35 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
             span_ [class_ "author-image"] $ avatarImgFromMeta mi
             span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
+data ListItemIdeaContext
+    = IdeaInIdeasOverview
+    | IdeaInViewTopic
+    | IdeaInUserProfile
+  deriving (Eq, Show, Read)
+
 data ListItemIdea = ListItemIdea
-      { _listItemIdeaLinkToUser :: Bool
+      { _listItemIdeaContext    :: ListItemIdeaContext
       , _listItemIdeaPhase      :: Maybe Phase
       , _listItemIdeaNumVoters  :: Int
       , _listItemIdea           :: Idea
+      , _listItemUserRole       :: Role
       }
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
+    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea role) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
+            -- FIXME: Visibility, translation, already marked
+            when isIdeaInJury . div_ $ do
+                case _ideaJuryResult idea of
+                    Nothing -> do
+                        button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "FEASIBLE"
+                        button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "NOT FEASIBLE"
+                    Just (IdeaJuryResult _ (Feasible _)) -> do
+                        p_ "Feasible"
+                    Just (IdeaJuryResult _ (NotFeasible _)) -> do
+                        p_ "Not Feasible"
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
@@ -352,6 +370,18 @@ instance ToHtml ListItemIdea where
             v = if numVoters == 0
                   then 0
                   else (numLikes * 100) `div` numVoters
+
+        isIdeaInJury = and
+            [ listItemIdeaContext == IdeaInIdeasOverview
+            , isVotingPhase phase
+            , isPrincipal role]
+
+        -- QUESTION: Similar abstraction via lenses?
+        isVotingPhase (Just (PhaseVoting _)) = True
+        isVotingPhase _                      = False
+
+        isPrincipal Principal = True
+        isPrincipal _         = False
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep (View (Html ())) ST (Frame p)

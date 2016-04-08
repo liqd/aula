@@ -13,17 +13,20 @@ module Frontend.Page.Idea
   , CreateIdea(..)
   , EditIdea(..)
   , CommentIdea(..)
+  , JuryIdea(..)
   , viewIdea
   , createIdea
   , editIdea
   , commentIdea
   , replyCommentIdea
+  , juryIdea
   , categoryValues
   )
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, query, mquery, aupdate
+              , markIdeaInJuryPhase
               )
 import Frontend.Page.Comment
 import Frontend.Prelude hiding (editIdea)
@@ -73,6 +76,12 @@ data CommentIdea = CommentIdea Idea (Maybe Comment)
 
 instance Page CommentIdea where
 
+-- | X. Jury idea
+-- Assumption: The topic is related to the idea
+data JuryIdea = JuryIdea IdeaJuryResultType Idea Topic
+  deriving (Eq, Show, Read)
+
+instance Page JuryIdea where
 
 -- * templates
 
@@ -95,6 +104,10 @@ instance ToHtml ViewIdea where
             votingButton v =
                 postButton_ [class_ "btn-cta voting-button"]
                             (U.voteIdea idea v)
+
+            juryButton v =
+                postButton_ [class_ "btn-cta"]
+                            (U.juryIdea idea v)
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -147,6 +160,8 @@ instance ToHtml ViewIdea where
 
                 div_ ">>>>>>>>>>> some phase-specific stuff"
 
+            juryButton IdeaNotFeasible "Not feasible" -- FIXME: Translation
+            juryButton IdeaFeasible    "Feasible"     -- FIXME: Translation
 
             div_ [class_ "sub-heading"] $ do
                 let voteBar :: Html () -> Html ()
@@ -370,6 +385,35 @@ instance FormPage CommentIdea where
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Kommentar abgeben"
 
+instance FormPage JuryIdea where
+    type FormPagePayload JuryIdea = IdeaJuryResultValue
+    type FormPageResult JuryIdea = ()
+
+    formAction (JuryIdea juryType idea _topic) = U.juryIdea idea juryType
+
+    redirectOf (JuryIdea _ idea topic) _ = U.listTopicIdeas topic
+
+    makeForm (JuryIdea IdeaFeasible _ _) =
+        Feasible
+        <$> "jury-text" .: (Just . Markdown <$> DF.text Nothing)
+    makeForm (JuryIdea IdeaNotFeasible _ _) =
+        NotFeasible
+        <$> "jury-text" .: (Markdown <$> DF.text Nothing)
+
+    -- FIXME styling
+    -- TODO: Fix translation
+    formPage v form p@(JuryIdea juryType_ idea _topic) =
+        semanticDiv p $ do
+            div_ [class_ "container-comment-idea"] $ do
+                h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
+                form $ do
+                    label_ $ do
+                        span_ [class_ "label-text"] "Was möchtest du sagen?"
+                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "jury-text" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Kommentar abgeben"
+
+
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
 
@@ -423,3 +467,13 @@ replyCommentIdea ideaId commentId =
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
         (currentUserAddDb $ AddReplyToIdeaComment ideaId commentId)
+
+juryIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JuryIdea) m
+juryIdea ideaId juryType =
+    redirectFormHandler
+        (do 
+            -- FIXME: Run in one transaction
+            idea  <- mquery (findIdea ideaId)
+            topic <- mquery (ideaTopic idea)
+            pure $ JuryIdea juryType idea topic)
+        (Action.markIdeaInJuryPhase ideaId)

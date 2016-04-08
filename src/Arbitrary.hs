@@ -118,6 +118,10 @@ instance Arbitrary EditIdea where
 instance Arbitrary CommentIdea where
     arbitrary = CommentIdea <$> arb <*> arb
 
+instance Arbitrary JuryIdea where
+    -- FIXME: Set the idea location to the topic's location
+    arbitrary = JuryIdea <$> arb <*> arb <*> arb
+
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
 
@@ -218,6 +222,9 @@ instance Arbitrary IdeaJuryResultValue where
     arbitrary = garbitrary
 
 instance Arbitrary IdeaVoteResultValue where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaJuryResultType where
     arbitrary = garbitrary
 
 instance Arbitrary DelegationContext where

@@ -119,7 +119,7 @@ instance ToHtml PageIdeasOverview where
                     a_ [href_ U.Broken] "Umgebung"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea True Nothing numVoters idea ^. html
+                ListItemIdea IdeaInIdeasOverview Nothing numVoters idea Principal ^. html -- TODO: Add user
 
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]

@@ -144,7 +144,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
                             li_ [class_ "pop-menu-list-item"] $ do
                                 a_ [href_ U.Broken] "date"  -- FIXME German / Dummy
                     for_ ideas $ \(idea, numVoters) ->
-                        ListItemIdea False Nothing numVoters idea ^. html
+                        ListItemIdea IdeaInUserProfile Nothing numVoters idea Principal ^. html -- TODO: Add user
 
 -- | List all the created ideas for the given user.
 -- Using @join . persistent $ do ... return $ makeFrame@ will
