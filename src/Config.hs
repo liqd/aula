@@ -14,7 +14,7 @@ module Config
     , listenerInterface
     , listenerPort
     , persistenceImpl
-    , getConfig
+    , readConfig
     , aulaRoot
     , setCurrentDirectoryToAulaRoot
     , getSamplesPath
@@ -80,8 +80,8 @@ defaultConfig = Config
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
-getConfig :: WarnMissing -> IO Config
-getConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
+readConfig :: WarnMissing -> IO Config
+readConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
   where
     dflt :: IO Config
     dflt = pure defaultConfig

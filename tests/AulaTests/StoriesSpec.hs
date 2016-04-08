@@ -40,7 +40,7 @@ spec = describe "stories" $ do
 story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
-        cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig DontWarnMissing
+        cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig DontWarnMissing
         Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO

@@ -211,7 +211,7 @@ renderForm (F g) =
 
 runFailOnError :: Action a -> PropertyM IO a
 runFailOnError action = run $ do
-    cfg <- getConfig DontWarnMissing
+    cfg <- readConfig DontWarnMissing
     let env :: ActionEnv = ActionEnv (error "Dummy RunPersist") cfg
     fmap (either (error . show) id) . runExceptT . unNat (mkRunAction env) $ action
 

@@ -790,7 +790,7 @@ fishDelegationNetworkIO = do
             fishDelegationNetworkAction
 
     -- We use @AcidStateInMem@ here to make sure it doesn't rust.
-    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig Config.DontWarnMissing
+    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig Config.DontWarnMissing
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)

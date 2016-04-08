@@ -33,7 +33,7 @@ import Frontend.Prelude as X hiding (get, put)
 
 testConfig :: IO Config
 testConfig = do
-    cfg <- getConfig DontWarnMissing
+    cfg <- readConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     cfg & listenerPort .~ pop
         & dbPath       .~ "./state/AulaData_Tests"
