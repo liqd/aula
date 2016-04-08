@@ -68,10 +68,7 @@ genStudent classes =
     <**> (set protoUserRole <$> elements (map Student classes))
 
 genAvatar :: Gen URL
-genAvatar = mkUrl <$> elements fishAvatars
-  where
-    mkUrl :: URL -> URL
-    mkUrl url = "http://zierfischverzeichnis.de/klassen/pisces/" <> url
+genAvatar = elements fishAvatars
 
 genTopic :: [IdeaSpace] -> Gen ProtoTopic
 genTopic ideaSpaces =
@@ -153,7 +150,7 @@ genCommentVote comments_in_context students = do
     action student <$> arb
 
 updateAvatar :: User -> URL -> forall m . ActionM m => m ()
-updateAvatar user url = aupdate $ SetUserAvatar (user ^. _Id) url
+updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
 
 -- * Universe
@@ -165,11 +162,11 @@ mkUniverse = universe <$> newQCGen
 -- for transaction granularity here that speeds things up considerably.)
 universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
-    admin <- aupdate . AddFirstUser sometime =<< gen rnd genFirstUser
+    admin <- update . AddFirstUser sometime =<< gen rnd genFirstUser
     loginByUser admin
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
-    mapM_ (aupdate . AddIdeaSpaceIfNotExists) ideaSpaces
+    mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
     let classes = mapMaybe ideaSpaceToSchoolClass ideaSpaces
     assert' (not $ null classes)
 

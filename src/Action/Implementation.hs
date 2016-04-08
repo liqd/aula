@@ -54,9 +54,9 @@ instance ActionLog Action where
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
-    aqueryDb = liftIO =<< view (envRunPersist . rpQuery)
+    queryDb = liftIO =<< view (envRunPersist . rpQuery)
 
-    aupdate ev =
+    update ev =
         either (throwError . ActionPersistExcept) pure
             =<< liftIO =<< views (envRunPersist . rpUpdate) ($ ev)
 

@@ -45,7 +45,6 @@ import Control.Monad (when, replicateM_)
 import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
-import Data.Version (showVersion)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_)
 import Servant
@@ -61,13 +60,12 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
+import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
-import qualified Paths_aula as Paths
--- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
 
 
 -- | FIXME: Could this be a PR for lucid?
@@ -242,7 +240,7 @@ footerMarkup = do
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
                 replicateM_ 5 $ toHtmlRaw nbsp
-                "[v" <> toHtml (showVersion Paths.version) <> "]"
+                toHtml Config.releaseVersion
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 

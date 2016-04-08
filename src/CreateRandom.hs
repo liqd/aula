@@ -23,12 +23,12 @@ import Arbitrary ()
 -- Note that no user is getting logged in by this code.
 genInitialTestDb :: (ActionPersist m) => m ()
 genInitialTestDb = do
-    aupdate $ AddIdeaSpaceIfNotExists SchoolSpace
-    aupdate . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
-    aupdate . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
-    aupdate . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
+    update $ AddIdeaSpaceIfNotExists SchoolSpace
+    update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
+    update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
+    update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
 
-    user1 <- aupdate $ AddFirstUser sometime ProtoUser
+    user1 <- update $ AddFirstUser sometime ProtoUser
         { _protoUserLogin     = Just "admin"
         , _protoUserFirstName = "A."
         , _protoUserLastName  = "Admin"
@@ -37,7 +37,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         }
 
-    user2 <- aupdate (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
+    user2 <- update (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
@@ -46,21 +46,21 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         }))
 
-    _wildIdea <- aupdate $ AddIdea (EnvWith user1 sometime ProtoIdea
+    _wildIdea <- update $ AddIdea (EnvWith user1 sometime ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
             , _protoIdeaDesc     = Markdown "wild-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topicIdea <- aupdate $ AddIdea (EnvWith user2 sometime ProtoIdea
+    topicIdea <- update $ AddIdea (EnvWith user2 sometime ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
             , _protoIdeaDesc     = Markdown "topic-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topic <- aupdate $ AddTopic (EnvWith user1 sometime ProtoTopic
+    topic <- update $ AddTopic (EnvWith user1 sometime ProtoTopic
         { _protoTopicTitle     = "topic-title"
         , _protoTopicDesc      = Markdown "topic-desc"
         , _protoTopicImage     = ""
@@ -69,7 +69,7 @@ genInitialTestDb = do
         , _protoTopicRefinDays = sometime
         })
 
-    aupdate $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
+    update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()
 

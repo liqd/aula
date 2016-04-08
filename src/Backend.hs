@@ -36,8 +36,8 @@ type DelegationsApi = Get '[JSON] DelegationNetwork
 -- | FIXME: This is all a bit silly: the new end-point logs in admin implicitly; the returned
 -- delegation networks are generated on top of the existing data; testing doesn't really test
 -- anything.  But it is self-contained and a good basis to continue from.
-delegationsApi :: (GenArbitrary m, ActionM m) => ServerT DelegationsApi m
-delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
+delegationsApi :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT DelegationsApi m
+delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction Nothing
 
 
 -- * persistent state management (for demo operation)
@@ -49,6 +49,6 @@ type ManageStateApi =
 
 manageStateApi :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
-       aupdate DangerousResetAulaData
+       update DangerousResetAulaData
   :<|> genInitialTestDb
   :<|> join (liftIO mkUniverse)

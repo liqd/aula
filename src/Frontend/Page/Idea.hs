@@ -20,7 +20,7 @@ module Frontend.Page.Idea
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, query, mquery, aupdate
+              , currentUserAddDb, query, mquery, update
               )
 import Frontend.Page.Category
 import Frontend.Page.Comment
@@ -334,7 +334,7 @@ editIdea :: ActionM m => AUID Idea -> ServerT (FormHandler EditIdea) m
 editIdea ideaId =
     redirectFormHandler
         (EditIdea <$> mquery (findIdea ideaId))
-        (aupdate . Persistent.EditIdea ideaId)
+        (update . Persistent.EditIdea ideaId)
 
 commentIdea :: ActionM m => AUID Idea -> ServerT (FormHandler CommentIdea) m
 commentIdea ideaId =
