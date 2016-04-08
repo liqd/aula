@@ -102,7 +102,7 @@ defaultSmtpConfig :: SmtpConfig
 defaultSmtpConfig = SmtpConfig
     { _senderName   = "Aula Notifications"
     , _senderEmail  = "aula@example.com"
-    , _sendmailPath = "/usr/bin/sendmail"
+    , _sendmailPath = "/usr/sbin/sendmail"
     , _sendmailArgs = ["-t"] }
 
 defaultConfig :: Config
