@@ -10,8 +10,8 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
+import Control.Lens (Getter, (^.), (^?), set, re, pre)
 import Control.Monad (zipWithM_)
-import Control.Lens (Getter, (^.), set, re, pre)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -64,9 +64,13 @@ genFirstUser =
     <**> (set protoUserPassword . Just <$> arbitrary)
 
 genStudent :: [SchoolClass] -> Gen ProtoUser
-genStudent classes =
+genStudent classes = genUser $ elements (map Student classes)
+
+genUser :: Gen Role -> Gen ProtoUser
+genUser genRole =
     arbitrary
-    <**> (set protoUserRole <$> elements (map Student classes))
+    <**> (set protoUserRole <$> genRole)
+    <**> (set protoUserEmail <$> (pure $ ("nobody@localhost" :: String) ^? emailAddress))
 
 genAvatar :: Gen URL
 genAvatar = mkUrl <$> elements fishAvatars
@@ -170,6 +174,11 @@ universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
     admin <- aupdate . AddFirstUser sometime =<< gen rnd genFirstUser
     loginByUser admin
+
+    generate 3 rnd (genUser (pure Principal))
+        >>= mapM (currentUserAddDb (AddUser (UserPassInitial "geheim")))
+    generate 8 rnd (genUser (pure Moderator))
+        >>= mapM (currentUserAddDb (AddUser (UserPassInitial "geheim")))
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
     mapM_ (aupdate . AddIdeaSpaceIfNotExists) ideaSpaces
