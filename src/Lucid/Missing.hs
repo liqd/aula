@@ -18,6 +18,7 @@ module Lucid.Missing
     , onclick_
     , postLink_
     , postButton_
+    , nbsp
     )
   where
 
@@ -111,3 +112,8 @@ postLink_ attrs path = formMethodPost_ [] path . inputSubmit_ attrs
 
 postButton_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
 postButton_ attrs path = formMethodPost_ [] path . Lucid.button_ ([ type_ "submit" ] <> attrs)
+
+
+-- | non-breaking space with a type.
+nbsp :: ST
+nbsp = "&nbsp;"
