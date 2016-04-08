@@ -70,7 +70,7 @@ genUser :: Gen Role -> Gen ProtoUser
 genUser genRole =
     arbitrary
     <**> (set protoUserRole <$> genRole)
-    <**> (set protoUserEmail <$> (pure $ ("nobody@localhost" :: String) ^? emailAddress))
+    <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
 
 genAvatar :: Gen URL
 genAvatar = mkUrl <$> elements fishAvatars
@@ -176,9 +176,9 @@ universe rnd = do
     loginByUser admin
 
     generate 3 rnd (genUser (pure Principal))
-        >>= mapM (currentUserAddDb (AddUser (UserPassInitial "geheim")))
+        >>= mapM_ (currentUserAddDb (AddUser (UserPassInitial "geheim")))
     generate 8 rnd (genUser (pure Moderator))
-        >>= mapM (currentUserAddDb (AddUser (UserPassInitial "geheim")))
+        >>= mapM_ (currentUserAddDb (AddUser (UserPassInitial "geheim")))
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
     mapM_ (aupdate . AddIdeaSpaceIfNotExists) ideaSpaces
