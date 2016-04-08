@@ -379,7 +379,7 @@ modifyIdea = modifyAMap dbIdeaMap
 modifyUser :: AUID User -> (User -> User) -> AUpdate ()
 modifyUser = modifyAMap dbUserMap
 
-setUserEmail :: AUID User -> UserEmail -> AUpdate ()
+setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)
 
 setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()

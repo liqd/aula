@@ -59,7 +59,7 @@ import Action.Implementation
 import Config
 import Frontend.Core
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (.~), (?~), ppShow, view, join)
+import Frontend.Prelude (set, (^.), (.~), (?~), ppShow, review, view, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent.Implementation
 import Types
@@ -310,12 +310,12 @@ guestOrStudent clss = elements
 instance Arbitrary UserPass where
     arbitrary = UserPassInitial <$> arbWord
 
-instance Arbitrary UserEmail where
+instance Arbitrary EmailAddress where
     arbitrary = do
         localName  <- arbWord
         domainName <- arbWord
         tld        <- elements topLevelDomains
-        return . UserEmail . mconcat $ [localName, "@", domainName, ".", tld]
+        pure . unsafeEmailAddress localName $ mconcat [domainName, ".", tld]
 
 instance Arbitrary UserSettingData where
     arbitrary = UserSettingData
@@ -862,7 +862,7 @@ instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON (MetaInfo a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserEmail where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON EmailAddress where toJSON = String . review emailAddress
 instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson

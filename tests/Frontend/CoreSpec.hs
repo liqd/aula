@@ -150,7 +150,7 @@ instance PayloadToEnv EditTopicData where
 
 instance PayloadToEnv UserSettingData where
     payloadToEnvMapping _ (UserSettingData email oldpass newpass1 newpass2) = \case
-        "email"         -> pure [TextInput . fromMaybe "" $ fromUserEmail <$> email]
+        "email"         -> pure [TextInput $ email ^. _Just . re emailAddress]
         "old-password"  -> pure [TextInput $ fromMaybe "" oldpass]
         "new-password1" -> pure [TextInput $ fromMaybe "" newpass1]
         "new-password2" -> pure [TextInput $ fromMaybe "" newpass2]

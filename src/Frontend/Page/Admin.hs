@@ -20,7 +20,6 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Thentos.Types
 
 import Action
 import Persistent.Api
@@ -536,7 +535,7 @@ theOnlySchoolYearHack = 2016
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
     , _csvUserRecordLast        :: UserLastName
-    , _csvUserRecordEmail       :: Maybe UserEmail
+    , _csvUserRecordEmail       :: Maybe EmailAddress
     , _csvUserRecordLogin       :: Maybe UserLogin
     }
   deriving (Eq, Show)
@@ -557,13 +556,13 @@ instance Csv.FromRecord CsvUserRecord where
             | otherwise
                 = pure $ v !! i
 
-        parseMEmail :: (Monad m) => Int -> m (Maybe UserEmail)
+        parseMEmail :: (Monad m) => Int -> m (Maybe EmailAddress)
         parseMEmail i
             | length v < i + 1 = pure Nothing
             | v !! i == ""     = pure Nothing
-            | otherwise        = case Thentos.Types.parseUserEmail $ v !! i of
+            | otherwise        = case v ^? ix i . emailAddress of
                 Nothing    -> fail $ "user record with bad email address: " <> show v
-                Just email -> pure . Just . UserEmail $ Thentos.Types.fromUserEmail email
+                Just email -> pure . Just $ email
 
         parseMLogin :: Int -> Maybe UserLogin
         parseMLogin i

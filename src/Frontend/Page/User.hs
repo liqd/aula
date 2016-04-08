@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 
@@ -44,7 +45,7 @@ instance Page PageUserProfileDelegatedVotes
 -- ** User Settings
 
 data UserSettingData = UserSettingData
-    { profileEmail    :: Maybe UserEmail
+    { profileEmail    :: Maybe EmailAddress
     , profileOldPass  :: Maybe ST
     , profileNewPass1 :: Maybe ST
     , profileNewPass2 :: Maybe ST
@@ -59,11 +60,12 @@ instance FormPage PageUserSettings where
 
     makeForm (PageUserSettings user) =
         UserSettingData
-        <$> ("email"         .: (fmap UserEmail <$> DF.optionalText
-                                        (fmap fromUserEmail $ user ^. userEmail)))
+        <$> ("email"         .: (email & prelens emailAddress %%~ DF.optionalText))
         <*> ("old-password"  .: DF.optionalText Nothing)
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
+
+        where email = user ^. userEmail
 
     formPage v form p = do
         semanticDiv p $ do
