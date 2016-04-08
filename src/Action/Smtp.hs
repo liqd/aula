@@ -37,7 +37,7 @@ data SendMailError
 instance Show SendMailError where
     show = \case
         NoEmailAddressForUser user -> "No email address for user: " <> show (user ^. userLogin)
-        IOErrorRunningSendMail exn -> "IO error running sendmail: " ++ show exn
+        IOErrorRunningSendMail exn -> "IO error running sendmail: " <> show exn
 
 class ThrowSendMailError err where
     _SendMailError :: Prism' err SendMailError
@@ -79,17 +79,17 @@ sendMailToAddressIO receiver msg = do
         sender = Address (Just $ scfg ^. senderName . to cs) (scfg ^. senderEmail . to cs)
         mail   = simpleMail' receiver sender (msg ^. msgSubject) (cs $ msg ^. msgBody)
     r <- liftIO $ do
-        logger cfg {-DEBUG-} $ "sending email: " ++ ppShow (receiver, msg)
-        when (isJust $ msg ^. msgHtml) . logger cfg {-WARNING-} $ "No support for the optional HTML part"
+        logger cfg {- debug -} $ "sending email: " <> ppShow (receiver, msg)
+        when (isJust $ msg ^. msgHtml) . logger cfg {- warn -} $ "No support for the optional HTML part"
         renderedMail <- renderMail' mail
         try $ sendmailCustomCaptureOutput (scfg ^. sendmailPath) (scfg ^. sendmailArgs) renderedMail
     case r of
         Right (out, err) -> do
             liftIO $ do
                 unless (SB.null out) .
-                    logger cfg {-WARNING-} $ "sendmail produced output on stdout: " ++ cs out
+                    logger cfg {- warn -} $ "sendmail produced output on stdout: " <> cs out
                 unless (SB.null err) .
-                    logger cfg {-WARNING-} $ "sendmail produced output on stderr: " ++ cs err
+                    logger cfg {- warn -} $ "sendmail produced output on stderr: " <> cs err
         Left (e :: IOException) ->
             throwSendMailError $ IOErrorRunningSendMail e
   where
