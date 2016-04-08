@@ -74,23 +74,13 @@ instance ToHtml CategoryLabel where
 
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
-    toHtml (CategoryButton CatRule) = li_ [class_ "icon-rules"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.0"] "Regeln"
-    toHtml (CategoryButton CatEquipment) = li_ [class_ "icon-equipment"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.1"] "Ausstattung"
-    toHtml (CategoryButton CatClass) = li_ [class_ "icon-teaching"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.2"] "Unterricht"
-    toHtml (CategoryButton CatTime) = li_ [class_ "icon-time"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.3"] "Zeit"
-    toHtml (CategoryButton CatEnvironment) = li_ [class_ "icon-environment"] $
-        span_ [class_ "icon-list-button", id_ "select-.idea-category.4"] "Umgebung"
-      -- TODO: do something with [minBound..] here.
+    toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] $
+        span_ [ class_ "icon-list-button"
+              , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
+              ] $ categoryToUiText cat
 
-
--- TODO: rename to categoryTOUIString; move to Types; have all mappings to and from string in one
--- place.
 categoryToUiText :: IsString s => Category -> s
-categoryToUiText CatRule        = "Regel"
+categoryToUiText CatRule        = "Regeln"
 categoryToUiText CatEquipment   = "Ausstattung"
 categoryToUiText CatClass       = "Unterricht"
 categoryToUiText CatTime        = "Zeit"
