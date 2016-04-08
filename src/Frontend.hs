@@ -133,15 +133,16 @@ type family Singular    a :: Symbol
 type family Plural      a :: Symbol
 type family CaptureData a
 
-type instance Singular Comment       = "comment"
-type instance Singular Idea          = "idea"
-type instance Singular IdeaSpace     = "space"
-type instance Singular IdeaVoteValue = "vote"
-type instance Singular Reply         = "reply"
-type instance Singular SchoolClass   = "class"
-type instance Singular Topic         = "topic"
-type instance Singular UpDown        = "vote"
-type instance Singular User          = "user"
+type instance Singular Comment            = "comment"
+type instance Singular Idea               = "idea"
+type instance Singular IdeaSpace          = "space"
+type instance Singular IdeaVoteValue      = "vote"
+type instance Singular Reply              = "reply"
+type instance Singular SchoolClass        = "class"
+type instance Singular Topic              = "topic"
+type instance Singular UpDown             = "vote"
+type instance Singular User               = "user"
+type instance Singular IdeaJuryResultType = "jury"
 
 type instance CaptureData Comment       = AUID Comment
 type instance CaptureData Idea          = AUID Idea
@@ -152,6 +153,7 @@ type instance CaptureData SchoolClass   = SchoolClass
 type instance CaptureData Topic         = AUID Topic
 type instance CaptureData UpDown        = UpDown
 type instance CaptureData User          = AUID User
+type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 
 infixr 9 ::>
 type (::>) a b = Singular a :> Capture (Singular a) (CaptureData a) :> b
@@ -222,6 +224,8 @@ type IdeaApi
   :<|> Idea ::> Comment ::> UpDown ::> PostH
        -- vote on a reply of a comment
   :<|> Idea ::> Comment ::> Reply ::> UpDown ::> PostH
+       -- jury an idea
+  :<|> Idea ::> IdeaJuryResultType ::> FormHandler JuryIdea
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
@@ -259,6 +263,7 @@ ideaApi loc
   :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
+  :<|> Page.juryIdea
   :<|> Page.createIdea loc
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m

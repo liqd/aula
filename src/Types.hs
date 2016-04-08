@@ -79,6 +79,9 @@ type CSI' s a = CSI s s a a
 csi :: CSI s t a b => Iso s t a b
 csi = iso cs cs
 
+lowerCase :: String -> String
+lowerCase = map toLower
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -205,6 +208,13 @@ data IdeaJuryResult = IdeaJuryResult
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaJuryResult
+
+data IdeaJuryResultType
+    = IdeaNotFeasible
+    | IdeaFeasible
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaJuryResultType
 
 data IdeaJuryResultValue
     = NotFeasible { _ideaResultNotFeasibleReason :: Document }
@@ -406,6 +416,12 @@ data ProtoUser = ProtoUser
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
+
+-- | Contains all the information which is needed to render
+-- a user role dependent functionality.
+-- FIXME: Use more appropiate information.
+newtype RenderContext = RenderContext { _renderContextUser :: User }
+  deriving (Eq, Read, Show)
 
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
@@ -736,6 +752,7 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
 makeLenses ''Quorums
+makeLenses ''RenderContext
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
@@ -894,6 +911,16 @@ instance FromHttpApiData IdeaVoteValue where
 
 instance HasUriPart IdeaVoteValue where
     uriPart = fromString . lowerFirst . show
+
+-- TODO: Do not use the Show instance
+instance FromHttpApiData IdeaJuryResultType where
+    parseUrlPiece = \case
+      "IdeaNotFeasible" -> Right IdeaNotFeasible
+      "IdeaFeasible"    -> Right IdeaFeasible
+      _                 -> Left "TODO: BLAH"
+
+instance HasUriPart IdeaJuryResultType where
+    uriPart = fromString . show
 
 instance HasUriPart UpDown where
     uriPart = fromString . lowerFirst . show

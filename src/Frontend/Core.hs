@@ -22,7 +22,7 @@ module Frontend.Core
     , Beside(Beside)
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
-    , ListItemIdea(ListItemIdea)
+    , ListItemIdeaContext(..), ListItemIdea(ListItemIdea)
     , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
     , AuthorWidget(AuthorWidget)
@@ -46,7 +46,7 @@ import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
 import Lucid.Base
-import Lucid hiding (href_, script_, src_)
+import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, getFormDataEnv)
@@ -62,7 +62,8 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
+import LifeCycle
+import Lucid.Missing (onclick_, script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
@@ -301,18 +302,42 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
                 span_ [class_ "author-image"] $ avatarImgFromMeta mi
                 span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
+data ListItemIdeaContext
+    = IdeaInIdeasOverview
+    | IdeaInViewTopic
+    | IdeaInUserProfile
+  deriving (Eq, Show, Read)
+
 data ListItemIdea = ListItemIdea
-      { _listItemIdeaLinkToUser :: Bool
+      { _listItemIdeaContext    :: ListItemIdeaContext
       , _listItemIdeaPhase      :: Maybe Phase
       , _listItemIdeaNumVoters  :: Int
       , _listItemIdea           :: Idea
+      , _listItemRenderContext  :: RenderContext
       }
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
+    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea ctx) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
+            let caps = ideaCapabilities
+                        (ctx ^. renderContextUser . _Id)
+                        idea
+                        phase
+                        (ctx ^. renderContextUser . userRole)
+
+            when (IdeaInViewTopic == listItemIdeaContext) $ do
+                when (MarkFeasiblity `elem` caps) . div_ $ do
+                    case _ideaJuryResult idea of
+                        Nothing -> do
+                            button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "Feasible"
+                            button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "Not Feasible"
+                        Just (IdeaJuryResult _ (Feasible _)) -> do
+                            p_ "Feasible"
+                        Just (IdeaJuryResult _ (NotFeasible _)) -> do
+                            p_ "Not Feasible"
+
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do

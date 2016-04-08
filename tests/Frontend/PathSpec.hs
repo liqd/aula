@@ -48,6 +48,8 @@ spec = do
             [ U (arb :: Gen PermissionContext)
             , U (arb :: Gen IdeaSpace)
             , U (arb :: Gen SchoolClass)
+            , U (arb :: Gen IdeaVoteValue)
+            , U (arb :: Gen UpDown)
             ]
 
     describe "Paths and handlers" $ do

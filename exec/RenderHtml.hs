@@ -158,7 +158,8 @@ newtype ViewTopic_Delegations = ViewTopic_Delegations (Topic, [Delegation])
 
 instance ToHtml ViewTopic_Ideas where
     toHtmlRaw = toHtml
-    toHtml (ViewTopic_Ideas (_tab, _topic, _ideas)) = toHtml $ ViewTopicIdeas _tab _topic _ideas
+    -- TODO: define valid render context
+    toHtml (ViewTopic_Ideas (_tab, _topic, _ideas)) = toHtml $ ViewTopicIdeas undefined _tab _topic _ideas
 
 instance ToHtml ViewTopic_Delegations where
     toHtmlRaw = toHtml
@@ -173,9 +174,9 @@ instance Arbitrary ViewTopic_Delegations where
 
 
 instance Page ViewTopic_Ideas where
-    isPrivatePage    _ = isPrivatePage    $ ViewTopicIdeas undefined undefined undefined
-    extraPageHeaders _ = extraPageHeaders $ ViewTopicIdeas undefined undefined undefined
-    extraBodyClasses _ = extraBodyClasses $ ViewTopicIdeas undefined undefined undefined
+    isPrivatePage    _ = isPrivatePage    $ ViewTopicIdeas undefined undefined undefined undefined
+    extraPageHeaders _ = extraPageHeaders $ ViewTopicIdeas undefined undefined undefined undefined
+    extraBodyClasses _ = extraBodyClasses $ ViewTopicIdeas undefined undefined undefined undefined
 
 instance Page ViewTopic_Delegations where
     isPrivatePage    _ = isPrivatePage    $ ViewTopicDelegations undefined undefined

@@ -30,7 +30,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview IdeaSpace IdeasFilterQuery [(Idea, Int)]
+data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace IdeasFilterQuery [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -52,8 +52,10 @@ viewRooms = makeFrame =<< (PageRoomsOverview <$> query getSpaces)
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> IdeasFilterQuery -> m (Frame PageIdeasOverview)
-viewIdeas space mcat = makeFrame =<<
-    (PageIdeasOverview space mcat <$> query (do
+viewIdeas space mcat = do
+    ctx <- renderContext
+    makeFrame =<< (PageIdeasOverview ctx space mcat
+                    <$> query (do
         is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
         ivs <- getNumVotersForIdea `mapM` is
         pure ivs))
@@ -93,7 +95,7 @@ instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview space filterQuery ideaAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview ctx space filterQuery ideaAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -106,7 +108,11 @@ instance ToHtml PageIdeasOverview where
         categoryFilterButtons (IdeaLocationSpace space) filterQuery
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea True Nothing numVoters idea ^. html
+                ListItemIdea
+                    IdeaInIdeasOverview
+                    Nothing
+                    numVoters idea
+                    ctx ^. html
 
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]
