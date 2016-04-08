@@ -183,7 +183,7 @@ class ActionError m => ActionUserHandler m where
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept
 
-class MonadError ActionExcept m => ActionError m
+type ActionError m = (MonadError ActionExcept m)
 
 
 -- * User Handling
@@ -244,7 +244,7 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionPersist m, ActionError m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionPersist m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -252,7 +252,7 @@ topicPhaseChange topic change = do
             aupdate $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist m, ActionError m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionPersist m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -322,15 +322,14 @@ markIdeaInResultPhase iid rv = do
     topic <- mquery $ ideaTopic idea
     equery $ checkInPhase (PhaseResult ==) idea topic
     currentUserAddDb_ (AddIdeaVoteResult iid) rv
-    return ()
 
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist m, ActionError m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPersist m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist m, ActionError m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPersist m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 

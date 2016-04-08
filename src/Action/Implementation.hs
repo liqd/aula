@@ -47,7 +47,6 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              , MonadIO
              )
 
-instance ActionError Action
 
 instance ActionLog Action where
     logEvent = liftIO . print

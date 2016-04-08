@@ -1,4 +1,6 @@
+{-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
