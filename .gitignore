@@ -17,3 +17,5 @@ packages/
 *.tix
 /aula.yaml
 /state/AulaData/
+/state/*
+aula.yaml*
