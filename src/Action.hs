@@ -199,18 +199,29 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
+updateWithUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
+                  (EnvWith update -> ev) -> User -> update -> m a
+updateWithUser modA user updateA = do
+    now <- getCurrentTimestamp
+    aupdate $ modA (EnvWith user now updateA)
+
+-- | Same as 'updateWithUser' but with the additional constraint that 'update ~ Proto a'.
 addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
                (EnvWithProto a -> ev) -> User -> Proto a -> m a
-addWithUser addA user protoA = do
-    now <- getCurrentTimestamp
-    aupdate $ addA (EnvWith user now protoA)
+addWithUser = updateWithUser
 
+updateWithCurrentUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
+                         (EnvWith update -> ev) -> update -> m a
+updateWithCurrentUser modA updateA = do
+    cUser <- currentUser
+    updateWithUser modA cUser updateA
+
+-- | Same as 'updateWithCurrentUser' but with the additional constraint that 'update ~ Proto a'.
 currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
                     (EnvWithProto a -> ev) -> Proto a -> m a
-currentUserAddDb addA protoA = do
-    cUser <- currentUser
-    addWithUser addA cUser protoA
+currentUserAddDb = updateWithCurrentUser
 
+-- | Same as 'currentUserAddDb' but drops the result value.
 currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
                      (EnvWithProto a -> ev) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA

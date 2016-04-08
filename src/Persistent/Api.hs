@@ -47,30 +47,44 @@ askDb :: Acid.Query AulaData AulaData
 askDb = ask
 
 $(makeAcidic ''AulaData
-    [ 'addCommentToIdea
+    -- The only query
+    [ 'askDb
+
+    -- AddDb updates
+    , 'addCommentToIdea
     , 'addCommentVoteToIdeaComment
     , 'addCommentVoteToIdeaCommentReply
     , 'addDelegation
-    , 'addFirstUser
     , 'addIdea
     , 'addIdeaJuryResult
-    , 'addIdeaSpaceIfNotExists
     , 'addIdeaVoteResult
     , 'addLikeToIdea
     , 'addReplyToIdeaComment
     , 'addTopic
     , 'addUser
     , 'addVoteToIdea
-    , 'askDb
+
+    -- Custom adds
+    , 'addFirstUser
+    , 'addIdeaSpaceIfNotExists
+
+    -- Custom setters
     , 'dangerousResetAulaData
-    , 'editIdea
-    , 'editTopic
-    , 'moveIdeasToLocation
     , 'saveDurations
     , 'saveQuorums
-    , 'setTopicPhase
+
+    -- Needs to be updated to change the meta data
+    --   Edit updates
+    , 'editIdea
+    , 'editTopic
+    --   Based on modifyUser:
+    , 'setUserRole
     , 'setUserAvatar
     , 'setUserEmail
+    --   Based on modifyIdea:
+    , 'moveIdeasToLocation
+    --   Based on modifyTopic:
+    , 'setTopicPhase
+    --   Custom:
     , 'setUserPass
-    , 'setUserRole
     ])
