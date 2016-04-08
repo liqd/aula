@@ -12,6 +12,7 @@ module Config
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , dbPath
+    , exposedUrl
     , htmlStatic
     , listenerInterface
     , listenerPort
@@ -69,7 +70,8 @@ data SmtpConfig = SmtpConfig
 makeLenses ''SmtpConfig
 
 data Config = Config
-    { _dbPath            :: FilePath
+    { _dbPath            :: FilePath  -- FIXME: should be part of @_persistentImpl@
+    , _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
     , _listenerInterface :: String
     , _listenerPort      :: Int
     , _htmlStatic        :: FilePath
@@ -106,6 +108,7 @@ defaultSmtpConfig = SmtpConfig
 defaultConfig :: Config
 defaultConfig = Config
     { _dbPath            = "./state/AulaData"
+    , _exposedUrl        = "https://localhost:8080"
     , _listenerInterface = "0.0.0.0"
     , _listenerPort      = 8080
     , _htmlStatic        = "./static"

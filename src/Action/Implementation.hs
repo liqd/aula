@@ -44,7 +44,7 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              , MonadError ActionExcept
              , MonadReader ActionEnv
              , MonadState UserState
-             , MonadIO
+             , MonadIO  -- TODO: remove?  (we could still leave the default implementation of sendmail in Action in the class, we'd just have to copy it over here.)
              )
 
 instance HasSendMail ActionExcept ActionEnv Action

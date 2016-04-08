@@ -68,7 +68,7 @@ where
 
 import Control.Lens
 import Control.Monad (void, when)
-import Control.Monad.Reader (runReader, runReaderT)
+import Control.Monad.Reader (runReader, runReaderT, asks)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
@@ -88,7 +88,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..))
+import Config (Config, GetConfig(..), MonadReaderConfig(..), exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import Frontend.Path (listTopicIdeas)
 import LifeCycle
@@ -280,44 +280,39 @@ sendMailToRole role msg = do
     forM_ users $ \user ->
         sendMailToUser [] user msg
 
-phaseAction :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseAction -> m ()
-phaseAction t = \case
-    JuryPhasePrincipalEmail ->
-        sendMailToRole Principal EmailMessage
-            { _msgSubject = "[Aula] Thema in der Prüfungsphase"
-            , _msgBody = ST.unlines $
-                  [ "Liebe Schulleitung,"
-                  , ""
-                  , "das Thema:"
-                  , ""
-                  , "    " <> topicTemplate
-                  , ""
-                  , "hat die Prüfungsphase erreicht und bedarf Ihrer Aufmerksamkeit."
-                  , ""
-                  , "hochachtungsvoll,"
-                  , "Ihr Aula-Benachrichtigungsdienst"
-                  ]
-            , _msgHtml = Nothing -- Not supported yet
-            }
-    ResultPhaseModeratorEmail ->
-        sendMailToRole Moderator EmailMessage
-            { _msgSubject = "[Aula] Thema in der Ergebnisphase"
-            , _msgBody = ST.unlines $
-                  [ "Liebe Moderatoren,"
-                  , ""
-                  , "das Thema:"
-                  , "    " <> topicTemplate
-                  , ""
-                  , "hat die Ergebnisphase erreicht und bedarf Ihrer Aufmerksamkeit."
-                  , ""
-                  , "hochachtungsvoll,"
-                  , "Ihr Aula-Benachrichtigungsdienst"
-                  ]
-            , _msgHtml = Nothing -- Not supported yet
-            }
-  where
-    topicTemplate = "the topic titled \"" <> t ^. topicTitle <> "\" at URL " <> absPath (listTopicIdeas t)
-    absPath p = "FIXME: http.../" <> absoluteUriPath (relPath p)  -- TODO!
+phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
+            => Topic -> PhaseAction -> m ()
+phaseAction topic phaseAction = do
+    cfg <- asks (view getConfig)
+    let topicTemplate addr phase = ST.unlines $
+            [ "Liebe " <> addr <> ","
+            , ""
+            , "das Thema:"
+            , ""
+            , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
+            , "    " <> (cfg ^. exposedUrl . csi)
+                     <> (absoluteUriPath . relPath $ listTopicIdeas topic)
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+
+    case phaseAction of
+      JuryPhasePrincipalEmail ->
+          sendMailToRole Principal EmailMessage
+              { _msgSubject = "[Aula] Thema in der Prüfungsphase"
+              , _msgBody = topicTemplate "Schulleitung" "Prüfungsphase"
+              , _msgHtml = Nothing -- Not supported yet
+              }
+      ResultPhaseModeratorEmail ->
+          sendMailToRole Moderator EmailMessage
+              { _msgSubject = "[Aula] Thema in der Ergebnisphase"
+              , _msgBody = topicTemplate "Moderatoren" "Ergebnisphase"
+              , _msgHtml = Nothing -- Not supported yet
+              }
 
 
 -- * Page Handling
