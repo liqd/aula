@@ -270,7 +270,7 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
-        <*> ("idea-category" .: DF.choice categoryUiTexts (Just $ idea ^. ideaCategory))
+        <*> ("idea-category" .: makeFormSelectCategory)
         <*> pure (idea ^. ideaLocation)
 
     -- FIXME: factor out code common with CreateIdea.
@@ -289,9 +289,7 @@ instance FormPage EditIdea where
                             span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
                             inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
                                 Nothing Nothing "idea-text" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
-                            DF.inputSelect "idea-category" v -- FIXME should be pictures but it xplodes
+                        formPageSelectCategory v
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Idee veröffentlichen"
                             button_ [class_ "btn-cta", value_ ""] $ do
