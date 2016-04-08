@@ -281,7 +281,7 @@ createOrEditPage showDeleteButton v form p = semanticDiv p $ do
                 formPageSelectCategory v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Idee veröffentlichen"
-                    when showDeleteButton $
+                    when showDeleteButton .
                         button_ [class_ "btn-cta", value_ ""] $ do
                             i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
                             "Idee löschen"
