@@ -68,10 +68,7 @@ genStudent classes =
     <**> (set protoUserRole <$> elements (map Student classes))
 
 genAvatar :: Gen URL
-genAvatar = mkUrl <$> elements fishAvatars
-  where
-    mkUrl :: URL -> URL
-    mkUrl url = "http://zierfischverzeichnis.de/klassen/pisces/" <> url
+genAvatar = elements fishAvatars
 
 genTopic :: [IdeaSpace] -> Gen ProtoTopic
 genTopic ideaSpaces =
