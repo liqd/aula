@@ -63,6 +63,18 @@ toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
+type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
+type CSI' s a = CSI s s a a
+
+-- An optic for string conversion
+-- let p = ("a" :: ST, Just ("b" :: SBS))
+-- p ^. _1 . csi :: SBS
+-- > "a"
+-- p & _1 . csi %~ ('x':)
+-- > ("xa", "b")
+csi :: CSI s t a b => Iso s t a b
+csi = iso cs cs
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 

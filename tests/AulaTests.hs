@@ -53,7 +53,7 @@ bodyShouldBe :: (Show body, Eq body) => body -> Response body -> Expectation
 bodyShouldBe body l = l ^. responseBody `shouldBe` body
 
 bodyShouldContain :: String -> Response LBS -> Expectation
-bodyShouldContain body l = l ^. responseBody . to cs `shouldContain` body
+bodyShouldContain body l = l ^. responseBody . ics `shouldContain` body
 
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
