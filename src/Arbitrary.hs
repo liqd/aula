@@ -61,7 +61,7 @@ import Action.Implementation
 import Config
 import Frontend.Core
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (.~), (?~), ppShow, view, join)
+import Frontend.Prelude (set, (^.), (.~), ppShow, view, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent.Implementation
 import Types
@@ -575,8 +575,9 @@ mkFishUser mSchoolClass avatarPath = do
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
-    -- FIXME: change avatar in the database, not just in the user returned from this function!
-    (userAvatar ?~ avatarPath) <$> currentUserAddDb (AddUser (UserPassInitial "dummy password")) pu
+    user <- currentUserAddDb (AddUser (UserPassInitial "dummy password")) pu
+    aupdate $ SetUserAvatar (user ^. _Id) avatarPath
+    return user
 
 instance Arbitrary DelegationNetwork where
     arbitrary = pure fishDelegationNetworkUnsafe
