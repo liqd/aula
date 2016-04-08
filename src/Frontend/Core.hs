@@ -372,13 +372,14 @@ instance ToHtml ListItemIdea where
                   else (numLikes * 100) `div` numVoters
 
         isIdeaInJury = and
-            [ listItemIdeaContext == IdeaInIdeasOverview
-            , isVotingPhase phase
-            , isPrincipal role]
+            [ listItemIdeaContext == IdeaInViewTopic
+            , isJuryPhase phase
+            , isPrincipal role
+            ]
 
         -- QUESTION: Similar abstraction via lenses?
-        isVotingPhase (Just (PhaseVoting _)) = True
-        isVotingPhase _                      = False
+        isJuryPhase (Just PhaseJury) = True
+        isJuryPhase _                = False
 
         isPrincipal Principal = True
         isPrincipal _         = False

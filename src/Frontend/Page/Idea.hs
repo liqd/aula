@@ -105,10 +105,6 @@ instance ToHtml ViewIdea where
                 postButton_ [class_ "btn-cta voting-button"]
                             (U.voteIdea idea v)
 
-            juryButton v =
-                postButton_ [class_ "btn-cta"]
-                            (U.juryIdea idea v)
-
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
@@ -159,9 +155,6 @@ instance ToHtml ViewIdea where
                 pre_ . toHtml $ ppShow (idea ^. ideaVotes)
 
                 div_ ">>>>>>>>>>> some phase-specific stuff"
-
-            juryButton IdeaNotFeasible "Not feasible" -- FIXME: Translation
-            juryButton IdeaFeasible    "Feasible"     -- FIXME: Translation
 
             div_ [class_ "sub-heading"] $ do
                 let voteBar :: Html () -> Html ()
@@ -402,16 +395,20 @@ instance FormPage JuryIdea where
 
     -- FIXME styling
     -- TODO: Fix translation
-    formPage v form p@(JuryIdea juryType_ idea _topic) =
+    formPage v form p@(JuryIdea juryType idea _topic) =
         semanticDiv p $ do
-            div_ [class_ "container-comment-idea"] $ do
-                h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
+            div_ [class_ "container-jury-idea"] $ do
+                h1_ [class_ "main-heading"] $ headerText <> idea ^. ideaTitle . html
                 form $ do
                     label_ $ do
-                        span_ [class_ "label-text"] "Was möchtest du sagen?"
+                        span_ [class_ "label-text"] "What is the reason?"
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "jury-text" v
                     footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Kommentar abgeben"
+                        DF.inputSubmit "Save jurisdiction"
+      where
+        headerText = case juryType of
+            IdeaFeasible    -> "Feasible "
+            IdeaNotFeasible -> "Not feasible "
 
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
