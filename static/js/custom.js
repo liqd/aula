@@ -60,6 +60,10 @@ if(imageSelect) {
             buttons[b].addEventListener("click", makeHandler(b));
         }
     }
+
+    if (hidden.value !== "") {
+        handler(hidden.value);
+    }
 }
 
 // helpers

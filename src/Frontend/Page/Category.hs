@@ -44,8 +44,8 @@ ideasFilterQuery = \case
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
 -- subform src/Frontend/Page/Topic.hs`.)
-makeFormSelectCategory :: (Monad m) => DF.Form (Html ()) m (Maybe Category)
-makeFormSelectCategory = DF.validate f $ DF.text Nothing
+makeFormSelectCategory :: (Monad m) => Maybe Category -> DF.Form (Html ()) m (Maybe Category)
+makeFormSelectCategory mcat = DF.validate f $ DF.text (cs . show . fromEnum <$> mcat)
   where
     f :: ST -> DF.Result (Html ()) (Maybe Category)
     f = DF.Success . (toEnumMay <=< readMay) . cs

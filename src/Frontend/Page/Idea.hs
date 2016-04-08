@@ -240,7 +240,7 @@ instance FormPage CreateIdea where
         ProtoIdea
         <$> ("title"         .: DF.text Nothing)
         <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
-        <*> ("idea-category" .: makeFormSelectCategory)
+        <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
     formPage v form p = do
@@ -273,7 +273,7 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
-        <*> ("idea-category" .: makeFormSelectCategory)
+        <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
     -- FIXME: factor out code common with CreateIdea.
