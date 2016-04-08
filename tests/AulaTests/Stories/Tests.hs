@@ -21,7 +21,7 @@ topicTimeoutStory = do
     let topic1 = "topic1"
     login "admin"
     selectIdeaSpace "school"
-    createIdea idea1 "desc" CatRule
+    createIdea idea1 "desc" CatRules
     likeIdea idea1
     createTopic idea1 topic1 "desc"
     timeoutTopic topic1

@@ -49,14 +49,14 @@ genInitialTestDb = do
     _wildIdea <- aupdate $ AddIdea (EnvWith user1 sometime ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
             , _protoIdeaDesc     = Markdown "wild-idea-desc"
-            , _protoIdeaCategory = CatRule
+            , _protoIdeaCategory = CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
     topicIdea <- aupdate $ AddIdea (EnvWith user2 sometime ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
             , _protoIdeaDesc     = Markdown "topic-idea-desc"
-            , _protoIdeaCategory = CatRule
+            , _protoIdeaCategory = CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 

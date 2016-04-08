@@ -80,9 +80,9 @@ instance ToHtml CategoryButton where
               ] $ categoryToUiText cat
 
 categoryToUiText :: IsString s => Category -> s
-categoryToUiText CatRule        = "Regeln"
+categoryToUiText CatRules       = "Regeln"
 categoryToUiText CatEquipment   = "Ausstattung"
-categoryToUiText CatClass       = "Unterricht"
+categoryToUiText CatTeaching    = "Unterricht"
 categoryToUiText CatTime        = "Zeit"
 categoryToUiText CatEnvironment = "Umgebung"
 

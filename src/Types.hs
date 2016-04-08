@@ -130,9 +130,9 @@ type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
-    CatRule         -- ^ "Regel"
+    CatRules        -- ^ "Regel"
   | CatEquipment    -- ^ "Ausstattung"
-  | CatClass        -- ^ "Unterricht"
+  | CatTeaching     -- ^ "Unterricht"
   | CatTime         -- ^ "Zeit"
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
@@ -141,18 +141,18 @@ instance SOP.Generic Category
 
 instance FromHttpApiData Category where
     parseUrlPiece = \case
-        "rules"       -> Right CatRule
+        "rules"       -> Right CatRules
         "equipment"   -> Right CatEquipment
-        "teaching"    -> Right CatClass
+        "teaching"    -> Right CatTeaching
         "time"        -> Right CatTime
         "environment" -> Right CatEnvironment
         _             -> Left "no parse"
 
 instance ToHttpApiData Category where
     toUrlPiece = \case
-        CatRule        -> "rules"
+        CatRules       -> "rules"
         CatEquipment   -> "equipment"
-        CatClass       -> "teaching"
+        CatTeaching    -> "teaching"
         CatTime        -> "time"
         CatEnvironment -> "environment"
 
