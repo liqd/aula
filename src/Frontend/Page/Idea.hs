@@ -202,10 +202,13 @@ instance ToHtml ViewIdea where
             idea ^. ideaDesc . html
 
             div_ [class_ "view-category"] $ do
-                h2_ [class_ "sub-header"] "Diese Idee gehört zur Kategorie"
-                div_ [class_ "icon-list m-inline"] $ do
-                    ul_ $ do
-                        toHtml $ CategoryLabel (idea ^. ideaCategory)
+                case idea ^. ideaCategory of
+                    Nothing -> do
+                        h2_ [class_ "sub-header"] "Diese Idee gehört zu keiner Kategorie"
+                    Just cat -> do
+                        h2_ [class_ "sub-header"] "Diese Idee gehört zur Kategorie"
+                        div_ [class_ "icon-list m-inline"] .
+                            ul_ . toHtml $ CategoryLabel cat
 
         -- comments
         section_ [class_ "comments"] $ do

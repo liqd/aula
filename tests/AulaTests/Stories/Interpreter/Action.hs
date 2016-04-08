@@ -71,7 +71,7 @@ runClient (Free (SelectIdeaSpace s k)) = do
 runClient (Free (CreateIdea t d c k)) = do
     Just i <- use csIdeaSpace
     _ <- lift $ Action.createIdea
-        (ProtoIdea t (Markdown d) c (IdeaLocationSpace i))
+        (ProtoIdea t (Markdown d) (Just c) (IdeaLocationSpace i))
     runClient k
 
 runClient (Free (LikeIdea t k)) = do

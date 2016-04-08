@@ -119,7 +119,7 @@ instance PayloadToEnv ProtoIdea where
     payloadToEnvMapping _v (ProtoIdea t (Markdown d) c _is) = \case
         "title"         -> pure [TextInput t]
         "idea-text"     -> pure [TextInput d]
-        "idea-category" -> pure [TextInput . cs . show . fromEnum $ c]
+        "idea-category" -> pure [TextInput $ fromMaybe nil (cs . show . fromEnum <$> c)]
 
 instance PayloadToEnv User where
     payloadToEnvMapping _ u = \case

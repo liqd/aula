@@ -945,7 +945,7 @@ constantSampleIdea = Idea
         , ""
         , "anim all it perfectly ducimus greater one is aliquam iste cupidatat it? reiciendis necessitatibus repudiandae foresee best, there atqu.\nvoluptate through asperiores consequatur? wise atque eu because nobis officiis advantage omnis minus accepted. extremel.\nEt commodo quam rejects, necessitatibus saying laborious extremely weakness laudantium, we beguiled ratione elit, cum Quis proident,.\noccaecati numquam libero fail quo certain fault illo how be beatae eius circumstances blanditiis able and At quae incidun.\nlong labore born certain sint dicta men endures cumque little laborum circumstances through aliquam quibusda.\nest, No distinguish. Duis weakness in own idea explorer The different quidem aspernatur quia necessitatibus abl."
         ]}
-    , _ideaCategory = CatTime
+    , _ideaCategory = Just CatTime
     , _ideaLocation =
         IdeaLocationSpace { _ideaLocationSpace = SchoolSpace }
     , _ideaComments = aMapFromList constantSampleComments

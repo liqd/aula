@@ -38,19 +38,17 @@ type IdeasFilterQuery = Maybe Category
 
 ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
 ideasFilterQuery = \case
-    (Just cat) -> filter ((== cat) . view ideaCategory)
+    (Just cat) -> filter ((== Just cat) . view ideaCategory)
     Nothing    -> id
 
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
 -- subform src/Frontend/Page/Topic.hs`.)
-makeFormSelectCategory :: (Monad m) => DF.Form (Html ()) m Category
+makeFormSelectCategory :: (Monad m) => DF.Form (Html ()) m (Maybe Category)
 makeFormSelectCategory = DF.validate f $ DF.text Nothing
   where
-    f :: ST -> DF.Result (Html ()) Category
-    f = maybe (DF.Error "bad category identifier") DF.Success
-      . (toEnumMay <=< readMay)
-      . cs
+    f :: ST -> DF.Result (Html ()) (Maybe Category)
+    f = DF.Success . (toEnumMay <=< readMay) . cs
 
 -- | see also: static/js/custom.js.
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()

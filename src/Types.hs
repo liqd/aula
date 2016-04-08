@@ -95,7 +95,7 @@ data Idea = Idea
     { _ideaMeta       :: MetaInfo Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
-    , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
+    , _ideaCategory   :: Maybe Category
     , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Comments
     , _ideaLikes      :: IdeaLikes
@@ -119,7 +119,7 @@ instance SOP.Generic IdeaLocation
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
     , _protoIdeaDesc       :: Document
-    , _protoIdeaCategory   :: Category
+    , _protoIdeaCategory   :: Maybe Category
     , _protoIdeaLocation   :: IdeaLocation
     }
   deriving (Eq, Ord, Show, Read, Generic)
