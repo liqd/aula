@@ -299,9 +299,10 @@ newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
 instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        div_ [class_ "author"] $ do
-            span_ [class_ "author-image"] $ avatarImgFromMeta mi
-            span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
+        div_ [class_ "author"] .
+            a_ [href_ $ P.User (mi ^. metaCreatedBy) P.UserIdeas] $ do
+                span_ [class_ "author-image"] $ avatarImgFromMeta mi
+                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
 data ListItemIdea = ListItemIdea
       { _listItemIdeaLinkToUser :: Bool

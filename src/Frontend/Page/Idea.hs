@@ -113,7 +113,8 @@ instance ToHtml ViewIdea where
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
-                idea ^. createdByLogin . fromUserLogin . html
+                a_ [ href_ $ U.User (idea ^. createdBy) U.UserIdeas
+                   ] $ idea ^. createdByLogin . fromUserLogin . html
                 " / "
                 let l = do
                         numberWithUnit totalLikes "Like" "Likes"
