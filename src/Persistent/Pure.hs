@@ -68,6 +68,8 @@ module Persistent.Pure
     , addCommentVoteToIdeaComment
     , addCommentVoteToIdeaCommentReply
     , findUser
+    , findUserByLogin
+    , findUsersByRole
     , getUsers
     , addUser
     , addFirstUser
@@ -85,7 +87,6 @@ module Persistent.Pure
     , moveIdeasToLocation
     , findTopic
     , findTopicsBySpace
-    , findUserByLogin
     , dbIdeas
     , dbUsers
     , dbTopics
@@ -438,6 +439,9 @@ findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.
 
 findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
+
+findUsersByRole :: Role -> Query [User]
+findUsersByRole = findAllInBy dbUsers userRole
 
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap
