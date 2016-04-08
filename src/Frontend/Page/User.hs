@@ -100,8 +100,8 @@ userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
     changeUser :: UserSettingData -> action ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
-        maybe (pure ()) (aupdate . SetUserEmail uid) memail
-        aupdate $ SetUserPass uid oldPass newPass1 newPass2
+        maybe (pure ()) (update . SetUserEmail uid) memail
+        update $ SetUserPass uid oldPass newPass1 newPass2
         pure ()
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()

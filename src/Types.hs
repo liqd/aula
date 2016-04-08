@@ -381,7 +381,7 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: Maybe URL  -- FIXME UriPath?
+    , _userAvatar    :: Maybe URL
     , _userRole      :: Role
     , _userPassword  :: UserPass
     , _userEmail     :: Maybe EmailAddress
@@ -574,7 +574,10 @@ instance ToHtml Document where
 
 -- * general-purpose types
 
--- | Dummy for URL.  FIXME: use uri-bytestring?
+-- | Use this for storing URLs in the aula state.  Unlike 'UriPath' is serializable, has equality,
+-- and unlike "Frontend.Path", it is flexible enough to contain internal and external uris.
+-- (FUTUREWORK: the `uri-bytestring` package could be nice here, but it may require a few orphans or
+-- a newtype to prevent them; see also: #31.)
 type URL = ST
 
 newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }

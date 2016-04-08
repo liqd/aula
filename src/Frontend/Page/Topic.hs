@@ -281,7 +281,7 @@ createTopic space =
         Action.createTopic
 
 editTopic :: ActionM m => AUID Topic -> ServerT (FormHandler EditTopic) m
-editTopic topicId = redirectFormHandler getPage (aupdate . Persistent.EditTopic topicId)
+editTopic topicId = redirectFormHandler getPage (update . Persistent.EditTopic topicId)
   where
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId

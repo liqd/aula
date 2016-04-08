@@ -218,7 +218,7 @@ instance FormPage PageAdminSettingsDurations where
 
 adminDurations :: ActionM m => ServerT (FormHandler PageAdminSettingsDurations) m
 adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> query (view dbDurations))
-                                     (aupdate . SaveDurations)
+                                     (update . SaveDurations)
 
 
 -- ** Quorum
@@ -250,7 +250,7 @@ instance FormPage PageAdminSettingsQuorum where
 
 adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
 adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> query (view dbQuorums))
-                                  (aupdate . SaveQuorums)
+                                  (update . SaveQuorums)
 
 
 -- ** roles and permisisons
@@ -309,7 +309,7 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
                             select_ [class_ "m-stretch"] nil
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
-                            DF.inputSubmit "speichern"
+                            DF.inputSubmit "Speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
@@ -441,7 +441,7 @@ adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
         <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
         <*> getSchoolClasses
 
-    editUser = aupdate . SetUserRole uid . payloadToUserRole
+    editUser = update . SetUserRole uid . payloadToUserRole
 
 payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
@@ -588,7 +588,7 @@ adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPCl
     p :: SchoolClass -> CsvUserRecord -> m ()
     p schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = do
       void $ do
-        aupdate . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
+        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
         pwd <- mkRandomPassword
         currentUserAddDb (AddUser pwd) ProtoUser
             { _protoUserLogin     = mLogin

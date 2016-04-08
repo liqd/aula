@@ -15,7 +15,7 @@ module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
-    , ActionPersist(aqueryDb, query, equery, mquery, aupdate), maybe404
+    , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState)
     , ActionRandomPassword(mkRandomPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
@@ -160,18 +160,18 @@ class Monad m => ActionLog m where
 --
 -- See 'Query', 'EQuery', 'AUpdate' in "Persistent.Pure" for more a deeper understanging of this.
 class (MonadError ActionExcept m) => ActionPersist m where
-    aqueryDb :: m AulaData
-    aupdate  :: HasAUpdate ev a => ev -> m a
+    queryDb :: m AulaData
+    update  :: HasAUpdate ev a => ev -> m a
 
     query :: Query a -> m a
-    query q = runReader q <$> aqueryDb
+    query q = runReader q <$> queryDb
 
     mquery :: Typeable a => MQuery a -> m a
     mquery q = equery (maybe404 =<< q)
 
     equery :: EQuery a -> m a
     equery q = do
-        db <- aqueryDb
+        db <- queryDb
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
 class ActionRandomPassword m where
@@ -223,7 +223,7 @@ addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
                (EnvWithProto a -> ev) -> User -> Proto a -> m a
 addWithUser addA user protoA = do
     now <- getCurrentTimestamp
-    aupdate $ addA (EnvWith user now protoA)
+    update $ addA (EnvWith user now protoA)
 
 currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
                     (EnvWithProto a -> ev) -> Proto a -> m a
@@ -247,7 +247,7 @@ currentUser = do
 -- | Modify the current user.
 modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
                   => (AUID User -> ev) -> m a
-modifyCurrentUser ev = currentUserId >>= aupdate . ev
+modifyCurrentUser ev = currentUserId >>= update . ev
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
@@ -266,7 +266,7 @@ topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
-            aupdate $ SetTopicPhase (topic ^. _Id) phase'
+            update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
 topicTimeout :: (ActionPersist m, ActionSendMail m) => PhaseChange -> AUID Topic -> m ()

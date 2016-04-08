@@ -2,14 +2,29 @@
 
 module Main where
 
-import Data.Monoid ((<>))
+import System.Directory
+import System.IO
+import Text.Show.Pretty
 
 import Frontend
 import Config
+
 
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
     cfg <- readConfig CrashMissing
-    logger cfg $ "running aula with config " <> show cfg
+
+    wd <- getCurrentDirectory
+    hPutStrLn stderr $ unlines
+        [ ""
+        , "this is aula!"
+        , "\nrelease:"
+        , Config.releaseVersion
+        , "\nroot path:"
+        , wd
+        , "\nsetup:", ppShow cfg
+        , ""
+        ]
+
     runFrontend cfg

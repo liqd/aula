@@ -36,7 +36,7 @@ type DelegationsApi = Get '[JSON] DelegationNetwork
 -- delegation networks are generated on top of the existing data; testing doesn't really test
 -- anything.  But it is self-contained and a good basis to continue from.
 delegationsApi :: (GenArbitrary m, ActionM m) => ServerT DelegationsApi m
-delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction
+delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction Nothing
 
 
 -- * persistent state management (for demo operation)
@@ -48,6 +48,6 @@ type ManageStateApi =
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
-       aupdate DangerousResetAulaData
+       update DangerousResetAulaData
   :<|> genInitialTestDb
   :<|> mkUniverse
