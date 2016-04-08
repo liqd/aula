@@ -266,25 +266,25 @@ instance FormPage EditIdea where
 createOrEditPage :: (Monad m, Typeable page, Page page) =>
     Bool -> View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
 createOrEditPage showDeleteButton v form p = semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Deine Idee"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
-                            inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
-                                "title" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                            inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
-                                Nothing Nothing "idea-text" v
-                        formPageSelectCategory v
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Idee veröffentlichen"
-                            when showDeleteButton $
-                                button_ [class_ "btn-cta", value_ ""] $ do
-                                    i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
-                                    "Idee löschen"
+    div_ [class_ "container-main popup-page"] $ do
+        div_ [class_ "container-narrow"] $ do
+            h1_ [class_ "main-heading"] "Deine Idee"
+            form $ do
+                label_ $ do
+                    span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
+                    inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                        "title" v
+                label_ $ do
+                    span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
+                    inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                        Nothing Nothing "idea-text" v
+                formPageSelectCategory v
+                footer_ [class_ "form-footer"] $ do
+                    DF.inputSubmit "Idee veröffentlichen"
+                    when showDeleteButton $
+                        button_ [class_ "btn-cta", value_ ""] $ do
+                            i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
+                            "Idee löschen"
 
 
 instance FormPage CommentIdea where
