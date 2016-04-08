@@ -18,7 +18,7 @@ module Frontend.Page.Topic
     , editTopic )
 where
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, currentUser)
 import Control.Exception (assert)
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
@@ -45,7 +45,7 @@ data ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas ViewTopicTab Topic [(Idea, Int)]
+  = ViewTopicIdeas User ViewTopicTab Topic [(Idea, Int)]
   | ViewTopicDelegations Topic [Delegation]
   deriving (Eq, Show, Read)
 
@@ -96,7 +96,7 @@ instance ToHtml ViewTopic where
         pre_ $ topic ^. showed . html
         pre_ $ delegations ^. showed . html
 
-    toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(ViewTopicIdeas user tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
             div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
@@ -108,7 +108,7 @@ instance ToHtml ViewTopic where
                         a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
 
             for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea IdeaInViewTopic (Just (topic ^. topicPhase)) numVoters idea Principal ^. html -- TODO: Add user
+                ListItemIdea IdeaInViewTopic (Just (topic ^. topicPhase)) numVoters idea (user ^. userRole) ^. html
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do
@@ -250,12 +250,14 @@ makeFormIdeaSelection ideas =
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = makeFrame =<< equery (do
+viewTopic tab topicId = do
+    user <- currentUser
+    makeFrame =<< equery (do
     topic <- maybe404 =<< findTopic topicId
     delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
     case tab of
         TabDelegation -> pure $ ViewTopicDelegations topic delegations
-        _ -> ViewTopicIdeas tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
+        _ -> ViewTopicIdeas user tab topic <$> (findIdeasByTopic topic >>= mapM getNumVotersForIdea))
 
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =

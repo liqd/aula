@@ -30,7 +30,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview IdeaSpace [(Idea, Int)]
+data PageIdeasOverview = PageIdeasOverview User IdeaSpace [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -52,11 +52,10 @@ viewRooms = makeFrame =<< (PageRoomsOverview <$> query getSpaces)
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasOverview)
-viewIdeas space = makeFrame =<<
-    (PageIdeasOverview space <$> query (do
-        is  <- findWildIdeasBySpace space
-        ivs <- getNumVotersForIdea `mapM` is
-        pure ivs))
+viewIdeas space = do
+    user <- currentUser
+    makeFrame =<< (PageIdeasOverview user space
+                    <$> query (findWildIdeasBySpace space >>= mapM getNumVotersForIdea))
 
 viewTopics :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasInDiscussion)
@@ -93,7 +92,7 @@ instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview space ideaAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview user space ideaAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -119,7 +118,7 @@ instance ToHtml PageIdeasOverview where
                     a_ [href_ U.Broken] "Umgebung"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea IdeaInIdeasOverview Nothing numVoters idea Principal ^. html -- TODO: Add user
+                ListItemIdea IdeaInIdeasOverview Nothing numVoters idea (user ^. userRole) ^. html
 
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]

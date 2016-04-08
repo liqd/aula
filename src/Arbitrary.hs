@@ -91,7 +91,7 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
@@ -104,7 +104,7 @@ instance Arbitrary ViewTopic where
         tab <- arb
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb
-            _ -> ViewTopicIdeas tab <$> arb <*> arb
+            _ -> ViewTopicIdeas <$> arb <*> (pure tab) <*> arb <*> arb
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
