@@ -32,7 +32,6 @@ module Arbitrary
 
 import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson as Aeson
@@ -407,9 +406,6 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
-
-instance GenArbitrary Action where
-    genGen = liftIO . generate
 
 
 -- * arbitrary readable text

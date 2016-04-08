@@ -88,7 +88,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), MonadReaderConfig(..), exposedUrl)
+import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import Frontend.Path (listTopicIdeas)
 import LifeCycle
@@ -282,9 +282,9 @@ sendMailToRole role msg = do
 
 phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
             => Topic -> PhaseAction -> m ()
-phaseAction topic phaseAction = do
+phaseAction topic phasact = do
     cfg <- asks (view getConfig)
-    let topicTemplate addr phase = ST.unlines $
+    let topicTemplate addr phase = ST.unlines
             [ "Liebe " <> addr <> ","
             , ""
             , "das Thema:"
@@ -300,7 +300,7 @@ phaseAction topic phaseAction = do
             , "Ihr Aula-Benachrichtigungsdienst"
             ]
 
-    case phaseAction of
+    case phasact of
       JuryPhasePrincipalEmail ->
           sendMailToRole Principal EmailMessage
               { _msgSubject = "[Aula] Thema in der Prüfungsphase"

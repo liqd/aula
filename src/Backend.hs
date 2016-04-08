@@ -10,8 +10,6 @@ where
 
 import Action
 import Arbitrary
-import Control.Monad.IO.Class
-import Control.Monad (join)
 import CreateRandom
 import DemoData
 import Persistent.Api
@@ -25,7 +23,7 @@ type Api =
        "delegations" :> DelegationsApi
   :<|> "manage-state" :> ManageStateApi
 
-api :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT Api m
+api :: (GenArbitrary m, ActionM m) => ServerT Api m
 api =  delegationsApi
   :<|> manageStateApi
 
@@ -48,8 +46,8 @@ type ManageStateApi =
   :<|> "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
 
-manageStateApi :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT ManageStateApi m
+manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        aupdate DangerousResetAulaData
   :<|> genInitialTestDb
-  :<|> join (liftIO mkUniverse)
+  :<|> mkUniverse

@@ -159,8 +159,10 @@ updateAvatar user url = aupdate $ SetUserAvatar (user ^. _Id) url
 
 -- * Universe
 
-mkUniverse :: forall m . ActionM m => IO (m ())
-mkUniverse = universe <$> newQCGen
+mkUniverse :: (GenArbitrary m, ActionM m) => m ()
+mkUniverse = do
+    rnd <- mkQCGen <$> genGen arbitrary
+    universe rnd
 
 -- | This type change will generate a lot of transactions.  (Maybe we can find a better trade-off
 -- for transaction granularity here that speeds things up considerably.)

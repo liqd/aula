@@ -23,6 +23,7 @@ import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
+import Test.QuickCheck  -- FIXME: remove
 import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
@@ -44,33 +45,39 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              , MonadError ActionExcept
              , MonadReader ActionEnv
              , MonadState UserState
-             , MonadIO  -- TODO: remove?  (we could still leave the default implementation of sendmail in Action in the class, we'd just have to copy it over here.)
              )
 
-instance HasSendMail ActionExcept ActionEnv Action
+actionIO :: IO a -> Action a
+actionIO = MkAction . liftIO
+
+instance GenArbitrary Action where  -- FIXME: remove
+    genGen = actionIO . generate
+
+instance HasSendMail ActionExcept ActionEnv Action where
+    sendMailToAddress addr msg = MkAction $ sendMailToAddressIO addr msg
 
 instance ActionLog Action where
-    logEvent = liftIO . print
+    logEvent = actionIO . print
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
-    aqueryDb = liftIO =<< view (envRunPersist . rpQuery)
+    aqueryDb = actionIO =<< view (envRunPersist . rpQuery)
 
     aupdate ev =
         either (throwError . ActionPersistExcept) pure
-            =<< liftIO =<< views (envRunPersist . rpUpdate) ($ ev)
+            =<< actionIO =<< views (envRunPersist . rpUpdate) ($ ev)
 
 instance MonadLIO DCLabel Action where
-    liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
+    liftLIO = actionIO . (`evalLIO` LIOState dcBottom dcBottom)
 
 instance MonadRandom Action where
-    getRandomBytes = liftIO . getRandomBytes
+    getRandomBytes = actionIO . getRandomBytes
 
 instance ActionRandomPassword Action where
-    mkRandomPassword = liftIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+    mkRandomPassword = actionIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
 
 instance ActionCurrentTimestamp Action where
-    getCurrentTimestamp = liftIO $ Timestamp <$> getCurrentTime
+    getCurrentTimestamp = actionIO $ Timestamp <$> getCurrentTime
 
 instance ActionUserHandler Action where
     login uid = do
@@ -83,11 +90,11 @@ instance ActionUserHandler Action where
     logout = put userLoggedOut
 
 instance ActionTempCsvFiles Action where
-    popTempCsvFile = liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
+    popTempCsvFile = actionIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
 
-    cleanupTempCsvFiles = liftIO . releaseFormTempFiles
+    cleanupTempCsvFiles = actionIO . releaseFormTempFiles
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.
