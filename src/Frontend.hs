@@ -133,15 +133,15 @@ type family Singular    a :: Symbol
 type family Plural      a :: Symbol
 type family CaptureData a
 
-type instance Singular Comment       = "comment"
-type instance Singular Idea          = "idea"
-type instance Singular IdeaSpace     = "space"
-type instance Singular IdeaVoteValue = "vote"
-type instance Singular Reply         = "reply"
-type instance Singular SchoolClass   = "class"
-type instance Singular Topic         = "topic"
-type instance Singular UpDown        = "vote"
-type instance Singular User          = "user"
+type instance Singular Comment            = "comment"
+type instance Singular Idea               = "idea"
+type instance Singular IdeaSpace          = "space"
+type instance Singular IdeaVoteValue      = "vote"
+type instance Singular Reply              = "reply"
+type instance Singular SchoolClass        = "class"
+type instance Singular Topic              = "topic"
+type instance Singular UpDown             = "vote"
+type instance Singular User               = "user"
 type instance Singular IdeaJuryResultType = "jury"
 
 type instance CaptureData Comment       = AUID Comment
