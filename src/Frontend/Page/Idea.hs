@@ -25,7 +25,7 @@ module Frontend.Page.Idea
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, query, mquery, aupdate
+              , currentUserAddDb, query, equery, mquery, aupdate
               , markIdeaInJuryPhase
               )
 import Frontend.Page.Comment
@@ -469,9 +469,9 @@ replyCommentIdea ideaId commentId =
 juryIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JuryIdea) m
 juryIdea ideaId juryType =
     redirectFormHandler
-        (do 
+        (equery $ do
             -- FIXME: Run in one transaction
-            idea  <- mquery (findIdea ideaId)
-            topic <- mquery (ideaTopic idea)
+            idea  <- maybe404 =<< findIdea ideaId
+            topic <- maybe404 =<< ideaTopic idea
             pure $ JuryIdea juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
