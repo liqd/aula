@@ -327,8 +327,8 @@ instance ToHtml ListItemIdea where
             when isIdeaInJury . div_ $ do
                 case _ideaJuryResult idea of
                     Nothing -> do
-                        button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "FEASIBLE"
-                        button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "NOT FEASIBLE"
+                        button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "Feasible"
+                        button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "Not Feasible"
                     Just (IdeaJuryResult _ (Feasible _)) -> do
                         p_ "Feasible"
                     Just (IdeaJuryResult _ (NotFeasible _)) -> do

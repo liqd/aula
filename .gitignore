@@ -16,6 +16,5 @@ packages/
 /pwd.log
 *.tix
 /aula.yaml
-/state/AulaData/
 /state/*
 aula.yaml*

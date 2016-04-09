@@ -77,11 +77,12 @@ data CommentIdea = CommentIdea Idea (Maybe Comment)
 instance Page CommentIdea where
 
 -- | X. Jury idea
--- Assumption: The topic is related to the idea
+-- Assumption: The idea has the idea location which refers to the topic.
 data JuryIdea = JuryIdea IdeaJuryResultType Idea Topic
   deriving (Eq, Show, Read)
 
 instance Page JuryIdea where
+
 
 -- * templates
 
@@ -384,7 +385,7 @@ instance FormPage JuryIdea where
 
     formAction (JuryIdea juryType idea _topic) = U.juryIdea idea juryType
 
-    redirectOf (JuryIdea _ idea topic) _ = U.listTopicIdeas topic
+    redirectOf (JuryIdea _ _idea topic) _ = U.listTopicIdeas topic
 
     makeForm (JuryIdea IdeaFeasible _ _) =
         Feasible
