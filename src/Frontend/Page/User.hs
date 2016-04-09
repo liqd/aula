@@ -27,7 +27,7 @@ data PageUserSettings = PageUserSettings User
 instance Page PageUserSettings
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas User [(Idea, Int)]
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext User [(Idea, Int)]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas
@@ -122,7 +122,7 @@ userHeaderDiv _user =
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileCreatedIdeas user ideas) = semanticDiv p $ do
+    toHtml p@(PageUserProfileCreatedIdeas ctx user ideas) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv user
             -- Tab selection
@@ -144,7 +144,11 @@ instance ToHtml PageUserProfileCreatedIdeas where
                             li_ [class_ "pop-menu-list-item"] $ do
                                 a_ [href_ U.Broken] "date"  -- FIXME German / Dummy
                     for_ ideas $ \(idea, numVoters) ->
-                        ListItemIdea IdeaInUserProfile Nothing numVoters idea (user ^. userRole) ^. html
+                        ListItemIdea
+                            IdeaInUserProfile
+                            Nothing
+                            numVoters
+                            idea (ctx ^. renderContextUser . userRole) ^. html
 
 -- | List all the created ideas for the given user.
 -- Using @join . persistent $ do ... return $ makeFrame@ will
@@ -154,10 +158,12 @@ instance ToHtml PageUserProfileCreatedIdeas where
 -- one round. Same applies here like 'STM' and 'IO'.
 createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
-createdIdeas userId = makeFrame =<< mquery (do
-    muser <- findUser userId
-    ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
-    pure $ PageUserProfileCreatedIdeas <$> muser <*> pure ideasAndNumVoters)
+createdIdeas userId = do
+    ctx <- renderContext
+    makeFrame =<< mquery (do
+        muser <- findUser userId
+        ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
+        pure $ PageUserProfileCreatedIdeas <$> pure ctx <*> muser <*> pure ideasAndNumVoters)
 
 
 -- ** User Profile: Delegated Votes

@@ -123,7 +123,7 @@ instance Arbitrary JuryIdea where
     arbitrary = JuryIdea <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
@@ -327,6 +327,8 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
+instance Arbitrary RenderContext where
+    arbitrary = RenderContext <$> arbitrary
 
 -- * admin
 

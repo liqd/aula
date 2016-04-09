@@ -372,6 +372,12 @@ data ProtoUser = ProtoUser
 
 instance SOP.Generic ProtoUser
 
+-- | Contains all the information which is needed to render
+-- a user role dependent functionality.
+-- FIXME: Use more appropiate information.
+newtype RenderContext = RenderContext { _renderContextUser :: User }
+  deriving (Eq, Read, Show)
+
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
@@ -684,6 +690,7 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
 makeLenses ''Quorums
+makeLenses ''RenderContext
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
