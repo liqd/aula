@@ -122,7 +122,7 @@ instance ToHtml PageIdeasOverview where
                     IdeaInIdeasOverview
                     Nothing
                     numVoters idea
-                    (ctx ^. renderContextUser . userRole) ^. html
+                    ctx ^. html
 
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]

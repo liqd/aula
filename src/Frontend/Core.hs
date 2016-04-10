@@ -48,7 +48,6 @@ import Data.Typeable
 import Data.Version (showVersion)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
-import Lucid.Missing (onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, getFormDataEnv)
@@ -63,7 +62,8 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import Lucid.Missing (script_, href_, src_, postButton_)
+import LifeCycle
+import Lucid.Missing (onclick_, script_, href_, src_, postButton_)
 import Types
 
 import qualified Frontend.Path as P
@@ -315,24 +315,31 @@ data ListItemIdea = ListItemIdea
       , _listItemIdeaPhase      :: Maybe Phase
       , _listItemIdeaNumVoters  :: Int
       , _listItemIdea           :: Idea
-      , _listItemUserRole       :: Role
+      , _listItemRenderContext  :: RenderContext
       }
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea role) = semanticDiv p $ do
+    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea ctx) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            -- FIXME: Visibility, translation, already marked
-            when isIdeaInJury . div_ $ do
-                case _ideaJuryResult idea of
-                    Nothing -> do
-                        button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "Feasible"
-                        button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "Not Feasible"
-                    Just (IdeaJuryResult _ (Feasible _)) -> do
-                        p_ "Feasible"
-                    Just (IdeaJuryResult _ (NotFeasible _)) -> do
-                        p_ "Not Feasible"
+            let caps = ideaCapabilities
+                        (ctx ^. renderContextUser . _Id)
+                        idea
+                        phase
+                        (ctx ^. renderContextUser . userRole)
+
+            when (IdeaInViewTopic == listItemIdeaContext) $ do
+                when (MarkFeasiblity `elem` caps) . div_ $ do
+                    case _ideaJuryResult idea of
+                        Nothing -> do
+                            button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "Feasible"
+                            button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "Not Feasible"
+                        Just (IdeaJuryResult _ (Feasible _)) -> do
+                            p_ "Feasible"
+                        Just (IdeaJuryResult _ (NotFeasible _)) -> do
+                            p_ "Not Feasible"
+
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
@@ -370,19 +377,6 @@ instance ToHtml ListItemIdea where
             v = if numVoters == 0
                   then 0
                   else (numLikes * 100) `div` numVoters
-
-        isIdeaInJury = and
-            [ listItemIdeaContext == IdeaInViewTopic
-            , isJuryPhase phase
-            , isPrincipal role
-            ]
-
-        -- QUESTION: Similar abstraction via lenses?
-        isJuryPhase (Just PhaseJury) = True
-        isJuryPhase _                = False
-
-        isPrincipal Principal = True
-        isPrincipal _         = False
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep (View (Html ())) ST (Frame p)

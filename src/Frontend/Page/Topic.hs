@@ -112,7 +112,7 @@ instance ToHtml ViewTopic where
                     IdeaInViewTopic
                     (Just (topic ^. topicPhase))
                     numVoters idea
-                    (ctx ^. renderContextUser . userRole) ^. html
+                    ctx ^. html
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do

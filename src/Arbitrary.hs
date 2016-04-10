@@ -104,7 +104,7 @@ instance Arbitrary ViewTopic where
         tab <- arb
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb
-            _ -> ViewTopicIdeas <$> arb <*> (pure tab) <*> arb <*> arb
+            _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb

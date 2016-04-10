@@ -148,7 +148,8 @@ instance ToHtml PageUserProfileCreatedIdeas where
                             IdeaInUserProfile
                             Nothing
                             numVoters
-                            idea (ctx ^. renderContextUser . userRole) ^. html
+                            idea
+                            ctx ^. html
 
 -- | List all the created ideas for the given user.
 -- Using @join . persistent $ do ... return $ makeFrame@ will
