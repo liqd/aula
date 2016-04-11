@@ -124,7 +124,6 @@ instance Arbitrary CommentIdea where
     arbitrary = CommentIdea <$> arb <*> arb
 
 instance Arbitrary JudgeIdea where
-    -- TODO: Set the idea location to the topic's location
     arbitrary = JudgeIdea <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserProfileCreatedIdeas where
