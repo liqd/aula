@@ -288,7 +288,7 @@ sendMailToRole role msg = do
 phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
             => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
-    cfg <- asks (view getConfig)
+    cfg <- viewConfig
     let topicTemplate addr phase = ST.unlines
             [ "Liebe " <> addr <> ","
             , ""
