@@ -225,7 +225,7 @@ type IdeaApi
        -- vote on a reply of a comment
   :<|> Idea ::> Comment ::> Reply ::> UpDown ::> PostH
        -- jury an idea
-  :<|> Idea ::> IdeaJuryResultType ::> FormHandler JuryIdea
+  :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
@@ -263,7 +263,7 @@ ideaApi loc
   :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
-  :<|> Page.juryIdea
+  :<|> Page.judgeIdea
   :<|> Page.createIdea loc
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m

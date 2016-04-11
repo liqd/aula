@@ -11,13 +11,13 @@ module Frontend.Page.Idea
   , CreateIdea(..)
   , EditIdea(..)
   , CommentIdea(..)
-  , JuryIdea(..)
+  , JudgeIdea(..)
   , viewIdea
   , createIdea
   , editIdea
   , commentIdea
   , replyCommentIdea
-  , juryIdea
+  , judgeIdea
   )
 where
 
@@ -73,12 +73,12 @@ data CommentIdea = CommentIdea Idea (Maybe Comment)
 
 instance Page CommentIdea where
 
--- | X. Jury idea
+-- | X. Deem idea feasible / not feasible
 -- Assumption: The idea is located in the topic (via 'IdeaLocation').
-data JuryIdea = JuryIdea IdeaJuryResultType Idea Topic
+data JudgeIdea = JudgeIdea IdeaJuryResultType Idea Topic
   deriving (Eq, Show, Read)
 
-instance Page JuryIdea where
+instance Page JudgeIdea where
 
 
 -- * templates
@@ -320,23 +320,23 @@ instance FormPage CommentIdea where
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Kommentar abgeben"
 
-instance FormPage JuryIdea where
-    type FormPagePayload JuryIdea = IdeaJuryResultValue
-    type FormPageResult JuryIdea = ()
+instance FormPage JudgeIdea where
+    type FormPagePayload JudgeIdea = IdeaJuryResultValue
+    type FormPageResult JudgeIdea = ()
 
-    formAction (JuryIdea juryType idea _topic) = U.juryIdea idea juryType
+    formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 
-    redirectOf (JuryIdea _ _idea topic) _ = U.listTopicIdeas topic
+    redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic
 
-    makeForm (JuryIdea IdeaFeasible _ _) =
+    makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
         <$> "jury-text" .: (Just . Markdown <$> DF.text Nothing)
-    makeForm (JuryIdea IdeaNotFeasible _ _) =
+    makeForm (JudgeIdea IdeaNotFeasible _ _) =
         NotFeasible
         <$> "jury-text" .: (Markdown <$> DF.text Nothing)
 
     -- FIXME styling
-    formPage v form p@(JuryIdea juryType idea _topic) =
+    formPage v form p@(JudgeIdea juryType idea _topic) =
         semanticDiv p $ do
             div_ [class_ "container-jury-idea"] $ do
                 h1_ [class_ "main-heading"] $ headerText <> idea ^. ideaTitle . html
@@ -395,11 +395,11 @@ replyCommentIdea ideaId commentId =
                       pure $ CommentIdea idea (Just comment))
         (currentUserAddDb $ AddReplyToIdeaComment ideaId commentId)
 
-juryIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JuryIdea) m
-juryIdea ideaId juryType =
+judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JudgeIdea) m
+judgeIdea ideaId juryType =
     redirectFormHandler
         (equery $ do
             idea  <- maybe404 =<< findIdea ideaId
             topic <- maybe404 =<< ideaTopic idea
-            pure $ JuryIdea juryType idea topic)
+            pure $ JudgeIdea juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
