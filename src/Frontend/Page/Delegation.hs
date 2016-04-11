@@ -43,8 +43,6 @@ data PageDelegationNetwork = PageDelegationNetwork
 
 instance Page PageDelegationNetwork where
     extraPageHeaders _ = do
-        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
-        script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
 instance ToHtml PageDelegationNetwork where
@@ -104,6 +102,9 @@ instance ToHtml PageDelegationNetwork where
                     td_ $ span_ [id_ "d3"] nil
 
         bigHr
+
+        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+        script_ [src_ $ U.TopStatic "d3-aula.js"]
 
 viewDelegationNetwork :: ActionM r m => m (Frame PageDelegationNetwork)
 viewDelegationNetwork = makeFrame PageDelegationNetwork
