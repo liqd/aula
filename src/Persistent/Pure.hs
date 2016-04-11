@@ -306,8 +306,7 @@ addDb' nextId' l (EnvWith cUser now pa) = do
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-                -- forall ... ::
-    a <- fromProto pa <$> mkMetaInfo cUser now <$> nextId' cUser
+    a <- (fromProto pa . mkMetaInfo cUser now) <$> nextId' cUser
     l . at (a ^. _Id) <?= a
 
 -- | @addDb l (EnvWith u now p)@ adds a record to the DB.
