@@ -69,7 +69,7 @@ where
 
 import Control.Lens
 import Control.Monad (void, when)
-import Control.Monad.Reader (runReader, runReaderT, asks)
+import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
