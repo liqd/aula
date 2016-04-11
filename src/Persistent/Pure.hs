@@ -311,17 +311,20 @@ type AddDb a = EnvWithProto a -> AUpdate a
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: forall a. (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDb l (EnvWith cUser now pa) = do
+addDb' :: (HasMetaInfo a, FromProto a) => (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
+addDb' nextId' l (EnvWith cUser now pa) = do
     assertAulaDataM $ do
         len <- asks (lengthOf l)
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    a :: a <- fromProto pa <$> nextMetaInfo cUser now
+    a <- fromProto pa <$> mkMetaInfo cUser now <$> nextId' cUser
     l . at (a ^. _Id) <?= a
 
-addDbAppValue :: (HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
+addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
+addDb = addDb' $ const nextId
+
+addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser now
     l .= pure a
@@ -339,7 +342,7 @@ findInBy l f b = findIn l (\x -> x ^? f == Just b)
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> MQuery a
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> IdOf a -> MQuery a
 findInById l i = view (l . at i)
 
 getSpaces :: Query [IdeaSpace]
@@ -370,7 +373,7 @@ findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> AUpdate ()
+modifyAMap :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> (a -> a) -> AUpdate ()
 modifyAMap l ident = (l . at ident . _Just %=)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
@@ -621,7 +624,7 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
-mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
+mkMetaInfo :: User -> Timestamp -> IdOf a -> MetaInfo a
 mkMetaInfo cUser now oid = MetaInfo
     { _metaId              = oid
     , _metaCreatedBy       = cUser ^. _Id
@@ -632,7 +635,7 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: User -> Timestamp -> AUpdate (MetaInfo a)
+nextMetaInfo :: IdOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
 nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()

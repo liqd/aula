@@ -4,6 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
@@ -522,7 +523,19 @@ newtype AUID a = AUID Integer
 
 instance SOP.Generic (AUID a)
 
-type AMap a = Map (AUID a) a
+type family   IdOf a
+type instance IdOf User             = AUID User
+type instance IdOf Idea             = AUID Idea
+type instance IdOf Topic            = AUID Topic
+type instance IdOf Delegation       = AUID Delegation
+type instance IdOf Comment          = AUID Comment
+type instance IdOf CommentVote      = AUID CommentVote  -- TODO User
+type instance IdOf IdeaVote         = AUID IdeaVote     -- TODO User
+type instance IdOf IdeaLike         = AUID IdeaLike     -- TODO User
+type instance IdOf IdeaVoteResult   = AUID IdeaVoteResult
+type instance IdOf IdeaJuryResult   = AUID IdeaJuryResult
+
+type AMap a = Map (IdOf a) a
 
 type Users        = AMap User
 type Ideas        = AMap Idea
@@ -559,7 +572,7 @@ data GMetaInfo a id = MetaInfo
 
 instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
 
-type MetaInfo a = GMetaInfo a (AUID a)
+type MetaInfo a = GMetaInfo a (IdOf a)
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
@@ -783,9 +796,9 @@ deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
 deriveSafeCopy 0 'base ''Quorums
 
-class HasMetaInfo a where
+class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
-    _Id             :: Lens' a (AUID a)
+    _Id             :: Lens' a (IdOf a)
     _Id             = metaInfo . metaId
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy

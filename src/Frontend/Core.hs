@@ -420,7 +420,7 @@ redirect uri = throwServantErr $
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
 
-avatarImgFromMeta :: forall m a. (Monad m) => MetaInfo a -> HtmlT m ()
+avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
 avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
 
 avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
