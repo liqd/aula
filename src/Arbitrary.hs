@@ -357,7 +357,7 @@ instance Arbitrary EditUserPayload where
 instance Arbitrary (AUID a) where
     arbitrary = AUID . abs <$> arb
 
-instance Generic a => Arbitrary (MetaInfo a) where
+instance (Generic id, Arbitrary id) => Arbitrary (GMetaInfo a id) where
     arbitrary = garbitrary
 
 instance Arbitrary Document where
@@ -661,7 +661,7 @@ instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON (MetaInfo a) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = String . review emailAddress
