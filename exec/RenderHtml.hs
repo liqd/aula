@@ -24,7 +24,7 @@
 -- This way, you can play with the server until you have found a page that needs tweaking, infer the
 -- RenderHtmlSource url from the "production" url, and extract exactly that page, with exactly the
 -- data in it that you see, into a source file.
-module Main (spec) where
+module Main (main, spec) where
 
 import Control.Exception (SomeException(SomeException), evaluate)
 import Data.String.Conversions
