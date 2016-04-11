@@ -33,9 +33,11 @@ import Frontend.Prelude as X hiding (get, put)
 
 testConfig :: IO Config
 testConfig = do
-    cfg <- getConfig DontWarnMissing
+    cfg <- readConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     cfg & listenerPort .~ pop
+        & dbPath       .~ "./state/AulaData_Tests"
+              -- (in case somebody accidentally tests on a production system.  :)
         & pure
 
 
@@ -51,12 +53,12 @@ bodyShouldBe :: (Show body, Eq body) => body -> Response body -> Expectation
 bodyShouldBe body l = l ^. responseBody `shouldBe` body
 
 bodyShouldContain :: String -> Response LBS -> Expectation
-bodyShouldContain body l = l ^. responseBody . to cs `shouldContain` body
+bodyShouldContain body l = l ^. responseBody . csi `shouldContain` body
 
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
 
-data Query = Query
+data WreqQuery = WreqQuery
     { post :: forall a. Postable a => String -> a -> IO (Response LBS)
     , get  :: String -> IO (Response LBS)
     }
@@ -64,14 +66,14 @@ data Query = Query
 doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
-withServer :: (Query -> IO a) -> IO a
+withServer :: (WreqQuery -> IO a) -> IO a
 withServer action = do
     cfg <- testConfig
 
-    let opts = defaults & checkStatus .~ Just doNotThrowExceptionsOnErrorCodes
+    let opts = defaults & checkStatus ?~ doNotThrowExceptionsOnErrorCodes
                         & redirects   .~ 0
-        query sess = Query (Sess.postWith opts sess . mkServerUri cfg)
-                           (Sess.getWith opts sess . mkServerUri cfg)
+        wreqQuery sess = WreqQuery (Sess.postWith opts sess . mkServerUri cfg)
+                                   (Sess.getWith opts sess . mkServerUri cfg)
         initialize q = do
             resp
                <- post q "/api/manage-state/create-init"
@@ -84,8 +86,8 @@ withServer action = do
         (runFrontendSafeFork cfg)
         killThread
         (const . Sess.withSession $ \sess -> do
-            initialize $ query sess
-            action $ query sess)
+            initialize $ wreqQuery sess
+            action     $ wreqQuery sess)
 
 mkServerUri :: Config -> String -> String
 mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)

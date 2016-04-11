@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 
@@ -11,6 +12,7 @@ where
 import Action
 import qualified Frontend.Path as P
 import Frontend.Prelude
+import Persistent.Api
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -43,7 +45,7 @@ instance Page PageUserProfileDelegatedVotes
 -- ** User Settings
 
 data UserSettingData = UserSettingData
-    { profileEmail    :: Maybe UserEmail
+    { profileEmail    :: Maybe EmailAddress
     , profileOldPass  :: Maybe ST
     , profileNewPass1 :: Maybe ST
     , profileNewPass2 :: Maybe ST
@@ -58,11 +60,29 @@ instance FormPage PageUserSettings where
 
     makeForm (PageUserSettings user) =
         UserSettingData
-        <$> ("email"         .: (fmap UserEmail <$> DF.optionalText
-                                        (fmap fromUserEmail $ user ^. userEmail)))
+        <$> ("email"         .: emailField)
         <*> ("old-password"  .: DF.optionalText Nothing)
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
+
+      where
+        email = user ^. userEmail
+        emailField =
+            {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
+                from texts to @EmailAddress@. Here we want to traverse the text of an email address
+                thus one needs to reverse this prisms. While Prisms cannot be reversed in full
+                generality we could expect a weaker form which also traversals, this would look
+                like that:
+
+                email & rev emailAddress %%~ DF.optionalText
+
+                Instead we have the code below which extracts the text of the email address if
+                there is such an email address, optionalText gets a @Maybe ST@, finally the
+                result of optionalText is processed with a pure function from @Maybe ST@ to
+                @Maybe EmailAddress@ where only a valid text representation of an email gets
+                mapped to @Just@  of an @EmailAddress@.
+            -}
+            (>>= preview emailAddress) <$> DF.optionalText (email ^? _Just . re emailAddress)
 
     formPage v form p = do
         semanticDiv p $ do
@@ -91,12 +111,15 @@ instance FormPage PageUserSettings where
                             DF.inputSubmit "Änderungen speichern"
 
 
-userSettings :: (ActionM r action) => ServerT (FormHandler PageUserSettings) action
+userSettings :: forall action. (ActionM action) => ServerT (FormHandler PageUserSettings) action
 userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
   where
-    -- FIXME: Set the password
-    changeUser (UserSettingData email _oldPass _newPass1 _newPass2) = do
-        modifyCurrentUser (maybe id (\ e -> userEmail .~ Just e) email)
+    changeUser :: UserSettingData -> action ()
+    changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
+        uid <- currentUserId
+        maybe (pure ()) (update . SetUserEmail uid) memail
+        update $ SetUserPass uid oldPass newPass1 newPass2
+        pure ()
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
 userHeaderDiv _user =
@@ -148,13 +171,13 @@ instance ToHtml PageUserProfileCreatedIdeas where
 -- that ensures data consistency, as other persistent computations
 -- can interleave if the compute partial results in more than
 -- one round. Same applies here like 'STM' and 'IO'.
-createdIdeas :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
-createdIdeas userId = join . persistent $ do
-    -- FIXME: 404
-    Just user <- findUser userId
+createdIdeas userId = makeFrame =<< mquery (do
+    muser <- findUser userId
     ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
-    return . makeFrame $ PageUserProfileCreatedIdeas user ideasAndNumVoters
+    pure $ PageUserProfileCreatedIdeas <$> muser <*> pure ideasAndNumVoters)
+
 
 -- ** User Profile: Delegated Votes
 
@@ -200,9 +223,9 @@ renderDelegations _ = do
                         a_ [href_ U.Broken] "UserName, "
                         a_ [href_ U.Broken] "UserName"
 
-delegatedVotes :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m)
+delegatedVotes :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
-delegatedVotes userId = join . persistent $ do
-    -- FIXME: 404
-    Just user <- findUser userId
-    return $ makeFrame (PageUserProfileDelegatedVotes user []) -- FIXME: Delegated votes
+delegatedVotes userId = makeFrame =<< (do
+    let dv = []  -- FIXME
+    user :: User <- mquery $ findUser userId
+    pure $ PageUserProfileDelegatedVotes user dv)

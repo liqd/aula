@@ -1,8 +1,13 @@
+{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE Rank2Types             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 
 -- | The 'Action' module contains an API which
@@ -10,18 +15,23 @@ module Action
     ( -- * constraint types
       ActionM
     , ActionLog(logEvent)
-    , ActionPersist(persistent)
+    , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState)
+    , ActionRandomPassword(mkRandomPassword)
+    , ActionCurrentTimestamp(getCurrentTimestamp)
+    , ActionSendMail
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), persistNat, config
+    , ActionEnv(..), envRunPersist, envConfig
 
       -- * user handling
     , loginByUser, loginByName
     , userLoggedOut
+    , addWithUser
     , currentUserAddDb
     , currentUserAddDb_
     , currentUser
+    , currentUserId
     , modifyCurrentUser
     , isLoggedIn
     , validUserState
@@ -50,17 +60,23 @@ module Action
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
 
     , MonadServantErr, ThrowServantErr(..)
+
+    , module Action.Smtp
+    , sendMailToRole
     )
 where
 
 import Control.Lens
-import Control.Monad (join, void)
-import Control.Monad.Except (MonadError)
-import Control.Monad.Trans.Except (ExceptT)
+import Control.Monad (void, when)
+import Control.Monad.Reader (runReader, runReaderT, asks)
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
+import Data.Monoid
 import Data.String.Conversions (ST, LBS)
-import Debug.Trace
+import Data.Typeable (Typeable)
+import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
@@ -68,11 +84,16 @@ import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfTo
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
 import qualified Data.Csv as Csv
+import qualified Data.Text as ST
 import qualified Data.Vector as V
 
-import Config (Config)
+import Action.Smtp
+import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
+import Data.UriPath (absoluteUriPath, relPath)
+import Frontend.Path (listTopicIdeas)
 import LifeCycle
 import Persistent
+import Persistent.Api
 import Types
 
 
@@ -91,47 +112,73 @@ makeLenses ''UserState
 userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing
 
-data ActionEnv r = ActionEnv
-    { _persistNat :: r :~> ExceptT PersistExcept IO
-    , _config     :: Config
+data ActionEnv = ActionEnv
+    { _envRunPersist :: RunPersist
+    , _envConfig     :: Config
     }
 
 makeLenses ''ActionEnv
 
-instance GetCsrfSecret (ActionEnv r) where
-    csrfSecret = config . csrfSecret
+instance GetCsrfSecret ActionEnv where
+    csrfSecret = envConfig . csrfSecret
+
+instance GetConfig ActionEnv where
+    getConfig = envConfig
 
 -- | Top level errors can happen.
 --
--- FIXME: this will have a constructor dedicated for PersistExcept, and 'ServantErr' will only be
--- introduced later.
-newtype ActionExcept = ActionExcept { unActionExcept :: ServantErr }
+-- FIXME: 'ServantErr' should be abstracted away.
+data ActionExcept
+    = ActionExcept { unActionExcept :: ServantErr }
+    | ActionPersistExcept PersistExcept
+    | ActionSendMailExcept SendMailError
     deriving (Eq, Show)
 
 makePrisms ''ActionExcept
 
-class ( ActionLog m
-      , ActionPersist r m
+instance ThrowSendMailError ActionExcept where
+    _SendMailError = _ActionSendMailExcept
+
+type ActionSendMail = HasSendMail ActionExcept ActionEnv
+
+type ActionM m =
+      ( ActionLog m
+      , ActionPersist m
       , ActionUserHandler m
       , ActionError m
       , ActionTempCsvFiles m
-      ) => ActionM r m
+      , ActionRandomPassword m
+      , ActionCurrentTimestamp m
+      , ActionSendMail m
+      )
 
 class Monad m => ActionLog m where
     -- | Log events
     logEvent :: ST -> m ()
 
--- | A monad that can include actions changing a persistent state.
+-- | A monad that can run acid-state.
 --
--- @r@ is determined by @m@, because @m@ is intended to be the program's
--- action monad, so @r@ is just the persistent implementation chosen
--- to be used in the action monad.
-class (PersistM r, Monad m, MonadError ActionExcept m) => ActionPersist r m | m -> r where
-    -- | Run @Persist@ computation in the action monad.
-    -- Authorization of the action should happen here.
-    -- FIXME: Rename atomically, and only call on
-    -- complex computations.
-    persistent :: r a -> m a
+-- See 'Query', 'EQuery', 'AUpdate' in "Persistent.Pure" for more a deeper understanging of this.
+class (MonadError ActionExcept m) => ActionPersist m where
+    queryDb :: m AulaData
+    update  :: HasAUpdate ev a => ev -> m a
+
+    query :: Query a -> m a
+    query q = runReader q <$> queryDb
+
+    mquery :: Typeable a => MQuery a -> m a
+    mquery q = equery (maybe404 =<< q)
+
+    equery :: EQuery a -> m a
+    equery q = do
+        db <- queryDb
+        either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
+
+class ActionRandomPassword m where
+    mkRandomPassword :: m UserPass
+
+class ActionCurrentTimestamp m where
+    getCurrentTimestamp :: m Timestamp
 
 instance HasSessionCsrfToken UserState where
     sessionCsrfToken = usCsrfToken
@@ -153,7 +200,7 @@ class ActionError m => ActionUserHandler m where
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept
 
-class MonadError ActionExcept m => ActionError m
+type ActionError m = (MonadError ActionExcept m)
 
 
 -- * User Handling
@@ -161,9 +208,9 @@ class MonadError ActionExcept m => ActionError m
 loginByUser :: ActionUserHandler m => User -> m ()
 loginByUser = login . view _Id
 
-loginByName :: (ActionPersist r m, ActionUserHandler m) => UserLogin -> m ()
+loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
 loginByName n = do
-    Just u <- persistent (findUserByLogin n)  -- FIXME: handle 'Nothing'
+    Just u <- query $ findUserByLogin n  -- FIXME: handle 'Nothing'
     loginByUser u
 
 -- | Returns the current user ID
@@ -172,27 +219,35 @@ currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
 
-currentUserAddDb :: (ActionPersist r m, ActionUserHandler m) =>
-                    (UserWithProto a -> r a) -> Proto a -> m a
+addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
+               (EnvWithProto a -> ev) -> User -> Proto a -> m a
+addWithUser addA user protoA = do
+    now <- getCurrentTimestamp
+    update $ addA (EnvWith user now protoA)
+
+currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
+                    (EnvWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
-    persistent $ addA (cUser, protoA)
+    addWithUser addA cUser protoA
 
-currentUserAddDb_ :: (ActionPersist r m, ActionUserHandler m) =>
-                    (UserWithProto a -> r a) -> Proto a -> m ()
+currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
+                     (EnvWithProto a -> ev) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 
 -- | Returns the current user
-currentUser :: (ActionPersist r m, ActionUserHandler m) => m User
+currentUser :: (ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
-    muser <- persistent . findUser =<< currentUserId
+    uid <- currentUserId
+    muser <- query (findUser uid)
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist r m, ActionUserHandler m) => (User -> User) -> m ()
-modifyCurrentUser f = currentUserId >>= persistent . (`modifyUser` f)
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
+                  => (AUID User -> ev) -> m a
+modifyCurrentUser ev = currentUserId >>= update . ev
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
@@ -206,101 +261,128 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange
-    :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseChange -> r (m ())
+topicPhaseChange :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
-            setTopicPhase (topic ^. _Id) phase'
-            return $ mapM_ (phaseAction topic) actions
+            update $ SetTopicPhase (topic ^. _Id) phase'
+            mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist r m, ActionUserHandler m) => PhaseChange -> AUID Topic -> m ()
-topicTimeout phaseChange tid =
-    join . persistent $ do
-        Just topic <- findTopic tid -- FIXME: Not found
-        topicPhaseChange topic phaseChange
+topicTimeout :: (ActionPersist m, ActionSendMail m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout phaseChange tid = do
+    topic <- mquery $ findTopic tid
+    topicPhaseChange topic phaseChange
 
-setTopicPhase :: PersistM m => AUID Topic -> Phase -> m ()
-setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
+sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage -> m ()
+sendMailToRole role msg = do
+    users <- query $ findUsersByRole role
+    forM_ users $ \user ->
+        sendMailToUser [] user msg
 
-phaseAction :: (ActionPersist r m, ActionUserHandler m) => Topic -> PhaseAction -> m ()
-phaseAction _ JuryPhasePrincipalEmail =
-    traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
-phaseAction _ ResultPhaseModeratorEmail =
-    traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
+phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
+            => Topic -> PhaseAction -> m ()
+phaseAction topic phasact = do
+    cfg <- asks (view getConfig)
+    let topicTemplate addr phase = ST.unlines
+            [ "Liebe " <> addr <> ","
+            , ""
+            , "das Thema:"
+            , ""
+            , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
+            , "    " <> (cfg ^. exposedUrl . csi)
+                     <> (absoluteUriPath . relPath $ listTopicIdeas topic)
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+
+    case phasact of
+      JuryPhasePrincipalEmail ->
+          sendMailToRole Principal EmailMessage
+              { _msgSubject = "[Aula] Thema in der Prüfungsphase"
+              , _msgBody = topicTemplate "Schulleitung" "Prüfungsphase"
+              , _msgHtml = Nothing -- Not supported yet
+              }
+      ResultPhaseModeratorEmail ->
+          sendMailToRole Moderator EmailMessage
+              { _msgSubject = "[Aula] Thema in der Ergebnisphase"
+              , _msgBody = topicTemplate "Moderatoren" "Ergebnisphase"
+              , _msgHtml = Nothing -- Not supported yet
+              }
 
 
 -- * Page Handling
 
-createIdea :: (ActionPersist r m, ActionUserHandler m) => ProtoIdea -> m Idea
-createIdea = currentUserAddDb addIdea
+type Create  a = forall m. (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => Proto a -> m a
+type Create_ a = forall m. (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => Proto a -> m ()
 
-createTopic :: (ActionPersist r m, ActionUserHandler m) => ProtoTopic -> m Topic
-createTopic = currentUserAddDb addTopic
+createIdea :: Create Idea
+createIdea = currentUserAddDb AddIdea
+
+createTopic :: Create Topic
+createTopic = currentUserAddDb AddTopic
 
 
 -- * Vote Handling
 
-likeIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> m ()
-likeIdea ideaId = currentUserAddDb_ (addLikeToIdea ideaId) ()
+likeIdea :: (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => AUID Idea -> m ()
+likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 
-voteIdea :: (ActionPersist r m, ActionUserHandler m) => AUID Idea -> IdeaVoteValue -> m ()
-voteIdea = currentUserAddDb_ . addVoteToIdea
+voteIdea :: AUID Idea -> Create_ IdeaVote
+voteIdea = currentUserAddDb_ . AddVoteToIdea
 
-voteIdeaComment :: (ActionPersist r m, ActionUserHandler m)
-                => AUID Idea -> AUID Comment -> UpDown -> m ()
-voteIdeaComment ideaId commentId = currentUserAddDb_ (addCommentVoteToIdeaComment ideaId commentId)
+voteIdeaComment :: AUID Idea -> AUID Comment -> Create_ CommentVote
+voteIdeaComment ideaId commentId = currentUserAddDb_ (AddCommentVoteToIdeaComment ideaId commentId)
 
-voteIdeaCommentReply :: (ActionPersist r m, ActionUserHandler m)
-                     => AUID Idea -> AUID Comment -> AUID Comment -> UpDown -> m ()
+voteIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
 voteIdeaCommentReply ideaId commentId replyId =
-    currentUserAddDb_ (addCommentVoteToIdeaCommentReply ideaId commentId replyId)
+    currentUserAddDb_ (AddCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throws an exception.
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase
-    :: (ActionPersist r m, ActionUserHandler m)
-    => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
-    topic <- persistent $ do
-        Just idea <- findIdea iid -- FIXME: 404
-        Just topic <- ideaTopic idea
-        checkInPhase (PhaseJury ==) idea topic
-        return topic
-    _ <- currentUserAddDb (addIdeaJuryResult iid) rv
-    join . persistent $ do
-        allMarked <- checkAllIdeasMarked topic
-        if allMarked
-            then topicPhaseChange topic =<< AllIdeasAreMarked <$> phaseEndVote
-            else emptyComputation
-  where
-    emptyComputation = return (return ())
+    idea  <- mquery $ findIdea iid
+    topic <- mquery $ ideaTopic idea
+    -- FIXME: should this be one transaction?  or the two above as well?
+    equery $ checkInPhase (PhaseJury ==) idea topic
+    currentUserAddDb_ (AddIdeaJuryResult iid) rv
+    checkCloseJuryPhase topic
+
+checkCloseJuryPhase :: ActionM m => Topic -> m ()
+checkCloseJuryPhase topic = do
+    allMarked <- query $ checkAllIdeasMarked topic
+    when allMarked $ do  -- FIXME: should this be one transaction?
+        days <- query phaseEndVote
+        topicPhaseChange topic (AllIdeasAreMarked days)
 
 -- | Mark idea as winner or not enough votes if the idea is in the Result phase,
 -- if not throws an exception.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInResultPhase
-    :: (ActionPersist r m, ActionUserHandler m)
-    => AUID Idea -> IdeaVoteResultValue -> m ()
+-- FIXME: redundant code between this and 'markIdeaInJuryPhase'.
+markIdeaInResultPhase :: ActionM m => AUID Idea -> IdeaVoteResultValue -> m ()
 markIdeaInResultPhase iid rv = do
-    persistent $ do
-        Just idea <- findIdea iid -- FIXME: 404
-        Just topic <- ideaTopic idea
-        checkInPhase (PhaseResult ==) idea topic
-    _ <- currentUserAddDb (addIdeaVoteResult iid) rv
-    return ()
+    idea  <- mquery $ findIdea iid
+    topic <- mquery $ ideaTopic idea
+    equery $ checkInPhase (PhaseResult ==) idea topic
+    currentUserAddDb_ (AddIdeaVoteResult iid) rv
+
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist r m, ActionUserHandler m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
+
 
 -- * csv temp files
 

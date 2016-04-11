@@ -1,77 +1,87 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module CreateRandom
 where
 
-import Data.Typeable (typeOf)
-import Data.Set (Set, insert)
-import Servant
-import Test.QuickCheck (Arbitrary)
 import Thentos.Prelude
 
 import Action
-import Frontend.Core
 import Persistent
+import Persistent.Api
 import Types
 import Arbitrary ()
-
-type CreateRandom a = "create_random" :> GetH (Frame (ST `Beside` PageShow a))
-
--- | Create random entities that have 'MetaInfo' in the Aula Action monad.
-createRandom
-    :: ( Arbitrary (Proto a), Show a, FromProto a, Typeable a, HasMetaInfo a
-       , ActionUserHandler m, ActionPersist r m, GenArbitrary m)
-    => AulaLens (AMap a) -> m (Frame (ST `Beside` PageShow a))
-createRandom l = do
-   cUser <- currentUser
-   x <- persistent . addDb l . (,) cUser =<< genArbitrary
-   return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
-                                     `Beside` PageShow x))
-
--- | Create random entities that have no 'MetaInfo'.  (Currently only 'Set' elements.)
-createRandomNoMeta
-    :: ( Arbitrary a, Ord a, Show a, Typeable a
-       , ActionPersist r m, GenArbitrary m)
-    => AulaLens (Set a) -> m (Frame (ST `Beside` PageShow a))
-createRandomNoMeta l = do
-   x <- genArbitrary
-   persistent $ modifyDb l (insert x)
-   return (Frame frameUserHack (("new " <> (cs . show . typeOf $ x) <> " created.")
-                                     `Beside` PageShow x))
 
 -- | Generate one arbitrary item of each type (idea, user, ...)
 -- plus one extra user for logging test.
 --
 -- Note that no user is getting logged in by this code.
-genInitialTestDb :: (PersistM m, GenArbitrary m) => m ()
+genInitialTestDb :: (ActionPersist m) => m ()
 genInitialTestDb = do
-    addIdeaSpaceIfNotExists SchoolSpace
-    addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
-    addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
-    addIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
-    protoU <- genArbitrary
-    firstUser <- addFirstUser $ protoU & protoUserLogin    ?~ UserLogin "admin"
-                                       & protoUserPassword ?~ UserPassInitial "pssst"
-    protoU2 <- genArbitrary
-    user2 <- addUser (firstUser,
-                      protoU2 & protoUserLogin ?~ UserLogin "admin2"
-                              & protoUserPassword ?~ UserPassInitial "pssst2")
-    _wildIdea <- addIdea . (,) firstUser . (protoIdeaLocation . ideaLocationMaybeTopicId .~ Nothing) =<< genArbitrary
-    topicIdea <- addIdea . (,) user2     =<< genArbitrary
-    _topic <- addTopic . (,) firstUser . (protoTopicIdeas .~ [topicIdea ^. _Id]) =<< genArbitrary
+    update $ AddIdeaSpaceIfNotExists SchoolSpace
+    update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
+    update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
+    update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
+
+    user1 <- update $ AddFirstUser sometime ProtoUser
+        { _protoUserLogin     = Just "admin"
+        , _protoUserFirstName = "A."
+        , _protoUserLastName  = "Admin"
+        , _protoUserRole      = Admin
+        , _protoUserPassword  = Just (UserPassInitial "pssst")
+        , _protoUserEmail     = Nothing
+        }
+
+    user2 <- update (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
+        { _protoUserLogin     = Just "godmin"
+        , _protoUserFirstName = "G."
+        , _protoUserLastName  = "Godmin"
+        , _protoUserRole      = Admin
+        , _protoUserPassword  = Just (UserPassInitial "geheim")
+        , _protoUserEmail     = Nothing
+        }))
+
+    _wildIdea <- update $ AddIdea (EnvWith user1 sometime ProtoIdea
+            { _protoIdeaTitle    = "wild-idea-title"
+            , _protoIdeaDesc     = Markdown "wild-idea-desc"
+            , _protoIdeaCategory = Just CatRules
+            , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
+            })
+
+    topicIdea <- update $ AddIdea (EnvWith user2 sometime ProtoIdea
+            { _protoIdeaTitle    = "topic-idea-title"
+            , _protoIdeaDesc     = Markdown "topic-idea-desc"
+            , _protoIdeaCategory = Just CatRules
+            , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
+            })
+
+    topic <- update $ AddTopic (EnvWith user1 sometime ProtoTopic
+        { _protoTopicTitle     = "topic-title"
+        , _protoTopicDesc      = Markdown "topic-desc"
+        , _protoTopicImage     = ""
+        , _protoTopicIdeaSpace = SchoolSpace
+        , _protoTopicIdeas     = []
+        , _protoTopicRefinDays = sometime
+        })
+
+    update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
+
     return ()
+
+
+sometime :: Timestamp
+sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
+
 
 -- FIXME
 frameUserHack :: User
 frameUserHack = user
   where
-    sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
     user = User
       { _userMeta      = metainfo
       , _userLogin     = "VorNam"

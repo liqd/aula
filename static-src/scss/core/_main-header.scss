@@ -8,6 +8,101 @@
     > .grid {
         overflow: visible;
     }
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        .main-header-menu,
+        .main-header-user {
+            display: none;
+        }
+
+        height: auto;
+
+        #mobile-menu-button {
+            display: block;
+        }
+
+        & > .grid {
+            padding: 0;
+        }
+
+        &.m-open {
+            .main-header-menu,
+            .main-header-user {
+                @include rem(margin-bottom, 20px);
+                display: block;
+            }
+
+            .pop-menu {
+                .user-avatar,
+                .user-name {
+                    display: none;
+                }
+
+                .pop-menu-list {
+                    opacity: 1;
+                    padding: 0;
+                    position: static;
+                    visibility: visible;
+                }
+            }
+
+            .pop-menu-list,
+            .main-header-menu,
+            .pop-menu,
+            .main-header-user {
+                &, li, a {
+                    @include rem(font-size, $font-size-normal);
+                    background: transparent;
+                    border: 0;
+                    box-shadow: none;
+                    display: block;
+                    float: none;
+                    font-weight: bold;
+                    overflow: hidden;
+                    line-height: 1.2;
+                    padding: 0;
+                    text-align: center;
+                    width: 100%;
+
+                    &:before, &:after, i {
+                        display: none;
+                    }
+                }
+
+                li {
+                    border: 1px solid $color-grey-light;
+                    border-width: 1px 1px 0;
+
+                    a {
+                        @include rem(padding, 10px 0);
+                    }
+
+                    &:last-child {
+                        border-bottom: 1px solid $color-grey-light;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#mobile-menu-button {
+    @include rem(font-size, 40px);
+    background: transparent;
+    color: $color-brand1;
+    border: none;
+    display: none;
+    float: right;
+    padding: 0;
+
+    &, i {
+        height: $main-menu-height;
+        line-height: $main-menu-height;
+    }
+
+    &:hover, &:focus {
+        color: $color-text;
+    }
 }
 
 .site-logo {

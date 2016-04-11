@@ -28,7 +28,8 @@ spec = describe "file upload" $ do
             classPart = partString (fileUploadPath ".classname") "7a"
 
             filePart :: Part
-            filePart = (partFileName .~ Just "x.csv") . (partContentType .~ Just "text/csv") $ p
+            filePart = p & partFileName ?~ "x.csv"
+                         & partContentType ?~ "text/csv"
               where
                 p = partString (fileUploadPath ".file") $ unlines
                         [ "Vorname;Nachname;email;Login-Name"
@@ -37,13 +38,13 @@ spec = describe "file upload" $ do
                         , "Jens;Kuhn;jens@example.org"
                         ]
 
-        it "posts users successfully; users will appear under /user" $ \query -> do
-            post query "/login"
+        it "posts users successfully; users will appear under /user" $ \wreq -> do
+            post wreq "/login"
                 [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
                 `shouldRespond` [codeShouldBe 303]
-            post query (fileUploadPath "") [classPart, filePart]
+            post wreq (fileUploadPath "") [classPart, filePart]
                 `shouldRespond` [codeShouldBe 303]
-            get query "/user"
+            get wreq "/user"
                 `shouldRespond` [codeShouldBe 200
                                 ,bodyShouldContain "_fromUserLastName = &quot;Kuhn&quot"]
 

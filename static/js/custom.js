@@ -8,22 +8,28 @@ for(p in pops) {
 }
 
 function addPopEvents(el) {
-    el.onmouseenter = function() {
+    el.onclick = function() {
         toggleMenu(el);
     }
 
     el.onmouseleave = function() {
-        toggleMenu(el);
+        toggleMenu(el, true);
     }
 }
 
 
-function toggleMenu(el) {
+function toggleMenu(el, out) {
     if(el.className.indexOf("m-open") > -1) {
         removeClass(el, "m-open");
     } else {
-        addClass(el, "m-open");
+        if(!out) addClass(el, "m-open");
     }
+}
+
+// Mobile menu
+
+document.getElementById("mobile-menu-button").onclick = function() {
+    toggleMenu(document.getElementById("main-header"));
 }
 
 // JS detection
@@ -42,10 +48,14 @@ if(imageSelect) {
         for (b2 = 0; b2 < buttons.length; ++b2) {
             removeClass(buttons[b2].parentNode, "m-active");
             if (b2 == b1) {
-                addClass(buttons[b2].parentNode, "m-active");
+                if (hidden.value === "") {
+                    addClass(buttons[b2].parentNode, "m-active");
+                    hidden.value = b1;
+                } else {
+                    hidden.value = "";
+                }
             }
         }
-        hidden.value = b1;
     };
 
     for (b = 0; b < buttons.length; ++b) {
@@ -53,6 +63,10 @@ if(imageSelect) {
         if(buttons[b] && buttons[b].className) {
             buttons[b].addEventListener("click", makeHandler(b));
         }
+    }
+
+    if (hidden.value !== "") {
+        handler(hidden.value);
     }
 }
 

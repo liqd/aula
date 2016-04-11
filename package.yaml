@@ -1,5 +1,5 @@
 name:        aula
-version:     0.2.0
+version:     0.4.0
 license:     AGPL
 copyright:   2016-2017 liquid democracy e.V. Berlin
 author: >
@@ -20,7 +20,7 @@ dependencies:
     - thentos-core >=0.4.0
     - aeson
     - aeson-pretty
-    - acid-state
+    - acid-state >=0.14
     - basic-sop
     - binary
     - bytestring
@@ -32,6 +32,7 @@ dependencies:
     - digestive-functors-lucid
     - directory
     - elocrypt >=0.4.1 && <0.5
+    - email-validate
     - filepath
     - functor-infix
     - generic-aeson
@@ -41,7 +42,7 @@ dependencies:
     - lens
     - lucid
     - mtl
-    - postgresql-simple
+    - mime-mail
     - pretty-show
     - process
     - QuickCheck
@@ -53,6 +54,7 @@ dependencies:
     - servant-server
     - stm
     - string-conversions
+    - template-haskell
     - text
     - time
     - transformers

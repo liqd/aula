@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.2.0
+version:        0.4.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -29,7 +29,7 @@ library
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -41,6 +41,7 @@ library
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -50,7 +51,7 @@ library
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -62,6 +63,7 @@ library
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers
@@ -74,6 +76,7 @@ library
       Action
       Action.Dummy
       Action.Implementation
+      Action.Smtp
       Arbitrary
       Backend
       Config
@@ -84,6 +87,7 @@ library
       Frontend.Core
       Frontend.Page
       Frontend.Page.Admin
+      Frontend.Page.Category
       Frontend.Page.Comment
       Frontend.Page.Delegation
       Frontend.Page.Idea
@@ -102,7 +106,8 @@ library
       Persistent.Idiom
       Persistent.Implementation
       Persistent.Implementation.AcidState
-      Persistent.Implementation.STM
+      Persistent.Pure
+      Persistent.TemplateHaskell
       Types
   other-modules:
       Paths_aula
@@ -118,7 +123,7 @@ executable aula-html-dummies
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -130,6 +135,7 @@ executable aula-html-dummies
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -139,7 +145,7 @@ executable aula-html-dummies
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -151,6 +157,7 @@ executable aula-html-dummies
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers
@@ -177,7 +184,7 @@ executable aula-server
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -189,6 +196,7 @@ executable aula-server
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -198,7 +206,7 @@ executable aula-server
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -210,6 +218,7 @@ executable aula-server
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers
@@ -234,7 +243,7 @@ test-suite spec
     , thentos-core >=0.4.0
     , aeson
     , aeson-pretty
-    , acid-state
+    , acid-state >=0.14
     , basic-sop
     , binary
     , bytestring
@@ -246,6 +255,7 @@ test-suite spec
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -255,7 +265,7 @@ test-suite spec
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -267,6 +277,7 @@ test-suite spec
     , servant-server
     , stm
     , string-conversions
+    , template-haskell
     , text
     , time
     , transformers

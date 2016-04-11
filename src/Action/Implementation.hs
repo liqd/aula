@@ -17,52 +17,69 @@ import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
+import Data.Elocrypt (mkPassword)
+import Data.String.Conversions (cs)
+import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
+import Test.QuickCheck  -- FIXME: remove
 import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
 import qualified Data.ByteString.Lazy as LBS
 
+import Types
 import Action
 import Persistent
+import Persistent.Api
 
 
 -- * concrete monad type
 
 -- | The actions a user can perform.
-newtype Action r a = MkAction { unAction :: ExceptT ActionExcept (RWST (ActionEnv r) () UserState IO) a }
+newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv () UserState IO) a }
     deriving ( Functor
              , Applicative
              , Monad
              , MonadError ActionExcept
-             , MonadReader (ActionEnv r)
+             , MonadReader ActionEnv
              , MonadState UserState
-             , MonadIO
              )
 
-instance ActionError (Action r)
+actionIO :: IO a -> Action a
+actionIO = MkAction . liftIO
 
-instance PersistM r => ActionM r (Action r)
+instance GenArbitrary Action where  -- FIXME: remove
+    genGen = actionIO . generate
 
-instance ActionLog (Action r) where
-    logEvent = liftIO . print
+instance HasSendMail ActionExcept ActionEnv Action where
+    sendMailToAddress addr msg = MkAction $ sendMailToAddressIO addr msg
 
-instance PersistM r => ActionPersist r (Action r) where
-    persistent r = do
-        Nat rp <- view persistNat
-        v  <- liftIO . runExceptT . rp $ r
-        either (throwError . ActionExcept . unPersistExcept) pure v
-            -- FIXME: is this strict enough?  how can we test this?
+instance ActionLog Action where
+    logEvent = actionIO . print
 
-instance MonadLIO DCLabel (Action r) where
-    liftLIO = liftIO . (`evalLIO` LIOState dcBottom dcBottom)
+-- | FIXME: test this (particularly strictness and exceptions)
+instance ActionPersist Action where
+    queryDb = actionIO =<< view (envRunPersist . rpQuery)
 
-instance MonadRandom (Action r) where
-    getRandomBytes = liftIO . getRandomBytes
+    update ev =
+        either (throwError . ActionPersistExcept) pure
+            =<< actionIO =<< views (envRunPersist . rpUpdate) ($ ev)
 
-instance PersistM r => ActionUserHandler (Action r) where
+instance MonadLIO DCLabel Action where
+    liftLIO = actionIO . (`evalLIO` LIOState dcBottom dcBottom)
+
+instance MonadRandom Action where
+    getRandomBytes = actionIO . getRandomBytes
+
+instance ActionRandomPassword Action where
+    mkRandomPassword = actionIO $ UserPassInitial . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+instance ActionCurrentTimestamp Action where
+    getCurrentTimestamp = actionIO $ Timestamp <$> getCurrentTime
+
+instance ActionUserHandler Action where
     login uid = do
         usUserId .= Just uid
         sessionToken <- freshSessionToken
@@ -72,19 +89,19 @@ instance PersistM r => ActionUserHandler (Action r) where
 
     logout = put userLoggedOut
 
-instance ActionTempCsvFiles (Action r) where
-    popTempCsvFile = liftIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
+instance ActionTempCsvFiles Action where
+    popTempCsvFile = actionIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
       where
         exceptToLeft (SomeException e) = return . Left . show $ e
 
-    cleanupTempCsvFiles = liftIO . releaseFormTempFiles
+    cleanupTempCsvFiles = actionIO . releaseFormTempFiles
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.
-mkRunAction :: PersistM r => ActionEnv r -> Action r :~> ExceptT ServantErr IO
+mkRunAction :: ActionEnv -> Action :~> ExceptT ServantErr IO
 mkRunAction env = Nat run
   where
-    run = withExceptT unActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
+    run = withExceptT runActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
         . runExceptT . unAction . (checkCurrentUser >>)
     runRWSTflip r s comp = runRWST comp r s
 
@@ -93,3 +110,8 @@ mkRunAction env = Nat run
         unless isValid $ do
             logout
             throwError500 "Invalid internal user session state"
+
+runActionExcept :: ActionExcept -> ServantErr
+runActionExcept (ActionExcept e) = e
+runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
+runActionExcept (ActionSendMailExcept e) = error500 # show e

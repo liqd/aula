@@ -48,12 +48,6 @@ instance Page PageDelegationNetwork where
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
     toHtml p@PageDelegationNetwork = semanticDiv p $ do
-        let bigHr = do
-              hr_ []
-              br_ []
-              hr_ []
-
-        bigHr
 
         let delegationLevels = div_ $ do
                 br_ []
@@ -101,10 +95,8 @@ instance ToHtml PageDelegationNetwork where
                                              "Sophia", "Sofia", "Amelie", "Lisa", "Leni", "Julia", "Alina"]
                     td_ $ span_ [id_ "d3"] nil
 
-        bigHr
-
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
         script_ [src_ $ U.TopStatic "d3-aula.js"]
 
-viewDelegationNetwork :: ActionM r m => m (Frame PageDelegationNetwork)
+viewDelegationNetwork :: ActionM m => m (Frame PageDelegationNetwork)
 viewDelegationNetwork = makeFrame PageDelegationNetwork

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
@@ -19,9 +20,9 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Thentos.Types
 
 import Action
+import Persistent.Api
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
@@ -80,34 +81,6 @@ data PageAdminSettingsEventsProtocol =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsEventsProtocol
-
--- | Elaboration and Voting phase durations
-data Durations = Durations
-    { elaborationPhase :: DurationDays
-    , votingPhase      :: DurationDays
-    }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic Durations
-
-data Quorums = Quorums
-    { schoolQuorumPercentage :: Int
-    , classQuorumPercentage  :: Int
-    }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic Quorums
-
-
--- * constants
-
-defaultElaborationPeriod, defaultVotingPeriod :: DurationDays
-defaultElaborationPeriod = 21
-defaultVotingPeriod = 21
-
-defaultSchoolQuorum, defaultClassQuorum :: Int
-defaultSchoolQuorum = 30
-defaultClassQuorum = 3
 
 
 -- * tabs
@@ -223,14 +196,13 @@ instance FormPage PageAdminSettingsDurations where
     redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
-        mkDurations
-            ("elab-duration" .: readPeriod defaultElaborationPeriod (elaborationPhase dur))
-            ("vote-duration" .: readPeriod defaultVotingPeriod (votingPhase dur))
+        Durations <$> ("elab-duration" .: getPeriod elaborationPhase)
+                  <*> ("vote-duration" .: getPeriod votingPhase)
       where
-        mkDurations e v =
-            Durations <$> (DurationDays <$> e) <*> (DurationDays <$> v)
+        defaultDurations = defaultSettings ^. durations
         readPeriod (DurationDays d) (DurationDays v) =
             fromMaybe d . readMaybe <$> DF.string (Just (show v))
+        getPeriod l = DurationDays <$> readPeriod (defaultDurations ^. l) (dur ^. l)
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         -- FIXME these should be "number" fields
@@ -242,20 +214,12 @@ instance FormPage PageAdminSettingsDurations where
             span_ [class_ "label-text"] "Wie viele Tage soll die Abstimmungphase dauren?"
             inputText_  [class_ "input-number input-appendee"] "vote-duration" v
             span_ [class_ "input-helper"] "Tage"
-        DF.inputSubmit "AENDERUNGEN SPIECHERN"
+        DF.inputSubmit "Änderungen speichern"
 
-adminDurations :: ActionM r m => ServerT (FormHandler PageAdminSettingsDurations) m
-adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> durations) saveDurations
-  where
-    saveDurations :: ActionM r m => Durations -> m ()
-    saveDurations (Durations elab vote) = persistent $ do
-        modifyDb dbElaborationDuration (const elab)
-        modifyDb dbVoteDuration        (const vote)
+adminDurations :: ActionM m => ServerT (FormHandler PageAdminSettingsDurations) m
+adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> query (view dbDurations))
+                                     (update . SaveDurations)
 
-    durations :: ActionM r m => m Durations
-    durations = persistent $
-        Durations <$> getDb dbElaborationDuration
-                  <*> getDb dbVoteDuration
 
 -- ** Quorum
 
@@ -267,10 +231,11 @@ instance FormPage PageAdminSettingsQuorum where
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
-        <$> ("school-quorum" .: readPercentage defaultSchoolQuorum (schoolQuorumPercentage q))
-        <*> ("class-quorum"  .: readPercentage defaultClassQuorum (classQuorumPercentage q))
+        <$> ("school-quorum" .: getPercentage schoolQuorumPercentage)
+        <*> ("class-quorum"  .: getPercentage classQuorumPercentage)
       where
         readPercentage d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
+        getPercentage l = readPercentage (defaultSettings ^. quorums . l) (q ^. l)
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         label_ [class_ "input-append"] $ do
@@ -281,18 +246,11 @@ instance FormPage PageAdminSettingsQuorum where
             span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
             inputText_ [class_ "input-number input-appendee"] "class-quorum" v
             span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
-        DF.inputSubmit "AENDERUNGEN SPIECHERN"
+        DF.inputSubmit "Änderungen speichern"
 
-adminQuorum :: ActionM r m => ServerT (FormHandler PageAdminSettingsQuorum) m
-adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> quorum_) saveQuorum
-  where
-    saveQuorum (Quorums school clss) = persistent $ do
-        modifyDb dbSchoolQuorum (const school)
-        modifyDb dbClassQuorum (const clss)
-
-    quorum_ = persistent $
-        Quorums <$> getDb dbSchoolQuorum
-                <*> getDb dbClassQuorum
+adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
+adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> query (view dbQuorums))
+                                  (update . SaveQuorums)
 
 
 -- ** roles and permisisons
@@ -322,7 +280,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                                 ClassGuest cl -> toHtml $ showSchoolClass cl
                                 _             -> nil)
                         td_ $ roleLabel (user ^. userRole)
-                        td_ (toHtmlRaw ("&nbsp;" :: String))
+                        td_ (toHtmlRaw nbsp)
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
                 tbody_ $ renderUserRow `mapM_` users
@@ -351,7 +309,7 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
                             select_ [class_ "m-stretch"] nil
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
-                            DF.inputSubmit "speichern"
+                            DF.inputSubmit "Speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesView where
     toHtml = toHtmlRaw
@@ -371,7 +329,7 @@ instance ToHtml PageAdminSettingsGaPClassesView where
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     td_ . toHtml $ clss ^. className
-                    td_ (toHtmlRaw ("&nbsp;" :: String))
+                    td_ (toHtmlRaw nbsp)
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
@@ -463,27 +421,27 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
 
 -- FIXME: Fetch limited number of users ("pagination").
 
-adminSettingsGaPUsersView :: ActionM r m => m (Frame PageAdminSettingsGaPUsersView)
+adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
-    makeFrame =<< PageAdminSettingsGaPUsersView <$> persistent getUsers
+    makeFrame =<< PageAdminSettingsGaPUsersView <$> query getUsers
 
-adminSettingsGaPUsersCreate :: ActionM r m => m (Frame PageAdminSettingsGaPUsersCreate)
+adminSettingsGaPUsersCreate :: ActionM m => m (Frame PageAdminSettingsGaPUsersCreate)
 adminSettingsGaPUsersCreate =
     makeFrame PageAdminSettingsGaPUsersCreate
 
-adminSettingsGaPClassesView :: ActionM r m => m (Frame PageAdminSettingsGaPClassesView)
+adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClassesView)
 adminSettingsGaPClassesView =
-    makeFrame =<< PageAdminSettingsGaPClassesView <$> persistent getSchoolClasses
+    makeFrame =<< PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
-adminSettingsGaPUserEdit :: ActionM r m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
+adminSettingsGaPUserEdit :: ActionM m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
-    editUserPage = persistent $
+    editUserPage = query $
         PageAdminSettingsGaPUsersEdit
         <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
         <*> getSchoolClasses
 
-    editUser e = persistent $ modifyUser uid (userRole .~ payloadToUserRole e)
+    editUser = update . SetUserRole uid . payloadToUserRole
 
 payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
@@ -494,18 +452,18 @@ isClassInRole clss (Student clss')    = clss == clss'
 isClassInRole clss (ClassGuest clss') = clss == clss'
 isClassInRole _    _                  = False
 
-getSchoolClasses :: PersistM m => m [SchoolClass]
+getSchoolClasses :: Query [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
   where
     toClass (ClassSpace clss) = Just clss
     toClass _                 = Nothing
 
-adminSettingsGaPClassesEdit :: ActionM r m => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
+adminSettingsGaPClassesEdit :: ActionM m => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
 adminSettingsGaPClassesEdit clss =
     makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
   where
     -- FIXME: the following two lines should be happening in "Persistent.Api".
-    usersInClass = filter isUserInClass <$> persistent getUsers
+    usersInClass = filter isUserInClass <$> query getUsers
     isUserInClass = isClassInRole clss . view userRole
 
 
@@ -535,8 +493,8 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         makeText SchoolSpace = "Schule"
         makeText (ClassSpace (SchoolClass _year name)) = toHtml name
 
-adminEventsProtocol :: ActionM r m => m (Frame PageAdminSettingsEventsProtocol)
-adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> persistent getSpaces)
+adminEventsProtocol :: ActionM m => m (Frame PageAdminSettingsEventsProtocol)
+adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> query getSpaces)
 
 
 -- * Classes Create
@@ -577,7 +535,7 @@ theOnlySchoolYearHack = 2016
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
     , _csvUserRecordLast        :: UserLastName
-    , _csvUserRecordEmail       :: Maybe UserEmail
+    , _csvUserRecordEmail       :: Maybe EmailAddress
     , _csvUserRecordLogin       :: Maybe UserLogin
     }
   deriving (Eq, Show)
@@ -598,13 +556,13 @@ instance Csv.FromRecord CsvUserRecord where
             | otherwise
                 = pure $ v !! i
 
-        parseMEmail :: (Monad m) => Int -> m (Maybe UserEmail)
+        parseMEmail :: (Monad m) => Int -> m (Maybe EmailAddress)
         parseMEmail i
             | length v < i + 1 = pure Nothing
             | v !! i == ""     = pure Nothing
-            | otherwise        = case Thentos.Types.parseUserEmail $ v !! i of
+            | otherwise        = case v ^? ix i . emailAddress of
                 Nothing    -> fail $ "user record with bad email address: " <> show v
-                Just email -> pure . Just . UserEmail $ Thentos.Types.fromUserEmail email
+                Just email -> pure . Just $ email
 
         parseMLogin :: Int -> Maybe UserLogin
         parseMLogin i
@@ -612,7 +570,7 @@ instance Csv.FromRecord CsvUserRecord where
             | v !! i == ""     = Nothing
             | otherwise        = Just . UserLogin $ v !! i
 
-adminSettingsGaPClassesCreate :: forall r m. (ActionTempCsvFiles m, ActionM r m)
+adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
                               => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
 adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
   where
@@ -630,8 +588,9 @@ adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPCl
     p :: SchoolClass -> CsvUserRecord -> m ()
     p schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = do
       void $ do
-        Action.persistent . addIdeaSpaceIfNotExists $ ClassSpace schoolcl
-        currentUserAddDb addUser ProtoUser
+        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
+        pwd <- mkRandomPassword
+        currentUserAddDb (AddUser pwd) ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName

@@ -1,9 +1,12 @@
+{-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
@@ -21,20 +24,21 @@ import Data.Binary
 import Data.Char
 import Data.Map (Map, fromList)
 import Data.Proxy (Proxy(Proxy))
-import Data.SafeCopy (base, deriveSafeCopy)
+import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
 import Data.String
 import Data.String.Conversions
 import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw)
-import Servant.API (FromHttpApiData(parseUrlPiece))
+import Network.Mail.Mime (Address(Address))
+import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
 import Text.Read (readMaybe)
 
 import qualified Data.Text as ST
-import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 import qualified Generics.SOP as SOP
+import qualified Text.Email.Validate as Email
 
 import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
@@ -58,8 +62,27 @@ lowerFirst :: String -> String
 lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
 
+toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
+toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
+    then Just $ toEnum i
+    else Nothing
+
+type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
+type CSI' s a = CSI s s a a
+
+-- An optic for string conversion
+-- let p = ("a" :: ST, Just ("b" :: SBS))
+-- p ^. _1 . csi :: SBS
+-- > "a"
+-- p & _1 . csi %~ ('x':)
+-- > ("xa", "b")
+csi :: CSI s t a b => Iso s t a b
+csi = iso cs cs
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
-  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral)
+  deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
+
+instance SOP.Generic DurationDays
 
 -- | Percentage values from 0 to 100, used in quorum computations.
 type Percent = Int
@@ -74,10 +97,6 @@ type Percent = Int
 -- FIXME: move this into 'FromProto'?
 type family Proto type_ :: *
 
--- | FIXME: it would be nice to have the creator in a reader in the persist monad rather than as an
--- explicit parameter (note this type synonym is isomorphic to an explicit argument).
-type UserWithProto a = (User, Proto a)
-
 -- | The method how a 't' value is calculated from its prototype
 -- and a metainfo to that.
 class FromProto t where
@@ -91,7 +110,7 @@ data Idea = Idea
     { _ideaMeta       :: MetaInfo Idea
     , _ideaTitle      :: ST
     , _ideaDesc       :: Document
-    , _ideaCategory   :: Category  -- FIXME: this will probably have to be a 'Maybe'.  need feedback from PO.
+    , _ideaCategory   :: Maybe Category
     , _ideaLocation   :: IdeaLocation
     , _ideaComments   :: Comments
     , _ideaLikes      :: IdeaLikes
@@ -115,7 +134,7 @@ instance SOP.Generic IdeaLocation
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
     , _protoIdeaDesc       :: Document
-    , _protoIdeaCategory   :: Category
+    , _protoIdeaCategory   :: Maybe Category
     , _protoIdeaLocation   :: IdeaLocation
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -126,14 +145,32 @@ type instance Proto Idea = ProtoIdea
 
 -- | "Kategorie"
 data Category =
-    CatRule         -- ^ "Regel"
+    CatRules        -- ^ "Regel"
   | CatEquipment    -- ^ "Ausstattung"
-  | CatClass        -- ^ "Unterricht"
+  | CatTeaching     -- ^ "Unterricht"
   | CatTime         -- ^ "Zeit"
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 instance SOP.Generic Category
+
+instance FromHttpApiData Category where
+    parseUrlPiece = \case
+        "rules"       -> Right CatRules
+        "equipment"   -> Right CatEquipment
+        "teaching"    -> Right CatTeaching
+        "time"        -> Right CatTime
+        "environment" -> Right CatEnvironment
+        _             -> Left "no parse"
+
+instance ToHttpApiData Category where
+    toUrlPiece = \case
+        CatRules       -> "rules"
+        CatEquipment   -> "equipment"
+        CatTeaching    -> "teaching"
+        CatTime        -> "time"
+        CatEnvironment -> "environment"
+
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
@@ -296,6 +333,16 @@ instance SOP.Generic ProtoTopic
 
 type instance Proto Topic = ProtoTopic
 
+-- Edit topic description and add ideas to topic.
+data EditTopicData = EditTopicData
+    { _editTopicTitle    :: ST
+    , _editTopicDesc     :: Document
+    , _editTopicAddIdeas :: [AUID Idea]
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EditTopicData
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
@@ -314,6 +361,12 @@ phaseName = \case
     PhaseVoting     _ -> "Abstimmungsphase"
     PhaseResult       -> "Ergebnisphase"
 
+followsPhase :: Phase -> Phase -> Bool
+followsPhase PhaseJury       (PhaseRefinement _) = True
+followsPhase (PhaseVoting _) PhaseJury           = True
+followsPhase PhaseResult     (PhaseVoting _)     = True
+followsPhase _               _                   = False
+
 
 -- * user
 
@@ -322,10 +375,10 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: Maybe URL  -- FIXME UriPath?
+    , _userAvatar    :: Maybe URL
     , _userRole      :: Role
     , _userPassword  :: UserPass
-    , _userEmail     :: Maybe UserEmail
+    , _userEmail     :: Maybe EmailAddress
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -348,7 +401,7 @@ data ProtoUser = ProtoUser
     , _protoUserLastName  :: UserLastName
     , _protoUserRole      :: Role
     , _protoUserPassword  :: Maybe UserPass
-    , _protoUserEmail     :: Maybe UserEmail
+    , _protoUserEmail     :: Maybe EmailAddress
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -374,9 +427,20 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
--- | FIXME: replace with structured email type.
-newtype UserEmail = UserEmail { fromUserEmail :: ST }
-    deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
+newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
+    deriving (Eq, Ord, Show, Read, Generic)
+
+instance CSV.FromField EmailAddress where
+    parseField f = either fail (pure . InternalEmailAddress) . Email.validate =<< CSV.parseField f
+
+instance Binary EmailAddress where
+    put = put . Email.toByteString . internalEmailAddress
+    get = maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< get
+
+instance SafeCopy EmailAddress where
+    kind = base
+    getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
+    putCopy = contain . safePut . Email.toByteString . internalEmailAddress
 
 -- | "Beauftragung"
 data Delegation = Delegation
@@ -417,6 +481,37 @@ data DelegationNetwork = DelegationNetwork
 
 instance SOP.Generic DelegationNetwork
 
+-- | Elaboration and Voting phase durations
+-- FIXME: elaboration and refinement are the same thing.  pick one term!
+data Durations = Durations
+    { _elaborationPhase :: DurationDays
+    , _votingPhase      :: DurationDays
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Durations
+
+data Quorums = Quorums
+    { _schoolQuorumPercentage :: Int
+    , _classQuorumPercentage  :: Int -- (there is only one quorum for all classes, see gh#318)
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Quorums
+
+data Settings = Settings
+    { _durations :: Durations
+    , _quorums   :: Quorums
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Settings
+
+defaultSettings :: Settings
+defaultSettings = Settings
+    { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
+    , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 3 }
+    }
 
 -- * aula-specific helper types
 
@@ -473,7 +568,10 @@ instance ToHtml Document where
 
 -- * general-purpose types
 
--- | Dummy for URL.  FIXME: use uri-bytestring?
+-- | Use this for storing URLs in the aula state.  Unlike 'UriPath' is serializable, has equality,
+-- and unlike "Frontend.Path", it is flexible enough to contain internal and external uris.
+-- (FUTUREWORK: the `uri-bytestring` package could be nice here, but it may require a few orphans or
+-- a newtype to prevent them; see also: #31.)
 type URL = ST
 
 newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
@@ -561,7 +659,6 @@ instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
 instance Binary UserPass
-instance Binary UserEmail
 instance Binary Role
 instance Binary Idea
 instance Binary IdeaLocation
@@ -582,9 +679,14 @@ instance Binary User
 instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
+instance Binary DurationDays
+instance Binary Durations
+instance Binary Quorums
+instance Binary Settings
 
 makePrisms ''IdeaLocation
 makePrisms ''Category
+makePrisms ''Document
 makePrisms ''IdeaVoteValue
 makePrisms ''IdeaJuryResultValue
 makePrisms ''IdeaVoteResultValue
@@ -595,6 +697,9 @@ makePrisms ''Role
 makePrisms ''UserPass
 makePrisms ''DelegationContext
 makePrisms ''PermissionContext
+makePrisms ''EmailAddress
+makePrisms ''UserLastName
+makePrisms ''UserFirstName
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -604,6 +709,8 @@ makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
 makeLenses ''Document
+makeLenses ''Durations
+makeLenses ''EditTopicData
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
@@ -613,19 +720,22 @@ makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''MetaInfo
 makeLenses ''Phase
+makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
 makeLenses ''Role
 makeLenses ''SchoolClass
+makeLenses ''Settings
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
-makeLenses ''UserEmail
+makeLenses ''EmailAddress
 makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
+makeLenses ''Quorums
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
@@ -636,6 +746,8 @@ deriveSafeCopy 0 'base ''DelegationContext
 -- deriveSafeCopy 0 'base ''DelegationNetwork
 deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
+deriveSafeCopy 0 'base ''Durations
+deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation
@@ -649,20 +761,22 @@ deriveSafeCopy 0 'base ''IdeaVote
 deriveSafeCopy 0 'base ''IdeaVoteValue
 deriveSafeCopy 0 'base ''MetaInfo
 deriveSafeCopy 0 'base ''Phase
--- deriveSafeCopy 0 'base ''ProtoIdea
--- deriveSafeCopy 0 'base ''ProtoTopic
--- deriveSafeCopy 0 'base ''ProtoUser
+deriveSafeCopy 0 'base ''ProtoDelegation
+deriveSafeCopy 0 'base ''ProtoIdea
+deriveSafeCopy 0 'base ''ProtoTopic
+deriveSafeCopy 0 'base ''ProtoUser
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
+deriveSafeCopy 0 'base ''Settings
 deriveSafeCopy 0 'base ''Timestamp
 deriveSafeCopy 0 'base ''Topic
 deriveSafeCopy 0 'base ''UpDown
 deriveSafeCopy 0 'base ''User
-deriveSafeCopy 0 'base ''UserEmail
 deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
+deriveSafeCopy 0 'base ''Quorums
 
 class HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
@@ -691,6 +805,42 @@ instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
 instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
+
+{- Examples:
+    e :: EmailAddress
+    s :: ST
+    s = emailAddress # e
+
+    s :: ST
+    s = "foo@example.com"
+    e :: Maybe EmailAddress
+    e = s ^? emailAddress
+
+
+  These more limited type signatures are also valid:
+    emailAddress :: Prism' ST  EmailAddress
+    emailAddress :: Prism' LBS EmailAddress
+-}
+emailAddress :: (CSI s t SBS SBS) => Prism s t EmailAddress EmailAddress
+emailAddress = csi . prism' Email.toByteString Email.emailAddress . from _InternalEmailAddress
+
+unsafeEmailAddress :: (ConvertibleStrings local SBS, ConvertibleStrings domain SBS) =>
+                      local -> domain -> EmailAddress
+unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddress (cs local) (cs domain)
+
+{- Example:
+    u :: User
+    s :: Maybe ST
+    s = u ^? userEmailAddress
+-}
+userEmailAddress :: CSI' s SBS => Fold User s
+userEmailAddress = userEmail . _Just . re emailAddress
+
+userFullName :: User -> ST
+userFullName u = u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName
+
+userAddress :: User -> Maybe Address
+userAddress u = u ^? userEmailAddress . to (Address . Just $ userFullName u)
 
 notFeasibleIdea :: Idea -> Bool
 notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible

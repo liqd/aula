@@ -1,146 +1,157 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Persistent.ApiSpec where
 
-import Arbitrary ()
-import Control.Exception (ErrorCall(ErrorCall), throwIO, finally)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
+import Control.Monad.Reader
 import Control.Monad.Trans.Except (runExceptT)
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
 import Test.QuickCheck
 
+import Arbitrary ()
 import CreateRandom
 import Config
 import Persistent
-import Persistent.Implementation
+import Persistent.Api
 import Types
+
+import qualified Action
+import qualified Action.Implementation as Action
 
 import AulaTests (testConfig)
 
 
--- FIXME: use @withPersist@ (instead of @before/it@?)
-
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
-mkInitial :: PersistenceImpl -> IO RunPersist
-mkInitial imp = do
-    RunPersist desc rp rpClose <- mkEmpty imp
-    runP rp genInitialTestDb
-    pure $ RunPersist desc rp rpClose
+mkInitial :: PersistenceImpl -> (RunPersist -> IO a) -> IO a
+mkInitial = mkState MkStateInitial
 
 -- | the empty database
-mkEmpty :: PersistenceImpl -> IO RunPersist
-mkEmpty imp = do
-    cfg <- (persistenceImpl .~ imp) <$> testConfig
-    mkRunPersist cfg
+mkEmpty :: PersistenceImpl -> (RunPersist -> IO a) -> IO a
+mkEmpty = mkState MkStateEmpty
 
-runPclose :: RunPersist -> (forall r. PersistM r => RunPersistNat IO r -> IO a) -> IO a
-runPclose (RunPersist _ persist persistClose) m =
-    m persist `finally` persistClose
+data MkStateSetup = MkStateEmpty | MkStateInitial
+  deriving (Eq, Show)
 
-type PolyPersist a = forall r. PersistM r => r a
+mkState :: MkStateSetup -> PersistenceImpl -> (RunPersist -> IO a) -> IO a
+mkState setup impl k = do
+    cfg <- (persistenceImpl .~ impl) <$> testConfig
+    withPersist cfg $ \rp -> do
+        case setup of
+            MkStateEmpty   -> pure ()
+            MkStateInitial -> runA cfg rp genInitialTestDb
+        k rp
 
-runP :: (MonadIO m, PersistM r) => RunPersistNat IO r -> r a -> m a
-runP persist m = liftIO $
-    runExceptT (unNat persist m) >>= either (throwIO . ErrorCall . show) pure
+runA :: Config -> RunPersist -> Action.Action a -> IO a
+runA cfg rp = fmap (either (error . show) id)
+            . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg))
 
-getDbSpec :: (Eq a, Show a) => PersistenceImpl -> String -> PolyPersist [a] -> Spec
+runQ :: (MonadIO m) => RunPersist -> Query a -> m a
+runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery
+
+runU :: (MonadIO m, HasAUpdate ev a) => RunPersist -> ev -> m (Either PersistExcept a)
+runU rp u = liftIO $ (rp ^. rpUpdate) u
+
+
+getDbSpec :: (Eq a, Show a) => PersistenceImpl -> String -> Query [a] -> Spec
 getDbSpec imp name getXs = do
     describe name $ do
-        context "on empty database" . before (mkEmpty imp) $ do
-            it "returns the empty list" $ \rp' -> runPclose rp' (\rp -> do
-                xs <- runP rp getXs
-                xs `shouldBe` [])
-        context "on initial database" . before (mkInitial imp) $ do
-            it "returns a non-empty list" $ \rp' -> runPclose rp' (\rp -> do
-                xs <- runP rp getXs
-                length xs `shouldNotBe` 0)
+        context "on empty database" . around (mkEmpty imp) $ do
+            it "returns the empty list" $ \rp -> do
+                xs <- runQ rp getXs
+                xs `shouldBe` []
+        context "on initial database" . around (mkInitial imp) $ do
+            it "returns a non-empty list" $ \rp -> do
+                xs <- runQ rp getXs
+                length xs `shouldNotBe` 0
 
-addDbSpecProp :: forall f proto a.
-                 (Foldable f, Arbitrary proto)
+addDbSpecProp :: forall f proto ev a.
+                 (Foldable f, Arbitrary proto, HasAUpdate ev a)
               => PersistenceImpl
               -> String
-              -> PolyPersist (f a)
-              -> ((User, proto) -> PolyPersist a)
-              -> (proto -> a -> Expectation)
+              -> Query (f a)
+              -> (EnvWith proto -> ev)
+              -> (proto -> Either PersistExcept a -> Expectation)
               -> Spec
 addDbSpecProp imp name getXs addX propX =
     describe name $ do
         let t :: SpecWith RunPersist
-            t = it "adds one" $ \rp' -> runPclose rp' (\rp -> do
-                    before' <- length <$> runP rp getXs
-                    p <- liftIO $ generate arbitrary
-                    r <- runP rp $ addX (frameUserHack, p)
-                    after' <- length <$> runP rp getXs
+            t = it "adds one" $ \rp -> do
+                    before' <- length <$> runQ rp getXs
+                    (now, p) <- liftIO $ generate arbitrary
+                    r <- runU rp $ addX (EnvWith frameUserHack now p)
+                    after' <- length <$> runQ rp getXs
                     after' `shouldBe` before' + 1
-                    propX p r)
+                    propX p r
 
-        context "on empty database" . before (mkEmpty imp) $ t
-        context "on initial database" . before (mkInitial imp) $ t
+        context "on empty database" . around (mkEmpty imp) $ t
+        context "on initial database" . around (mkInitial imp) $ t
 
-addDbSpec :: (Foldable f, Arbitrary proto) =>
-             PersistenceImpl -> String -> PolyPersist (f a) -> ((User, proto) -> PolyPersist a) -> Spec
+addDbSpec :: (Foldable f, Arbitrary proto, HasAUpdate ev a)
+          => PersistenceImpl -> String -> Query (f a) -> (EnvWith proto -> ev) -> Spec
 addDbSpec imp name getXs addX = addDbSpecProp imp name getXs addX (\_ _ -> passes)
 
 findInBySpec :: (Eq a, Show a, Arbitrary k) =>
-                PersistenceImpl -> String -> PolyPersist [a] -> (k -> PolyPersist (Maybe a)) ->
+                PersistenceImpl -> String -> Query [a] -> (k -> Query (Maybe a)) ->
                 Fold a k -> (k -> k) ->
                 Spec
 findInBySpec imp name getXs findXBy f change =
     describe name $ do
-        context "on empty database" . before (mkEmpty imp) $ do
-            it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
+        context "on empty database" . around (mkEmpty imp) $ do
+            it "will come up empty" $ \rp -> do
                 rf <- liftIO $ generate arbitrary
-                mu <- runP rp $ findXBy rf
-                mu `shouldBe` Nothing)
+                mu <- runQ rp $ findXBy rf
+                mu `shouldBe` Nothing
 
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             context "if it does not exist" $ do
-                it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
-                    (x:_) <- runP rp getXs
+                it "will come up empty" $ \rp -> do
+                    (x:_) <- runQ rp getXs
                     let Just y = x ^? f
-                    mu <- runP rp $ findXBy (change y)
-                    mu `shouldBe` Nothing)
+                    mu <- runQ rp $ findXBy (change y)
+                    mu `shouldBe` Nothing
             context "if it exists" $ do
-                it "will come up with the newly added record" $ \rp' -> runPclose rp' (\rp -> do
-                    (x:_) <- runP rp getXs
+                it "will come up with the newly added record" $ \rp -> do
+                    (x:_) <- runQ rp getXs
                     let Just y = x ^? f
-                    mu <- runP rp $ findXBy y
-                    mu `shouldBe` Just x)
+                    mu <- runQ rp $ findXBy y
+                    mu `shouldBe` Just x
 
 findAllInBySpec :: (Eq a, Show a) =>
-                    PersistenceImpl -> String -> PolyPersist [a] -> PolyPersist (Gen k) -> (k -> PolyPersist [a]) ->
+                    PersistenceImpl -> String -> Query [a] -> Query (Gen k) -> (k -> Query [a]) ->
                     Fold a k -> (k -> k) ->
                     Spec
 findAllInBySpec imp name getXs genKs findAllXBy f change =
     describe name $ do
-        context "on empty database" . before (mkEmpty imp) $ do
-            it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
-                genK <- runP rp genKs
+        context "on empty database" . around (mkEmpty imp) $ do
+            it "will come up empty" $ \rp -> do
+                genK <- runQ rp genKs
                 rf <- liftIO $ generate genK
-                us <- runP rp $ findAllXBy rf
-                us `shouldBe` [])
+                us <- runQ rp $ findAllXBy rf
+                us `shouldBe` []
 
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             context "if it does not exist" $ do
-                it "will come up empty" $ \rp' -> runPclose rp' (\rp -> do
-                    [x] <- runP rp getXs
+                it "will come up empty" $ \rp -> do
+                    [x] <- runQ rp getXs
                     let Just y = x ^? f
-                    us <- runP rp $ findAllXBy (change y)
-                    us `shouldBe` [])
+                    us <- runQ rp $ findAllXBy (change y)
+                    us `shouldBe` []
             context "if it exists" $ do
-                it "will come up with the newly added record" $ \rp' -> runPclose rp' (\rp -> do
-                    [x] <- runP rp getXs
+                it "will come up with the newly added record" $ \rp -> do
+                    [x] <- runQ rp getXs
                     let [y] = x ^.. f
-                    us <- runP rp $ findAllXBy y
-                    us `shouldBe` [x])
+                    us <- runQ rp $ findAllXBy y
+                    us `shouldBe` [x]
 
 -- Given an AUID pick a different one
 changeAUID :: AUID a -> AUID a
@@ -148,7 +159,7 @@ changeAUID (AUID i) = AUID (succ i)
 
 spec :: Spec
 spec = do
-    context "Using STM"             $ persistApiSpec STM
+    -- context "Using STM"             $ persistApiSpec STM
     context "Using AcidStateInMem"  $ persistApiSpec AcidStateInMem
 
     -- I guess we need to change the config to target a different directory.
@@ -158,22 +169,22 @@ spec = do
 persistApiSpec :: PersistenceImpl -> Spec
 persistApiSpec imp = do
     getDbSpec imp "getIdeas" getIdeas
-    addDbSpec imp "addIdea"  getIdeas addIdea
+    addDbSpec imp "addIdea"  getIdeas AddIdea
     getDbSpec imp "getWildIdeas"      getWildIdeas
     getDbSpec imp "getIdeasWithTopic" getIdeasWithTopic
 
     getDbSpec imp "getUsers" getUsers
-    addDbSpec imp "addUsers" getUsers addUser
+    addDbSpec imp "addUsers" getUsers (AddUser (error "UserPass"))
 
     getDbSpec imp "getTopics" getTopics
-    addDbSpec imp "addTopics" getTopics addTopic
+    addDbSpec imp "addTopics" getTopics AddTopic
 
     findInBySpec imp "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
     findInBySpec imp "findTopic" getTopics findTopic _Id changeAUID
 
     let elements' [] = arbitrary
         elements' xs = elements xs
-        getArbTopicIds :: PersistM r => r (Gen (AUID Topic))
+        getArbTopicIds :: Query (Gen (AUID Topic))
         getArbTopicIds = elements' . map (view _Id) <$> getTopics
     findAllInBySpec imp "findIdeasByTopicId"
         getIdeasWithTopic getArbTopicIds findIdeasByTopicId ideaTopicId changeAUID
@@ -181,23 +192,24 @@ persistApiSpec imp = do
     describe "addIdeaSpace" $ do
         let test :: (Int -> Int) -> IdeaSpace -> SpecWith RunPersist
             test upd ispace = do
-                it ("can add " <> showIdeaSpace ispace) $ \rp' -> runPclose rp' (\rp -> do
-                    let getL = runP rp getSpaces
-                        addS = runP rp $ addIdeaSpaceIfNotExists ispace
+                it ("can add " <> showIdeaSpace ispace) $ \rp -> do
+                    let getL = runQ rp getSpaces
+                        addS = runU rp $ AddIdeaSpaceIfNotExists ispace
                     bef <- getL
-                    addS
+                    _   <- addS
                     aft <- getL
                     upd (length bef) `shouldBe` length aft
-                    (ispace `elem` aft) `shouldBe` True)
+                    (ispace `elem` aft) `shouldBe` True
 
-        context "on empty database" . before (mkEmpty imp) $ do
+        context "on empty database" . around (mkEmpty imp) $ do
             test (+1) SchoolSpace
             test (+1) (ClassSpace (SchoolClass 2016 "7a"))
-        context "on initial database" . before (mkInitial imp) $ do
+        context "on initial database" . around (mkInitial imp) $ do
             test id SchoolSpace
             test id (ClassSpace (SchoolClass 2016 "7a"))
 
     regression imp
+
 
 -- * Regression suite
 
@@ -205,8 +217,8 @@ regression :: PersistenceImpl -> Spec
 regression imp = describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp imp
-            "addIdea" getIdeas addIdea
-            (\p i -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
+            "addIdea" getIdeas AddIdea
+            (\p (Right i) -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
 
 
 -- * Expectations

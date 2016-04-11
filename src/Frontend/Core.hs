@@ -41,11 +41,10 @@ where
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
-import Control.Monad (when)
+import Control.Monad (when, replicateM_)
 import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
-import Data.Version (showVersion)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_)
 import Servant
@@ -61,13 +60,12 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
+import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import Lucid.Missing (script_, href_, src_, postButton_)
+import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
-import qualified Paths_aula as Paths
--- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
 
 
 -- | FIXME: Could this be a PR for lucid?
@@ -127,14 +125,14 @@ class Page p => FormPage p where
     -- | Calculates a redirect address from the given page
     redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
-    makeForm :: ActionM r m => p -> DF.Form (Html ()) m (FormPagePayload p)
+    makeForm :: ActionM m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
     -- | Guard the form, if the 'guardPage' returns an UriPath the page will
     -- be redirected. It only guards GET handlers.
-    guardPage :: (ActionM r m) => p -> m (Maybe UriPath)
+    guardPage :: (ActionM m) => p -> m (Maybe UriPath)
     guardPage _ = pure Nothing
 
 
@@ -163,7 +161,7 @@ instance Page p => Page (Frame p) where
     isPrivatePage    = isPrivatePage    . view frameBody
     extraPageHeaders = extraPageHeaders . view frameBody
 
-makeFrame :: (ActionPersist r m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
@@ -192,9 +190,11 @@ pageFrame p mUser bdy = do
         footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
-headerMarkup mUser = header_ [class_ "main-header"] $ do
+headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
     div_ [class_ "grid"] $ do
         a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
+        button_ [id_ "mobile-menu-button"] $ do
+            i_ [class_ "icon-bars", title_ "Menu"] nil
         case mUser of
             Just _usr -> do
                 ul_ [class_ "main-header-menu"] $ do
@@ -208,7 +208,8 @@ headerMarkup mUser = header_ [class_ "main-header"] $ do
                 Just usr -> do
                     div_ [class_ "pop-menu"] $ do
                         div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
-                        "Hi " <> (usr ^. userLogin . fromUserLogin . html)
+                        span_ [class_ "user-name"] $ do
+                            "Hi " <> (usr ^. userLogin . fromUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
@@ -238,9 +239,8 @@ footerMarkup = do
                 li_ $ a_ [href_ P.Imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
-            span_ [class_ "main-footer-blurb"] $ do
-                toHtmlRaw ("&nbsp;" :: ST)
-                "[v" <> toHtml (showVersion Paths.version) <> "]"
+                replicateM_ 5 $ toHtmlRaw nbsp
+                toHtml Config.releaseVersion
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
@@ -296,9 +296,10 @@ newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
 instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        div_ [class_ "author"] $ do
-            span_ [class_ "author-image"] $ avatarImgFromMeta mi
-            span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
+        div_ [class_ "author"] .
+            a_ [href_ $ P.User (mi ^. metaCreatedBy) P.UserIdeas] $ do
+                span_ [class_ "author-image"] $ avatarImgFromMeta mi
+                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
 data ListItemIdea = ListItemIdea
       { _listItemIdeaLinkToUser :: Bool
@@ -378,7 +379,7 @@ instance FormPage p => ToHtml (FormPageRep p) where
 -- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
 -- the `resourcet` engine and it's use pattern.
 redirectFormHandler
-    :: (FormPage p, Page p, ActionM r m)
+    :: (FormPage p, Page p, ActionM m)
     => m p                       -- ^ Page representation
     -> (FormPagePayload p -> m (FormPageResult p)) -- ^ Processor for the form result
     -> ServerT (FormHandler p) m
