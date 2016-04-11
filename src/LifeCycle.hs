@@ -56,9 +56,7 @@ data IdeaCapability
 --    | Edit
   deriving (Enum, Eq, Ord, Show)
 
-type IdeaCapabilities = [IdeaCapability]
-
-ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> IdeaCapabilities
+ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> [IdeaCapability]
 ideaCapabilities _ i Nothing  r = wildIdeaCap i r
 ideaCapabilities u i (Just p) r = case p of
     PhaseRefinement _ -> phaseRefinementCap i r
@@ -66,7 +64,7 @@ ideaCapabilities u i (Just p) r = case p of
     PhaseVoting     _ -> phaseVotingCap i r
     PhaseResult       -> phaseResultCap u i r
 
-wildIdeaCap :: Idea -> Role -> IdeaCapabilities
+wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
     Student    _clss -> [QuorumVote, Comment]
     ClassGuest _clss -> []
@@ -75,7 +73,7 @@ wildIdeaCap _i = \case
     Principal        -> []
     Admin            -> []
 
-phaseRefinementCap :: Idea -> Role -> IdeaCapabilities
+phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
 phaseRefinementCap _i = \case
     Student    _clss -> [Comment]
     ClassGuest _clss -> []
@@ -84,7 +82,7 @@ phaseRefinementCap _i = \case
     Principal        -> []
     Admin            -> []
 
-phaseJuryCap :: Idea -> Role -> IdeaCapabilities
+phaseJuryCap :: Idea -> Role -> [IdeaCapability]
 phaseJuryCap _i = \case
     Student    _clss -> []
     ClassGuest _clss -> []
@@ -93,7 +91,7 @@ phaseJuryCap _i = \case
     Principal        -> [MarkFeasiblity]
     Admin            -> []
 
-phaseVotingCap :: Idea -> Role -> IdeaCapabilities
+phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
     Student    _clss -> onFeasibleIdea i [Vote]
     ClassGuest _clss -> []
@@ -102,7 +100,7 @@ phaseVotingCap i = \case
     Principal        -> []
     Admin            -> []
 
-phaseResultCap :: AUID User -> Idea -> Role -> IdeaCapabilities
+phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
     Student    _clss -> [AddCreatorStatement | u `isCreatorOf` i]
     ClassGuest _clss -> []
