@@ -725,6 +725,10 @@ instance Aeson.ToJSON D3DN where
 constantSampleTimestamp :: Timestamp
 constantSampleTimestamp = read "2016-03-17_12:57:25_558349000000"
 
+-- TODO [@fisx] potentially replace by 'arbitrary' with a pure seed.
+-- @np: However, I've quickly made the ids locally unique such that
+-- the resulting map does not loss entries. Using arbitrary would not
+-- do that.
 constantSampleIdea :: Idea
 constantSampleIdea = Idea
     { _ideaMeta =
@@ -821,7 +825,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 1
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
                         , _metaCreatedByAvatar = Just ""
@@ -834,7 +838,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 2
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin =
                             UserLogin { _fromUserLogin = "consequatur" }
@@ -848,7 +852,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 3
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin =
                             UserLogin { _fromUserLogin = "consequuntur" }
@@ -862,7 +866,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 4
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "dicta" }
                         , _metaCreatedByAvatar = Nothing
@@ -893,7 +897,7 @@ constantSampleComments =
               , Comment
                   { _commentMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 1
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "amet" }
                         , _metaCreatedByAvatar = Nothing
@@ -912,7 +916,7 @@ constantSampleComments =
               , Comment
                   { _commentMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 2
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
                         , _metaCreatedByAvatar = Nothing
@@ -979,7 +983,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 1
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
                         , _metaCreatedByAvatar = Just ""
@@ -992,7 +996,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 2
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin =
                             UserLogin { _fromUserLogin = "consequatur" }
@@ -1006,7 +1010,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 3
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin =
                             UserLogin { _fromUserLogin = "consequuntur" }
@@ -1020,7 +1024,7 @@ constantSampleComments =
               , CommentVote
                   { _commentVoteMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 4
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "dicta" }
                         , _metaCreatedByAvatar = Nothing
@@ -1051,7 +1055,7 @@ constantSampleComments =
               , Comment
                   { _commentMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 1
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "amet" }
                         , _metaCreatedByAvatar = Nothing
@@ -1070,7 +1074,7 @@ constantSampleComments =
               , Comment
                   { _commentMeta =
                       MetaInfo
-                        { _metaId = AUID 0
+                        { _metaId = AUID 2
                         , _metaCreatedBy = AUID 0
                         , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
                         , _metaCreatedByAvatar = Nothing
