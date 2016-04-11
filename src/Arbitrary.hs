@@ -27,6 +27,7 @@ module Arbitrary
     , breakCycles
     , fishAvatarsPath
     , fishAvatars
+    , constantSampleTimestamp
     ) where
 
 import Control.Applicative ((<**>))

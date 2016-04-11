@@ -45,7 +45,6 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Data.Text.IO as ST
 
 import Arbitrary
-import CreateRandom (sometime)
 import Config (getSamplesPath)
 import Action.Dummy
 import Frontend.Core
@@ -83,9 +82,9 @@ mockUser = User
         , _metaCreatedBy       = AUID 0
         , _metaCreatedByLogin  = "login"
         , _metaCreatedByAvatar = Nothing
-        , _metaCreatedAt       = sometime
+        , _metaCreatedAt       = constantSampleTimestamp
         , _metaChangedBy       = AUID 0
-        , _metaChangedAt       = sometime
+        , _metaChangedAt       = constantSampleTimestamp
         }
     , _userLogin     = "login"
     , _userFirstName = "firstname"

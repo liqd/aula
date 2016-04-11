@@ -20,7 +20,6 @@ import Arbitrary hiding (generate)
 import Persistent.Api
 import Action
 import Types
-import CreateRandom (sometime)
 
 import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
@@ -169,7 +168,7 @@ mkUniverse = do
 -- for transaction granularity here that speeds things up considerably.)
 universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
-    admin <- update . AddFirstUser sometime =<< gen rnd genFirstUser
+    admin <- update . AddFirstUser constantSampleTimestamp =<< gen rnd genFirstUser
     loginByUser admin
 
     generate 3 rnd (genUser (pure Principal))
