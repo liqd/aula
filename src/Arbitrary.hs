@@ -92,7 +92,7 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
@@ -109,7 +109,7 @@ instance Arbitrary ViewTopic where
         tab <- arb
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb
-            _ -> ViewTopicIdeas tab <$> arb <*> arb
+            _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
@@ -123,8 +123,11 @@ instance Arbitrary EditIdea where
 instance Arbitrary CommentIdea where
     arbitrary = CommentIdea <$> arb <*> arb
 
+instance Arbitrary JudgeIdea where
+    arbitrary = JudgeIdea <$> arb <*> arb <*> arb
+
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
@@ -223,6 +226,9 @@ instance Arbitrary IdeaJuryResultValue where
     arbitrary = garbitrary
 
 instance Arbitrary IdeaVoteResultValue where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaJuryResultType where
     arbitrary = garbitrary
 
 instance Arbitrary DelegationContext where
@@ -325,6 +331,8 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
+instance Arbitrary RenderContext where
+    arbitrary = RenderContext <$> arbitrary
 
 -- * admin
 

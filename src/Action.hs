@@ -33,6 +33,7 @@ module Action
     , currentUser
     , currentUserId
     , modifyCurrentUser
+    , renderContext
     , isLoggedIn
     , validUserState
     , validLoggedIn
@@ -68,7 +69,7 @@ where
 
 import Control.Lens
 import Control.Monad (void, when)
-import Control.Monad.Reader (runReader, runReaderT, asks)
+import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
@@ -244,6 +245,10 @@ currentUser = do
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
 
+-- | Calculates the render context for role sensitive page rendering
+renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
+renderContext = RenderContext <$> currentUser
+
 -- | Modify the current user.
 modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
                   => (AUID User -> ev) -> m a
@@ -283,7 +288,7 @@ sendMailToRole role msg = do
 phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
             => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
-    cfg <- asks (view getConfig)
+    cfg <- viewConfig
     let topicTemplate addr phase = ST.unlines
             [ "Liebe " <> addr <> ","
             , ""

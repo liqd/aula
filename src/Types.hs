@@ -206,6 +206,13 @@ data IdeaJuryResult = IdeaJuryResult
 
 instance SOP.Generic IdeaJuryResult
 
+data IdeaJuryResultType
+    = IdeaNotFeasible
+    | IdeaFeasible
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaJuryResultType
+
 data IdeaJuryResultValue
     = NotFeasible { _ideaResultNotFeasibleReason :: Document }
     | Feasible    { _ideaResultFeasibleReason    :: Maybe Document }
@@ -406,6 +413,12 @@ data ProtoUser = ProtoUser
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
+
+-- | Contains all the information which is needed to render
+-- a user role dependent functionality.
+-- FIXME: Use more appropiate information.
+newtype RenderContext = RenderContext { _renderContextUser :: User }
+  deriving (Eq, Read, Show)
 
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
@@ -736,6 +749,7 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
 makeLenses ''Quorums
+makeLenses ''RenderContext
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
@@ -890,10 +904,24 @@ instance FromHttpApiData IdeaVoteValue where
         "yes"     -> Right Yes
         "no"      -> Right No
         "neutral" -> Right Neutral
-        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are expected)"
+        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are allowed"
 
 instance HasUriPart IdeaVoteValue where
     uriPart = fromString . lowerFirst . show
+
+instance FromHttpApiData IdeaJuryResultType where
+    parseUrlPiece = \case
+      "good" -> Right IdeaNotFeasible
+      "bad"  -> Right IdeaFeasible
+      _      -> Left "Ill-formed idea vote value: only `good' or `bad' are allowed"
+
+instance ToHttpApiData IdeaJuryResultType where
+    toUrlPiece = \case
+      IdeaNotFeasible -> "good"
+      IdeaFeasible    -> "bad"
+
+instance HasUriPart IdeaJuryResultType where
+    uriPart = fromString . show
 
 instance HasUriPart UpDown where
     uriPart = fromString . lowerFirst . show

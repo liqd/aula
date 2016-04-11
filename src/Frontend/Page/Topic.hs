@@ -20,7 +20,7 @@ module Frontend.Page.Topic
     , editTopic )
 where
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, renderContext)
 import Control.Exception (assert)
 import Frontend.Page.Category
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
@@ -51,7 +51,7 @@ makePrisms ''ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas ViewTopicTab Topic [(Idea, Int)]
+  = ViewTopicIdeas RenderContext ViewTopicTab Topic [(Idea, Int)]
   | ViewTopicDelegations Topic [Delegation]
   deriving (Eq, Show, Read)
 
@@ -102,7 +102,7 @@ instance ToHtml ViewTopic where
         pre_ $ topic ^. showed . html
         pre_ $ delegations ^. showed . html
 
-    toHtml p@(ViewTopicIdeas tab topic ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(ViewTopicIdeas ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
             categoryFilterButtons (topicIdeaLocation topic) (tab ^? viewTopicTabFilter . _Just)
@@ -115,7 +115,11 @@ instance ToHtml ViewTopic where
                         a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
 
             for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea True (Just (topic ^. topicPhase)) numVoters idea ^. html
+                ListItemIdea
+                    IdeaInViewTopic
+                    (Just (topic ^. topicPhase))
+                    numVoters idea
+                    ctx ^. html
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do
@@ -261,16 +265,18 @@ makeFormIdeaSelection ideas =
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = makeFrame =<< equery (do
-    topic <- maybe404 =<< findTopic topicId
-    case tab of
-        TabDelegation -> do
-            delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
-            pure $ ViewTopicDelegations topic delegations
-        _ -> do
-            ideas <- ideasFilterQuery (tab ^? viewTopicTabFilter . _Just)
-                  <$> findIdeasByTopic topic
-            ViewTopicIdeas tab topic <$> (getNumVotersForIdea `mapM` ideas))
+viewTopic tab topicId = do
+    ctx <- renderContext
+    makeFrame =<< equery (do
+        topic <- maybe404 =<< findTopic topicId
+        case tab of
+            TabDelegation -> do
+                delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
+                pure $ ViewTopicDelegations topic delegations
+            _ -> do
+                ideas <- ideasFilterQuery (tab ^? viewTopicTabFilter . _Just)
+                      <$> findIdeasByTopic topic
+                ViewTopicIdeas ctx tab topic <$> (getNumVotersForIdea `mapM` ideas))
 
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =

@@ -28,6 +28,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Data.Text.IO as ST
 
 import Arbitrary
+import CreateRandom (sometime)
 import Config (getSamplesPath)
 import Action.Dummy
 import Frontend.Core
@@ -156,9 +157,30 @@ newtype ViewTopic_Delegations = ViewTopic_Delegations (Topic, [Delegation])
   deriving (Eq, Ord, Show, Read)
 
 
+mockUser :: User
+mockUser = User
+    { _userMeta      = MetaInfo
+        { _metaId              = AUID 0
+        , _metaCreatedBy       = AUID 0
+        , _metaCreatedByLogin  = "login"
+        , _metaCreatedByAvatar = Nothing
+        , _metaCreatedAt       = sometime
+        , _metaChangedBy       = AUID 0
+        , _metaChangedAt       = sometime
+        }
+    , _userLogin     = "login"
+    , _userFirstName = "firstname"
+    , _userLastName  = "lastname"
+    , _userAvatar    = Nothing
+    , _userRole      = Principal
+    , _userPassword  = UserPassInitial "wef"
+    , _userEmail     = Nothing
+    }
+
 instance ToHtml ViewTopic_Ideas where
     toHtmlRaw = toHtml
-    toHtml (ViewTopic_Ideas (_tab, _topic, _ideas)) = toHtml $ ViewTopicIdeas _tab _topic _ideas
+    toHtml (ViewTopic_Ideas (_tab, _topic, _ideas)) =
+        toHtml $ ViewTopicIdeas (RenderContext mockUser) _tab _topic _ideas
 
 instance ToHtml ViewTopic_Delegations where
     toHtmlRaw = toHtml
@@ -173,9 +195,9 @@ instance Arbitrary ViewTopic_Delegations where
 
 
 instance Page ViewTopic_Ideas where
-    isPrivatePage    _ = isPrivatePage    $ ViewTopicIdeas undefined undefined undefined
-    extraPageHeaders _ = extraPageHeaders $ ViewTopicIdeas undefined undefined undefined
-    extraBodyClasses _ = extraBodyClasses $ ViewTopicIdeas undefined undefined undefined
+    isPrivatePage    _ = isPrivatePage    $ ViewTopicIdeas undefined undefined undefined undefined
+    extraPageHeaders _ = extraPageHeaders $ ViewTopicIdeas undefined undefined undefined undefined
+    extraBodyClasses _ = extraBodyClasses $ ViewTopicIdeas undefined undefined undefined undefined
 
 instance Page ViewTopic_Delegations where
     isPrivatePage    _ = isPrivatePage    $ ViewTopicDelegations undefined undefined

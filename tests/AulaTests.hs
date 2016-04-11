@@ -35,9 +35,10 @@ testConfig :: IO Config
 testConfig = do
     cfg <- readConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
-    cfg & listenerPort .~ pop
-        & dbPath       .~ "./state/AulaData_Tests"
+    cfg & listenerPort   .~ pop
               -- (in case somebody accidentally tests on a production system.  :)
+        & dbPath         .~ "./state/AulaData_Tests"
+        & persistenceImpl.~ AcidStateInMem
         & pure
 
 
