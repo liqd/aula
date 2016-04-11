@@ -79,12 +79,6 @@ type CSI' s a = CSI s s a a
 csi :: CSI s t a b => Iso s t a b
 csi = iso cs cs
 
--- FIXME: [NP] I'm not quite sure of what this means but at
--- least this is useful in combination with DF.optionalText
--- (see Frontend.Page.User) where
-prelens :: Prism' s a -> Lens' (Maybe a) (Maybe s)
-prelens p f s = (>>= preview p) <$> f (s ^? _Just . re p)
-
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -821,6 +815,11 @@ instance HasMetaInfo User where metaInfo = userMeta
     s = "foo@example.com"
     e :: Maybe EmailAddress
     e = s ^? emailAddress
+
+
+  These more limited type signatures are also valid:
+    emailAddress :: Prism' ST  EmailAddress
+    emailAddress :: Prism' LBS EmailAddress
 -}
 emailAddress :: (CSI s t SBS SBS) => Prism s t EmailAddress EmailAddress
 emailAddress = csi . prism' Email.toByteString Email.emailAddress . from _InternalEmailAddress
