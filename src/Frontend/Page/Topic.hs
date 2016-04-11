@@ -226,7 +226,7 @@ instance FormPage EditTopic where
     makeForm (EditTopic _space topic ideas) =
         EditTopicData
         <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
-        <*> ("desc"  .: (Markdown <$> DF.text (Just $ fromMarkdown (topic ^. topicDesc))))
+        <*> ("desc"  .: ((topic ^. topicDesc) & _Markdown %%~ (DF.text . Just)))
         <*> makeFormIdeaSelection ideas
 
     formPage v form p@(EditTopic _space _topic ideas) = do

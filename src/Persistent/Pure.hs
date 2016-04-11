@@ -68,6 +68,8 @@ module Persistent.Pure
     , addCommentVoteToIdeaComment
     , addCommentVoteToIdeaCommentReply
     , findUser
+    , findUserByLogin
+    , findUsersByRole
     , getUsers
     , addUser
     , addFirstUser
@@ -85,7 +87,6 @@ module Persistent.Pure
     , moveIdeasToLocation
     , findTopic
     , findTopicsBySpace
-    , findUserByLogin
     , dbIdeas
     , dbUsers
     , dbTopics
@@ -378,7 +379,7 @@ modifyIdea = modifyAMap dbIdeaMap
 modifyUser :: AUID User -> (User -> User) -> AUpdate ()
 modifyUser = modifyAMap dbUserMap
 
-setUserEmail :: AUID User -> UserEmail -> AUpdate ()
+setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)
 
 setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()
@@ -438,6 +439,9 @@ findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.
 
 findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
+
+findUsersByRole :: Role -> Query [User]
+findUsersByRole = findAllInBy dbUsers userRole
 
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap

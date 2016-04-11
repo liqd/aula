@@ -33,7 +33,7 @@ import Frontend.Prelude as X hiding (get, put)
 
 testConfig :: IO Config
 testConfig = do
-    cfg <- getConfig DontWarnMissing
+    cfg <- readConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     cfg & listenerPort .~ pop
         & dbPath       .~ "./state/AulaData_Tests"
@@ -53,7 +53,7 @@ bodyShouldBe :: (Show body, Eq body) => body -> Response body -> Expectation
 bodyShouldBe body l = l ^. responseBody `shouldBe` body
 
 bodyShouldContain :: String -> Response LBS -> Expectation
-bodyShouldContain body l = l ^. responseBody . to cs `shouldContain` body
+bodyShouldContain body l = l ^. responseBody . csi `shouldContain` body
 
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher

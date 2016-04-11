@@ -256,7 +256,7 @@ instance FormPage EditIdea where
     makeForm (EditIdea idea) =
         ProtoIdea
         <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
-        <*> ("idea-text"     .: (Markdown <$> DF.text (Just . fromMarkdown $ idea ^. ideaDesc)))
+        <*> ("idea-text"     .: ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 

@@ -121,7 +121,7 @@ type AulaActions =
   :<|> "api" :> Backend.Api
   :<|> "testing" :> AulaTesting
 
-aulaActions :: (MonadIO m, GenArbitrary m, ActionM m) => ServerT AulaActions m
+aulaActions :: (GenArbitrary m, ActionM m) => ServerT AulaActions m
 aulaActions =
        aulaMain
   :<|> Backend.api

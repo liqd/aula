@@ -33,7 +33,6 @@ module Arbitrary
 
 import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Aeson as Aeson
@@ -61,7 +60,7 @@ import Action.Implementation
 import Config
 import Frontend.Core
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (.~), ppShow, view, join)
+import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent.Implementation
 import Types
@@ -312,12 +311,12 @@ guestOrStudent clss = elements
 instance Arbitrary UserPass where
     arbitrary = UserPassInitial <$> arbWord
 
-instance Arbitrary UserEmail where
+instance Arbitrary EmailAddress where
     arbitrary = do
         localName  <- arbWord
         domainName <- arbWord
         tld        <- elements topLevelDomains
-        return . UserEmail . mconcat $ [localName, "@", domainName, ".", tld]
+        pure . unsafeEmailAddress localName $ mconcat [domainName, ".", tld]
 
 instance Arbitrary UserSettingData where
     arbitrary = UserSettingData
@@ -409,9 +408,6 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
-
-instance GenArbitrary Action where
-    genGen = liftIO . generate
 
 
 -- * arbitrary readable text
@@ -598,7 +594,7 @@ fishDelegationNetworkIO = do
             fishDelegationNetworkAction Nothing
 
     -- We use @AcidStateInMem@ here to make sure it doesn't rust.
-    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.getConfig Config.DontWarnMissing
+    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig Config.DontWarnMissing
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
@@ -606,7 +602,7 @@ fishDelegationNetworkIO = do
     withPersist cfg runAction
 
 fishDelegationNetworkAction :: Maybe SchoolClass ->
-    (MonadIO m, GenArbitrary m, ActionM m) => m DelegationNetwork
+    (GenArbitrary m, ActionM m) => m DelegationNetwork
 fishDelegationNetworkAction mSchoolClass = do
     users <- mkFishUser mSchoolClass `mapM` List.take 25 fishAvatars
     let -- invariants:
@@ -668,7 +664,7 @@ instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON (MetaInfo a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserEmail where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON EmailAddress where toJSON = String . review emailAddress
 instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson

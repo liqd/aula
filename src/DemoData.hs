@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 
@@ -9,8 +10,8 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
+import Control.Lens (Getter, (^.), (^?), set, re, pre)
 import Control.Monad (zipWithM_)
-import Control.Lens (Getter, (^.), set, re, pre)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -63,9 +64,13 @@ genFirstUser =
     <**> (set protoUserPassword . Just <$> arbitrary)
 
 genStudent :: [SchoolClass] -> Gen ProtoUser
-genStudent classes =
+genStudent classes = genUser $ elements (map Student classes)
+
+genUser :: Gen Role -> Gen ProtoUser
+genUser genRole =
     arbitrary
-    <**> (set protoUserRole <$> elements (map Student classes))
+    <**> (set protoUserRole <$> genRole)
+    <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
 
 genAvatar :: Gen URL
 genAvatar = elements fishAvatars
@@ -155,8 +160,10 @@ updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
 -- * Universe
 
-mkUniverse :: forall m . ActionM m => IO (m ())
-mkUniverse = universe <$> newQCGen
+mkUniverse :: (GenArbitrary m, ActionM m) => m ()
+mkUniverse = do
+    rnd <- mkQCGen <$> genGen arbitrary
+    universe rnd
 
 -- | This type change will generate a lot of transactions.  (Maybe we can find a better trade-off
 -- for transaction granularity here that speeds things up considerably.)
@@ -164,6 +171,11 @@ universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
     admin <- update . AddFirstUser sometime =<< gen rnd genFirstUser
     loginByUser admin
+
+    generate 3 rnd (genUser (pure Principal))
+        >>= mapM_ (currentUserAddDb (AddUser (UserPassInitial "geheim")))
+    generate 8 rnd (genUser (pure Moderator))
+        >>= mapM_ (currentUserAddDb (AddUser (UserPassInitial "geheim")))
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces

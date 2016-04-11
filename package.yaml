@@ -32,6 +32,7 @@ dependencies:
     - digestive-functors-lucid
     - directory
     - elocrypt >=0.4.1 && <0.5
+    - email-validate
     - filepath
     - functor-infix
     - generic-aeson
@@ -41,7 +42,7 @@ dependencies:
     - lens
     - lucid
     - mtl
-    - postgresql-simple
+    - mime-mail
     - pretty-show
     - process
     - QuickCheck

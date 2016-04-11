@@ -41,6 +41,7 @@ library
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -50,7 +51,7 @@ library
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -75,6 +76,7 @@ library
       Action
       Action.Dummy
       Action.Implementation
+      Action.Smtp
       Arbitrary
       Backend
       Config
@@ -133,6 +135,7 @@ executable aula-html-dummies
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -142,7 +145,7 @@ executable aula-html-dummies
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -193,6 +196,7 @@ executable aula-server
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -202,7 +206,7 @@ executable aula-server
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck
@@ -251,6 +255,7 @@ test-suite spec
     , digestive-functors-lucid
     , directory
     , elocrypt >=0.4.1 && <0.5
+    , email-validate
     , filepath
     , functor-infix
     , generic-aeson
@@ -260,7 +265,7 @@ test-suite spec
     , lens
     , lucid
     , mtl
-    , postgresql-simple
+    , mime-mail
     , pretty-show
     , process
     , QuickCheck

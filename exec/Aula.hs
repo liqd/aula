@@ -8,12 +8,14 @@ import Text.Show.Pretty
 
 import Frontend
 import Config
+import Action.Smtp
 
 
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
-    cfg <- getConfig CrashMissing
+    cfg <- readConfig CrashMissing
+    checkSendMail cfg
 
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines

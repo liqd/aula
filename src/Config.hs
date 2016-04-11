@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds    #-}
 {-# LANGUAGE DeriveAnyClass     #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE OverloadedStrings  #-}
@@ -6,19 +7,26 @@
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 
 module Config
-    ( Config
+    ( Config(Config), SmtpConfig(SmtpConfig)
+    , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , dbPath
+    , exposedUrl
     , htmlStatic
     , listenerInterface
     , listenerPort
     , persistenceImpl
-    , getConfig
+    , readConfig
     , aulaRoot
     , setCurrentDirectoryToAulaRoot
     , getSamplesPath
     , logger
+    , smtpConfig
+    , senderName
+    , senderEmail
+    , sendmailPath
+    , sendmailArgs
     , releaseVersion
     )
 where
@@ -26,6 +34,7 @@ where
 import Control.Exception (throwIO, ErrorCall(ErrorCall))
 import Control.Lens
 import Control.Monad (when)
+import Control.Monad.Reader (MonadReader)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -54,25 +63,57 @@ instance FromJSON CsrfSecret where
 data PersistenceImpl = AcidStateInMem | AcidStateOnDisk
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON, Enum, Bounded)
 
+data SmtpConfig = SmtpConfig
+    { _senderName   :: String
+    , _senderEmail  :: String
+    , _sendmailPath :: String
+    , _sendmailArgs :: [String]
+   -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
+    }
+  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+
+makeLenses ''SmtpConfig
+
 data Config = Config
-    { _dbPath            :: FilePath
+    { _dbPath            :: FilePath  -- FIXME: should be part of @_persistentImpl@
+    , _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
     , _listenerInterface :: String
     , _listenerPort      :: Int
     , _htmlStatic        :: FilePath
     , _cfgCsrfSecret     :: CsrfSecret
     , _logLevel          :: Bool  -- (see 'logger' below)
     , _persistenceImpl   :: PersistenceImpl
+    , _smtpConfig        :: SmtpConfig
     }
-  deriving (Show, Generic, ToJSON, FromJSON)
+  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
 makeLenses ''Config
+
+class GetConfig r where
+    getConfig :: Getter r Config
+
+    viewConfig :: MonadReader r m => m Config
+    viewConfig = view getConfig
+
+type MonadReaderConfig r m = (MonadReader r m, GetConfig r)
+
+instance GetConfig Config where
+    getConfig = id
 
 instance GetCsrfSecret Config where
     csrfSecret = pre cfgCsrfSecret
 
+defaultSmtpConfig :: SmtpConfig
+defaultSmtpConfig = SmtpConfig
+    { _senderName   = "Aula Notifications"
+    , _senderEmail  = "aula@example.com"
+    , _sendmailPath = "/usr/sbin/sendmail"
+    , _sendmailArgs = ["-t"] }
+
 defaultConfig :: Config
 defaultConfig = Config
     { _dbPath            = "./state/AulaData"
+    , _exposedUrl        = "https://localhost:8080"
     , _listenerInterface = "0.0.0.0"
     , _listenerPort      = 8080
     , _htmlStatic        = "./static"
@@ -80,13 +121,14 @@ defaultConfig = Config
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logLevel          = False
     , _persistenceImpl   = AcidStateInMem
+    , _smtpConfig        = defaultSmtpConfig
     }
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
-getConfig :: WarnMissing -> IO Config
-getConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
+readConfig :: WarnMissing -> IO Config
+readConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
   where
     dflt :: IO Config
     dflt = pure defaultConfig

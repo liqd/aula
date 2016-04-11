@@ -3,6 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE Rank2Types             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TemplateHaskell        #-}
@@ -18,6 +19,7 @@ module Action
     , ActionUserHandler(login, logout, userState)
     , ActionRandomPassword(mkRandomPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
+    , ActionSendMail
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), envRunPersist, envConfig
@@ -58,19 +60,23 @@ module Action
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
 
     , MonadServantErr, ThrowServantErr(..)
+
+    , module Action.Smtp
+    , sendMailToRole
     )
 where
 
 import Control.Lens
 import Control.Monad (void, when)
-import Control.Monad.Reader (runReader, runReaderT)
+import Control.Monad.Reader (runReader, runReaderT, asks)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
+import Data.Monoid
 import Data.String.Conversions (ST, LBS)
 import Data.Typeable (Typeable)
-import Debug.Trace
+import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
@@ -78,9 +84,13 @@ import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfTo
 import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
 import qualified Data.Csv as Csv
+import qualified Data.Text as ST
 import qualified Data.Vector as V
 
-import Config (Config)
+import Action.Smtp
+import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
+import Data.UriPath (absoluteUriPath, relPath)
+import Frontend.Path (listTopicIdeas)
 import LifeCycle
 import Persistent
 import Persistent.Api
@@ -112,15 +122,24 @@ makeLenses ''ActionEnv
 instance GetCsrfSecret ActionEnv where
     csrfSecret = envConfig . csrfSecret
 
+instance GetConfig ActionEnv where
+    getConfig = envConfig
+
 -- | Top level errors can happen.
 --
 -- FIXME: 'ServantErr' should be abstracted away.
 data ActionExcept
     = ActionExcept { unActionExcept :: ServantErr }
     | ActionPersistExcept PersistExcept
+    | ActionSendMailExcept SendMailError
     deriving (Eq, Show)
 
 makePrisms ''ActionExcept
+
+instance ThrowSendMailError ActionExcept where
+    _SendMailError = _ActionSendMailExcept
+
+type ActionSendMail = HasSendMail ActionExcept ActionEnv
 
 type ActionM m =
       ( ActionLog m
@@ -130,6 +149,7 @@ type ActionM m =
       , ActionTempCsvFiles m
       , ActionRandomPassword m
       , ActionCurrentTimestamp m
+      , ActionSendMail m
       )
 
 class Monad m => ActionLog m where
@@ -180,7 +200,7 @@ class ActionError m => ActionUserHandler m where
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept
 
-class MonadError ActionExcept m => ActionError m
+type ActionError m = (MonadError ActionExcept m)
 
 
 -- * User Handling
@@ -241,7 +261,7 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionPersist m, ActionError m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -249,16 +269,50 @@ topicPhaseChange topic change = do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist m, ActionError m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionPersist m, ActionSendMail m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
 
-phaseAction :: (Monad m) => Topic -> PhaseAction -> m ()
-phaseAction _ JuryPhasePrincipalEmail =
-    traceShow "phaseAction JuryPhasePrincipalEmail" $ pure ()
-phaseAction _ ResultPhaseModeratorEmail =
-    traceShow "phaseAction ResultPhaseModeratorEmail" $ pure ()
+sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage -> m ()
+sendMailToRole role msg = do
+    users <- query $ findUsersByRole role
+    forM_ users $ \user ->
+        sendMailToUser [] user msg
+
+phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
+            => Topic -> PhaseAction -> m ()
+phaseAction topic phasact = do
+    cfg <- asks (view getConfig)
+    let topicTemplate addr phase = ST.unlines
+            [ "Liebe " <> addr <> ","
+            , ""
+            , "das Thema:"
+            , ""
+            , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
+            , "    " <> (cfg ^. exposedUrl . csi)
+                     <> (absoluteUriPath . relPath $ listTopicIdeas topic)
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+
+    case phasact of
+      JuryPhasePrincipalEmail ->
+          sendMailToRole Principal EmailMessage
+              { _msgSubject = "[Aula] Thema in der Prüfungsphase"
+              , _msgBody = topicTemplate "Schulleitung" "Prüfungsphase"
+              , _msgHtml = Nothing -- Not supported yet
+              }
+      ResultPhaseModeratorEmail ->
+          sendMailToRole Moderator EmailMessage
+              { _msgSubject = "[Aula] Thema in der Ergebnisphase"
+              , _msgBody = topicTemplate "Moderatoren" "Ergebnisphase"
+              , _msgHtml = Nothing -- Not supported yet
+              }
 
 
 -- * Page Handling
@@ -319,15 +373,14 @@ markIdeaInResultPhase iid rv = do
     topic <- mquery $ ideaTopic idea
     equery $ checkInPhase (PhaseResult ==) idea topic
     currentUserAddDb_ (AddIdeaVoteResult iid) rv
-    return ()
 
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist m, ActionError m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist m, ActionError m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 

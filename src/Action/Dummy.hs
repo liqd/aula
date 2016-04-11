@@ -43,8 +43,6 @@ instance Monad m => ActionPersist (DummyT ActionExcept m) where
     queryDb = notImplemented "ActionPersist" "queryDb"
     update _ = notImplemented "ActionPersist" "update"
 
-instance Monad m => ActionError (DummyT ActionExcept m)
-
 instance Monad m => ActionRandomPassword (DummyT ActionExcept m) where
     mkRandomPassword = notImplemented "ActionRandomPassword" "mkRandomPassword"
 
@@ -55,3 +53,10 @@ instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
     login _     = pure ()
     logout      = pure ()
     userState _ = notImplemented "ActionUserHandler" "userState"
+
+instance Monad m => MonadReader ActionEnv (DummyT ActionExcept m) where
+    ask = notImplemented "MonadReader" "ask"
+    local _ _ = notImplemented "MonadReader" "local"
+
+instance Monad m => HasSendMail ActionExcept ActionEnv (DummyT ActionExcept m) where
+    sendMailToAddress _ _ = notImplemented "HasSendMail" "sendMailToAddress"

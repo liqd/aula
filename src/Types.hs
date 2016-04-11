@@ -1,4 +1,6 @@
+{-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
@@ -22,20 +24,21 @@ import Data.Binary
 import Data.Char
 import Data.Map (Map, fromList)
 import Data.Proxy (Proxy(Proxy))
-import Data.SafeCopy (base, deriveSafeCopy)
+import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
 import Data.String
 import Data.String.Conversions
 import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw)
+import Network.Mail.Mime (Address(Address))
 import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
 import Text.Read (readMaybe)
 
 import qualified Data.Text as ST
-import qualified Database.PostgreSQL.Simple.ToField as PostgreSQL
 import qualified Data.Csv as CSV
 import qualified Generics.SOP as SOP
+import qualified Text.Email.Validate as Email
 
 import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
@@ -63,6 +66,18 @@ toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
+
+type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
+type CSI' s a = CSI s s a a
+
+-- An optic for string conversion
+-- let p = ("a" :: ST, Just ("b" :: SBS))
+-- p ^. _1 . csi :: SBS
+-- > "a"
+-- p & _1 . csi %~ ('x':)
+-- > ("xa", "b")
+csi :: CSI s t a b => Iso s t a b
+csi = iso cs cs
 
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
@@ -363,7 +378,7 @@ data User = User
     , _userAvatar    :: Maybe URL
     , _userRole      :: Role
     , _userPassword  :: UserPass
-    , _userEmail     :: Maybe UserEmail
+    , _userEmail     :: Maybe EmailAddress
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -386,7 +401,7 @@ data ProtoUser = ProtoUser
     , _protoUserLastName  :: UserLastName
     , _protoUserRole      :: Role
     , _protoUserPassword  :: Maybe UserPass
-    , _protoUserEmail     :: Maybe UserEmail
+    , _protoUserEmail     :: Maybe EmailAddress
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -412,9 +427,20 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
--- | FIXME: replace with structured email type.
-newtype UserEmail = UserEmail { fromUserEmail :: ST }
-    deriving (Eq, Ord, Show, Read, PostgreSQL.ToField, CSV.FromField, Generic)
+newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
+    deriving (Eq, Ord, Show, Read, Generic)
+
+instance CSV.FromField EmailAddress where
+    parseField f = either fail (pure . InternalEmailAddress) . Email.validate =<< CSV.parseField f
+
+instance Binary EmailAddress where
+    put = put . Email.toByteString . internalEmailAddress
+    get = maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< get
+
+instance SafeCopy EmailAddress where
+    kind = base
+    getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
+    putCopy = contain . safePut . Email.toByteString . internalEmailAddress
 
 -- | "Beauftragung"
 data Delegation = Delegation
@@ -633,7 +659,6 @@ instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
 instance Binary UserPass
-instance Binary UserEmail
 instance Binary Role
 instance Binary Idea
 instance Binary IdeaLocation
@@ -661,6 +686,7 @@ instance Binary Settings
 
 makePrisms ''IdeaLocation
 makePrisms ''Category
+makePrisms ''Document
 makePrisms ''IdeaVoteValue
 makePrisms ''IdeaJuryResultValue
 makePrisms ''IdeaVoteResultValue
@@ -671,6 +697,9 @@ makePrisms ''Role
 makePrisms ''UserPass
 makePrisms ''DelegationContext
 makePrisms ''PermissionContext
+makePrisms ''EmailAddress
+makePrisms ''UserLastName
+makePrisms ''UserFirstName
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -701,7 +730,7 @@ makeLenses ''Settings
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
-makeLenses ''UserEmail
+makeLenses ''EmailAddress
 makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
@@ -743,7 +772,6 @@ deriveSafeCopy 0 'base ''Timestamp
 deriveSafeCopy 0 'base ''Topic
 deriveSafeCopy 0 'base ''UpDown
 deriveSafeCopy 0 'base ''User
-deriveSafeCopy 0 'base ''UserEmail
 deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
@@ -777,6 +805,42 @@ instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
 instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
+
+{- Examples:
+    e :: EmailAddress
+    s :: ST
+    s = emailAddress # e
+
+    s :: ST
+    s = "foo@example.com"
+    e :: Maybe EmailAddress
+    e = s ^? emailAddress
+
+
+  These more limited type signatures are also valid:
+    emailAddress :: Prism' ST  EmailAddress
+    emailAddress :: Prism' LBS EmailAddress
+-}
+emailAddress :: (CSI s t SBS SBS) => Prism s t EmailAddress EmailAddress
+emailAddress = csi . prism' Email.toByteString Email.emailAddress . from _InternalEmailAddress
+
+unsafeEmailAddress :: (ConvertibleStrings local SBS, ConvertibleStrings domain SBS) =>
+                      local -> domain -> EmailAddress
+unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddress (cs local) (cs domain)
+
+{- Example:
+    u :: User
+    s :: Maybe ST
+    s = u ^? userEmailAddress
+-}
+userEmailAddress :: CSI' s SBS => Fold User s
+userEmailAddress = userEmail . _Just . re emailAddress
+
+userFullName :: User -> ST
+userFullName u = u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName
+
+userAddress :: User -> Maybe Address
+userAddress u = u ^? userEmailAddress . to (Address . Just $ userFullName u)
 
 notFeasibleIdea :: Idea -> Bool
 notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
