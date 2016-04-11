@@ -74,7 +74,7 @@ data CommentIdea = CommentIdea Idea (Maybe Comment)
 instance Page CommentIdea where
 
 -- | X. Jury idea
--- Assumption: The idea has the idea location which refers to the topic.
+-- Assumption: The idea is located in the topic (via 'IdeaLocation').
 data JuryIdea = JuryIdea IdeaJuryResultType Idea Topic
   deriving (Eq, Show, Read)
 
@@ -353,10 +353,6 @@ instance FormPage JuryIdea where
             IdeaNotFeasible -> "Not feasible "
 
 
-toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
-toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a) then Just $ toEnum i else Nothing
-
-
 -- * handlers
 
 -- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
@@ -401,7 +397,6 @@ juryIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler
 juryIdea ideaId juryType =
     redirectFormHandler
         (equery $ do
-            -- FIXME: Run in one transaction
             idea  <- maybe404 =<< findIdea ideaId
             topic <- maybe404 =<< ideaTopic idea
             pure $ JuryIdea juryType idea topic)

@@ -144,15 +144,15 @@ type instance Singular UpDown             = "vote"
 type instance Singular User               = "user"
 type instance Singular IdeaJuryResultType = "jury"
 
-type instance CaptureData Comment       = AUID Comment
-type instance CaptureData Idea          = AUID Idea
-type instance CaptureData IdeaSpace     = IdeaSpace
-type instance CaptureData IdeaVoteValue = IdeaVoteValue
-type instance CaptureData Reply         = AUID Comment
-type instance CaptureData SchoolClass   = SchoolClass
-type instance CaptureData Topic         = AUID Topic
-type instance CaptureData UpDown        = UpDown
-type instance CaptureData User          = AUID User
+type instance CaptureData Comment            = AUID Comment
+type instance CaptureData Idea               = AUID Idea
+type instance CaptureData IdeaSpace          = IdeaSpace
+type instance CaptureData IdeaVoteValue      = IdeaVoteValue
+type instance CaptureData Reply              = AUID Comment
+type instance CaptureData SchoolClass        = SchoolClass
+type instance CaptureData Topic              = AUID Topic
+type instance CaptureData UpDown             = UpDown
+type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 
 infixr 9 ::>
