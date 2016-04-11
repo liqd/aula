@@ -80,7 +80,7 @@ isPostOnly = \case
     -- FIXME[#312] Logout -> True
     _ -> False
 
--- FIXME: fix & emove
+-- FIXME: fix & remove
 isBroken :: Main -> Bool
 isBroken Broken = True
 isBroken (IdeaPath _ (JudgeIdea _ _)) = True
