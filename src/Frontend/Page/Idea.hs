@@ -336,21 +336,23 @@ instance FormPage JuryIdea where
         <$> "jury-text" .: (Markdown <$> DF.text Nothing)
 
     -- FIXME styling
-    -- TODO: Fix translation
     formPage v form p@(JuryIdea juryType idea _topic) =
         semanticDiv p $ do
             div_ [class_ "container-jury-idea"] $ do
                 h1_ [class_ "main-heading"] $ headerText <> idea ^. ideaTitle . html
                 form $ do
                     label_ $ do
-                        span_ [class_ "label-text"] "What is the reason?"
+                        span_ [class_ "label-text"] $
+                            case juryType of
+                                IdeaFeasible    -> "Möchten Sie die Idee kommentieren?"
+                                IdeaNotFeasible -> "Bitte formulieren Sie eine Begründung!"
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "jury-text" v
                     footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Save jurisdiction"
+                        DF.inputSubmit "Entscheidung speichern."
       where
         headerText = case juryType of
-            IdeaFeasible    -> "Feasible "
-            IdeaNotFeasible -> "Not feasible "
+            IdeaFeasible    -> "[Angenommen zur Wahl] "
+            IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
 
 
 -- * handlers

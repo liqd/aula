@@ -907,17 +907,21 @@ instance FromHttpApiData IdeaVoteValue where
         "yes"     -> Right Yes
         "no"      -> Right No
         "neutral" -> Right Neutral
-        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are expected)"
+        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are allowed"
 
 instance HasUriPart IdeaVoteValue where
     uriPart = fromString . lowerFirst . show
 
--- TODO: Do not use the Show instance
 instance FromHttpApiData IdeaJuryResultType where
     parseUrlPiece = \case
-      "IdeaNotFeasible" -> Right IdeaNotFeasible
-      "IdeaFeasible"    -> Right IdeaFeasible
-      _                 -> Left "TODO: BLAH"
+      "good" -> Right IdeaNotFeasible
+      "bad"  -> Right IdeaFeasible
+      _      -> Left "Ill-formed idea vote value: only `good' or `bad' are allowed"
+
+instance ToHttpApiData IdeaJuryResultType where
+    toUrlPiece = \case
+      IdeaNotFeasible -> "good"
+      IdeaFeasible    -> "bad"
 
 instance HasUriPart IdeaJuryResultType where
     uriPart = fromString . show
