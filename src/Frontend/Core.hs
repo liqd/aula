@@ -331,12 +331,13 @@ instance ToHtml ListItemIdea where
                 when (MarkFeasiblity `elem` caps) . div_ $ do
                     case _ideaJuryResult idea of
                         Nothing -> do
-                            button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "Feasible"
-                            button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "Not Feasible"
+                            button_ [onclick_ $ P.juryIdea idea IdeaFeasible]    "durchführbar"
+                            button_ [onclick_ $ P.juryIdea idea IdeaNotFeasible] "nicht durchführbar"
                         Just (IdeaJuryResult _ (Feasible _)) -> do
-                            p_ "Feasible"
+                            p_ "durchführbar"
                         Just (IdeaJuryResult _ (NotFeasible _)) -> do
-                            p_ "Not Feasible"
+                            p_ "nicht durchführbar"
+                            -- FIXME: make the comments accessible (inside the idea?)
 
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
