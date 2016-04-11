@@ -42,6 +42,8 @@ module Persistent.Pure
     , liftAQuery
 
     , addDb
+    , addDb'
+    , addDbByUser
     , findIn
     , findInBy
     , findInById
@@ -297,6 +299,17 @@ type EnvWithProto a = EnvWith (Proto a)
 -}
 type AddDb a = EnvWithProto a -> AUpdate a
 
+addDb' :: (HasMetaInfo a, FromProto a) => (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
+addDb' nextId' l (EnvWith cUser now pa) = do
+    assertAulaDataM $ do
+        len <- asks (lengthOf l)
+        when (len /= 1) $ do
+            fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
+                <> "to target exactly 1 field not " <> show len
+                -- forall ... ::
+    a <- fromProto pa <$> mkMetaInfo cUser now <$> nextId' cUser
+    l . at (a ^. _Id) <?= a
+
 -- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
 -- The record is computed from the prototype @p@, the current time @now@ and the given user @u@.
@@ -311,18 +324,12 @@ type AddDb a = EnvWithProto a -> AUpdate a
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb' :: (HasMetaInfo a, FromProto a) => (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
-addDb' nextId' l (EnvWith cUser now pa) = do
-    assertAulaDataM $ do
-        len <- asks (lengthOf l)
-        when (len /= 1) $ do
-            fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
-                <> "to target exactly 1 field not " <> show len
-    a <- fromProto pa <$> mkMetaInfo cUser now <$> nextId' cUser
-    l . at (a ^. _Id) <?= a
-
 addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
 addDb = addDb' $ const nextId
+
+-- | Like addDb but the record id but for records which ought to be indexed by user id.
+addDbByUser :: (IdOf a ~ AUID User, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
+addDbByUser = addDb' (pure . view _Id)
 
 addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
