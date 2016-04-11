@@ -18,8 +18,10 @@ module Action.Smtp
     , SendMailFlag(..)
     ) where
 
-import Thentos.Prelude hiding (logger)
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Reader
 import Network.Mail.Mime (Address(Address), sendmailCustomCaptureOutput, simpleMail', renderMail')
+import Thentos.Prelude hiding (logger)
 
 import qualified Data.ByteString as SB
 
@@ -100,12 +102,6 @@ sendMailToUser flags user msg = do
             | otherwise ->
                 throwSendMailError $ NoEmailAddressForUser user
 
-{- TODO: remove this or fix it?
-
-newtype EasySendMail = EasySendMail { runEasySendMail :: ReaderT Config (ExceptT SendMailError m))) }
-    deriving (Functor m, Applicative m, Monad m, MonadReader )
-instance (ThrowSendMailError e, GetConfig r, MonadIO m) => HasSendMail e r (EasySendMail e r m)
--- instance (ThrowSendMailError e, GetConfig r) => HasSendMail e r (
 
 -- | Run sendMail to check that we can send emails. Throw an error if sendmail
 -- is not available or doesn't work.
@@ -113,10 +109,8 @@ checkSendMail :: Config -> IO ()
 checkSendMail cfg = do
     let address = Address Nothing "user@example.com"
         msg     = EmailMessage "Test Mail" "This is a test" Nothing
-    r <- runExceptT (runReaderT (sendMailToAddress address msg :: ReaderT Config (ExceptT SendMailError IO) ()) cfg)
+    r <- runExceptT (runReaderT (sendMailToAddressIO address msg :: ReaderT Config (ExceptT SendMailError IO) ()) cfg)
     case r of
         Left _ -> throwIO $ ErrorCall "sendmail seems to not work.\
                                     \ Maybe the sendmail path is misconfigured?"
         Right () -> pure ()
-
--}
