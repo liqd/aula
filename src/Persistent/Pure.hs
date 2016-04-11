@@ -326,11 +326,12 @@ addDb' nextId' l (EnvWith cUser now pa) = do
 addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
 addDb = addDb' $ const nextId
 
--- | Like addDb but the record id but for records which ought to be indexed by user id.
+-- | Like addDb but for values indexed by user id.
 addDbByUser :: (IdOf a ~ AUID User, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
 addDbByUser = addDb' (pure . view _Id)
 
-addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
+addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
+    => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser now
     l .= pure a

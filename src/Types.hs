@@ -1,9 +1,9 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
-{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
@@ -529,7 +529,7 @@ type instance IdOf Topic            = AUID Topic
 type instance IdOf Delegation       = AUID Delegation
 type instance IdOf Comment          = AUID Comment
 -- ^ A more precise identifier would be:
---      IdOf Comment = (AUID Idea, NonEmpty (AUID Comment))
+--      IdOf Comment = (AUID Idea, [AUID Comment])
 -- This would be the full path from AulaData down to the comment
 -- which could be a reply to reply...
 type instance IdOf CommentVote      = AUID User
