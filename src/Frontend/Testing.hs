@@ -70,9 +70,11 @@ makeTopicTimeout tid = do
 type RenderHtmlSource =
        "idea"  :> Capture "iid" (AUID Idea)  :> Get '[PlainText] String
   :<|> "topic" :> Capture "tid" (AUID Topic) :> Get '[PlainText] String
+  :<|> "user"  :> "settings" :> Get '[PlainText] String
 
 renderHtmlSource :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
       => ServerT RenderHtmlSource m
 renderHtmlSource =
        (\iid -> show <$> viewIdea'                        iid)
   :<|> (\tid -> show <$> viewTopic' (TabAllIdeas Nothing) tid)
+  :<|> (show . PageUserSettings <$> equery (maybe404 =<< findUserByLogin "admin"))
