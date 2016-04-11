@@ -155,7 +155,7 @@ findAllInBySpec imp name getXs genKs findAllXBy f change =
 
 -- Given an AUID pick a different one
 changeAUID :: AUID a -> AUID a
-changeAUID (AUID i) = AUID (succ i)
+changeAUID = _AUID +~ 1
 
 spec :: Spec
 spec = do

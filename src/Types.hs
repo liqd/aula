@@ -688,6 +688,7 @@ instance Binary Durations
 instance Binary Quorums
 instance Binary Settings
 
+makePrisms ''AUID
 makePrisms ''IdeaLocation
 makePrisms ''Category
 makePrisms ''Document
