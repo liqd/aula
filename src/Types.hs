@@ -79,9 +79,6 @@ type CSI' s a = CSI s s a a
 csi :: CSI s t a b => Iso s t a b
 csi = iso cs cs
 
-lowerCase :: String -> String
-lowerCase = map toLower
-
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
