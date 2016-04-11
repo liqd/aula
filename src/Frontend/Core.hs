@@ -15,7 +15,8 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
-    ( GetH
+    ( Singular, CaptureData, (::>), Reply
+    , GetH
     , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
@@ -45,6 +46,7 @@ import Control.Monad (when, replicateM_)
 import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
+import GHC.TypeLits (Symbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
@@ -67,6 +69,38 @@ import Lucid.Missing (onclick_, script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
+
+
+-- FIXME could use closed-type families
+type family Singular    a :: Symbol
+type family CaptureData a
+
+infixr 9 ::>
+type (::>) a b = Singular a :> Capture (Singular a) (CaptureData a) :> b
+
+data Reply
+
+type instance Singular Comment            = "comment"
+type instance Singular Idea               = "idea"
+type instance Singular IdeaSpace          = "space"
+type instance Singular IdeaVoteValue      = "vote"
+type instance Singular Reply              = "reply"
+type instance Singular SchoolClass        = "class"
+type instance Singular Topic              = "topic"
+type instance Singular UpDown             = "vote"
+type instance Singular User               = "user"
+type instance Singular IdeaJuryResultType = "jury"
+
+type instance CaptureData Comment            = AUID Comment
+type instance CaptureData Idea               = AUID Idea
+type instance CaptureData IdeaSpace          = IdeaSpace
+type instance CaptureData IdeaVoteValue      = IdeaVoteValue
+type instance CaptureData Reply              = AUID Comment
+type instance CaptureData SchoolClass        = SchoolClass
+type instance CaptureData Topic              = AUID Topic
+type instance CaptureData UpDown             = UpDown
+type instance CaptureData User               = AUID User
+type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 
 
 -- | FIXME: Could this be a PR for lucid?
