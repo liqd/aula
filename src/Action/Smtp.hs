@@ -109,7 +109,11 @@ checkSendMail :: Config -> IO ()
 checkSendMail cfg = do
     let address = Address Nothing "user@example.com"
         msg     = EmailMessage "Test Mail" "This is a test" Nothing
-    r <- runExceptT (runReaderT (sendMailToAddressIO address msg :: ReaderT Config (ExceptT SendMailError IO) ()) cfg)
+
+        action :: ReaderT Config (ExceptT SendMailError IO) ()
+        action = sendMailToAddressIO address msg
+
+    r <- runExceptT (runReaderT action cfg)
     case r of
         Left _ -> throwIO $ ErrorCall "sendmail seems to not work.\
                                     \ Maybe the sendmail path is misconfigured?"
