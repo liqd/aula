@@ -405,8 +405,16 @@ dynamicRender s = do
     vs <- sequence $ pages g
     case vs ^? each . _Just of
         Just v -> return v
-        Nothing -> error $ "dynamicRender: problem parsing the type of the following value." <>
-                           "  recreate samples?\n\n" <> take 200 (cs s) <> "\n\n"
+        Nothing -> error . unlines $
+            [ "dynamicRender failed.  possible reasons:"
+            , "  - version of sample data does not match version of exec/RenderHtml.hs"
+            , "  - there is an error in the ToHtml instance for the type"
+            , "  - there is an error in exec/RenderHtml.hs"
+            , ""
+            , "input data:"
+            , "    " <> take 200 (cs s)
+            , ""
+            ]
   where
     g :: forall a. (Read a, ToHtml' a, Page a) => Proxy a -> IO (Maybe ST)
     g proxy = yes `catch` \(SomeException _) -> no
