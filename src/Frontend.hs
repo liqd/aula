@@ -129,8 +129,9 @@ aulaActions =
 
 data Reply
 
+-- FIXME could use closed-type families
+
 type family Singular    a :: Symbol
-type family Plural      a :: Symbol
 type family CaptureData a
 
 type instance Singular Comment       = "comment"
