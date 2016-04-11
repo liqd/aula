@@ -288,7 +288,7 @@ instance ToHtml CommentVotesWidget where
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
                 -- FIXME style
-                postButton_ [class_ "btn"] (P.voteCommentWithContext context comment v) $
+                postButton_ [class_ "btn", Lucid.onclick_ "incrCommentVote(this)"] (P.voteCommentWithContext context comment v) $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
@@ -446,7 +446,7 @@ redirect uri = throwServantErr $
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
 
-avatarImgFromMeta :: forall m a. (Monad m) => MetaInfo a -> HtmlT m ()
+avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
 avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
 
 avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()

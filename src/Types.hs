@@ -533,7 +533,27 @@ defaultSettings = Settings
 newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, Enum, Real, Num, Integral)
 
-type AMap a = Map (AUID a) a
+instance SOP.Generic (AUID a)
+
+type family   IdOf a
+type instance IdOf User             = AUID User
+type instance IdOf Idea             = AUID Idea
+type instance IdOf Topic            = AUID Topic
+type instance IdOf Delegation       = AUID Delegation
+type instance IdOf Comment          = AUID Comment
+-- ^ A more precise identifier would be:
+--      IdOf Comment = (AUID Idea, [AUID Comment])
+-- This would be the full path from AulaData down to the comment
+-- which could be a reply to reply...
+type instance IdOf CommentVote      = AUID User
+type instance IdOf IdeaVote         = AUID User
+type instance IdOf IdeaLike         = AUID User
+-- ^ If we were to have more precise comment identifiers these 3 could
+-- become: (IdOf Comment, AUID User)
+type instance IdOf IdeaVoteResult   = AUID IdeaVoteResult
+type instance IdOf IdeaJuryResult   = AUID IdeaJuryResult
+
+type AMap a = Map (IdOf a) a
 
 type Users        = AMap User
 type Ideas        = AMap Idea
@@ -557,8 +577,8 @@ instance HasUriPart (AUID a) where
 -- If this is becoming too much in the future and we want to keep objects around without all this
 -- inlined information, we should consider making objects polymorphic in the concrete meta info
 -- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
-data MetaInfo a = MetaInfo
-    { _metaId              :: AUID a
+data GMetaInfo a id = MetaInfo
+    { _metaId              :: id
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: Maybe URL
@@ -568,7 +588,9 @@ data MetaInfo a = MetaInfo
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic a => SOP.Generic (MetaInfo a)
+instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
+
+type MetaInfo a = GMetaInfo a (IdOf a)
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
@@ -683,7 +705,7 @@ instance Binary IdeaVoteResultValue
 instance Binary IdeaSpace
 instance Binary IdeaVote
 instance Binary IdeaVoteValue
-instance Binary (MetaInfo a)
+instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
 instance Binary SchoolClass
 instance Binary Topic
@@ -697,6 +719,7 @@ instance Binary Durations
 instance Binary Quorums
 instance Binary Settings
 
+makePrisms ''AUID
 makePrisms ''IdeaLocation
 makePrisms ''Category
 makePrisms ''Document
@@ -731,7 +754,7 @@ makeLenses ''IdeaJuryResult
 makeLenses ''IdeaVoteResult
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
-makeLenses ''MetaInfo
+makeLenses ''GMetaInfo
 makeLenses ''Phase
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
@@ -773,7 +796,7 @@ deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaSpace
 deriveSafeCopy 0 'base ''IdeaVote
 deriveSafeCopy 0 'base ''IdeaVoteValue
-deriveSafeCopy 0 'base ''MetaInfo
+deriveSafeCopy 0 'base ''GMetaInfo
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
@@ -792,9 +815,9 @@ deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
 deriveSafeCopy 0 'base ''Quorums
 
-class HasMetaInfo a where
+class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
-    _Id             :: Lens' a (AUID a)
+    _Id             :: Lens' a (IdOf a)
     _Id             = metaInfo . metaId
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy
