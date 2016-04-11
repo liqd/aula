@@ -529,9 +529,15 @@ type instance IdOf Idea             = AUID Idea
 type instance IdOf Topic            = AUID Topic
 type instance IdOf Delegation       = AUID Delegation
 type instance IdOf Comment          = AUID Comment
-type instance IdOf CommentVote      = AUID CommentVote  -- TODO User
-type instance IdOf IdeaVote         = AUID IdeaVote     -- TODO User
-type instance IdOf IdeaLike         = AUID IdeaLike     -- TODO User
+-- ^ A more precise identifier would be:
+--      IdOf Comment = (AUID Idea, NonEmpty (AUID Comment))
+-- This would be the full path from AulaData down to the comment
+-- which could be a reply to reply...
+type instance IdOf CommentVote      = AUID User
+type instance IdOf IdeaVote         = AUID User
+type instance IdOf IdeaLike         = AUID User
+-- ^ If we were to have more precise comment identifiers these 3 could
+-- become: (IdOf Comment, AUID User)
 type instance IdOf IdeaVoteResult   = AUID IdeaVoteResult
 type instance IdOf IdeaJuryResult   = AUID IdeaJuryResult
 

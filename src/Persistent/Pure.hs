@@ -475,18 +475,16 @@ findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . v
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
--- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb IdeaLike
-addLikeToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaLikes)
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
 
--- | FIXME: Same user can vote on the same idea more than once (Issue #308).
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -515,7 +513,7 @@ instance FromProto CommentVote where
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb CommentVote
 addCommentVoteToIdeaComment iid cid =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
+    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
@@ -523,9 +521,9 @@ addCommentVoteToIdeaComment iid cid =
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
 addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb CommentVote
 addCommentVoteToIdeaCommentReply iid cid rid =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments
-                     . at cid . _Just . commentReplies
-                     . at rid . _Just . commentVotes)
+    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments
+                           . at cid . _Just . commentReplies
+                           . at rid . _Just . commentVotes)
 
 instance FromProto IdeaJuryResult where
     fromProto = flip IdeaJuryResult
