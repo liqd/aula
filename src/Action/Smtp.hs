@@ -16,6 +16,7 @@ module Action.Smtp
     , sendMailToAddressIO
     , sendMailToUser
     , SendMailFlag(..)
+    , checkSendMail
     ) where
 
 import Control.Monad.Trans.Except
