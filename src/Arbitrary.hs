@@ -111,7 +111,7 @@ instance Arbitrary ViewTopic where
             _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
 
 instance Arbitrary ViewIdea where
-    arbitrary = ViewIdea <$> arb <*> arb <*> arb
+    arbitrary = ViewIdea <$> arb <*> arb
 
 instance Arbitrary CreateIdea where
     arbitrary = CreateIdea <$> arb

@@ -29,6 +29,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
 import LifeCycle
 import Frontend.Page.Category
 import Frontend.Page.Comment
+import Frontend.Page.Overview
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
 
@@ -53,7 +54,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea RenderContext Idea (Maybe Phase)
+data ViewIdea = ViewIdea RenderContext (Idea, Maybe Phase, Int)
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
@@ -104,7 +105,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx idea phase) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx (idea, phase, _)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -233,8 +234,18 @@ instance ToHtml ViewIdea where
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars caps (ViewIdea ctx idea phase)) = semanticDiv p $ do
-        let voteBar :: Html () -> Html ()
+    toHtml p@(IdeaVoteLikeBars caps (ViewIdea ctx (idea, phase, numVoters))) = semanticDiv p $ do
+        let likeBar :: Html () -> Html ()
+            likeBar bs = toHtml (QuorumBar $ percentLikes idea numVoters) >> bs
+
+            likeButtons :: Html ()
+            likeButtons = if QuorumVote `elem` caps
+                then div_ [class_ "voting-buttons"] $
+                        postButton_ [class_ "btn comment-footer-button"] (U.likeIdea idea) "dafür!"
+                        -- FIXME: how do you un-like an idea?
+                else nil
+
+            voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
                 span_ [class_ "progress-bar m-against"] $ do
                     span_ [ class_ "progress-bar-progress"
@@ -261,7 +272,7 @@ instance ToHtml IdeaVoteLikeBars where
                             (U.voteIdea idea v)
 
         case phase of
-            Nothing                  -> nil
+            Nothing                  -> toHtml $ likeBar likeButtons
             Just (PhaseRefinement _) -> nil
             Just PhaseJury           -> nil
             Just (PhaseVoting _)     -> toHtml $ voteBar nil
@@ -402,11 +413,7 @@ viewIdea ideaId = viewIdeaPage ideaId >>= makeFrame
 
 viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
-viewIdeaPage ideaId = do
-    idea  :: Idea        <- mquery $ findIdea ideaId
-    phase :: Maybe Phase <- query $ ideaPhase idea
-    ctx                  <- renderContext
-    pure $ ViewIdea ctx idea phase
+viewIdeaPage ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
 
 createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea

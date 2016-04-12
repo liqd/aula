@@ -11,6 +11,7 @@ module Frontend.Page.Overview
     , PageIdeasOverview(..)
     , PageIdeasInDiscussion(..)
     , ListItemIdeaContext(..), ListItemIdea(ListItemIdea), ListItemIdeas(ListItemIdeas)
+    , QuorumBar(QuorumBar)
     , viewRooms
     , viewIdeas
     , viewTopics
@@ -261,12 +262,21 @@ instance ToHtml ListItemIdea where
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show (numLikes idea) <> " von " <> show numVoters <> " Stimmen")
-                    span_ [class_ "progress-bar"] $ do
-                        span_ [ class_ "progress-bar-progress"
-                              , style_ ("width: " <> cs (show (percentLikes idea numVoters)) <> "%")
-                              ]
-                            nil
+                            toHtml (show (numLikes idea) <> " von " <> show numVoters <> " Quorum-Stimmen")
+                    toHtml $ QuorumBar (percentLikes idea numVoters)
+
+
+data QuorumBar = QuorumBar Int
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance ToHtml QuorumBar where
+    toHtmlRaw = toHtml
+    toHtml (QuorumBar i) = do
+        span_ [class_ "progress-bar"] $ do
+            span_ [ class_ "progress-bar-progress"
+                  , style_ ("width: " <> cs (show i) <> "%")
+                  ]
+                nil
 
 
 instance ToHtml ListItemIdeas where
