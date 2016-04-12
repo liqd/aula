@@ -36,7 +36,6 @@ instance ToHtml CommentWidget where
 
 commentToHtml :: Monad m => CommentContext -> Comment -> HtmlT m ()
 commentToHtml context comment = div_ $ do
-    hr_ []  -- FIXME: comments melt into each other without this.  should be fixed in css.
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
         VotesWidget context comment ^. html
