@@ -56,21 +56,21 @@ data IdeaCapability
     | MoveBetweenTopics  -- also move between (and into and out of) topics
   deriving (Enum, Eq, Ord, Show)
 
-ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> [IdeaCapability]
-ideaCapabilities u i mp r =
-       phaseCap u i mp r
-    <> editCap u i r
+ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
+ideaCapabilities u r i mp =
+       phaseCap u r i mp
+    <> editCap u r i
     <> moveBetweenTopicsCap r
 
-editCap :: AUID User -> Idea -> Role -> [IdeaCapability]
-editCap uid i r = [Edit | r == Moderator || i ^. createdBy == uid]
+editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
+editCap uid r i = [Edit | r == Moderator || i ^. createdBy == uid]
 
 moveBetweenTopicsCap :: Role -> [IdeaCapability]
 moveBetweenTopicsCap r = [MoveBetweenTopics | r ==  Moderator]
 
-phaseCap :: AUID User -> Idea -> Maybe Phase -> Role -> [IdeaCapability]
-phaseCap _ i Nothing  r = wildIdeaCap i r
-phaseCap u i (Just p) r = case p of
+phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
+phaseCap _ r i Nothing  = wildIdeaCap i r
+phaseCap u r i (Just p) = case p of
     PhaseRefinement _ -> phaseRefinementCap i r
     PhaseJury         -> phaseJuryCap i r
     PhaseVoting     _ -> phaseVotingCap i r

@@ -208,9 +208,9 @@ instance ToHtml ListItemIdea where
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
+                        (ctx ^. renderContextUser . userRole)
                         idea
                         phase
-                        (ctx ^. renderContextUser . userRole)
 
             when (IdeaInViewTopic == listItemIdeaContext) $ do
                 when (MarkFeasiblity `elem` caps) . div_ $ do
