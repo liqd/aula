@@ -24,6 +24,7 @@ where
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, query, equery, mquery, update
               , markIdeaInJuryPhase
+              , renderContext
               )
 import Frontend.Page.Category
 import Frontend.Page.Comment
@@ -51,7 +52,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea Idea (Maybe Phase)
+data ViewIdea = ViewIdea RenderContext Idea (Maybe Phase)
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
@@ -102,7 +103,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
+    toHtml p@(ViewIdea _ctx idea phase) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -222,7 +223,7 @@ instance ToHtml ViewIdea where
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars (ViewIdea idea phase)) = semanticDiv p $ do
+    toHtml p@(IdeaVoteLikeBars (ViewIdea ctx idea phase)) = semanticDiv p $ do
         let voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
                 span_ [class_ "progress-bar m-against"] $ do
@@ -389,7 +390,8 @@ viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m
 viewIdeaPage ideaId = do
     idea  :: Idea        <- mquery $ findIdea ideaId
     phase :: Maybe Phase <- query $ ideaPhase idea
-    pure $ ViewIdea idea phase
+    ctx                  <- renderContext
+    pure $ ViewIdea ctx idea phase
 
 createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
