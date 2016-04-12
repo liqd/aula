@@ -15,7 +15,7 @@ module Frontend.Page.Topic
     , CreateTopic(..)
     , EditTopic(..)
     , IdeasFilterApi
-    , viewTopic, viewTopic'
+    , viewTopic, viewTopicPage
     , createTopic
     , editTopic )
 where
@@ -265,11 +265,11 @@ makeFormIdeaSelection ideas =
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = viewTopic' tab topicId >>= makeFrame
+viewTopic tab topicId = viewTopicPage tab topicId >>= makeFrame
 
-viewTopic' :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
+viewTopicPage :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
-viewTopic' tab topicId = do
+viewTopicPage tab topicId = do
     ctx <- renderContext
     equery (do
         topic <- maybe404 =<< findTopic topicId

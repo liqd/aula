@@ -12,7 +12,7 @@ module Frontend.Page.Idea
   , EditIdea(..)
   , CommentIdea(..)
   , JudgeIdea(..)
-  , viewIdea, viewIdea'
+  , viewIdea, viewIdeaPage
   , createIdea
   , editIdea
   , commentIdea
@@ -362,11 +362,11 @@ instance FormPage JudgeIdea where
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
-viewIdea ideaId = viewIdea' ideaId >>= makeFrame
+viewIdea ideaId = viewIdeaPage ideaId >>= makeFrame
 
-viewIdea' :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
+viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
-viewIdea' ideaId = do
+viewIdeaPage ideaId = do
     idea  :: Idea        <- mquery $ findIdea ideaId
     phase :: Maybe Phase <- query $ ideaPhase idea
     pure $ ViewIdea idea phase

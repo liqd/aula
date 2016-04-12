@@ -75,6 +75,6 @@ type RenderHtmlSource =
 renderHtmlSource :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
       => ServerT RenderHtmlSource m
 renderHtmlSource =
-       (\iid -> show <$> viewIdea'                        iid)
-  :<|> (\tid -> show <$> viewTopic' (TabAllIdeas Nothing) tid)
+       (\iid -> show <$> viewIdeaPage                        iid)
+  :<|> (\tid -> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
   :<|> (show . PageUserSettings <$> equery (maybe404 =<< findUserByLogin "admin"))
