@@ -65,9 +65,11 @@ genFirstUser =
 genStudent :: [SchoolClass] -> Gen ProtoUser
 genStudent classes = genUser $ elements (map Student classes)
 
+-- | login names are not provided here.  the 'AddUser' transaction will find a fresh login name.
 genUser :: Gen Role -> Gen ProtoUser
 genUser genRole =
     arbitrary
+    <**> (pure $ set protoUserLogin Nothing)
     <**> (set protoUserRole <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
 
