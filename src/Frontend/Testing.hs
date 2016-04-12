@@ -67,14 +67,16 @@ makeTopicTimeout tid = do
         PhaseVoting     _ -> topicInVotingTimedOut tid
         _                 -> return ()
 
-type RenderHtmlSource =
+type RenderHtmlSource = Capture "login" UserLogin :> RenderHtmlSource'
+
+type RenderHtmlSource' =
        "idea"  :> Capture "iid" (AUID Idea)  :> Get '[PlainText] String
   :<|> "topic" :> Capture "tid" (AUID Topic) :> Get '[PlainText] String
   :<|> "user"  :> "settings" :> Get '[PlainText] String
 
 renderHtmlSource :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
       => ServerT RenderHtmlSource m
-renderHtmlSource =
-       (\iid -> show <$> viewIdeaPage                        iid)
-  :<|> (\tid -> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
-  :<|> (show . PageUserSettings <$> equery (maybe404 =<< findUserByLogin "admin"))
+renderHtmlSource loginName =
+       (\iid -> loginByName loginName >> show <$> viewIdeaPage                        iid)
+  :<|> (\tid -> loginByName loginName >> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
+  :<|> (loginByName loginName >> show . PageUserSettings <$> currentUser)
