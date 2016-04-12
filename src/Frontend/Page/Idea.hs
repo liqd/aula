@@ -34,6 +34,7 @@ import qualified Persistent.Api as Persistent
 import qualified Action (createIdea)
 import qualified Frontend.Path as U
 import qualified Data.Map as Map
+import qualified Data.Text as ST
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -330,7 +331,7 @@ instance FormPage JudgeIdea where
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
-        <$> "jury-text" .: (Just . Markdown <$> DF.text Nothing)
+        <$> "jury-text" .: (Markdown <$$> (`justIfP` (not . ST.null)) <$> DF.text Nothing)
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
         NotFeasible
         <$> "jury-text" .: (Markdown <$> DF.text Nothing)

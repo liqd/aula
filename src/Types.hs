@@ -58,6 +58,9 @@ readWith Proxy = read
 justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
 
+justIfP :: a -> (a -> Bool) -> Maybe a
+justIfP x f = justIf x (f x)
+
 lowerFirst :: String -> String
 lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
