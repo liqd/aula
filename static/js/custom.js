@@ -17,7 +17,6 @@ function addPopEvents(el) {
     }
 }
 
-
 function toggleMenu(el, out) {
     if(el.className.indexOf("m-open") > -1) {
         removeClass(el, "m-open");
@@ -88,7 +87,10 @@ function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
 }
 
-function incrCommentVote(e) {
-    var node = e.parentNode.parentNode.childNodes[0];
-    node.data = Number(node.data) + 1;
+function handleLikeOrVote(e) {
+    // FIXME: this is a race condition: if we wait for 0 ms, the page
+    // will usually be reloaded before the POST request updating the
+    // score can be processed.
+    // FIXME: we are required to avoid reload!
+    setTimeout(function() { document.location.reload(true); }, 50);
 }

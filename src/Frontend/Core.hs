@@ -322,7 +322,7 @@ instance ToHtml CommentVotesWidget where
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
                 -- FIXME style
-                postButton_ [class_ "btn", Lucid.onclick_ "incrCommentVote(this)"] (P.voteCommentWithContext context comment v) $
+                postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
