@@ -1,9 +1,3 @@
-svg {
-  border: 1px solid #ccc;
-}
-body {
-  font: 10px sans-serif;
-}
 circle.node {
   fill: lightsteelblue;
   stroke: #555;
