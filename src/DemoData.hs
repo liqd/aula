@@ -69,7 +69,7 @@ genStudent classes = genUser $ elements (map Student classes)
 genUser :: Gen Role -> Gen ProtoUser
 genUser genRole =
     arbitrary
-    <**> (pure $ set protoUserLogin Nothing)
+    <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
     <**> (set protoUserRole <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
 
