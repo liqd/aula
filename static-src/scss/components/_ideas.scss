@@ -69,6 +69,27 @@
     }
 }
 
+.info-text {
+    @include rem(font-size, $font-size-small);
+    @include rem(margin-bottom, 20px);
+    @include rem(padding, 10px);
+    background: $color-grey-lighter;
+    border-radius: 4px;
+    color: $color-text-muted;
+
+    &.m-realised {
+        .info-text-header {
+            color: $color-positive;
+        }
+    }
+
+    &.m-unrealised {
+        .info-text-header {
+            color: $color-negative;
+        }
+    }
+}
+
 .no-js {
     .category-image-select {
         display: none;
