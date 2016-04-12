@@ -254,7 +254,7 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage = createOrEditPage False
+    formPage v form p@(CreateIdea iloc) = createOrEditPage False iloc v form p
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -270,11 +270,12 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    formPage = createOrEditPage True
+    formPage v form p@(EditIdea idea) = createOrEditPage True (idea ^. ideaLocation) v form p
 
 createOrEditPage :: (Monad m, Typeable page, Page page) =>
-    Bool -> View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditPage showDeleteButton v form p = semanticDiv p $ do
+    Bool -> IdeaLocation ->
+    View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
+createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
     div_ [class_ "container-main popup-page"] $ do
         div_ [class_ "container-narrow"] $ do
             h1_ [class_ "main-heading"] "Deine Idee"
@@ -290,9 +291,15 @@ createOrEditPage showDeleteButton v form p = semanticDiv p $ do
                 formPageSelectCategory v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Idee veröffentlichen"
+                    a_ [class_ "btn-cta", href_ $ U.listIdeas cancelUrl] $ do
+                        -- FIXME: "are you sure?" dialog.
+                        i_ [class_ "icon-trash-o"] nil
+                        "Idee verwerfen"
                     when showDeleteButton .
                         button_ [class_ "btn-cta", value_ ""] $ do
-                            i_ [class_ "icon-trash-o"] nil  -- FIXME delete button
+                            -- FIXME: delete ideas.
+                            -- FIXME: "are you sure?" dialog.
+                            i_ [class_ "icon-trash-o"] nil
                             "Idee löschen"
 
 
