@@ -20,9 +20,7 @@ where
 import Action
 import Frontend.Page.Category
 import Frontend.Prelude
-import GHC.Generics (Generic)
 import LifeCycle
-import Lucid.Missing (onclick_, script_, href_, src_, postButton_, nbsp)
 
 import qualified Data.Map as Map
 import qualified Data.Text as ST
