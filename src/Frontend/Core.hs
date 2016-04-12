@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE LambdaCase           #-}
@@ -47,6 +48,7 @@ import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
 import GHC.TypeLits (Symbol)
+import GHC.Generics (Generic)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
@@ -57,6 +59,7 @@ import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -340,7 +343,7 @@ data ListItemIdeaContext
     = IdeaInIdeasOverview
     | IdeaInViewTopic
     | IdeaInUserProfile
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic)
 
 data ListItemIdea = ListItemIdea
       { _listItemIdeaContext    :: ListItemIdeaContext
@@ -349,7 +352,10 @@ data ListItemIdea = ListItemIdea
       , _listItemIdea           :: Idea
       , _listItemRenderContext  :: RenderContext
       }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic ListItemIdeaContext
+instance SOP.Generic ListItemIdea
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
