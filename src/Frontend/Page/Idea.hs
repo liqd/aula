@@ -22,7 +22,7 @@ module Frontend.Page.Idea
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, query, equery, mquery, update
+              , currentUserAddDb, equery, mquery, update
               , markIdeaInJuryPhase
               , renderContext
               )
@@ -234,7 +234,8 @@ instance ToHtml ViewIdea where
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars caps (ViewIdea ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
+    toHtml p@(IdeaVoteLikeBars caps
+                (ViewIdea _ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
             likeBar bs = toHtml (QuorumBar $ percentLikes idea quo) >> bs
 

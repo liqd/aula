@@ -62,7 +62,6 @@ import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
-import Persistent.Implementation
 import Types
 
 import qualified Frontend.Path as P
