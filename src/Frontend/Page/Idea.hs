@@ -270,8 +270,6 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    -- FIXME: factor out code common with CreateIdea.
-    -- FIXME: category choice should look like in CreateIdea.
     formPage = createOrEditPage True
 
 createOrEditPage :: (Monad m, Typeable page, Page page) =>
