@@ -363,15 +363,23 @@ instance ToHtml ListItemIdea where
 
             when (IdeaInViewTopic == listItemIdeaContext) $ do
                 when (MarkFeasiblity `elem` caps) . div_ $ do
+                    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
+                        explToHtml (Markdown text) = do
+                            p_ "Begründung:"
+                            p_ $ toHtml text
+
                     case _ideaJuryResult idea of
                         Nothing -> do
                             button_ [onclick_ $ P.judgeIdea idea IdeaFeasible]    "durchführbar"
                             button_ [onclick_ $ P.judgeIdea idea IdeaNotFeasible] "nicht durchführbar"
-                        Just (IdeaJuryResult _ (Feasible _)) -> do
+                        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
                             p_ "durchführbar"
-                        Just (IdeaJuryResult _ (NotFeasible _)) -> do
+                            case maybeExpl of
+                                Just expl -> explToHtml expl
+                                Nothing -> nil
+                        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
                             p_ "nicht durchführbar"
-                            -- FIXME: make the comments accessible (inside the idea?)
+                            explToHtml expl
 
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
