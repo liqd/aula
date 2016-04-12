@@ -54,7 +54,7 @@ data IdeaCapability
     | AddCreatorStatement
     | Edit
     | MoveBetweenTopics  -- also move between (and into and out of) topics
-  deriving (Enum, Eq, Ord, Show)
+  deriving (Enum, Eq, Ord, Show, Read)
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
 ideaCapabilities u r i mp =

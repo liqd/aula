@@ -86,7 +86,7 @@ instance Page JudgeIdea where
 
 -- ** non-page types
 
-data IdeaVoteLikeBars = IdeaVoteLikeBars ViewIdea
+data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
   deriving (Eq, Show, Read)
 
 
@@ -155,7 +155,7 @@ instance ToHtml ViewIdea where
                     Just PhaseResult         -> v >> c
 
             div_ [class_ "sub-heading"] $ do
-                toHtml $ IdeaVoteLikeBars p
+                toHtml $ IdeaVoteLikeBars caps p
 
             when False . div_ $ do
                 -- FIXME: needs design/layout
@@ -233,7 +233,7 @@ instance ToHtml ViewIdea where
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars (ViewIdea ctx idea phase)) = semanticDiv p $ do
+    toHtml p@(IdeaVoteLikeBars caps (ViewIdea ctx idea phase)) = semanticDiv p $ do
         let voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
                 span_ [class_ "progress-bar m-against"] $ do
@@ -246,12 +246,14 @@ instance ToHtml IdeaVoteLikeBars where
                 bs
 
             voteButtons :: Html ()
-            voteButtons = div_ [class_ "voting-buttons"] $ do
-                votingButton Yes     "dafür"
-                votingButton Neutral "neutral"
-                votingButton No      "dagegen"
+            voteButtons = if Vote `elem` caps
+                then div_ [class_ "voting-buttons"] $ do
+                    voteButton Yes     "dafür"
+                    voteButton Neutral "neutral"
+                    voteButton No      "dagegen"
+                else nil
 
-            votingButton v =
+            voteButton v =
                 postButton_ [class_ "btn-cta voting-button"]
                             (U.voteIdea idea v)
 
