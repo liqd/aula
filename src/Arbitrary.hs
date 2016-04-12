@@ -61,6 +61,7 @@ import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
+import Persistent
 import Persistent.Implementation
 import Types
 
@@ -243,6 +244,9 @@ instance Arbitrary ListItemIdea where
     arbitrary = garbitrary
 
 instance Arbitrary ListItemIdeas where
+    arbitrary = garbitrary
+
+instance Arbitrary ListInfoForIdea where
     arbitrary = garbitrary
 
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,9 +12,11 @@ where
 import Control.Lens
 import Control.Monad (unless)
 import Data.Time
+import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map (size)
+import qualified Generics.SOP as SOP
 
 import Types
 import Persistent.Pure
@@ -41,14 +44,27 @@ getVotersForIdea idea = filter hasAccess <$> getUsers
     isStudentInClass (view userRole -> (Student cl')) cl = cl' == cl
     isStudentInClass _ _ = False
 
-getListInfoForIdea :: Idea -> EQuery (Idea, Maybe Phase, Int)
+
+-- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
+-- reached.
+data ListInfoForIdea = ListInfoForIdea
+    { _listInfoForIdeaIt     :: Idea
+    , _listInfoForIdeaPhase  :: Maybe Phase
+    , _listInfoForIdeaQuorum :: Int
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ListInfoForIdea
+
+getListInfoForIdea :: Idea -> EQuery ListInfoForIdea
 getListInfoForIdea idea = do
     vs <- getVotersForIdea idea
+    qu <- (`div` 100) . (length vs *) <$> quorum idea
     mtopic :: Maybe Topic
         <- case idea ^. ideaMaybeTopicId of
             Nothing -> pure Nothing
             Just tid -> Just <$> (maybe404 =<< findTopic tid)
-    pure (idea, view topicPhase <$> mtopic, length vs)
+    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) qu
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent

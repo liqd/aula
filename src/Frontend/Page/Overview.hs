@@ -193,7 +193,7 @@ data ListItemIdeas =
     ListItemIdeas
         { _ideasAndNumVotersCtx    :: RenderContext
         , _ideasAndNumVotersFilter :: IdeasFilterQuery
-        , _ideasAndNumVotersData   :: [(Idea, Maybe Phase, Int)]
+        , _ideasAndNumVotersData   :: [ListInfoForIdea]
         }
   deriving (Eq, Show, Read, Generic)
 
@@ -287,9 +287,5 @@ instance ToHtml ListItemIdeas where
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
 
     toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ \(idea, mphase, numVoters) ->
-            ListItemIdea
-                IdeaInViewTopic
-                mphase
-                numVoters idea
-                ctx ^. html
+        for_ ideasAndNumVoters $ \(ListInfoForIdea idea mphase quo) -> toHtml $
+            ListItemIdea IdeaInViewTopic mphase quo idea ctx

@@ -54,7 +54,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea RenderContext (Idea, Maybe Phase, Int)
+data ViewIdea = ViewIdea RenderContext ListInfoForIdea
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
@@ -105,7 +105,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx (idea, phase, _)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -234,9 +234,9 @@ instance ToHtml ViewIdea where
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars caps (ViewIdea ctx (idea, phase, numVoters))) = semanticDiv p $ do
+    toHtml p@(IdeaVoteLikeBars caps (ViewIdea ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
-            likeBar bs = toHtml (QuorumBar $ percentLikes idea numVoters) >> bs
+            likeBar bs = toHtml (QuorumBar $ percentLikes idea quo) >> bs
 
             likeButtons :: Html ()
             likeButtons = if QuorumVote `elem` caps
