@@ -82,6 +82,12 @@ data JudgeIdea = JudgeIdea IdeaJuryResultType Idea Topic
 instance Page JudgeIdea where
 
 
+-- ** non-page types
+
+data IdeaVoteLikeBars = IdeaVoteLikeBars ViewIdea
+  deriving (Eq, Show, Read)
+
+
 -- * templates
 
 backLink :: Monad m => IdeaLocation -> HtmlT m ()
@@ -100,9 +106,6 @@ instance ToHtml ViewIdea where
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
-            votingButton v =
-                postButton_ [class_ "btn-cta voting-button"]
-                            (U.voteIdea idea v)
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -140,6 +143,9 @@ instance ToHtml ViewIdea where
                     Just (PhaseVoting _)     -> v >> c
                     Just PhaseResult         -> v >> c
 
+            div_ [class_ "sub-heading"] $ do
+                toHtml $ IdeaVoteLikeBars p
+
             when False . div_ $ do
                 -- FIXME: needs design/layout
                 -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
@@ -155,31 +161,6 @@ instance ToHtml ViewIdea where
                 pre_ . toHtml $ ppShow (idea ^. ideaVotes)
 
                 div_ ">>>>>>>>>>> some phase-specific stuff"
-
-            div_ [class_ "sub-heading"] $ do
-                let voteBar :: Html () -> Html ()
-                    voteBar bs = div_ [class_ "voting-widget"] $ do
-                        span_ [class_ "progress-bar m-against"] $ do
-                            span_ [ class_ "progress-bar-progress"
-                                    -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
-                                  , style_ "width: 75%"
-                                  ] $ do
-                                span_ [class_ "progress-bar-votes-for"] "6"
-                                span_ [class_ "progress-bar-votes-against"] "12"
-                        bs
-
-                    buttons :: Html ()
-                    buttons = div_ [class_ "voting-buttons"] $ do
-                        votingButton Yes     "dafür"
-                        votingButton Neutral "neutral"
-                        votingButton No      "dagegen"
-
-                case phase of
-                    Nothing                  -> nil
-                    Just (PhaseRefinement _) -> nil
-                    Just PhaseJury           -> nil
-                    Just (PhaseVoting _)     -> toHtml $ voteBar nil
-                    Just PhaseResult         -> toHtml $ voteBar buttons
 
             {- FIXME: data model is not clear yet.  read process specs again!
 
@@ -237,6 +218,39 @@ instance ToHtml ViewIdea where
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget idea c ^. html
+
+
+instance ToHtml IdeaVoteLikeBars where
+    toHtmlRaw = toHtml
+    toHtml p@(IdeaVoteLikeBars (ViewIdea idea phase)) = semanticDiv p $ do
+        let voteBar :: Html () -> Html ()
+            voteBar bs = div_ [class_ "voting-widget"] $ do
+                span_ [class_ "progress-bar m-against"] $ do
+                    span_ [ class_ "progress-bar-progress"
+                            -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
+                          , style_ "width: 75%"
+                          ] $ do
+                        span_ [class_ "progress-bar-votes-for"] "6"
+                        span_ [class_ "progress-bar-votes-against"] "12"
+                bs
+
+            voteButtons :: Html ()
+            voteButtons = div_ [class_ "voting-buttons"] $ do
+                votingButton Yes     "dafür"
+                votingButton Neutral "neutral"
+                votingButton No      "dagegen"
+
+            votingButton v =
+                postButton_ [class_ "btn-cta voting-button"]
+                            (U.voteIdea idea v)
+
+        case phase of
+            Nothing                  -> nil
+            Just (PhaseRefinement _) -> nil
+            Just PhaseJury           -> nil
+            Just (PhaseVoting _)     -> toHtml $ voteBar nil
+            Just PhaseResult         -> toHtml $ voteBar voteButtons
+
 
 
 instance FormPage CreateIdea where
