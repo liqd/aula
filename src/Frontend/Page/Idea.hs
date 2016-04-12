@@ -12,7 +12,7 @@ module Frontend.Page.Idea
   , EditIdea(..)
   , CommentIdea(..)
   , JudgeIdea(..)
-  , viewIdea
+  , viewIdea, viewIdeaPage
   , createIdea
   , editIdea
   , commentIdea
@@ -34,6 +34,7 @@ import qualified Persistent.Api as Persistent
 import qualified Action (createIdea)
 import qualified Frontend.Path as U
 import qualified Data.Map as Map
+import qualified Data.Text as ST
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -330,7 +331,7 @@ instance FormPage JudgeIdea where
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
-        <$> "jury-text" .: (Just . Markdown <$> DF.text Nothing)
+        <$> "jury-text" .: (Markdown <$$> (`justIfP` (not . ST.null)) <$> DF.text Nothing)
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
         NotFeasible
         <$> "jury-text" .: (Markdown <$> DF.text Nothing)
@@ -362,10 +363,14 @@ instance FormPage JudgeIdea where
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
-viewIdea ideaId = makeFrame =<< (do
+viewIdea ideaId = viewIdeaPage ideaId >>= makeFrame
+
+viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
+    => AUID Idea -> m ViewIdea
+viewIdeaPage ideaId = do
     idea  :: Idea        <- mquery $ findIdea ideaId
     phase :: Maybe Phase <- query $ ideaPhase idea
-    pure $ ViewIdea idea phase)
+    pure $ ViewIdea idea phase
 
 createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
