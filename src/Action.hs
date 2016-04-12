@@ -353,18 +353,19 @@ voteIdeaCommentReply ideaId commentId replyId =
 -- FIXME: Compute value in one persistent computation
 markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
+    -- FIXME: should this be one transaction?
     idea  <- mquery $ findIdea iid
     topic <- mquery $ ideaTopic idea
-    -- FIXME: should this be one transaction?  or the two above as well?
     equery $ checkInPhase (PhaseJury ==) idea topic
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
 checkCloseJuryPhase :: ActionM m => Topic -> m ()
 checkCloseJuryPhase topic = do
+    -- FIXME: should this be one transaction?
     allMarked <- query $ checkAllIdeasMarked topic
-    when allMarked $ do  -- FIXME: should this be one transaction?
-        days <- query phaseEndVote
+    when allMarked $ do
+        days <- getCurrentTimestamp >>= \now -> query $ phaseEndVote now
         topicPhaseChange topic (AllIdeasAreMarked days)
 
 -- | Mark idea as winner or not enough votes if the idea is in the Result phase,

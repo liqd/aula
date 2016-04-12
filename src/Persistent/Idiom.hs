@@ -8,7 +8,6 @@
 module Persistent.Idiom
 where
 
-import Control.Exception
 import Control.Lens
 import Control.Monad (unless)
 import Data.Time
@@ -60,21 +59,16 @@ quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
 -- | Return the current system time with the day set to the date on which phases opened
 -- today end.  When running the phase change trigger at midnight, find all dates that lie in the
 -- past.
-phaseEnd :: Int -> Query Timestamp
-phaseEnd days = do
-    Timestamp timestamp <- assert False $ error "see github issue #307"
-    let day' :: Integer = toModifiedJulianDay (utctDay timestamp) + fromIntegral days
-    return . Timestamp $ timestamp { utctDay = ModifiedJulianDay day' }
+phaseEnd :: Timestamp -> DurationDays -> Query Timestamp
+phaseEnd (Timestamp now) (DurationDays days) = do
+    let day' :: Integer = toModifiedJulianDay (utctDay now) + fromIntegral days
+    return . Timestamp $ now { utctDay = ModifiedJulianDay day' }
 
-phaseEndRefinement :: Query Timestamp
-phaseEndRefinement = do
-    DurationDays (days :: Int) <- view dbElaborationDuration
-    phaseEnd days
+phaseEndRefinement :: Timestamp -> Query Timestamp
+phaseEndRefinement now = view dbElaborationDuration >>= phaseEnd now
 
-phaseEndVote :: Query Timestamp
-phaseEndVote = do
-    DurationDays (days :: Int) <- view dbVoteDuration
-    phaseEnd days
+phaseEndVote :: Timestamp -> Query Timestamp
+phaseEndVote now = view dbVoteDuration >>= phaseEnd now
 
 
 -- | Returns the Just topic of an idea if the idea is assocaited with a topic, Nothing

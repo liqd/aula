@@ -20,7 +20,9 @@ module Frontend.Page.Topic
     , editTopic )
 where
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, renderContext)
+import Action ( ActionM, ActionPersist(..), ActionUserHandler, ActionExcept
+              , renderContext, getCurrentTimestamp
+              )
 import Control.Exception (assert)
 import Frontend.Page.Category
 import Frontend.Page.Overview
@@ -289,9 +291,11 @@ viewTopicPage tab topicId = do
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =
     redirectFormHandler
-        (query $ CreateTopic space
-            <$> findWildIdeasBySpace space
-            <*> phaseEndRefinement)
+        (do
+            now <- getCurrentTimestamp
+            query $ CreateTopic space
+                <$> findWildIdeasBySpace space
+                <*> phaseEndRefinement now)
         Action.createTopic
 
 editTopic :: ActionM m => AUID Topic -> ServerT (FormHandler EditTopic) m
