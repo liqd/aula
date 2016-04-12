@@ -395,13 +395,13 @@ data User = User
 instance SOP.Generic User
 
 newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 type instance Proto User = ProtoUser
 
@@ -545,7 +545,7 @@ type instance IdOf Topic            = AUID Topic
 type instance IdOf Delegation       = AUID Delegation
 type instance IdOf Comment          = AUID Comment
 -- ^ A more precise identifier would be:
---      IdOf Comment = (AUID Idea, [AUID Comment])
+--      IdOf Comment = (AUID Idea, NonEmpty (AUID Comment))
 -- This would be the full path from AulaData down to the comment
 -- which could be a reply to reply...
 type instance IdOf CommentVote      = AUID User
@@ -947,7 +947,7 @@ instance ToHttpApiData IdeaJuryResultType where
       IdeaFeasible    -> "bad"
 
 instance HasUriPart IdeaJuryResultType where
-    uriPart = fromString . show
+    uriPart = fromString . cs . toUrlPiece
 
 instance HasUriPart UpDown where
     uriPart = fromString . lowerFirst . show
