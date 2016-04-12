@@ -370,8 +370,13 @@ instance ToHtml ListItemIdea where
 
                     case _ideaJuryResult idea of
                         Nothing -> do
-                            button_ [onclick_ $ P.judgeIdea idea IdeaFeasible]    "durchführbar"
-                            button_ [onclick_ $ P.judgeIdea idea IdeaNotFeasible] "nicht durchführbar"
+                            div_ [class_ "admin-buttons"] $ do
+                                button_ [class_ "btn-cta m-valid", onclick_ $ P.judgeIdea idea IdeaFeasible] $ do
+                                    i_ [class_ "icon-check"] nil
+                                    "durchführbar"
+                                button_ [class_ "btn-cta m-invalid", onclick_ $ P.judgeIdea idea IdeaNotFeasible] $ do
+                                    i_ [class_ "icon-times"] nil
+                                    "nicht durchführbar"
                         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
                             p_ "durchführbar"
                             case maybeExpl of

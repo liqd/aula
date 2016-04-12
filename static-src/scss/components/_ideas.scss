@@ -46,6 +46,10 @@
             color: $color-link;
         }
     }
+
+    .admin-buttons {
+        @include rem(margin-bottom, 20px);
+    }
 }
 
 .ideas-list {
