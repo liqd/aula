@@ -21,6 +21,10 @@
     width: $thumbnail-size;
 }
 
+.ideas-list-text-container {
+    @include rem(margin-left, $thumbnail-size + 27px);
+}
+
 .ideas-list-item {
     @include rem(margin-bottom, 15px);
     @include rem(padding, 25px 27px);

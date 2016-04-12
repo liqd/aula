@@ -385,10 +385,11 @@ instance ToHtml ListItemIdea where
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
-                    h2_ [class_ "ideas-list-title"] $ do
-                        idea ^. ideaTitle . html
-                        span_ [class_ "ideas-list-author"] $ do
-                            "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
+                    div_ [class_ "ideas-list-text-container"] $ do
+                        h2_ [class_ "ideas-list-title"] $ do
+                            idea ^. ideaTitle . html
+                            span_ [class_ "ideas-list-author"] $ do
+                                "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
