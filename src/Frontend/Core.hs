@@ -370,25 +370,33 @@ instance ToHtml ListItemIdea where
 
                     case _ideaJuryResult idea of
                         Nothing -> do
-                            button_ [onclick_ $ P.judgeIdea idea IdeaFeasible]    "durchführbar"
-                            button_ [onclick_ $ P.judgeIdea idea IdeaNotFeasible] "nicht durchführbar"
+                            div_ [class_ "admin-buttons"] $ do
+                                button_ [class_ "btn-cta m-valid", onclick_ $ P.judgeIdea idea IdeaFeasible] $ do
+                                    i_ [class_ "icon-check"] nil
+                                    "durchführbar"
+                                button_ [class_ "btn-cta m-invalid", onclick_ $ P.judgeIdea idea IdeaNotFeasible] $ do
+                                    i_ [class_ "icon-times"] nil
+                                    "nicht durchführbar"
                         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-                            p_ "durchführbar"
-                            case maybeExpl of
-                                Just expl -> explToHtml expl
-                                Nothing -> nil
+                            div_ [class_ "info-text m-realised"] $ do
+                                h3_ [class_ "info-text-header"] "durchführbar"
+                                case maybeExpl of
+                                    Just expl -> explToHtml expl
+                                    Nothing -> nil
                         Just (IdeaJuryResult _ (NotFeasible expl)) -> do
-                            p_ "nicht durchführbar"
-                            explToHtml expl
+                            div_ [class_ "info-text m-unrealised"] $ do
+                                h3_ [class_ "info-text-header"] "nicht durchführbar"
+                                explToHtml expl
 
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
-                    h2_ [class_ "ideas-list-title"] $ do
-                        idea ^. ideaTitle . html
-                        span_ [class_ "ideas-list-author"] $ do
-                            "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
+                    div_ [class_ "ideas-list-text-container"] $ do
+                        h2_ [class_ "ideas-list-title"] $ do
+                            idea ^. ideaTitle . html
+                            span_ [class_ "ideas-list-author"] $ do
+                                "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
