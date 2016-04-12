@@ -60,14 +60,16 @@ genFirstUser :: Gen ProtoUser
 genFirstUser =
     arbitrary
     <**> (set protoUserLogin . Just <$> arbitrary)
-    <**> (set protoUserPassword . Just <$> arbitrary)
+    <**> (set protoUserPassword <$> arbitrary)
 
 genStudent :: [SchoolClass] -> Gen ProtoUser
 genStudent classes = genUser $ elements (map Student classes)
 
+-- | login names are not provided here.  the 'AddUser' transaction will find a fresh login name.
 genUser :: Gen Role -> Gen ProtoUser
 genUser genRole =
     arbitrary
+    <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
     <**> (set protoUserRole <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
 
@@ -171,10 +173,8 @@ universe rnd = do
     admin <- update . AddFirstUser constantSampleTimestamp =<< gen rnd genFirstUser
     loginByUser admin
 
-    generate 3 rnd (genUser (pure Principal))
-        >>= mapM_ (currentUserAddDb (AddUser (UserPassInitial "geheim")))
-    generate 8 rnd (genUser (pure Moderator))
-        >>= mapM_ (currentUserAddDb (AddUser (UserPassInitial "geheim")))
+    generate 3 rnd (genUser (pure Principal)) >>= mapM_ (currentUserAddDb AddUser)
+    generate 8 rnd (genUser (pure Moderator)) >>= mapM_ (currentUserAddDb AddUser)
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
@@ -182,7 +182,7 @@ universe rnd = do
     assert' (not $ null classes)
 
     students' <- generate numberOfStudents rnd (genStudent classes)
-    students  <- mapM (currentUserAddDb (AddUser (UserPassInitial "geheim"))) students'
+    students  <- mapM (currentUserAddDb AddUser) students'
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 

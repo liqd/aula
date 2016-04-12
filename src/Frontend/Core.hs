@@ -35,6 +35,8 @@ module Frontend.Core
     , avatarImgFromMaybeURL, avatarImgFromHasMeta, avatarImgFromMeta
     -- Test only
     , FormPageRep(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
+    , numLikes
+    , percentLikes
     )
 where
 
@@ -54,6 +56,7 @@ import Servant.Missing (FormH, getFormDataEnv)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
+import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -304,7 +307,6 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
--- | FIXME: find better name?
 data CommentVotesWidget = VotesWidget CommentContext Comment
 
 instance ToHtml CommentVotesWidget where
@@ -318,8 +320,7 @@ instance ToHtml CommentVotesWidget where
         voteButton v = do
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
-                -- FIXME style
-                postButton_ [class_ "btn", Lucid.onclick_ "incrCommentVote(this)"] (P.voteCommentWithContext context comment v) $
+                postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
@@ -407,3 +408,19 @@ avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
 
 avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
 avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
+
+
+numLikes :: Idea -> Int
+numLikes idea = Map.size $ idea ^. ideaLikes
+
+-- div by zero is caught silently: if there are no voters, the quorum is 100% (no likes is enough
+-- likes in that case).
+-- FIXME: we could assert that values are always between 0..100, but the inconsistent test
+-- data violates that invariant.
+percentLikes :: Idea -> Int -> Int
+percentLikes idea numVoters = {- assert c -} v
+  where
+    -- c = numVoters >= 0 && v >= 0 && v <= 100
+    v = if numVoters == 0
+          then 100
+          else (numLikes idea * 100) `div` numVoters

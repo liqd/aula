@@ -410,7 +410,7 @@ data ProtoUser = ProtoUser
     , _protoUserFirstName :: UserFirstName
     , _protoUserLastName  :: UserLastName
     , _protoUserRole      :: Role
-    , _protoUserPassword  :: Maybe UserPass
+    , _protoUserPassword  :: UserPass
     , _protoUserEmail     :: Maybe EmailAddress
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -526,7 +526,7 @@ instance SOP.Generic Settings
 defaultSettings :: Settings
 defaultSettings = Settings
     { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
-    , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 3 }
+    , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
     }
 
 -- * aula-specific helper types

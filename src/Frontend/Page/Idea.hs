@@ -22,19 +22,23 @@ module Frontend.Page.Idea
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, query, equery, mquery, update
+              , currentUserAddDb, equery, mquery, update
               , markIdeaInJuryPhase
+              , renderContext
               )
+import LifeCycle
 import Frontend.Page.Category
 import Frontend.Page.Comment
+import Frontend.Page.Overview
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
 
-import qualified Persistent.Api as Persistent
 import qualified Action (createIdea)
-import qualified Frontend.Path as U
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Frontend.Path as U
+import qualified Lucid
+import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -51,7 +55,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea Idea (Maybe Phase)
+data ViewIdea = ViewIdea RenderContext ListInfoForIdea
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
@@ -82,6 +86,12 @@ data JudgeIdea = JudgeIdea IdeaJuryResultType Idea Topic
 instance Page JudgeIdea where
 
 
+-- ** non-page types
+
+data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
+  deriving (Eq, Show, Read)
+
+
 -- * templates
 
 backLink :: Monad m => IdeaLocation -> HtmlT m ()
@@ -96,28 +106,34 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea idea phase) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
-            votingButton v =
-                postButton_ [class_ "btn-cta voting-button"]
-                            (U.voteIdea idea v)
+
+            caps = ideaCapabilities
+                       (ctx ^. renderContextUser . _Id)
+                       (ctx ^. renderContextUser . userRole)
+                       idea
+                       phase
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
                    , href_ . U.listIdeas $ idea ^. ideaLocation
                    ] $ backLink (idea ^. ideaLocation)
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [href_ $ U.editIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-                            a_ [href_ U.Broken] $ do
-                                i_ [class_ "icon-sign-out"] nil
+
+                when (any (`elem` caps) [Edit, MoveBetweenTopics]) $ do
+                    nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                        ul_ [class_ "pop-menu-list"] $ do
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                when (Edit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
+                                    i_ [class_ "icon-pencil"] nil
+                                    "bearbeiten"
+                                when (MoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
+                                    i_ [class_ "icon-sign-out"] nil
                                 "Idee verschieben"
+
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
@@ -140,6 +156,9 @@ instance ToHtml ViewIdea where
                     Just (PhaseVoting _)     -> v >> c
                     Just PhaseResult         -> v >> c
 
+            div_ [class_ "sub-heading"] $ do
+                toHtml $ IdeaVoteLikeBars caps p
+
             when False . div_ $ do
                 -- FIXME: needs design/layout
                 -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
@@ -155,31 +174,6 @@ instance ToHtml ViewIdea where
                 pre_ . toHtml $ ppShow (idea ^. ideaVotes)
 
                 div_ ">>>>>>>>>>> some phase-specific stuff"
-
-            div_ [class_ "sub-heading"] $ do
-                let voteBar :: Html () -> Html ()
-                    voteBar bs = div_ [class_ "voting-widget"] $ do
-                        span_ [class_ "progress-bar m-against"] $ do
-                            span_ [ class_ "progress-bar-progress"
-                                    -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
-                                  , style_ "width: 75%"
-                                  ] $ do
-                                span_ [class_ "progress-bar-votes-for"] "6"
-                                span_ [class_ "progress-bar-votes-against"] "12"
-                        bs
-
-                    buttons :: Html ()
-                    buttons = div_ [class_ "voting-buttons"] $ do
-                        votingButton Yes     "dafür"
-                        votingButton Neutral "neutral"
-                        votingButton No      "dagegen"
-
-                case phase of
-                    Nothing                  -> nil
-                    Just (PhaseRefinement _) -> nil
-                    Just PhaseJury           -> nil
-                    Just (PhaseVoting _)     -> toHtml $ voteBar nil
-                    Just PhaseResult         -> toHtml $ voteBar buttons
 
             {- FIXME: data model is not clear yet.  read process specs again!
 
@@ -237,6 +231,60 @@ instance ToHtml ViewIdea where
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget idea c ^. html
+
+
+instance ToHtml IdeaVoteLikeBars where
+    toHtmlRaw = toHtml
+    toHtml p@(IdeaVoteLikeBars caps
+                (ViewIdea _ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
+        let likeBar :: Html () -> Html ()
+            likeBar bs = div_ $ do
+                toHtml (QuorumBar $ percentLikes idea quo)
+                li_ [class_ "meta-list-item"] $ do
+                    toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
+                bs
+
+            likeButtons :: Html ()
+            likeButtons = if QuorumVote `elem` caps
+                then div_ [class_ "voting-buttons"] $
+                        postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"]
+                            (U.likeIdea idea) "dafür!"
+                        -- FIXME: how do you un-like an idea?
+                else nil
+
+            voteBar :: Html () -> Html ()
+            voteBar bs = div_ [class_ "voting-widget"] $ do
+                span_ [class_ "progress-bar m-against"] $ do
+                    span_ [ class_ "progress-bar-progress"
+                            -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
+                          , style_ "width: 75%"
+                          ] $ do
+                        span_ [class_ "progress-bar-votes-for"]     $ toHtml (show yesVotes)
+                        span_ [class_ "progress-bar-votes-against"] $ toHtml (show noVotes)
+                bs
+              where
+                yesVotes :: Int = 6
+                noVotes  :: Int = 12
+
+            voteButtons :: Html ()
+            voteButtons = if Vote `elem` caps
+                then div_ [class_ "voting-buttons"] $ do
+                    voteButton Yes     "dafür"
+                    voteButton Neutral "neutral"
+                    voteButton No      "dagegen"
+                else nil
+
+            voteButton v =
+                postButton_ [class_ "btn-cta voting-button"]
+                            (U.voteIdea idea v)
+
+        case phase of
+            Nothing                  -> toHtml $ likeBar likeButtons
+            Just (PhaseRefinement _) -> nil
+            Just PhaseJury           -> nil
+            Just (PhaseVoting _)     -> toHtml $ voteBar nil
+            Just PhaseResult         -> toHtml $ voteBar voteButtons
+
 
 
 instance FormPage CreateIdea where
@@ -372,10 +420,7 @@ viewIdea ideaId = viewIdeaPage ideaId >>= makeFrame
 
 viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
-viewIdeaPage ideaId = do
-    idea  :: Idea        <- mquery $ findIdea ideaId
-    phase :: Maybe Phase <- query $ ideaPhase idea
-    pure $ ViewIdea idea phase
+viewIdeaPage ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
 
 createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea

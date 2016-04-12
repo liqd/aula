@@ -33,18 +33,18 @@ genInitialTestDb = do
         , _protoUserFirstName = "A."
         , _protoUserLastName  = "Admin"
         , _protoUserRole      = Admin
-        , _protoUserPassword  = Just (UserPassInitial "pssst")
+        , _protoUserPassword  = UserPassInitial "pssst"
         , _protoUserEmail     = Nothing
         }
 
-    user2 <- update (AddUser (UserPassInitial "geheim") (EnvWith user1 constantSampleTimestamp ProtoUser
+    user2 <- update $ AddUser (EnvWith user1 constantSampleTimestamp ProtoUser
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
         , _protoUserRole      = Admin
-        , _protoUserPassword  = Just (UserPassInitial "geheim")
+        , _protoUserPassword  = UserPassInitial "geheim"
         , _protoUserEmail     = Nothing
-        }))
+        })
 
     _wildIdea <- update $ AddIdea (EnvWith user1 constantSampleTimestamp ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -8,13 +9,14 @@
 module Persistent.Idiom
 where
 
-import Control.Exception
 import Control.Lens
 import Control.Monad (unless)
 import Data.Time
+import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map (size)
+import qualified Generics.SOP as SOP
 
 import Types
 import Persistent.Pure
@@ -42,14 +44,28 @@ getVotersForIdea idea = filter hasAccess <$> getUsers
     isStudentInClass (view userRole -> (Student cl')) cl = cl' == cl
     isStudentInClass _ _ = False
 
-getListInfoForIdea :: Idea -> EQuery (Idea, Maybe Phase, Int)
+
+-- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
+-- reached.
+data ListInfoForIdea = ListInfoForIdea
+    { _listInfoForIdeaIt     :: Idea
+    , _listInfoForIdeaPhase  :: Maybe Phase
+    , _listInfoForIdeaQuorum :: Int
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ListInfoForIdea
+
+getListInfoForIdea :: Idea -> EQuery ListInfoForIdea
 getListInfoForIdea idea = do
     vs <- getVotersForIdea idea
+    quPercent <- quorum idea
+    let quVotesRequired = length vs * quPercent `div` 100
     mtopic :: Maybe Topic
         <- case idea ^. ideaMaybeTopicId of
             Nothing -> pure Nothing
             Just tid -> Just <$> (maybe404 =<< findTopic tid)
-    pure (idea, view topicPhase <$> mtopic, length vs)
+    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) quVotesRequired
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent
@@ -60,21 +76,16 @@ quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
 -- | Return the current system time with the day set to the date on which phases opened
 -- today end.  When running the phase change trigger at midnight, find all dates that lie in the
 -- past.
-phaseEnd :: Int -> Query Timestamp
-phaseEnd days = do
-    Timestamp timestamp <- assert False $ error "see github issue #307"
-    let day' :: Integer = toModifiedJulianDay (utctDay timestamp) + fromIntegral days
-    return . Timestamp $ timestamp { utctDay = ModifiedJulianDay day' }
+phaseEnd :: Timestamp -> DurationDays -> Query Timestamp
+phaseEnd (Timestamp now) (DurationDays days) = do
+    let day' :: Integer = toModifiedJulianDay (utctDay now) + fromIntegral days
+    return . Timestamp $ now { utctDay = ModifiedJulianDay day' }
 
-phaseEndRefinement :: Query Timestamp
-phaseEndRefinement = do
-    DurationDays (days :: Int) <- view dbElaborationDuration
-    phaseEnd days
+phaseEndRefinement :: Timestamp -> Query Timestamp
+phaseEndRefinement now = view dbElaborationDuration >>= phaseEnd now
 
-phaseEndVote :: Query Timestamp
-phaseEndVote = do
-    DurationDays (days :: Int) <- view dbVoteDuration
-    phaseEnd days
+phaseEndVote :: Timestamp -> Query Timestamp
+phaseEndVote now = view dbVoteDuration >>= phaseEnd now
 
 
 -- | Returns the Just topic of an idea if the idea is assocaited with a topic, Nothing

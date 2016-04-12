@@ -7,6 +7,7 @@ module LifeCycle
 where
 
 import Control.Lens
+import Data.Monoid
 
 import Types hiding (Comment)
 
@@ -43,9 +44,7 @@ phaseTrans _ _ = Nothing
 
 -- | What a user can do with an idea.
 --
--- The view of an idea is default and controlled
--- by access control.
--- FIXME: More possible actions what can a user do with an idea.
+-- The view of an idea is default and controlled by access control.
 data IdeaCapability
     = QuorumVote -- aka Like
     | Vote
@@ -53,12 +52,25 @@ data IdeaCapability
     | MarkFeasiblity -- also can add jury statement
     | MarkWinner
     | AddCreatorStatement
---    | Edit
-  deriving (Enum, Eq, Ord, Show)
+    | Edit
+    | MoveBetweenTopics  -- also move between (and into and out of) topics
+  deriving (Enum, Eq, Ord, Show, Read)
 
-ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> [IdeaCapability]
-ideaCapabilities _ i Nothing  r = wildIdeaCap i r
-ideaCapabilities u i (Just p) r = case p of
+ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
+ideaCapabilities u r i mp =
+       phaseCap u r i mp
+    <> editCap u r i
+    <> moveBetweenTopicsCap r
+
+editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
+editCap uid r i = [Edit | r == Moderator || i ^. createdBy == uid]
+
+moveBetweenTopicsCap :: Role -> [IdeaCapability]
+moveBetweenTopicsCap r = [MoveBetweenTopics | r ==  Moderator]
+
+phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
+phaseCap _ r i Nothing  = wildIdeaCap i r
+phaseCap u r i (Just p) = case p of
     PhaseRefinement _ -> phaseRefinementCap i r
     PhaseJury         -> phaseJuryCap i r
     PhaseVoting     _ -> phaseVotingCap i r

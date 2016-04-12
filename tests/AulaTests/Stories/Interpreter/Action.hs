@@ -105,7 +105,7 @@ runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- precondition $ findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace
     _ <- lift $ do
-        end <- query phaseEndRefinement
+        end <- getCurrentTimestamp >>= \now -> query $ phaseEndRefinement now
         Action.createTopic
             (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end)
     postcondition $ return ()

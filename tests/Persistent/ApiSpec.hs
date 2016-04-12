@@ -174,7 +174,7 @@ persistApiSpec imp = do
     getDbSpec imp "getIdeasWithTopic" getIdeasWithTopic
 
     getDbSpec imp "getUsers" getUsers
-    addDbSpec imp "addUsers" getUsers (AddUser (error "UserPass"))
+    addDbSpec imp "addUsers" getUsers AddUser
 
     getDbSpec imp "getTopics" getTopics
     addDbSpec imp "addTopics" getTopics AddTopic

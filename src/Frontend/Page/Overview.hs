@@ -11,6 +11,7 @@ module Frontend.Page.Overview
     , PageIdeasOverview(..)
     , PageIdeasInDiscussion(..)
     , ListItemIdeaContext(..), ListItemIdea(ListItemIdea), ListItemIdeas(ListItemIdeas)
+    , QuorumBar(QuorumBar)
     , viewRooms
     , viewIdeas
     , viewTopics
@@ -22,7 +23,6 @@ import Frontend.Page.Category
 import Frontend.Prelude
 import LifeCycle
 
-import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
@@ -174,18 +174,16 @@ instance ToHtml Tabs where
 
 -- * idea lists
 
-data ListItemIdeaContext
+data ListItemIdeaContext  -- TODO: rename to 'ListLocation'?  'Context' is used for too many things.
     = IdeaInIdeasOverview
     | IdeaInViewTopic
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
 
 data ListItemIdea = ListItemIdea
-      { _listItemIdeaContext    :: ListItemIdeaContext
-      , _listItemIdeaPhase      :: Maybe Phase
-      , _listItemIdeaNumVoters  :: Int
-      , _listItemIdea           :: Idea
-      , _listItemRenderContext  :: RenderContext
+      { _listItemRenderContext  :: RenderContext
+      , _listItemIdeaContext    :: ListItemIdeaContext
+      , _listItemIdeaInfo       :: ListInfoForIdea
       }
   deriving (Eq, Show, Read, Generic)
 
@@ -193,7 +191,7 @@ data ListItemIdeas =
     ListItemIdeas
         { _ideasAndNumVotersCtx    :: RenderContext
         , _ideasAndNumVotersFilter :: IdeasFilterQuery
-        , _ideasAndNumVotersData   :: [(Idea, Maybe Phase, Int)]
+        , _ideasAndNumVotersData   :: [ListInfoForIdea]
         }
   deriving (Eq, Show, Read, Generic)
 
@@ -204,13 +202,13 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea ctx) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx listItemIdeaContext (ListInfoForIdea idea mphase quo)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
-                        idea
-                        phase
                         (ctx ^. renderContextUser . userRole)
+                        idea
+                        mphase
 
             when (IdeaInViewTopic == listItemIdeaContext) $ do
                 when (MarkFeasiblity `elem` caps) . div_ $ do
@@ -261,26 +259,21 @@ instance ToHtml ListItemIdea where
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show numLikes <> " von " <> show numVoters <> " Stimmen")
-                    span_ [class_ "progress-bar"] $ do
-                        span_ [ class_ "progress-bar-progress"
-                              , style_ ("width: " <> cs (show percentLikes) <> "%")
-                              ]
-                            nil
-      where
-        numLikes :: Int
-        numLikes = Map.size $ idea ^. ideaLikes
+                            toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
+                    toHtml $ QuorumBar (percentLikes idea quo)
 
-        -- div by zero is caught silently: if there are no voters, the quorum stays 0%.
-        -- FIXME: we could assert that values are always between 0..100, but the inconsistent test
-        -- data violates that invariant.
-        percentLikes :: Int
-        percentLikes = {- assert c -} v
-          where
-            -- c = v >= 0 && v <= 100
-            v = if numVoters == 0
-                  then 0
-                  else (numLikes * 100) `div` numVoters
+
+data QuorumBar = QuorumBar Int
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance ToHtml QuorumBar where
+    toHtmlRaw = toHtml
+    toHtml (QuorumBar i) = do
+        span_ [class_ "progress-bar"] $ do
+            span_ [ class_ "progress-bar-progress"
+                  , style_ ("width: " <> cs (show i) <> "%")
+                  ]
+                nil
 
 
 instance ToHtml ListItemIdeas where
@@ -292,9 +285,4 @@ instance ToHtml ListItemIdeas where
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
 
     toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ \(idea, mphase, numVoters) ->
-            ListItemIdea
-                IdeaInViewTopic
-                mphase
-                numVoters idea
-                ctx ^. html
+        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic
