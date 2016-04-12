@@ -23,7 +23,6 @@ module Frontend.Core
     , Beside(Beside)
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
-    , ListItemIdeaContext(..), ListItemIdea(ListItemIdea)
     , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
     , AuthorWidget(AuthorWidget)
@@ -55,7 +54,6 @@ import Servant.Missing (FormH, getFormDataEnv)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
-import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -64,8 +62,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import LifeCycle
-import Lucid.Missing (onclick_, script_, href_, src_, postButton_, nbsp)
+import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
@@ -335,97 +332,6 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
             a_ [href_ $ P.User (mi ^. metaCreatedBy) P.UserIdeas] $ do
                 span_ [class_ "author-image"] $ avatarImgFromMeta mi
                 span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
-
-data ListItemIdeaContext
-    = IdeaInIdeasOverview
-    | IdeaInViewTopic
-    | IdeaInUserProfile
-  deriving (Eq, Show, Read)
-
-data ListItemIdea = ListItemIdea
-      { _listItemIdeaContext    :: ListItemIdeaContext
-      , _listItemIdeaPhase      :: Maybe Phase
-      , _listItemIdeaNumVoters  :: Int
-      , _listItemIdea           :: Idea
-      , _listItemRenderContext  :: RenderContext
-      }
-  deriving (Eq, Show, Read)
-
-instance ToHtml ListItemIdea where
-    toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea ctx) = semanticDiv p $ do
-        div_ [class_ "ideas-list-item"] $ do
-            let caps = ideaCapabilities
-                        (ctx ^. renderContextUser . _Id)
-                        idea
-                        phase
-                        (ctx ^. renderContextUser . userRole)
-
-            when (IdeaInViewTopic == listItemIdeaContext) $ do
-                when (MarkFeasiblity `elem` caps) . div_ $ do
-                    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
-                        explToHtml (Markdown text) = do
-                            p_ "Begründung:"
-                            p_ $ toHtml text
-
-                    case _ideaJuryResult idea of
-                        Nothing -> do
-                            div_ [class_ "admin-buttons"] $ do
-                                button_ [class_ "btn-cta m-valid", onclick_ $ P.judgeIdea idea IdeaFeasible] $ do
-                                    i_ [class_ "icon-check"] nil
-                                    "durchführbar"
-                                button_ [class_ "btn-cta m-invalid", onclick_ $ P.judgeIdea idea IdeaNotFeasible] $ do
-                                    i_ [class_ "icon-times"] nil
-                                    "nicht durchführbar"
-                        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-                            div_ [class_ "info-text m-realised"] $ do
-                                h3_ [class_ "info-text-header"] "durchführbar"
-                                case maybeExpl of
-                                    Just expl -> explToHtml expl
-                                    Nothing -> nil
-                        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
-                            div_ [class_ "info-text m-unrealised"] $ do
-                                h3_ [class_ "info-text-header"] "nicht durchführbar"
-                                explToHtml expl
-
-            a_ [href_ $ P.viewIdea idea] $ do
-                -- FIXME use the phase
-                div_ [class_ "col-8-12"] $ do
-                    div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
-                    div_ [class_ "ideas-list-text-container"] $ do
-                        h2_ [class_ "ideas-list-title"] $ do
-                            idea ^. ideaTitle . html
-                            span_ [class_ "ideas-list-author"] $ do
-                                "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
-                div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
-                    ul_ [class_ "meta-list"] $ do
-                        li_ [class_ "meta-list-item"] $ do
-                            i_ [class_ "meta-list-icon icon-comment-o"] nil
-                            let s = idea ^. ideaComments . commentsCount
-                            s ^. showed . html
-                            if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
-                        li_ [class_ "meta-list-item"] $ do
-                            i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show numLikes <> " von " <> show numVoters <> " Stimmen")
-                    span_ [class_ "progress-bar"] $ do
-                        span_ [ class_ "progress-bar-progress"
-                              , style_ ("width: " <> cs (show percentLikes) <> "%")
-                              ]
-                            nil
-      where
-        numLikes :: Int
-        numLikes = Map.size $ idea ^. ideaLikes
-
-        -- div by zero is caught silently: if there are no voters, the quorum stays 0%.
-        -- FIXME: we could assert that values are always between 0..100, but the inconsistent test
-        -- data violates that invariant.
-        percentLikes :: Int
-        percentLikes = {- assert c -} v
-          where
-            -- c = v >= 0 && v <= 100
-            v = if numVoters == 0
-                  then 0
-                  else (numLikes * 100) `div` numVoters
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep (View (Html ())) ST (Frame p)

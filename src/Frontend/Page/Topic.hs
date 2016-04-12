@@ -23,11 +23,12 @@ where
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, renderContext)
 import Control.Exception (assert)
 import Frontend.Page.Category
+import Frontend.Page.Overview
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
 import qualified Action (createTopic)
-import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Frontend.Path as U
+import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -51,7 +52,7 @@ makePrisms ''ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas RenderContext ViewTopicTab Topic [(Idea, Int)]
+  = ViewTopicIdeas RenderContext ViewTopicTab Topic ListItemIdeas
   | ViewTopicDelegations Topic [Delegation]
   deriving (Eq, Show, Read)
 
@@ -102,7 +103,7 @@ instance ToHtml ViewTopic where
         pre_ $ topic ^. showed . html
         pre_ $ delegations ^. showed . html
 
-    toHtml p@(ViewTopicIdeas ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(ViewTopicIdeas _ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
             categoryFilterButtons (topicIdeaLocation topic) (tab ^? viewTopicTabFilter . _Just)
@@ -113,13 +114,8 @@ instance ToHtml ViewTopic where
                         a_ [href_ U.Broken] "Unterstützung"  -- FIXME Dummy
                     li_ [class_ "pop-menu-list-item"] $ do
                         a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
+            toHtml ideasAndNumVoters
 
-            for_ ideasAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea
-                    IdeaInViewTopic
-                    (Just (topic ^. topicPhase))
-                    numVoters idea
-                    ctx ^. html
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv topic tab = do
@@ -261,6 +257,7 @@ makeFormIdeaSelection ideas =
         [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
         | idea <- ideas ]
 
+
 -- * handlers
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
@@ -274,13 +271,20 @@ viewTopicPage tab topicId = do
     equery (do
         topic <- maybe404 =<< findTopic topicId
         case tab of
-            TabDelegation -> do
+            TabDelegation ->
+              do
                 delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
                 pure $ ViewTopicDelegations topic delegations
-            _ -> do
+            _ ->
+              do
                 ideas <- ideasFilterQuery (tab ^? viewTopicTabFilter . _Just)
                       <$> findIdeasByTopic topic
-                ViewTopicIdeas ctx tab topic <$> (getNumVotersForIdea `mapM` ideas))
+                ideasAndNumVoters <- ListItemIdeas
+                    ctx
+                    (tab ^? viewTopicTabFilter . _Just)
+                    <$> (getListInfoForIdea `mapM` ideas)
+
+                pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 
 createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
 createTopic space =

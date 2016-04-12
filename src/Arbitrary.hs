@@ -236,6 +236,15 @@ instance Arbitrary DelegationContext where
 instance Arbitrary Delegation where
     arbitrary = garbitrary
 
+instance Arbitrary ListItemIdeaContext where
+    arbitrary = garbitrary
+
+instance Arbitrary ListItemIdea where
+    arbitrary = garbitrary
+
+instance Arbitrary ListItemIdeas where
+    arbitrary = garbitrary
+
 
 -- * comment
 

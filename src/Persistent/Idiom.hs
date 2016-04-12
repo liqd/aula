@@ -42,9 +42,14 @@ getVotersForIdea idea = filter hasAccess <$> getUsers
     isStudentInClass (view userRole -> (Student cl')) cl = cl' == cl
     isStudentInClass _ _ = False
 
--- | Users can like an idea / vote on it iff they are students with access to the idea's space.
-getNumVotersForIdea :: Idea -> Query (Idea, Int)
-getNumVotersForIdea idea = (,) idea . length <$> getVotersForIdea idea
+getListInfoForIdea :: Idea -> EQuery (Idea, Maybe Phase, Int)
+getListInfoForIdea idea = do
+    vs <- getVotersForIdea idea
+    mtopic :: Maybe Topic
+        <- case idea ^. ideaMaybeTopicId of
+            Nothing -> pure Nothing
+            Just tid -> Just <$> (maybe404 =<< findTopic tid)
+    pure (idea, view topicPhase <$> mtopic, length vs)
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent
