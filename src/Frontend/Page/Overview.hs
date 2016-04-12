@@ -99,7 +99,7 @@ instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview ctx space filterQuery ideas) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview _ctx space filterQuery ideas) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
