@@ -378,13 +378,15 @@ instance ToHtml ListItemIdea where
                                     i_ [class_ "icon-times"] nil
                                     "nicht durchführbar"
                         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-                            p_ "durchführbar"
-                            case maybeExpl of
-                                Just expl -> explToHtml expl
-                                Nothing -> nil
+                            div_ [class_ "info-text m-realised"] $ do
+                                h3_ [class_ "info-text-header"] "durchführbar"
+                                case maybeExpl of
+                                    Just expl -> explToHtml expl
+                                    Nothing -> nil
                         Just (IdeaJuryResult _ (NotFeasible expl)) -> do
-                            p_ "nicht durchführbar"
-                            explToHtml expl
+                            div_ [class_ "info-text m-unrealised"] $ do
+                                h3_ [class_ "info-text-header"] "nicht durchführbar"
+                                explToHtml expl
 
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
