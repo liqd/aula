@@ -10,9 +10,10 @@ module Frontend.Page.User
 where
 
 import Action
-import qualified Frontend.Path as P
+import Frontend.Page.Overview
 import Frontend.Prelude
 import Persistent.Api
+import qualified Frontend.Path as P
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -163,7 +164,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
                             li_ [class_ "pop-menu-list-item"] $ do
                                 a_ [href_ U.Broken] "date"  -- FIXME German / Dummy
                     for_ ideas $ \(idea, numVoters) ->
-                        ListItemIdea
+                        ListItemIdea  -- TODO: use ListItemIdeas
                             IdeaInUserProfile
                             Nothing
                             numVoters

@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
@@ -15,7 +14,6 @@ module Frontend.Page.Topic
     , ViewTopicTab(..)
     , CreateTopic(..)
     , EditTopic(..)
-    , ListItemIdeas(..)
     , IdeasFilterApi
     , viewTopic, viewTopicPage
     , createTopic
@@ -25,11 +23,11 @@ where
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionExcept, renderContext)
 import Control.Exception (assert)
 import Frontend.Page.Category
+import Frontend.Page.Overview
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
 import qualified Action (createTopic)
 import qualified Frontend.Path as U
-import qualified Generics.SOP as SOP
 import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -72,18 +70,6 @@ data EditTopic = EditTopic IdeaSpace Topic [Idea]
   deriving (Eq, Show, Read)
 
 instance Page EditTopic
-
--- | TODO: move to Overview, put together with ListItemIdea from Core.
-data ListItemIdeas =
-    ListItemIdeas
-        { _ideasAndNumVotersCtx    :: RenderContext
-        , _ideasAndNumVotersFilter :: IdeasFilterQuery
-        , _ideasAndNumVotersPhase  :: Maybe Phase
-        , _ideasAndNumVotersData   :: [(Idea, Int)]
-        }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic ListItemIdeas
 
 
 -- * templates
@@ -129,23 +115,6 @@ instance ToHtml ViewTopic where
                     li_ [class_ "pop-menu-list-item"] $ do
                         a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
             toHtml ideasAndNumVoters
-
-
-instance ToHtml ListItemIdeas where
-    toHtmlRaw = toHtml
-    toHtml (ListItemIdeas _ctx filterq _mphase []) = do
-        p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
-      where
-        mCatInfo :: Maybe ST
-        mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
-
-    toHtml (ListItemIdeas ctx _filterq mphase ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ \(idea, numVoters) ->
-            ListItemIdea
-                IdeaInViewTopic
-                mphase
-                numVoters idea
-                ctx ^. html
 
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
