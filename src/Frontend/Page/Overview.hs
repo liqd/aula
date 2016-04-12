@@ -62,9 +62,9 @@ viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
 viewIdeas space mcat = do
     ctx <- renderContext
     makeFrame =<< (PageIdeasOverview ctx space mcat
-                    <$> query (do
+                    <$> equery (do
         is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
-        ListItemIdeas ctx mcat Nothing <$> getNumVotersForIdea `mapM` is))
+        ListItemIdeas ctx mcat <$> getListInfoForIdea `mapM` is))
 
 viewTopics :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasInDiscussion)
@@ -195,8 +195,7 @@ data ListItemIdeas =
     ListItemIdeas
         { _ideasAndNumVotersCtx    :: RenderContext
         , _ideasAndNumVotersFilter :: IdeasFilterQuery
-        , _ideasAndNumVotersPhase  :: Maybe Phase
-        , _ideasAndNumVotersData   :: [(Idea, Int)]
+        , _ideasAndNumVotersData   :: [(Idea, Maybe Phase, Int)]
         }
   deriving (Eq, Show, Read, Generic)
 
@@ -276,14 +275,14 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx filterq _mphase []) = semanticDiv p $ do
+    toHtml p@(ListItemIdeas _ctx filterq []) = semanticDiv p $ do
         p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
 
-    toHtml (ListItemIdeas ctx _filterq mphase ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ \(idea, numVoters) ->
+    toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
+        for_ ideasAndNumVoters $ \(idea, mphase, numVoters) ->
             ListItemIdea
                 IdeaInViewTopic
                 mphase

@@ -29,7 +29,7 @@ data PageUserSettings = PageUserSettings User
 instance Page PageUserSettings
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext User [(Idea, Int)]
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext User ListItemIdeas
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas
@@ -142,7 +142,7 @@ userHeaderDiv _user =
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileCreatedIdeas ctx user ideas) = semanticDiv p $ do
+    toHtml p@(PageUserProfileCreatedIdeas _ctx user ideas) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv user
             -- Tab selection
@@ -163,13 +163,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
                                 a_ [href_ U.Broken] "popularity" -- FIXME German / Dummy
                             li_ [class_ "pop-menu-list-item"] $ do
                                 a_ [href_ U.Broken] "date"  -- FIXME German / Dummy
-                    for_ ideas $ \(idea, numVoters) ->
-                        ListItemIdea  -- TODO: use ListItemIdeas
-                            IdeaInUserProfile
-                            Nothing
-                            numVoters
-                            idea
-                            ctx ^. html
+                    toHtml ideas
 
 -- | List all the created ideas for the given user.
 -- Using @join . persistent $ do ... return $ makeFrame@ will
@@ -181,10 +175,11 @@ createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = do
     ctx <- renderContext
-    makeFrame =<< mquery (do
-        muser <- findUser userId
-        ideasAndNumVoters <- findIdeasByUserId userId >>= mapM getNumVotersForIdea
-        pure $ PageUserProfileCreatedIdeas <$> pure ctx <*> muser <*> pure ideasAndNumVoters)
+    makeFrame =<< equery (do
+        user  <- maybe404 =<< findUser userId
+        ideas <- ListItemIdeas ctx Nothing
+              <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
+        pure $ PageUserProfileCreatedIdeas ctx user ideas)
 
 
 -- ** User Profile: Delegated Votes

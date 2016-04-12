@@ -282,8 +282,7 @@ viewTopicPage tab topicId = do
                 ideasAndNumVoters <- ListItemIdeas
                     ctx
                     (tab ^? viewTopicTabFilter . _Just)
-                    (Just $ topic ^. topicPhase)
-                    <$> (getNumVotersForIdea `mapM` ideas)
+                    <$> (getListInfoForIdea `mapM` ideas)
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 
