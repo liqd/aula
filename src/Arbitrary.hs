@@ -25,10 +25,9 @@ module Arbitrary
     , fishDelegationNetworkAction
     , D3DN(..)
     , breakCycles
-    , constantSampleIdea
-    , constantSampleComments
     , fishAvatarsPath
     , fishAvatars
+    , constantSampleTimestamp
     ) where
 
 import Control.Applicative ((<**>))
@@ -92,7 +91,7 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
@@ -109,7 +108,7 @@ instance Arbitrary ViewTopic where
         tab <- arb
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb
-            _ -> ViewTopicIdeas tab <$> arb <*> arb
+            _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
@@ -123,8 +122,11 @@ instance Arbitrary EditIdea where
 instance Arbitrary CommentIdea where
     arbitrary = CommentIdea <$> arb <*> arb
 
+instance Arbitrary JudgeIdea where
+    arbitrary = JudgeIdea <$> arb <*> arb <*> arb
+
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
@@ -223,6 +225,9 @@ instance Arbitrary IdeaJuryResultValue where
     arbitrary = garbitrary
 
 instance Arbitrary IdeaVoteResultValue where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaJuryResultType where
     arbitrary = garbitrary
 
 instance Arbitrary DelegationContext where
@@ -325,6 +330,8 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
 
+instance Arbitrary RenderContext where
+    arbitrary = RenderContext <$> arbitrary
 
 -- * admin
 
@@ -357,7 +364,7 @@ instance Arbitrary EditUserPayload where
 instance Arbitrary (AUID a) where
     arbitrary = AUID . abs <$> arb
 
-instance Generic a => Arbitrary (MetaInfo a) where
+instance (Generic id, Arbitrary id) => Arbitrary (GMetaInfo a id) where
     arbitrary = garbitrary
 
 instance Arbitrary Document where
@@ -661,7 +668,7 @@ instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON (MetaInfo a) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = String . review emailAddress
@@ -724,383 +731,3 @@ instance Aeson.ToJSON D3DN where
 
 constantSampleTimestamp :: Timestamp
 constantSampleTimestamp = read "2016-03-17_12:57:25_558349000000"
-
-constantSampleIdea :: Idea
-constantSampleIdea = Idea
-    { _ideaMeta =
-        MetaInfo
-          { _metaId = AUID 0
-          , _metaCreatedBy = AUID 0
-          , _metaCreatedByLogin = UserLogin { _fromUserLogin = "same" }
-          , _metaCreatedByAvatar = Just ""
-          , _metaCreatedAt = constantSampleTimestamp
-          , _metaChangedBy = AUID 0
-          , _metaChangedAt = constantSampleTimestamp
-          }
-    , _ideaTitle = "ever principle pariatur impedit prevents"
-    , _ideaDesc = Markdown { fromMarkdown = ST.unlines
-        [ "hour, No consequat. libero fugit, beguiled system, porro necessitatibus quia bad rerum foresee et example, iusto resultant hold.\nrepudiandae vitae principle aute annoyances occaecati obligations produces pariatur? The recusandae. non veniam, they trivial elit, eas.\niusto amet, magni error as mollit sequi praesentium how in expedita omnis desires aute thei.\nequal laudantium, early therefore ad repudiated occaecat happiness. animi, desire, dolorem big saying ration."
-        , ""
-        , "sequi hour, magna Excepteur expound possimus, expedita non pleasure, and reprehenderit he able expound a fuga..\nmaster-builder nulla dolorum error quasi pains. cupidatat do cases except nostrum little of fail dolore.\npainful. omnis placeat expound toil saying physical ullam doloremque holds cupiditate libero ulla.\nconsectetur voluptate dolore perspiciatis accusamus assumenda To nulla to ab sapiente ipsam quam choice will, These praesentium ca."
-        , ""
-        , "tenetur take quia hand, we dicta consequences, denouncing cum laboris being must duty whic.\nfault system, pleasure? quam eu trivial commodo nobis obtain magni pleasure. eaque reiciendis us error that perfectly pleasures, encounte.\nlaborious occaecat illum toil obligations ut pains odit numquam him every dolores omnis Nemo Nam importan."
-        , ""
-        , "anim all it perfectly ducimus greater one is aliquam iste cupidatat it? reiciendis necessitatibus repudiandae foresee best, there atqu.\nvoluptate through asperiores consequatur? wise atque eu because nobis officiis advantage omnis minus accepted. extremel.\nEt commodo quam rejects, necessitatibus saying laborious extremely weakness laudantium, we beguiled ratione elit, cum Quis proident,.\noccaecati numquam libero fail quo certain fault illo how be beatae eius circumstances blanditiis able and At quae incidun.\nlong labore born certain sint dicta men endures cumque little laborum circumstances through aliquam quibusda.\nest, No distinguish. Duis weakness in own idea explorer The different quidem aspernatur quia necessitatibus abl."
-        ]}
-    , _ideaCategory = Just CatTime
-    , _ideaLocation =
-        IdeaLocationSpace { _ideaLocationSpace = SchoolSpace }
-    , _ideaComments = aMapFromList constantSampleComments
-    , _ideaLikes = aMapFromList
-          [
-            IdeaLike
-              { _likeMeta =
-                  MetaInfo
-                    { _metaId = AUID 2
-                    , _metaCreatedBy = AUID 6
-                    , _metaCreatedByLogin = UserLogin { _fromUserLogin = "aliqua" }
-                    , _metaCreatedByAvatar = Just ""
-                    , _metaCreatedAt = constantSampleTimestamp
-                    , _metaChangedBy = AUID 9
-                    , _metaChangedAt = constantSampleTimestamp
-                    }
-              }
-          ]
-    , _ideaVotes = nil
-    , _ideaJuryResult =
-        Just
-          IdeaJuryResult
-            { _ideaJuryResultMeta =
-                MetaInfo
-                  { _metaId = AUID 0
-                  , _metaCreatedBy = AUID 0
-                  , _metaCreatedByLogin = UserLogin { _fromUserLogin = "inventore" }
-                  , _metaCreatedByAvatar = Just ""
-                  , _metaCreatedAt = constantSampleTimestamp
-                  , _metaChangedBy = AUID 0
-                  , _metaChangedAt = constantSampleTimestamp
-                  }
-            , _ideaJuryResultValue = Feasible Nothing
-            }
-    , _ideaVoteResult = Nothing -- FIXME: Good test data
-    }
-
-constantSampleComments :: [Comment]
-constantSampleComments =
-    [ Comment
-        { _commentMeta =
-            MetaInfo
-              { _metaId = AUID 1
-              , _metaCreatedBy = AUID 1
-              , _metaCreatedByLogin = UserLogin { _fromUserLogin = "endures" }
-              , _metaCreatedByAvatar = Nothing
-              , _metaCreatedAt = constantSampleTimestamp
-              , _metaChangedBy = AUID 8
-              , _metaChangedAt = constantSampleTimestamp
-              }
-        , _commentText =
-            Markdown
-              { fromMarkdown =
-                  "amen 3 rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
-              }
-        , _commentVotes =
-            aMapFromList
-              [ CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "avoids" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Up
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Down
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin =
-                            UserLogin { _fromUserLogin = "consequatur" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Up
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin =
-                            UserLogin { _fromUserLogin = "consequuntur" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Down
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "dicta" }
-                        , _metaCreatedByAvatar = Nothing
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Up
-                  }
-              ]
-        , _commentReplies =
-            aMapFromList
-              [ Comment
-                  { _commentMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Excepteur" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
-                  , _commentVotes = nil
-                  , _commentReplies = nil
-                  }
-              , Comment
-                  { _commentMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "amet" }
-                        , _metaCreatedByAvatar = Nothing
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentText =
-                      Markdown
-                        { fromMarkdown =
-                            "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
-                        }
-                  , _commentVotes = nil
-                  , _commentReplies = nil
-                  }
-              , Comment
-                  { _commentMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
-                        , _metaCreatedByAvatar = Nothing
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentText =
-                      Markdown
-                        { fromMarkdown =
-                            "pleasure ever debitis dicta annoying pain. optio aperiam, hic find pain, pain. toil quo.\n"
-                        }
-                  , _commentReplies = nil
-                  , _commentVotes =
-                      aMapFromList
-                        [ CommentVote
-                            { _commentVoteMeta =
-                                MetaInfo
-                                  { _metaId = AUID 0
-                                  , _metaCreatedBy = AUID 0
-                                  , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Neque" }
-                                  , _metaCreatedByAvatar = Just ""
-                                  , _metaCreatedAt = constantSampleTimestamp
-                                  , _metaChangedBy = AUID 0
-                                  , _metaChangedAt = constantSampleTimestamp
-                                  }
-                            , _commentVoteValue = Up
-                            }
-                        ]
-                  }
-              ]
-        }
-    , Comment
-        { _commentMeta =
-            MetaInfo
-              { _metaId = AUID 10
-              , _metaCreatedBy = AUID 1
-              , _metaCreatedByLogin = UserLogin { _fromUserLogin = "endures" }
-              , _metaCreatedByAvatar = Nothing
-              , _metaCreatedAt = constantSampleTimestamp
-              , _metaChangedBy = AUID 8
-              , _metaChangedAt = constantSampleTimestamp
-              }
-        , _commentText =
-            Markdown
-              { fromMarkdown =
-                  "rejects amet, illum pains ea quasi The Sed free big foresee therefore perfectly simple selection:.\niste rejects, to totam earum eiusmod molestiae voluptatum delectus, minim magni demoralized atque occur repellat. example, firs.\nexcepturi denouncing ipsa To human obtain excepturi other pain. do prevents autem ducimus repellat. laudantium, tenetu.\nrerum chooses system, like debitis beatae perferendis ad tempora aute illo public autem equa.\n"
-              }
-        , _commentVotes =
-            aMapFromList
-              [ CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "avoids" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Up
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Down
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin =
-                            UserLogin { _fromUserLogin = "consequatur" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Up
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin =
-                            UserLogin { _fromUserLogin = "consequuntur" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Down
-                  }
-              , CommentVote
-                  { _commentVoteMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "dicta" }
-                        , _metaCreatedByAvatar = Nothing
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentVoteValue = Up
-                  }
-              ]
-        , _commentReplies =
-            aMapFromList
-              [ Comment
-                  { _commentMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Excepteur" }
-                        , _metaCreatedByAvatar = Just ""
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentText = Markdown { fromMarkdown = "i disagree.  ish." }
-                  , _commentVotes = nil
-                  , _commentReplies = nil
-                  }
-              , Comment
-                  { _commentMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "amet" }
-                        , _metaCreatedByAvatar = Nothing
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentText =
-                      Markdown
-                        { fromMarkdown =
-                            "choice aliqua. pains other anyone this different ad quaerat produces moment, pursue These ips.\n"
-                        }
-                  , _commentVotes = nil
-                  , _commentReplies = nil
-                  }
-              , Comment
-                  { _commentMeta =
-                      MetaInfo
-                        { _metaId = AUID 0
-                        , _metaCreatedBy = AUID 0
-                        , _metaCreatedByLogin = UserLogin { _fromUserLogin = "be" }
-                        , _metaCreatedByAvatar = Nothing
-                        , _metaCreatedAt = constantSampleTimestamp
-                        , _metaChangedBy = AUID 0
-                        , _metaChangedAt = constantSampleTimestamp
-                        }
-                  , _commentText =
-                      Markdown
-                        { fromMarkdown =
-                            "pleasure ever debitis dicta annoying pain. optio aperiam, hic find pain, pain. toil quo.\n"
-                        }
-                  , _commentReplies = nil
-                  , _commentVotes =
-                      aMapFromList
-                        [ CommentVote
-                            { _commentVoteMeta =
-                                MetaInfo
-                                  { _metaId = AUID 0
-                                  , _metaCreatedBy = AUID 0
-                                  , _metaCreatedByLogin = UserLogin { _fromUserLogin = "Neque" }
-                                  , _metaCreatedByAvatar = Just ""
-                                  , _metaCreatedAt = constantSampleTimestamp
-                                  , _metaChangedBy = AUID 0
-                                  , _metaChangedAt = constantSampleTimestamp
-                                  }
-                            , _commentVoteValue = Up
-                            }
-                        ]
-                  }
-              ]
-        }
-    ]

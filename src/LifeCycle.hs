@@ -7,9 +7,6 @@ module LifeCycle
 where
 
 import Control.Lens
-import Data.Set (Set)
-
-import qualified Data.Set as Set
 
 import Types hiding (Comment)
 
@@ -53,16 +50,13 @@ data IdeaCapability
     = QuorumVote -- aka Like
     | Vote
     | Comment
-    | MarkFeasiblity
-    | AddJuryStatement
+    | MarkFeasiblity -- also can add jury statement
     | MarkWinner
     | AddCreatorStatement
 --    | Edit
   deriving (Enum, Eq, Ord, Show)
 
-type IdeaCapabilities = Set IdeaCapability
-
-ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> IdeaCapabilities
+ideaCapabilities :: AUID User -> Idea -> Maybe Phase -> Role -> [IdeaCapability]
 ideaCapabilities _ i Nothing  r = wildIdeaCap i r
 ideaCapabilities u i (Just p) r = case p of
     PhaseRefinement _ -> phaseRefinementCap i r
@@ -70,8 +64,8 @@ ideaCapabilities u i (Just p) r = case p of
     PhaseVoting     _ -> phaseVotingCap i r
     PhaseResult       -> phaseResultCap u i r
 
-wildIdeaCap :: Idea -> Role -> IdeaCapabilities
-wildIdeaCap _i = Set.fromList . \case
+wildIdeaCap :: Idea -> Role -> [IdeaCapability]
+wildIdeaCap _i = \case
     Student    _clss -> [QuorumVote, Comment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
@@ -79,8 +73,8 @@ wildIdeaCap _i = Set.fromList . \case
     Principal        -> []
     Admin            -> []
 
-phaseRefinementCap :: Idea -> Role -> IdeaCapabilities
-phaseRefinementCap _i = Set.fromList . \case
+phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
+phaseRefinementCap _i = \case
     Student    _clss -> [Comment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
@@ -88,17 +82,17 @@ phaseRefinementCap _i = Set.fromList . \case
     Principal        -> []
     Admin            -> []
 
-phaseJuryCap :: Idea -> Role -> IdeaCapabilities
-phaseJuryCap _i = Set.fromList . \case
+phaseJuryCap :: Idea -> Role -> [IdeaCapability]
+phaseJuryCap _i = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
-    Principal        -> [MarkFeasiblity, AddJuryStatement]
+    Principal        -> [MarkFeasiblity]
     Admin            -> []
 
-phaseVotingCap :: Idea -> Role -> IdeaCapabilities
-phaseVotingCap i = Set.fromList . \case
+phaseVotingCap :: Idea -> Role -> [IdeaCapability]
+phaseVotingCap i = \case
     Student    _clss -> onFeasibleIdea i [Vote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
@@ -106,8 +100,8 @@ phaseVotingCap i = Set.fromList . \case
     Principal        -> []
     Admin            -> []
 
-phaseResultCap :: AUID User -> Idea -> Role -> IdeaCapabilities
-phaseResultCap u i = Set.fromList . \case
+phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
+phaseResultCap u i = \case
     Student    _clss -> [AddCreatorStatement | u `isCreatorOf` i]
     ClassGuest _clss -> []
     SchoolGuest      -> []

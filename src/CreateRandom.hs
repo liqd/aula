@@ -15,7 +15,7 @@ import Action
 import Persistent
 import Persistent.Api
 import Types
-import Arbitrary ()
+import Arbitrary (constantSampleTimestamp)
 
 -- | Generate one arbitrary item of each type (idea, user, ...)
 -- plus one extra user for logging test.
@@ -28,7 +28,7 @@ genInitialTestDb = do
     update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
     update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
 
-    user1 <- update $ AddFirstUser sometime ProtoUser
+    user1 <- update $ AddFirstUser constantSampleTimestamp ProtoUser
         { _protoUserLogin     = Just "admin"
         , _protoUserFirstName = "A."
         , _protoUserLastName  = "Admin"
@@ -37,7 +37,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         }
 
-    user2 <- update (AddUser (UserPassInitial "geheim") (EnvWith user1 sometime ProtoUser
+    user2 <- update (AddUser (UserPassInitial "geheim") (EnvWith user1 constantSampleTimestamp ProtoUser
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
@@ -46,36 +46,32 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         }))
 
-    _wildIdea <- update $ AddIdea (EnvWith user1 sometime ProtoIdea
+    _wildIdea <- update $ AddIdea (EnvWith user1 constantSampleTimestamp ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
             , _protoIdeaDesc     = Markdown "wild-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topicIdea <- update $ AddIdea (EnvWith user2 sometime ProtoIdea
+    topicIdea <- update $ AddIdea (EnvWith user2 constantSampleTimestamp ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
             , _protoIdeaDesc     = Markdown "topic-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topic <- update $ AddTopic (EnvWith user1 sometime ProtoTopic
+    topic <- update $ AddTopic (EnvWith user1 constantSampleTimestamp ProtoTopic
         { _protoTopicTitle     = "topic-title"
         , _protoTopicDesc      = Markdown "topic-desc"
         , _protoTopicImage     = ""
         , _protoTopicIdeaSpace = SchoolSpace
         , _protoTopicIdeas     = []
-        , _protoTopicRefinDays = sometime
+        , _protoTopicRefinDays = constantSampleTimestamp
         })
 
     update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()
-
-
-sometime :: Timestamp
-sometime = Timestamp $ read "2016-02-20 17:09:23.325662 UTC"
 
 
 -- FIXME
@@ -96,4 +92,4 @@ frameUserHack = user
     oid = AUID 1
     cUser = _Id .~ uid $ user  -- the user creates himself
     metainfo :: MetaInfo User
-    metainfo = mkMetaInfo cUser sometime oid
+    metainfo = mkMetaInfo cUser constantSampleTimestamp oid

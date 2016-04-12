@@ -15,14 +15,15 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
-    ( GetH
+    ( Singular, CaptureData, (::>), Reply
+    , GetH
     , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
     , PageShow(PageShow)
     , Beside(Beside)
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
-    , ListItemIdea(ListItemIdea)
+    , ListItemIdeaContext(..), ListItemIdea(ListItemIdea)
     , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
     , AuthorWidget(AuthorWidget)
@@ -45,8 +46,9 @@ import Control.Monad (when, replicateM_)
 import Data.Maybe (isJust, fromJust)
 import Data.String.Conversions
 import Data.Typeable
+import GHC.TypeLits (Symbol)
 import Lucid.Base
-import Lucid hiding (href_, script_, src_)
+import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (FormH, getFormDataEnv)
@@ -62,10 +64,43 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
+import LifeCycle
+import Lucid.Missing (onclick_, script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
+
+
+-- FIXME could use closed-type families
+type family Singular    a :: Symbol
+type family CaptureData a
+
+infixr 9 ::>
+type (::>) a b = Singular a :> Capture (Singular a) (CaptureData a) :> b
+
+data Reply
+
+type instance Singular Comment            = "comment"
+type instance Singular Idea               = "idea"
+type instance Singular IdeaSpace          = "space"
+type instance Singular IdeaVoteValue      = "vote"
+type instance Singular Reply              = "reply"
+type instance Singular SchoolClass        = "class"
+type instance Singular Topic              = "topic"
+type instance Singular UpDown             = "vote"
+type instance Singular User               = "user"
+type instance Singular IdeaJuryResultType = "jury"
+
+type instance CaptureData Comment            = AUID Comment
+type instance CaptureData Idea               = AUID Idea
+type instance CaptureData IdeaSpace          = IdeaSpace
+type instance CaptureData IdeaVoteValue      = IdeaVoteValue
+type instance CaptureData Reply              = AUID Comment
+type instance CaptureData SchoolClass        = SchoolClass
+type instance CaptureData Topic              = AUID Topic
+type instance CaptureData UpDown             = UpDown
+type instance CaptureData User               = AUID User
+type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 
 
 -- | FIXME: Could this be a PR for lucid?
@@ -287,7 +322,7 @@ instance ToHtml CommentVotesWidget where
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
                 -- FIXME style
-                postButton_ [class_ "btn"] (P.voteCommentWithContext context comment v) $
+                postButton_ [class_ "btn", Lucid.onclick_ "incrCommentVote(this)"] (P.voteCommentWithContext context comment v) $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
@@ -301,18 +336,51 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
                 span_ [class_ "author-image"] $ avatarImgFromMeta mi
                 span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
+data ListItemIdeaContext
+    = IdeaInIdeasOverview
+    | IdeaInViewTopic
+    | IdeaInUserProfile
+  deriving (Eq, Show, Read)
+
 data ListItemIdea = ListItemIdea
-      { _listItemIdeaLinkToUser :: Bool
+      { _listItemIdeaContext    :: ListItemIdeaContext
       , _listItemIdeaPhase      :: Maybe Phase
       , _listItemIdeaNumVoters  :: Int
       , _listItemIdea           :: Idea
+      , _listItemRenderContext  :: RenderContext
       }
   deriving (Eq, Show, Read)
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea _linkToUserProfile _phase numVoters idea) = semanticDiv p $ do
+    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea ctx) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
+            let caps = ideaCapabilities
+                        (ctx ^. renderContextUser . _Id)
+                        idea
+                        phase
+                        (ctx ^. renderContextUser . userRole)
+
+            when (IdeaInViewTopic == listItemIdeaContext) $ do
+                when (MarkFeasiblity `elem` caps) . div_ $ do
+                    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
+                        explToHtml (Markdown text) = do
+                            p_ "Begründung:"
+                            p_ $ toHtml text
+
+                    case _ideaJuryResult idea of
+                        Nothing -> do
+                            button_ [onclick_ $ P.judgeIdea idea IdeaFeasible]    "durchführbar"
+                            button_ [onclick_ $ P.judgeIdea idea IdeaNotFeasible] "nicht durchführbar"
+                        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
+                            p_ "durchführbar"
+                            case maybeExpl of
+                                Just expl -> explToHtml expl
+                                Nothing -> nil
+                        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
+                            p_ "nicht durchführbar"
+                            explToHtml expl
+
             a_ [href_ $ P.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
@@ -420,7 +488,7 @@ redirect uri = throwServantErr $
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
 
-avatarImgFromMeta :: forall m a. (Monad m) => MetaInfo a -> HtmlT m ()
+avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
 avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
 
 avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()

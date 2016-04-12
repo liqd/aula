@@ -36,7 +36,6 @@ import qualified Test.Hspec.Wai.QuickCheck as Wai (property)
 
 spec :: Spec
 spec = do
-
     describe "HasPath" $ do
         it "absoluteUriPath is not empty and well defined" . property . forAll mainGen $ \path ->
             ST.length (absoluteUriPath $ relPath path) >= 1
@@ -48,6 +47,8 @@ spec = do
             [ U (arb :: Gen PermissionContext)
             , U (arb :: Gen IdeaSpace)
             , U (arb :: Gen SchoolClass)
+            , U (arb :: Gen IdeaVoteValue)
+            , U (arb :: Gen UpDown)
             ]
 
     describe "Paths and handlers" $ do
@@ -58,7 +59,7 @@ spec = do
                     if isPostOnly path then
                         post uri "" `shouldRespondWith` 204
                     else
-                        get  uri `shouldRespondWith` 200
+                        get  uri    `shouldRespondWith` 200
 
   where
     mainGen :: Gen Main

@@ -87,3 +87,8 @@ function removeClass(el, cl) {
 function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
 }
+
+function incrCommentVote(e) {
+    var node = e.parentNode.parentNode.childNodes[0];
+    node.data = Number(node.data) + 1;
+}

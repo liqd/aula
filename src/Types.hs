@@ -58,6 +58,9 @@ readWith Proxy = read
 justIf :: a -> Bool -> Maybe a
 justIf x b = if b then Just x else Nothing
 
+justIfP :: a -> (a -> Bool) -> Maybe a
+justIfP x f = justIf x (f x)
+
 lowerFirst :: String -> String
 lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
@@ -205,6 +208,13 @@ data IdeaJuryResult = IdeaJuryResult
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaJuryResult
+
+data IdeaJuryResultType
+    = IdeaNotFeasible
+    | IdeaFeasible
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaJuryResultType
 
 data IdeaJuryResultValue
     = NotFeasible { _ideaResultNotFeasibleReason :: Document }
@@ -385,13 +395,13 @@ data User = User
 instance SOP.Generic User
 
 newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
-  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic)
+  deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 type instance Proto User = ProtoUser
 
@@ -406,6 +416,12 @@ data ProtoUser = ProtoUser
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
+
+-- | Contains all the information which is needed to render
+-- a user role dependent functionality.
+-- FIXME: Use more appropiate information.
+newtype RenderContext = RenderContext { _renderContextUser :: User }
+  deriving (Eq, Read, Show)
 
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
@@ -520,7 +536,27 @@ defaultSettings = Settings
 newtype AUID a = AUID Integer
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, Enum, Real, Num, Integral)
 
-type AMap a = Map (AUID a) a
+instance SOP.Generic (AUID a)
+
+type family   IdOf a
+type instance IdOf User             = AUID User
+type instance IdOf Idea             = AUID Idea
+type instance IdOf Topic            = AUID Topic
+type instance IdOf Delegation       = AUID Delegation
+type instance IdOf Comment          = AUID Comment
+-- ^ A more precise identifier would be:
+--      IdOf Comment = (AUID Idea, NonEmpty (AUID Comment))
+-- This would be the full path from AulaData down to the comment
+-- which could be a reply to reply...
+type instance IdOf CommentVote      = AUID User
+type instance IdOf IdeaVote         = AUID User
+type instance IdOf IdeaLike         = AUID User
+-- ^ If we were to have more precise comment identifiers these 3 could
+-- become: (IdOf Comment, AUID User)
+type instance IdOf IdeaVoteResult   = AUID IdeaVoteResult
+type instance IdOf IdeaJuryResult   = AUID IdeaJuryResult
+
+type AMap a = Map (IdOf a) a
 
 type Users        = AMap User
 type Ideas        = AMap Idea
@@ -544,8 +580,8 @@ instance HasUriPart (AUID a) where
 -- If this is becoming too much in the future and we want to keep objects around without all this
 -- inlined information, we should consider making objects polymorphic in the concrete meta info
 -- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
-data MetaInfo a = MetaInfo
-    { _metaId              :: AUID a
+data GMetaInfo a id = MetaInfo
+    { _metaId              :: id
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: Maybe URL
@@ -555,7 +591,9 @@ data MetaInfo a = MetaInfo
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic a => SOP.Generic (MetaInfo a)
+instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
+
+type MetaInfo a = GMetaInfo a (IdOf a)
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
@@ -670,7 +708,7 @@ instance Binary IdeaVoteResultValue
 instance Binary IdeaSpace
 instance Binary IdeaVote
 instance Binary IdeaVoteValue
-instance Binary (MetaInfo a)
+instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
 instance Binary SchoolClass
 instance Binary Topic
@@ -684,6 +722,7 @@ instance Binary Durations
 instance Binary Quorums
 instance Binary Settings
 
+makePrisms ''AUID
 makePrisms ''IdeaLocation
 makePrisms ''Category
 makePrisms ''Document
@@ -718,7 +757,7 @@ makeLenses ''IdeaJuryResult
 makeLenses ''IdeaVoteResult
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
-makeLenses ''MetaInfo
+makeLenses ''GMetaInfo
 makeLenses ''Phase
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
@@ -736,6 +775,7 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
 makeLenses ''Quorums
+makeLenses ''RenderContext
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
@@ -759,7 +799,7 @@ deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaSpace
 deriveSafeCopy 0 'base ''IdeaVote
 deriveSafeCopy 0 'base ''IdeaVoteValue
-deriveSafeCopy 0 'base ''MetaInfo
+deriveSafeCopy 0 'base ''GMetaInfo
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
@@ -778,9 +818,9 @@ deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
 deriveSafeCopy 0 'base ''Quorums
 
-class HasMetaInfo a where
+class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
-    _Id             :: Lens' a (AUID a)
+    _Id             :: Lens' a (IdOf a)
     _Id             = metaInfo . metaId
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy
@@ -890,10 +930,24 @@ instance FromHttpApiData IdeaVoteValue where
         "yes"     -> Right Yes
         "no"      -> Right No
         "neutral" -> Right Neutral
-        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are expected)"
+        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are allowed"
 
 instance HasUriPart IdeaVoteValue where
     uriPart = fromString . lowerFirst . show
+
+instance FromHttpApiData IdeaJuryResultType where
+    parseUrlPiece = \case
+      "good" -> Right IdeaNotFeasible
+      "bad"  -> Right IdeaFeasible
+      _      -> Left "Ill-formed idea vote value: only `good' or `bad' are allowed"
+
+instance ToHttpApiData IdeaJuryResultType where
+    toUrlPiece = \case
+      IdeaNotFeasible -> "good"
+      IdeaFeasible    -> "bad"
+
+instance HasUriPart IdeaJuryResultType where
+    uriPart = fromString . cs . toUrlPiece
 
 instance HasUriPart UpDown where
     uriPart = fromString . lowerFirst . show

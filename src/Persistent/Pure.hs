@@ -42,6 +42,8 @@ module Persistent.Pure
     , liftAQuery
 
     , addDb
+    , addDb'
+    , addDbByUser
     , findIn
     , findInBy
     , findInById
@@ -297,6 +299,16 @@ type EnvWithProto a = EnvWith (Proto a)
 -}
 type AddDb a = EnvWithProto a -> AUpdate a
 
+addDb' :: (HasMetaInfo a, FromProto a) => (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
+addDb' nextId' l (EnvWith cUser now pa) = do
+    assertAulaDataM $ do
+        len <- asks (lengthOf l)
+        when (len /= 1) $ do
+            fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
+                <> "to target exactly 1 field not " <> show len
+    a <- (fromProto pa . mkMetaInfo cUser now) <$> nextId' cUser
+    l . at (a ^. _Id) <?= a
+
 -- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
 -- The record is computed from the prototype @p@, the current time @now@ and the given user @u@.
@@ -311,17 +323,15 @@ type AddDb a = EnvWithProto a -> AUpdate a
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: forall a. (HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDb l (EnvWith cUser now pa) = do
-    assertAulaDataM $ do
-        len <- asks (lengthOf l)
-        when (len /= 1) $ do
-            fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
-                <> "to target exactly 1 field not " <> show len
-    a :: a <- fromProto pa <$> nextMetaInfo cUser now
-    l . at (a ^. _Id) <?= a
+addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
+addDb = addDb' $ const nextId
 
-addDbAppValue :: (HasMetaInfo a, FromProto a, Applicative ap) => AulaTraversal (ap a) -> AddDb a
+-- | Like addDb but for values indexed by user id.
+addDbByUser :: (IdOf a ~ AUID User, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
+addDbByUser = addDb' (pure . view _Id)
+
+addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
+    => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser now
     l .= pure a
@@ -339,7 +349,7 @@ findInBy l f b = findIn l (\x -> x ^? f == Just b)
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUID a -> MQuery a
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> IdOf a -> MQuery a
 findInById l i = view (l . at i)
 
 getSpaces :: Query [IdeaSpace]
@@ -370,7 +380,7 @@ findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: AulaLens (AMap a) -> AUID a -> (a -> a) -> AUpdate ()
+modifyAMap :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> (a -> a) -> AUpdate ()
 modifyAMap l ident = (l . at ident . _Just %=)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
@@ -465,18 +475,16 @@ findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . v
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
--- | FIXME: Same user can like the same idea more than once (Issue #308).
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb IdeaLike
-addLikeToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaLikes)
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
 
--- | FIXME: Same user can vote on the same idea more than once (Issue #308).
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -505,7 +513,7 @@ instance FromProto CommentVote where
 -- * the given @AUID Comment@ MUST be one of the comment of the given idea.
 addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb CommentVote
 addCommentVoteToIdeaComment iid cid =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
+    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
 
 -- | FIXME: Assumptions:
 -- * the given @AUID Idea@ MUST be in the DB.
@@ -513,9 +521,9 @@ addCommentVoteToIdeaComment iid cid =
 -- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
 addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb CommentVote
 addCommentVoteToIdeaCommentReply iid cid rid =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments
-                     . at cid . _Just . commentReplies
-                     . at rid . _Just . commentVotes)
+    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments
+                           . at cid . _Just . commentReplies
+                           . at rid . _Just . commentVotes)
 
 instance FromProto IdeaJuryResult where
     fromProto = flip IdeaJuryResult
@@ -621,7 +629,7 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
-mkMetaInfo :: User -> Timestamp -> AUID a -> MetaInfo a
+mkMetaInfo :: User -> Timestamp -> IdOf a -> MetaInfo a
 mkMetaInfo cUser now oid = MetaInfo
     { _metaId              = oid
     , _metaCreatedBy       = cUser ^. _Id
@@ -632,7 +640,7 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: User -> Timestamp -> AUpdate (MetaInfo a)
+nextMetaInfo :: IdOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
 nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()

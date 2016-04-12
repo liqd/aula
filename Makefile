@@ -41,7 +41,9 @@ aula-server: .phony
 	$(EXEC) runhaskell $(FULL_SOURCES) ./exec/Aula.hs
 
 click-dummies-recreate: .phony
-	$(EXEC) runhaskell $(FULL_SOURCES) ./exec/RenderHtml.hs
+	@echo "*** this target is deprecated!"
+	@echo "*** you need pre-created sample sources to use click-dummies-refresh now."
+	@echo "*** see module docs in src/RenderHtml.hs"
 
 click-dummies-refresh: .phony aula.unregister
 	$(EXEC) sensei $(FULL_SOURCES) ./exec/RenderHtml.hs
@@ -54,10 +56,9 @@ hlint:
 	find src exec tests -name '*.hs' | xargs $(HLINT)
 
 test-everything:
+	make hlint
 	cabal install --enable-test --ghc-options="-Werror -Wall -O0"
 	cabal test
-	make hlint
-	make click-dummies-recreate
 
 ghci-no-type-errors:
 	$(EXEC) ghci $(FULL_SOURCES) -fdefer-type-errors

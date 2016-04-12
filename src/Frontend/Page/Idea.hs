@@ -11,16 +11,19 @@ module Frontend.Page.Idea
   , CreateIdea(..)
   , EditIdea(..)
   , CommentIdea(..)
-  , viewIdea
+  , JudgeIdea(..)
+  , viewIdea, viewIdeaPage
   , createIdea
   , editIdea
   , commentIdea
   , replyCommentIdea
+  , judgeIdea
   )
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, query, mquery, update
+              , currentUserAddDb, query, equery, mquery, update
+              , markIdeaInJuryPhase
               )
 import Frontend.Page.Category
 import Frontend.Page.Comment
@@ -31,6 +34,7 @@ import qualified Persistent.Api as Persistent
 import qualified Action (createIdea)
 import qualified Frontend.Path as U
 import qualified Data.Map as Map
+import qualified Data.Text as ST
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -69,6 +73,13 @@ data CommentIdea = CommentIdea Idea (Maybe Comment)
   deriving (Eq, Show, Read)
 
 instance Page CommentIdea where
+
+-- | X. Deem idea feasible / not feasible
+-- Assumption: The idea is located in the topic (via 'IdeaLocation').
+data JudgeIdea = JudgeIdea IdeaJuryResultType Idea Topic
+  deriving (Eq, Show, Read)
+
+instance Page JudgeIdea where
 
 
 -- * templates
@@ -144,7 +155,6 @@ instance ToHtml ViewIdea where
                 pre_ . toHtml $ ppShow (idea ^. ideaVotes)
 
                 div_ ">>>>>>>>>>> some phase-specific stuff"
-
 
             div_ [class_ "sub-heading"] $ do
                 let voteBar :: Html () -> Html ()
@@ -311,6 +321,40 @@ instance FormPage CommentIdea where
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Kommentar abgeben"
 
+instance FormPage JudgeIdea where
+    type FormPagePayload JudgeIdea = IdeaJuryResultValue
+    type FormPageResult JudgeIdea = ()
+
+    formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
+
+    redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic
+
+    makeForm (JudgeIdea IdeaFeasible _ _) =
+        Feasible
+        <$> "jury-text" .: (Markdown <$$> (`justIfP` (not . ST.null)) <$> DF.text Nothing)
+    makeForm (JudgeIdea IdeaNotFeasible _ _) =
+        NotFeasible
+        <$> "jury-text" .: (Markdown <$> DF.text Nothing)
+
+    -- FIXME styling
+    formPage v form p@(JudgeIdea juryType idea _topic) =
+        semanticDiv p $ do
+            div_ [class_ "container-jury-idea"] $ do
+                h1_ [class_ "main-heading"] $ headerText <> idea ^. ideaTitle . html
+                form $ do
+                    label_ $ do
+                        span_ [class_ "label-text"] $
+                            case juryType of
+                                IdeaFeasible    -> "Möchten Sie die Idee kommentieren?"
+                                IdeaNotFeasible -> "Bitte formulieren Sie eine Begründung!"
+                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "jury-text" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Entscheidung speichern."
+      where
+        headerText = case juryType of
+            IdeaFeasible    -> "[Angenommen zur Wahl] "
+            IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
+
 
 -- * handlers
 
@@ -319,10 +363,14 @@ instance FormPage CommentIdea where
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
-viewIdea ideaId = makeFrame =<< (do
+viewIdea ideaId = viewIdeaPage ideaId >>= makeFrame
+
+viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
+    => AUID Idea -> m ViewIdea
+viewIdeaPage ideaId = do
     idea  :: Idea        <- mquery $ findIdea ideaId
     phase :: Maybe Phase <- query $ ideaPhase idea
-    pure $ ViewIdea idea phase)
+    pure $ ViewIdea idea phase
 
 createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
 createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
@@ -351,3 +399,12 @@ replyCommentIdea ideaId commentId =
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
         (currentUserAddDb $ AddReplyToIdeaComment ideaId commentId)
+
+judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JudgeIdea) m
+judgeIdea ideaId juryType =
+    redirectFormHandler
+        (equery $ do
+            idea  <- maybe404 =<< findIdea ideaId
+            topic <- maybe404 =<< ideaTopic idea
+            pure $ JudgeIdea juryType idea topic)
+        (Action.markIdeaInJuryPhase ideaId)

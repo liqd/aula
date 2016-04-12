@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
+{-# OPTIONS_GHC -Werror -Wall #-}
+
 -- | rule: always add (and expect) trailing slashes.
 module Frontend.Path
     ( Top(..)
@@ -13,7 +15,8 @@ module Frontend.Path
     , AdminPs(..)
     , IdeaMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
-    , likeIdea, voteIdea, voteCommentIdea, voteCommentIdeaReply, voteCommentWithContext
+    , likeIdea, voteIdea, judgeIdea
+    , voteCommentIdea, voteCommentIdeaReply, voteCommentWithContext
     , replyCommentIdea, commentOrReplyIdea, isPostOnly, isBroken
     )
 where
@@ -26,7 +29,7 @@ import qualified Generics.SOP as SOP
 
 import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
              , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , CommentContext(..))
+             , CommentContext(..), IdeaJuryResultType(..))
 
 data Top =
     Top
@@ -77,9 +80,11 @@ isPostOnly = \case
     -- FIXME[#312] Logout -> True
     _ -> False
 
--- FIXME: Remove
+-- FIXME: fix & remove
 isBroken :: Main -> Bool
 isBroken Broken = True
+isBroken (IdeaPath _ (JudgeIdea _ _)) = True
+    -- ('JudgeIdea' won't work until we stop using src/Arbitrary.hs instead of test scripts.)
 isBroken _      = False
 
 instance SOP.Generic Main
@@ -126,6 +131,9 @@ likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 voteIdea :: Idea -> IdeaVoteValue -> Main
 voteIdea idea = IdeaPath (idea ^. ideaLocation) . VoteIdea (idea ^. _Id)
 
+judgeIdea :: Idea -> IdeaJuryResultType -> Main
+judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
+
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
@@ -168,6 +176,8 @@ ideaMode (ViewIdea i)                   root = root </> "idea" </> uriPart i </>
 ideaMode (EditIdea i)                   root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (LikeIdea i)                   root = root </> "idea" </> uriPart i </> "like"
 ideaMode (VoteIdea i v)                 root = root </> "idea" </> uriPart i </> "vote"
+                                                    </> uriPart v
+ideaMode (JudgeIdea i v)                root = root </> "idea" </> uriPart i </> "jury"
                                                     </> uriPart v
 ideaMode (CommentIdea i)                root = root </> "idea" </> uriPart i </> "comment"
 ideaMode (ReplyCommentIdea i c)         root = root </> "idea" </> uriPart i </> "comment"
@@ -237,6 +247,7 @@ data IdeaMode =
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
     | VoteIdea (AUID Idea) IdeaVoteValue
+    | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentIdea (AUID Idea)
     | ReplyCommentIdea (AUID Idea) (AUID Comment)
     | VoteCommentIdea (AUID Idea) (AUID Comment) UpDown
