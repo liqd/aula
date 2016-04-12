@@ -37,7 +37,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace IdeasFilterQuery [(Idea, Int)]
+data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace IdeasFilterQuery ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -64,8 +64,7 @@ viewIdeas space mcat = do
     makeFrame =<< (PageIdeasOverview ctx space mcat
                     <$> query (do
         is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
-        ivs <- getNumVotersForIdea `mapM` is
-        pure ivs))
+        ListItemIdeas ctx mcat Nothing <$> getNumVotersForIdea `mapM` is))
 
 viewTopics :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasInDiscussion)
@@ -102,7 +101,7 @@ instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview ctx space filterQuery ideaAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview ctx space filterQuery ideas) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -113,13 +112,8 @@ instance ToHtml PageIdeasOverview where
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
         categoryFilterButtons (IdeaLocationSpace space) filterQuery
-        div_ [class_ "m-shadow"] $ do  -- TODO: use ListItemIdeas
-            div_ [class_ "ideas-list"] . for_ ideaAndNumVoters $ \(idea, numVoters) ->
-                ListItemIdea
-                    IdeaInIdeasOverview
-                    Nothing
-                    numVoters idea
-                    ctx ^. html
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "ideas-list"] . toHtml $ ideas
 
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]
@@ -282,7 +276,7 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml (ListItemIdeas _ctx filterq _mphase []) = do
+    toHtml p@(ListItemIdeas _ctx filterq _mphase []) = semanticDiv p $ do
         p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
