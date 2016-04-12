@@ -241,9 +241,12 @@ instance ToHtml IdeaVoteLikeBars where
                             -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
                           , style_ "width: 75%"
                           ] $ do
-                        span_ [class_ "progress-bar-votes-for"] "6"
-                        span_ [class_ "progress-bar-votes-against"] "12"
+                        span_ [class_ "progress-bar-votes-for"]     $ toHtml (show yesVotes)
+                        span_ [class_ "progress-bar-votes-against"] $ toHtml (show noVotes)
                 bs
+              where
+                yesVotes :: Int = 6
+                noVotes  :: Int = 12
 
             voteButtons :: Html ()
             voteButtons = if Vote `elem` caps

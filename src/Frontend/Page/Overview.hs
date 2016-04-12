@@ -261,26 +261,12 @@ instance ToHtml ListItemIdea where
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show numLikes <> " von " <> show numVoters <> " Stimmen")
+                            toHtml (show (numLikes idea) <> " von " <> show numVoters <> " Stimmen")
                     span_ [class_ "progress-bar"] $ do
                         span_ [ class_ "progress-bar-progress"
-                              , style_ ("width: " <> cs (show percentLikes) <> "%")
+                              , style_ ("width: " <> cs (show (percentLikes idea numVoters)) <> "%")
                               ]
                             nil
-      where
-        numLikes :: Int
-        numLikes = Map.size $ idea ^. ideaLikes
-
-        -- div by zero is caught silently: if there are no voters, the quorum stays 0%.
-        -- FIXME: we could assert that values are always between 0..100, but the inconsistent test
-        -- data violates that invariant.
-        percentLikes :: Int
-        percentLikes = {- assert c -} v
-          where
-            -- c = v >= 0 && v <= 100
-            v = if numVoters == 0
-                  then 0
-                  else (numLikes * 100) `div` numVoters
 
 
 instance ToHtml ListItemIdeas where
