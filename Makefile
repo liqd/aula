@@ -56,10 +56,9 @@ hlint:
 	find src exec tests -name '*.hs' | xargs $(HLINT)
 
 test-everything:
+	make hlint
 	cabal install --enable-test --ghc-options="-Werror -Wall -O0"
 	cabal test
-	make hlint
-	make click-dummies-recreate
 
 ghci-no-type-errors:
 	$(EXEC) ghci $(FULL_SOURCES) -fdefer-type-errors
