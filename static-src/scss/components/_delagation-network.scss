@@ -1,0 +1,14 @@
+#d3 {
+    svg {
+        max-width: 100%;
+    }
+}
+
+.delegation-network {
+    @include rem(padding, 20px 0);
+    overflow: visible;
+
+    select {
+        @include rem(margin-bottom, 20px);
+    }
+}
