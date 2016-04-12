@@ -26,6 +26,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , markIdeaInJuryPhase
               , renderContext
               )
+import LifeCycle
 import Frontend.Page.Category
 import Frontend.Page.Comment
 import Frontend.Prelude hiding (editIdea)
@@ -103,25 +104,34 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea _ctx idea phase) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx idea phase) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
+
+            caps = ideaCapabilities
+                       (ctx ^. renderContextUser . _Id)
+                       (ctx ^. renderContextUser . userRole)
+                       idea
+                       phase
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
                    , href_ . U.listIdeas $ idea ^. ideaLocation
                    ] $ backLink (idea ^. ideaLocation)
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [href_ $ U.editIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-                            a_ [href_ U.Broken] $ do
-                                i_ [class_ "icon-sign-out"] nil
+
+                when (any (`elem` caps) [Edit, MoveBetweenTopics]) $ do
+                    nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                        ul_ [class_ "pop-menu-list"] $ do
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                when (Edit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
+                                    i_ [class_ "icon-pencil"] nil
+                                    "bearbeiten"
+                                when (MoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
+                                    i_ [class_ "icon-sign-out"] nil
                                 "Idee verschieben"
+
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
