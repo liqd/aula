@@ -590,11 +590,11 @@ adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPCl
       void $ do
         update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
         pwd <- mkRandomPassword
-        currentUserAddDb (AddUser pwd) ProtoUser
+        currentUserAddDb AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
             , _protoUserRole      = Student schoolcl
-            , _protoUserPassword  = Nothing
+            , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
             }

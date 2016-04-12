@@ -561,11 +561,9 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
--- | FIXME: default pass was more useful when it was generated in-place.  now we can just add it to
--- the proto-user, so drop 'UserPass' arg?
-addUser :: UserPass -> AddDb User
-addUser defaultPass (EnvWith cUser now proto) = do
-    metainfo  <- nextMetaInfo cUser now
+addUser :: AddDb User
+addUser (EnvWith cUser now proto) = do
+    metainfo <- nextMetaInfo cUser now
     uLogin <- case proto ^. protoUserLogin of
         Nothing -> mkUserLogin proto
         Just li -> do
@@ -573,8 +571,7 @@ addUser defaultPass (EnvWith cUser now proto) = do
             case existingUser of
                 Nothing -> pure li
                 Just _  -> throwError $ UserLoginInUse li
-    let uPassword = fromMaybe defaultPass $ proto ^. protoUserPassword
-    let user = userFromProto metainfo uLogin uPassword proto
+    let user = userFromProto metainfo uLogin (proto ^. protoUserPassword) proto
     dbUserMap . at (user ^. _Id) <?= user
 
 -- | When adding the first user, there is no creator yet, so the first user creates itself.  Login
@@ -583,11 +580,10 @@ addFirstUser :: Timestamp -> Proto User -> AUpdate User
 addFirstUser now proto = do
     uid <- nextId
     let uLogin    = fromMaybe (error "addFirstUser: no login name") (proto ^. protoUserLogin)
-        uPassword = fromMaybe (error "addFirstUser: no passphrase") (proto ^. protoUserPassword)
         -- the user creates herself
         cUser = _Id .~ uid $ user
         metainfo = mkMetaInfo cUser now uid
-        user = userFromProto metainfo uLogin uPassword proto
+        user = userFromProto metainfo uLogin (proto ^. protoUserPassword) proto
 
     dbUserMap . at (user ^. _Id) <?= user
 

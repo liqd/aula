@@ -589,8 +589,8 @@ mkFishUser mSchoolClass avatarPath = do
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam role Nothing Nothing
-    user <- currentUserAddDb (AddUser (UserPassInitial "dummy password")) pu
+    let pu = ProtoUser Nothing fnam lnam role (UserPassInitial "dummy password") Nothing
+    user <- currentUserAddDb AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
 
@@ -608,7 +608,7 @@ fishDelegationNetworkIO = do
             now <- getCurrentTimestamp
             admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                Admin (Just (UserPassInitial "admin")) Nothing
+                Admin (UserPassInitial "admin") Nothing
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 

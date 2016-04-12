@@ -410,7 +410,7 @@ data ProtoUser = ProtoUser
     , _protoUserFirstName :: UserFirstName
     , _protoUserLastName  :: UserLastName
     , _protoUserRole      :: Role
-    , _protoUserPassword  :: Maybe UserPass
+    , _protoUserPassword  :: UserPass
     , _protoUserEmail     :: Maybe EmailAddress
     }
   deriving (Eq, Ord, Show, Read, Generic)
