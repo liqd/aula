@@ -232,6 +232,7 @@ data PersistExcept
     | PersistError404 { persistErrorMessage :: String }
         -- FIXME: rename to PersistExceptNotFound
     | PersistErrorNotImplemented { persistErrorMessage :: String }
+    | UserLoginInUse UserLogin
     deriving (Eq, Show)
 
 makePrisms ''PersistExcept
@@ -245,6 +246,9 @@ runPersistExcept :: PersistExcept -> ServantErr
 runPersistExcept (PersistError500 msg)            = err500 { errBody = cs msg }
 runPersistExcept (PersistError404 msg)            = err404 { errBody = cs msg }
 runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
+runPersistExcept (UserLoginInUse li) =
+    err500 { errBody = "user login in use: " <> cs (show li) }
+    -- FIXME: what's a good status code for 'login in use'?
 
 
 -- * state interface
@@ -557,10 +561,18 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userEmail     = proto ^. protoUserEmail
     }
 
+-- | FIXME: default pass was more useful when it was generated in-place.  now we can just add it to
+-- the proto-user, so drop 'UserPass' arg?
 addUser :: UserPass -> AddDb User
 addUser defaultPass (EnvWith cUser now proto) = do
     metainfo  <- nextMetaInfo cUser now
-    uLogin    <- maybe (mkUserLogin proto) pure (proto ^. protoUserLogin)
+    uLogin <- case proto ^. protoUserLogin of
+        Nothing -> mkUserLogin proto
+        Just li -> do
+            existingUser <- liftAQuery $ findUserByLogin li
+            case existingUser of
+                Nothing -> pure li
+                Just _  -> throwError $ UserLoginInUse li
     let uPassword = fromMaybe defaultPass $ proto ^. protoUserPassword
     let user = userFromProto metainfo uLogin uPassword proto
     dbUserMap . at (user ^. _Id) <?= user
