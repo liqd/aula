@@ -42,6 +42,20 @@ input[type=submit] {
     &:hover, &:focus {
         background-color: $button-cta-hover-color;
     }
+
+    &.m-valid {
+        background: $color-positive;
+    }
+
+    &.m-invalid {
+        background: $color-negative;
+    }
+
+    &.m-valid, &.m-invalid {
+        &:hover, &:focus {
+            background-color: $button-cta-hover-color;
+        }
+    }
 }
 
 $btn-settings-size: 35px;

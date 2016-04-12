@@ -21,6 +21,10 @@
     width: $thumbnail-size;
 }
 
+.ideas-list-text-container {
+    @include rem(margin-left, $thumbnail-size + 27px);
+}
+
 .ideas-list-item {
     @include rem(margin-bottom, 15px);
     @include rem(padding, 25px 27px);
@@ -42,6 +46,10 @@
             color: $color-link;
         }
     }
+
+    .admin-buttons {
+        @include rem(margin-bottom, 20px);
+    }
 }
 
 .ideas-list {
@@ -58,6 +66,27 @@
     .ideas-list-author {
         display: block;
         font-size: $font-size-normal;
+    }
+}
+
+.info-text {
+    @include rem(font-size, $font-size-small);
+    @include rem(margin-bottom, 20px);
+    @include rem(padding, 10px);
+    background: $color-grey-lighter;
+    border-radius: 4px;
+    color: $color-text-muted;
+
+    &.m-realised {
+        .info-text-header {
+            color: $color-positive;
+        }
+    }
+
+    &.m-unrealised {
+        .info-text-header {
+            color: $color-negative;
+        }
     }
 }
 
