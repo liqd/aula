@@ -174,18 +174,16 @@ instance ToHtml Tabs where
 
 -- * idea lists
 
-data ListItemIdeaContext
+data ListItemIdeaContext  -- TODO: rename to 'ListLocation'?  'Context' is used for too many things.
     = IdeaInIdeasOverview
     | IdeaInViewTopic
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
 
 data ListItemIdea = ListItemIdea
-      { _listItemIdeaContext    :: ListItemIdeaContext
-      , _listItemIdeaPhase      :: Maybe Phase
-      , _listItemIdeaNumVoters  :: Int
-      , _listItemIdea           :: Idea
-      , _listItemRenderContext  :: RenderContext
+      { _listItemRenderContext  :: RenderContext
+      , _listItemIdeaContext    :: ListItemIdeaContext
+      , _listItemIdeaInfo       :: ListInfoForIdea
       }
   deriving (Eq, Show, Read, Generic)
 
@@ -204,13 +202,13 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea listItemIdeaContext phase numVoters idea ctx) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx listItemIdeaContext (ListInfoForIdea idea mphase quo)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
                         (ctx ^. renderContextUser . userRole)
                         idea
-                        phase
+                        mphase
 
             when (IdeaInViewTopic == listItemIdeaContext) $ do
                 when (MarkFeasiblity `elem` caps) . div_ $ do
@@ -261,8 +259,8 @@ instance ToHtml ListItemIdea where
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show (numLikes idea) <> " von " <> show numVoters <> " Quorum-Stimmen")
-                    toHtml $ QuorumBar (percentLikes idea numVoters)
+                            toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
+                    toHtml $ QuorumBar (percentLikes idea quo)
 
 
 data QuorumBar = QuorumBar Int
@@ -287,5 +285,4 @@ instance ToHtml ListItemIdeas where
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
 
     toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ \(ListInfoForIdea idea mphase quo) -> toHtml $
-            ListItemIdea IdeaInViewTopic mphase quo idea ctx
+        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic

@@ -59,12 +59,13 @@ instance SOP.Generic ListInfoForIdea
 getListInfoForIdea :: Idea -> EQuery ListInfoForIdea
 getListInfoForIdea idea = do
     vs <- getVotersForIdea idea
-    qu <- (`div` 100) . (length vs *) <$> quorum idea
+    quPercent <- quorum idea
+    let quVotesRequired = length vs * quPercent `div` 100
     mtopic :: Maybe Topic
         <- case idea ^. ideaMaybeTopicId of
             Nothing -> pure Nothing
             Just tid -> Just <$> (maybe404 =<< findTopic tid)
-    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) qu
+    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) quVotesRequired
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent

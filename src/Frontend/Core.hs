@@ -413,7 +413,8 @@ avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
 numLikes :: Idea -> Int
 numLikes idea = Map.size $ idea ^. ideaLikes
 
--- div by zero is caught silently: if there are no voters, the quorum stays 0%.
+-- div by zero is caught silently: if there are no voters, the quorum is 100% (no likes is enough
+-- likes in that case).
 -- FIXME: we could assert that values are always between 0..100, but the inconsistent test
 -- data violates that invariant.
 percentLikes :: Idea -> Int -> Int
@@ -421,5 +422,5 @@ percentLikes idea numVoters = {- assert c -} v
   where
     -- c = numVoters >= 0 && v >= 0 && v <= 100
     v = if numVoters == 0
-          then 0
+          then 100
           else (numLikes idea * 100) `div` numVoters

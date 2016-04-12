@@ -238,7 +238,11 @@ instance ToHtml IdeaVoteLikeBars where
     toHtml p@(IdeaVoteLikeBars caps
                 (ViewIdea _ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
-            likeBar bs = toHtml (QuorumBar $ percentLikes idea quo) >> bs
+            likeBar bs = div_ $ do
+                toHtml (QuorumBar $ percentLikes idea quo)
+                li_ [class_ "meta-list-item"] $ do
+                    toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
+                bs
 
             likeButtons :: Html ()
             likeButtons = if QuorumVote `elem` caps
