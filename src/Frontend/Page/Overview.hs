@@ -23,7 +23,6 @@ import Frontend.Page.Category
 import Frontend.Prelude
 import LifeCycle
 
-import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
