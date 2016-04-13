@@ -59,7 +59,7 @@ commentToHtml w = div_ $ do
         if comment ^. commentDeleted then "Kommentar löschen" else comment ^. commentText . html
     footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
-            when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) $
+            when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
                 button_ [class_ "btn comment-footer-button", onclick_ $ U.replyCommentIdea idea parent] $ do
                     i_ [class_ "icon-reply"] nil
                     "antworten"
@@ -67,7 +67,7 @@ commentToHtml w = div_ $ do
                         (U.onComment idea mparent comment U.ReportComment) $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
-            when (CanDeleteComment `elem` comCaps) $
+            when (CanDeleteComment `elem` comCaps) .
                 postButton_ [class_ "btn comment-footer-button", Lucid.onclick_ "handleDeleteComment(this)"]
                             (U.onComment idea mparent comment U.DeleteComment) $ do
                     i_ [class_ "icon-trash-o"] nil

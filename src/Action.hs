@@ -396,11 +396,11 @@ reportIdeaCommentOrReply iid mparentid cid = do
 
 reportIdeaComment :: AUID Idea -> AUID Comment
                   -> (ActionPersist m, ActionSendMail m) => m ()
-reportIdeaComment iid cid = reportIdeaCommentOrReply iid Nothing cid
+reportIdeaComment iid = reportIdeaCommentOrReply iid Nothing
 
 reportIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment
                        -> (ActionPersist m, ActionSendMail m) => m ()
-reportIdeaCommentReply iid cid rid = reportIdeaCommentOrReply iid (Just cid) rid
+reportIdeaCommentReply iid = reportIdeaCommentOrReply iid . Just
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throws an exception.
 -- It runs the phase change computations if happens.

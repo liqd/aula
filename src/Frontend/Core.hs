@@ -321,7 +321,7 @@ instance ToHtml CommentVotesWidget where
         voteButton v = do
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
-                when (CanVoteComment `elem` caps) $
+                when (CanVoteComment `elem` caps) .
                     postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
                         i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
