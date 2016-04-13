@@ -445,24 +445,14 @@ payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
 payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
-isClassInRole :: SchoolClass -> Role -> Bool
-isClassInRole clss (Student clss')    = clss == clss'
-isClassInRole clss (ClassGuest clss') = clss == clss'
-isClassInRole _    _                  = False
+adminSettingsGaPClassesEdit :: (ActionPersist m, ActionUserHandler m)
+    => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
+adminSettingsGaPClassesEdit clss = makeFrame =<< adminSettingsGaPClassesEditPage clss
 
-getSchoolClasses :: Query [SchoolClass]
-getSchoolClasses = mapMaybe toClass <$> getSpaces
-  where
-    toClass (ClassSpace clss) = Just clss
-    toClass _                 = Nothing
-
-adminSettingsGaPClassesEdit :: ActionM m => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
-adminSettingsGaPClassesEdit clss =
-    makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
-  where
-    -- FIXME: the following two lines should be happening in "Persistent.Api".
-    usersInClass = filter isUserInClass <$> query getUsers
-    isUserInClass = isClassInRole clss . view userRole
+adminSettingsGaPClassesEditPage :: (ActionPersist m, ActionUserHandler m)
+    => SchoolClass -> m PageAdminSettingsGaPClassesEdit
+adminSettingsGaPClassesEditPage clss =
+    PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
 
 
 -- ** Events protocol
