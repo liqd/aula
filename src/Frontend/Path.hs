@@ -189,7 +189,7 @@ ideaMode (OnComment ctx c m)            root = commentMode ctx c m root
 ideaMode CreateIdea                     root = root </> "idea" </> "create"
 
 commentAnchor :: IsString s => AUID Comment -> s
-commentAnchor (AUID c) = fromString $ "#comment-" <> show c
+commentAnchor (AUID c) = fromString $ "comment-" <> show c
 
 commentMode :: CommentContext -> AUID Comment -> CommentMode -> UriPath -> UriPath
 commentMode (CommentContext idea mc) c m root =
@@ -197,7 +197,7 @@ commentMode (CommentContext idea mc) c m root =
         ReplyComment  -> base </> "reply"
         DeleteComment -> base </> "delete"
         ReportComment -> base </> "report"
-        ViewComment   -> root </> "idea" </> uriPart i </> commentAnchor c
+        ViewComment   -> root </> "idea" </> uriPart i </#> commentAnchor c
         VoteComment v -> base </> "vote" </> uriPart v
   where
     i = idea ^. _Id
