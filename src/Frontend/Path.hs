@@ -197,7 +197,7 @@ commentMode (CommentContext idea mc) c m root =
         ReplyComment  -> base </> "reply"
         DeleteComment -> base </> "delete"
         ReportComment -> base </> "report"
-        ViewComment   -> root </> "idea" </> uriPart i </#> commentAnchor c
+        ViewComment   -> root </> "idea" </> uriPart i </> "view" </#> commentAnchor c
         VoteComment v -> base </> "vote" </> uriPart v
   where
     i = idea ^. _Id

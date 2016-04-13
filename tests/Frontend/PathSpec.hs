@@ -43,7 +43,6 @@ isBrokenPath = \case
                 case cm of
                     -- Does not work well on random paths
                     ReportComment -> True
-                    ViewComment -> True
                     _ -> False
             _ -> False
 
