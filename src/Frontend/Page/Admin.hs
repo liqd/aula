@@ -419,8 +419,6 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
--- FIXME: Fetch limited number of users ("pagination").
-
 adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
     makeFrame =<< PageAdminSettingsGaPUsersView <$> query getUsers
