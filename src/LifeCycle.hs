@@ -49,6 +49,7 @@ data IdeaCapability
     = CanLike
     | CanVote
     | CanComment
+    | CanVoteComment
     | CanMarkFeasiblity -- also can add jury statement
     | CanMarkWinner
     | CanAddCreatorStatement
@@ -78,7 +79,7 @@ phaseCap u r i (Just p) = case p of
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
-    Student    _clss -> [CanLike, CanComment]
+    Student    _clss -> [CanLike, CanComment, CanVoteComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -87,7 +88,7 @@ wildIdeaCap _i = \case
 
 phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
 phaseRefinementCap _i = \case
-    Student    _clss -> [CanComment]
+    Student    _clss -> [CanComment, CanVoteComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
