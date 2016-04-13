@@ -110,12 +110,9 @@ instance ToHtml ViewIdea where
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
-
-            caps = ideaCapabilities
-                       (ctx ^. renderContextUser . _Id)
-                       (ctx ^. renderContextUser . userRole)
-                       idea
-                       phase
+            uid           = ctx ^. renderContextUser . _Id
+            role          = ctx ^. renderContextUser . userRole
+            caps          = ideaCapabilities uid role idea phase
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -223,14 +220,15 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ do
                             numberWithUnit totalComments
                                 "Verbesserungsvorschlag" "Verbesserungsvorschläge"
-                        button_ [ value_ "create_comment"
-                                , class_ "btn-cta comments-header-button"
-                                , onclick_ (U.commentIdea idea)]
-                              "Neuer Verbesserungsvorschlag"
+                        when (CanComment `elem` caps) $
+                            button_ [ value_ "create_comment"
+                                    , class_ "btn-cta comments-header-button"
+                                    , onclick_ (U.commentIdea idea)]
+                                "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget idea c ^. html
+                        CommentWidget caps uid role (CommentContext idea Nothing) c ^. html
 
 
 instance ToHtml IdeaVoteLikeBars where

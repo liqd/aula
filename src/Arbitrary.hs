@@ -270,6 +270,9 @@ instance Arbitrary CommentContext where
 instance Arbitrary CommentCapability where
     arbitrary = garbitrary
 
+instance Arbitrary CommentWidget where
+    arbitrary = garbitrary
+
 
 -- * idea space, topic, phase
 

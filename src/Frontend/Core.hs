@@ -65,6 +65,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
+import LifeCycle
 import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
@@ -307,11 +308,11 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
-data CommentVotesWidget = VotesWidget CommentContext Comment
+data CommentVotesWidget = VotesWidget [IdeaCapability] CommentContext Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget context comment) = semanticDiv p $ do
+    toHtml p@(VotesWidget caps context comment) = semanticDiv p $ do
         div_ [class_ "comment-votes"] $ do
             voteButton Up
             voteButton Down
@@ -320,8 +321,9 @@ instance ToHtml CommentVotesWidget where
         voteButton v = do
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
-                postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
-                    i_ [class_ $ "icon-thumbs-o-" <> vs] nil
+                when (CanVoteComment `elem` caps) $
+                    postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
+                        i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
 newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
