@@ -64,7 +64,7 @@ module Persistent.Pure
     , findIdeasByUserId
     , findWildIdeasBySpace
     , findComment
-    , findComment'
+    , findCommentHack
     , addLikeToIdea
     , addVoteToIdea
     , addCommentToIdea
@@ -488,8 +488,8 @@ findComment iid mparentid cid = preview $ dbIdeaMap . at iid . _Just . ideaComme
             Just parentid -> at parentid . _Just . commentReplies . at cid . _Just
 
 -- This function should become useless once the comment ids are complete
-findComment' :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> EQuery (Idea, Maybe Comment, Comment)
-findComment' iid mparentid cid = do
+findCommentHack :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> EQuery (Idea, Maybe Comment, Comment)
+findCommentHack iid mparentid cid = do
     idea <- maybe404 =<< findIdea iid
     case mparentid of
         Nothing       -> do

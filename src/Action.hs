@@ -371,7 +371,7 @@ deleteIdeaCommentReply ideaId commentId replyId =
 reportIdeaCommentOrReply :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment
                          -> (ActionPersist m, ActionSendMail m) => m ()
 reportIdeaCommentOrReply iid mparentid cid = do
-    (idea, mparent, comment) <- equery $ findComment' iid mparentid cid
+    (idea, mparent, comment) <- equery $ findCommentHack iid mparentid cid
     let uri = relPath $ U.onComment idea mparent comment U.ViewComment
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
