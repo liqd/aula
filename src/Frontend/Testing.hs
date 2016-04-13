@@ -82,4 +82,4 @@ renderHtmlSource (loginByName -> li) =
        (\iid -> li >> show <$> viewIdeaPage                        iid)
   :<|> (\tid -> li >> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
   :<|> (li >> show . PageUserSettings <$> currentUser)
-  :<|> (\schoolclass -> li >> show . PageAdminSettingsGaPClassesEdit clss <$> usersInClass schoolclass)
+  :<|> (\schoolclass -> li >> (show <$> adminSettingsGaPClassesEditPage schoolclass))

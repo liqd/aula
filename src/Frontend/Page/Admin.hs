@@ -1,11 +1,12 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE ViewPatterns      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -410,7 +411,8 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
     toHtmlRaw p@(PageAdminSettingsGaPClassesEdit clss users) =
         adminFrame p . semanticDiv p $ do
             -- FIXME: Make appropiate design
-            div_ . h1_ . toHtml $ clss ^. className
+            div_ . h1_ [class_ "admin-main-heading"] . toHtml $ clss ^. className
+            div_ $ a_ [href_ . U.Admin . U.AdminDlPass $ clss] "Passwordliste"
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
@@ -420,6 +422,29 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
+
+
+data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic InitialPasswordsCsv
+
+instance MimeRender PlainText InitialPasswordsCsv where
+    mimeRender Proxy (InitialPasswordsCsv rows) = Csv.encode rows
+
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsv
+adminInitialPasswordsCsv clss =
+    InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
+  where
+    mk u = case u ^. userPassword of
+        UserPassInitial ps -> Just $ CsvUserRecord
+              (u ^. userFirstName)
+              (u ^. userLastName)
+              (u ^. userEmail)
+              (Just $ u ^. userLogin)
+              (Just ps)
+        _ -> Nothing
+
 
 adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
@@ -527,15 +552,21 @@ data CsvUserRecord = CsvUserRecord
     , _csvUserRecordLast        :: UserLastName
     , _csvUserRecordEmail       :: Maybe EmailAddress
     , _csvUserRecordLogin       :: Maybe UserLogin
+    , _csvUserRecordInitialPass :: Maybe ST
     }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic CsvUserRecord
+
+-- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
+-- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
 instance Csv.FromRecord CsvUserRecord where
     parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
         <$> (UserFirstName <$> parseName 50 0)
         <*> (UserLastName <$> parseName 50 1)
         <*> parseMEmail 2
         <*> pure (parseMLogin 3)
+        <*> pure Nothing
       where
         parseName :: (Monad m) => Int -> Int -> m ST
         parseName maxLength i
@@ -560,6 +591,9 @@ instance Csv.FromRecord CsvUserRecord where
             | v !! i == ""     = Nothing
             | otherwise        = Just . UserLogin $ v !! i
 
+instance Csv.ToRecord CsvUserRecord where
+    toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord (show fn, show ln, show em, show li, show pw)
+
 adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
                               => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
 adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
@@ -576,7 +610,8 @@ adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPCl
             Right records -> mapM_ (p schoolcl) records
 
     p :: SchoolClass -> CsvUserRecord -> m ()
-    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = do
+    p schoolcl (CsvUserRecord _ _ _ _ (Just _)) = throwError500 "upload FAILED: internal error!"
+    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
         update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
         pwd <- mkRandomPassword
