@@ -44,6 +44,8 @@ data PageAdminSettingsQuorum =
 
 instance Page PageAdminSettingsQuorum
 
+-- FIXME: the following names are a little ridiculous.  s/PageAdminSettingsGaPUsersView/GroupPermUserView/?9
+
 -- | 11.3 Admin settings: Manage groups & permissions
 data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
   deriving (Eq, Show, Read)
