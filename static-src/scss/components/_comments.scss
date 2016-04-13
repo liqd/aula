@@ -46,10 +46,6 @@
         border-bottom: 1px solid $color-grey-light;
         overflow: hidden;
 
-        &:last-child {
-            border-bottom: 0;
-        }
-
         &:first-child {
             @include rem(padding-top, 20px);
             border-top: 1px solid $color-grey-light;
