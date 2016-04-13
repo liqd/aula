@@ -147,3 +147,23 @@ isFeasibleIdea _
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
+
+-- These capabilities are specific to a particular comment. Using IdeaCapability would
+-- be too coarse and would not allow distinguish that authors can delete only their own
+-- comments.
+data CommentCapability
+    = CanReplyComment
+      -- To reply to a comment you need both this capability and the MakeComment capability
+      -- for the corresponding idea.
+    | CanDeleteComment
+  deriving (Enum, Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentCapability
+
+canDeleteComment :: AUID User -> Role -> Comment -> Bool
+canDeleteComment uid role comment = uid `isCreatorOf` comment || role == Moderator
+
+commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
+commentCapabilities uid role comment =
+    [CanDeleteComment | canDeleteComment uid role comment ] <>
+    [CanReplyComment  | not $ comment ^. commentDeleted   ]
