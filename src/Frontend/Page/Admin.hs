@@ -249,11 +249,11 @@ instance FormPage PageAdminSettingsQuorum where
         label_ [class_ "input-append"] $ do
             span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
             inputText_ [class_ "input-number input-appendee"] "school-quorum" v
-            span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
+            span_ [class_ "input-helper"] "% aller Schülerinnen der Schule"
         label_ [class_ "input-append"] $ do
             span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
             inputText_ [class_ "input-number input-appendee"] "class-quorum" v
-            span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
+            span_ [class_ "input-helper"] "% aller Schülerinnen der Klasse"
         DF.inputSubmit "Änderungen speichern"
 
 adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
