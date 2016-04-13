@@ -236,7 +236,7 @@ instance Arbitrary DelegationContext where
 instance Arbitrary Delegation where
     arbitrary = garbitrary
 
-instance Arbitrary ListItemIdeaContext where
+instance Arbitrary WhatListPage where
     arbitrary = garbitrary
 
 instance Arbitrary ListItemIdea where

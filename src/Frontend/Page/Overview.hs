@@ -10,7 +10,7 @@ module Frontend.Page.Overview
     ( PageRoomsOverview(..)
     , PageIdeasOverview(..)
     , PageIdeasInDiscussion(..)
-    , ListItemIdeaContext(..), ListItemIdea(ListItemIdea), ListItemIdeas(ListItemIdeas)
+    , WhatListPage(..), ListItemIdea(ListItemIdea), ListItemIdeas(ListItemIdeas)
     , QuorumBar(QuorumBar)
     , viewRooms
     , viewIdeas
@@ -174,8 +174,7 @@ instance ToHtml Tabs where
 
 -- * idea lists
 
-data ListItemIdeaContext  -- TODO: rename to 'ListLocation'?  'Context' is used for too many things.
-                          -- 'Position'?  i think my favorite so far would be `WhatList`.  ~~mf
+data WhatListPage
     = IdeaInIdeasOverview
     | IdeaInViewTopic
     | IdeaInUserProfile
@@ -183,7 +182,7 @@ data ListItemIdeaContext  -- TODO: rename to 'ListLocation'?  'Context' is used 
 
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
-      , _listItemIdeaContext    :: ListItemIdeaContext
+      , _listItemIdeaWhatPage   :: WhatListPage
       , _listItemIdeaInfo       :: ListInfoForIdea
       }
   deriving (Eq, Show, Read, Generic)
@@ -196,14 +195,14 @@ data ListItemIdeas =
         }
   deriving (Eq, Show, Read, Generic)
 
-instance SOP.Generic ListItemIdeaContext
+instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
 instance SOP.Generic ListItemIdeas
 
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx listItemIdeaContext (ListInfoForIdea idea mphase quo)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea mphase quo)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
@@ -211,7 +210,7 @@ instance ToHtml ListItemIdea where
                         idea
                         mphase
 
-            when (IdeaInViewTopic == listItemIdeaContext) $ do
+            when (IdeaInViewTopic == whatListPage) $ do
                 when (MarkFeasiblity `elem` caps) . div_ $ do
                     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
                         explToHtml (Markdown text) = do
