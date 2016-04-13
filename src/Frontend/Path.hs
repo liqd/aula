@@ -28,7 +28,7 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
+import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
              , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
              , CommentContext(..), IdeaJuryResultType(..))
 
@@ -77,6 +77,9 @@ isPostOnly = \case
             OnComment _ _ cm ->
                 case cm of
                     VoteComment{} -> True
+                    DeleteComment -> True
+                    ReportComment -> True
+                    ViewComment   -> False
                     ReplyComment  -> False
             _ -> False
 
@@ -185,9 +188,12 @@ ideaMode (OnComment ctx c m)            root = commentMode ctx c m root
 ideaMode CreateIdea                     root = root </> "idea" </> "create"
 
 commentMode :: CommentContext -> AUID Comment -> CommentMode -> UriPath -> UriPath
-commentMode (CommentContext idea mc) c m root =
+commentMode (CommentContext idea mc) c@(AUID c') m root =
     case m of
         ReplyComment  -> base </> "reply"
+        DeleteComment -> base </> "delete"
+        ReportComment -> base </> "report"
+        ViewComment   -> root </> "idea" </> uriPart i </> fromString ("#comment-" <> show c')
         VoteComment v -> base </> "vote" </> uriPart v
   where
     i = idea ^. _Id
@@ -248,6 +254,9 @@ admin AdminEvent            path = path </> "event"
 
 data CommentMode
     = ReplyComment
+    | DeleteComment
+    | ReportComment
+    | ViewComment
     | VoteComment UpDown
   deriving (Eq, Ord, Show, Read, Generic)
 
