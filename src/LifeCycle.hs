@@ -1,5 +1,6 @@
-{-# LANGUAGE LambdaCase   #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE ViewPatterns  #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -8,6 +9,8 @@ where
 
 import Control.Lens
 import Data.Monoid
+import GHC.Generics (Generic)
+import qualified Generics.SOP as SOP
 
 import Types
 
@@ -55,7 +58,9 @@ data IdeaCapability
     | CanAddCreatorStatement
     | CanEdit
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
-  deriving (Enum, Eq, Ord, Show, Read)
+  deriving (Enum, Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaCapability
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
 ideaCapabilities u r i mp =
