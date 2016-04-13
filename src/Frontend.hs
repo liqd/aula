@@ -280,8 +280,7 @@ type AulaAdmin =
   :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
-  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[PlainText] InitialPasswordsCsv
-          -- FIXME: use a 'CSV' content-type for 'PasswordListCsv'.  thentos has one.
+  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m

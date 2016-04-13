@@ -1,11 +1,14 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror #-}
@@ -14,7 +17,8 @@ module Frontend.Page.Admin
 where
 
 import Control.Arrow ((&&&))
-import Data.Maybe (mapMaybe)
+import Network.HTTP.Media ((//))
+import Servant
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
@@ -408,11 +412,12 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
 
 instance ToHtml PageAdminSettingsGaPClassesEdit where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit clss users) =
+    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit schoolClss users) =
         adminFrame p . semanticDiv p $ do
             -- FIXME: Make appropiate design
-            div_ . h1_ [class_ "admin-main-heading"] . toHtml $ clss ^. className
-            div_ $ a_ [href_ . U.Admin . U.AdminDlPass $ clss] "Passwordliste"
+            div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
+            div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
+                "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
@@ -429,11 +434,23 @@ data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
 
 instance SOP.Generic InitialPasswordsCsv
 
-instance MimeRender PlainText InitialPasswordsCsv where
+type InitialPasswordsCsvH = Headers '[Header "Content-Disposition" String] InitialPasswordsCsv
+
+data CSV
+
+instance Accept CSV where
+    contentType Proxy = "text" // "csv"
+
+instance MimeRender CSV InitialPasswordsCsv where
     mimeRender Proxy (InitialPasswordsCsv rows) = Csv.encode rows
 
-adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsv
+instance MimeRender CSV InitialPasswordsCsvH where
+    mimeRender proxy (Headers v _) = mimeRender proxy v
+
+
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsvH
 adminInitialPasswordsCsv clss =
+    addHeader ("attachment; filename=" <> showSchoolClass clss <> ".csv") .
     InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of
@@ -592,7 +609,13 @@ instance Csv.FromRecord CsvUserRecord where
             | otherwise        = Just . UserLogin $ v !! i
 
 instance Csv.ToRecord CsvUserRecord where
-    toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord (show fn, show ln, show em, show li, show pw)
+    toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord
+        (          _fromUserFirstName            fn
+        ,          _fromUserLastName             ln
+        , maybe "" (show . internalEmailAddress) em
+        , maybe "" _fromUserLogin                li
+        , maybe "" id                            pw
+        )
 
 adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
                               => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
@@ -610,7 +633,8 @@ adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPCl
             Right records -> mapM_ (p schoolcl) records
 
     p :: SchoolClass -> CsvUserRecord -> m ()
-    p schoolcl (CsvUserRecord _ _ _ _ (Just _)) = throwError500 "upload FAILED: internal error!"
+    p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
+        throwError500 "upload FAILED: internal error!"
     p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
         update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
