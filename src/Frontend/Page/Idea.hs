@@ -240,7 +240,7 @@ instance ToHtml IdeaVoteLikeBars where
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 toHtml (QuorumBar $ percentLikes idea quo)
-                li_ [class_ "meta-list-item"] $ do
+                span_ [class_ "like-bar"] $ do
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
 

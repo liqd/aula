@@ -11,6 +11,7 @@
     }
 
     .sub-header {
+        @include rem(font-size, $font-size-small);
         @include rem(margin-bottom, 33px);
         display: block;
 
@@ -30,6 +31,18 @@
     .icon-list {
         padding: 0;
         text-align: center;
+    }
+
+    .progress-bar {
+        margin: 0 auto;
+        max-width: 400px;
+    }
+
+    .like-bar {
+        @include rem(font-size, $font-size-smaller);
+        @include rem(margin-top, 5px);
+        color: $color-positive;
+        display: inline-block;
     }
 }
 
