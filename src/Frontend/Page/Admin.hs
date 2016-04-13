@@ -415,7 +415,6 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageAdminSettingsGaPClassesEdit schoolClss users) =
         adminFrame p . semanticDiv p $ do
-            -- FIXME: Make appropiate design
             div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
             div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
                 "Passwort-Liste"
@@ -484,9 +483,9 @@ adminSettingsGaPClassesView =
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
-    editUserPage = query $
+    editUserPage = equery $
         PageAdminSettingsGaPUsersEdit
-        <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
+        <$> (maybe404 =<< findUser uid)
         <*> getSchoolClasses
 
     editUser = update . SetUserRole uid . payloadToUserRole
