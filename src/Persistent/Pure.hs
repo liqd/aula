@@ -63,6 +63,8 @@ module Persistent.Pure
     , findIdeasByTopic
     , findIdeasByUserId
     , findWildIdeasBySpace
+    , findComment
+    , findComment'
     , addLikeToIdea
     , addVoteToIdea
     , addCommentToIdea
@@ -109,6 +111,8 @@ module Persistent.Pure
     , addIdeaJuryResult
     , addIdeaVoteResult
     , editIdea
+    , deleteComment
+    , deleteCommentReply
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
@@ -476,6 +480,26 @@ findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
+findComment :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> MQuery Comment
+findComment iid mparentid cid = preview $ dbIdeaMap . at iid . _Just . ideaComments . l
+  where
+    l = case mparentid of
+            Nothing       -> at cid . _Just
+            Just parentid -> at parentid . _Just . commentReplies . at cid . _Just
+
+-- This function should become useless once the comment ids are complete
+findComment' :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> EQuery (Idea, Maybe Comment, Comment)
+findComment' iid mparentid cid = do
+    idea <- maybe404 =<< findIdea iid
+    case mparentid of
+        Nothing       -> do
+            comment <- maybe404 (idea ^. ideaComments . at cid)
+            pure (idea, Nothing, comment)
+        Just parentid -> do
+            parent <- maybe404 (idea ^. ideaComments . at parentid)
+            comment <- maybe404 $ parent ^. commentReplies . at cid
+            pure (idea, Just parent, comment)
+
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
@@ -495,6 +519,7 @@ instance FromProto Comment where
                             , _commentText      = d
                             , _commentReplies   = nil
                             , _commentVotes     = nil
+                            , _commentDeleted   = False
                             }
 
 
@@ -543,6 +568,15 @@ addIdeaVoteResult :: AUID Idea -> AddDb IdeaVoteResult
 addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
+deleteComment :: AUID Idea -> AUID Comment -> AUpdate ()
+deleteComment iid cid = dbIdeaMap    . at iid . _Just .
+                        ideaComments . at cid . _Just . commentDeleted .= True
+
+deleteCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AUpdate ()
+deleteCommentReply iid cid rid = dbIdeaMap      . at iid . _Just .
+                                 ideaComments   . at cid . _Just .
+                                 commentReplies . at rid . _Just .
+                                 commentDeleted .= True
 
 nextId :: AUpdate (AUID a)
 nextId = AUID <$> (dbLastId <+= 1)

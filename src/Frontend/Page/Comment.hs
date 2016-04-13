@@ -40,7 +40,7 @@ commentToHtml context comment = div_ $ do
         comment ^. commentMeta . to AuthorWidget . html
         VotesWidget context comment ^. html
     div_ [class_ "comments-body"] $ do
-        comment ^. commentText . html
+        if comment ^. commentDeleted then "Kommentar löschen" else comment ^. commentText . html
     footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             button_ [class_ "btn comment-footer-button", onclick_ $ U.replyCommentIdea idea parent] $ do

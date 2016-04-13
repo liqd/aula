@@ -258,6 +258,7 @@ data Comment = Comment
     , _commentText    :: Document
     , _commentVotes   :: CommentVotes
     , _commentReplies :: Comments
+    , _commentDeleted :: Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
