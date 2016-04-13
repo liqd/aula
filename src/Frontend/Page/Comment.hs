@@ -51,7 +51,7 @@ instance ToHtml CommentWidget where
                                                                   & cwComment .~ reply
 
 commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
-commentToHtml w = div_ $ do
+commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
         VotesWidget (w ^. cwIdeaCaps) context comment ^. html
