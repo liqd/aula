@@ -60,6 +60,7 @@ import Config
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
+import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
@@ -248,6 +249,9 @@ instance Arbitrary ListItemIdeas where
 instance Arbitrary ListInfoForIdea where
     arbitrary = garbitrary
 
+instance Arbitrary IdeaCapability where
+    arbitrary = garbitrary
+
 
 -- * comment
 
@@ -258,6 +262,12 @@ instance Arbitrary CommentVote where
     arbitrary = garbitrary
 
 instance Arbitrary UpDown where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentContext where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentCapability where
     arbitrary = garbitrary
 
 
@@ -393,6 +403,9 @@ instance Arbitrary P.Main where
     arbitrary = suchThat garbitrary (not . P.isBroken)
 
 instance Arbitrary P.IdeaMode where
+    arbitrary = garbitrary
+
+instance Arbitrary P.CommentMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.Space where
