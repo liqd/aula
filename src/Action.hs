@@ -49,6 +49,12 @@ module Action
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
 
+      -- * reporting and deleting comments
+    , deleteIdeaComment
+    , deleteIdeaCommentReply
+    , reportIdeaComment
+    , reportIdeaCommentReply
+
       -- * topic handling
     , topicInRefinementTimedOut
     , topicInVotingTimedOut
@@ -91,11 +97,11 @@ import qualified Data.Vector as V
 import Action.Smtp
 import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
-import Frontend.Path (listTopicIdeas)
 import LifeCycle
 import Persistent
 import Persistent.Api
 import Types
+import qualified Frontend.Path as U
 
 
 -- * constraint types
@@ -296,7 +302,7 @@ phaseAction topic phasact = do
             , ""
             , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
             , "    " <> (cfg ^. exposedUrl . csi)
-                     <> (absoluteUriPath . relPath $ listTopicIdeas topic)
+                     <> (absoluteUriPath . relPath $ U.listTopicIdeas topic)
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
@@ -346,6 +352,55 @@ voteIdeaComment ideaId commentId = currentUserAddDb_ (AddCommentVoteToIdeaCommen
 voteIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
 voteIdeaCommentReply ideaId commentId replyId =
     currentUserAddDb_ (AddCommentVoteToIdeaCommentReply ideaId commentId replyId)
+
+-- * Reporting and deleting comments
+
+deleteIdeaComment :: AUID Idea -> AUID Comment -> ActionPersist m => m ()
+deleteIdeaComment ideaId commentId = update $ DeleteComment ideaId commentId
+
+deleteIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> ActionPersist m => m ()
+deleteIdeaCommentReply ideaId commentId replyId =
+    update $ DeleteCommentReply ideaId commentId replyId
+
+-- FIXME:
+-- One might want to check that the parameters corresponds to an existing comment.
+-- More generally do we do anything to prevent abuse of the report system?
+-- One thing could be log the event or count the reports made by one user.
+-- Since no record of the report are kept in base not only multiple users can
+-- report the same comment but the same user can report multiple times.
+reportIdeaCommentOrReply :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment
+                         -> (ActionPersist m, ActionSendMail m) => m ()
+reportIdeaCommentOrReply iid mparentid cid = do
+    (idea, mparent, comment) <- equery $ findComment' iid mparentid cid
+    let uri = relPath $ U.onComment idea mparent comment U.ViewComment
+    cfg <- viewConfig
+    sendMailToRole Moderator EmailMessage
+        { _msgSubject = "[Aula] Thema in der Ergebnisphase"
+        , _msgBody = ST.unlines
+            [ "Liebe Moderatoren,"
+            , ""
+            -- FIXME english
+            , "the comment:"
+            , ""
+            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            -- FIXME english
+            , "has been reported..."
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+        , _msgHtml = Nothing -- Not supported yet
+        }
+
+reportIdeaComment :: AUID Idea -> AUID Comment
+                  -> (ActionPersist m, ActionSendMail m) => m ()
+reportIdeaComment iid cid = reportIdeaCommentOrReply iid Nothing cid
+
+reportIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment
+                       -> (ActionPersist m, ActionSendMail m) => m ()
+reportIdeaCommentReply iid cid rid = reportIdeaCommentOrReply iid (Just cid) rid
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throws an exception.
 -- It runs the phase change computations if happens.
