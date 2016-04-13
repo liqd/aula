@@ -443,7 +443,12 @@ instance Accept CSV where
     contentType Proxy = "text" // "csv"
 
 instance MimeRender CSV InitialPasswordsCsv where
-    mimeRender Proxy (InitialPasswordsCsv rows) = Csv.encode rows
+    mimeRender Proxy (InitialPasswordsCsv rows) =
+        cs (intercalate "," csvUserRecordHeaders <> "\n")
+        <> Csv.encode rows
+
+csvUserRecordHeaders :: [String]
+csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
 
 instance MimeRender CSV InitialPasswordsCsvH where
     mimeRender proxy (Headers v _) = mimeRender proxy v
