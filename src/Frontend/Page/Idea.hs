@@ -128,7 +128,7 @@ instance ToHtml ViewIdea where
                                     "bearbeiten"
                                 when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
                                     i_ [class_ "icon-sign-out"] nil
-                                "Idee verschieben"
+                                    "Idee verschieben"
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
