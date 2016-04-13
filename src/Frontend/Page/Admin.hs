@@ -425,7 +425,7 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     th_ "Name"
                     th_ nil
                 tbody_ . forM_ users $ \user -> tr_ $ do
-                    td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                    td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
