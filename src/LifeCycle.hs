@@ -9,7 +9,7 @@ where
 import Control.Lens
 import Data.Monoid
 
-import Types hiding (Comment)
+import Types
 
 
 -- * Phase transition matrix
@@ -46,14 +46,14 @@ phaseTrans _ _ = Nothing
 --
 -- The view of an idea is default and controlled by access control.
 data IdeaCapability
-    = QuorumVote -- aka Like
-    | Vote
-    | Comment
-    | MarkFeasiblity -- also can add jury statement
-    | MarkWinner
-    | AddCreatorStatement
-    | Edit
-    | MoveBetweenTopics  -- also move between (and into and out of) topics
+    = CanLike
+    | CanVote
+    | CanComment
+    | CanMarkFeasiblity -- also can add jury statement
+    | CanMarkWinner
+    | CanAddCreatorStatement
+    | CanEdit
+    | CanMoveBetweenTopics  -- also move between (and into and out of) topics
   deriving (Enum, Eq, Ord, Show, Read)
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
@@ -63,10 +63,10 @@ ideaCapabilities u r i mp =
     <> moveBetweenTopicsCap r
 
 editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
-editCap uid r i = [Edit | r == Moderator || i ^. createdBy == uid]
+editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
 
 moveBetweenTopicsCap :: Role -> [IdeaCapability]
-moveBetweenTopicsCap r = [MoveBetweenTopics | r ==  Moderator]
+moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 
 phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
 phaseCap _ r i Nothing  = wildIdeaCap i r
@@ -78,7 +78,7 @@ phaseCap u r i (Just p) = case p of
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
-    Student    _clss -> [QuorumVote, Comment]
+    Student    _clss -> [CanLike, CanComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -87,7 +87,7 @@ wildIdeaCap _i = \case
 
 phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
 phaseRefinementCap _i = \case
-    Student    _clss -> [Comment]
+    Student    _clss -> [CanComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -100,12 +100,12 @@ phaseJuryCap _i = \case
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
-    Principal        -> [MarkFeasiblity]
+    Principal        -> [CanMarkFeasiblity]
     Admin            -> []
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> onFeasibleIdea i [Vote]
+    Student    _clss -> onFeasibleIdea i [CanVote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -114,10 +114,10 @@ phaseVotingCap i = \case
 
 phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
-    Student    _clss -> [AddCreatorStatement | u `isCreatorOf` i]
+    Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> onFeasibleIdea i [MarkWinner]
+    Moderator        -> onFeasibleIdea i [CanMarkWinner]
     Principal        -> []
     Admin            -> []
 

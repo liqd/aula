@@ -211,7 +211,7 @@ instance ToHtml ListItemIdea where
                         mphase
 
             when (IdeaInViewTopic == listItemIdeaContext) $ do
-                when (MarkFeasiblity `elem` caps) . div_ $ do
+                when (CanMarkFeasiblity `elem` caps) . div_ $ do
                     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
                         explToHtml (Markdown text) = do
                             p_ "Begründung:"

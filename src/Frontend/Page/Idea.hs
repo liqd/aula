@@ -123,14 +123,14 @@ instance ToHtml ViewIdea where
                    , href_ . U.listIdeas $ idea ^. ideaLocation
                    ] $ backLink (idea ^. ideaLocation)
 
-                when (any (`elem` caps) [Edit, MoveBetweenTopics]) $ do
+                when (any (`elem` caps) [CanEdit, CanMoveBetweenTopics]) $ do
                     nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"] $ do
-                                when (Edit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
+                                when (CanEdit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
-                                when (MoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
+                                when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
                                     i_ [class_ "icon-sign-out"] nil
                                 "Idee verschieben"
 
@@ -245,7 +245,7 @@ instance ToHtml IdeaVoteLikeBars where
                 bs
 
             likeButtons :: Html ()
-            likeButtons = if QuorumVote `elem` caps
+            likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
                         postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"]
                             (U.likeIdea idea) "dafür!"
@@ -267,7 +267,7 @@ instance ToHtml IdeaVoteLikeBars where
                 noVotes  :: Int = 12
 
             voteButtons :: Html ()
-            voteButtons = if Vote `elem` caps
+            voteButtons = if CanVote `elem` caps
                 then div_ [class_ "voting-buttons"] $ do
                     voteButton Yes     "dafür"
                     voteButton Neutral "neutral"
