@@ -175,6 +175,7 @@ instance ToHtml Tabs where
 -- * idea lists
 
 data ListItemIdeaContext  -- TODO: rename to 'ListLocation'?  'Context' is used for too many things.
+                          -- 'Position'?  i think my favorite so far would be `WhatList`.  ~~mf
     = IdeaInIdeasOverview
     | IdeaInViewTopic
     | IdeaInUserProfile
