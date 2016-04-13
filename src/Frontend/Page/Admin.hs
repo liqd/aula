@@ -25,6 +25,7 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Text.Email.Parser as Email
 
 import Action
 import Persistent.Api
@@ -610,11 +611,11 @@ instance Csv.FromRecord CsvUserRecord where
 
 instance Csv.ToRecord CsvUserRecord where
     toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord
-        (          _fromUserFirstName            fn
-        ,          _fromUserLastName             ln
-        , maybe "" (show . internalEmailAddress) em
-        , maybe "" _fromUserLogin                li
-        , maybe "" id                            pw
+        (          _fromUserFirstName                          fn
+        ,          _fromUserLastName                           ln
+        , maybe "" (Email.toByteString . internalEmailAddress) em
+        , maybe "" _fromUserLogin                              li
+        , maybe "" id                                          pw
         )
 
 adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
