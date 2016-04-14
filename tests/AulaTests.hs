@@ -17,6 +17,7 @@ import Control.Exception (bracket)
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
+import Test.Hspec.Wai (WaiExpectation)
 
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
@@ -109,3 +110,6 @@ runFrontendSafeFork cfg = do
 
 passes :: Expectation
 passes = return ()
+
+wpasses :: WaiExpectation
+wpasses = return ()

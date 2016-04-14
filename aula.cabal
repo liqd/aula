@@ -305,6 +305,7 @@ test-suite spec
     , servant-server
     , string-conversions
     , text
+    , wai-extra
     , wreq
   other-modules:
       AllModulesSpec

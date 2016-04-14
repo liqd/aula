@@ -90,8 +90,6 @@ isPostOnly = \case
 -- FIXME: fix & remove
 isBroken :: Main -> Bool
 isBroken Broken = True
-isBroken (IdeaPath _ (JudgeIdea _ _)) = True
-    -- ('JudgeIdea' won't work until we stop using src/Arbitrary.hs instead of test scripts.)
 isBroken _      = False
 
 instance SOP.Generic Main
