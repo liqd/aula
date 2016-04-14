@@ -429,46 +429,6 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
-data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic InitialPasswordsCsv
-
-type InitialPasswordsCsvH = Headers '[HeaderListEntry__] InitialPasswordsCsv
-type HeaderListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
-
-data CSV
-
-instance Accept CSV where
-    contentType Proxy = "text" // "csv"
-
-instance MimeRender CSV InitialPasswordsCsv where
-    mimeRender Proxy (InitialPasswordsCsv rows) =
-        cs (intercalate "," csvUserRecordHeaders <> "\n")
-        <> Csv.encode rows
-
-csvUserRecordHeaders :: [String]
-csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
-
-instance MimeRender CSV InitialPasswordsCsvH where
-    mimeRender proxy (Headers v _) = mimeRender proxy v
-
-
-adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsvH
-adminInitialPasswordsCsv clss =
-    addHeader ("attachment; filename=" <> showSchoolClass clss <> ".csv") .
-    InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
-  where
-    mk u = case u ^. userPassword of
-        UserPassInitial ps -> Just $ CsvUserRecord
-              (u ^. userFirstName)
-              (u ^. userLastName)
-              (u ^. userEmail)
-              (Just $ u ^. userLogin)
-              (Just ps)
-        _ -> Nothing
-
-
 adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
     makeFrame =<< PageAdminSettingsGaPUsersView <$> query getUsers
@@ -567,8 +527,39 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-theOnlySchoolYearHack :: Int
-theOnlySchoolYearHack = 2016
+adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
+                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
+adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
+  where
+    q :: BatchCreateUsersFormData -> m ()
+    q (BatchCreateUsersFormData _clname Nothing) =
+        throwError500 "upload FAILED: no file!"  -- FIXME: status code?
+    q (BatchCreateUsersFormData clname (Just file)) = do
+        let schoolcl = SchoolClass theOnlySchoolYearHack clname
+        eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
+        case eCsv of
+            Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
+                                             -- FIXME: status code?
+            Right records -> mapM_ (p schoolcl) records
+
+    p :: SchoolClass -> CsvUserRecord -> m ()
+    p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
+        throwError500 "upload FAILED: internal error!"
+    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+      void $ do
+        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
+        pwd <- mkRandomPassword
+        currentUserAddDb AddUser ProtoUser
+            { _protoUserLogin     = mLogin
+            , _protoUserFirstName = firstName
+            , _protoUserLastName  = lastName
+            , _protoUserRole      = Student schoolcl
+            , _protoUserPassword  = pwd
+            , _protoUserEmail     = mEmail
+            }
+
+
+-- * csv file handling
 
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
@@ -580,6 +571,15 @@ data CsvUserRecord = CsvUserRecord
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CsvUserRecord
+
+data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic InitialPasswordsCsv
+
+type InitialPasswordsCsvH = Headers '[HeaderListEntry__] InitialPasswordsCsv
+type HeaderListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
+
 
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
 -- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
@@ -623,33 +623,34 @@ instance Csv.ToRecord CsvUserRecord where
         , fromMaybe ""                                         pw
         )
 
-adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
-                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
-adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
-  where
-    q :: BatchCreateUsersFormData -> m ()
-    q (BatchCreateUsersFormData _clname Nothing) =
-        throwError500 "upload FAILED: no file!"  -- FIXME: status code?
-    q (BatchCreateUsersFormData clname (Just file)) = do
-        let schoolcl = SchoolClass theOnlySchoolYearHack clname
-        eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
-        case eCsv of
-            Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
-                                             -- FIXME: status code?
-            Right records -> mapM_ (p schoolcl) records
 
-    p :: SchoolClass -> CsvUserRecord -> m ()
-    p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
-        throwError500 "upload FAILED: internal error!"
-    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
-      void $ do
-        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-        pwd <- mkRandomPassword
-        currentUserAddDb AddUser ProtoUser
-            { _protoUserLogin     = mLogin
-            , _protoUserFirstName = firstName
-            , _protoUserLastName  = lastName
-            , _protoUserRole      = Student schoolcl
-            , _protoUserPassword  = pwd
-            , _protoUserEmail     = mEmail
-            }
+data CSV
+
+instance Accept CSV where
+    contentType Proxy = "text" // "csv"
+
+instance MimeRender CSV InitialPasswordsCsv where
+    mimeRender Proxy (InitialPasswordsCsv rows) =
+        cs (intercalate "," csvUserRecordHeaders <> "\n")
+        <> Csv.encode rows
+
+csvUserRecordHeaders :: [String]
+csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
+
+instance MimeRender CSV InitialPasswordsCsvH where
+    mimeRender proxy (Headers v _) = mimeRender proxy v
+
+
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsvH
+adminInitialPasswordsCsv clss =
+    addHeader ("attachment; filename=" <> showSchoolClass clss <> ".csv") .
+    InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
+  where
+    mk u = case u ^. userPassword of
+        UserPassInitial ps -> Just $ CsvUserRecord
+              (u ^. userFirstName)
+              (u ^. userLastName)
+              (u ^. userEmail)
+              (Just $ u ^. userLogin)
+              (Just ps)
+        _ -> Nothing

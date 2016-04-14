@@ -311,6 +311,10 @@ data SchoolClass = SchoolClass
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+-- | FIXME: needs to be gone by the end of school year 2016!
+theOnlySchoolYearHack :: Int
+theOnlySchoolYearHack = 2016
+
 schoolClass :: Int -> ST -> SchoolClass
 schoolClass = SchoolClass
 
