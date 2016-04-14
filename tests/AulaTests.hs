@@ -31,6 +31,7 @@ import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
 
+
 testConfig :: IO Config
 testConfig = do
     cfg <- readConfig DontWarnMissing
@@ -102,3 +103,9 @@ runFrontendSafeFork cfg = do
           (Network.Wreq.get $ mkServerUri cfg "/")
           (\(_ :: HttpException) -> threadDelay 4900 >> loop)
     loop >> return threadId
+
+
+-- * Expectations
+
+passes :: Expectation
+passes = return ()
