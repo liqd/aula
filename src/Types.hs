@@ -420,7 +420,6 @@ instance SOP.Generic ProtoUser
 
 -- | Contains all the information which is needed to render
 -- a user role dependent functionality.
--- FIXME: Use more appropiate information.
 newtype RenderContext = RenderContext { _renderContextUser :: User }
   deriving (Eq, Read, Show)
 
