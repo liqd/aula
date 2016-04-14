@@ -378,7 +378,7 @@ reportIdeaCommentOrReply iid mparentid cid = do
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
-            , "Der Kommentar wurde als problematisch gemeldet:"
+            , "Ein Verbesserungsvorschlag wurde als problematisch gemeldet:"
             , ""
             , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
                 -- FIXME: do we want to send urls by email?  phishing and all?

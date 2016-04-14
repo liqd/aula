@@ -363,13 +363,13 @@ instance FormPage CommentIdea where
     formPage v form p@(CommentIdea idea _mcomment) =
         semanticDiv p $ do
             div_ [class_ "container-comment-idea"] $ do
-                h1_ [class_ "main-heading"] $ "Kommentar zu " <> idea ^. ideaTitle . html
+                h1_ [class_ "main-heading"] $ "Verbesserungsvorschlag zu " <> idea ^. ideaTitle . html
                 form $ do
                     label_ $ do
                         span_ [class_ "label-text"] "Was möchtest du sagen?"
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "comment-text" v
                     footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Kommentar abgeben"
+                        DF.inputSubmit "Verbesserungsvorschlag abgeben"
 
 instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue
