@@ -96,6 +96,8 @@ type Percent = Int
 data Either3 a b c = Left3 a | Middle3 b | Right3 c
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a b c)
+
 
 -- * prototypes for types
 
@@ -1016,27 +1018,3 @@ countIdeaVotes v = countEq v ideaVoteValue
 
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
-
-
--- * event log
-
-data EventLog = EventLog IdeaSpace [(Timestamp, EventLogItem)]
-  deriving (Eq, Ord, Show, Read)
-
-data EventLogItem =
-    EventLogUserCreates           User (Either3 Topic Idea Comment)
-  | EventLogUserEdits             User (Either3 Topic Idea Comment)
-  | EventLogUserMarksIdeaFeasible User IdeaJuryResultValue Idea
-  | EventLogUserVotesOnIdea       User Idea IdeaVote
-  | EventLogUserVotesOnComment    User Idea CommentVote
-  | EventLogUserDelegates         User Delegation User
-  | EventLogTopicMovesFromTo      Phase Phase EventTriggeredBy
-  | EventLogIdeaMovesToTopic      User Idea Topic
-  | EventLogIdeaWins              User Idea
-  deriving (Eq, Ord, Show, Read)
-
-data EventTriggeredBy =
-    EventTriggeredBy User
-  | EventTriggeredByTimeout
-  | EventTriggeredByAllIdeasMarked
-  deriving (Eq, Ord, Show, Read)
