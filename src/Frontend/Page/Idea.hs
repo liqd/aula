@@ -227,7 +227,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget caps ctx (CommentContext idea Nothing) c ^. html
+                        CommentWidget ctx caps (CommentContext idea Nothing) c ^. html
 
 
 instance ToHtml IdeaVoteLikeBars where

@@ -29,8 +29,8 @@ import LifeCycle
 import qualified Frontend.Path as U
 
 data CommentWidget = CommentWidget
-    { _cwIdeaCaps      :: [IdeaCapability]
-    , _cwRenderContext :: RenderContext
+    { _cwRenderContext :: RenderContext
+    , _cwIdeaCaps      :: [IdeaCapability]
     , _cwContext       :: CommentContext
     , _cwComment       :: Comment
     }
