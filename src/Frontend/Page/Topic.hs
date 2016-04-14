@@ -21,7 +21,7 @@ module Frontend.Page.Topic
 where
 
 import Action ( ActionM, ActionPersist(..), ActionUserHandler, ActionExcept
-              , renderContext, getCurrentTimestamp
+              , getCurrentTimestamp
               )
 import Control.Exception (assert)
 import Frontend.Page.Category

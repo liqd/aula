@@ -24,7 +24,6 @@ where
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, equery, mquery, update
               , markIdeaInJuryPhase
-              , renderContext
               )
 import LifeCycle
 import Frontend.Page.Category

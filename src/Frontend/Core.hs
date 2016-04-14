@@ -16,6 +16,8 @@
 
 module Frontend.Core
     ( Singular, CaptureData, (::>), Reply
+    , RenderContext(..)
+    , renderContext, renderContextUser
     , GetH
     , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
@@ -102,6 +104,19 @@ type instance CaptureData Topic              = AUID Topic
 type instance CaptureData UpDown             = UpDown
 type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
+
+
+-- | Contains all the information which is needed to render a user role dependent functionality.
+data RenderContext = RenderContext
+      { _renderContextUser     :: User
+      }
+  deriving (Eq, Read, Show)
+
+makeLenses ''RenderContext
+
+-- | Calculates the render context for role sensitive page rendering
+renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
+renderContext = RenderContext <$> currentUser
 
 
 -- | FIXME: Could this be a PR for lucid?

@@ -33,7 +33,6 @@ module Action
     , currentUser
     , currentUserId
     , modifyCurrentUser
-    , renderContext
     , isLoggedIn
     , validUserState
     , validLoggedIn
@@ -250,10 +249,6 @@ currentUser = do
     case muser of
         Just user -> pure user
         Nothing   -> logout >> throwError500 "Unknown user identitifer"
-
--- | Calculates the render context for role sensitive page rendering
-renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
-renderContext = RenderContext <$> currentUser
 
 -- | Modify the current user.
 modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
