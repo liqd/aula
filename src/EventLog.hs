@@ -64,7 +64,7 @@ eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
 instance CSV.ToRecord EventLogItem where
     toRecord (EventLogItem ispace timestamp user ev) = CSV.toRecord
         [ showIdeaSpace ispace
-        , renderTimestamp timestamp
+        , showTimestamp timestamp
         , user ^. userLogin . fromUserLogin . csi
         ] <> f ev
       where

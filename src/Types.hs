@@ -624,11 +624,11 @@ newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
 
 instance Binary Timestamp where
-    put = put . renderTimestamp
+    put = put . showTimestamp
     get = get >>= maybe mzero return . parseTimestamp
 
 instance Show Timestamp where
-    show = renderTimestamp
+    show = showTimestamp
 
 instance Read Timestamp where
     readsPrec _ s = case splitAt timestampFormatLength $ dropWhile isSpace s of
@@ -638,8 +638,8 @@ instance Read Timestamp where
 parseTimestamp :: String -> Maybe Timestamp
 parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat
 
-renderTimestamp :: Timestamp -> String
-renderTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
+showTimestamp :: Timestamp -> String
+showTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
 
 timestampFormat :: String
 timestampFormat = "%F_%T_%q"
