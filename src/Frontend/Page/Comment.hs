@@ -29,11 +29,10 @@ import LifeCycle
 import qualified Frontend.Path as U
 
 data CommentWidget = CommentWidget
-    { _cwIdeaCaps :: [IdeaCapability]
-    , _cwUserId   :: AUID User
-    , _cwRole     :: Role
-    , _cwContext  :: CommentContext
-    , _cwComment  :: Comment
+    { _cwIdeaCaps      :: [IdeaCapability]
+    , _cwRenderContext :: RenderContext
+    , _cwContext       :: CommentContext
+    , _cwComment       :: Comment
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -78,4 +77,5 @@ commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
     idea = context ^. parentIdea
     mparent = context ^. parentComment
     parent = fromMaybe comment mparent
-    comCaps = commentCapabilities (w ^. cwUserId) (w ^. cwRole) comment
+    user = w ^. cwRenderContext . renderContextUser
+    comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment
