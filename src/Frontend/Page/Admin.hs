@@ -618,8 +618,8 @@ instance Csv.ToRecord CsvUserRecord where
     toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord
         ( fn ^. _UserFirstName
         , ln ^. _UserLastName
-        , maybe (nil :: ST) (emailAddress #) em
-        , maybe (nil :: ST) _fromUserLogin li
+        , em ^. _Just . re emailAddress
+        , li ^. _Just . _UserLogin
         , pw ^. _Just
         )
 

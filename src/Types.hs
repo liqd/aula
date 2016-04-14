@@ -747,6 +747,7 @@ makePrisms ''PermissionContext
 makePrisms ''EmailAddress
 makePrisms ''UserLastName
 makePrisms ''UserFirstName
+makePrisms ''UserLogin
 
 makeLenses ''Category
 makeLenses ''Comment
