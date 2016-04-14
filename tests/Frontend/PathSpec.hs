@@ -21,7 +21,7 @@ import Servant.HTML.Lucid
 import Servant.Missing hiding (redirect)
 import Servant.Mock (HasMock(..), mock)
 import Test.Hspec (Spec, beforeAll, describe, it)
-import Test.Hspec.Wai (get, post, pendingWith)
+import Test.Hspec.Wai (get, post)
 import Test.QuickCheck (Arbitrary, Gen, forAll, property)
 import Text.Digestive.View (getForm)
 
@@ -72,7 +72,7 @@ spec = do
                     case s of
                         204 -> wpasses
                         200 -> wpasses
-                        _   -> pendingWith (msg <> show (uri, s, b))
+                        _   -> error (msg <> show (uri, s, b))
   where
     mainGen :: Gen Main
     mainGen = arbitrary
