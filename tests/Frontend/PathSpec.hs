@@ -59,7 +59,7 @@ spec = do
         beforeAll mockAulaMain $ do
             it "Every path has a handler" $ \app -> property . forAll mainGen $ \path ->
                 flip Wai.property app $ do
-                    let uri = cs . absoluteUriPath $ relPath path
+                    let uri = cs . ST.takeWhile (/= '#') . absoluteUriPath $ relPath path
                     resp :: SResponse <- if isPostOnly path then post uri ""
                                                             else get  uri
                     let s :: Int    = statusCode . simpleStatus $ resp
