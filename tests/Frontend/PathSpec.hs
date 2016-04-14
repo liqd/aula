@@ -35,6 +35,8 @@ import Network.Wai
 import Test.Hspec.Wai (get, post, shouldRespondWith)
 import qualified Test.Hspec.Wai.QuickCheck as Wai (property)
 
+-- | FIXME: confusingly, see also @Frontend.Path.isBroken@.  One limits reach of arbitrary instance,
+-- the other the reach of the tests in this module.  Both should go away, ideally.
 isBrokenPath :: Main -> Bool
 isBrokenPath = \case
     IdeaPath _ m ->

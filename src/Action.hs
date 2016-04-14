@@ -353,6 +353,7 @@ voteIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> Create_ Com
 voteIdeaCommentReply ideaId commentId replyId =
     currentUserAddDb_ (AddCommentVoteToIdeaCommentReply ideaId commentId replyId)
 
+
 -- * Reporting and deleting comments
 
 deleteIdeaComment :: AUID Idea -> AUID Comment -> ActionPersist m => m ()
@@ -363,8 +364,8 @@ deleteIdeaCommentReply ideaId commentId replyId =
     update $ DeleteCommentReply ideaId commentId replyId
 
 -- FIXME:
--- One might want to check that the parameters corresponds to an existing comment.
--- More generally do we do anything to prevent abuse of the report system?
+-- One might want to check that the parameters correspond to an existing comment.
+-- More generally: do we do anything to prevent abuse of the report system?
 -- One thing could be log the event or count the reports made by one user.
 -- Since no record of the report are kept in base not only multiple users can
 -- report the same comment but the same user can report multiple times.
@@ -379,14 +380,10 @@ reportIdeaCommentOrReply iid mparentid cid = do
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
-            -- FIXME english
-            , "the comment:"
+            , "Der Kommentar wurde als problematisch gemeldet:"
             , ""
             , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
-            , ""
-            -- FIXME english
-            , "has been reported..."
             , ""
             , "hochachtungsvoll,"
             , "Ihr Aula-Benachrichtigungsdienst"
