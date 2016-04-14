@@ -1026,8 +1026,8 @@ data EventLog = EventLog IdeaSpace [(Timestamp, EventLogItem)]
   deriving (Eq, Ord, Show, Read)
 
 data EventLogItem =
-    EventLogUserCreates           User (Either Topic Idea Comment)
-  | EventLogUserEdits             User (Either Topic Idea Comment)
+    EventLogUserCreates           User (Either3 Topic Idea Comment)
+  | EventLogUserEdits             User (Either3 Topic Idea Comment)
   | EventLogUserMarksIdeaFeasible User IdeaJuryResultValue Idea
   | EventLogUserVotesOnIdea       User Idea IdeaVote
   | EventLogUserVotesOnComment    User Idea CommentVote
