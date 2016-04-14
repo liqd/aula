@@ -616,12 +616,12 @@ instance Csv.FromRecord CsvUserRecord where
 
 instance Csv.ToRecord CsvUserRecord where
     toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord
-        ( fn ^. _UserFirstName
+        [ fn ^. _UserFirstName
         , ln ^. _UserLastName
         , em ^. _Just . re emailAddress
         , li ^. _Just . _UserLogin
         , pw ^. _Just
-        )
+        ]
 
 
 data CSV
