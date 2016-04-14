@@ -244,6 +244,7 @@ data AdminPs =
   | AdminEditUser (AUID User)
   | AdminEditClass SchoolClass
   | AdminEvent
+  | AdminDlPass SchoolClass
   deriving (Generic, Show)
 
 instance SOP.Generic AdminPs
@@ -255,6 +256,7 @@ admin (AdminAccess ctx)     path = path </> "access" </> uriPart ctx
 admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"
+admin (AdminDlPass clss)    path = path </> "passwords" </> uriPart clss
 
 data CommentMode
     = ReplyComment

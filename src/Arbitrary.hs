@@ -237,7 +237,7 @@ instance Arbitrary DelegationContext where
 instance Arbitrary Delegation where
     arbitrary = garbitrary
 
-instance Arbitrary ListItemIdeaContext where
+instance Arbitrary WhatListPage where
     arbitrary = garbitrary
 
 instance Arbitrary ListItemIdea where
@@ -358,6 +358,7 @@ instance Arbitrary UserSettingData where
 instance Arbitrary RenderContext where
     arbitrary = RenderContext <$> arbitrary
 
+
 -- * admin
 
 userForClass :: SchoolClass -> Gen User
@@ -377,6 +378,12 @@ instance Arbitrary RoleSelection where
     arbitrary = garbitrary
 
 instance Arbitrary EditUserPayload where
+    arbitrary = garbitrary
+
+instance Arbitrary InitialPasswordsCsv where
+    arbitrary = garbitrary
+
+instance Arbitrary CsvUserRecord where
     arbitrary = garbitrary
 
 -- FIXME: instance Arbitrary Delegation
