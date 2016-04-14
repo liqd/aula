@@ -409,7 +409,6 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- * path
 
 instance Arbitrary P.Main where
-    -- FIXME: Remove Broken
     arbitrary = suchThat garbitrary (not . P.isBroken)
 
 instance Arbitrary P.IdeaMode where
