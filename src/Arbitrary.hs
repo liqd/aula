@@ -28,6 +28,7 @@ module Arbitrary
     , fishAvatarsPath
     , fishAvatars
     , constantSampleTimestamp
+    , sampleEventLog
     ) where
 
 import Control.Applicative ((<**>))
@@ -44,7 +45,7 @@ import Servant
 import System.FilePath (takeBaseName)
 import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat, resize)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -789,6 +790,13 @@ instance Arbitrary EventLogItemValue where
 
 instance Arbitrary PhaseTransitionTriggeredBy where
     arbitrary = garbitrary
+
+{-# NOINLINE sampleEventLog #-}
+sampleEventLog :: EventLog
+sampleEventLog = unsafePerformIO sampleEventLogIO
+
+sampleEventLogIO :: IO EventLog
+sampleEventLogIO = generate $ resize 1000 arbitrary
 
 
 -- * constant sample values

@@ -57,6 +57,14 @@ instance SOP.Generic EventLogItemValue
 instance SOP.Generic PhaseTransitionTriggeredBy
 
 
+filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
+filterEventLog mspc (EventLog rows) = EventLog $ filter f rows
+  where
+    f = case mspc of
+          Nothing  -> const True
+          Just spc -> (\(EventLogItem spc' _ _ _) -> spc' == spc)
+
+
 eventLogItemCsvHeaders :: [String]
 eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
 

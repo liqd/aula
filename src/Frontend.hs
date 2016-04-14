@@ -35,9 +35,11 @@ import Thentos.Frontend.State (serveFAction)
 
 import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
+import Arbitrary (sampleEventLog)
 import Config
 import CreateRandom
 import Data.UriPath
+import EventLog
 import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Testing
@@ -293,6 +295,8 @@ type AulaAdmin =
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
   :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
+  :<|> "events" :> Get '[CSV] EventLog
+  :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] EventLog
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
@@ -307,6 +311,13 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
+  :<|> adminEventLogCsv Nothing
+  :<|> adminEventLogCsv . Just
+
+-- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
+-- condition as long as we pull data from Arbitrary rather than from the actual events.
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m EventLog
+adminEventLogCsv mspc = filterEventLog mspc <$> pure sampleEventLog
 
 
 catch404 :: Middleware

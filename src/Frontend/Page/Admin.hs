@@ -634,6 +634,13 @@ instance MimeRender CSV InitialPasswordsCsv where
         cs (intercalate "," csvUserRecordHeaders <> "\n")
         <> Csv.encode rows
 
+instance MimeRender CSV EventLog where
+    mimeRender Proxy (EventLog []) = "[Keine Daten]"
+    mimeRender Proxy (EventLog rows) =
+        cs (intercalate "," eventLogItemCsvHeaders <> "\n")
+        <> Csv.encode rows
+
+
 csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
 
