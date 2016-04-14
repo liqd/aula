@@ -25,7 +25,6 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Text.Email.Parser as Email
 
 import Action
 import Persistent.Api
