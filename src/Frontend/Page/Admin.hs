@@ -1,11 +1,15 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE ViewPatterns      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror #-}
 
@@ -13,7 +17,8 @@ module Frontend.Page.Admin
 where
 
 import Control.Arrow ((&&&))
-import Data.Maybe (mapMaybe)
+import Network.HTTP.Media ((//))
+import Servant
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
@@ -43,6 +48,8 @@ data PageAdminSettingsQuorum =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsQuorum
+
+-- FIXME: the following names are a little ridiculous.  s/PageAdminSettingsGaPUsersView/GroupPermUserView/?9
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
@@ -241,11 +248,11 @@ instance FormPage PageAdminSettingsQuorum where
         label_ [class_ "input-append"] $ do
             span_ [class_ "label-text"] "Wie hoch soll das Quorum schulweit sein?"
             inputText_ [class_ "input-number input-appendee"] "school-quorum" v
-            span_ [class_ "input-helper"] "% aller Schulerinnen der Schule"
+            span_ [class_ "input-helper"] "% aller Schülerinnen der Schule"
         label_ [class_ "input-append"] $ do
             span_ [class_ "label-text"] "Wie hoch soll das Quorum klassenweit sein?"
             inputText_ [class_ "input-number input-appendee"] "class-quorum" v
-            span_ [class_ "input-helper"] "% aller Schulerinnen der Klasse"
+            span_ [class_ "input-helper"] "% aller Schülerinnen der Klasse"
         DF.inputSubmit "Änderungen speichern"
 
 adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
@@ -405,21 +412,21 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
 
 instance ToHtml PageAdminSettingsGaPClassesEdit where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit clss users) =
+    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit schoolClss users) =
         adminFrame p . semanticDiv p $ do
-            -- FIXME: Make appropiate design
-            div_ . h1_ . toHtml $ clss ^. className
+            div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
+            div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
+                "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
                     th_ "Name"
                     th_ nil
                 tbody_ . forM_ users $ \user -> tr_ $ do
-                    td_ . span_ [class_ "img-container"] $ img_ [src_ U.Broken]
+                    td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                     td_ . toHtml $ user ^. userLogin . fromUserLogin
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
--- FIXME: Fetch limited number of users ("pagination").
 
 adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
@@ -436,9 +443,9 @@ adminSettingsGaPClassesView =
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
 adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
   where
-    editUserPage = query $
+    editUserPage = equery $
         PageAdminSettingsGaPUsersEdit
-        <$> ((\(Just u) -> u) <$> findUser uid) -- FIXME: Error handling (404?)
+        <$> (maybe404 =<< findUser uid)
         <*> getSchoolClasses
 
     editUser = update . SetUserRole uid . payloadToUserRole
@@ -447,24 +454,14 @@ payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
 payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
-isClassInRole :: SchoolClass -> Role -> Bool
-isClassInRole clss (Student clss')    = clss == clss'
-isClassInRole clss (ClassGuest clss') = clss == clss'
-isClassInRole _    _                  = False
+adminSettingsGaPClassesEdit :: (ActionPersist m, ActionUserHandler m)
+    => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
+adminSettingsGaPClassesEdit clss = makeFrame =<< adminSettingsGaPClassesEditPage clss
 
-getSchoolClasses :: Query [SchoolClass]
-getSchoolClasses = mapMaybe toClass <$> getSpaces
-  where
-    toClass (ClassSpace clss) = Just clss
-    toClass _                 = Nothing
-
-adminSettingsGaPClassesEdit :: ActionM m => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
-adminSettingsGaPClassesEdit clss =
-    makeFrame =<< PageAdminSettingsGaPClassesEdit clss <$> usersInClass
-  where
-    -- FIXME: the following two lines should be happening in "Persistent.Api".
-    usersInClass = filter isUserInClass <$> query getUsers
-    isUserInClass = isClassInRole clss . view userRole
+adminSettingsGaPClassesEditPage :: (ActionPersist m, ActionUserHandler m)
+    => SchoolClass -> m PageAdminSettingsGaPClassesEdit
+adminSettingsGaPClassesEditPage clss =
+    PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
 
 
 -- ** Events protocol
@@ -529,23 +526,69 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-theOnlySchoolYearHack :: Int
-theOnlySchoolYearHack = 2016
+adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
+                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
+adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
+  where
+    q :: BatchCreateUsersFormData -> m ()
+    q (BatchCreateUsersFormData _clname Nothing) =
+        throwError500 "upload FAILED: no file!"  -- FIXME: status code?
+    q (BatchCreateUsersFormData clname (Just file)) = do
+        let schoolcl = SchoolClass theOnlySchoolYearHack clname
+        eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
+        case eCsv of
+            Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
+                                             -- FIXME: status code?
+            Right records -> mapM_ (p schoolcl) records
+
+    p :: SchoolClass -> CsvUserRecord -> m ()
+    p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
+        throwError500 "upload FAILED: internal error!"
+    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+      void $ do
+        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
+        pwd <- mkRandomPassword
+        currentUserAddDb AddUser ProtoUser
+            { _protoUserLogin     = mLogin
+            , _protoUserFirstName = firstName
+            , _protoUserLastName  = lastName
+            , _protoUserRole      = Student schoolcl
+            , _protoUserPassword  = pwd
+            , _protoUserEmail     = mEmail
+            }
+
+
+-- * csv file handling
 
 data CsvUserRecord = CsvUserRecord
     { _csvUserRecordFirst       :: UserFirstName
     , _csvUserRecordLast        :: UserLastName
     , _csvUserRecordEmail       :: Maybe EmailAddress
     , _csvUserRecordLogin       :: Maybe UserLogin
+    , _csvUserRecordInitialPass :: Maybe ST
     }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic CsvUserRecord
+
+data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic InitialPasswordsCsv
+
+type InitialPasswordsCsvH = Headers '[HeaderListEntry__] InitialPasswordsCsv
+type HeaderListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
+
+
+-- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
+-- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
 instance Csv.FromRecord CsvUserRecord where
     parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
         <$> (UserFirstName <$> parseName 50 0)
         <*> (UserLastName <$> parseName 50 1)
         <*> parseMEmail 2
         <*> pure (parseMLogin 3)
+        <*> pure Nothing
       where
         parseName :: (Monad m) => Int -> Int -> m ST
         parseName maxLength i
@@ -570,31 +613,43 @@ instance Csv.FromRecord CsvUserRecord where
             | v !! i == ""     = Nothing
             | otherwise        = Just . UserLogin $ v !! i
 
-adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
-                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
-adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
-  where
-    q :: BatchCreateUsersFormData -> m ()
-    q (BatchCreateUsersFormData _clname Nothing) =
-        throwError500 "upload FAILED: no file!"  -- FIXME: status code?
-    q (BatchCreateUsersFormData clname (Just file)) = do
-        let schoolcl = SchoolClass theOnlySchoolYearHack clname
-        eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
-        case eCsv of
-            Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
-                                             -- FIXME: status code?
-            Right records -> mapM_ (p schoolcl) records
+instance Csv.ToRecord CsvUserRecord where
+    toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord
+        [ fn ^. _UserFirstName
+        , ln ^. _UserLastName
+        , em ^. _Just . re emailAddress
+        , li ^. _Just . _UserLogin
+        , pw ^. _Just
+        ]
 
-    p :: SchoolClass -> CsvUserRecord -> m ()
-    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin) = do
-      void $ do
-        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-        pwd <- mkRandomPassword
-        currentUserAddDb AddUser ProtoUser
-            { _protoUserLogin     = mLogin
-            , _protoUserFirstName = firstName
-            , _protoUserLastName  = lastName
-            , _protoUserRole      = Student schoolcl
-            , _protoUserPassword  = pwd
-            , _protoUserEmail     = mEmail
-            }
+
+data CSV
+
+instance Accept CSV where
+    contentType Proxy = "text" // "csv"
+
+instance MimeRender CSV InitialPasswordsCsv where
+    mimeRender Proxy (InitialPasswordsCsv rows) =
+        cs (intercalate "," csvUserRecordHeaders <> "\n")
+        <> Csv.encode rows
+
+csvUserRecordHeaders :: [String]
+csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
+
+instance MimeRender CSV InitialPasswordsCsvH where
+    mimeRender proxy (Headers v _) = mimeRender proxy v
+
+
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsvH
+adminInitialPasswordsCsv clss =
+    addHeader ("attachment; filename=" <> showSchoolClass clss <> ".csv") .
+    InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
+  where
+    mk u = case u ^. userPassword of
+        UserPassInitial ps -> Just $ CsvUserRecord
+              (u ^. userFirstName)
+              (u ^. userLastName)
+              (u ^. userEmail)
+              (Just $ u ^. userLogin)
+              (Just ps)
+        _ -> Nothing

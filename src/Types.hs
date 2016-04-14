@@ -90,6 +90,10 @@ instance SOP.Generic DurationDays
 -- | Percentage values from 0 to 100, used in quorum computations.
 type Percent = Int
 
+data Either3 a b c = Left3 a | Middle3 b | Right3 c
+  deriving (Eq, Ord, Show, Read, Generic)
+
+
 -- * prototypes for types
 
 -- | Prototype for a type.
@@ -310,6 +314,10 @@ data SchoolClass = SchoolClass
     , _className       :: ST  -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- | FIXME: needs to be gone by the end of school year 2016!
+theOnlySchoolYearHack :: Int
+theOnlySchoolYearHack = 2016
 
 schoolClass :: Int -> ST -> SchoolClass
 schoolClass = SchoolClass
@@ -739,6 +747,7 @@ makePrisms ''PermissionContext
 makePrisms ''EmailAddress
 makePrisms ''UserLastName
 makePrisms ''UserFirstName
+makePrisms ''UserLogin
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -1010,3 +1019,27 @@ countIdeaVotes v = countEq v ideaVoteValue
 
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
+
+
+-- * event log
+
+data EventLog = EventLog IdeaSpace [(Timestamp, EventLogItem)]
+  deriving (Eq, Ord, Show, Read)
+
+data EventLogItem =
+    EventLogUserCreates           User (Either3 Topic Idea Comment)
+  | EventLogUserEdits             User (Either3 Topic Idea Comment)
+  | EventLogUserMarksIdeaFeasible User IdeaJuryResultValue Idea
+  | EventLogUserVotesOnIdea       User Idea IdeaVote
+  | EventLogUserVotesOnComment    User Idea CommentVote
+  | EventLogUserDelegates         User Delegation User
+  | EventLogTopicMovesFromTo      Phase Phase EventTriggeredBy
+  | EventLogIdeaMovesToTopic      User Idea Topic
+  | EventLogIdeaWins              User Idea
+  deriving (Eq, Ord, Show, Read)
+
+data EventTriggeredBy =
+    EventTriggeredBy User
+  | EventTriggeredByTimeout
+  | EventTriggeredByAllIdeasMarked
+  deriving (Eq, Ord, Show, Read)

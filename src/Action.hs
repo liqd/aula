@@ -362,7 +362,10 @@ markIdeaInJuryPhase iid rv = do
 
 checkCloseJuryPhase :: ActionM m => Topic -> m ()
 checkCloseJuryPhase topic = do
-    -- FIXME: should this be one transaction?
+    -- FIXME: should this be one transaction?  [~~mf] -- I think so, and the same above. I think an
+    -- alternative is to check (in the operations above that modify the DB, internally, necessarily
+    -- within a single transaction with the update) that the current values are as expected, and if
+    -- not abort with an error like "the ideal is not in the expected phase".  [~~mk]
     allMarked <- query $ checkAllIdeasMarked topic
     when allMarked $ do
         days <- getCurrentTimestamp >>= \now -> query $ phaseEndVote now

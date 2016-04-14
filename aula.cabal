@@ -47,11 +47,12 @@ library
     , generic-aeson
     , generics-sop
     , http-client
+    , http-media
     , http-types
     , lens
     , lucid
-    , mtl
     , mime-mail
+    , mtl
     , pretty-show
     , process
     , QuickCheck
@@ -141,11 +142,12 @@ executable aula-html-dummies
     , generic-aeson
     , generics-sop
     , http-client
+    , http-media
     , http-types
     , lens
     , lucid
-    , mtl
     , mime-mail
+    , mtl
     , pretty-show
     , process
     , QuickCheck
@@ -202,11 +204,12 @@ executable aula-server
     , generic-aeson
     , generics-sop
     , http-client
+    , http-media
     , http-types
     , lens
     , lucid
-    , mtl
     , mime-mail
+    , mtl
     , pretty-show
     , process
     , QuickCheck
@@ -261,11 +264,12 @@ test-suite spec
     , generic-aeson
     , generics-sop
     , http-client
+    , http-media
     , http-types
     , lens
     , lucid
-    , mtl
     , mime-mail
+    , mtl
     , pretty-show
     , process
     , QuickCheck

@@ -280,6 +280,7 @@ type AulaAdmin =
   :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
+  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
@@ -293,6 +294,8 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPUserEdit
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
+  :<|> Page.adminInitialPasswordsCsv
+
 
 catch404 :: Middleware
 catch404 app req cont = app req $ \resp -> cont $ f resp
