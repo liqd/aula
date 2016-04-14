@@ -71,8 +71,8 @@ makeTopicTimeout tid = do
 type RenderHtmlSource = Capture "login" UserLogin :> RenderHtmlSource'
 
 type RenderHtmlSource' =
-       "idea"  :> Capture "iid" (AUID Idea)  :> Get '[PlainText] String
-  :<|> "topic" :> Capture "tid" (AUID Topic) :> Get '[PlainText] String
+       Idea  ::> Get '[PlainText] String
+  :<|> Topic ::> Get '[PlainText] String
   :<|> "user"  :> "settings" :> Get '[PlainText] String
   :<|> "admin" :> SchoolClass ::> "edit" :> Get '[PlainText] String
 

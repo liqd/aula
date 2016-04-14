@@ -616,11 +616,11 @@ instance Csv.FromRecord CsvUserRecord where
 
 instance Csv.ToRecord CsvUserRecord where
     toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord
-        (          _fromUserFirstName                          fn
-        ,          _fromUserLastName                           ln
-        , maybe "" (Email.toByteString . internalEmailAddress) em
-        , maybe "" _fromUserLogin                              li
-        , fromMaybe ""                                         pw
+        ( fn ^. _UserFirstName
+        , ln ^. _UserLastName
+        , maybe (nil :: ST) (emailAddress #) em
+        , maybe (nil :: ST) _fromUserLogin li
+        , pw ^. _Just
         )
 
 
