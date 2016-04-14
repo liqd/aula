@@ -434,7 +434,8 @@ data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
 
 instance SOP.Generic InitialPasswordsCsv
 
-type InitialPasswordsCsvH = Headers '[Header "Content-Disposition" String] InitialPasswordsCsv
+type InitialPasswordsCsvH = Headers '[HeaderListEntry__] InitialPasswordsCsv
+type HeaderListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
 
 data CSV
 
