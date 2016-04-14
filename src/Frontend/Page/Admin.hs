@@ -620,7 +620,7 @@ instance Csv.ToRecord CsvUserRecord where
         ,          _fromUserLastName                           ln
         , maybe "" (Email.toByteString . internalEmailAddress) em
         , maybe "" _fromUserLogin                              li
-        , maybe "" id                                          pw
+        , fromMaybe ""                                         pw
         )
 
 adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
