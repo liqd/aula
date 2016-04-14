@@ -412,7 +412,12 @@ instance Arbitrary P.Main where
     arbitrary = suchThat garbitrary (not . P.isBroken)
 
 instance Arbitrary P.IdeaMode where
-    arbitrary = garbitrary
+    arbitrary = prune <$> garbitrary
+      where
+        -- replies to sub-comments are turned into replies to the parent comment.
+        prune (P.OnComment (CommentContext idea (Just c)) _c'        P.ReplyComment)
+             = P.OnComment (CommentContext idea Nothing)  (c ^. _Id) P.ReplyComment
+        prune m = m
 
 instance Arbitrary P.CommentMode where
     arbitrary = garbitrary
