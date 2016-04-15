@@ -11,20 +11,19 @@ module AulaTests.StoriesSpec where
 
 import Prelude hiding ((.), id)
 import Control.Category
-import Control.Lens
 import Control.Monad (join)
 import Control.Monad.Trans.Except
 import Servant
 import Test.Hspec
 
 import Action.Implementation
-import Config
-import CreateRandom (genInitialTestDb)
+import DemoData (genInitialTestDb)
 
 import qualified Action
 import qualified Persistent
 import qualified Persistent.Api as Persistent
 
+import AulaTests (testConfig)
 import AulaTests.Stories.DSL
 import AulaTests.Stories.Interpreter.Action
 import AulaTests.Stories.Tests
@@ -40,7 +39,7 @@ spec = describe "stories" $ do
 story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
-        cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig DontWarnMissing
+        cfg <- testConfig
         Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO

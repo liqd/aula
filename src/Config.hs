@@ -11,23 +11,25 @@ module Config
     , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
+    , aulaRoot
     , dbPath
     , exposedUrl
+    , getSamplesPath
     , htmlStatic
     , listenerInterface
     , listenerPort
+    , logger
+    , persistConfig
     , persistenceImpl
     , readConfig
-    , aulaRoot
-    , setCurrentDirectoryToAulaRoot
-    , getSamplesPath
-    , logger
-    , smtpConfig
-    , senderName
-    , senderEmail
-    , sendmailPath
-    , sendmailArgs
     , releaseVersion
+    , senderEmail
+    , senderName
+    , sendmailArgs
+    , sendmailPath
+    , setCurrentDirectoryToAulaRoot
+    , smtpConfig
+    , snapshotIntervalMinutes
     )
 where
 
@@ -74,15 +76,23 @@ data SmtpConfig = SmtpConfig
 
 makeLenses ''SmtpConfig
 
+data PersistConfig = PersistConfig
+    { _dbPath                  :: String
+    , _persistenceImpl         :: PersistenceImpl
+    , _snapshotIntervalMinutes :: Int
+    }
+  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+
+makeLenses ''PersistConfig
+
 data Config = Config
-    { _dbPath            :: FilePath  -- FIXME: should be part of @_persistentImpl@
-    , _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
+    { _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
     , _listenerInterface :: String
     , _listenerPort      :: Int
     , _htmlStatic        :: FilePath
     , _cfgCsrfSecret     :: CsrfSecret
     , _logLevel          :: Bool  -- (see 'logger' below)
-    , _persistenceImpl   :: PersistenceImpl
+    , _persistConfig     :: PersistConfig
     , _smtpConfig        :: SmtpConfig
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
@@ -110,17 +120,23 @@ defaultSmtpConfig = SmtpConfig
     , _sendmailPath = "/usr/sbin/sendmail"
     , _sendmailArgs = ["-t"] }
 
+defaultPersistConfig :: PersistConfig
+defaultPersistConfig = PersistConfig
+    { _dbPath                  = "./state/AulaData"
+    , _persistenceImpl         = AcidStateInMem
+    , _snapshotIntervalMinutes = 47
+    }
+
 defaultConfig :: Config
 defaultConfig = Config
-    { _dbPath            = "./state/AulaData"
-    , _exposedUrl        = "https://localhost:8080"
+    { _exposedUrl        = "http://localhost:8080"
     , _listenerInterface = "0.0.0.0"
     , _listenerPort      = 8080
     , _htmlStatic        = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logLevel          = False
-    , _persistenceImpl   = AcidStateInMem
+    , _persistConfig     = defaultPersistConfig
     , _smtpConfig        = defaultSmtpConfig
     }
 

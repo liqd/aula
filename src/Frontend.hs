@@ -37,7 +37,7 @@ import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
 import Arbitrary (sampleEventLog)
 import Config
-import CreateRandom
+import DemoData
 import Data.UriPath
 import EventLog
 import Frontend.Core
@@ -317,7 +317,7 @@ aulaAdmin =
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
 adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m EventLog
-adminEventLogCsv mspc = filterEventLog mspc <$> pure sampleEventLog
+adminEventLogCsv mspc = filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
 
 
 catch404 :: Middleware

@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE FlexibleInstances           #-}
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
@@ -27,7 +28,7 @@ import Frontend.Path as U
 import Types
 
 
-data EventLog = EventLog [EventLogItem]
+data EventLog = EventLog URL [EventLogItem]
   deriving (Eq, Ord, Show, Read, Generic)
 
 data EventLogItem = EventLogItem IdeaSpace Timestamp User EventLogItemValue
@@ -58,7 +59,7 @@ instance SOP.Generic PhaseTransitionTriggeredBy
 
 
 filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
-filterEventLog mspc (EventLog rows) = EventLog $ filter f rows
+filterEventLog mspc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
   where
     f (EventLogItem spc' _ _ _) = maybe True (== spc') mspc
 
@@ -67,8 +68,8 @@ eventLogItemCsvHeaders :: [String]
 eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
 
 
-instance CSV.ToRecord EventLogItem where
-    toRecord (EventLogItem ispace timestamp user ev) = CSV.toRecord
+instance CSV.ToRecord (URL, EventLogItem) where
+    toRecord (domainUrl, EventLogItem ispace timestamp user ev) = CSV.toRecord
         [ showIdeaSpace ispace
         , showTimestamp timestamp
         , user ^. userLogin . fromUserLogin . csi
@@ -81,7 +82,7 @@ instance CSV.ToRecord EventLogItem where
                            <> ST.take 30 (c ^. commentText . showed . csi) <> "..."
 
         objLink :: Either3 Topic Idea Comment -> ST
-        objLink = absoluteUriPath . relPath . objLink'
+        objLink = (domainUrl <>) . absoluteUriPath . relPath . objLink'
 
         objLink' :: Either3 Topic Idea Comment -> U.Main
         objLink' (Left3   t) = U.listTopicIdeas t

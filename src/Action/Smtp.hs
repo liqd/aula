@@ -78,7 +78,7 @@ sendMailToAddressIO receiver msg = do
     cfg <- viewConfig
     let scfg   = cfg ^. smtpConfig
         sender = Address (Just $ scfg ^. senderName . to cs) (scfg ^. senderEmail . to cs)
-        subj   = "[" <> msg ^. msgISpace . showed . csi <> "] " <> msg ^. msgSubject
+        subj   = "[" <> msg ^. msgISpace . to showIdeaSpace . csi <> "] " <> msg ^. msgSubject
         mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody)
     r <- liftIO $ do
         logger cfg {- debug -} $ "sending email: " <> ppShow (receiver, msg)

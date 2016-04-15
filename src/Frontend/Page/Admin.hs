@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
@@ -635,10 +636,10 @@ instance MimeRender CSV InitialPasswordsCsv where
         <> Csv.encode rows
 
 instance MimeRender CSV EventLog where
-    mimeRender Proxy (EventLog []) = "[Keine Daten]"
-    mimeRender Proxy (EventLog rows) =
+    mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
+    mimeRender Proxy (EventLog domainUrl rows) =
         cs (intercalate "," eventLogItemCsvHeaders <> "\n")
-        <> Csv.encode rows
+        <> Csv.encode ((domainUrl,) <$> rows)
 
 
 csvUserRecordHeaders :: [String]

@@ -647,8 +647,9 @@ fishDelegationNetworkIO = do
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 
-    -- We use @AcidStateInMem@ here to make sure it doesn't rust.
-    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig Config.DontWarnMissing
+    cfg <- (persistConfig . persistenceImpl .~ AcidStateInMem)
+        <$> Config.readConfig Config.DontWarnMissing
+        -- FIXME: we should use AulaTests.testConfig here, but that's under /tests/
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
@@ -792,11 +793,13 @@ instance Arbitrary PhaseTransitionTriggeredBy where
     arbitrary = garbitrary
 
 {-# NOINLINE sampleEventLog #-}
-sampleEventLog :: EventLog
-sampleEventLog = unsafePerformIO sampleEventLogIO
+sampleEventLog :: Config -> EventLog
+sampleEventLog = unsafePerformIO . sampleEventLogIO
 
-sampleEventLogIO :: IO EventLog
-sampleEventLogIO = generate $ resize 1000 arbitrary
+sampleEventLogIO :: Config -> IO EventLog
+sampleEventLogIO cfg = do
+    EventLog _ rows <- generate $ resize 1000 arbitrary
+    pure $ EventLog (cs $ cfg ^. exposedUrl) rows
 
 
 -- * constant sample values

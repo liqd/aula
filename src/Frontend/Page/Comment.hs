@@ -55,7 +55,9 @@ commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
         comment ^. commentMeta . to AuthorWidget . html
         VotesWidget (w ^. cwIdeaCaps) context comment ^. html
     div_ [class_ "comments-body"] $ do
-        if comment ^. commentDeleted then "Verbesserungsvorschlag löschen" else comment ^. commentText . html
+        if comment ^. commentDeleted
+            then "[Inhalt gelöscht]"
+            else comment ^. commentText . html
     footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
