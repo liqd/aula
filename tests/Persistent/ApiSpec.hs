@@ -19,7 +19,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Arbitrary ()
-import CreateRandom
+import DemoData hiding (generate)
 import Config
 import Persistent
 import Persistent.Api

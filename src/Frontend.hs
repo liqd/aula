@@ -37,7 +37,7 @@ import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
 import Arbitrary (sampleEventLog)
 import Config
-import CreateRandom
+import DemoData
 import Data.UriPath
 import EventLog
 import Frontend.Core

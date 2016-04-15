@@ -17,7 +17,7 @@ import Servant
 import Test.Hspec
 
 import Action.Implementation
-import CreateRandom (genInitialTestDb)
+import DemoData (genInitialTestDb)
 
 import qualified Action
 import qualified Persistent
