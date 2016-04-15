@@ -647,8 +647,9 @@ fishDelegationNetworkIO = do
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 
-    -- We use @AcidStateInMem@ here to make sure it doesn't rust.
-    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig Config.DontWarnMissing
+    cfg <- (persistConfig . persistenceImpl .~ AcidStateInMem)
+        <$> Config.readConfig Config.DontWarnMissing
+        -- FIXME: we should use AulaTests.testConfig here, but that's under /tests/
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)

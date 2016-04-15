@@ -25,6 +25,6 @@ withPersist' mkRunP m = do
 
 mkRunPersist :: Config -> IO RunPersist
 mkRunPersist cfg =
-    case cfg ^. persistenceImpl of
+    case cfg ^. persistConfig . persistenceImpl of
         AcidStateInMem  -> mkRunPersistInMemory
         AcidStateOnDisk -> mkRunPersistOnDisk cfg
