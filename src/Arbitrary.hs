@@ -217,6 +217,9 @@ instance Arbitrary Category where
 instance Arbitrary IdeaLike where
     arbitrary = garbitrary
 
+instance Arbitrary IdeaVoteLikeId where
+    arbitrary = garbitrary
+
 instance Arbitrary IdeaVote where
     arbitrary = garbitrary
 
@@ -265,7 +268,13 @@ instance Arbitrary IdeaCapability where
 instance Arbitrary Comment where
     arbitrary = garbitrary' (`div` 3)
 
+instance Arbitrary CommentId where
+    arbitrary = garbitrary
+
 instance Arbitrary CommentVote where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentVoteId where
     arbitrary = garbitrary
 
 instance Arbitrary UpDown where
@@ -423,8 +432,8 @@ instance Arbitrary P.IdeaMode where
     arbitrary = prune <$> garbitrary
       where
         -- replies to sub-comments are turned into replies to the parent comment.
-        prune (P.OnComment (CommentContext idea (Just c)) _c'        P.ReplyComment)
-             = P.OnComment (CommentContext idea Nothing)  (c ^. _Id) P.ReplyComment
+        prune (P.OnComment (CommentId loc idea (c:_) _) P.ReplyComment)
+             = P.OnComment (CommentId loc idea []    c) P.ReplyComment
         prune m = m
 
 instance Arbitrary P.CommentMode where
