@@ -8,6 +8,7 @@ module Data.UriPath
     ( UriPart
     , UriPath
     , (</>)
+    , (</#>)
     , absoluteUriPath
     , relativeUriPath
     , HasPath(..)
@@ -38,9 +39,16 @@ instance Monoid UriPath where
     DiffUriParts ps `mappend` DiffUriParts qs = DiffUriParts (ps . qs)
 
 infixl 7 </>
+infixl 7 </#>
 
 (</>) :: UriPath -> UriPart -> UriPath
 DiffUriParts ps </> p = DiffUriParts (ps . (p :))
+
+(</#>) :: UriPath -> UriPart -> UriPath
+ps </#> p = ps </> addHash p
+
+addHash :: UriPart -> UriPart
+addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
 
 instance IsString UriPath where
     fromString s = DiffUriParts (ps ++)

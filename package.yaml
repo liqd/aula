@@ -109,4 +109,5 @@ tests:
       - servant-server
       - string-conversions
       - text
+      - wai-extra
       - wreq

@@ -17,6 +17,7 @@ import Control.Exception (bracket)
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
+import Test.Hspec.Wai (WaiExpectation)
 
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
@@ -30,6 +31,7 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
+
 
 testConfig :: IO Config
 testConfig = do
@@ -102,3 +104,12 @@ runFrontendSafeFork cfg = do
           (Network.Wreq.get $ mkServerUri cfg "/")
           (\(_ :: HttpException) -> threadDelay 4900 >> loop)
     loop >> return threadId
+
+
+-- * Expectations
+
+passes :: Expectation
+passes = return ()
+
+wpasses :: WaiExpectation
+wpasses = return ()

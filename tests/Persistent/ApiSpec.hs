@@ -28,7 +28,7 @@ import Types
 import qualified Action
 import qualified Action.Implementation as Action
 
-import AulaTests (testConfig)
+import AulaTests (testConfig, passes)
 
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
@@ -219,9 +219,3 @@ regression imp = describe "regression" $ do
         addDbSpecProp imp
             "addIdea" getIdeas AddIdea
             (\p (Right i) -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)
-
-
--- * Expectations
-
-passes :: Expectation
-passes = return ()

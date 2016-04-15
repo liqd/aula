@@ -262,6 +262,7 @@ data Comment = Comment
     , _commentText    :: Document
     , _commentVotes   :: CommentVotes
     , _commentReplies :: Comments
+    , _commentDeleted :: Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -424,12 +425,6 @@ data ProtoUser = ProtoUser
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
-
--- | Contains all the information which is needed to render
--- a user role dependent functionality.
--- FIXME: Use more appropiate information.
-newtype RenderContext = RenderContext { _renderContextUser :: User }
-  deriving (Eq, Read, Show)
 
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
@@ -784,7 +779,6 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
 makeLenses ''Quorums
-makeLenses ''RenderContext
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category

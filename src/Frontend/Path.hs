@@ -14,10 +14,12 @@ module Frontend.Path
     , UserPs(..)
     , AdminPs(..)
     , IdeaMode(..)
+    , CommentMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea
     , voteCommentIdea, voteCommentIdeaReply, voteCommentWithContext
-    , replyCommentIdea, commentOrReplyIdea, isPostOnly, isBroken
+    , replyCommentIdea, commentOrReplyIdea, isPostOnly, isBroken, onComment
+    , commentAnchor
     )
 where
 
@@ -27,7 +29,7 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types ( AUID, Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
+import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
              , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
              , CommentContext(..), IdeaJuryResultType(..))
 
@@ -73,8 +75,13 @@ isPostOnly = \case
         case m of
             LikeIdea{} -> True
             VoteIdea{} -> True
-            VoteCommentIdea{} -> True
-            VoteCommentIdeaReply{} -> True
+            OnComment _ _ cm ->
+                case cm of
+                    VoteComment{} -> True
+                    DeleteComment -> True
+                    ReportComment -> True
+                    ViewComment   -> False
+                    ReplyComment  -> False
             _ -> False
 
     -- FIXME[#312] Logout -> True
@@ -83,8 +90,6 @@ isPostOnly = \case
 -- FIXME: fix & remove
 isBroken :: Main -> Bool
 isBroken Broken = True
-isBroken (IdeaPath _ (JudgeIdea _ _)) = True
-    -- ('JudgeIdea' won't work until we stop using src/Arbitrary.hs instead of test scripts.)
 isBroken _      = False
 
 instance SOP.Generic Main
@@ -137,9 +142,12 @@ judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
+onComment :: Idea -> Maybe Comment -> Comment -> CommentMode -> Main
+onComment idea mparent comment =
+    IdeaPath (idea ^. ideaLocation) .  OnComment (CommentContext idea mparent) (comment ^. _Id)
+
 replyCommentIdea :: Idea -> Comment -> Main
-replyCommentIdea idea comment =
-    IdeaPath (idea ^. ideaLocation) $ ReplyCommentIdea (idea ^. _Id) (comment ^. _Id)
+replyCommentIdea idea comment = onComment idea Nothing comment ReplyComment
 
 commentOrReplyIdea :: Idea -> Maybe Comment -> Main
 commentOrReplyIdea idea = \case
@@ -147,19 +155,14 @@ commentOrReplyIdea idea = \case
     Just comment -> replyCommentIdea idea comment
 
 voteCommentIdea :: Idea -> Comment -> UpDown -> Main
-voteCommentIdea idea comment =
-    IdeaPath (idea ^. ideaLocation) . VoteCommentIdea (idea ^. _Id) (comment ^. _Id)
+voteCommentIdea idea comment = onComment idea Nothing comment . VoteComment
 
 voteCommentIdeaReply :: Idea -> Comment -> Comment -> UpDown -> Main
-voteCommentIdeaReply idea comment reply =
-    IdeaPath (idea ^. ideaLocation) .
-    VoteCommentIdeaReply (idea ^. _Id) (comment ^. _Id) (reply ^. _Id)
+voteCommentIdeaReply idea comment reply = onComment idea (Just comment) reply . VoteComment
 
 voteCommentWithContext :: CommentContext -> Comment -> UpDown -> Main
-voteCommentWithContext (CommentContext idea mcomment) =
-    case mcomment of
-        Nothing      -> voteCommentIdea idea
-        Just comment -> voteCommentIdeaReply idea comment
+voteCommentWithContext (CommentContext idea mparent) comment =
+    onComment idea mparent comment . VoteComment
 
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
@@ -180,14 +183,26 @@ ideaMode (VoteIdea i v)                 root = root </> "idea" </> uriPart i </>
 ideaMode (JudgeIdea i v)                root = root </> "idea" </> uriPart i </> "jury"
                                                     </> uriPart v
 ideaMode (CommentIdea i)                root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (ReplyCommentIdea i c)         root = root </> "idea" </> uriPart i </> "comment"
-                                                    </> uriPart c </> "reply"
-ideaMode (VoteCommentIdea i c v)        root = root </> "idea" </> uriPart i </> "comment"
-                                                    </> uriPart c </> "vote" </> uriPart v
-ideaMode (VoteCommentIdeaReply i c r v) root = root </> "idea" </> uriPart i </> "comment"
-                                                    </> uriPart c </> "reply" </> uriPart r
-                                                    </> "vote" </> uriPart v
+ideaMode (OnComment ctx c m)            root = commentMode ctx c m root
 ideaMode CreateIdea                     root = root </> "idea" </> "create"
+
+commentAnchor :: IsString s => AUID Comment -> s
+commentAnchor (AUID c) = fromString $ "comment-" <> show c
+
+commentMode :: CommentContext -> AUID Comment -> CommentMode -> UriPath -> UriPath
+commentMode (CommentContext idea mc) c m root =
+    case m of
+        ReplyComment  -> base </> "reply"
+        DeleteComment -> base </> "delete"
+        ReportComment -> base </> "report"
+        ViewComment   -> root </> "idea" </> uriPart i </> "view" </#> commentAnchor c
+        VoteComment v -> base </> "vote" </> uriPart v
+  where
+    i = idea ^. _Id
+    base =
+        case mc of
+            Nothing -> root </> "idea" </> uriPart i </> "comment" </> uriPart c
+            Just p  -> root </> "idea" </> uriPart i </> "comment" </> uriPart (p ^. _Id) </> "reply" </> uriPart c
 
 ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
 ideaPath loc mode root =
@@ -241,6 +256,15 @@ admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "passwords" </> uriPart clss
 
+data CommentMode
+    = ReplyComment
+    | DeleteComment
+    | ReportComment
+    | ViewComment
+    | VoteComment UpDown
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentMode
 
 data IdeaMode =
       ListIdeas
@@ -251,9 +275,7 @@ data IdeaMode =
     | VoteIdea (AUID Idea) IdeaVoteValue
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentIdea (AUID Idea)
-    | ReplyCommentIdea (AUID Idea) (AUID Comment)
-    | VoteCommentIdea (AUID Idea) (AUID Comment) UpDown
-    | VoteCommentIdeaReply (AUID Idea) (AUID Comment) (AUID Comment) UpDown
+    | OnComment CommentContext (AUID Comment) CommentMode
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaMode

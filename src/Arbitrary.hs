@@ -60,6 +60,7 @@ import Config
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
+import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
@@ -248,6 +249,9 @@ instance Arbitrary ListItemIdeas where
 instance Arbitrary ListInfoForIdea where
     arbitrary = garbitrary
 
+instance Arbitrary IdeaCapability where
+    arbitrary = garbitrary
+
 
 -- * comment
 
@@ -258,6 +262,15 @@ instance Arbitrary CommentVote where
     arbitrary = garbitrary
 
 instance Arbitrary UpDown where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentContext where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentCapability where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentWidget where
     arbitrary = garbitrary
 
 
@@ -396,10 +409,17 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- * path
 
 instance Arbitrary P.Main where
-    -- FIXME: Remove Broken
     arbitrary = suchThat garbitrary (not . P.isBroken)
 
 instance Arbitrary P.IdeaMode where
+    arbitrary = prune <$> garbitrary
+      where
+        -- replies to sub-comments are turned into replies to the parent comment.
+        prune (P.OnComment (CommentContext idea (Just c)) _c'        P.ReplyComment)
+             = P.OnComment (CommentContext idea Nothing)  (c ^. _Id) P.ReplyComment
+        prune m = m
+
+instance Arbitrary P.CommentMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.Space where

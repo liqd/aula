@@ -193,6 +193,14 @@ type IdeaApi
   :<|> Idea ::> Comment ::> UpDown ::> PostH
        -- vote on a reply of a comment
   :<|> Idea ::> Comment ::> Reply ::> UpDown ::> PostH
+       -- delete a comment
+  :<|> Idea ::> Comment ::> "delete" :> PostH
+       -- delete a comment reply
+  :<|> Idea ::> Comment ::> Reply ::> "delete" :> PostH
+       -- report a comment
+  :<|> Idea ::> Comment ::> "report" :> PostH
+       -- report a comment reply
+  :<|> Idea ::> Comment ::> Reply ::> "report" :> PostH
        -- jury an idea
   :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
        -- create wild idea
@@ -232,6 +240,10 @@ ideaApi loc
   :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
+  :<|> Action.deleteIdeaComment
+  :<|> Action.deleteIdeaCommentReply
+  :<|> Action.reportIdeaComment
+  :<|> Action.reportIdeaCommentReply
   :<|> Page.judgeIdea
   :<|> Page.createIdea loc
 
