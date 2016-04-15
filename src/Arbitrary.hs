@@ -28,6 +28,7 @@ module Arbitrary
     , fishAvatarsPath
     , fishAvatars
     , constantSampleTimestamp
+    , sampleEventLog
     ) where
 
 import Control.Applicative ((<**>))
@@ -44,7 +45,7 @@ import Servant
 import System.FilePath (takeBaseName)
 import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat, resize)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -57,6 +58,7 @@ import qualified Generics.Generic.Aeson as Aeson
 import Action
 import Action.Implementation
 import Config
+import EventLog
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
@@ -84,6 +86,11 @@ garbitrary = garbitrary' (max 0 . subtract 10)
 
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
+
+instance ( Generic a, Generic b, Generic c
+         , Arbitrary a, Arbitrary b, Arbitrary c
+         ) => Arbitrary (Either3 a b c) where
+    arbitrary = garbitrary
 
 
 -- * pages
@@ -303,6 +310,7 @@ arbTopicPhaseDuration = pure constantSampleTimestamp
 instance Arbitrary Topic where
     arbitrary =
         scaleDown garbitrary
+        <**> (set topicTitle           <$> arbPhrase)
         <**> (set topicDesc . Markdown <$> arbPhrase)
 
 instance Arbitrary Phase where
@@ -764,6 +772,31 @@ instance Aeson.ToJSON D3DN where
         getPower u = toJSON . List.length
                    . List.filter (== (u ^. _Id))
                    . fmap (view delegationTo)
+
+
+-- * event log
+
+instance Arbitrary EventLog where
+    arbitrary = garbitrary
+
+instance Arbitrary EventLogItem where
+    arbitrary = garbitrary
+
+instance Arbitrary EventLogItemValue where
+    arbitrary = garbitrary >>= repair
+      where
+        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
+        repair v = pure v
+
+instance Arbitrary PhaseTransitionTriggeredBy where
+    arbitrary = garbitrary
+
+{-# NOINLINE sampleEventLog #-}
+sampleEventLog :: EventLog
+sampleEventLog = unsafePerformIO sampleEventLogIO
+
+sampleEventLogIO :: IO EventLog
+sampleEventLogIO = generate $ resize 1000 arbitrary
 
 
 -- * constant sample values

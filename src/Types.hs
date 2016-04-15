@@ -82,6 +82,9 @@ type CSI' s a = CSI s s a a
 csi :: CSI s t a b => Iso s t a b
 csi = iso cs cs
 
+showed :: Show a => Getter a String
+showed = to show
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -92,6 +95,8 @@ type Percent = Int
 
 data Either3 a b c = Left3 a | Middle3 b | Right3 c
   deriving (Eq, Ord, Show, Read, Generic)
+
+instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a b c)
 
 
 -- * prototypes for types
@@ -619,11 +624,11 @@ newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
 
 instance Binary Timestamp where
-    put = put . renderTimestamp
+    put = put . showTimestamp
     get = get >>= maybe mzero return . parseTimestamp
 
 instance Show Timestamp where
-    show = renderTimestamp
+    show = showTimestamp
 
 instance Read Timestamp where
     readsPrec _ s = case splitAt timestampFormatLength $ dropWhile isSpace s of
@@ -633,8 +638,8 @@ instance Read Timestamp where
 parseTimestamp :: String -> Maybe Timestamp
 parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat
 
-renderTimestamp :: Timestamp -> String
-renderTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
+showTimestamp :: Timestamp -> String
+showTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
 
 timestampFormat :: String
 timestampFormat = "%F_%T_%q"
@@ -1013,27 +1018,3 @@ countIdeaVotes v = countEq v ideaVoteValue
 
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
-
-
--- * event log
-
-data EventLog = EventLog IdeaSpace [(Timestamp, EventLogItem)]
-  deriving (Eq, Ord, Show, Read)
-
-data EventLogItem =
-    EventLogUserCreates           User (Either3 Topic Idea Comment)
-  | EventLogUserEdits             User (Either3 Topic Idea Comment)
-  | EventLogUserMarksIdeaFeasible User IdeaJuryResultValue Idea
-  | EventLogUserVotesOnIdea       User Idea IdeaVote
-  | EventLogUserVotesOnComment    User Idea CommentVote
-  | EventLogUserDelegates         User Delegation User
-  | EventLogTopicMovesFromTo      Phase Phase EventTriggeredBy
-  | EventLogIdeaMovesToTopic      User Idea Topic
-  | EventLogIdeaWins              User Idea
-  deriving (Eq, Ord, Show, Read)
-
-data EventTriggeredBy =
-    EventTriggeredBy User
-  | EventTriggeredByTimeout
-  | EventTriggeredByAllIdeasMarked
-  deriving (Eq, Ord, Show, Read)

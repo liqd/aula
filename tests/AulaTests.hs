@@ -49,17 +49,26 @@ testConfigPortSource :: MVar [Int]
 testConfigPortSource = unsafePerformIO . newMVar . mconcat $ repeat [18081..29713]
 {-# NOINLINE testConfigPortSource #-}
 
+-- FIXME: error location should be of the caller
+-- FIXME: rename to 'statusShouldBe'
 codeShouldBe :: Int -> Response body -> Expectation
 codeShouldBe code l = l ^. responseStatus . statusCode `shouldBe` code
 
+-- FIXME: error location should be of the caller
 bodyShouldBe :: (Show body, Eq body) => body -> Response body -> Expectation
 bodyShouldBe body l = l ^. responseBody `shouldBe` body
 
+-- FIXME: error location should be of the caller
 bodyShouldContain :: String -> Response LBS -> Expectation
 bodyShouldContain body l = l ^. responseBody . csi `shouldContain` body
 
+-- FIXME: error location should be of the caller
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
+
+-- FIXME: error location should be of the caller
+bodyShouldSatisfy :: (Show body, Eq body) => (body -> Bool) -> Response body -> Expectation
+bodyShouldSatisfy bodyP l = l ^. responseBody `shouldSatisfy` bodyP
 
 data WreqQuery = WreqQuery
     { post :: forall a. Postable a => String -> a -> IO (Response LBS)

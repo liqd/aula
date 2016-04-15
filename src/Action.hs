@@ -309,15 +309,17 @@ phaseAction topic phasact = do
     case phasact of
       JuryPhasePrincipalEmail ->
           sendMailToRole Principal EmailMessage
-              { _msgSubject = "[Aula] Thema in der Prüfungsphase"
-              , _msgBody = topicTemplate "Schulleitung" "Prüfungsphase"
-              , _msgHtml = Nothing -- Not supported yet
+              { _msgISpace  = topic ^. topicIdeaSpace
+              , _msgSubject = "Thema in der Prüfungsphase"
+              , _msgBody    = topicTemplate "Schulleitung" "Prüfungsphase"
+              , _msgHtml    = Nothing -- Not supported yet
               }
       ResultPhaseModeratorEmail ->
           sendMailToRole Moderator EmailMessage
-              { _msgSubject = "[Aula] Thema in der Ergebnisphase"
-              , _msgBody = topicTemplate "Moderatoren" "Ergebnisphase"
-              , _msgHtml = Nothing -- Not supported yet
+              { _msgISpace  = topic ^. topicIdeaSpace
+              , _msgSubject = "Thema in der Ergebnisphase"
+              , _msgBody    = topicTemplate "Moderatoren" "Ergebnisphase"
+              , _msgHtml    = Nothing -- Not supported yet
               }
 
 
@@ -371,11 +373,12 @@ reportIdeaCommentOrReply iid mparentid cid = do
     let uri = relPath $ U.onComment idea mparent comment U.ViewComment
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
-        { _msgSubject = "[Aula] Thema in der Ergebnisphase"
+        { _msgISpace  = idea ^. ideaLocation . ideaLocationSpace
+        , _msgSubject = "Thema in der Ergebnisphase"
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
-            , "Der Kommentar wurde als problematisch gemeldet:"
+            , "Ein Verbesserungsvorschlag wurde als problematisch gemeldet:"
             , ""
             , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
                 -- FIXME: do we want to send urls by email?  phishing and all?

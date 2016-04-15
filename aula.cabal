@@ -84,6 +84,7 @@ library
       CreateRandom
       Data.UriPath
       DemoData
+      EventLog
       Frontend
       Frontend.Core
       Frontend.Page

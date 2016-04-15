@@ -96,5 +96,5 @@ function handleLikeOrVote(e) {
 }
 
 function handleDeleteComment(e) {
-    e.parentNode.parentNode.parentNode.parentNode.childNodes[1].innerHTML = "Kommentar löschen";
+    e.parentNode.parentNode.parentNode.parentNode.childNodes[1].innerHTML = "Verbesserungsvorschlag löschen";
 }

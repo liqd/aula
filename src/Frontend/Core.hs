@@ -304,9 +304,6 @@ tabSelected curTab targetTab
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
 
-showed :: Show a => Getter a String
-showed = to show
-
 data Beside a b = Beside a b
 
 instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
