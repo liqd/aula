@@ -49,13 +49,20 @@ mkRunPersistOnDisk cfg =
     opn aulaData = do
         st <- openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
         tid <- forkIO . forever $ do
-            logger cfg "[create acid-state checkpoint, archive]"
-            createCheckpoint st
-            createArchive st
-            let delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
+            let run = do
+                    logger cfg "[create acid-state checkpoint, archive]"
+                    createCheckpoint st
+                    createArchive st
+
+                catchAll (SomeException e) = do
+                    logger cfg ("error creating checkpoint or archiving changelog: " <> show e)
+
+                delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
                 delay_us = delay_min * 1000000 * 60
+
+            run `catch` catchAll
             threadDelay delay_us
-            -- FIXME: better logging, handle exceptions
+
         pure (st, tid)
 
     cls st tid = do
@@ -65,5 +72,5 @@ mkRunPersistOnDisk cfg =
 mkRunPersistInMemory :: IO RunPersist
 mkRunPersistInMemory =
     mkRunPersistGeneric "acid-state (memory)"
-        (\aulaData -> (, ()) <$> openMemoryState aulaData)
+        (fmap (, ()) . openMemoryState)
         (\st () -> closeAcidState st)
