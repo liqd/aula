@@ -129,7 +129,7 @@ defaultPersistConfig = PersistConfig
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _exposedUrl        = "https://localhost:8080"
+    { _exposedUrl        = "http://localhost:8080"
     , _listenerInterface = "0.0.0.0"
     , _listenerPort      = 8080
     , _htmlStatic        = "./static"
