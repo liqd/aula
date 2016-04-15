@@ -792,11 +792,13 @@ instance Arbitrary PhaseTransitionTriggeredBy where
     arbitrary = garbitrary
 
 {-# NOINLINE sampleEventLog #-}
-sampleEventLog :: EventLog
-sampleEventLog = unsafePerformIO sampleEventLogIO
+sampleEventLog :: Config -> EventLog
+sampleEventLog = unsafePerformIO . sampleEventLogIO
 
-sampleEventLogIO :: IO EventLog
-sampleEventLogIO = generate $ resize 1000 arbitrary
+sampleEventLogIO :: Config -> IO EventLog
+sampleEventLogIO cfg = do
+    EventLog _ rows <- generate $ resize 1000 arbitrary
+    pure $ EventLog (cs $ cfg ^. exposedUrl) rows
 
 
 -- * constant sample values
