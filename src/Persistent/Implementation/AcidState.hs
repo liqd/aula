@@ -52,7 +52,9 @@ mkRunPersistOnDisk cfg =
             logger cfg "[create acid-state checkpoint, archive]"
             createCheckpoint st
             createArchive st
-            threadDelay (cfg ^. persistConfig . snapshotIntervalMinutes)
+            let delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
+                delay_us = delay_min * 1000000 * 60
+            threadDelay delay_us
             -- FIXME: better logging, handle exceptions
         pure (st, tid)
 
