@@ -19,11 +19,13 @@ module Persistent.Implementation.AcidState
 where
 
 import Control.Concurrent
+import Control.Exception hiding (handle)
 import Control.Lens
 import Control.Monad
 import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
+import Data.Monoid ((<>))
 
 import Config
 import Persistent.Pure
