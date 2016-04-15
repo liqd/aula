@@ -43,7 +43,6 @@ module Persistent.Pure
 
     , addDb
     , addDb'
-    , addDbByUser
     , findIn
     , findInBy
     , findInById
@@ -64,13 +63,12 @@ module Persistent.Pure
     , findIdeasByUserId
     , findWildIdeasBySpace
     , findComment
-    , findCommentHack
+    , findComment'
     , addLikeToIdea
     , addVoteToIdea
     , addCommentToIdea
-    , addReplyToIdeaComment
-    , addCommentVoteToIdeaComment
-    , addCommentVoteToIdeaCommentReply
+    , addReply
+    , addCommentVote
     , findUser
     , findUserByLogin
     , findUsersByRole
@@ -115,7 +113,6 @@ module Persistent.Pure
     , addIdeaVoteResult
     , editIdea
     , deleteComment
-    , deleteCommentReply
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
@@ -309,15 +306,18 @@ type EnvWithProto a = EnvWith (Proto a)
 -}
 type AddDb a = EnvWithProto a -> AUpdate a
 
-addDb' :: (HasMetaInfo a, FromProto a) => (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
-addDb' nextId' l (EnvWith cUser now pa) = do
+addDb' :: (HasMetaInfo a, FromProto a) =>
+          Getter (IdOf a) (AUIDOf (IdOf a)) ->
+          (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
+addDb' coreAUID nextId' l (EnvWith cUser now pa) = do
     assertAulaDataM $ do
         len <- asks (lengthOf l)
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    a <- (fromProto pa . mkMetaInfo cUser now) <$> nextId' cUser
-    l . at (a ^. _Id) <?= a
+    aid <- nextId' cUser
+    let a = fromProto pa $ mkMetaInfo cUser now aid
+    l . at (aid ^. coreAUID) <?= a
 
 -- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
@@ -328,17 +328,14 @@ addDb' nextId' l (EnvWith cUser now pa) = do
 --
 -- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
 -- above at the expense of pushing the burden towards cases where the traversal is only a
--- lens when some additional assumptions are met (see addReplyToIdeaComment for instance).
+-- lens when some additional assumptions are met (see addReply for instance).
 --
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
 addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDb = addDb' $ const nextId
+addDb = addDb' id $ const nextId
 
--- | Like addDb but for values indexed by user id.
-addDbByUser :: (IdOf a ~ AUID User, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDbByUser = addDb' (pure . view _Id)
 
 addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
     => AulaTraversal (ap a) -> AddDb a
@@ -359,7 +356,7 @@ findInBy l f b = findIn l (\x -> x ^? f == Just b)
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> IdOf a -> MQuery a
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUIDOf (IdOf a) -> MQuery a
 findInById l i = view (l . at i)
 
 getSpaces :: Query [IdeaSpace]
@@ -390,7 +387,7 @@ findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> (a -> a) -> AUpdate ()
+modifyAMap :: Ord (AUIDOf (IdOf a)) => AulaLens (AMap a) -> AUIDOf (IdOf a) -> (a -> a) -> AUpdate ()
 modifyAMap l ident = (l . at ident . _Just %=)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
@@ -499,39 +496,28 @@ findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
-findComment :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> MQuery Comment
-findComment iid mparentid cid = preview $ dbIdeaMap . at iid . _Just . ideaComments . l
-  where
-    l = case mparentid of
-            Nothing       -> at cid . _Just
-            Just parentid -> at parentid . _Just . commentReplies . at cid . _Just
+findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
+findComment' iid parents = preview . dbComment' iid parents
 
--- This function should become useless once the comment ids are complete
-findCommentHack :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> EQuery (Idea, Maybe Comment, Comment)
-findCommentHack iid mparentid cid = do
-    idea <- maybe404 =<< findIdea iid
-    case mparentid of
-        Nothing       -> do
-            comment <- maybe404 (idea ^. ideaComments . at cid)
-            pure (idea, Nothing, comment)
-        Just parentid -> do
-            parent <- maybe404 (idea ^. ideaComments . at parentid)
-            comment <- maybe404 $ parent ^. commentReplies . at cid
-            pure (idea, Just parent, comment)
+findComment :: CommentId -> MQuery Comment
+findComment cid = findComment' (cid ^. cidIdea) (cid ^. cidParents) (cid ^. cidAUID)
 
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb IdeaLike
-addLikeToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea iid = addDb' ivUser (mkIdeaVoteLikeId iid) (dbIdeaMap . at iid . _Just . ideaLikes)
+
+mkIdeaVoteLikeId :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeId
+mkIdeaVoteLikeId i u = pure $ IdeaVoteLikeId i (u ^. _Id)
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
 
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea iid = addDb' ivUser (mkIdeaVoteLikeId iid) (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -543,35 +529,33 @@ instance FromProto Comment where
 
 
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addCommentToIdea :: AUID Idea -> AddDb Comment
-addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
+addCommentToIdea :: IdeaLocation -> AUID Idea -> AddDb Comment
+addCommentToIdea loc iid = addDb' cidAUID (nextCommentId loc iid) (dbIdeaMap . at iid . _Just . ideaComments)
+
+nextCommentId :: IdeaLocation -> AUID Idea -> User -> AUpdate CommentId
+nextCommentId loc iid _ = CommentId loc iid [] <$> nextId
+
+nextReplyId :: CommentId -> User -> AUpdate CommentId
+nextReplyId cid _ = do
+    i <- nextId
+    pure $ cid & cidParents <>~ [cid ^. cidAUID]
+               & cidAUID    .~  i
 
 -- | FIXME: Assumptions:
--- * the given @AUID Idea@ MUST be in the DB.
--- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb Comment
-addReplyToIdeaComment iid cid =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies)
+-- * the given @CommentId@ MUST be in the DB.
+addReply :: CommentId -> AddDb Comment
+addReply cid = addDb' cidAUID (nextReplyId cid) (dbComment cid . commentReplies)
 
 instance FromProto CommentVote where
     fromProto = flip CommentVote
 
 -- | FIXME: Assumptions:
--- * the given @AUID Idea@ MUST be in the DB.
--- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb CommentVote
-addCommentVoteToIdeaComment iid cid =
-    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
+-- * the given @CommentId@ MUST be in the DB.
+addCommentVote :: CommentId -> AddDb CommentVote
+addCommentVote cid = addDb' cvUser (mkCommentVoteId cid) (dbComment cid . commentVotes)
 
--- | FIXME: Assumptions:
--- * the given @AUID Idea@ MUST be in the DB.
--- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
--- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
-addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb CommentVote
-addCommentVoteToIdeaCommentReply iid cid rid =
-    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments
-                           . at cid . _Just . commentReplies
-                           . at rid . _Just . commentVotes)
+mkCommentVoteId :: Applicative f => CommentId -> User -> f CommentVoteId
+mkCommentVoteId cid u = pure $ CommentVoteId cid (u ^. _Id)
 
 instance FromProto IdeaJuryResult where
     fromProto = flip IdeaJuryResult
@@ -587,15 +571,16 @@ addIdeaVoteResult :: AUID Idea -> AddDb IdeaVoteResult
 addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
-deleteComment :: AUID Idea -> AUID Comment -> AUpdate ()
-deleteComment iid cid = dbIdeaMap    . at iid . _Just .
-                        ideaComments . at cid . _Just . commentDeleted .= True
+dbComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> AulaTraversal Comment
+dbComment' iid parents cid =
+    dbIdeaMap . at iid . _Just . ideaComments . traverseParents parents . at cid . _Just
 
-deleteCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AUpdate ()
-deleteCommentReply iid cid rid = dbIdeaMap      . at iid . _Just .
-                                 ideaComments   . at cid . _Just .
-                                 commentReplies . at rid . _Just .
-                                 commentDeleted .= True
+dbComment :: CommentId -> AulaTraversal Comment
+dbComment cid = dbComment' (cid ^. cidIdea) (cid ^. cidParents) (cid ^. cidAUID)
+
+deleteComment :: CommentId -> AUpdate ()
+deleteComment cid = dbComment cid . commentDeleted .= True
+
 
 nextId :: AUpdate (AUID a)
 nextId = AUID <$> (dbLastId <+= 1)

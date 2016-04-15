@@ -1068,3 +1068,7 @@ countIdeaVotes v = countEq v ideaVoteValue
 
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
+
+traverseParents :: [AUID Comment] -> Traversal' Comments Comments
+traverseParents []     = id
+traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
