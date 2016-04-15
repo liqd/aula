@@ -44,9 +44,9 @@ mkRunPersistGeneric desc openState closeState = do
 
 mkRunPersistOnDisk :: Config -> IO RunPersist
 mkRunPersistOnDisk cfg =
-    mkRunPersistGeneric "acid-state (disk)" op cl
+    mkRunPersistGeneric "acid-state (disk)" opn cls
   where
-    op aulaData = do
+    opn aulaData = do
         st <- openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
         tid <- forkIO . forever $ do
             logger cfg "[create acid-state checkpoint, archive]"
@@ -58,7 +58,7 @@ mkRunPersistOnDisk cfg =
             -- FIXME: better logging, handle exceptions
         pure (st, tid)
 
-    cl st tid = do
+    cls st tid = do
         killThread tid
         createCheckpointAndClose st
 
