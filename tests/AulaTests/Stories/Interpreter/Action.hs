@@ -147,18 +147,18 @@ runClient (Free (VoteIdea t v k)) = do
 runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $
-        currentUserAddDb (AddCommentToIdea (idea ^. _Id)) (Markdown c)
+        currentUserAddDb (AddCommentToIdea (idea ^. ideaLocation) (idea ^. _Id)) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
 runClient (Free (CommentOnComment t cp c k)) = do
-    (idea, comment) <- precondition $ do
+    comment <- precondition $ do
         Just idea <- findIdeaByTitle t
         let Just comment = findCommentByText idea cp
-        return (idea, comment)
+        pure comment
     _ <- step . lift $
         currentUserAddDb
-            (AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id))
+            (AddReply (comment ^. _Id))
             (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k

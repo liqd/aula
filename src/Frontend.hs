@@ -238,14 +238,14 @@ ideaApi loc
   :<|> Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteIdea
-  :<|> Page.commentIdea
-  :<|> Page.replyCommentIdea
-  :<|> Action.voteIdeaComment
-  :<|> Action.voteIdeaCommentReply
-  :<|> Action.deleteIdeaComment
-  :<|> Action.deleteIdeaCommentReply
-  :<|> Action.reportIdeaComment
-  :<|> Action.reportIdeaCommentReply
+  :<|> Page.commentIdea loc
+  :<|> Page.replyCommentIdea loc
+  :<|> Action.voteIdeaComment loc
+  :<|> Action.voteIdeaCommentReply loc
+  :<|> Action.deleteIdeaComment loc
+  :<|> Action.deleteIdeaCommentReply loc
+  :<|> Action.reportIdeaComment loc
+  :<|> Action.reportIdeaCommentReply loc
   :<|> Page.judgeIdea
   :<|> Page.createIdea loc
 

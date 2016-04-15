@@ -227,7 +227,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget ctx caps (CommentContext idea Nothing) c ^. html
+                        CommentWidget ctx caps c ^. html
 
 
 instance ToHtml IdeaVoteLikeBars where
@@ -431,21 +431,21 @@ editIdea ideaId =
         (EditIdea <$> mquery (findIdea ideaId))
         (update . Persistent.EditIdea ideaId)
 
-commentIdea :: ActionM m => AUID Idea -> ServerT (FormHandler CommentIdea) m
-commentIdea ideaId =
+commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> ServerT (FormHandler CommentIdea) m
+commentIdea loc ideaId =
     redirectFormHandler
         (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
-        (currentUserAddDb $ AddCommentToIdea ideaId)
+        (currentUserAddDb $ AddCommentToIdea loc ideaId)
 
-replyCommentIdea :: ActionM m => AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
-replyCommentIdea ideaId commentId =
+replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
+replyCommentIdea loc ideaId commentId =
     redirectFormHandler
         (mquery $ do
             midea <- findIdea ideaId
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
-        (currentUserAddDb $ AddReplyToIdeaComment ideaId commentId)
+        (currentUserAddDb . AddReply $ CommentId loc ideaId [] commentId)
 
 judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JudgeIdea) m
 judgeIdea ideaId juryType =
