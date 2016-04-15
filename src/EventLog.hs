@@ -60,9 +60,7 @@ instance SOP.Generic PhaseTransitionTriggeredBy
 filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
 filterEventLog mspc (EventLog rows) = EventLog $ filter f rows
   where
-    f = case mspc of
-          Nothing  -> const True
-          Just spc -> (\(EventLogItem spc' _ _ _) -> spc' == spc)
+    f (EventLogItem spc' _ _ _) = maybe True (== spc') mspc
 
 
 eventLogItemCsvHeaders :: [String]

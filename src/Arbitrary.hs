@@ -785,7 +785,7 @@ instance Arbitrary EventLogItem where
 instance Arbitrary EventLogItemValue where
     arbitrary = garbitrary >>= repair
       where
-        repair (EventLogUserDelegates ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
+        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
         repair v = pure v
 
 instance Arbitrary PhaseTransitionTriggeredBy where
