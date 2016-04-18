@@ -470,8 +470,8 @@ instance SOP.Generic ProtoUser
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
-    Student    { _studentSchoolClass :: SchoolClass }
-  | ClassGuest { _guestSchoolClass   :: SchoolClass } -- ^ e.g., parents
+    Student    { _roleSchoolClass :: SchoolClass }
+  | ClassGuest { _roleSchoolClass :: SchoolClass } -- ^ e.g., parents
   | SchoolGuest  -- ^ e.g., researchers
   | Moderator
   | Principal

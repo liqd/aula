@@ -53,7 +53,7 @@ data ActiveTab = WildIdeas | Topics
 
 viewRooms :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => m (Frame PageRoomsOverview)
-viewRooms = makeFrame =<< (PageRoomsOverview <$> query getSpaces)
+viewRooms = makeFrame =<< (PageRoomsOverview <$> getSpacesForCurrentUser)
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> IdeasFilterQuery -> m (Frame PageIdeasOverview)
