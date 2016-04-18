@@ -57,7 +57,11 @@ instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
     formAction _ = U.UserSettings
-    redirectOf _ _ = U.ListSpaces  -- FIXME: Redirect to the right place
+
+    -- Redirect to ourselves, so the user can review the changes.  FUTUREWORK: It would be nice to
+    -- have a messaging device that prints a line "your changes have been saved" at the top of the
+    -- form; without that, UX is still a bit confusing.
+    redirectOf _ _ = U.UserSettings
 
     makeForm (PageUserSettings user) =
         UserSettingData
