@@ -166,7 +166,7 @@ aulaMain =
 
   :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
   :<|> aulaUser
-  :<|> Page.userSettings
+  :<|> form Page.userSettings
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
@@ -175,7 +175,7 @@ aulaMain =
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
 
-  :<|> Page.login
+  :<|> form Page.login
   :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
 
 type IdeaApi
@@ -235,19 +235,19 @@ type AulaSpace
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
     =  Page.viewIdea
-  :<|> Page.editIdea
+  :<|> form . Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteIdea
-  :<|> Page.commentIdea loc
-  :<|> Page.replyCommentIdea loc
+  :<|> (form . Page.commentIdea loc)
+  :<|> (app2 form (Page.replyCommentIdea loc))
   :<|> Action.voteIdeaComment loc
   :<|> Action.voteIdeaCommentReply loc
   :<|> Action.deleteIdeaComment loc
   :<|> Action.deleteIdeaCommentReply loc
   :<|> Action.reportIdeaComment loc
   :<|> Action.reportIdeaCommentReply loc
-  :<|> Page.judgeIdea
-  :<|> Page.createIdea loc
+  :<|> (app2 form Page.judgeIdea)
+  :<|> form (Page.createIdea loc)
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
@@ -260,8 +260,8 @@ topicApi space
   :<|> flip (Page.viewTopic . TabWinningIdeas)
   :<|> Page.viewTopic TabDelegation
 
-  :<|> Page.createTopic space
-  :<|> Page.editTopic
+  :<|> (form $ Page.createTopic space)
+  :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
@@ -301,13 +301,13 @@ type AulaAdmin =
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
 aulaAdmin =
-       Page.adminDurations
-  :<|> Page.adminQuorum
+       form Page.adminDurations
+  :<|> form Page.adminQuorum
   :<|> Page.adminSettingsGaPUsersView
   :<|> Page.adminSettingsGaPUsersCreate
   :<|> Page.adminSettingsGaPClassesView
-  :<|> Page.adminSettingsGaPClassesCreate
-  :<|> Page.adminSettingsGaPUserEdit
+  :<|> form Page.adminSettingsGaPClassesCreate
+  :<|> form . Page.adminSettingsGaPUserEdit
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv

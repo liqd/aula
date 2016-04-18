@@ -419,27 +419,27 @@ viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m
     => AUID Idea -> m ViewIdea
 viewIdeaPage ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
 
-createIdea :: ActionM m => IdeaLocation -> ServerT (FormHandler CreateIdea) m
-createIdea loc = redirectFormHandler (pure $ CreateIdea loc) Action.createIdea
+createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
+createIdea loc = FormPageHandler (pure $ CreateIdea loc) Action.createIdea
 
 -- | FIXME: there is a race condition if several edits happen concurrently.  this can happen if
 -- student and moderator edit an idea at the same time.  One solution would be to carry a
 -- 'last-changed' timestamp in the edit form, and check for it before writing the edits.
-editIdea :: ActionM m => AUID Idea -> ServerT (FormHandler EditIdea) m
+editIdea :: ActionM m => AUID Idea -> FormPageHandler m EditIdea
 editIdea ideaId =
-    redirectFormHandler
+    FormPageHandler
         (EditIdea <$> mquery (findIdea ideaId))
         (update . Persistent.EditIdea ideaId)
 
-commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> ServerT (FormHandler CommentIdea) m
+commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentIdea
 commentIdea loc ideaId =
-    redirectFormHandler
+    FormPageHandler
         (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (currentUserAddDb $ AddCommentToIdea loc ideaId)
 
-replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT (FormHandler CommentIdea) m
+replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
 replyCommentIdea loc ideaId commentId =
-    redirectFormHandler
+    FormPageHandler
         (mquery $ do
             midea <- findIdea ideaId
             pure $ do idea <- midea
@@ -447,9 +447,9 @@ replyCommentIdea loc ideaId commentId =
                       pure $ CommentIdea idea (Just comment))
         (currentUserAddDb . AddReply $ CommentKey loc ideaId [] commentId)
 
-judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JudgeIdea) m
+judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> FormPageHandler m JudgeIdea
 judgeIdea ideaId juryType =
-    redirectFormHandler
+    FormPageHandler
         (equery $ do
             idea  <- maybe404 =<< findIdea ideaId
             topic <- maybe404 =<< ideaTopic idea

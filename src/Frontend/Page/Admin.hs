@@ -225,9 +225,11 @@ instance FormPage PageAdminSettingsDurations where
             span_ [class_ "input-helper"] "Tage"
         DF.inputSubmit "Änderungen speichern"
 
-adminDurations :: ActionM m => ServerT (FormHandler PageAdminSettingsDurations) m
-adminDurations = redirectFormHandler (PageAdminSettingsDurations <$> query (view dbDurations))
-                                     (update . SaveDurations)
+adminDurations :: ActionM m => FormPageHandler m PageAdminSettingsDurations
+adminDurations =
+    FormPageHandler
+        (PageAdminSettingsDurations <$> query (view dbDurations))
+        (update . SaveDurations)
 
 
 -- ** Quorum
@@ -257,9 +259,11 @@ instance FormPage PageAdminSettingsQuorum where
             span_ [class_ "input-helper"] "% aller Schülerinnen der Klasse"
         DF.inputSubmit "Änderungen speichern"
 
-adminQuorum :: ActionM m => ServerT (FormHandler PageAdminSettingsQuorum) m
-adminQuorum = redirectFormHandler (PageAdminSettingsQuorum <$> query (view dbQuorums))
-                                  (update . SaveQuorums)
+adminQuorum :: ActionM m => FormPageHandler m PageAdminSettingsQuorum
+adminQuorum =
+    FormPageHandler
+        (PageAdminSettingsQuorum <$> query (view dbQuorums))
+        (update . SaveQuorums)
 
 
 -- ** roles and permisisons
@@ -442,8 +446,8 @@ adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClasses
 adminSettingsGaPClassesView =
     makeFrame =<< PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
-adminSettingsGaPUserEdit :: ActionM m => AUID User -> ServerT (FormHandler PageAdminSettingsGaPUsersEdit) m
-adminSettingsGaPUserEdit uid = redirectFormHandler editUserPage editUser
+adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
+adminSettingsGaPUserEdit uid = FormPageHandler editUserPage editUser
   where
     editUserPage = equery $
         PageAdminSettingsGaPUsersEdit
@@ -529,8 +533,8 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
             DF.inputSubmit "upload!"
 
 adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
-                              => ServerT (FormHandler PageAdminSettingsGaPClassesCreate) m
-adminSettingsGaPClassesCreate = redirectFormHandler (pure PageAdminSettingsGaPClassesCreate) q
+                              => FormPageHandler m PageAdminSettingsGaPClassesCreate
+adminSettingsGaPClassesCreate = FormPageHandler (pure PageAdminSettingsGaPClassesCreate) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
