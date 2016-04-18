@@ -50,6 +50,7 @@ module Persistent.Pure
     , maybe404
 
     , getSpaces
+    , getSpacesForRole
     , getIdeas
     , getWildIdeas
     , getIdeasWithTopic
@@ -439,6 +440,12 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
   where
     toClass (ClassSpace clss) = Just clss
     toClass SchoolSpace       = Nothing
+
+getSpacesForRole :: Role -> Query [IdeaSpace]
+getSpacesForRole role =
+    case role ^? roleSchoolClass of
+        Just clss -> findAllIn dbSpaces (`elem` [SchoolSpace, ClassSpace clss])
+        Nothing   -> getSpaces
 
 getTopics :: Query [Topic]
 getTopics = view dbTopics
