@@ -98,3 +98,8 @@ function handleLikeOrVote(e) {
 function handleDeleteComment(e) {
     e.parentNode.parentNode.parentNode.parentNode.childNodes[1].innerHTML = "Verbesserungsvorschlag löschen";
 }
+
+function createPageSample() {
+    setTimeout(function() { document.location.search = "?create_page_sample=true"; }, 50);
+    // TODO: extend existing queries, not break the uri with multiple '?'!
+}

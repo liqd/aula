@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf           #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RankNTypes           #-}
@@ -154,11 +155,20 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body }
     | PublicFrame               { _frameBody :: body }
-  deriving (Functor)
+  deriving (Show, Functor)
 
 makeLenses ''Frame
 
-type GetH = Get '[HTML]
+-- Every 'Get' handler in aula accepts repsonse content types 'HTML' (for normal operation) and
+-- 'PlainText' (for generating samples for RenderHtml.  The plaintext version of any page can be
+-- requested using curl on the resp. URL with @-H"content-type: text/plain"@.
+--
+-- (Using this is tricky: (1) cookie authentication is clumsy with curl; and (2) we are using
+-- 'FormH' from thentos, which doesn't play along.  (2) can be resolved by collecting the
+-- servant-digestive-functors code into a separate package; (1) may be a hint that we should try
+-- something else, like adding a form to the admin pages where we can paste a url and cut the sample
+-- page code via text fields.)
+type GetH = Get '[HTML, PlainText]
 type PostH = Post '[HTML] ()
 type FormHandlerT p a = FormH HTML (FormPageRep p) a
 type FormHandler p = FormHandlerT p ST
@@ -227,6 +237,9 @@ instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtml (Frame usr bdy)   = pageFrame bdy (Just usr) (toHtml bdy)
     toHtml (PublicFrame bdy) = pageFrame bdy Nothing (toHtml bdy)
 
+instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
+    mimeRender Proxy = cs . show
+
 pageFrame :: (Monad m, Page p) => p -> Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame p mUser bdy = do
     let hdrs = extraPageHeaders p
@@ -294,6 +307,9 @@ footerMarkup = do
                 "Made with \x2665 by Liqd"
                 replicateM_ 5 $ toHtmlRaw nbsp
                 toHtml Config.releaseVersion
+                replicateM_ 5 $ toHtmlRaw nbsp
+                a_ [Lucid.onclick_ "createPageSample()"]
+                    "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
@@ -317,6 +333,9 @@ newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
 
 instance Page (PageShow a)
+
+instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
+    mimeRender Proxy = cs . show
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
