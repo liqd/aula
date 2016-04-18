@@ -94,3 +94,7 @@ function handleLikeOrVote(e) {
     // FIXME: we are required to avoid reload!
     setTimeout(function() { document.location.reload(true); }, 50);
 }
+
+function handleDeleteComment(e) {
+    e.parentNode.parentNode.parentNode.parentNode.childNodes[1].innerHTML = "Verbesserungsvorschlag löschen";
+}

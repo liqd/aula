@@ -38,11 +38,12 @@ dependencies:
     - generic-aeson
     - generics-sop
     - http-client
+    - http-media
     - http-types
     - lens
     - lucid
-    - mtl
     - mime-mail
+    - mtl
     - pretty-show
     - process
     - QuickCheck
@@ -108,4 +109,5 @@ tests:
       - servant-server
       - string-conversions
       - text
+      - wai-extra
       - wreq

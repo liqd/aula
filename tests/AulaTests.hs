@@ -17,6 +17,7 @@ import Control.Exception (bracket)
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
+import Test.Hspec.Wai (WaiExpectation)
 
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
@@ -31,14 +32,15 @@ import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
 
+
 testConfig :: IO Config
 testConfig = do
     cfg <- readConfig DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     cfg & listenerPort   .~ pop
-              -- (in case somebody accidentally tests on a production system.  :)
-        & dbPath         .~ "./state/AulaData_Tests"
-        & persistenceImpl.~ AcidStateInMem
+              -- (in case somebody accidentally tests on a production system: change dbPath.)
+        & persistConfig . dbPath          .~ "./state/AulaData_Tests"
+        & persistConfig . persistenceImpl .~ AcidStateInMem
         & pure
 
 
@@ -47,17 +49,26 @@ testConfigPortSource :: MVar [Int]
 testConfigPortSource = unsafePerformIO . newMVar . mconcat $ repeat [18081..29713]
 {-# NOINLINE testConfigPortSource #-}
 
+-- FIXME: error location should be of the caller
+-- FIXME: rename to 'statusShouldBe'
 codeShouldBe :: Int -> Response body -> Expectation
 codeShouldBe code l = l ^. responseStatus . statusCode `shouldBe` code
 
+-- FIXME: error location should be of the caller
 bodyShouldBe :: (Show body, Eq body) => body -> Response body -> Expectation
 bodyShouldBe body l = l ^. responseBody `shouldBe` body
 
+-- FIXME: error location should be of the caller
 bodyShouldContain :: String -> Response LBS -> Expectation
 bodyShouldContain body l = l ^. responseBody . csi `shouldContain` body
 
+-- FIXME: error location should be of the caller
 shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
 shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
+
+-- FIXME: error location should be of the caller
+bodyShouldSatisfy :: (Show body, Eq body) => (body -> Bool) -> Response body -> Expectation
+bodyShouldSatisfy bodyP l = l ^. responseBody `shouldSatisfy` bodyP
 
 data WreqQuery = WreqQuery
     { post :: forall a. Postable a => String -> a -> IO (Response LBS)
@@ -102,3 +113,12 @@ runFrontendSafeFork cfg = do
           (Network.Wreq.get $ mkServerUri cfg "/")
           (\(_ :: HttpException) -> threadDelay 4900 >> loop)
     loop >> return threadId
+
+
+-- * Expectations
+
+passes :: Expectation
+passes = return ()
+
+wpasses :: WaiExpectation
+wpasses = return ()

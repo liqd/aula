@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -18,37 +20,64 @@
 module Frontend.Page.Comment
 where
 
+import qualified Lucid
+import qualified Generics.SOP as SOP
+
 import Types
 import Frontend.Prelude
+import LifeCycle
 import qualified Frontend.Path as U
 
-data CommentWidget = CommentWidget Idea Comment
-  deriving (Eq, Show, Read)
+data CommentWidget = CommentWidget
+    { _cwRenderContext :: RenderContext
+    , _cwIdeaCaps      :: [IdeaCapability]
+    , _cwContext       :: CommentContext
+    , _cwComment       :: Comment
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic CommentWidget
+
+makeLenses ''CommentWidget
 
 instance ToHtml CommentWidget where
     toHtmlRaw = toHtml
-    toHtml p@(CommentWidget idea comment) = semanticDiv p $ do
+    toHtml w = semanticDiv w $ do
         div_ [class_ "comment"] $ do
-            commentToHtml (CommentContext idea Nothing) comment
-            let context = CommentContext idea (Just comment)
-            div_ [class_ "comment-replies"] . for_ (comment ^. commentReplies) $
-                div_ [class_ "comment-reply"] . commentToHtml context
+            commentToHtml w
+            div_ [class_ "comment-replies"] . for_ (w ^. cwComment . commentReplies) $ \reply ->
+                div_ [class_ "comment-reply"] . commentToHtml $ w & cwContext . parentComment ?~ (w ^. cwComment)
+                                                                  & cwComment .~ reply
 
-commentToHtml :: Monad m => CommentContext -> Comment -> HtmlT m ()
-commentToHtml context comment = div_ $ do
+commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
+commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
-        VotesWidget context comment ^. html
+        VotesWidget (w ^. cwIdeaCaps) context comment ^. html
     div_ [class_ "comments-body"] $ do
-        comment ^. commentText . html
+        if comment ^. commentDeleted
+            then "[Inhalt gelöscht]"
+            else comment ^. commentText . html
     footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
-            button_ [class_ "btn comment-footer-button", onclick_ $ U.replyCommentIdea idea parent] $ do
-                i_ [class_ "icon-reply"] nil
-                "antworten"
-            button_ [class_ "btn comment-footer-button"] $ do
+            when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
+                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyCommentIdea idea parent] $ do
+                    i_ [class_ "icon-reply"] nil
+                    "antworten"
+            postButton_ [class_ "btn comment-footer-button"]
+                        (U.onComment idea mparent comment U.ReportComment) $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
+            when (CanDeleteComment `elem` comCaps) .
+                postButton_ [class_ "btn comment-footer-button", Lucid.onclick_ "handleDeleteComment(this)"]
+                            (U.onComment idea mparent comment U.DeleteComment) $ do
+                    i_ [class_ "icon-trash-o"] nil
+                    "löschen"
   where
+    comment = w ^. cwComment
+    context = w ^. cwContext
     idea = context ^. parentIdea
-    parent = fromMaybe comment $ context ^. parentComment
+    mparent = context ^. parentComment
+    parent = fromMaybe comment mparent
+    user = w ^. cwRenderContext . renderContextUser
+    comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment

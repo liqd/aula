@@ -16,6 +16,8 @@
 
 module Frontend.Core
     ( Singular, CaptureData, (::>), Reply
+    , RenderContext(..)
+    , renderContext, renderContextUser
     , GetH
     , PostH
     , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
@@ -65,6 +67,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
+import LifeCycle
 import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
@@ -101,6 +104,19 @@ type instance CaptureData Topic              = AUID Topic
 type instance CaptureData UpDown             = UpDown
 type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
+
+
+-- | Contains all the information which is needed to render a user role dependent functionality.
+data RenderContext = RenderContext
+      { _renderContextUser     :: User
+      }
+  deriving (Eq, Read, Show)
+
+makeLenses ''RenderContext
+
+-- | Calculates the render context for role sensitive page rendering
+renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
+renderContext = RenderContext <$> currentUser
 
 
 -- | FIXME: Could this be a PR for lucid?
@@ -288,9 +304,6 @@ tabSelected curTab targetTab
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
 
-showed :: Show a => Getter a String
-showed = to show
-
 data Beside a b = Beside a b
 
 instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
@@ -307,11 +320,11 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
-data CommentVotesWidget = VotesWidget CommentContext Comment
+data CommentVotesWidget = VotesWidget [IdeaCapability] CommentContext Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget context comment) = semanticDiv p $ do
+    toHtml p@(VotesWidget caps context comment) = semanticDiv p $ do
         div_ [class_ "comment-votes"] $ do
             voteButton Up
             voteButton Down
@@ -320,8 +333,9 @@ instance ToHtml CommentVotesWidget where
         voteButton v = do
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
-                postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
-                    i_ [class_ $ "icon-thumbs-o-" <> vs] nil
+                when (CanVoteComment `elem` caps) .
+                    postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
+                        i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
 newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }

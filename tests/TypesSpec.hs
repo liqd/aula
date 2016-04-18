@@ -27,10 +27,10 @@ spec = do
             \x -> decode (encode x) == (x :: Timestamp)
         it "read and show are inverses" . property $
             \x -> read (show x) == (x :: Timestamp)
-        it "parseTimestamp and renderTimestamp are inverses" . property $
-            isJust . parseTimestamp . renderTimestamp
+        it "parseTimestamp and showTimestamp are inverses" . property $
+            isJust . parseTimestamp . showTimestamp
         it "parseTimestamp should fail on noise" . property $
-            isNothing . parseTimestamp . (<> "noise") . renderTimestamp
+            isNothing . parseTimestamp . (<> "noise") . showTimestamp
 
     when beThorough $ do
         describe "DelegationNetwork" $ do

@@ -35,9 +35,11 @@ import Thentos.Frontend.State (serveFAction)
 
 import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
+import Arbitrary (sampleEventLog)
 import Config
-import CreateRandom
+import DemoData
 import Data.UriPath
+import EventLog
 import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Testing
@@ -193,6 +195,14 @@ type IdeaApi
   :<|> Idea ::> Comment ::> UpDown ::> PostH
        -- vote on a reply of a comment
   :<|> Idea ::> Comment ::> Reply ::> UpDown ::> PostH
+       -- delete a comment
+  :<|> Idea ::> Comment ::> "delete" :> PostH
+       -- delete a comment reply
+  :<|> Idea ::> Comment ::> Reply ::> "delete" :> PostH
+       -- report a comment
+  :<|> Idea ::> Comment ::> "report" :> PostH
+       -- report a comment reply
+  :<|> Idea ::> Comment ::> Reply ::> "report" :> PostH
        -- jury an idea
   :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
        -- create wild idea
@@ -232,6 +242,10 @@ ideaApi loc
   :<|> Page.replyCommentIdea
   :<|> Action.voteIdeaComment
   :<|> Action.voteIdeaCommentReply
+  :<|> Action.deleteIdeaComment
+  :<|> Action.deleteIdeaCommentReply
+  :<|> Action.reportIdeaComment
+  :<|> Action.reportIdeaCommentReply
   :<|> Page.judgeIdea
   :<|> Page.createIdea loc
 
@@ -280,6 +294,9 @@ type AulaAdmin =
   :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
+  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
+  :<|> "events" :> Get '[CSV] EventLog
+  :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] EventLog
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
@@ -293,6 +310,15 @@ aulaAdmin =
   :<|> Page.adminSettingsGaPUserEdit
   :<|> Page.adminSettingsGaPClassesEdit
   :<|> Page.adminEventsProtocol
+  :<|> Page.adminInitialPasswordsCsv
+  :<|> adminEventLogCsv Nothing
+  :<|> adminEventLogCsv . Just
+
+-- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
+-- condition as long as we pull data from Arbitrary rather than from the actual events.
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m EventLog
+adminEventLogCsv mspc = filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
+
 
 catch404 :: Middleware
 catch404 app req cont = app req $ \resp -> cont $ f resp

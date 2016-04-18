@@ -51,7 +51,8 @@ instance ThrowSendMailError SendMailError where
 type MonadSendMailError e m = (MonadError e m, ThrowSendMailError e)
 
 data EmailMessage = EmailMessage
-    { _msgSubject :: ST
+    { _msgISpace  :: IdeaSpace
+    , _msgSubject :: ST
     , _msgBody    :: ST
     , _msgHtml    :: Maybe ST
     }
@@ -77,7 +78,8 @@ sendMailToAddressIO receiver msg = do
     cfg <- viewConfig
     let scfg   = cfg ^. smtpConfig
         sender = Address (Just $ scfg ^. senderName . to cs) (scfg ^. senderEmail . to cs)
-        mail   = simpleMail' receiver sender (msg ^. msgSubject) (cs $ msg ^. msgBody)
+        subj   = "[" <> msg ^. msgISpace . to showIdeaSpace . csi <> "] " <> msg ^. msgSubject
+        mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody)
     r <- liftIO $ do
         logger cfg {- debug -} $ "sending email: " <> ppShow (receiver, msg)
         when (isJust $ msg ^. msgHtml) . logger cfg {- warn -} $ "No support for the optional HTML part"
@@ -109,7 +111,7 @@ sendMailToUser flags user msg = do
 checkSendMail :: Config -> IO ()
 checkSendMail cfg = do
     let address = Address Nothing "user@example.com"
-        msg     = EmailMessage "Test Mail" "This is a test" Nothing
+        msg     = EmailMessage SchoolSpace "Test Mail" "This is a test" Nothing
 
         action :: ReaderT Config (ExceptT SendMailError IO) ()
         action = sendMailToAddressIO address msg

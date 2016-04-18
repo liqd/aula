@@ -82,6 +82,9 @@ type CSI' s a = CSI s s a a
 csi :: CSI s t a b => Iso s t a b
 csi = iso cs cs
 
+showed :: Show a => Getter a String
+showed = to show
+
 newtype DurationDays = DurationDays { fromDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -89,6 +92,12 @@ instance SOP.Generic DurationDays
 
 -- | Percentage values from 0 to 100, used in quorum computations.
 type Percent = Int
+
+data Either3 a b c = Left3 a | Middle3 b | Right3 c
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a b c)
+
 
 -- * prototypes for types
 
@@ -258,6 +267,7 @@ data Comment = Comment
     , _commentText    :: Document
     , _commentVotes   :: CommentVotes
     , _commentReplies :: Comments
+    , _commentDeleted :: Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -310,6 +320,10 @@ data SchoolClass = SchoolClass
     , _className       :: ST  -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+-- | FIXME: needs to be gone by the end of school year 2016!
+theOnlySchoolYearHack :: Int
+theOnlySchoolYearHack = 2016
 
 schoolClass :: Int -> ST -> SchoolClass
 schoolClass = SchoolClass
@@ -416,12 +430,6 @@ data ProtoUser = ProtoUser
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
-
--- | Contains all the information which is needed to render
--- a user role dependent functionality.
--- FIXME: Use more appropiate information.
-newtype RenderContext = RenderContext { _renderContextUser :: User }
-  deriving (Eq, Read, Show)
 
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
@@ -616,11 +624,11 @@ newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
 
 instance Binary Timestamp where
-    put = put . renderTimestamp
+    put = put . showTimestamp
     get = get >>= maybe mzero return . parseTimestamp
 
 instance Show Timestamp where
-    show = renderTimestamp
+    show = showTimestamp
 
 instance Read Timestamp where
     readsPrec _ s = case splitAt timestampFormatLength $ dropWhile isSpace s of
@@ -630,8 +638,8 @@ instance Read Timestamp where
 parseTimestamp :: String -> Maybe Timestamp
 parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat
 
-renderTimestamp :: Timestamp -> String
-renderTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
+showTimestamp :: Timestamp -> String
+showTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
 
 timestampFormat :: String
 timestampFormat = "%F_%T_%q"
@@ -739,6 +747,7 @@ makePrisms ''PermissionContext
 makePrisms ''EmailAddress
 makePrisms ''UserLastName
 makePrisms ''UserFirstName
+makePrisms ''UserLogin
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -775,7 +784,6 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
 makeLenses ''Quorums
-makeLenses ''RenderContext
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category

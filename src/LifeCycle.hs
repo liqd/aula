@@ -1,5 +1,6 @@
-{-# LANGUAGE LambdaCase   #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE ViewPatterns  #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -8,8 +9,10 @@ where
 
 import Control.Lens
 import Data.Monoid
+import GHC.Generics (Generic)
+import qualified Generics.SOP as SOP
 
-import Types hiding (Comment)
+import Types
 
 
 -- * Phase transition matrix
@@ -46,15 +49,18 @@ phaseTrans _ _ = Nothing
 --
 -- The view of an idea is default and controlled by access control.
 data IdeaCapability
-    = QuorumVote -- aka Like
-    | Vote
-    | Comment
-    | MarkFeasiblity -- also can add jury statement
-    | MarkWinner
-    | AddCreatorStatement
-    | Edit
-    | MoveBetweenTopics  -- also move between (and into and out of) topics
-  deriving (Enum, Eq, Ord, Show, Read)
+    = CanLike
+    | CanVote
+    | CanComment
+    | CanVoteComment
+    | CanMarkFeasiblity -- also can add jury statement
+    | CanMarkWinner
+    | CanAddCreatorStatement
+    | CanEdit
+    | CanMoveBetweenTopics  -- also move between (and into and out of) topics
+  deriving (Enum, Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaCapability
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
 ideaCapabilities u r i mp =
@@ -63,10 +69,10 @@ ideaCapabilities u r i mp =
     <> moveBetweenTopicsCap r
 
 editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
-editCap uid r i = [Edit | r == Moderator || i ^. createdBy == uid]
+editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
 
 moveBetweenTopicsCap :: Role -> [IdeaCapability]
-moveBetweenTopicsCap r = [MoveBetweenTopics | r ==  Moderator]
+moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 
 phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
 phaseCap _ r i Nothing  = wildIdeaCap i r
@@ -78,7 +84,7 @@ phaseCap u r i (Just p) = case p of
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
-    Student    _clss -> [QuorumVote, Comment]
+    Student    _clss -> [CanLike, CanComment, CanVoteComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -87,7 +93,7 @@ wildIdeaCap _i = \case
 
 phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
 phaseRefinementCap _i = \case
-    Student    _clss -> [Comment]
+    Student    _clss -> [CanComment, CanVoteComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -100,12 +106,12 @@ phaseJuryCap _i = \case
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
-    Principal        -> [MarkFeasiblity]
+    Principal        -> [CanMarkFeasiblity]
     Admin            -> []
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> onFeasibleIdea i [Vote]
+    Student    _clss -> onFeasibleIdea i [CanVote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -114,10 +120,10 @@ phaseVotingCap i = \case
 
 phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
-    Student    _clss -> [AddCreatorStatement | u `isCreatorOf` i]
+    Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> onFeasibleIdea i [MarkWinner]
+    Moderator        -> onFeasibleIdea i [CanMarkWinner]
     Principal        -> []
     Admin            -> []
 
@@ -141,3 +147,23 @@ isFeasibleIdea _
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
+
+-- These capabilities are specific to a particular comment. Using IdeaCapability would
+-- be too coarse and would not allow distinguish that authors can delete only their own
+-- comments.
+data CommentCapability
+    = CanReplyComment
+      -- To reply to a comment you need both this capability and the MakeComment capability
+      -- for the corresponding idea.
+    | CanDeleteComment
+  deriving (Enum, Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentCapability
+
+canDeleteComment :: AUID User -> Role -> Comment -> Bool
+canDeleteComment uid role comment = uid `isCreatorOf` comment || role == Moderator
+
+commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
+commentCapabilities uid role comment =
+    [CanDeleteComment | canDeleteComment uid role comment ] <>
+    [CanReplyComment  | not $ comment ^. commentDeleted   ]

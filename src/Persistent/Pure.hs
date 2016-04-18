@@ -63,6 +63,8 @@ module Persistent.Pure
     , findIdeasByTopic
     , findIdeasByUserId
     , findWildIdeasBySpace
+    , findComment
+    , findCommentHack
     , addLikeToIdea
     , addVoteToIdea
     , addCommentToIdea
@@ -73,6 +75,9 @@ module Persistent.Pure
     , findUserByLogin
     , findUsersByRole
     , getUsers
+    , getUsersInClass
+    , isClassInRole
+    , getSchoolClasses
     , addUser
     , addFirstUser
     , mkMetaInfo
@@ -109,6 +114,8 @@ module Persistent.Pure
     , addIdeaJuryResult
     , addIdeaVoteResult
     , editIdea
+    , deleteComment
+    , deleteCommentReply
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
@@ -247,8 +254,7 @@ runPersistExcept (PersistError500 msg)            = err500 { errBody = cs msg }
 runPersistExcept (PersistError404 msg)            = err404 { errBody = cs msg }
 runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
 runPersistExcept (UserLoginInUse li) =
-    err500 { errBody = "user login in use: " <> cs (show li) }
-    -- FIXME: what's a good status code for 'login in use'?
+    err403 { errBody = "user login in use: " <> cs (show li) }
 
 
 -- * state interface
@@ -425,6 +431,23 @@ findUser = findInById dbUserMap
 getUsers :: Query [User]
 getUsers = view dbUsers
 
+getUsersInClass :: SchoolClass -> Query [User]
+getUsersInClass clss = filter (isClassInRole clss . view userRole) <$> view dbUsers
+
+isClassInRole :: SchoolClass -> Role -> Bool
+isClassInRole clss (Student clss')    = clss == clss'
+isClassInRole clss (ClassGuest clss') = clss == clss'
+isClassInRole _    SchoolGuest        = False
+isClassInRole _    Moderator          = False
+isClassInRole _    Principal          = False
+isClassInRole _    Admin              = False
+
+getSchoolClasses :: Query [SchoolClass]
+getSchoolClasses = mapMaybe toClass <$> getSpaces
+  where
+    toClass (ClassSpace clss) = Just clss
+    toClass SchoolSpace       = Nothing
+
 getTopics :: Query [Topic]
 getTopics = view dbTopics
 
@@ -476,6 +499,26 @@ findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
+findComment :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> MQuery Comment
+findComment iid mparentid cid = preview $ dbIdeaMap . at iid . _Just . ideaComments . l
+  where
+    l = case mparentid of
+            Nothing       -> at cid . _Just
+            Just parentid -> at parentid . _Just . commentReplies . at cid . _Just
+
+-- This function should become useless once the comment ids are complete
+findCommentHack :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> EQuery (Idea, Maybe Comment, Comment)
+findCommentHack iid mparentid cid = do
+    idea <- maybe404 =<< findIdea iid
+    case mparentid of
+        Nothing       -> do
+            comment <- maybe404 (idea ^. ideaComments . at cid)
+            pure (idea, Nothing, comment)
+        Just parentid -> do
+            parent <- maybe404 (idea ^. ideaComments . at parentid)
+            comment <- maybe404 $ parent ^. commentReplies . at cid
+            pure (idea, Just parent, comment)
+
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
@@ -495,6 +538,7 @@ instance FromProto Comment where
                             , _commentText      = d
                             , _commentReplies   = nil
                             , _commentVotes     = nil
+                            , _commentDeleted   = False
                             }
 
 
@@ -543,6 +587,15 @@ addIdeaVoteResult :: AUID Idea -> AddDb IdeaVoteResult
 addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
+deleteComment :: AUID Idea -> AUID Comment -> AUpdate ()
+deleteComment iid cid = dbIdeaMap    . at iid . _Just .
+                        ideaComments . at cid . _Just . commentDeleted .= True
+
+deleteCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AUpdate ()
+deleteCommentReply iid cid rid = dbIdeaMap      . at iid . _Just .
+                                 ideaComments   . at cid . _Just .
+                                 commentReplies . at rid . _Just .
+                                 commentDeleted .= True
 
 nextId :: AUpdate (AUID a)
 nextId = AUID <$> (dbLastId <+= 1)

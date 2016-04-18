@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -70,13 +71,15 @@ makeTopicTimeout tid = do
 type RenderHtmlSource = Capture "login" UserLogin :> RenderHtmlSource'
 
 type RenderHtmlSource' =
-       "idea"  :> Capture "iid" (AUID Idea)  :> Get '[PlainText] String
-  :<|> "topic" :> Capture "tid" (AUID Topic) :> Get '[PlainText] String
+       Idea  ::> Get '[PlainText] String
+  :<|> Topic ::> Get '[PlainText] String
   :<|> "user"  :> "settings" :> Get '[PlainText] String
+  :<|> "admin" :> SchoolClass ::> "edit" :> Get '[PlainText] String
 
 renderHtmlSource :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
       => ServerT RenderHtmlSource m
-renderHtmlSource loginName =
-       (\iid -> loginByName loginName >> show <$> viewIdeaPage                        iid)
-  :<|> (\tid -> loginByName loginName >> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
-  :<|> (loginByName loginName >> show . PageUserSettings <$> currentUser)
+renderHtmlSource (loginByName -> li) =
+       (\iid -> li >> show <$> viewIdeaPage                        iid)
+  :<|> (\tid -> li >> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
+  :<|> (li >> show . PageUserSettings <$> currentUser)
+  :<|> (\schoolclass -> li >> (show <$> adminSettingsGaPClassesEditPage schoolclass))

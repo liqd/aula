@@ -28,6 +28,7 @@ module Arbitrary
     , fishAvatarsPath
     , fishAvatars
     , constantSampleTimestamp
+    , sampleEventLog
     ) where
 
 import Control.Applicative ((<**>))
@@ -44,7 +45,7 @@ import Servant
 import System.FilePath (takeBaseName)
 import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat)
+import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat, resize)
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -57,9 +58,11 @@ import qualified Generics.Generic.Aeson as Aeson
 import Action
 import Action.Implementation
 import Config
+import EventLog
 import Frontend.Core
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
+import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
@@ -83,6 +86,11 @@ garbitrary = garbitrary' (max 0 . subtract 10)
 
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
+
+instance ( Generic a, Generic b, Generic c
+         , Arbitrary a, Arbitrary b, Arbitrary c
+         ) => Arbitrary (Either3 a b c) where
+    arbitrary = garbitrary
 
 
 -- * pages
@@ -236,7 +244,7 @@ instance Arbitrary DelegationContext where
 instance Arbitrary Delegation where
     arbitrary = garbitrary
 
-instance Arbitrary ListItemIdeaContext where
+instance Arbitrary WhatListPage where
     arbitrary = garbitrary
 
 instance Arbitrary ListItemIdea where
@@ -246,6 +254,9 @@ instance Arbitrary ListItemIdeas where
     arbitrary = garbitrary
 
 instance Arbitrary ListInfoForIdea where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeaCapability where
     arbitrary = garbitrary
 
 
@@ -258,6 +269,15 @@ instance Arbitrary CommentVote where
     arbitrary = garbitrary
 
 instance Arbitrary UpDown where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentContext where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentCapability where
+    arbitrary = garbitrary
+
+instance Arbitrary CommentWidget where
     arbitrary = garbitrary
 
 
@@ -290,6 +310,7 @@ arbTopicPhaseDuration = pure constantSampleTimestamp
 instance Arbitrary Topic where
     arbitrary =
         scaleDown garbitrary
+        <**> (set topicTitle           <$> arbPhrase)
         <**> (set topicDesc . Markdown <$> arbPhrase)
 
 instance Arbitrary Phase where
@@ -345,6 +366,7 @@ instance Arbitrary UserSettingData where
 instance Arbitrary RenderContext where
     arbitrary = RenderContext <$> arbitrary
 
+
 -- * admin
 
 userForClass :: SchoolClass -> Gen User
@@ -364,6 +386,12 @@ instance Arbitrary RoleSelection where
     arbitrary = garbitrary
 
 instance Arbitrary EditUserPayload where
+    arbitrary = garbitrary
+
+instance Arbitrary InitialPasswordsCsv where
+    arbitrary = garbitrary
+
+instance Arbitrary CsvUserRecord where
     arbitrary = garbitrary
 
 -- FIXME: instance Arbitrary Delegation
@@ -389,10 +417,17 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
 -- * path
 
 instance Arbitrary P.Main where
-    -- FIXME: Remove Broken
     arbitrary = suchThat garbitrary (not . P.isBroken)
 
 instance Arbitrary P.IdeaMode where
+    arbitrary = prune <$> garbitrary
+      where
+        -- replies to sub-comments are turned into replies to the parent comment.
+        prune (P.OnComment (CommentContext idea (Just c)) _c'        P.ReplyComment)
+             = P.OnComment (CommentContext idea Nothing)  (c ^. _Id) P.ReplyComment
+        prune m = m
+
+instance Arbitrary P.CommentMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.Space where
@@ -612,8 +647,9 @@ fishDelegationNetworkIO = do
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 
-    -- We use @AcidStateInMem@ here to make sure it doesn't rust.
-    cfg <- (persistenceImpl .~ AcidStateInMem) <$> Config.readConfig Config.DontWarnMissing
+    cfg <- (persistConfig . persistenceImpl .~ AcidStateInMem)
+        <$> Config.readConfig Config.DontWarnMissing
+        -- FIXME: we should use AulaTests.testConfig here, but that's under /tests/
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
             v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
@@ -737,6 +773,33 @@ instance Aeson.ToJSON D3DN where
         getPower u = toJSON . List.length
                    . List.filter (== (u ^. _Id))
                    . fmap (view delegationTo)
+
+
+-- * event log
+
+instance Arbitrary EventLog where
+    arbitrary = garbitrary
+
+instance Arbitrary EventLogItem where
+    arbitrary = garbitrary
+
+instance Arbitrary EventLogItemValue where
+    arbitrary = garbitrary >>= repair
+      where
+        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
+        repair v = pure v
+
+instance Arbitrary PhaseTransitionTriggeredBy where
+    arbitrary = garbitrary
+
+{-# NOINLINE sampleEventLog #-}
+sampleEventLog :: Config -> EventLog
+sampleEventLog = unsafePerformIO . sampleEventLogIO
+
+sampleEventLogIO :: Config -> IO EventLog
+sampleEventLogIO cfg = do
+    EventLog _ rows <- generate $ resize 1000 arbitrary
+    pure $ EventLog (cs $ cfg ^. exposedUrl) rows
 
 
 -- * constant sample values
