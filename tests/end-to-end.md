@@ -1,17 +1,3 @@
-issues:
-
-1. the template class csv does not parse.
-2. the error should be nicer (not a crash, but a log entry and a redirect), when error thrown, it should be caught by the runAction
-3. create user page is not implemented (github issue?)
-4. acid-state snapshot thread is probably missing.  needed for staging!
-5. delete of user is not implemented (github issue?)
-6. quorums in admin: make reasonable lower/upper limits; make fields wide enough to contain the entire number.  (especially % values over 100 :-) make sure unparseable numbers are also reported as errors ('-aaa')
-7. User settings page should redirect to itself.
-8. Student can't like wild idea on idea view page.
-
-
-
-
 ------------------------------------------------------------------------------------
 
 test scripts  2016-04-07 andorp, fisx
