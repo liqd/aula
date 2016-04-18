@@ -33,6 +33,7 @@ import Frontend.Testing as Action (makeTopicTimeout)
 
 import AulaTests.Stories.DSL
 
+
 -- | Client state stores information about the assumptions
 -- of the state of server states, it is also can be used
 -- to simulate web clients state.
@@ -126,6 +127,21 @@ runClient (Free (CreateTopic it tt td k)) = do
     postcondition $ return ()
     runClient k
 
+runClient (Free (EditTopic ot nt d k)) = do
+    topic <- precondition $ do
+        Just topic <- findTopicByTitle ot
+        Nothing <- findTopicByTitle nt
+        pure topic
+    _ <- step . lift $ do
+        let editTopicPage = Page.editTopic (topic ^. _Id)
+        -- FIXME: Add idea handling
+        (editTopicPage ^. formProcessor) $ EditTopicData nt (Markdown d) []
+    postcondition $ do
+        Nothing <- findTopicByTitle ot
+        Just _topic <- findTopicByTitle nt
+        pure ()
+    runClient k
+
 runClient (Free (TimeoutTopic t k)) = do
     Just topic <- precondition $ findTopicByTitle t
     _ <- step . lift $ Action.makeTopicTimeout (topic ^. _Id)
@@ -133,7 +149,7 @@ runClient (Free (TimeoutTopic t k)) = do
         Just topic' <- findTopicByTitle t
         let phase1 = topic ^. topicPhase
         let phase2 = topic' ^. topicPhase
-        unless (phase2 `followsPhase` phase1) . fail $ show (phase1, phase2)
+        unless (phase2 `followsPhase` phase1) . fail . ("runClient: " ++) $ show (phase1, phase2)
     runClient k
 
 runClient (Free (MarkIdea t v k)) = do
