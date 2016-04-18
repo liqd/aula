@@ -156,10 +156,7 @@ runClient (Free (CommentOnComment t cp c k)) = do
         Just idea <- findIdeaByTitle t
         let Just comment = findCommentByText idea cp
         pure comment
-    _ <- step . lift $
-        currentUserAddDb
-            (AddReply (comment ^. _Id))
-            (Markdown c)
+    _ <- step . lift $ currentUserAddDb (AddReply (comment ^. _Key)) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 

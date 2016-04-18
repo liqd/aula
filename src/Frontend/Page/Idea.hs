@@ -445,7 +445,7 @@ replyCommentIdea loc ideaId commentId =
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
-        (currentUserAddDb . AddReply $ CommentId loc ideaId [] commentId)
+        (currentUserAddDb . AddReply $ CommentKey loc ideaId [] commentId)
 
 judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> ServerT (FormHandler JudgeIdea) m
 judgeIdea ideaId juryType =

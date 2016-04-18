@@ -306,18 +306,17 @@ type EnvWithProto a = EnvWith (Proto a)
 -}
 type AddDb a = EnvWithProto a -> AUpdate a
 
-addDb' :: (HasMetaInfo a, FromProto a) =>
-          Getter (IdOf a) (AUIDOf (IdOf a)) ->
-          (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
-addDb' coreAUID nextId' l (EnvWith cUser now pa) = do
+addDb' :: forall a. (HasMetaInfo a, FromProto a) =>
+          (User -> AUpdate (KeyOf a)) -> AulaTraversal (AMap a) -> AddDb a
+addDb' mkKey l (EnvWith cUser now pa) = do
     assertAulaDataM $ do
         len <- asks (lengthOf l)
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    aid <- nextId' cUser
+    aid <- mkKey cUser
     let a = fromProto pa $ mkMetaInfo cUser now aid
-    l . at (aid ^. coreAUID) <?= a
+    l . at (aid ^. idOfKey (Proxy :: Proxy a)) <?= a
 
 -- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
@@ -333,11 +332,11 @@ addDb' coreAUID nextId' l (EnvWith cUser now pa) = do
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDb = addDb' id $ const nextId
+addDb :: (KeyOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
+addDb = addDb' $ const nextId
 
 
-addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
+addDbAppValue :: (KeyOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
     => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser now
@@ -356,7 +355,7 @@ findInBy l f b = findIn l (\x -> x ^? f == Just b)
 findAllInBy :: Eq b => AulaGetter [a] -> Fold a b -> b -> Query [a]
 findAllInBy l f b = findAllIn l (\x -> x ^? f == Just b)
 
-findInById :: HasMetaInfo a => AulaGetter (AMap a) -> AUIDOf (IdOf a) -> MQuery a
+findInById :: HasMetaInfo a => AulaGetter (AMap a) -> IdOf a -> MQuery a
 findInById l i = view (l . at i)
 
 getSpaces :: Query [IdeaSpace]
@@ -387,7 +386,7 @@ findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: Ord (AUIDOf (IdOf a)) => AulaLens (AMap a) -> AUIDOf (IdOf a) -> (a -> a) -> AUpdate ()
+modifyAMap :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> (a -> a) -> AUpdate ()
 modifyAMap l ident = (l . at ident . _Just %=)
 
 modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
@@ -499,25 +498,25 @@ findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . v
 findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
 findComment' iid parents = preview . dbComment' iid parents
 
-findComment :: CommentId -> MQuery Comment
-findComment cid = findComment' (cid ^. cidIdea) (cid ^. cidParents) (cid ^. cidAUID)
+findComment :: CommentKey -> MQuery Comment
+findComment ck = findComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
 
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb IdeaLike
-addLikeToIdea iid = addDb' ivUser (mkIdeaVoteLikeId iid) (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaLikes)
 
-mkIdeaVoteLikeId :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeId
-mkIdeaVoteLikeId i u = pure $ IdeaVoteLikeId i (u ^. _Id)
+mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
+mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
 
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDb' ivUser (mkIdeaVoteLikeId iid) (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -530,32 +529,32 @@ instance FromProto Comment where
 
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: IdeaLocation -> AUID Idea -> AddDb Comment
-addCommentToIdea loc iid = addDb' cidAUID (nextCommentId loc iid) (dbIdeaMap . at iid . _Just . ideaComments)
+addCommentToIdea loc iid = addDb' (nextCommentKey loc iid) (dbIdeaMap . at iid . _Just . ideaComments)
 
-nextCommentId :: IdeaLocation -> AUID Idea -> User -> AUpdate CommentId
-nextCommentId loc iid _ = CommentId loc iid [] <$> nextId
+nextCommentKey :: IdeaLocation -> AUID Idea -> User -> AUpdate CommentKey
+nextCommentKey loc iid _ = CommentKey loc iid [] <$> nextId
 
-nextReplyId :: CommentId -> User -> AUpdate CommentId
-nextReplyId cid _ = do
+nextReplyId :: CommentKey -> User -> AUpdate CommentKey
+nextReplyId ck _ = do
     i <- nextId
-    pure $ cid & cidParents <>~ [cid ^. cidAUID]
-               & cidAUID    .~  i
+    pure $ ck & ckParents  <>~ [ck ^. ckCommentId]
+              & ckCommentId .~ i
 
 -- | FIXME: Assumptions:
--- * the given @CommentId@ MUST be in the DB.
-addReply :: CommentId -> AddDb Comment
-addReply cid = addDb' cidAUID (nextReplyId cid) (dbComment cid . commentReplies)
+-- * the given @CommentKey@ MUST be in the DB.
+addReply :: CommentKey -> AddDb Comment
+addReply ck = addDb' (nextReplyId ck) (dbComment ck . commentReplies)
 
 instance FromProto CommentVote where
     fromProto = flip CommentVote
 
 -- | FIXME: Assumptions:
--- * the given @CommentId@ MUST be in the DB.
-addCommentVote :: CommentId -> AddDb CommentVote
-addCommentVote cid = addDb' cvUser (mkCommentVoteId cid) (dbComment cid . commentVotes)
+-- * the given @CommentKey@ MUST be in the DB.
+addCommentVote :: CommentKey -> AddDb CommentVote
+addCommentVote ck = addDb' (mkCommentVoteKey ck) (dbComment ck . commentVotes)
 
-mkCommentVoteId :: Applicative f => CommentId -> User -> f CommentVoteId
-mkCommentVoteId cid u = pure $ CommentVoteId cid (u ^. _Id)
+mkCommentVoteKey :: Applicative f => CommentKey -> User -> f CommentVoteKey
+mkCommentVoteKey ck u = pure $ CommentVoteKey ck (u ^. _Id)
 
 instance FromProto IdeaJuryResult where
     fromProto = flip IdeaJuryResult
@@ -572,14 +571,14 @@ addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
 dbComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> AulaTraversal Comment
-dbComment' iid parents cid =
-    dbIdeaMap . at iid . _Just . ideaComments . traverseParents parents . at cid . _Just
+dbComment' iid parents ck =
+    dbIdeaMap . at iid . _Just . ideaComments . traverseParents parents . at ck . _Just
 
-dbComment :: CommentId -> AulaTraversal Comment
-dbComment cid = dbComment' (cid ^. cidIdea) (cid ^. cidParents) (cid ^. cidAUID)
+dbComment :: CommentKey -> AulaTraversal Comment
+dbComment ck = dbComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
 
-deleteComment :: CommentId -> AUpdate ()
-deleteComment cid = dbComment cid . commentDeleted .= True
+deleteComment :: CommentKey -> AUpdate ()
+deleteComment ck = dbComment ck . commentDeleted .= True
 
 
 nextId :: AUpdate (AUID a)
@@ -675,9 +674,9 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
-mkMetaInfo :: User -> Timestamp -> IdOf a -> MetaInfo a
-mkMetaInfo cUser now oid = MetaInfo
-    { _metaId              = oid
+mkMetaInfo :: User -> Timestamp -> KeyOf a -> MetaInfo a
+mkMetaInfo cUser now key = MetaInfo
+    { _metaKey             = key
     , _metaCreatedBy       = cUser ^. _Id
     , _metaCreatedByLogin  = cUser ^. userLogin
     , _metaCreatedByAvatar = cUser ^. userAvatar
@@ -686,7 +685,7 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: IdOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
+nextMetaInfo :: KeyOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
 nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()

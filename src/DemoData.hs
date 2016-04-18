@@ -137,7 +137,7 @@ genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m Comme
 genReply comments_in_context students = do
     CommentInContext idea comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    let event = AddReply (comment ^. _Id)
+    let event = AddReply (comment ^. _Key)
         getResult = fmap (CommentInContext idea)
     getResult . addWithUser event student <$> arbDocument
 
@@ -145,7 +145,7 @@ genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m
 genCommentVote comments_in_context students = do
     CommentInContext idea comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    let action = addWithUser . AddCommentVote $ comment ^. _Id
+    let action = addWithUser . AddCommentVote $ comment ^. _Key
     action student <$> arb
 
 updateAvatar :: User -> URL -> forall m . ActionM m => m ()

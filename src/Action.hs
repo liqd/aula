@@ -344,36 +344,35 @@ voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea = currentUserAddDb_ . AddVoteToIdea
 
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
-voteIdeaComment loc ideaId commentId = currentUserAddDb_ $ AddCommentVote cid
-    where cid = CommentId loc ideaId [] commentId
+voteIdeaComment loc ideaId = currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId []
 
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
-voteIdeaCommentReply loc ideaId commentId replyId = currentUserAddDb_ $ AddCommentVote cid
-    where cid = CommentId loc ideaId [commentId] replyId
+voteIdeaCommentReply loc ideaId commentId =
+    currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
 
 -- * Reporting and deleting comments
 
 deleteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> ActionPersist m => m ()
-deleteIdeaComment loc ideaId commentId = update $ DeleteComment cid
-    where cid = CommentId loc ideaId [] commentId
+deleteIdeaComment loc ideaId = update . DeleteComment . CommentKey loc ideaId []
 
-deleteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> ActionPersist m => m ()
-deleteIdeaCommentReply loc ideaId commentId replyId = update $ DeleteComment cid
-    where cid = CommentId loc ideaId [commentId] replyId
+deleteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment ->
+                          ActionPersist m => m ()
+deleteIdeaCommentReply loc ideaId commentId =
+    update . DeleteComment . CommentKey loc ideaId [commentId]
 
 -- FIXME:
 -- More generally: do we do anything to prevent abuse of the report system?
 -- One thing could be log the event or count the reports made by one user.
 -- Since no record of the report are kept in base not only multiple users can
 -- report the same comment but the same user can report multiple times.
-reportCommentById :: CommentId -> (ActionPersist m, ActionSendMail m) => m ()
-reportCommentById cid = do
-    comment <- mquery $ findComment cid
+reportCommentById :: CommentKey -> (ActionPersist m, ActionSendMail m) => m ()
+reportCommentById ck = do
+    comment <- mquery $ findComment ck
     let uri = relPath $ U.viewComment comment
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
-        { _msgISpace  = comment ^. _Id . cidIdeaLocation . ideaLocationSpace
+        { _msgISpace  = comment ^. _Key . ckIdeaLocation . ideaLocationSpace
         , _msgSubject = "Thema in der Ergebnisphase"
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
@@ -391,11 +390,11 @@ reportCommentById cid = do
 
 reportIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment
                   -> (ActionPersist m, ActionSendMail m) => m ()
-reportIdeaComment loc ideaId commentId = reportCommentById $ CommentId loc ideaId [] commentId
+reportIdeaComment loc ideaId = reportCommentById . CommentKey loc ideaId []
 
 reportIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment
                        -> (ActionPersist m, ActionSendMail m) => m ()
-reportIdeaCommentReply loc ideaId commentId = reportCommentById . CommentId loc ideaId [commentId]
+reportIdeaCommentReply loc ideaId commentId = reportCommentById . CommentKey loc ideaId [commentId]
 
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throws an exception.
 -- It runs the phase change computations if happens.

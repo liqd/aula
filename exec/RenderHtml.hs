@@ -78,7 +78,7 @@ pagesView f =
 mockUser :: User
 mockUser = User
     { _userMeta      = MetaInfo
-        { _metaId              = AUID 0
+        { _metaKey             = AUID 0
         , _metaCreatedBy       = AUID 0
         , _metaCreatedByLogin  = "login"
         , _metaCreatedByAvatar = Nothing

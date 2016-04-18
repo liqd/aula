@@ -29,8 +29,8 @@ import Data.UriPath
 import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
-             , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , IdeaJuryResultType(..), cidIdeaLocation, CommentId(CommentId))
+             , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
+             , IdeaJuryResultType(..), ckIdeaLocation, CommentKey(CommentKey))
 
 data Top =
     Top
@@ -142,9 +142,8 @@ commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
 onComment :: Comment -> CommentMode -> Main
-onComment comment =
-    IdeaPath (cid ^. cidIdeaLocation) .  OnComment cid
-  where cid = comment ^. _Id
+onComment comment = IdeaPath (ck ^. ckIdeaLocation) .  OnComment ck
+  where ck = comment ^. _Key
 
 replyComment :: Comment -> Main
 replyComment comment = onComment comment ReplyComment
@@ -185,14 +184,14 @@ ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
 ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
                                        </> uriPart v
 ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment cid m) root = commentMode cid m root
+ideaMode (OnComment ck m) root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
 
 commentAnchor :: IsString s => AUID Comment -> s
 commentAnchor (AUID c) = fromString $ "comment-" <> show c
 
-commentMode :: CommentId -> CommentMode -> UriPath -> UriPath
-commentMode (CommentId _loc i parents commentId) m root =
+commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
+commentMode (CommentKey _loc i parents commentId) m root =
     case m of
         ReplyComment  -> base 1 </> "reply"
         DeleteComment -> base 2 </> "delete"
@@ -285,8 +284,8 @@ data IdeaMode =
     | CommentIdea (AUID Idea)
 
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
-    -- CommentId
-    | OnComment CommentId CommentMode
+    -- CommentKey
+    | OnComment CommentKey CommentMode
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaMode

@@ -211,13 +211,13 @@ data IdeaVoteValue = Yes | No | Neutral
 
 instance SOP.Generic IdeaVoteValue
 
-data IdeaVoteLikeId = IdeaVoteLikeId
+data IdeaVoteLikeKey = IdeaVoteLikeKey
     { _ivIdea :: AUID Idea
     , _ivUser :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic IdeaVoteLikeId
+instance SOP.Generic IdeaVoteLikeKey
 
 data IdeaJuryResult = IdeaJuryResult
     { _ideaJuryResultMeta   :: MetaInfo IdeaJuryResult
@@ -283,23 +283,23 @@ data Comment = Comment
 instance SOP.Generic Comment
 
 -- This is the complete information to recover a comment in AulaData
-data CommentId = CommentId
-    { _cidIdeaLocation  :: IdeaLocation
-    , _cidIdea          :: AUID Idea
-    , _cidParents       :: [AUID Comment]
-    , _cidAUID          :: AUID Comment
+data CommentKey = CommentKey
+    { _ckIdeaLocation  :: IdeaLocation
+    , _ckIdeaId        :: AUID Idea
+    , _ckParents       :: [AUID Comment]
+    , _ckCommentId     :: AUID Comment
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic CommentId
+instance SOP.Generic CommentKey
 
-data CommentVoteId = CommentVoteId
-    { _cvCommentId :: CommentId
+data CommentVoteKey = CommentVoteKey
+    { _cvCommentKey :: CommentKey
     , _cvUser      :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic CommentVoteId
+instance SOP.Generic CommentVoteKey
 
 type instance Proto Comment = Document
 
@@ -574,25 +574,27 @@ newtype AUID a = AUID Integer
 
 instance SOP.Generic (AUID a)
 
-type family   IdOf a
-type instance IdOf User             = AUID User
-type instance IdOf Idea             = AUID Idea
-type instance IdOf Topic            = AUID Topic
-type instance IdOf Delegation       = AUID Delegation
-type instance IdOf Comment          = CommentId
-type instance IdOf CommentVote      = CommentVoteId
-type instance IdOf IdeaVote         = IdeaVoteLikeId
-type instance IdOf IdeaLike         = IdeaVoteLikeId
-type instance IdOf IdeaVoteResult   = AUID IdeaVoteResult
-type instance IdOf IdeaJuryResult   = AUID IdeaJuryResult
+type family   KeyOf a
+type instance KeyOf User             = AUID User
+type instance KeyOf Idea             = AUID Idea
+type instance KeyOf Topic            = AUID Topic
+type instance KeyOf Delegation       = AUID Delegation
+type instance KeyOf Comment          = CommentKey
+type instance KeyOf CommentVote      = CommentVoteKey
+type instance KeyOf IdeaVote         = IdeaVoteLikeKey
+type instance KeyOf IdeaLike         = IdeaVoteLikeKey
+type instance KeyOf IdeaVoteResult   = AUID IdeaVoteResult
+type instance KeyOf IdeaJuryResult   = AUID IdeaJuryResult
 
-type family   AUIDOf a
-type instance AUIDOf (AUID a)       = AUID a
-type instance AUIDOf CommentId      = AUID Comment
-type instance AUIDOf CommentVoteId  = AUID User
-type instance AUIDOf IdeaVoteLikeId = AUID User
+type family   IdOfKey a
+type instance IdOfKey (AUID a)        = AUID a
+type instance IdOfKey CommentKey      = AUID Comment
+type instance IdOfKey CommentVoteKey  = AUID User
+type instance IdOfKey IdeaVoteLikeKey = AUID User
 
-type AMap a = Map (AUIDOf (IdOf a)) a
+type IdOf a = IdOfKey (KeyOf a)
+
+type AMap a = Map (IdOf a) a
 
 type Users        = AMap User
 type Ideas        = AMap Idea
@@ -616,8 +618,8 @@ instance HasUriPart (AUID a) where
 -- If this is becoming too much in the future and we want to keep objects around without all this
 -- inlined information, we should consider making objects polymorphic in the concrete meta info
 -- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
-data GMetaInfo a id = MetaInfo
-    { _metaId              :: id
+data GMetaInfo a k = MetaInfo
+    { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: Maybe URL
@@ -629,7 +631,7 @@ data GMetaInfo a id = MetaInfo
 
 instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
 
-type MetaInfo a = GMetaInfo a (IdOf a)
+type MetaInfo a = GMetaInfo a (KeyOf a)
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
@@ -728,9 +730,9 @@ instance HasUriPart PermissionContext where
 instance Binary (AUID a)
 instance Binary Category
 instance Binary Comment
-instance Binary CommentId
+instance Binary CommentKey
 instance Binary CommentVote
-instance Binary CommentVoteId
+instance Binary CommentVoteKey
 instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
@@ -745,7 +747,7 @@ instance Binary IdeaVoteResult
 instance Binary IdeaVoteResultValue
 instance Binary IdeaSpace
 instance Binary IdeaVote
-instance Binary IdeaVoteLikeId
+instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
@@ -783,9 +785,9 @@ makePrisms ''UserLogin
 makeLenses ''Category
 makeLenses ''Comment
 makeLenses ''CommentContext
-makeLenses ''CommentId
+makeLenses ''CommentKey
 makeLenses ''CommentVote
-makeLenses ''CommentVoteId
+makeLenses ''CommentVoteKey
 makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
@@ -797,7 +799,7 @@ makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
 makeLenses ''IdeaJuryResult
 makeLenses ''IdeaVoteResult
-makeLenses ''IdeaVoteLikeId
+makeLenses ''IdeaVoteLikeKey
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''GMetaInfo
@@ -822,9 +824,9 @@ makeLenses ''Quorums
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
 deriveSafeCopy 0 'base ''Comment
-deriveSafeCopy 0 'base ''CommentId
+deriveSafeCopy 0 'base ''CommentKey
 deriveSafeCopy 0 'base ''CommentVote
-deriveSafeCopy 0 'base ''CommentVoteId
+deriveSafeCopy 0 'base ''CommentVoteKey
 deriveSafeCopy 0 'base ''Delegation
 deriveSafeCopy 0 'base ''DelegationContext
 -- deriveSafeCopy 0 'base ''DelegationNetwork
@@ -833,7 +835,7 @@ deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''Idea
-deriveSafeCopy 0 'base ''IdeaVoteLikeId
+deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation
 -- deriveSafeCopy 0 'base ''IdeaLike
@@ -863,15 +865,15 @@ deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
 deriveSafeCopy 0 'base ''Quorums
 
-class Ord (AUIDOf (IdOf a)) => HasMetaInfo a where
+class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
+    _Key            :: Lens' a (KeyOf a)
+    _Key            = metaInfo . metaKey
     _Id             :: Lens' a (IdOf a)
-    _Id             = metaInfo . metaId
-    aUID            :: Lens' a (AUIDOf (IdOf a))
-    aUID            = _Id . aUID_ (Proxy :: Proxy a)
-    aUID_           :: Proxy a -> Lens' (IdOf a) (AUIDOf (IdOf a))
-    default aUID_   :: Proxy a -> Lens' (AUID a) (AUID a)
-    aUID_ _         = id
+    _Id             = _Key . idOfKey (Proxy :: Proxy a)
+    idOfKey         :: Proxy a -> Lens' (KeyOf a) (IdOf a)
+    default idOfKey :: Proxy a -> Lens' (AUID a) (AUID a)
+    idOfKey _       = id
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy
     createdByLogin  :: Lens' a UserLogin
@@ -893,16 +895,16 @@ instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
 instance HasMetaInfo Comment where
     metaInfo = commentMeta
-    aUID_ _ = cidAUID
+    idOfKey _ = ckCommentId
 instance HasMetaInfo CommentVote where
     metaInfo = commentVoteMeta
-    aUID_ _ = cvUser
+    idOfKey _ = cvUser
 instance HasMetaInfo IdeaVote where
     metaInfo = ideaVoteMeta
-    aUID_ _ = ivUser
+    idOfKey _ = ivUser
 instance HasMetaInfo IdeaLike where
     metaInfo = likeMeta
-    aUID_ _ = ivUser
+    idOfKey _ = ivUser
 
 {- Examples:
     e :: EmailAddress
@@ -1049,7 +1051,7 @@ roleLabel Principal      = "Direktor"
 roleLabel Admin          = "Administrator"
 
 aMapFromList :: HasMetaInfo a => [a] -> AMap a
-aMapFromList = fromList . map (\x -> (x ^. aUID, x))
+aMapFromList = fromList . map (\x -> (x ^. _Id, x))
 
 foldComment :: Fold Comment Comment
 foldComment = cosmosOf (commentReplies . each)
