@@ -88,7 +88,7 @@ runClient (Free (CreateIdea t d c k)) = do
     Just i <- use csIdeaSpace
     let location = IdeaLocationSpace i
     _ <- step . lift . (Page.createIdea location ^. formProcessor) $
-        (ProtoIdea t (Markdown d) (Just c) location)
+        ProtoIdea t (Markdown d) (Just c) location
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
 
@@ -109,7 +109,7 @@ runClient (Free (CreateTopic it tt td k)) = do
     _ <- lift $ do
         end <- getCurrentTimestamp >>= \now -> query $ phaseEndRefinement now
         (Page.createTopic ideaSpace ^. formProcessor) $
-            (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end)
+            ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end
     postcondition $ return ()
     runClient k
 

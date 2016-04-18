@@ -239,14 +239,14 @@ ideaApi loc
   :<|> Action.likeIdea
   :<|> Action.voteIdea
   :<|> (form . Page.commentIdea loc)
-  :<|> (app2 form (Page.replyCommentIdea loc))
+  :<|> app2 form (Page.replyCommentIdea loc)
   :<|> Action.voteIdeaComment loc
   :<|> Action.voteIdeaCommentReply loc
   :<|> Action.deleteIdeaComment loc
   :<|> Action.deleteIdeaCommentReply loc
   :<|> Action.reportIdeaComment loc
   :<|> Action.reportIdeaCommentReply loc
-  :<|> (app2 form Page.judgeIdea)
+  :<|> app2 form Page.judgeIdea
   :<|> form (Page.createIdea loc)
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
@@ -260,7 +260,7 @@ topicApi space
   :<|> flip (Page.viewTopic . TabWinningIdeas)
   :<|> Page.viewTopic TabDelegation
 
-  :<|> (form $ Page.createTopic space)
+  :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
 
