@@ -364,56 +364,10 @@ instance FormPage p => ToHtml (FormPageRep p) where
         frameToHtml (Frame usr bdy)   = pageFrame fop (Just usr) (toHtml bdy)
         frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)
         form bdy = DF.childErrorList "" v >> DF.form v a bdy
-{-
--- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
--- move parts of it there?)
---
--- Note on file upload: The 'processor' argument is responsible for reading all file contents before
--- returning a WHNF from 'popTempCsvFile'.  'cleanupTempCsvFiles' will be called from within this
--- function as a 'processor' finalizer, so be weary of lazy IO!
---
--- Note that since we read (or write to) files eagerly and close them in obviously safe
--- places (e.g., a parent thread of all potentially file-opening threads, after they all
--- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
--- the `resourcet` engine and it's use pattern.
-FormPageHandler
-    :: (FormPage p, Page p, ActionM m)
-    => m p                       -- ^ Page representation
-    -> (FormPagePayload p -> m (FormPageResult p)) -- ^ Processor for the form result
-    -> ServerT (FormHandler p) m
-FormPageHandler getPage processor = getH :<|> postH
-  where
-    guard page = do
-        r <- guardPage page
-        when (isJust r) . redirect . absoluteUriPath $ fromJust r
-
-    getH = do
-        page <- getPage
-        guard page
-        let fa = absoluteUriPath . relPath $ formAction page
-        v <- getForm fa (processor1 page)
-        FormPageRep v fa <$> makeFrame page
-
-    postH formData = do
-        page <- getPage
-        let fa = absoluteUriPath . relPath $ formAction page
-            env = getFormDataEnv formData
-        (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
-        (case mpayload of
-            Just payload -> processor2 page payload >>= redirect
-            Nothing      -> FormPageRep v fa <$> makeFrame page)
-            `finally` cleanupTempCsvFiles formData
-
-    -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
-    -- produces a type error.  is this a ghc bug, or a bug in our code?)
-    processor1 = makeForm
-    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
--}
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $
     Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
-
 
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
