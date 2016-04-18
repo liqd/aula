@@ -27,7 +27,7 @@ module Frontend.Core
     , FormHandler, FormHandlerT
     , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, guardPage
-    , FormPageHandler(..), fhGetPage, fhProcessor
+    , FormPageHandler(..), formGetPage, formProcessor
     , form
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
@@ -379,17 +379,28 @@ avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
 avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
 
 data FormPageHandler m p = FormPageHandler
-    { _fhGetPage   :: m p
-    , _fhProcessor :: FormPagePayload p -> m (FormPageResult p)
+    { _formGetPage   :: m p
+    , _formProcessor :: FormPagePayload p -> m (FormPageResult p)
     }
 
 makeLenses ''FormPageHandler
 
+-- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
+-- move parts of it there?)
+--
+-- Note on file upload: The 'processor' argument is responsible for reading all file contents before
+-- returning a WHNF from 'popTempCsvFile'.  'cleanupTempCsvFiles' will be called from within this
+-- function as a 'processor' finalizer, so be weary of lazy IO!
+--
+-- Note that since we read (or write to) files eagerly and close them in obviously safe
+-- places (e.g., a parent thread of all potentially file-opening threads, after they all
+-- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
+-- the `resourcet` engine and it's use pattern.
 form :: (FormPage p, Page p, ActionM m) => FormPageHandler m p -> ServerT (FormHandler p) m
 form formHandler = getH :<|> postH
   where
-    getPage = formHandler ^. fhGetPage
-    processor = formHandler ^. fhProcessor
+    getPage = formHandler ^. formGetPage
+    processor = formHandler ^. formProcessor
 
     guard page = do
         r <- guardPage page
