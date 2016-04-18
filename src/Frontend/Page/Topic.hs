@@ -288,6 +288,7 @@ viewTopicPage tab topicId = do
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 
+-- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
 createTopic space =
     FormPageHandler

@@ -419,6 +419,7 @@ viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m
     => AUID Idea -> m ViewIdea
 viewIdeaPage ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
 
+-- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
 createIdea loc = FormPageHandler (pure $ CreateIdea loc) Action.createIdea
 

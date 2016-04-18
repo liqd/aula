@@ -243,6 +243,10 @@ data IdeaJuryResultValue
 
 type instance Proto IdeaJuryResult = IdeaJuryResultValue
 
+ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
+ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
+ideaJuryResultValueToType Feasible{}    = IdeaFeasible
+
 instance SOP.Generic IdeaJuryResultValue
 
 data IdeaVoteResult = IdeaVoteResult
