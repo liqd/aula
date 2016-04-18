@@ -33,7 +33,6 @@ module Persistent.Pure
     , AEvent, Query, EQuery, MQuery, AUpdate(AUpdate), AddDb
     , runAUpdate
     , aUpdateEvent
-    , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
     , PersistExcept(..)
     , _PersistError500, _PersistError404, _PersistErrorNotImplemented
@@ -183,17 +182,9 @@ emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
 
 -- * transactions
 
-data WhoWhen = WhoWhen
-    { _whoWhenTimestamp :: Timestamp
-    , _whoWhenUID       :: AUID User
-    }
-
-makeLenses ''WhoWhen
-
 type AEvent = Event AulaData
 
--- | 'Query' for 'AulaData'.  Doesn't contain the 'WhoWhen' context,
--- because that would make the stack contain two readers.
+-- | 'Query' for 'AulaData'.
 type Query a = forall m. MonadReader AulaData m => m a
 
 -- | Same as 'Query' but can throw 'PersistExcept'.
