@@ -199,7 +199,7 @@ commentMode (CommentKey _loc i parents commentId) m root =
         VoteComment v -> base 2 </> "vote" </> uriPart v
         ViewComment   -> root  </> "idea" </> uriPart i </> "view" </#> commentAnchor commentId
   where
-    -- FIXME: Deep replies are not supported yet.
+    -- NOTE: Deep replies are not supported yet.
     -- Meanwhile urls are automatically shortened to fit the current API.
     -- In particular voting/deleting/reporting can only apply up to depth 2
     -- and replying up to depth 1.
