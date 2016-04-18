@@ -128,7 +128,7 @@ instance ToHtml ViewIdea where
                                     "bearbeiten"
                                 when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
                                     i_ [class_ "icon-sign-out"] nil
-                                "Idee verschieben"
+                                    "Idee verschieben"
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
@@ -237,7 +237,7 @@ instance ToHtml IdeaVoteLikeBars where
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 toHtml (QuorumBar $ percentLikes idea quo)
-                li_ [class_ "meta-list-item"] $ do
+                span_ [class_ "like-bar"] $ do
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
 

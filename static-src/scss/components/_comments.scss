@@ -46,10 +46,6 @@
         border-bottom: 1px solid $color-grey-light;
         overflow: hidden;
 
-        &:last-child {
-            border-bottom: 0;
-        }
-
         &:first-child {
             @include rem(padding-top, 20px);
             border-top: 1px solid $color-grey-light;
@@ -78,21 +74,32 @@ $author-image-size: 37px;
     @include rem(font-size, $font-size-small);
 
     .comment-vote-up,
-    .comment-vote-down {
+    .comment-vote-down, & form {
         display: inline-block;
 
         [class^="icon-"] {
             @include rem(margin-left, 3px);
         }
+
+        .btn {
+            &:hover, &:focus {
+                color: $color-text;
+            }
+        }
     }
 
     .comment-vote-up {
         @include rem(margin-right, 15px);
-        color: $color-positive;
+
+        &, .btn {
+            color: $color-positive;
+        }
     }
 
-    .comment-vote-down {
-        color: $color-negative;
+    .comment-vote-down, & .btn {
+        &, .btn {
+            color: $color-negative;
+        }
     }
 }
 
