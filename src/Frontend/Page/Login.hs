@@ -104,7 +104,7 @@ instance ToHtml LoginDemoHints where
 
 -- * handlers
 
-login :: (ActionM action) => ServerT (FormHandler PageHomeWithLoginPrompt) action
-login = redirectFormHandler getPage Action.loginByUser
+login :: ActionM m => FormPageHandler m PageHomeWithLoginPrompt
+login = FormPageHandler getPage Action.loginByUser
   where
     getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> query getUsers

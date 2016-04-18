@@ -26,7 +26,9 @@ module Frontend.Core
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
     , FormHandler, FormHandlerT
     , FormPage, FormPagePayload, FormPageResult
-    , formAction, redirectOf, makeForm, formPage, redirectFormHandler, guardPage
+    , formAction, redirectOf, makeForm, formPage, guardPage
+    , FormPageHandler(..), formGetPage, formProcessor
+    , form
     , AuthorWidget(AuthorWidget)
     , CommentVotesWidget(VotesWidget)
     , semanticDiv
@@ -363,6 +365,25 @@ instance FormPage p => ToHtml (FormPageRep p) where
         frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)
         form bdy = DF.childErrorList "" v >> DF.form v a bdy
 
+redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
+redirect uri = throwServantErr $
+    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+
+avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
+avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
+
+avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
+avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
+
+avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
+avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
+
+data FormPageHandler m p = FormPageHandler
+    { _formGetPage   :: m p
+    , _formProcessor :: FormPagePayload p -> m (FormPageResult p)
+    }
+
+makeLenses ''FormPageHandler
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)
@@ -375,13 +396,12 @@ instance FormPage p => ToHtml (FormPageRep p) where
 -- places (e.g., a parent thread of all potentially file-opening threads, after they all
 -- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
 -- the `resourcet` engine and it's use pattern.
-redirectFormHandler
-    :: (FormPage p, Page p, ActionM m)
-    => m p                       -- ^ Page representation
-    -> (FormPagePayload p -> m (FormPageResult p)) -- ^ Processor for the form result
-    -> ServerT (FormHandler p) m
-redirectFormHandler getPage processor = getH :<|> postH
+form :: (FormPage p, Page p, ActionM m) => FormPageHandler m p -> ServerT (FormHandler p) m
+form formHandler = getH :<|> postH
   where
+    getPage = formHandler ^. formGetPage
+    processor = formHandler ^. formProcessor
+
     guard page = do
         r <- guardPage page
         when (isJust r) . redirect . absoluteUriPath $ fromJust r
@@ -407,21 +427,6 @@ redirectFormHandler getPage processor = getH :<|> postH
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
-
-
-redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
-redirect uri = throwServantErr $
-    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
-
-
-avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
-avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
-
-avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
-avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
-
-avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
-avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
 
 
 numLikes :: Idea -> Int

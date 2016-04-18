@@ -288,9 +288,10 @@ viewTopicPage tab topicId = do
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 
-createTopic :: ActionM m => IdeaSpace -> ServerT (FormHandler CreateTopic) m
+-- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
+createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
 createTopic space =
-    redirectFormHandler
+    FormPageHandler
         (do
             now <- getCurrentTimestamp
             query $ CreateTopic space
@@ -298,8 +299,8 @@ createTopic space =
                 <*> phaseEndRefinement now)
         Action.createTopic
 
-editTopic :: ActionM m => AUID Topic -> ServerT (FormHandler EditTopic) m
-editTopic topicId = redirectFormHandler getPage (update . Persistent.EditTopic topicId)
+editTopic :: ActionM m => AUID Topic -> FormPageHandler m EditTopic
+editTopic topicId = FormPageHandler getPage (update . Persistent.EditTopic topicId)
   where
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId

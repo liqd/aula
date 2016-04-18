@@ -112,10 +112,10 @@ instance FormPage PageUserSettings where
                             DF.inputSubmit "Änderungen speichern"
 
 
-userSettings :: forall action. (ActionM action) => ServerT (FormHandler PageUserSettings) action
-userSettings = redirectFormHandler (PageUserSettings <$> currentUser) changeUser
+userSettings :: forall m . ActionM m => FormPageHandler m PageUserSettings
+userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
   where
-    changeUser :: UserSettingData -> action ()
+    changeUser :: UserSettingData -> m ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
         maybe (pure ()) (update . SetUserEmail uid) memail

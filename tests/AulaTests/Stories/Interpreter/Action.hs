@@ -26,8 +26,9 @@ import Data.String.Conversions
 
 import Action
 import Persistent
-import Persistent.Api
 import Types
+import Frontend.Core
+import qualified Frontend.Page as Page
 import Frontend.Testing as Action (makeTopicTimeout)
 
 import AulaTests.Stories.DSL
@@ -58,7 +59,7 @@ runClient (Pure r) = pure r
 runClient (Free (Login l k)) = do
     join . lift $ do
         u <- mquery $ findUserByLogin l
-        step $ Action.login (u ^. _Id)
+        step (Page.login ^. formProcessor $ u)
         postcondition $ do
             u' <- currentUser
             assert (u, u') (u == u')
@@ -85,8 +86,9 @@ runClient (Free (SelectIdeaSpace s k)) = do
 runClient (Free (CreateIdea t d c k)) = do
     Nothing <- precondition $ findIdeaByTitle t
     Just i <- use csIdeaSpace
-    _ <- step . lift $ Action.createIdea
-        (ProtoIdea t (Markdown d) (Just c) (IdeaLocationSpace i))
+    let location = IdeaLocationSpace i
+    _ <- step . lift . (Page.createIdea location ^. formProcessor) $
+        ProtoIdea t (Markdown d) (Just c) location
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
 
@@ -106,8 +108,8 @@ runClient (Free (CreateTopic it tt td k)) = do
     Just ideaSpace <- use csIdeaSpace
     _ <- lift $ do
         end <- getCurrentTimestamp >>= \now -> query $ phaseEndRefinement now
-        Action.createTopic
-            (ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end)
+        (Page.createTopic ideaSpace ^. formProcessor) $
+            ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end
     postcondition $ return ()
     runClient k
 
@@ -124,7 +126,7 @@ runClient (Free (TimeoutTopic t k)) = do
 runClient (Free (MarkIdea t v k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $ case v of
-        Left v'  -> Action.markIdeaInJuryPhase (idea ^. _Id) v'
+        Left v'  -> (Page.judgeIdea (idea ^. _Id) (ideaJuryResultValueToType v') ^. formProcessor) v'
         Right v' -> Action.markIdeaInResultPhase (idea ^. _Id) v'
     postcondition $ do
         Just idea' <- findIdeaByTitle t
@@ -146,17 +148,17 @@ runClient (Free (VoteIdea t v k)) = do
 
 runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    _ <- step . lift $
-        currentUserAddDb (AddCommentToIdea (idea ^. ideaLocation) (idea ^. _Id)) (Markdown c)
+    _ <- step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
 runClient (Free (CommentOnComment t cp c k)) = do
-    comment <- precondition $ do
+    (idea, comment) <- precondition $ do
         Just idea <- findIdeaByTitle t
         let Just comment = findCommentByText idea cp
-        pure comment
-    _ <- step . lift $ currentUserAddDb (AddReply (comment ^. _Key)) (Markdown c)
+        pure (idea, comment)
+    _ <- step . lift $
+        (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
