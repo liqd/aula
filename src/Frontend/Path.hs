@@ -16,9 +16,8 @@ module Frontend.Path
     , IdeaMode(..)
     , CommentMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
-    , likeIdea, voteIdea, judgeIdea
-    , voteCommentIdea, voteCommentIdeaReply, voteCommentWithContext
-    , replyCommentIdea, commentOrReplyIdea, isPostOnly, isBroken, onComment
+    , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
+    , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , commentAnchor
     )
 where
@@ -30,8 +29,8 @@ import Data.UriPath
 import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
-             , SchoolClass, _Id, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , CommentContext(..), IdeaJuryResultType(..))
+             , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
+             , IdeaJuryResultType(..), ckIdeaLocation, CommentKey(CommentKey))
 
 data Top =
     Top
@@ -75,7 +74,7 @@ isPostOnly = \case
         case m of
             LikeIdea{} -> True
             VoteIdea{} -> True
-            OnComment _ _ cm ->
+            OnComment _ cm ->
                 case cm of
                     VoteComment{} -> True
                     DeleteComment -> True
@@ -142,27 +141,29 @@ judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
-onComment :: Idea -> Maybe Comment -> Comment -> CommentMode -> Main
-onComment idea mparent comment =
-    IdeaPath (idea ^. ideaLocation) .  OnComment (CommentContext idea mparent) (comment ^. _Id)
+onComment :: Comment -> CommentMode -> Main
+onComment comment = IdeaPath (ck ^. ckIdeaLocation) .  OnComment ck
+  where ck = comment ^. _Key
 
-replyCommentIdea :: Idea -> Comment -> Main
-replyCommentIdea idea comment = onComment idea Nothing comment ReplyComment
+replyComment :: Comment -> Main
+replyComment comment = onComment comment ReplyComment
 
 commentOrReplyIdea :: Idea -> Maybe Comment -> Main
 commentOrReplyIdea idea = \case
     Nothing      -> commentIdea idea
-    Just comment -> replyCommentIdea idea comment
+    Just comment -> replyComment comment
 
-voteCommentIdea :: Idea -> Comment -> UpDown -> Main
-voteCommentIdea idea comment = onComment idea Nothing comment . VoteComment
+voteComment :: Comment -> UpDown -> Main
+voteComment comment = onComment comment . VoteComment
 
-voteCommentIdeaReply :: Idea -> Comment -> Comment -> UpDown -> Main
-voteCommentIdeaReply idea comment reply = onComment idea (Just comment) reply . VoteComment
+reportComment :: Comment -> Main
+reportComment comment = onComment comment ReportComment
 
-voteCommentWithContext :: CommentContext -> Comment -> UpDown -> Main
-voteCommentWithContext (CommentContext idea mparent) comment =
-    onComment idea mparent comment . VoteComment
+deleteComment :: Comment -> Main
+deleteComment comment = onComment comment DeleteComment
+
+viewComment :: Comment -> Main
+viewComment comment = onComment comment ViewComment
 
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
@@ -174,35 +175,39 @@ listTopicIdeas :: Topic -> Main
 listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode ListIdeas                      root = root </> "ideas"
-ideaMode (ViewIdea i)                   root = root </> "idea" </> uriPart i </> "view"
-ideaMode (EditIdea i)                   root = root </> "idea" </> uriPart i </> "edit"
-ideaMode (LikeIdea i)                   root = root </> "idea" </> uriPart i </> "like"
-ideaMode (VoteIdea i v)                 root = root </> "idea" </> uriPart i </> "vote"
-                                                    </> uriPart v
-ideaMode (JudgeIdea i v)                root = root </> "idea" </> uriPart i </> "jury"
-                                                    </> uriPart v
-ideaMode (CommentIdea i)                root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment ctx c m)            root = commentMode ctx c m root
-ideaMode CreateIdea                     root = root </> "idea" </> "create"
+ideaMode ListIdeas         root = root </> "ideas"
+ideaMode (ViewIdea i)      root = root </> "idea" </> uriPart i </> "view"
+ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
+ideaMode (LikeIdea i)      root = root </> "idea" </> uriPart i </> "like"
+ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
+                                       </> uriPart v
+ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
+                                       </> uriPart v
+ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (OnComment ck m) root = commentMode ck m root
+ideaMode CreateIdea        root = root </> "idea" </> "create"
 
 commentAnchor :: IsString s => AUID Comment -> s
 commentAnchor (AUID c) = fromString $ "comment-" <> show c
 
-commentMode :: CommentContext -> AUID Comment -> CommentMode -> UriPath -> UriPath
-commentMode (CommentContext idea mc) c m root =
+commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
+commentMode (CommentKey _loc i parents commentId) m root =
     case m of
-        ReplyComment  -> base </> "reply"
-        DeleteComment -> base </> "delete"
-        ReportComment -> base </> "report"
-        ViewComment   -> root </> "idea" </> uriPart i </> "view" </#> commentAnchor c
-        VoteComment v -> base </> "vote" </> uriPart v
+        ReplyComment  -> base 1 </> "reply"
+        DeleteComment -> base 2 </> "delete"
+        ReportComment -> base 2 </> "report"
+        VoteComment v -> base 2 </> "vote" </> uriPart v
+        ViewComment   -> root  </> "idea" </> uriPart i </> "view" </#> commentAnchor commentId
   where
-    i = idea ^. _Id
-    base =
-        case mc of
-            Nothing -> root </> "idea" </> uriPart i </> "comment" </> uriPart c
-            Just p  -> root </> "idea" </> uriPart i </> "comment" </> uriPart (p ^. _Id) </> "reply" </> uriPart c
+    -- NOTE: Deep replies are not supported yet.
+    -- Meanwhile urls are automatically shortened to fit the current API.
+    -- In particular voting/deleting/reporting can only apply up to depth 2
+    -- and replying up to depth 1.
+    base n =
+        case take n (parents <> [commentId]) of
+            [p]   -> root </> "idea" </> uriPart i </> "comment" </> uriPart p
+            [p,c] -> root </> "idea" </> uriPart i </> "comment" </> uriPart p </> "reply" </> uriPart c
+            _     -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
 
 ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
 ideaPath loc mode root =
@@ -277,7 +282,10 @@ data IdeaMode =
     | VoteIdea (AUID Idea) IdeaVoteValue
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentIdea (AUID Idea)
-    | OnComment CommentContext (AUID Comment) CommentMode
+
+    -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
+    -- CommentKey
+    | OnComment CommentKey CommentMode
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaMode

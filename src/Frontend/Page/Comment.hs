@@ -31,7 +31,6 @@ import qualified Frontend.Path as U
 data CommentWidget = CommentWidget
     { _cwRenderContext :: RenderContext
     , _cwIdeaCaps      :: [IdeaCapability]
-    , _cwContext       :: CommentContext
     , _cwComment       :: Comment
     }
   deriving (Eq, Show, Read, Generic)
@@ -46,14 +45,13 @@ instance ToHtml CommentWidget where
         div_ [class_ "comment"] $ do
             commentToHtml w
             div_ [class_ "comment-replies"] . for_ (w ^. cwComment . commentReplies) $ \reply ->
-                div_ [class_ "comment-reply"] . commentToHtml $ w & cwContext . parentComment ?~ (w ^. cwComment)
-                                                                  & cwComment .~ reply
+                div_ [class_ "comment-reply"] . commentToHtml $ w & cwComment .~ reply
 
 commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
 commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
-        VotesWidget (w ^. cwIdeaCaps) context comment ^. html
+        VotesWidget (w ^. cwIdeaCaps) comment ^. html
     div_ [class_ "comments-body"] $ do
         if comment ^. commentDeleted
             then "[Inhalt gelöscht]"
@@ -61,23 +59,19 @@ commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
     footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
-                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyCommentIdea idea parent] $ do
+                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyComment comment] $ do
                     i_ [class_ "icon-reply"] nil
                     "antworten"
             postButton_ [class_ "btn comment-footer-button"]
-                        (U.onComment idea mparent comment U.ReportComment) $ do
+                        (U.reportComment comment) $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
             when (CanDeleteComment `elem` comCaps) .
                 postButton_ [class_ "btn comment-footer-button", Lucid.onclick_ "handleDeleteComment(this)"]
-                            (U.onComment idea mparent comment U.DeleteComment) $ do
+                            (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil
                     "löschen"
   where
     comment = w ^. cwComment
-    context = w ^. cwContext
-    idea = context ^. parentIdea
-    mparent = context ^. parentComment
-    parent = fromMaybe comment mparent
     user = w ^. cwRenderContext . renderContextUser
     comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment

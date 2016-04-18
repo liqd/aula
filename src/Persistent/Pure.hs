@@ -33,7 +33,6 @@ module Persistent.Pure
     , AEvent, Query, EQuery, MQuery, AUpdate(AUpdate), AddDb
     , runAUpdate
     , aUpdateEvent
-    , WhoWhen(_whoWhenTimestamp, _whoWhenUID), whoWhenTimestamp, whoWhenUID
 
     , PersistExcept(..)
     , _PersistError500, _PersistError404, _PersistErrorNotImplemented
@@ -43,7 +42,6 @@ module Persistent.Pure
 
     , addDb
     , addDb'
-    , addDbByUser
     , findIn
     , findInBy
     , findInById
@@ -59,18 +57,18 @@ module Persistent.Pure
     , addIdea
     , modifyIdea
     , findIdea
+    , findIdeaBy
     , findIdeasByTopicId
     , findIdeasByTopic
     , findIdeasByUserId
     , findWildIdeasBySpace
     , findComment
-    , findCommentHack
+    , findComment'
     , addLikeToIdea
     , addVoteToIdea
     , addCommentToIdea
-    , addReplyToIdeaComment
-    , addCommentVoteToIdeaComment
-    , addCommentVoteToIdeaCommentReply
+    , addReply
+    , addCommentVote
     , findUser
     , findUserByLogin
     , findUsersByRole
@@ -93,6 +91,7 @@ module Persistent.Pure
     , modifyTopic
     , moveIdeasToLocation
     , findTopic
+    , findTopicBy
     , findTopicsBySpace
     , dbIdeas
     , dbUsers
@@ -115,7 +114,6 @@ module Persistent.Pure
     , addIdeaVoteResult
     , editIdea
     , deleteComment
-    , deleteCommentReply
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
@@ -186,17 +184,9 @@ emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
 
 -- * transactions
 
-data WhoWhen = WhoWhen
-    { _whoWhenTimestamp :: Timestamp
-    , _whoWhenUID       :: AUID User
-    }
-
-makeLenses ''WhoWhen
-
 type AEvent = Event AulaData
 
--- | 'Query' for 'AulaData'.  Doesn't contain the 'WhoWhen' context,
--- because that would make the stack contain two readers.
+-- | 'Query' for 'AulaData'.
 type Query a = forall m. MonadReader AulaData m => m a
 
 -- | Same as 'Query' but can throw 'PersistExcept'.
@@ -309,15 +299,17 @@ type EnvWithProto a = EnvWith (Proto a)
 -}
 type AddDb a = EnvWithProto a -> AUpdate a
 
-addDb' :: (HasMetaInfo a, FromProto a) => (User -> AUpdate (IdOf a)) -> AulaTraversal (AMap a) -> AddDb a
-addDb' nextId' l (EnvWith cUser now pa) = do
+addDb' :: forall a. (HasMetaInfo a, FromProto a) =>
+          (User -> AUpdate (KeyOf a)) -> AulaTraversal (AMap a) -> AddDb a
+addDb' mkKey l (EnvWith cUser now pa) = do
     assertAulaDataM $ do
         len <- asks (lengthOf l)
         when (len /= 1) $ do
             fail $ "Persistent.Api.addDb expects the location (lens, traversal) "
                 <> "to target exactly 1 field not " <> show len
-    a <- (fromProto pa . mkMetaInfo cUser now) <$> nextId' cUser
-    l . at (a ^. _Id) <?= a
+    aid <- mkKey cUser
+    let a = fromProto pa $ mkMetaInfo cUser now aid
+    l . at (aid ^. idOfKey (Proxy :: Proxy a)) <?= a
 
 -- | @addDb l (EnvWith u now p)@ adds a record to the DB.
 -- The record is added on the behalf of the user @u@.
@@ -328,19 +320,16 @@ addDb' nextId' l (EnvWith cUser now pa) = do
 --
 -- We could make the type of @l@ be @AulaLens (AMap a)@ which would enforce the constraint
 -- above at the expense of pushing the burden towards cases where the traversal is only a
--- lens when some additional assumptions are met (see addReplyToIdeaComment for instance).
+-- lens when some additional assumptions are met (see addReply for instance).
 --
 -- It could make sense for the traversal to point to more than one target for instance
 -- to index the record at different locations. For instance we could keep an additional
 -- global map of the comments, votes, likes and still call @addDb@ only once.
-addDb :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
+addDb :: (KeyOf a ~ AUID a, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
 addDb = addDb' $ const nextId
 
--- | Like addDb but for values indexed by user id.
-addDbByUser :: (IdOf a ~ AUID User, HasMetaInfo a, FromProto a) => AulaTraversal (AMap a) -> AddDb a
-addDbByUser = addDb' (pure . view _Id)
 
-addDbAppValue :: (IdOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
+addDbAppValue :: (KeyOf a ~ AUID a, HasMetaInfo a, FromProto a, Applicative ap)
     => AulaTraversal (ap a) -> AddDb a
 addDbAppValue l (EnvWith cUser now pa) = do
     a <- fromProto pa <$> nextMetaInfo cUser now
@@ -385,6 +374,9 @@ addIdea = addDb dbIdeaMap
 
 findIdea :: AUID Idea -> MQuery Idea
 findIdea = findInById dbIdeaMap
+
+findIdeaBy :: Eq a => Fold Idea a -> a -> MQuery Idea
+findIdeaBy = findInBy dbIdeas
 
 findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
@@ -483,6 +475,9 @@ findUsersByRole = findAllInBy dbUsers userRole
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap
 
+findTopicBy :: Eq a => Fold Topic a -> a -> MQuery Topic
+findTopicBy = findInBy dbTopics
+
 findTopicsBySpace :: IdeaSpace -> Query [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
 
@@ -499,39 +494,28 @@ findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
 findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
-findComment :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> MQuery Comment
-findComment iid mparentid cid = preview $ dbIdeaMap . at iid . _Just . ideaComments . l
-  where
-    l = case mparentid of
-            Nothing       -> at cid . _Just
-            Just parentid -> at parentid . _Just . commentReplies . at cid . _Just
+findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
+findComment' iid parents = preview . dbComment' iid parents
 
--- This function should become useless once the comment ids are complete
-findCommentHack :: AUID Idea -> Maybe (AUID Comment) -> AUID Comment -> EQuery (Idea, Maybe Comment, Comment)
-findCommentHack iid mparentid cid = do
-    idea <- maybe404 =<< findIdea iid
-    case mparentid of
-        Nothing       -> do
-            comment <- maybe404 (idea ^. ideaComments . at cid)
-            pure (idea, Nothing, comment)
-        Just parentid -> do
-            parent <- maybe404 (idea ^. ideaComments . at parentid)
-            comment <- maybe404 $ parent ^. commentReplies . at cid
-            pure (idea, Just parent, comment)
+findComment :: CommentKey -> MQuery Comment
+findComment ck = findComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
 
 instance FromProto IdeaLike where
     fromProto () = IdeaLike
 
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> AddDb IdeaLike
-addLikeToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaLikes)
+
+mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
+mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)
 
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
 
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDbByUser (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaVotes)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -543,35 +527,33 @@ instance FromProto Comment where
 
 
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addCommentToIdea :: AUID Idea -> AddDb Comment
-addCommentToIdea iid = addDb (dbIdeaMap . at iid . _Just . ideaComments)
+addCommentToIdea :: IdeaLocation -> AUID Idea -> AddDb Comment
+addCommentToIdea loc iid = addDb' (nextCommentKey loc iid) (dbIdeaMap . at iid . _Just . ideaComments)
+
+nextCommentKey :: IdeaLocation -> AUID Idea -> User -> AUpdate CommentKey
+nextCommentKey loc iid _ = CommentKey loc iid [] <$> nextId
+
+nextReplyId :: CommentKey -> User -> AUpdate CommentKey
+nextReplyId ck _ = do
+    i <- nextId
+    pure $ ck & ckParents  <>~ [ck ^. ckCommentId]
+              & ckCommentId .~ i
 
 -- | FIXME: Assumptions:
--- * the given @AUID Idea@ MUST be in the DB.
--- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addReplyToIdeaComment :: AUID Idea -> AUID Comment -> AddDb Comment
-addReplyToIdeaComment iid cid =
-    addDb (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentReplies)
+-- * the given @CommentKey@ MUST be in the DB.
+addReply :: CommentKey -> AddDb Comment
+addReply ck = addDb' (nextReplyId ck) (dbComment ck . commentReplies)
 
 instance FromProto CommentVote where
     fromProto = flip CommentVote
 
 -- | FIXME: Assumptions:
--- * the given @AUID Idea@ MUST be in the DB.
--- * the given @AUID Comment@ MUST be one of the comment of the given idea.
-addCommentVoteToIdeaComment :: AUID Idea -> AUID Comment -> AddDb CommentVote
-addCommentVoteToIdeaComment iid cid =
-    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments . at cid . _Just . commentVotes)
+-- * the given @CommentKey@ MUST be in the DB.
+addCommentVote :: CommentKey -> AddDb CommentVote
+addCommentVote ck = addDb' (mkCommentVoteKey ck) (dbComment ck . commentVotes)
 
--- | FIXME: Assumptions:
--- * the given @AUID Idea@ MUST be in the DB.
--- * the first given @AUID Comment@ MUST be one of the comment of the given idea.
--- * the second given @AUID Comment@ MUST be one of the comment of the first given comment.
-addCommentVoteToIdeaCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AddDb CommentVote
-addCommentVoteToIdeaCommentReply iid cid rid =
-    addDbByUser (dbIdeaMap . at iid . _Just . ideaComments
-                           . at cid . _Just . commentReplies
-                           . at rid . _Just . commentVotes)
+mkCommentVoteKey :: Applicative f => CommentKey -> User -> f CommentVoteKey
+mkCommentVoteKey ck u = pure $ CommentVoteKey ck (u ^. _Id)
 
 instance FromProto IdeaJuryResult where
     fromProto = flip IdeaJuryResult
@@ -587,15 +569,16 @@ addIdeaVoteResult :: AUID Idea -> AddDb IdeaVoteResult
 addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
-deleteComment :: AUID Idea -> AUID Comment -> AUpdate ()
-deleteComment iid cid = dbIdeaMap    . at iid . _Just .
-                        ideaComments . at cid . _Just . commentDeleted .= True
+dbComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> AulaTraversal Comment
+dbComment' iid parents ck =
+    dbIdeaMap . at iid . _Just . ideaComments . traverseParents parents . at ck . _Just
 
-deleteCommentReply :: AUID Idea -> AUID Comment -> AUID Comment -> AUpdate ()
-deleteCommentReply iid cid rid = dbIdeaMap      . at iid . _Just .
-                                 ideaComments   . at cid . _Just .
-                                 commentReplies . at rid . _Just .
-                                 commentDeleted .= True
+dbComment :: CommentKey -> AulaTraversal Comment
+dbComment ck = dbComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
+
+deleteComment :: CommentKey -> AUpdate ()
+deleteComment ck = dbComment ck . commentDeleted .= True
+
 
 nextId :: AUpdate (AUID a)
 nextId = AUID <$> (dbLastId <+= 1)
@@ -690,9 +673,9 @@ instance FromProto Topic where
 instance FromProto Delegation where
     fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
-mkMetaInfo :: User -> Timestamp -> IdOf a -> MetaInfo a
-mkMetaInfo cUser now oid = MetaInfo
-    { _metaId              = oid
+mkMetaInfo :: User -> Timestamp -> KeyOf a -> MetaInfo a
+mkMetaInfo cUser now key = MetaInfo
+    { _metaKey             = key
     , _metaCreatedBy       = cUser ^. _Id
     , _metaCreatedByLogin  = cUser ^. userLogin
     , _metaCreatedByAvatar = cUser ^. userAvatar
@@ -701,7 +684,7 @@ mkMetaInfo cUser now oid = MetaInfo
     , _metaChangedAt       = now
     }
 
-nextMetaInfo :: IdOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
+nextMetaInfo :: KeyOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
 nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()

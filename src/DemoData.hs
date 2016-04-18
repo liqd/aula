@@ -124,36 +124,29 @@ arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
 
 data CommentInContext = CommentInContext
     { _cicIdea :: Idea
-    , _cicParentComment :: Maybe Comment
     , _cicComment :: Comment
     }
 
 genComment :: [Idea] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    let event = AddCommentToIdea (idea ^. _Id)
-        getResult = fmap (CommentInContext idea Nothing)
+    let event = AddCommentToIdea (idea ^. ideaLocation) (idea ^. _Id)
+        getResult = fmap (CommentInContext idea)
     getResult . addWithUser event student <$> arbDocument
 
 genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
-    CommentInContext idea Nothing comment <- elements comments_in_context
+    CommentInContext idea comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    let event = AddReplyToIdeaComment (idea ^. _Id) (comment ^. _Id)
-        getResult = fmap (CommentInContext idea (Just comment))
+    let event = AddReply (comment ^. _Key)
+        getResult = fmap (CommentInContext idea)
     getResult . addWithUser event student <$> arbDocument
 
 genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do
-    CommentInContext idea mparent comment <- elements comments_in_context
+    CommentInContext idea comment <- elements comments_in_context
     (_, student) <- ideaStudentPair [idea] students
-    let action = case mparent of
-            Nothing ->
-                addWithUser $ AddCommentVoteToIdeaComment
-                    (idea ^. _Id) (comment ^. _Id)
-            Just parent ->
-                addWithUser $ AddCommentVoteToIdeaCommentReply
-                    (idea ^. _Id) (parent ^. _Id) (comment ^. _Id)
+    let action = addWithUser . AddCommentVote $ comment ^. _Key
     action student <$> arb
 
 updateAvatar :: User -> URL -> forall m . ActionM m => m ()

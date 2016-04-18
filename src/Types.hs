@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds             #-}
 {-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE DefaultSignatures           #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
@@ -210,6 +211,14 @@ data IdeaVoteValue = Yes | No | Neutral
 
 instance SOP.Generic IdeaVoteValue
 
+data IdeaVoteLikeKey = IdeaVoteLikeKey
+    { _ivIdea :: AUID Idea
+    , _ivUser :: AUID User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeaVoteLikeKey
+
 data IdeaJuryResult = IdeaJuryResult
     { _ideaJuryResultMeta   :: MetaInfo IdeaJuryResult
     , _ideaJuryResultValue  :: IdeaJuryResultValue
@@ -272,6 +281,27 @@ data Comment = Comment
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Comment
+
+-- This is the complete information to recover a comment in AulaData
+-- * ckParents: Comment identifiers from the root to the leaf. If `y`, follows `x` in ckParents,
+--              then `y` is a reply to `x`. See also `traverseParents` for a use of that field.
+data CommentKey = CommentKey
+    { _ckIdeaLocation  :: IdeaLocation
+    , _ckIdeaId        :: AUID Idea
+    , _ckParents       :: [AUID Comment]
+    , _ckCommentId     :: AUID Comment
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentKey
+
+data CommentVoteKey = CommentVoteKey
+    { _cvCommentKey :: CommentKey
+    , _cvUser      :: AUID User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentVoteKey
 
 type instance Proto Comment = Document
 
@@ -546,23 +576,34 @@ newtype AUID a = AUID Integer
 
 instance SOP.Generic (AUID a)
 
-type family   IdOf a
-type instance IdOf User             = AUID User
-type instance IdOf Idea             = AUID Idea
-type instance IdOf Topic            = AUID Topic
-type instance IdOf Delegation       = AUID Delegation
-type instance IdOf Comment          = AUID Comment
--- ^ A more precise identifier would be:
---      IdOf Comment = (AUID Idea, NonEmpty (AUID Comment))
--- This would be the full path from AulaData down to the comment
--- which could be a reply to reply...
-type instance IdOf CommentVote      = AUID User
-type instance IdOf IdeaVote         = AUID User
-type instance IdOf IdeaLike         = AUID User
--- ^ If we were to have more precise comment identifiers these 3 could
--- become: (IdOf Comment, AUID User)
-type instance IdOf IdeaVoteResult   = AUID IdeaVoteResult
-type instance IdOf IdeaJuryResult   = AUID IdeaJuryResult
+type family   KeyOf a
+type instance KeyOf User             = AUID User
+type instance KeyOf Idea             = AUID Idea
+type instance KeyOf Topic            = AUID Topic
+type instance KeyOf Delegation       = AUID Delegation
+type instance KeyOf Comment          = CommentKey
+type instance KeyOf CommentVote      = CommentVoteKey
+type instance KeyOf IdeaVote         = IdeaVoteLikeKey
+type instance KeyOf IdeaLike         = IdeaVoteLikeKey
+type instance KeyOf IdeaVoteResult   = AUID IdeaVoteResult
+type instance KeyOf IdeaJuryResult   = AUID IdeaJuryResult
+
+-- Extracts the identifier (AUID) from a key (KeyOf).
+-- The identifier corresponds to the key of the last map (AMap).
+--
+-- For some types such as User, the key and the identifier are identical.
+--
+-- For a comment vote, the key is a composite of the comment key and the user id.
+-- The identifier of a comment vote is only the user id part of the key.
+--
+-- So far all identifiers are of type AUID we shall try to keep it that way.
+type family   IdOfKey a
+type instance IdOfKey (AUID a)        = AUID a
+type instance IdOfKey CommentKey      = AUID Comment
+type instance IdOfKey CommentVoteKey  = AUID User
+type instance IdOfKey IdeaVoteLikeKey = AUID User
+
+type IdOf a = IdOfKey (KeyOf a)
 
 type AMap a = Map (IdOf a) a
 
@@ -588,8 +629,10 @@ instance HasUriPart (AUID a) where
 -- If this is becoming too much in the future and we want to keep objects around without all this
 -- inlined information, we should consider making objects polymorphic in the concrete meta info
 -- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
-data GMetaInfo a id = MetaInfo
-    { _metaId              :: id
+-- np@2016-04-18: Actually `Idea MetaInfo` does not work well. Parameters of kind `* -> *` are not
+-- well supported by generics and deriving mechanisms.
+data GMetaInfo a k = MetaInfo
+    { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: Maybe URL
@@ -601,7 +644,7 @@ data GMetaInfo a id = MetaInfo
 
 instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
 
-type MetaInfo a = GMetaInfo a (IdOf a)
+type MetaInfo a = GMetaInfo a (KeyOf a)
 
 -- | Markdown content.
 newtype Document = Markdown { fromMarkdown :: ST }
@@ -700,7 +743,9 @@ instance HasUriPart PermissionContext where
 instance Binary (AUID a)
 instance Binary Category
 instance Binary Comment
+instance Binary CommentKey
 instance Binary CommentVote
+instance Binary CommentVoteKey
 instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
@@ -715,6 +760,7 @@ instance Binary IdeaVoteResult
 instance Binary IdeaVoteResultValue
 instance Binary IdeaSpace
 instance Binary IdeaVote
+instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
@@ -752,7 +798,9 @@ makePrisms ''UserLogin
 makeLenses ''Category
 makeLenses ''Comment
 makeLenses ''CommentContext
+makeLenses ''CommentKey
 makeLenses ''CommentVote
+makeLenses ''CommentVoteKey
 makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
@@ -764,6 +812,7 @@ makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
 makeLenses ''IdeaJuryResult
 makeLenses ''IdeaVoteResult
+makeLenses ''IdeaVoteLikeKey
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''GMetaInfo
@@ -788,7 +837,9 @@ makeLenses ''Quorums
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
 deriveSafeCopy 0 'base ''Comment
+deriveSafeCopy 0 'base ''CommentKey
 deriveSafeCopy 0 'base ''CommentVote
+deriveSafeCopy 0 'base ''CommentVoteKey
 deriveSafeCopy 0 'base ''Delegation
 deriveSafeCopy 0 'base ''DelegationContext
 -- deriveSafeCopy 0 'base ''DelegationNetwork
@@ -797,6 +848,7 @@ deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''Idea
+deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation
 -- deriveSafeCopy 0 'base ''IdeaLike
@@ -828,8 +880,13 @@ deriveSafeCopy 0 'base ''Quorums
 
 class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
+    _Key            :: Lens' a (KeyOf a)
+    _Key            = metaInfo . metaKey
     _Id             :: Lens' a (IdOf a)
-    _Id             = metaInfo . metaId
+    _Id             = _Key . idOfKey (Proxy :: Proxy a)
+    idOfKey         :: Proxy a -> Lens' (KeyOf a) (IdOf a)
+    default idOfKey :: Proxy a -> Lens' (AUID a) (AUID a)
+    idOfKey _       = id
     createdBy       :: Lens' a (AUID User)
     createdBy       = metaInfo . metaCreatedBy
     createdByLogin  :: Lens' a UserLogin
@@ -843,16 +900,24 @@ class Ord (IdOf a) => HasMetaInfo a where
     changedAt       :: Lens' a Timestamp
     changedAt       = metaInfo . metaChangedAt
 
-instance HasMetaInfo Comment where metaInfo = commentMeta
-instance HasMetaInfo CommentVote where metaInfo = commentVoteMeta
 instance HasMetaInfo Delegation where metaInfo = delegationMeta
 instance HasMetaInfo Idea where metaInfo = ideaMeta
-instance HasMetaInfo IdeaLike where metaInfo = likeMeta
 instance HasMetaInfo IdeaJuryResult where metaInfo = ideaJuryResultMeta
 instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
-instance HasMetaInfo IdeaVote where metaInfo = ideaVoteMeta
 instance HasMetaInfo Topic where metaInfo = topicMeta
 instance HasMetaInfo User where metaInfo = userMeta
+instance HasMetaInfo Comment where
+    metaInfo = commentMeta
+    idOfKey _ = ckCommentId
+instance HasMetaInfo CommentVote where
+    metaInfo = commentVoteMeta
+    idOfKey _ = cvUser
+instance HasMetaInfo IdeaVote where
+    metaInfo = ideaVoteMeta
+    idOfKey _ = ivUser
+instance HasMetaInfo IdeaLike where
+    metaInfo = likeMeta
+    idOfKey _ = ivUser
 
 {- Examples:
     e :: EmailAddress
@@ -1018,3 +1083,9 @@ countIdeaVotes v = countEq v ideaVoteValue
 
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
+
+-- Given a list of parents and a collection (AMap) of comments
+-- returns the collection of comments after following the parenting list.
+traverseParents :: [AUID Comment] -> Traversal' Comments Comments
+traverseParents []     = id
+traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps

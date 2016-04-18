@@ -320,11 +320,11 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
-data CommentVotesWidget = VotesWidget [IdeaCapability] CommentContext Comment
+data CommentVotesWidget = VotesWidget [IdeaCapability] Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget caps context comment) = semanticDiv p $ do
+    toHtml p@(VotesWidget caps comment) = semanticDiv p $ do
         div_ [class_ "comment-votes"] $ do
             voteButton Up
             voteButton Down
@@ -334,7 +334,7 @@ instance ToHtml CommentVotesWidget where
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
                 when (CanVoteComment `elem` caps) .
-                    postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteCommentWithContext context comment v) $
+                    postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteComment comment v) $
                         i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
