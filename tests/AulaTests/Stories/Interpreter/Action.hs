@@ -15,6 +15,7 @@ module AulaTests.Stories.Interpreter.Action
     )
 where
 
+import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad (join, unless)
 import Control.Monad.Free
@@ -202,6 +203,26 @@ runClient (Free (VoteOnComment t cp v k)) = do
         noOfVotes' `shouldBe` (noOfVotes + 1)
     runClient k
 
+runClient (Free (VoteOnCommentComment t c1 c2 v k)) = do
+    -- FIXME: Check if the user already voted, if yes the number of votes
+    -- should be the same.
+    Just (idea, Just (comment1, Just comment2)) <-
+        precondition $ findIdeaAndCommentComment t c1 c2
+    _ <- step . lift $ do
+        Action.voteIdeaCommentReply
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment1 ^. _Id)
+            (comment2 ^. _Id)
+            v
+    postcondition $ do
+        Just (_idea, Just (_comment1, Just comment2')) <-
+            findIdeaAndCommentComment t c1 c2
+        let noOfVotes  = Map.size $ comment2  ^. commentVotes
+        let noOfVotes' = Map.size $ comment2' ^. commentVotes
+        noOfVotes' `shouldBe` (noOfVotes + 1)
+        runClient k
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)
@@ -213,9 +234,20 @@ findTopicByTitle t = lift $ query (findTopicBy topicTitle t)
 findCommentByText :: Idea -> CommentText -> Maybe Comment
 findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments
 
+findCommentCommentByText :: Comment -> CommentText -> Maybe Comment
+findCommentCommentByText c t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ c ^. commentReplies
+
 findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
 findIdeaAndComment it cp =
     fmap (fmap (\idea -> (idea, findCommentByText idea cp))) (findIdeaByTitle it)
+
+findIdeaAndCommentComment
+    :: (ActionM m)
+    => IdeaTitle -> CommentText -> CommentText
+    -> ActionClient m (Maybe (Idea, Maybe (Comment, Maybe Comment)))
+findIdeaAndCommentComment it c1 c2 =
+    (_Just . _2 . _Just %~ (id &&& flip findCommentCommentByText c2))
+    <$> findIdeaAndComment it c1
 
 checkIdeaComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m ()
 checkIdeaComment t c = do
