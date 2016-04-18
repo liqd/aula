@@ -98,3 +98,8 @@ function reloadOnClick(hash) {
         document.location.reload(true);
     }, 100);
 }
+
+function createPageSample() {
+    setTimeout(function() { document.location.search = "?create_page_sample=true"; }, 50);
+    // TODO: extend existing queries, not break the uri with multiple '?'!
+}
