@@ -191,7 +191,7 @@ class Page p => FormPage p where
 
 -- | Defines some properties for pages
 class Page p where
-    isPrivatePage :: p -> Bool
+    isPrivatePage :: proxy p -> Bool
     isPrivatePage _ = True
 
     extraPageHeaders  :: p -> Html ()
@@ -207,20 +207,21 @@ instance Page ST where
     isPrivatePage _ = True -- safer default, might need to be changed if needed
 
 instance (Page a, Page b) => Page (Beside a b) where
-    isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
+    isPrivatePage _ = isPrivatePage (Proxy :: Proxy a) || isPrivatePage (Proxy :: Proxy b)
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
 instance Page p => Page (Frame p) where
-    isPrivatePage    = isPrivatePage    . view frameBody
+    isPrivatePage  _ = isPrivatePage (Proxy :: Proxy p)
     extraPageHeaders = extraPageHeaders . view frameBody
 
 makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => p -> m (Frame p)
 makeFrame p = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect . absoluteUriPath $ relPath P.Login
-     | isli     || isPrivatePage p -> flip Frame p <$> currentUser
-     | otherwise                   -> return $ PublicFrame p
+  let isPrivate = isPrivatePage [p] -- Here '[]' is used as the 'proxy'.
+  if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
+     | isli     || isPrivate -> (`Frame` p) <$> currentUser
+     | otherwise             -> pure $ PublicFrame p
 
 instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
@@ -354,7 +355,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
 data FormPageRep p = FormPageRep (View (Html ())) ST (Frame p)
 
 instance Page p => Page (FormPageRep p) where
-    isPrivatePage (FormPageRep _v _a p) = isPrivatePage p
+    isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)
     extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
 
 instance FormPage p => ToHtml (FormPageRep p) where
