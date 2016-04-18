@@ -81,7 +81,6 @@ library
       Arbitrary
       Backend
       Config
-      CreateRandom
       Data.UriPath
       DemoData
       EventLog
@@ -317,6 +316,7 @@ test-suite spec
       AulaTests.StoriesSpec
       BackendSpec
       Frontend.CoreSpec
+      Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec
       Frontend.Page.LoginSpec
       Frontend.PathSpec
