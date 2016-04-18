@@ -164,10 +164,10 @@ runClient (Free (CommentOnComment t cp c k)) = do
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)
-findIdeaByTitle t = fmap (find ((t ==) . view ideaTitle)) . lift $ query getIdeas
+findIdeaByTitle t = lift $ query (findIdeaBy ideaTitle t)
 
 findTopicByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Topic)
-findTopicByTitle t = fmap (find ((t ==) . view topicTitle)) . lift $ query getTopics
+findTopicByTitle t = lift $ query (findTopicBy topicTitle t)
 
 findCommentByText :: Idea -> CommentText -> Maybe Comment
 findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments

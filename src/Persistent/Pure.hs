@@ -57,6 +57,7 @@ module Persistent.Pure
     , addIdea
     , modifyIdea
     , findIdea
+    , findIdeaBy
     , findIdeasByTopicId
     , findIdeasByTopic
     , findIdeasByUserId
@@ -90,6 +91,7 @@ module Persistent.Pure
     , modifyTopic
     , moveIdeasToLocation
     , findTopic
+    , findTopicBy
     , findTopicsBySpace
     , dbIdeas
     , dbUsers
@@ -373,6 +375,9 @@ addIdea = addDb dbIdeaMap
 findIdea :: AUID Idea -> MQuery Idea
 findIdea = findInById dbIdeaMap
 
+findIdeaBy :: Eq a => Fold Idea a -> a -> MQuery Idea
+findIdeaBy = findInBy dbIdeas
+
 findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
@@ -469,6 +474,9 @@ findUsersByRole = findAllInBy dbUsers userRole
 
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap
+
+findTopicBy :: Eq a => Fold Topic a -> a -> MQuery Topic
+findTopicBy = findInBy dbTopics
 
 findTopicsBySpace :: IdeaSpace -> Query [Topic]
 findTopicsBySpace = findAllInBy dbTopics topicIdeaSpace
