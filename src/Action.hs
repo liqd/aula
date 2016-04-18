@@ -267,8 +267,13 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 getSpacesForCurrentUser :: (ActionUserHandler m, ActionPersist m) => m [IdeaSpace]
 getSpacesForCurrentUser = do
-    user <- currentUser
-    query $ getSpacesForRole (user ^. userRole)
+    -- FIXME: remove the isLoggedIn check.
+    b <- isLoggedIn
+    if b then do
+        user <- currentUser
+        query $ getSpacesForRole (user ^. userRole)
+    else
+        pure []
 
 -- * Phase Transitions
 
