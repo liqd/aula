@@ -283,6 +283,8 @@ data Comment = Comment
 instance SOP.Generic Comment
 
 -- This is the complete information to recover a comment in AulaData
+-- * ckParents: Comment identifiers from the root to the leaf. If `y`, follows `x` in ckParents,
+--              then `y` is a reply to `x`. See also `traverseParents` for a use of that field.
 data CommentKey = CommentKey
     { _ckIdeaLocation  :: IdeaLocation
     , _ckIdeaId        :: AUID Idea
@@ -586,6 +588,15 @@ type instance KeyOf IdeaLike         = IdeaVoteLikeKey
 type instance KeyOf IdeaVoteResult   = AUID IdeaVoteResult
 type instance KeyOf IdeaJuryResult   = AUID IdeaJuryResult
 
+-- Extracts the identifier (AUID) from a key (KeyOf).
+-- The identifier corresponds to the key of the last map (AMap).
+--
+-- For some types such as User, the key and the identifier are identical.
+--
+-- For a comment vote, the key is a composite of the comment key and the user id.
+-- The identifier of a comment vote is only the user id part of the key.
+--
+-- So far all identifiers are of type AUID we shall try to keep it that way.
 type family   IdOfKey a
 type instance IdOfKey (AUID a)        = AUID a
 type instance IdOfKey CommentKey      = AUID Comment
@@ -618,6 +629,8 @@ instance HasUriPart (AUID a) where
 -- If this is becoming too much in the future and we want to keep objects around without all this
 -- inlined information, we should consider making objects polymorphic in the concrete meta info
 -- type.  Example: 'Idea MetaInfo', but also 'Idea ShortMetaInfo'.
+-- np@2016-04-18: Actually `Idea MetaInfo` does not work well. Parameters of kind `* -> *` are not
+-- well supported by generics and deriving mechanisms.
 data GMetaInfo a k = MetaInfo
     { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
@@ -1071,6 +1084,8 @@ countIdeaVotes v = countEq v ideaVoteValue
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
 
+-- Given a list of parents and a collection (AMap) of comments
+-- returns the collection of comments after following the parenting list.
 traverseParents :: [AUID Comment] -> Traversal' Comments Comments
 traverseParents []     = id
 traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
