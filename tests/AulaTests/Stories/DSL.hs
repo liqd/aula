@@ -33,6 +33,7 @@ data Step a where
     Logout           :: a -> Step a
     SelectIdeaSpace  :: IdeaSpaceName -> a -> Step a
     CreateIdea       :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
+    EditIdea         :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     LikeIdea         :: IdeaTitle -> a -> Step a
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
@@ -57,6 +58,9 @@ selectIdeaSpace n = liftF $ SelectIdeaSpace n ()
 
 createIdea :: IdeaTitle -> IdeaDescription -> Category -> Behavior ()
 createIdea title desc cat = liftF $ CreateIdea title desc cat ()
+
+editIdea :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> Behavior ()
+editIdea oldTitle newTitle desc cat = liftF $ EditIdea oldTitle newTitle desc cat ()
 
 likeIdea :: IdeaTitle -> Behavior ()
 likeIdea title = liftF $ LikeIdea title ()

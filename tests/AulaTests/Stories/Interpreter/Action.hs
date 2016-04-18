@@ -92,6 +92,19 @@ runClient (Free (CreateIdea t d c k)) = do
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
 
+runClient (Free (EditIdea ot nt d c k)) = do
+    idea <- precondition $ do
+        Just idea <- findIdeaByTitle ot
+        Nothing <- findIdeaByTitle nt
+        pure idea
+    _ <- step . lift . (Page.editIdea (idea ^. _Id) ^. formProcessor) $
+        ProtoIdea nt (Markdown d) (Just c) (idea ^. ideaLocation)
+    postcondition $ do
+        Nothing <- findIdeaByTitle ot
+        Just _idea <- findIdeaByTitle nt
+        pure ()
+    runClient k
+
 runClient (Free (LikeIdea t k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $ Action.likeIdea (idea ^. _Id)

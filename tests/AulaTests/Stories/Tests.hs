@@ -18,10 +18,12 @@ import AulaTests.Stories.DSL
 topicTimeoutStory :: Behavior ()
 topicTimeoutStory = do
     let idea1 = "idea1"
+    let idea1a = "idea1a"
     let topic1 = "topic1"
     login "admin"
     selectIdeaSpace "school"
-    createIdea idea1 "desc" CatRules
+    createIdea idea1a "desc" CatRules
+    editIdea idea1a idea1 "desc1" CatRules
     likeIdea idea1
     commentIdea idea1 "This is a comment"
     commentOnComment idea1 "This is a comment" "This is a comment1"
