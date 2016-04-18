@@ -413,7 +413,7 @@ instance FormPage JudgeIdea where
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m (Frame ViewIdea)
-viewIdea ideaId = viewIdeaPage ideaId >>= makeFrame
+viewIdea = makeFrame . viewIdeaPage
 
 viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea

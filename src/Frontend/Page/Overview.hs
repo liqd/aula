@@ -53,20 +53,19 @@ data ActiveTab = WildIdeas | Topics
 
 viewRooms :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => m (Frame PageRoomsOverview)
-viewRooms = makeFrame =<< (PageRoomsOverview <$> getSpacesForCurrentUser)
+viewRooms = makeFrame $ PageRoomsOverview <$> getSpacesForCurrentUser
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> IdeasFilterQuery -> m (Frame PageIdeasOverview)
-viewIdeas space mcat = do
+viewIdeas space mcat = makeFrame $ do
     ctx <- renderContext
-    makeFrame =<< (PageIdeasOverview ctx space mcat
-                    <$> equery (do
+    PageIdeasOverview ctx space mcat <$> equery (do
         is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
-        ListItemIdeas ctx mcat <$> getListInfoForIdea `mapM` is))
+        ListItemIdeas ctx mcat <$> getListInfoForIdea `mapM` is)
 
 viewTopics :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => IdeaSpace -> m (Frame PageIdeasInDiscussion)
-viewTopics space = makeFrame =<< (PageIdeasInDiscussion space <$> query (findTopicsBySpace space))
+viewTopics space = makeFrame $ PageIdeasInDiscussion space <$> query (findTopicsBySpace space)
 
 
 -- * templates

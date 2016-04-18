@@ -173,9 +173,9 @@ instance ToHtml PageUserProfileCreatedIdeas where
 -- one round. Same applies here like 'STM' and 'IO'.
 createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
-createdIdeas userId = do
+createdIdeas userId = makeFrame $ do
     ctx <- renderContext
-    makeFrame =<< equery (do
+    equery (do
         user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx Nothing
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
@@ -228,7 +228,7 @@ renderDelegations _ = do
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileDelegatedVotes)
-delegatedVotes userId = makeFrame =<< (do
+delegatedVotes userId = makeFrame $ do
     let dv = []  -- FIXME
     user :: User <- mquery $ findUser userId
-    pure $ PageUserProfileDelegatedVotes user dv)
+    pure $ PageUserProfileDelegatedVotes user dv

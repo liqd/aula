@@ -264,7 +264,7 @@ makeFormIdeaSelection ideas =
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = viewTopicPage tab topicId >>= makeFrame
+viewTopic tab = makeFrame . viewTopicPage tab
 
 viewTopicPage :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic

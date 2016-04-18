@@ -436,15 +436,15 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
 
 adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
 adminSettingsGaPUsersView =
-    makeFrame =<< PageAdminSettingsGaPUsersView <$> query getUsers
+    makeFrame $ PageAdminSettingsGaPUsersView <$> query getUsers
 
 adminSettingsGaPUsersCreate :: ActionM m => m (Frame PageAdminSettingsGaPUsersCreate)
 adminSettingsGaPUsersCreate =
-    makeFrame PageAdminSettingsGaPUsersCreate
+    makeFrame $ pure PageAdminSettingsGaPUsersCreate
 
 adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClassesView)
 adminSettingsGaPClassesView =
-    makeFrame =<< PageAdminSettingsGaPClassesView <$> query getSchoolClasses
+    makeFrame $ PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
 adminSettingsGaPUserEdit uid = FormPageHandler editUserPage editUser
@@ -462,7 +462,7 @@ payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
 adminSettingsGaPClassesEdit :: (ActionPersist m, ActionUserHandler m)
     => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
-adminSettingsGaPClassesEdit clss = makeFrame =<< adminSettingsGaPClassesEditPage clss
+adminSettingsGaPClassesEdit = makeFrame . adminSettingsGaPClassesEditPage
 
 adminSettingsGaPClassesEditPage :: (ActionPersist m, ActionUserHandler m)
     => SchoolClass -> m PageAdminSettingsGaPClassesEdit
@@ -497,7 +497,7 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         makeText (ClassSpace (SchoolClass _year name)) = toHtml name
 
 adminEventsProtocol :: ActionM m => m (Frame PageAdminSettingsEventsProtocol)
-adminEventsProtocol = makeFrame =<< (PageAdminSettingsEventsProtocol <$> query getSpaces)
+adminEventsProtocol = makeFrame $ PageAdminSettingsEventsProtocol <$> query getSpaces
 
 
 -- * Classes Create

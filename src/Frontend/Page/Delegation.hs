@@ -106,4 +106,4 @@ instance ToHtml PageDelegationNetwork where
         bigHr
 
 viewDelegationNetwork :: ActionM m => m (Frame PageDelegationNetwork)
-viewDelegationNetwork = makeFrame PageDelegationNetwork
+viewDelegationNetwork = makeFrame $ pure PageDelegationNetwork
