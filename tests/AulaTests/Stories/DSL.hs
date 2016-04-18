@@ -41,6 +41,7 @@ data Step a where
     VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
     CommentIdea      :: IdeaTitle -> CommentText -> a -> Step a
     CommentOnComment :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    VoteOnComment    :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -86,3 +87,6 @@ commentIdea title text = liftF $ CommentIdea title text ()
 
 commentOnComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
 commentOnComment title comment text = liftF $ CommentOnComment title comment text ()
+
+voteOnComment :: IdeaTitle -> CommentText -> UpDown -> Behavior ()
+voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()

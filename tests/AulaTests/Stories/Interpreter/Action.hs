@@ -54,6 +54,7 @@ run = fmap fst . flip runStateT initialClientState . runClient
 type ActionClient m a = StateT ClientState m a
 
 -- FIXME: Check pre and post conditions
+-- FIXME: Find comment by part of its description
 runClient :: (ActionM m) => Behavior a -> ActionClient m a
 runClient (Pure r) = pure r
 
@@ -182,15 +183,24 @@ runClient (Free (CommentIdea t c k)) = do
     runClient k
 
 runClient (Free (CommentOnComment t cp c k)) = do
-    (idea, comment) <- precondition $ do
-        Just idea <- findIdeaByTitle t
-        let Just comment = findCommentByText idea cp
-        pure (idea, comment)
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     _ <- step . lift $
         (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
+runClient (Free (VoteOnComment t cp v k)) = do
+    -- FIXME: Check if the user already voted, if yes the number of votes
+    -- should be the same.
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
+    _ <- step . lift $ do
+        Action.voteIdeaComment (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) v
+    postcondition $ do
+        Just (_idea, Just comment') <- findIdeaAndComment t cp
+        let noOfVotes  = Map.size $ comment  ^. commentVotes
+        let noOfVotes' = Map.size $ comment' ^. commentVotes
+        noOfVotes' `shouldBe` (noOfVotes + 1)
+    runClient k
 
 -- * helpers
 
@@ -202,6 +212,10 @@ findTopicByTitle t = lift $ query (findTopicBy topicTitle t)
 
 findCommentByText :: Idea -> CommentText -> Maybe Comment
 findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments
+
+findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
+findIdeaAndComment it cp =
+    fmap (fmap (\idea -> (idea, findCommentByText idea cp))) (findIdeaByTitle it)
 
 checkIdeaComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m ()
 checkIdeaComment t c = do
@@ -215,7 +229,10 @@ assert msg False = error $ "assertion failed: " <> show msg
     -- FIXME: give source code location of the call.
 
 shouldBe :: (Monad m, Eq a, Show a) => a -> a -> m ()
-shouldBe actual expected = assert (actual, expected) (actual == expected)
+shouldBe actual expected =
+    assert
+        (unwords [show actual, "should be", show expected])
+        (actual == expected)
     -- FIXME: give source code location of the call.
 
 -- ** Notations for test step sections

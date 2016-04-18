@@ -28,6 +28,7 @@ topicTimeoutStory = do
     likeIdea idea1
     commentIdea idea1 "This is a comment"
     commentOnComment idea1 "This is a comment" "This is a comment1"
+    voteOnComment idea1 "This is a comment" Up
     createTopic idea1 topic1a "desc"
     editTopic topic1a topic1 "desc1"
     timeoutTopic topic1
