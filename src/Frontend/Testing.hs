@@ -33,8 +33,6 @@ type AulaTesting =
   :<|> "error303" :> GetH ()
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "timeout" :> GetH ()
 
-  :<|> "render-html-source" :> RenderHtmlSource
-
 aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
        (PublicFrame . PageShow <$> Action.query getIdeas)
@@ -47,8 +45,6 @@ aulaTesting =
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
   :<|> makeTopicTimeout
-
-  :<|> renderHtmlSource
 
 data Page404 = Page404
 
@@ -67,19 +63,3 @@ makeTopicTimeout tid = do
         PhaseRefinement _ -> topicInRefinementTimedOut tid
         PhaseVoting     _ -> topicInVotingTimedOut tid
         _                 -> return ()
-
-type RenderHtmlSource = Capture "login" UserLogin :> RenderHtmlSource'
-
-type RenderHtmlSource' =
-       Idea  ::> Get '[PlainText] String
-  :<|> Topic ::> Get '[PlainText] String
-  :<|> "user"  :> "settings" :> Get '[PlainText] String
-  :<|> "admin" :> SchoolClass ::> "edit" :> Get '[PlainText] String
-
-renderHtmlSource :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
-      => ServerT RenderHtmlSource m
-renderHtmlSource (loginByName -> li) =
-       (\iid -> li >> show <$> viewIdeaPage                        iid)
-  :<|> (\tid -> li >> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
-  :<|> (li >> show . PageUserSettings <$> currentUser)
-  :<|> (\schoolclass -> li >> (show <$> adminSettingsGaPClassesEditPage schoolclass))

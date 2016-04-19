@@ -462,12 +462,8 @@ payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
 adminSettingsGaPClassesEdit :: (ActionPersist m, ActionUserHandler m)
     => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
-adminSettingsGaPClassesEdit clss = makeFrame =<< adminSettingsGaPClassesEditPage clss
-
-adminSettingsGaPClassesEditPage :: (ActionPersist m, ActionUserHandler m)
-    => SchoolClass -> m PageAdminSettingsGaPClassesEdit
-adminSettingsGaPClassesEditPage clss =
-    PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
+adminSettingsGaPClassesEdit clss = makeFrame =<<
+    (PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss))
 
 
 -- ** Events protocol

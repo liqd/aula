@@ -15,7 +15,7 @@ module Frontend.Page.Topic
     , CreateTopic(..)
     , EditTopic(..)
     , IdeasFilterApi
-    , viewTopic, viewTopicPage
+    , viewTopic
     , createTopic
     , editTopic )
 where
@@ -264,11 +264,7 @@ makeFormIdeaSelection ideas =
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = viewTopicPage tab topicId >>= makeFrame
-
-viewTopicPage :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => ViewTopicTab -> AUID Topic -> m ViewTopic
-viewTopicPage tab topicId = do
+viewTopic tab topicId = makeFrame =<< (do
     ctx <- renderContext
     equery (do
         topic <- maybe404 =<< findTopic topicId
@@ -286,7 +282,7 @@ viewTopicPage tab topicId = do
                     (tab ^? viewTopicTabFilter . _Just)
                     <$> (getListInfoForIdea `mapM` ideas)
 
-                pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
+                pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters))
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic

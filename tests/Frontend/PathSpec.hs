@@ -91,9 +91,9 @@ mockAulaMain :: IO Application
 mockAulaMain = do
     return $ serve (Proxy :: Proxy AulaMain) (mock (Proxy :: Proxy AulaMain))
 
-instance (FormPage a, Page a, Arbitrary a)
-        => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML] (FormPageRep a)) where
-    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML] (FormPageRep a)))
+instance (Show a, FormPage a, Page a, Arbitrary a)
+        => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML, PlainText] (FormPageRep a)) where
+    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML, PlainText] (FormPageRep a)))
 
 
 -- * UriPath and FromHttpApiData correspondence

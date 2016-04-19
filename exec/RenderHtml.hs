@@ -41,7 +41,6 @@ import Text.Digestive.View (getForm)
 
 import qualified Data.Aeson.Encode.Pretty as Aeson
 import qualified Data.ByteString.Lazy as LBS
-import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Data.Text.IO as ST
 
 import Arbitrary
@@ -53,6 +52,8 @@ import Frontend.Prelude hiding ((<.>), (</>))
 
 
 -- | config section: add new page types here.
+--
+-- TODO: rename pagesView to runPages, pagesForm to runForms?
 pagesView :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml a, Page a) => Proxy a -> b)
     -> [b]
@@ -74,26 +75,6 @@ pagesView f =
     , f (Proxy :: Proxy ViewIdea)
     , f (Proxy :: Proxy ViewTopic)
     ]
-
-mockUser :: User
-mockUser = User
-    { _userMeta      = MetaInfo
-        { _metaKey             = AUID 0
-        , _metaCreatedBy       = AUID 0
-        , _metaCreatedByLogin  = "login"
-        , _metaCreatedByAvatar = Nothing
-        , _metaCreatedAt       = constantSampleTimestamp
-        , _metaChangedBy       = AUID 0
-        , _metaChangedAt       = constantSampleTimestamp
-        }
-    , _userLogin     = "login"
-    , _userFirstName = "firstname"
-    , _userLastName  = "lastname"
-    , _userAvatar    = Nothing
-    , _userRole      = Principal
-    , _userPassword  = UserPassInitial "wef"
-    , _userEmail     = Nothing
-    }
 
 pagesForm :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, FormPage a, Page a) => Proxy a -> b)
@@ -200,21 +181,21 @@ dynamicRender s = do
             , "  - there is an error in exec/RenderHtml.hs"
             , ""
             , "input data:"
-            , "    " <> take 200 (cs s)
+            , "    " <> take 3000 (cs s)
             , ""
             ]
   where
-    runRW :: forall a. (Read a, Page a) => (a -> Html ()) -> Proxy a -> IO (Maybe ST)
-    runRW runWrite proxy = runRead `catch` \(SomeException _) -> return Nothing
+    runRW :: forall a. (Read a, Page a) => (Frame a -> Html ()) -> Proxy a -> IO (Maybe ST)
+    runRW runWrite Proxy = runRead `catch` \(SomeException _) -> return Nothing
       where
         runRead :: IO (Maybe ST)
         runRead = do
-            Just <$> evaluate (cs . renderText . runWrite . readWith proxy . cs $ s)
+            Just <$> evaluate (cs . renderText . runWrite . readWith (Proxy :: Proxy (Frame a)) . cs $ s)
 
-    runWriteView :: (Page a, ToHtml a) => a -> Html ()
-    runWriteView !p = pageFrame p (Just mockUser) $ toHtml p
+    runWriteView :: (Page a, ToHtml a) => Frame a -> Html ()
+    runWriteView !p = toHtml p
 
-    runWriteForm :: (Page a, FormPage a) => a -> Html ()
-    runWriteForm !p = pageFrame p (Just mockUser) . toHtml $ do
-        let (Right v) = runDummy $ getForm "" (makeForm p)
-        formPage v (DF.form v "/pseudo/form/action") p  -- (action doesn't matter here)
+    runWriteForm :: (Page a, FormPage a) => Frame a -> Html ()
+    runWriteForm !frame = toHtml $ FormPageRep v "a" frame  -- (action doesn't matter here)
+      where
+        (Right v) = runDummy $ getForm "" (makeForm (frame ^. frameBody))
