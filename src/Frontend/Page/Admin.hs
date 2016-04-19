@@ -447,14 +447,14 @@ adminSettingsGaPClassesView =
     makeFrame =<< PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
-adminSettingsGaPUserEdit uid = FormPageHandler editUserPage editUser
+adminSettingsGaPUserEdit uid = FormPageHandler editUserPage changeUser
   where
     editUserPage = equery $
         PageAdminSettingsGaPUsersEdit
         <$> (maybe404 =<< findUser uid)
         <*> getSchoolClasses
 
-    editUser = update . SetUserRole uid . payloadToUserRole
+    changeUser = update . SetUserRole uid . payloadToUserRole
 
 payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss

@@ -469,6 +469,16 @@ data ProtoUser = ProtoUser
 
 instance SOP.Generic ProtoUser
 
+-- Edit topic description and add ideas to topic.
+data EditUserData = EditUserData
+    { _editUserFirstName :: UserFirstName
+    , _editUserLastName  :: UserLastName
+    , _editUserDesc      :: Document
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EditUserData
+
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
@@ -815,6 +825,7 @@ makeLenses ''DelegationNetwork
 makeLenses ''Document
 makeLenses ''Durations
 makeLenses ''EditTopicData
+makeLenses ''EditUserData
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
@@ -855,6 +866,7 @@ deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
+deriveSafeCopy 0 'base ''EditUserData
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaLike
