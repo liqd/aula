@@ -119,6 +119,10 @@ runClient (Free (LikeIdea t k)) = do
         noOfLikes' `shouldBe` (noOfLikes + 1)
     runClient k
 
+runClient (Free (DeleteIdea _t k)) = do
+    -- FIXME: Implement delete idea.
+    runClient k
+
 runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- precondition $ findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace

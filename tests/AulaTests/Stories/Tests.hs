@@ -19,6 +19,7 @@ topicTimeoutStory :: Behavior ()
 topicTimeoutStory = do
     let idea1 = "idea1"
     let idea1a = "idea1a"
+    let idea2 = "idea2"
     let topic1 = "topic1"
     let topic1a = "topic1a"
     let comment1 = "This is the comment 1"
@@ -42,4 +43,6 @@ topicTimeoutStory = do
     voteIdea idea1 Yes
     timeoutTopic topic1
     markIdea idea1 (Right $ Winning Nothing)
+    createIdea idea2 "desc" CatRules
+    deleteIdea idea2
     logout
