@@ -32,6 +32,7 @@ import AulaTests.Stories.Tests
 spec :: Spec
 spec = describe "stories" $ do
     story_ "Topic in refinement phase times out" topicTimeoutStory
+    story_ "Some user behavior" randomUserBehavior
 
 
 -- | Runs the 'Behavior' represented story with the 'Action' interpreter,
