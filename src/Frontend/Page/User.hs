@@ -166,11 +166,6 @@ instance ToHtml PageUserProfileCreatedIdeas where
                     toHtml ideas
 
 -- | List all the created ideas for the given user.
--- Using @join . persistent $ do ... return $ makeFrame@ will
--- go only once to the database and query everything in one transaction,
--- that ensures data consistency, as other persistent computations
--- can interleave if the compute partial results in more than
--- one round. Same applies here like 'STM' and 'IO'.
 createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
     => AUID User -> m (Frame PageUserProfileCreatedIdeas)
 createdIdeas userId = makeFrame $ do
