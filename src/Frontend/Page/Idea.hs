@@ -27,7 +27,6 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               )
 import LifeCycle
 import Frontend.Page.Category
-import Frontend.Page.Overview
 import Frontend.Page.Snippet as Snippet
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)

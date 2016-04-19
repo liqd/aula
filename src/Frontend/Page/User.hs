@@ -10,7 +10,7 @@ module Frontend.Page.User
 where
 
 import Action
-import Frontend.Page.Overview
+import Frontend.Page.Snippet
 import Frontend.Prelude
 import Persistent.Api
 import qualified Frontend.Path as P
