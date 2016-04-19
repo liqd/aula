@@ -430,16 +430,30 @@ followsPhase _               _                   = False
 
 -- * user
 
+data Profile = Profile
+    { _profileAvatar :: Maybe URL
+    , _profileDesc   :: Document
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic Profile
+
+data UserSettings = UserSettings
+    { _userSettingsPassword :: UserPass
+    , _userSettingsEmail    :: Maybe EmailAddress
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic UserSettings
+
 data User = User
     { _userMeta      :: MetaInfo User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: Maybe URL
     , _userRole      :: Role
-    , _userPassword  :: UserPass
-    , _userEmail     :: Maybe EmailAddress
-    , _userDesc      :: Document
+    , _userProfile   :: Profile
+    , _userSettings  :: UserSettings
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -782,6 +796,7 @@ instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
+instance Binary Profile
 instance Binary SchoolClass
 instance Binary Topic
 instance Binary UpDown
@@ -789,6 +804,7 @@ instance Binary User
 instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
+instance Binary UserSettings
 instance Binary DurationDays
 instance Binary Durations
 instance Binary Quorums
@@ -836,6 +852,7 @@ makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''GMetaInfo
 makeLenses ''Phase
+makeLenses ''Profile
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
@@ -851,6 +868,7 @@ makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
+makeLenses ''UserSettings
 makeLenses ''Quorums
 
 deriveSafeCopy 0 'base ''AUID
@@ -885,6 +903,7 @@ deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
+deriveSafeCopy 0 'base ''Profile
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
 deriveSafeCopy 0 'base ''Settings
@@ -896,6 +915,7 @@ deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
+deriveSafeCopy 0 'base ''UserSettings
 deriveSafeCopy 0 'base ''Quorums
 
 class Ord (IdOf a) => HasMetaInfo a where
@@ -1109,3 +1129,15 @@ countCommentVotes v = countEq v commentVoteValue
 traverseParents :: [AUID Comment] -> Traversal' Comments Comments
 traverseParents []     = id
 traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
+
+userAvatar :: Lens' User (Maybe URL)
+userAvatar = userProfile . profileAvatar
+
+userDesc :: Lens' User Document
+userDesc = userProfile . profileDesc
+
+userPassword :: Lens' User UserPass
+userPassword = userSettings . userSettingsPassword
+
+userEmail :: Lens' User (Maybe EmailAddress)
+userEmail = userSettings . userSettingsEmail

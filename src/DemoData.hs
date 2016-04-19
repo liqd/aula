@@ -285,11 +285,15 @@ frameUserHack = user
       , _userLogin     = "VorNam"
       , _userFirstName = "Vorname"
       , _userLastName  = "Name"
-      , _userAvatar    = Nothing
       , _userRole      = Admin
-      , _userPassword  = UserPassInitial ""
-      , _userEmail     = Nothing
-      , _userDesc      = Markdown nil
+      , _userProfile   = Profile
+            { _profileAvatar = Nothing
+            , _profileDesc   = Markdown nil
+            }
+      , _userSettings  = UserSettings
+            { _userSettingsPassword = UserPassInitial ""
+            , _userSettingsEmail    = Nothing
+            }
       }
     uid = AUID 0
     oid = AUID 1

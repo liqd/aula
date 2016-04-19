@@ -601,11 +601,15 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userLogin     = uLogin
     , _userFirstName = proto ^. protoUserFirstName
     , _userLastName  = proto ^. protoUserLastName
-    , _userAvatar    = Nothing
     , _userRole      = proto ^. protoUserRole
-    , _userPassword  = uPassword
-    , _userEmail     = proto ^. protoUserEmail
-    , _userDesc      = proto ^. protoUserDesc
+    , _userSettings  = UserSettings
+        { _userSettingsPassword = uPassword
+        , _userSettingsEmail    = proto ^. protoUserEmail
+        }
+    , _userProfile   = Profile
+        { _profileAvatar = Nothing
+        , _profileDesc   = proto ^. protoUserDesc
+        }
     }
 
 addUser :: AddDb User
