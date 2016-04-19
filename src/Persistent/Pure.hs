@@ -602,6 +602,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userRole      = proto ^. protoUserRole
     , _userPassword  = uPassword
     , _userEmail     = proto ^. protoUserEmail
+    , _userDesc      = proto ^. protoUserDesc
     }
 
 addUser :: AddDb User

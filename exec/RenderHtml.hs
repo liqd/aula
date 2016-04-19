@@ -93,6 +93,7 @@ mockUser = User
     , _userRole      = Principal
     , _userPassword  = UserPassInitial "wef"
     , _userEmail     = Nothing
+    , _userDesc      = Markdown nil
     }
 
 pagesForm :: forall b.

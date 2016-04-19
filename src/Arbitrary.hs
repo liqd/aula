@@ -633,7 +633,7 @@ mkFishUser mSchoolClass avatarPath = do
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam role (UserPassInitial "dummy password") Nothing
+    let pu = ProtoUser Nothing fnam lnam role (UserPassInitial "dummy password") Nothing (Markdown nil)
     user <- currentUserAddDb AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
@@ -652,7 +652,7 @@ fishDelegationNetworkIO = do
             now <- getCurrentTimestamp
             admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                Admin (UserPassInitial "admin") Nothing
+                Admin (UserPassInitial "admin") Nothing (Markdown nil)
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 
@@ -723,6 +723,7 @@ instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson

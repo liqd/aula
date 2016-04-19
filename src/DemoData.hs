@@ -235,6 +235,7 @@ genInitialTestDb = do
         , _protoUserRole      = Admin
         , _protoUserPassword  = UserPassInitial "pssst"
         , _protoUserEmail     = Nothing
+        , _protoUserDesc      = Markdown nil
         }
 
     user2 <- update $ AddUser (EnvWith user1 constantSampleTimestamp ProtoUser
@@ -244,6 +245,7 @@ genInitialTestDb = do
         , _protoUserRole      = Admin
         , _protoUserPassword  = UserPassInitial "geheim"
         , _protoUserEmail     = Nothing
+        , _protoUserDesc      = Markdown nil
         })
 
     _wildIdea <- update $ AddIdea (EnvWith user1 constantSampleTimestamp ProtoIdea
@@ -287,6 +289,7 @@ frameUserHack = user
       , _userRole      = Admin
       , _userPassword  = UserPassInitial ""
       , _userEmail     = Nothing
+      , _userDesc      = Markdown nil
       }
     uid = AUID 0
     oid = AUID 1

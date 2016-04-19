@@ -439,6 +439,7 @@ data User = User
     , _userRole      :: Role
     , _userPassword  :: UserPass
     , _userEmail     :: Maybe EmailAddress
+    , _userDesc      :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -462,6 +463,7 @@ data ProtoUser = ProtoUser
     , _protoUserRole      :: Role
     , _protoUserPassword  :: UserPass
     , _protoUserEmail     :: Maybe EmailAddress
+    , _protoUserDesc      :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

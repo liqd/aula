@@ -561,6 +561,7 @@ adminSettingsGaPClassesCreate = FormPageHandler (pure PageAdminSettingsGaPClasse
             , _protoUserRole      = Student schoolcl
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
+            , _protoUserDesc      = Markdown nil
             }
 
 
