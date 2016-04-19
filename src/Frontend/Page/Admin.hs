@@ -434,17 +434,14 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
-adminSettingsGaPUsersView :: ActionM m => m (Frame PageAdminSettingsGaPUsersView)
-adminSettingsGaPUsersView =
-    makeFrame $ PageAdminSettingsGaPUsersView <$> query getUsers
+adminSettingsGaPUsersView :: ActionPersist m => m PageAdminSettingsGaPUsersView
+adminSettingsGaPUsersView = PageAdminSettingsGaPUsersView <$> query getUsers
 
-adminSettingsGaPUsersCreate :: ActionM m => m (Frame PageAdminSettingsGaPUsersCreate)
-adminSettingsGaPUsersCreate =
-    makeFrame $ pure PageAdminSettingsGaPUsersCreate
+adminSettingsGaPUsersCreate :: Applicative m => m PageAdminSettingsGaPUsersCreate
+adminSettingsGaPUsersCreate = pure PageAdminSettingsGaPUsersCreate
 
-adminSettingsGaPClassesView :: ActionM m => m (Frame PageAdminSettingsGaPClassesView)
-adminSettingsGaPClassesView =
-    makeFrame $ PageAdminSettingsGaPClassesView <$> query getSchoolClasses
+adminSettingsGaPClassesView :: ActionPersist m => m PageAdminSettingsGaPClassesView
+adminSettingsGaPClassesView = PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
 adminSettingsGaPUserEdit uid = FormPageHandler editUserPage editUser
@@ -460,13 +457,8 @@ payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
 payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
-adminSettingsGaPClassesEdit :: (ActionPersist m, ActionUserHandler m)
-    => SchoolClass -> m (Frame PageAdminSettingsGaPClassesEdit)
-adminSettingsGaPClassesEdit = makeFrame . adminSettingsGaPClassesEditPage
-
-adminSettingsGaPClassesEditPage :: (ActionPersist m, ActionUserHandler m)
-    => SchoolClass -> m PageAdminSettingsGaPClassesEdit
-adminSettingsGaPClassesEditPage clss =
+adminSettingsGaPClassesEdit :: ActionPersist m => SchoolClass -> m PageAdminSettingsGaPClassesEdit
+adminSettingsGaPClassesEdit clss =
     PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
 
 
@@ -496,8 +488,8 @@ instance ToHtml PageAdminSettingsEventsProtocol where
         makeText SchoolSpace = "Schule"
         makeText (ClassSpace (SchoolClass _year name)) = toHtml name
 
-adminEventsProtocol :: ActionM m => m (Frame PageAdminSettingsEventsProtocol)
-adminEventsProtocol = makeFrame $ PageAdminSettingsEventsProtocol <$> query getSpaces
+adminEventsProtocol :: ActionPersist m => m PageAdminSettingsEventsProtocol
+adminEventsProtocol = PageAdminSettingsEventsProtocol <$> query getSpaces
 
 
 -- * Classes Create

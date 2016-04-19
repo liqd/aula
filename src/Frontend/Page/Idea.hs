@@ -12,7 +12,7 @@ module Frontend.Page.Idea
   , EditIdea(..)
   , CommentIdea(..)
   , JudgeIdea(..)
-  , viewIdea, viewIdeaPage
+  , viewIdea
   , createIdea
   , editIdea
   , commentIdea
@@ -412,12 +412,8 @@ instance FormPage JudgeIdea where
 -- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
-    => AUID Idea -> m (Frame ViewIdea)
-viewIdea = makeFrame . viewIdeaPage
-
-viewIdeaPage :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
-viewIdeaPage ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
+viewIdea ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea

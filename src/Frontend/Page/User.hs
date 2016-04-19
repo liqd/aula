@@ -166,9 +166,9 @@ instance ToHtml PageUserProfileCreatedIdeas where
                     toHtml ideas
 
 -- | List all the created ideas for the given user.
-createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => AUID User -> m (Frame PageUserProfileCreatedIdeas)
-createdIdeas userId = makeFrame $ do
+createdIdeas :: (ActionPersist m, ActionUserHandler m)
+    => AUID User -> m PageUserProfileCreatedIdeas
+createdIdeas userId = do
     ctx <- renderContext
     equery (do
         user  <- maybe404 =<< findUser userId
@@ -221,9 +221,8 @@ renderDelegations _ = do
                         a_ [href_ U.Broken] "UserName, "
                         a_ [href_ U.Broken] "UserName"
 
-delegatedVotes :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => AUID User -> m (Frame PageUserProfileDelegatedVotes)
-delegatedVotes userId = makeFrame $ do
+delegatedVotes :: ActionPersist m => AUID User -> m PageUserProfileDelegatedVotes
+delegatedVotes userId = do
     let dv = []  -- FIXME
     user :: User <- mquery $ findUser userId
     pure $ PageUserProfileDelegatedVotes user dv

@@ -161,7 +161,7 @@ type AulaMain =
 
 aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
-       Page.viewRooms
+       makeFrame Page.viewRooms
   :<|> aulaSpace
 
   :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
@@ -170,7 +170,7 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> Page.viewDelegationNetwork
+  :<|> makeFrame Page.viewDelegationNetwork
 
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
@@ -234,7 +234,7 @@ type AulaSpace
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
-    =  Page.viewIdea
+    =  makeFrame . Page.viewIdea
   :<|> form . Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteIdea
@@ -251,24 +251,26 @@ ideaApi loc
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
-    =  Page.viewTopics space
+    =  makeFrame (Page.viewTopics space)
   :<|> ideaApi        . IdeaLocationTopic space
 
-  :<|> flip (Page.viewTopic . TabAllIdeas)  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> flip (Page.viewTopic . TabAllIdeas)
-  :<|> flip (Page.viewTopic . TabVotingIdeas)
-  :<|> flip (Page.viewTopic . TabWinningIdeas)
-  :<|> Page.viewTopic TabDelegation
+  :<|> viewTopicTab TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> viewTopicTab TabAllIdeas
+  :<|> viewTopicTab TabVotingIdeas
+  :<|> viewTopicTab TabWinningIdeas
+  :<|> makeFrame . Page.viewTopic TabDelegation
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
+  where
+    viewTopicTab tab tid qf = makeFrame $ Page.viewTopic (tab qf) tid
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
-    =  ideaApi        (IdeaLocationSpace space)
-  :<|> Page.viewIdeas space
-  :<|> topicApi       space
+    =  ideaApi (IdeaLocationSpace space)
+  :<|> makeFrame . Page.viewIdeas space
+  :<|> topicApi                   space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
@@ -276,8 +278,8 @@ type AulaUser =
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser user =
-       Page.createdIdeas   user
-  :<|> Page.delegatedVotes user
+       makeFrame (Page.createdIdeas   user)
+  :<|> makeFrame (Page.delegatedVotes user)
 
 
 type AulaAdmin =
@@ -303,13 +305,13 @@ aulaAdmin :: ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
-  :<|> Page.adminSettingsGaPUsersView
-  :<|> Page.adminSettingsGaPUsersCreate
-  :<|> Page.adminSettingsGaPClassesView
+  :<|> makeFrame Page.adminSettingsGaPUsersView
+  :<|> makeFrame Page.adminSettingsGaPUsersCreate
+  :<|> makeFrame Page.adminSettingsGaPClassesView
   :<|> form Page.adminSettingsGaPClassesCreate
   :<|> form . Page.adminSettingsGaPUserEdit
-  :<|> Page.adminSettingsGaPClassesEdit
-  :<|> Page.adminEventsProtocol
+  :<|> makeFrame . Page.adminSettingsGaPClassesEdit
+  :<|> makeFrame Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing
   :<|> adminEventLogCsv . Just
