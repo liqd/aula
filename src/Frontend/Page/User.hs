@@ -152,8 +152,15 @@ userHeaderDiv user =
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileCreatedIdeas _ctx user ideas) = semanticDiv p $ do
+    toHtml p@(PageUserProfileCreatedIdeas ctx user ideas) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
+            when (ctx ^. renderContextUser . _Id == user ^. _Id) $ do
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] $ do
+                            a_ [href_ U.UserProfile] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                "bearbeiten"
             userHeaderDiv user
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
