@@ -36,6 +36,7 @@ data Step a where
     EditIdea         :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     LikeIdea         :: IdeaTitle -> a -> Step a
     DeleteIdea       :: IdeaTitle -> a -> Step a
+    ReportIdea       :: IdeaTitle -> a -> Step a
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     EditTopic        :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
@@ -73,6 +74,9 @@ likeIdea title = liftF $ LikeIdea title ()
 
 deleteIdea :: IdeaTitle -> Behavior ()
 deleteIdea title = liftF $ DeleteIdea title ()
+
+reportIdea :: IdeaTitle -> Behavior ()
+reportIdea title = liftF $ ReportIdea title ()
 
 createTopic :: IdeaTitle -> TopicTitle -> TopicDescription -> Behavior ()
 createTopic ititle ttitle tdesc = liftF $ CreateTopic ititle ttitle tdesc ()

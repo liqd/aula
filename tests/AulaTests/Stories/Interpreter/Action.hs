@@ -123,6 +123,10 @@ runClient (Free (DeleteIdea _t k)) = do
     -- FIXME: Implement delete idea.
     runClient k
 
+runClient (Free (ReportIdea _t k)) = do
+    -- FIXME: Implement report idea.
+    runClient k
+
 runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- precondition $ findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace

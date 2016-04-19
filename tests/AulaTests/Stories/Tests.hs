@@ -51,5 +51,6 @@ randomUserBehavior = do
     createIdea idea1 "desc" CatRules
     commentIdea idea1 comment1
     deleteComment idea1 comment1
+    reportIdea idea1
     deleteIdea idea1
     logout
