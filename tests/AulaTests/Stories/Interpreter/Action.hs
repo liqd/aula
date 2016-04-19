@@ -247,6 +247,16 @@ runClient (Free (DeleteComment t c k)) = do
         (comment' ^. commentDeleted) `shouldBe` True
     runClient k
 
+runClient (Free (ReportComment t c k)) = do
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t c
+    _ <- step . lift $ do
+        Action.reportIdeaComment
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment ^. _Id)
+    -- FIXME: Add postcondition checking. Test email sending?
+    runClient k
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)

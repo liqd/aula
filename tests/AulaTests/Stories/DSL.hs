@@ -46,6 +46,7 @@ data Step a where
     ReplyComment     :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     VoteOnComment    :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
     VoteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
+    ReportComment      :: IdeaTitle -> CommentText -> a -> Step a
     DeleteComment      :: IdeaTitle -> CommentText -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
@@ -108,6 +109,9 @@ voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()
 voteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> Behavior ()
 voteOnCommentReply idea comment1 comment2 vote =
     liftF $ VoteOnCommentReply idea comment1 comment2 vote ()
+
+reportComment :: IdeaTitle -> CommentText -> Behavior ()
+reportComment idea comment1 = liftF $ ReportComment idea comment1 ()
 
 deleteComment :: IdeaTitle -> CommentText -> Behavior ()
 deleteComment idea comment =

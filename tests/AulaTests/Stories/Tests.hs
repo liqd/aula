@@ -50,6 +50,7 @@ randomUserBehavior = do
     selectIdeaSpace "school"
     createIdea idea1 "desc" CatRules
     commentIdea idea1 comment1
+    reportComment idea1 comment1
     deleteComment idea1 comment1
     reportIdea idea1
     deleteIdea idea1
