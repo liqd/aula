@@ -87,14 +87,14 @@ function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
 }
 
-function handleLikeOrVote(e) {
+function reloadOnClick(hash) {
+    // NOTE: it would be nice to avoid reload, but this is not a hard
+    // requirement any more.
     // FIXME: this is a race condition: if we wait for 0 ms, the page
     // will usually be reloaded before the POST request updating the
     // score can be processed.
-    // FIXME: we are required to avoid reload!
-    setTimeout(function() { document.location.reload(true); }, 50);
-}
-
-function handleDeleteComment(e) {
-    e.parentNode.parentNode.parentNode.parentNode.childNodes[1].innerHTML = "Verbesserungsvorschlag löschen";
+    setTimeout(function() {
+        document.location.hash = hash;
+        document.location.reload(true);
+    }, 100);
 }

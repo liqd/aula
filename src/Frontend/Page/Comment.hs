@@ -20,13 +20,13 @@
 module Frontend.Page.Comment
 where
 
-import qualified Lucid
 import qualified Generics.SOP as SOP
 
-import Types
 import Frontend.Prelude
 import LifeCycle
+
 import qualified Frontend.Path as U
+
 
 data CommentWidget = CommentWidget
     { _cwRenderContext :: RenderContext
@@ -48,10 +48,10 @@ instance ToHtml CommentWidget where
                 div_ [class_ "comment-reply"] . commentToHtml $ w & cwComment .~ reply
 
 commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
-commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
+commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
-        VotesWidget (w ^. cwIdeaCaps) comment ^. html
+        CommentVotesWidget (w ^. cwIdeaCaps) comment ^. html
     div_ [class_ "comments-body"] $ do
         if comment ^. commentDeleted
             then "[Inhalt gelöscht]"
@@ -67,7 +67,9 @@ commentToHtml w = div_ [id_ . U.commentAnchor $ comment ^. _Id] $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
             when (CanDeleteComment `elem` comCaps) .
-                postButton_ [class_ "btn comment-footer-button", Lucid.onclick_ "handleDeleteComment(this)"]
+                postButton_ [ class_ "btn comment-footer-button"
+                            , onclickJs . JsReloadOnClick . U.anchor $ comment ^. _Id
+                            ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil
                     "löschen"

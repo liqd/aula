@@ -18,7 +18,7 @@ module Frontend.Path
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
-    , commentAnchor
+    , anchor
     )
 where
 
@@ -187,8 +187,8 @@ ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
 ideaMode (OnComment ck m) root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
 
-commentAnchor :: IsString s => AUID Comment -> s
-commentAnchor (AUID c) = fromString $ "comment-" <> show c
+anchor :: IsString s => AUID a -> s
+anchor (AUID c) = fromString $ "auid-" <> show c
 
 commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
 commentMode (CommentKey _loc i parents commentId) m root =
@@ -197,7 +197,7 @@ commentMode (CommentKey _loc i parents commentId) m root =
         DeleteComment -> base 2 </> "delete"
         ReportComment -> base 2 </> "report"
         VoteComment v -> base 2 </> "vote" </> uriPart v
-        ViewComment   -> root  </> "idea" </> uriPart i </> "view" </#> commentAnchor commentId
+        ViewComment   -> root  </> "idea" </> uriPart i </> "view" </#> anchor commentId
   where
     -- NOTE: Deep replies are not supported yet.
     -- Meanwhile urls are automatically shortened to fit the current API.
