@@ -146,14 +146,14 @@ type AulaMain =
 
        -- enter user profile
   :<|> User ::> AulaUser
-  :<|> "user" :> "profile"  :> FormHandlerT EditUserProfile User
+  :<|> "user" :> "profile"  :> FormHandler EditUserProfile
   :<|> "user" :> "settings" :> FormHandler PageUserSettings
 
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegation" :> "edit" :> FormHandlerT PageDelegateVote () --FIXME: Correct page type
+  :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote
   :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
 
        -- static content
@@ -187,7 +187,7 @@ aulaMain =
 
 type CommentApi
        -- reply on a comment
-    = "reply" :> FormHandlerT CommentIdea Idea
+    = "reply" :> FormHandler CommentIdea
        -- vote on a comment
   :<|> UpDown ::> PostH
        -- vote on a reply of a comment
@@ -215,13 +215,13 @@ type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)
     =  Idea ::> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> Idea ::> "edit" :> FormHandlerT Page.EditIdea Idea
+  :<|> Idea ::> "edit" :> FormHandler Page.EditIdea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH
        -- vote on an idea
   :<|> Idea ::> IdeaVoteValue ::> PostH
        -- comment on an idea
-  :<|> Idea ::> "comment" :> FormHandlerT CommentIdea Idea
+  :<|> Idea ::> "comment" :> FormHandler CommentIdea
        -- API specific to one comment
   :<|> Idea ::> Comment ::> CommentApi
        -- jury an idea
