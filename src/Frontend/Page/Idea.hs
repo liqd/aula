@@ -36,7 +36,6 @@ import qualified Action (createIdea)
 import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
-import qualified Lucid
 import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -244,8 +243,11 @@ instance ToHtml IdeaVoteLikeBars where
             likeButtons :: Html ()
             likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
-                        postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"]
-                            (U.likeIdea idea) "dafür!"
+                        postButton_ [ class_ "btn"
+                                    , onclickJs . JsReloadOnClick $ U.anchor (idea ^. _Id)
+                                    ]
+                                    (U.likeIdea idea)
+                            "dafür!"
                         -- FIXME: how do you un-like an idea?
                 else nil
 

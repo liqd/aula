@@ -37,10 +37,11 @@ module Frontend.Core
     , html
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromHasMeta, avatarImgFromMeta
-    -- Test only
+    -- Test only  -- (TODO: "Test only" comment should be removed, right?)
     , FormPageRep(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
     , numLikes
     , percentLikes
+    , JsCallback(..), onclickJs
     )
 where
 
@@ -74,6 +75,16 @@ import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
+
+
+-- | js glue
+onclickJs :: JsCallback -> Attribute
+onclickJs (JsReloadOnClick hash) = Lucid.onclick_ $ "reloadOnClick(" <> cs (show hash) <> ")"
+
+-- | (see 'onclickJs')
+data JsCallback =
+    JsReloadOnClick ST
+  deriving (Eq, Ord, Show, Read)
 
 
 -- FIXME could use closed-type families
@@ -336,7 +347,10 @@ instance ToHtml CommentVotesWidget where
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
                 when (CanVoteComment `elem` caps) .
-                    postButton_ [class_ "btn", Lucid.onclick_ "handleLikeOrVote(this)"] (P.voteComment comment v) $
+                    postButton_ [ class_ "btn"
+                                , onclickJs . JsReloadOnClick . P.anchor $ comment ^. _Id
+                                ]
+                                (P.voteComment comment v) $
                         i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
