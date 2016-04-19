@@ -22,10 +22,11 @@ where
 
 import qualified Generics.SOP as SOP
 
-import Types
 import Frontend.Prelude
 import LifeCycle
+
 import qualified Frontend.Path as U
+
 
 data CommentWidget = CommentWidget
     { _cwRenderContext :: RenderContext
@@ -50,7 +51,7 @@ commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
 commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     header_ [class_ "comment-header"] $ do
         comment ^. commentMeta . to AuthorWidget . html
-        VotesWidget (w ^. cwIdeaCaps) comment ^. html
+        CommentVotesWidget (w ^. cwIdeaCaps) comment ^. html
     div_ [class_ "comments-body"] $ do
         if comment ^. commentDeleted
             then "[Inhalt gelöscht]"

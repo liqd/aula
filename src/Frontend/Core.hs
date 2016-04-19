@@ -30,7 +30,7 @@ module Frontend.Core
     , FormPageHandler(..), formGetPage, formProcessor
     , form
     , AuthorWidget(AuthorWidget)
-    , CommentVotesWidget(VotesWidget)
+    , CommentVotesWidget(CommentVotesWidget)
     , semanticDiv
     , showed
     , tabSelected
@@ -333,11 +333,11 @@ instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
     toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
 
-data CommentVotesWidget = VotesWidget [IdeaCapability] Comment
+data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(VotesWidget caps comment) = semanticDiv p $ do
+    toHtml p@(CommentVotesWidget caps comment) = semanticDiv p $ do
         div_ [class_ "comment-votes"] $ do
             voteButton Up
             voteButton Down
