@@ -39,7 +39,6 @@ import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
 import Arbitrary (sampleEventLog)
 import Config
-import DemoData
 import Data.UriPath
 import EventLog
 import Frontend.Core
@@ -170,7 +169,7 @@ aulaMain =
        makeFrame Page.viewRooms
   :<|> aulaSpace
 
-  :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
+  :<|> makeFrame (PageShow <$> Action.query getUsers)
   :<|> aulaUser
   :<|> form Page.editUserProfile
   :<|> form Page.userSettings
@@ -179,8 +178,8 @@ aulaMain =
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
   :<|> makeFrame Page.viewDelegationNetwork
 
-  :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
-  :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
+  :<|> makeFrame (pure PageStaticImprint)
+  :<|> makeFrame (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
   :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
