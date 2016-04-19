@@ -27,8 +27,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               )
 import LifeCycle
 import Frontend.Page.Category
-import Frontend.Page.Comment
-import Frontend.Page.Overview
+import Frontend.Page.Snippet as Snippet
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
 
@@ -153,6 +152,8 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
+
+            Snippet.juryIdea True idea caps
 
             when False . div_ $ do
                 -- FIXME: needs design/layout

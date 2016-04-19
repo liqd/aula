@@ -28,6 +28,7 @@ import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config
 import Frontend.Core
 import Frontend.Page
+import Frontend.Page.Snippet
 import Types
 
 import AulaTests

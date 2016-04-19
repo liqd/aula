@@ -23,7 +23,7 @@ where
 import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
 import Frontend.Page.Category
-import Frontend.Page.Overview
+import Frontend.Page.Snippet
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
 import qualified Action (createTopic)

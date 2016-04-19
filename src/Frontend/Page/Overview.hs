@@ -1,17 +1,14 @@
-{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Overview
     ( PageRoomsOverview(..)
     , PageIdeasOverview(..)
     , PageIdeasInDiscussion(..)
-    , WhatListPage(..), ListItemIdea(ListItemIdea), ListItemIdeas(ListItemIdeas)
-    , QuorumBar(QuorumBar)
     , viewRooms
     , viewIdeas
     , viewTopics
@@ -20,12 +17,11 @@ where
 
 import Action
 import Frontend.Page.Category
+import Frontend.Page.Snippet
 import Frontend.Prelude
-import LifeCycle
 
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
-import qualified Generics.SOP as SOP
 
 
 -- * pages
@@ -167,119 +163,3 @@ instance ToHtml Tabs where
         spaceDesc SchoolSpace    = "der Schule"
         spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className
         loc = IdeaLocationSpace space
-
-
--- * idea lists
-
-data WhatListPage
-    = IdeaInIdeasOverview
-    | IdeaInViewTopic
-    | IdeaInUserProfile
-  deriving (Eq, Show, Read, Generic)
-
-data ListItemIdea = ListItemIdea
-      { _listItemRenderContext  :: RenderContext
-      , _listItemIdeaWhatPage   :: WhatListPage
-      , _listItemIdeaInfo       :: ListInfoForIdea
-      }
-  deriving (Eq, Show, Read, Generic)
-
-data ListItemIdeas =
-    ListItemIdeas
-        { _ideasAndNumVotersCtx    :: RenderContext
-        , _ideasAndNumVotersFilter :: IdeasFilterQuery
-        , _ideasAndNumVotersData   :: [ListInfoForIdea]
-        }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic WhatListPage
-instance SOP.Generic ListItemIdea
-instance SOP.Generic ListItemIdeas
-
-
-instance ToHtml ListItemIdea where
-    toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea mphase quo)) = semanticDiv p $ do
-        div_ [class_ "ideas-list-item"] $ do
-            let caps = ideaCapabilities
-                        (ctx ^. renderContextUser . _Id)
-                        (ctx ^. renderContextUser . userRole)
-                        idea
-                        mphase
-
-            when (IdeaInViewTopic == whatListPage) $ do
-                when (CanMarkFeasiblity `elem` caps) . div_ $ do
-                    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
-                        explToHtml (Markdown text) = do
-                            p_ "Begründung:"
-                            p_ $ toHtml text
-
-                    case _ideaJuryResult idea of
-                        Nothing -> do
-                            div_ [class_ "admin-buttons"] $ do
-                                button_ [ class_ "btn-cta m-valid"
-                                        , onclick_ $ U.judgeIdea idea IdeaFeasible
-                                        ] $ do
-                                    i_ [class_ "icon-check"] nil
-                                    "durchführbar"
-                                button_ [ class_ "btn-cta m-invalid"
-                                        , onclick_ $ U.judgeIdea idea IdeaNotFeasible
-                                        ] $ do
-                                    i_ [class_ "icon-times"] nil
-                                    "nicht durchführbar"
-                        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-                            div_ [class_ "info-text m-realised"] $ do
-                                h3_ [class_ "info-text-header"] "durchführbar"
-                                case maybeExpl of
-                                    Just expl -> explToHtml expl
-                                    Nothing -> nil
-                        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
-                            div_ [class_ "info-text m-unrealised"] $ do
-                                h3_ [class_ "info-text-header"] "nicht durchführbar"
-                                explToHtml expl
-
-            a_ [href_ $ U.viewIdea idea] $ do
-                -- FIXME use the phase
-                div_ [class_ "col-8-12"] $ do
-                    div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
-                    div_ [class_ "ideas-list-text-container"] $ do
-                        h2_ [class_ "ideas-list-title"] $ do
-                            idea ^. ideaTitle . html
-                            span_ [class_ "ideas-list-author"] $ do
-                                "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
-                div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
-                    ul_ [class_ "meta-list"] $ do
-                        li_ [class_ "meta-list-item"] $ do
-                            i_ [class_ "meta-list-icon icon-comment-o"] nil
-                            let s = idea ^. ideaComments . commentsCount
-                            s ^. showed . html
-                            if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
-                        li_ [class_ "meta-list-item"] $ do
-                            i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
-                    toHtml $ QuorumBar (percentLikes idea quo)
-
-
-data QuorumBar = QuorumBar Int
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance ToHtml QuorumBar where
-    toHtmlRaw = toHtml
-    toHtml (QuorumBar i) = do
-        span_ [class_ "progress-bar"] $ do
-            span_ [ class_ "progress-bar-progress"
-                  , style_ ("width: " <> cs (show i) <> "%")
-                  ]
-                nil
-
-
-instance ToHtml ListItemIdeas where
-    toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx filterq []) = semanticDiv p $ do
-        p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
-      where
-        mCatInfo :: Maybe ST
-        mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
-
-    toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic

@@ -5,7 +5,6 @@ where
 
 import Frontend.Page.Admin      as P
 import Frontend.Page.Category   as P
-import Frontend.Page.Comment    as P
 import Frontend.Page.Delegation as P
 import Frontend.Page.Idea       as P
 import Frontend.Page.Login      as P
