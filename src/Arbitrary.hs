@@ -142,6 +142,9 @@ instance Arbitrary PageUserProfileDelegatedVotes where
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
 
+instance Arbitrary EditUserProfile where
+    arbitrary = EditUserProfile <$> arb
+
 instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicPhaseDuration
 

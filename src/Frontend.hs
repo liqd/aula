@@ -146,6 +146,7 @@ type AulaMain =
 
        -- enter user profile
   :<|> User ::> AulaUser
+  :<|> "user" :> "profile"  :> FormHandlerT EditUserProfile User
   :<|> "user" :> "settings" :> FormHandler PageUserSettings
 
        -- enter admin api
@@ -171,6 +172,7 @@ aulaMain =
 
   :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
   :<|> aulaUser
+  :<|> form Page.editUserProfile
   :<|> form Page.userSettings
   :<|> aulaAdmin
 

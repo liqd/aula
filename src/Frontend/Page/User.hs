@@ -40,6 +40,12 @@ data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes User [Delegat
 
 instance Page PageUserProfileDelegatedVotes
 
+-- | 8.X User profile: Editing the public profile
+data EditUserProfile = EditUserProfile User
+  deriving (Eq, Show, Read)
+
+instance Page EditUserProfile
+
 
 -- * templates
 
@@ -230,3 +236,47 @@ delegatedVotes userId = do
     let dv = []  -- FIXME
     user :: User <- mquery $ findUser userId
     pure $ PageUserProfileDelegatedVotes user dv
+
+
+-- ** User Profile: Edit profile
+
+instance FormPage EditUserProfile where
+    type FormPagePayload EditUserProfile = EditUserData
+
+    formAction EditUserProfile{} = U.UserProfile
+
+    redirectOf (EditUserProfile u) _ = U.viewUser u
+
+    makeForm (EditUserProfile user) =
+        EditUserData
+        <$> ("firstname" .: field userFirstName _UserFirstName)
+        <*> ("lastname"  .: field userLastName  _UserLastName)
+        <*> ("desc"      .: field userDesc      _Markdown)
+
+      where
+        -- FIXME: use me elsewhere
+        field :: Monad m => Getter User a -> Traversal' a ST -> DF.Form (Html ()) m a
+        field l p = user ^. l & p %%~ DF.text . Just
+
+    formPage v form p = do
+        semanticDiv p $ do
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "User profile" -- FIXME english
+                    form $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "Firstname" -- FIXME english
+                            inputText_ [class_ "m-small"] "firstname" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Lastname" -- FIXME english
+                            inputText_ [class_ "m-small"] "lastname" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Desc" -- FIXME english
+                            inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "Änderungen speichern"
+
+editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
+editUserProfile = FormPageHandler
+    { _formGetPage   = EditUserProfile <$> currentUser
+    , _formProcessor = \up -> update . (`EditUser` up) =<< currentUserId }

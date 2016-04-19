@@ -18,6 +18,7 @@ module Frontend.Path
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
+    , viewUser
     , anchor
     )
 where
@@ -57,6 +58,7 @@ data Main =
   | IdeaPath IdeaLocation IdeaMode
   | ListUsers
   | User (AUID User) UserPs
+  | UserProfile
   | UserSettings
   | Admin AdminPs
   | DelegationEdit
@@ -101,6 +103,7 @@ main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
 main (IdeaPath l m)   root = ideaPath l m root
 main ListUsers        root = root </> "user"
 main (User uid p)     root = user  p (root </> "user" </> uriPart uid)
+main UserProfile      root = root </> "user" </> "profile"
 main UserSettings     root = root </> "user" </> "settings"
 main (Admin p)        root = admin p (root </> "admin")
 main DelegationEdit   root = root </> "delegation" </> "edit"
@@ -239,6 +242,9 @@ instance SOP.Generic UserPs
 user :: UserPs -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
+
+viewUser :: User -> Main
+viewUser u = User (u ^. _Id) UserIdeas
 
 data AdminPs =
     AdminDuration
