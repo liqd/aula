@@ -155,7 +155,7 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body }
     | PublicFrame               { _frameBody :: body }
-  deriving (Show, Functor)
+  deriving (Show, Read, Functor)
 
 makeLenses ''Frame
 
@@ -170,7 +170,7 @@ makeLenses ''Frame
 -- page code via text fields.)
 type GetH = Get '[HTML, PlainText]
 type PostH = Post '[HTML] ()
-type FormHandlerT p a = FormH HTML (FormPageRep p) a
+type FormHandlerT p a = FormH '[HTML, PlainText] (FormPageRep p) a
 type FormHandler p = FormHandlerT p ST
 
 -- | Render Form based Views
@@ -238,7 +238,7 @@ instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtml (PublicFrame bdy) = pageFrame bdy Nothing (toHtml bdy)
 
 instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
-    mimeRender Proxy = cs . show
+    mimeRender Proxy = cs . ppShow
 
 pageFrame :: (Monad m, Page p) => p -> Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame p mUser bdy = do
@@ -335,7 +335,7 @@ newtype PageShow a = PageShow { _unPageShow :: a }
 instance Page (PageShow a)
 
 instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
-    mimeRender Proxy = cs . show
+    mimeRender Proxy = cs . ppShow
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
@@ -383,6 +383,9 @@ instance FormPage p => ToHtml (FormPageRep p) where
         frameToHtml (Frame usr bdy)   = pageFrame fop (Just usr) (toHtml bdy)
         frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)
         form bdy = DF.childErrorList "" v >> DF.form v a bdy
+
+instance (Show p) => MimeRender PlainText (FormPageRep p) where
+    mimeRender Proxy (FormPageRep _ _ frame) = cs $ ppShow frame
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $
