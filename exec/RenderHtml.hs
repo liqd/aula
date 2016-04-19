@@ -195,7 +195,7 @@ dynamicRender s = do
     runWriteView :: (Page a, ToHtml a) => Frame a -> Html ()
     runWriteView !p = toHtml p
 
-    runWriteForm :: (Page a, FormPage a) => Frame a -> Html ()
-    runWriteForm !frame = toHtml $ FormPageRep v "a" frame  -- (action doesn't matter here)
+    runWriteForm :: (FormPage a) => Frame a -> Html ()
+    runWriteForm !frame = toHtml $ FormPageRep v "a" <$> frame  -- (action doesn't matter here)
       where
         (Right v) = runDummy $ getForm "" (makeForm (frame ^. frameBody))
