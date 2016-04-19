@@ -33,12 +33,16 @@ data Step a where
     Logout           :: a -> Step a
     SelectIdeaSpace  :: IdeaSpaceName -> a -> Step a
     CreateIdea       :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
+    EditIdea         :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     LikeIdea         :: IdeaTitle -> a -> Step a
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
+    EditTopic        :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
     VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
     CommentIdea      :: IdeaTitle -> CommentText -> a -> Step a
-    CommentOnComment :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    ReplyComment     :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    VoteOnComment    :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
+    VoteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -58,11 +62,17 @@ selectIdeaSpace n = liftF $ SelectIdeaSpace n ()
 createIdea :: IdeaTitle -> IdeaDescription -> Category -> Behavior ()
 createIdea title desc cat = liftF $ CreateIdea title desc cat ()
 
+editIdea :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> Behavior ()
+editIdea oldTitle newTitle desc cat = liftF $ EditIdea oldTitle newTitle desc cat ()
+
 likeIdea :: IdeaTitle -> Behavior ()
 likeIdea title = liftF $ LikeIdea title ()
 
 createTopic :: IdeaTitle -> TopicTitle -> TopicDescription -> Behavior ()
 createTopic ititle ttitle tdesc = liftF $ CreateTopic ititle ttitle tdesc ()
+
+editTopic :: TopicTitle -> TopicTitle -> TopicDescription -> Behavior ()
+editTopic oldTitle newTitle desc = liftF $ EditTopic oldTitle newTitle desc ()
 
 timeoutTopic :: TopicTitle -> Behavior ()
 timeoutTopic title = liftF $ TimeoutTopic title ()
@@ -76,5 +86,12 @@ voteIdea title vote = liftF $ VoteIdea title vote ()
 commentIdea :: IdeaTitle -> CommentText -> Behavior ()
 commentIdea title text = liftF $ CommentIdea title text ()
 
-commentOnComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
-commentOnComment title comment text = liftF $ CommentOnComment title comment text ()
+replyComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
+replyComment title comment text = liftF $ ReplyComment title comment text ()
+
+voteOnComment :: IdeaTitle -> CommentText -> UpDown -> Behavior ()
+voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()
+
+voteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> Behavior ()
+voteOnCommentReply idea comment1 comment2 vote =
+    liftF $ VoteOnCommentReply idea comment1 comment2 vote ()

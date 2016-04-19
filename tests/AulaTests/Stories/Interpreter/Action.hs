@@ -15,6 +15,7 @@ module AulaTests.Stories.Interpreter.Action
     )
 where
 
+import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad (join, unless)
 import Control.Monad.Free
@@ -32,6 +33,7 @@ import qualified Frontend.Page as Page
 import Frontend.Testing as Action (makeTopicTimeout)
 
 import AulaTests.Stories.DSL
+
 
 -- | Client state stores information about the assumptions
 -- of the state of server states, it is also can be used
@@ -53,6 +55,7 @@ run = fmap fst . flip runStateT initialClientState . runClient
 type ActionClient m a = StateT ClientState m a
 
 -- FIXME: Check pre and post conditions
+-- FIXME: Find comment by part of its description
 runClient :: (ActionM m) => Behavior a -> ActionClient m a
 runClient (Pure r) = pure r
 
@@ -92,6 +95,19 @@ runClient (Free (CreateIdea t d c k)) = do
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
 
+runClient (Free (EditIdea ot nt d c k)) = do
+    idea <- precondition $ do
+        Just idea <- findIdeaByTitle ot
+        Nothing <- findIdeaByTitle nt
+        pure idea
+    _ <- step . lift . (Page.editIdea (idea ^. _Id) ^. formProcessor) $
+        ProtoIdea nt (Markdown d) (Just c) (idea ^. ideaLocation)
+    postcondition $ do
+        Nothing <- findIdeaByTitle ot
+        Just _idea <- findIdeaByTitle nt
+        pure ()
+    runClient k
+
 runClient (Free (LikeIdea t k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $ Action.likeIdea (idea ^. _Id)
@@ -113,6 +129,21 @@ runClient (Free (CreateTopic it tt td k)) = do
     postcondition $ return ()
     runClient k
 
+runClient (Free (EditTopic ot nt d k)) = do
+    topic <- precondition $ do
+        Just topic <- findTopicByTitle ot
+        Nothing <- findTopicByTitle nt
+        pure topic
+    _ <- step . lift $ do
+        let editTopicPage = Page.editTopic (topic ^. _Id)
+        -- FIXME: Add idea handling
+        (editTopicPage ^. formProcessor) $ EditTopicData nt (Markdown d) []
+    postcondition $ do
+        Nothing <- findTopicByTitle ot
+        Just _topic <- findTopicByTitle nt
+        pure ()
+    runClient k
+
 runClient (Free (TimeoutTopic t k)) = do
     Just topic <- precondition $ findTopicByTitle t
     _ <- step . lift $ Action.makeTopicTimeout (topic ^. _Id)
@@ -120,7 +151,7 @@ runClient (Free (TimeoutTopic t k)) = do
         Just topic' <- findTopicByTitle t
         let phase1 = topic ^. topicPhase
         let phase2 = topic' ^. topicPhase
-        unless (phase2 `followsPhase` phase1) . fail $ show (phase1, phase2)
+        unless (phase2 `followsPhase` phase1) . fail . ("runClient: " ++) $ show (phase1, phase2)
     runClient k
 
 runClient (Free (MarkIdea t v k)) = do
@@ -152,16 +183,45 @@ runClient (Free (CommentIdea t c k)) = do
     postcondition $ checkIdeaComment t c
     runClient k
 
-runClient (Free (CommentOnComment t cp c k)) = do
-    (idea, comment) <- precondition $ do
-        Just idea <- findIdeaByTitle t
-        let Just comment = findCommentByText idea cp
-        pure (idea, comment)
+runClient (Free (ReplyComment t cp c k)) = do
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     _ <- step . lift $
         (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
+runClient (Free (VoteOnComment t cp v k)) = do
+    -- FIXME: Check if the user already voted, if yes the number of votes
+    -- should be the same.
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
+    _ <- step . lift $ do
+        Action.voteIdeaComment (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) v
+    postcondition $ do
+        Just (_idea, Just comment') <- findIdeaAndComment t cp
+        let noOfVotes  = Map.size $ comment  ^. commentVotes
+        let noOfVotes' = Map.size $ comment' ^. commentVotes
+        noOfVotes' `shouldBe` (noOfVotes + 1)
+    runClient k
+
+runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
+    -- FIXME: Check if the user already voted, if yes the number of votes
+    -- should be the same.
+    Just (idea, Just (comment1, Just comment2)) <-
+        precondition $ findIdeaAndCommentComment t c1 c2
+    _ <- step . lift $ do
+        Action.voteIdeaCommentReply
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment1 ^. _Id)
+            (comment2 ^. _Id)
+            v
+    postcondition $ do
+        Just (_idea, Just (_comment1, Just comment2')) <-
+            findIdeaAndCommentComment t c1 c2
+        let noOfVotes  = Map.size $ comment2  ^. commentVotes
+        let noOfVotes' = Map.size $ comment2' ^. commentVotes
+        noOfVotes' `shouldBe` (noOfVotes + 1)
+        runClient k
 
 -- * helpers
 
@@ -173,6 +233,21 @@ findTopicByTitle t = lift $ query (findTopicBy topicTitle t)
 
 findCommentByText :: Idea -> CommentText -> Maybe Comment
 findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments
+
+findCommentCommentByText :: Comment -> CommentText -> Maybe Comment
+findCommentCommentByText c t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ c ^. commentReplies
+
+findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
+findIdeaAndComment it cp =
+    fmap (fmap (id &&& flip findCommentByText cp)) (findIdeaByTitle it)
+
+findIdeaAndCommentComment
+    :: (ActionM m)
+    => IdeaTitle -> CommentText -> CommentText
+    -> ActionClient m (Maybe (Idea, Maybe (Comment, Maybe Comment)))
+findIdeaAndCommentComment it c1 c2 =
+    (_Just . _2 . _Just %~ (id &&& flip findCommentCommentByText c2))
+    <$> findIdeaAndComment it c1
 
 checkIdeaComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m ()
 checkIdeaComment t c = do
@@ -186,7 +261,10 @@ assert msg False = error $ "assertion failed: " <> show msg
     -- FIXME: give source code location of the call.
 
 shouldBe :: (Monad m, Eq a, Show a) => a -> a -> m ()
-shouldBe actual expected = assert (actual, expected) (actual == expected)
+shouldBe actual expected =
+    assert
+        (unwords [show actual, "should be", show expected])
+        (actual == expected)
     -- FIXME: give source code location of the call.
 
 -- ** Notations for test step sections
