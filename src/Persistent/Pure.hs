@@ -428,12 +428,7 @@ getUsersInClass :: SchoolClass -> Query [User]
 getUsersInClass clss = filter (isClassInRole clss . view userRole) <$> view dbUsers
 
 isClassInRole :: SchoolClass -> Role -> Bool
-isClassInRole clss (Student clss')    = clss == clss'
-isClassInRole clss (ClassGuest clss') = clss == clss'
-isClassInRole _    SchoolGuest        = False
-isClassInRole _    Moderator          = False
-isClassInRole _    Principal          = False
-isClassInRole _    Admin              = False
+isClassInRole clss role = role ^? roleSchoolClass == Just clss
 
 getSchoolClasses :: Query [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
