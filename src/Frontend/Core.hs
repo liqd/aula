@@ -159,15 +159,14 @@ data Frame body
 
 makeLenses ''Frame
 
--- Every 'Get' handler in aula accepts repsonse content types 'HTML' (for normal operation) and
--- 'PlainText' (for generating samples for RenderHtml.  The plaintext version of any page can be
--- requested using curl on the resp. URL with @-H"content-type: text/plain"@.
+-- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
+-- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
+-- plaintext version of any page can be requested using curl on the resp. URL with @-H"content-type:
+-- text/plain"@.
 --
--- (Using this is tricky: (1) cookie authentication is clumsy with curl; and (2) we are using
--- 'FormH' from thentos, which doesn't play along.  (2) can be resolved by collecting the
--- servant-digestive-functors code into a separate package; (1) may be a hint that we should try
--- something else, like adding a form to the admin pages where we can paste a url and cut the sample
--- page code via text fields.)
+-- Using this via `curl` is complicated by the fact that we need cookie authentication, so this
+-- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
+-- for more details).
 type GetH = Get '[HTML, PlainText]
 type PostH = Post '[HTML] ()
 type FormHandlerT p a = FormH '[HTML, PlainText] (FormPageRep p) a
