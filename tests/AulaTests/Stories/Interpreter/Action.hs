@@ -181,6 +181,10 @@ runClient (Free (VoteIdea t v k)) = do
         noOfVotes' `shouldBe` (noOfVotes + 1)
     runClient k
 
+runClient (Free (MoveIdea _i _ot _nt k)) = do
+    -- FIXME: Implement move topic.
+    runClient k
+
 runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     _ <- step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor) (Markdown c)
