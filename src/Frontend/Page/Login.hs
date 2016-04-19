@@ -28,7 +28,7 @@ instance Page PageHomeWithLoginPrompt where
     isPrivatePage _ = False
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
-data LoginDemoHints = LoginDemoHints { fromLoginDemoHints :: [User] }
+data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
   deriving (Eq, Show, Read)
 
 
