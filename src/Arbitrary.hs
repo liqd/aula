@@ -61,6 +61,7 @@ import Config
 import EventLog
 import Frontend.Core
 import Frontend.Page
+import Frontend.Page.Snippet
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
 import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))

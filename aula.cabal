@@ -89,11 +89,11 @@ library
       Frontend.Page
       Frontend.Page.Admin
       Frontend.Page.Category
-      Frontend.Page.Comment
       Frontend.Page.Delegation
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
+      Frontend.Page.Snippet
       Frontend.Page.Static
       Frontend.Page.Topic
       Frontend.Page.User

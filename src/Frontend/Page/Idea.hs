@@ -27,15 +27,14 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               )
 import LifeCycle
 import Frontend.Page.Category
-import Frontend.Page.Comment
 import Frontend.Page.Overview
+import Frontend.Page.Snippet as Snippet
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
 
 import qualified Action (createIdea)
 import qualified Data.Map as Map
 import qualified Data.Text as ST
-import qualified Frontend.Page.Snippet as Snippet
 import qualified Frontend.Path as U
 import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
