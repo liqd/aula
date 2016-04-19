@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), (.~), set, re, pre)
+import Control.Lens (Getter, (^.), (^?), set, re, pre)
 import Control.Monad (zipWithM_)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
@@ -274,29 +274,3 @@ genInitialTestDb = do
     update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()
-
-
--- FIXME
-frameUserHack :: User
-frameUserHack = user
-  where
-    user = User
-      { _userMeta      = metainfo
-      , _userLogin     = "VorNam"
-      , _userFirstName = "Vorname"
-      , _userLastName  = "Name"
-      , _userRole      = Admin
-      , _userProfile   = Profile
-            { _profileAvatar = Nothing
-            , _profileDesc   = Markdown nil
-            }
-      , _userSettings  = UserSettings
-            { _userSettingsPassword = UserPassInitial ""
-            , _userSettingsEmail    = Nothing
-            }
-      }
-    uid = AUID 0
-    oid = AUID 1
-    cUser = _Id .~ uid $ user  -- the user creates himself
-    metainfo :: MetaInfo User
-    metainfo = mkMetaInfo cUser constantSampleTimestamp oid

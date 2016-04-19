@@ -31,6 +31,7 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
+import Arbitrary (constantSampleTimestamp)
 
 
 testConfig :: IO Config
@@ -113,6 +114,30 @@ runFrontendSafeFork cfg = do
           (Network.Wreq.get $ mkServerUri cfg "/")
           (\(_ :: HttpException) -> threadDelay 4900 >> loop)
     loop >> return threadId
+
+someTestUser :: User
+someTestUser = user
+  where
+    user = User
+        { _userMeta      = metainfo
+        , _userLogin     = "VorNam"
+        , _userFirstName = "Vorname"
+        , _userLastName  = "Name"
+        , _userRole      = Admin
+        , _userProfile   = Profile
+            { _profileAvatar = Nothing
+            , _profileDesc   = Markdown nil
+            }
+        , _userSettings  = UserSettings
+            { _userSettingsPassword = UserPassInitial ""
+            , _userSettingsEmail    = Nothing
+            }
+        }
+    uid = AUID 0
+    oid = AUID 1
+    cUser = user & _Id .~ uid -- the user creates himself
+    metainfo :: MetaInfo User
+    metainfo = mkMetaInfo cUser constantSampleTimestamp oid
 
 
 -- * Expectations
