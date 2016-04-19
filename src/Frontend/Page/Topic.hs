@@ -15,14 +15,12 @@ module Frontend.Page.Topic
     , CreateTopic(..)
     , EditTopic(..)
     , IdeasFilterApi
-    , viewTopic, viewTopicPage
+    , viewTopic
     , createTopic
     , editTopic )
 where
 
-import Action ( ActionM, ActionPersist(..), ActionUserHandler, ActionExcept
-              , getCurrentTimestamp
-              )
+import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
 import Frontend.Page.Category
 import Frontend.Page.Overview
@@ -262,13 +260,9 @@ makeFormIdeaSelection ideas =
 
 -- * handlers
 
-viewTopic :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => ViewTopicTab -> AUID Topic -> m (Frame ViewTopic)
-viewTopic tab topicId = viewTopicPage tab topicId >>= makeFrame
-
-viewTopicPage :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
+viewTopic :: (ActionPersist m, ActionUserHandler m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
-viewTopicPage tab topicId = do
+viewTopic tab topicId = do
     ctx <- renderContext
     equery (do
         topic <- maybe404 =<< findTopic topicId

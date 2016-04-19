@@ -79,7 +79,7 @@ type RenderHtmlSource' =
 renderHtmlSource :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
       => ServerT RenderHtmlSource m
 renderHtmlSource (loginByName -> li) =
-       (\iid -> li >> show <$> viewIdeaPage                        iid)
-  :<|> (\tid -> li >> show <$> viewTopicPage (TabAllIdeas Nothing) tid)
+       (\iid -> li >> show <$> viewIdea                        iid)
+  :<|> (\tid -> li >> show <$> viewTopic (TabAllIdeas Nothing) tid)
   :<|> (li >> show . PageUserSettings <$> currentUser)
-  :<|> (\schoolclass -> li >> (show <$> adminSettingsGaPClassesEditPage schoolclass))
+  :<|> (\schoolclass -> li >> (show <$> adminSettingsGaPClassesEdit schoolclass))

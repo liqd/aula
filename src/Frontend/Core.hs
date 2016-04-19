@@ -171,7 +171,7 @@ makeLenses ''Frame
 
 type GetH = Get '[HTML]
 type PostH = Post '[HTML] ()
-type FormHandlerT p a = FormH HTML (FormPageRep p) a
+type FormHandlerT p a = FormH HTML (Frame (FormPageRep p)) a
 type FormHandler p = FormHandlerT p ST
 
 -- | Render Form based Views
@@ -202,7 +202,7 @@ class Page p => FormPage p where
 
 -- | Defines some properties for pages
 class Page p where
-    isPrivatePage :: p -> Bool
+    isPrivatePage :: proxy p -> Bool
     isPrivatePage _ = True
 
     extraPageHeaders  :: p -> Html ()
@@ -218,20 +218,21 @@ instance Page ST where
     isPrivatePage _ = True -- safer default, might need to be changed if needed
 
 instance (Page a, Page b) => Page (Beside a b) where
-    isPrivatePage (Beside a b) = isPrivatePage a || isPrivatePage b
+    isPrivatePage _ = isPrivatePage (Proxy :: Proxy a) || isPrivatePage (Proxy :: Proxy b)
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
 instance Page p => Page (Frame p) where
-    isPrivatePage    = isPrivatePage    . view frameBody
+    isPrivatePage  _ = isPrivatePage (Proxy :: Proxy p)
     extraPageHeaders = extraPageHeaders . view frameBody
 
 makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-          => p -> m (Frame p)
-makeFrame p = do
+          => m p -> m (Frame p)
+makeFrame mp = do
   isli <- isLoggedIn
-  if | not isli && isPrivatePage p -> redirect . absoluteUriPath $ relPath P.Login
-     | isli     || isPrivatePage p -> flip Frame p <$> currentUser
-     | otherwise                   -> return $ PublicFrame p
+  let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
+  if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
+     | isli     || isPrivate -> Frame <$> currentUser <*> mp
+     | otherwise             -> PublicFrame <$> mp
 
 instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
@@ -367,18 +368,16 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
                 span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
-data FormPageRep p = FormPageRep (View (Html ())) ST (Frame p)
+data FormPageRep p = FormPageRep (View (Html ())) ST p
 
 instance Page p => Page (FormPageRep p) where
-    isPrivatePage (FormPageRep _v _a p) = isPrivatePage p
+    isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)
     extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
-    toHtml fop@(FormPageRep v a frp) = frameToHtml $ formPage v form <$> frp
+    toHtml (FormPageRep v a p) =  toHtml $ formPage v form p
       where
-        frameToHtml (Frame usr bdy)   = pageFrame fop (Just usr) (toHtml bdy)
-        frameToHtml (PublicFrame bdy) = pageFrame fop Nothing (toHtml bdy)
         form bdy = DF.childErrorList "" v >> DF.form v a bdy
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
@@ -422,21 +421,21 @@ form formHandler = getH :<|> postH
         r <- guardPage page
         when (isJust r) . redirect . absoluteUriPath $ fromJust r
 
-    getH = do
+    getH = makeFrame $ do
         page <- getPage
         guard page
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
-        FormPageRep v fa <$> makeFrame page
+        pure $ FormPageRep v fa page
 
-    postH formData = do
+    postH formData = makeFrame $ do
         page <- getPage
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
             Just payload -> processor2 page payload >>= redirect
-            Nothing      -> FormPageRep v fa <$> makeFrame page)
+            Nothing      -> pure $ FormPageRep v fa page)
             `finally` cleanupTempCsvFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
