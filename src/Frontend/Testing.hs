@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -15,7 +14,6 @@ import Servant.Missing (throwError500)
 import Thentos.Prelude
 
 import Frontend.Core
-import Frontend.Page
 import Persistent
 import Types
 import Action
