@@ -56,6 +56,7 @@ type ActionClient m a = StateT ClientState m a
 
 -- FIXME: Check pre and post conditions
 -- FIXME: Find comment by part of its description
+-- FIXME: Add email mocking
 runClient :: (ActionM m) => Behavior a -> ActionClient m a
 runClient (Pure r) = pure r
 
@@ -254,6 +255,18 @@ runClient (Free (ReportComment t c k)) = do
             (idea ^. ideaLocation)
             (idea ^. _Id)
             (comment ^. _Id)
+    -- FIXME: Add postcondition checking. Test email sending?
+    runClient k
+
+runClient (Free (ReportCommentReply t c1 c2 k)) = do
+    Just (idea, Just (comment1, Just comment2)) <-
+        precondition $ findIdeaAndCommentComment t c1 c2
+    step . lift $ do
+        Action.reportIdeaCommentReply
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment1 ^. _Id)
+            (comment2 ^. _Id)
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
