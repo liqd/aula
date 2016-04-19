@@ -188,7 +188,7 @@ ideaMode (OnComment ck m) root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
 
 anchor :: IsString s => AUID a -> s
-anchor (AUID c) = fromString $ "comment-" <> show c
+anchor (AUID c) = fromString $ "auid-" <> show c
 
 commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
 commentMode (CommentKey _loc i parents commentId) m root =
