@@ -46,7 +46,7 @@ spec = describe "file upload" $ do
                 `shouldRespond` [codeShouldBe 303]
             get wreq "/user"
                 `shouldRespond` [codeShouldBe 200
-                                ,bodyShouldContain "_fromUserLastName = &quot;Kuhn&quot"]
+                                ,bodyShouldContain "_unUserLastName = &quot;Kuhn&quot"]
 
     describe "csv file parser" $ do
         let ts :: [(String, [LBS])]

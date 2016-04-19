@@ -123,7 +123,7 @@ instance PayloadToEnv ProtoIdea where
 
 instance PayloadToEnv User where
     payloadToEnvMapping _ u = \case
-        "user" -> pure [TextInput $ u ^. userLogin . fromUserLogin]
+        "user" -> pure [TextInput $ u ^. userLogin . unUserLogin]
         "pass" -> pure []
 
 ideaCheckboxValue iids path =

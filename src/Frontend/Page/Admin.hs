@@ -287,7 +287,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                 let renderUserRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserRow user = tr_ $ do
                         td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
-                        td_ $ user ^. userLogin . fromUserLogin . html
+                        td_ $ user ^. userLogin . unUserLogin . html
                         td_ (case user ^. userRole of
                                 Student cl    -> toHtml $ showSchoolClass cl
                                 ClassGuest cl -> toHtml $ showSchoolClass cl
@@ -404,7 +404,7 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                         avatarImgFromHasMeta user
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
-                    toHtml (user ^. userLogin . fromUserLogin)
+                    toHtml (user ^. userLogin . unUserLogin)
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
                     inputSelect_ [class_ "m-stretch"] "user-role" v
@@ -430,7 +430,7 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     th_ nil
                 tbody_ . forM_ users $ \user -> tr_ $ do
                     td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
-                    td_ . toHtml $ user ^. userLogin . fromUserLogin
+                    td_ . toHtml $ user ^. userLogin . unUserLogin
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 

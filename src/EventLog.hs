@@ -72,7 +72,7 @@ instance CSV.ToRecord (URL, EventLogItem) where
     toRecord (domainUrl, EventLogItem ispace timestamp user ev) = CSV.toRecord
         [ showIdeaSpace ispace
         , showTimestamp timestamp
-        , user ^. userLogin . fromUserLogin . csi
+        , user ^. userLogin . unUserLogin . csi
         ] <> f ev
       where
         objDesc :: Either3 Topic Idea Comment -> ST

@@ -246,7 +246,7 @@ instance ToHtml ListItemIdea where
                         h2_ [class_ "ideas-list-title"] $ do
                             idea ^. ideaTitle . html
                             span_ [class_ "ideas-list-author"] $ do
-                                "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . fromUserLogin . html
+                                "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do

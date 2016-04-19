@@ -747,7 +747,7 @@ instance Aeson.ToJSON D3DN where
             ]
 
         renderNode n = object
-            [ "name"   .= (n ^. userLogin . fromUserLogin)
+            [ "name"   .= (n ^. userLogin . unUserLogin)
             , "avatar" .= (n ^. userAvatar)
             , "power"  .= getPower n links
             ]

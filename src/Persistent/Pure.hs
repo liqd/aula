@@ -633,8 +633,8 @@ addFirstUser now proto = do
 mkUserLogin :: ProtoUser -> AUpdate UserLogin
 mkUserLogin protoUser = pick (gen firstn lastn)
   where
-    firstn :: ST = protoUser ^. protoUserFirstName . fromUserFirstName
-    lastn  :: ST = protoUser ^. protoUserLastName  . fromUserLastName
+    firstn :: ST = protoUser ^. protoUserFirstName . unUserFirstName
+    lastn  :: ST = protoUser ^. protoUserLastName  . unUserLastName
 
     pick :: [ST] -> AUpdate UserLogin
     pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)

@@ -444,13 +444,13 @@ data User = User
 
 instance SOP.Generic User
 
-newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
+newtype UserLogin     = UserLogin     { _unUserLogin     :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
-newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
+newtype UserFirstName = UserFirstName { _unUserFirstName :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
-newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
+newtype UserLastName  = UserLastName  { _unUserLastName  :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 type instance Proto User = ProtoUser
