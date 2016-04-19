@@ -346,12 +346,14 @@ instance ToHtml CommentVotesWidget where
         voteButton v = do
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
-                when (CanVoteComment `elem` caps) .
-                    postButton_ [ class_ "btn"
-                                , onclickJs . JsReloadOnClick . P.anchor $ comment ^. _Id
-                                ]
-                                (P.voteComment comment v) $
-                        i_ [class_ $ "icon-thumbs-o-" <> vs] nil
+                let likeButton = if CanVoteComment `elem` caps
+                        then postButton_ [ class_ "btn"
+                                         , onclickJs . JsReloadOnClick . P.anchor $ comment ^. _Id
+                                         ]
+                                     (P.voteComment comment v)
+                        else div_ [class_ "btn"]
+                likeButton $
+                    i_ [class_ $ "icon-thumbs-o-" <> vs] nil
           where vs = cs . lowerFirst $ show v
 
 newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
