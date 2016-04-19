@@ -1,16 +1,17 @@
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DeriveFunctor        #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE MultiWayIf           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE ViewPatterns         #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiWayIf            #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
@@ -165,13 +166,21 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body }
     | PublicFrame               { _frameBody :: body }
-  deriving (Functor)
+  deriving (Show, Read, Functor)
 
 makeLenses ''Frame
 
-type GetH = Get '[HTML]
+-- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
+-- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
+-- plaintext version of any page can be requested using curl on the resp. URL with @-H"content-type:
+-- text/plain"@.
+--
+-- Using this via `curl` is complicated by the fact that we need cookie authentication, so this
+-- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
+-- for more details).
+type GetH = Get '[HTML, PlainText]
 type PostH = Post '[HTML] ()
-type FormHandlerT p a = FormH HTML (Frame (FormPageRep p)) a
+type FormHandlerT p a = FormH '[HTML, PlainText] (Frame (FormPageRep p)) a
 type FormHandler p = FormHandlerT p ST
 
 -- | Render Form based Views
@@ -238,6 +247,9 @@ instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
     toHtml (Frame usr bdy)   = pageFrame bdy (Just usr) (toHtml bdy)
     toHtml (PublicFrame bdy) = pageFrame bdy Nothing (toHtml bdy)
+
+instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
+    mimeRender Proxy = cs . ppShow
 
 pageFrame :: (Monad m, Page p) => p -> Maybe User -> HtmlT m a -> HtmlT m ()
 pageFrame p mUser bdy = do
@@ -306,6 +318,9 @@ footerMarkup = do
                 "Made with \x2665 by Liqd"
                 replicateM_ 5 $ toHtmlRaw nbsp
                 toHtml Config.releaseVersion
+                replicateM_ 5 $ toHtmlRaw nbsp
+                a_ [Lucid.onclick_ "createPageSample()"]
+                    "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
@@ -329,6 +344,9 @@ newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
 
 instance Page (PageShow a)
+
+instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
+    mimeRender Proxy = cs . ppShow
 
 instance Show a => ToHtml (PageShow a) where
     toHtmlRaw = toHtml
@@ -369,6 +387,9 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep (View (Html ())) ST p
+
+instance (Show p) => Show (FormPageRep p) where
+    show (FormPageRep _v _a p) = show p
 
 instance Page p => Page (FormPageRep p) where
     isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)

@@ -12,12 +12,14 @@
 module Frontend
 where
 
+import Control.Exception (assert)
 import Control.Monad.Trans.Except
+import Data.List (partition)
 import Lucid hiding (href_)
 import Network.HTTP.Types
 import Network.Wai
     ( Application, Middleware, Response
-    , responseStatus, responseHeaders, responseBuilder
+    , responseStatus, responseHeaders, responseBuilder, queryString, requestHeaders
     )
 import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort, defaultSettings)
 import Network.Wai.Application.Static
@@ -79,7 +81,10 @@ runFrontend' cfg rp = do
                  . setPort (cfg ^. listenerPort)
                  $ Warp.defaultSettings
 
-    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+    runSettings settings
+        . createPageSamples
+        . catch404
+        . serve aulaTopProxy $ aulaTop cfg app
 
 
 -- * routing tables
@@ -333,3 +338,16 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
         status  = responseStatus resp
         headers = responseHeaders resp
         builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404
+
+
+-- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a
+-- way to extract page samples to feed to @src/RenderHtml.hs@.
+createPageSamples :: Middleware
+createPageSamples app req = app req'
+  where
+    req' = case partition (== ("create_page_sample", Just "true")) $ queryString req of
+        ([], _)      -> req
+        ([_], query) -> req { queryString = query
+                            , requestHeaders = ("Accept", "text/plain") : requestHeaders req
+                            }
+        bad -> assert False $ error ("createPageSamples: impossible: " <> show bad)
