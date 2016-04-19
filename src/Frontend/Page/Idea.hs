@@ -35,6 +35,7 @@ import Persistent.Api hiding (EditIdea)
 import qualified Action (createIdea)
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Frontend.Page.Snippet as Snippet
 import qualified Frontend.Path as U
 import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
@@ -153,6 +154,8 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
+
+            Snippet.juryIdea True idea caps
 
             when False . div_ $ do
                 -- FIXME: needs design/layout
