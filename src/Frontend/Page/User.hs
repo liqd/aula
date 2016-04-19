@@ -170,16 +170,11 @@ instance ToHtml PageUserProfileCreatedIdeas where
                     toHtml ideas
 
 -- | List all the created ideas for the given user.
--- Using @join . persistent $ do ... return $ makeFrame@ will
--- go only once to the database and query everything in one transaction,
--- that ensures data consistency, as other persistent computations
--- can interleave if the compute partial results in more than
--- one round. Same applies here like 'STM' and 'IO'.
-createdIdeas :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => AUID User -> m (Frame PageUserProfileCreatedIdeas)
+createdIdeas :: (ActionPersist m, ActionUserHandler m)
+    => AUID User -> m PageUserProfileCreatedIdeas
 createdIdeas userId = do
     ctx <- renderContext
-    makeFrame =<< equery (do
+    equery (do
         user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx Nothing
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
@@ -230,9 +225,8 @@ renderDelegations _ = do
                         a_ [href_ U.Broken] "UserName, "
                         a_ [href_ U.Broken] "UserName"
 
-delegatedVotes :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m)
-    => AUID User -> m (Frame PageUserProfileDelegatedVotes)
-delegatedVotes userId = makeFrame =<< (do
+delegatedVotes :: ActionPersist m => AUID User -> m PageUserProfileDelegatedVotes
+delegatedVotes userId = do
     let dv = []  -- FIXME
     user :: User <- mquery $ findUser userId
-    pure $ PageUserProfileDelegatedVotes user dv)
+    pure $ PageUserProfileDelegatedVotes user dv

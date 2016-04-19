@@ -13,7 +13,6 @@ where
 
 import Prelude
 
-import Action
 import Frontend.Core
 import Frontend.Prelude
 
@@ -105,5 +104,5 @@ instance ToHtml PageDelegationNetwork where
 
         bigHr
 
-viewDelegationNetwork :: ActionM m => m (Frame PageDelegationNetwork)
-viewDelegationNetwork = makeFrame PageDelegationNetwork
+viewDelegationNetwork :: Applicative m => m PageDelegationNetwork
+viewDelegationNetwork = pure PageDelegationNetwork

@@ -12,12 +12,14 @@
 module Frontend
 where
 
+import Control.Exception (assert)
 import Control.Monad.Trans.Except
+import Data.List (partition)
 import Lucid hiding (href_)
 import Network.HTTP.Types
 import Network.Wai
     ( Application, Middleware, Response
-    , responseStatus, responseHeaders, responseBuilder
+    , responseStatus, responseHeaders, responseBuilder, queryString, requestHeaders
     )
 import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort, defaultSettings)
 import Network.Wai.Application.Static
@@ -79,7 +81,10 @@ runFrontend' cfg rp = do
                  . setPort (cfg ^. listenerPort)
                  $ Warp.defaultSettings
 
-    runSettings settings . catch404 . serve aulaTopProxy $ aulaTop cfg app
+    runSettings settings
+        . createPageSamples
+        . catch404
+        . serve aulaTopProxy $ aulaTop cfg app
 
 
 -- * routing tables
@@ -161,7 +166,7 @@ type AulaMain =
 
 aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
-       Page.viewRooms
+       makeFrame Page.viewRooms
   :<|> aulaSpace
 
   :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
@@ -170,7 +175,7 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> Page.viewDelegationNetwork
+  :<|> makeFrame Page.viewDelegationNetwork
 
   :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
   :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
@@ -248,7 +253,7 @@ type AulaSpace
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
-    =  Page.viewIdea
+    =  makeFrame . Page.viewIdea
   :<|> form . Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteIdea
@@ -259,24 +264,26 @@ ideaApi loc
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
-    =  Page.viewTopics space
+    =  makeFrame (Page.viewTopics space)
   :<|> ideaApi        . IdeaLocationTopic space
 
-  :<|> flip (Page.viewTopic . TabAllIdeas)  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> flip (Page.viewTopic . TabAllIdeas)
-  :<|> flip (Page.viewTopic . TabVotingIdeas)
-  :<|> flip (Page.viewTopic . TabWinningIdeas)
-  :<|> Page.viewTopic TabDelegation
+  :<|> viewTopicTab TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> viewTopicTab TabAllIdeas
+  :<|> viewTopicTab TabVotingIdeas
+  :<|> viewTopicTab TabWinningIdeas
+  :<|> makeFrame . Page.viewTopic TabDelegation
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
+  where
+    viewTopicTab tab tid qf = makeFrame $ Page.viewTopic (tab qf) tid
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
-    =  ideaApi        (IdeaLocationSpace space)
-  :<|> Page.viewIdeas space
-  :<|> topicApi       space
+    =  ideaApi (IdeaLocationSpace space)
+  :<|> makeFrame . Page.viewIdeas space
+  :<|> topicApi                   space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
@@ -284,8 +291,8 @@ type AulaUser =
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser user =
-       Page.createdIdeas   user
-  :<|> Page.delegatedVotes user
+       makeFrame (Page.createdIdeas   user)
+  :<|> makeFrame (Page.delegatedVotes user)
 
 
 type AulaAdmin =
@@ -311,13 +318,13 @@ aulaAdmin :: ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
-  :<|> Page.adminSettingsGaPUsersView
-  :<|> Page.adminSettingsGaPUsersCreate
-  :<|> Page.adminSettingsGaPClassesView
+  :<|> makeFrame Page.adminSettingsGaPUsersView
+  :<|> makeFrame Page.adminSettingsGaPUsersCreate
+  :<|> makeFrame Page.adminSettingsGaPClassesView
   :<|> form Page.adminSettingsGaPClassesCreate
   :<|> form . Page.adminSettingsGaPUserEdit
-  :<|> Page.adminSettingsGaPClassesEdit
-  :<|> Page.adminEventsProtocol
+  :<|> makeFrame . Page.adminSettingsGaPClassesEdit
+  :<|> makeFrame Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing
   :<|> adminEventLogCsv . Just
@@ -339,3 +346,16 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
         status  = responseStatus resp
         headers = responseHeaders resp
         builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404
+
+
+-- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a
+-- way to extract page samples to feed to @src/RenderHtml.hs@.
+createPageSamples :: Middleware
+createPageSamples app req = app req'
+  where
+    req' = case partition (== ("create_page_sample", Just "true")) $ queryString req of
+        ([], _)      -> req
+        ([_], query) -> req { queryString = query
+                            , requestHeaders = ("Accept", "text/plain") : requestHeaders req
+                            }
+        bad -> assert False $ error ("createPageSamples: impossible: " <> show bad)

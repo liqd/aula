@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.5.0
+version:        0.6.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -26,7 +26,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.4.0
+    , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
     , acid-state >=0.14
@@ -121,7 +121,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.4.0
+    , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
     , acid-state >=0.14
@@ -183,7 +183,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.4.0
+    , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
     , acid-state >=0.14
@@ -243,7 +243,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.4.0
+    , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
     , acid-state >=0.14
