@@ -223,6 +223,18 @@ runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
         noOfVotes' `shouldBe` (noOfVotes + 1)
         runClient k
 
+runClient (Free (DeleteComment t c k)) = do
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t c
+    _ <- step . lift $ do
+        Action.deleteIdeaComment
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment ^. _Id)
+    postcondition $ do
+        Just (_idea, Just comment') <- findIdeaAndComment t c
+        (comment' ^. commentDeleted) `shouldBe` True
+    runClient k
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)

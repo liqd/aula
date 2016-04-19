@@ -21,8 +21,9 @@ topicTimeoutStory = do
     let idea1a = "idea1a"
     let topic1 = "topic1"
     let topic1a = "topic1a"
-    let comment1 = "This is a comment1"
-    let comment2 = "This is a comment2"
+    let comment1 = "This is the comment 1"
+    let comment2 = "This is the comment 2"
+    let comment3 = "This is the comment 3"
     login "admin"
     selectIdeaSpace "school"
     createIdea idea1a "desc" CatRules
@@ -32,6 +33,8 @@ topicTimeoutStory = do
     replyComment idea1 comment1 comment2
     voteOnComment idea1 comment1 Up
     voteOnCommentReply idea1 comment1 comment2 Up
+    commentIdea idea1 comment3
+    deleteComment idea1 comment3
     createTopic idea1 topic1a "desc"
     editTopic topic1a topic1 "desc1"
     timeoutTopic topic1
