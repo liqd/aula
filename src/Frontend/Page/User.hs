@@ -133,12 +133,12 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
         pure ()
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
-userHeaderDiv _user =
+userHeaderDiv user =
     div_ $ do
-        div_ [class_ "heroic-avatar"] "Avatar"
-        h1_ [class_ "main-heading"] "Username"
-        span_ [class_ "post-title"] "Klasse"
-        p_ [class_ "sub-header"] "Ein kleiner freier Beschreibungstext ..."  -- FIXME: get this from 'User' value!
+        div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
+        h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
+        span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
+        p_ [class_ "sub-header"] $ user ^. userDesc . html
         div_ [class_ "heroic-btn-group"] $ do
             button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
                 i_ [class_ "icon-bullhorn"] nil
