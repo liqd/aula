@@ -40,9 +40,9 @@ data Step a where
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
     VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
     CommentIdea      :: IdeaTitle -> CommentText -> a -> Step a
-    CommentOnComment :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    ReplyComment     :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     VoteOnComment    :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
-    VoteOnCommentComment :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
+    VoteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -86,12 +86,12 @@ voteIdea title vote = liftF $ VoteIdea title vote ()
 commentIdea :: IdeaTitle -> CommentText -> Behavior ()
 commentIdea title text = liftF $ CommentIdea title text ()
 
-commentOnComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
-commentOnComment title comment text = liftF $ CommentOnComment title comment text ()
+replyComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
+replyComment title comment text = liftF $ ReplyComment title comment text ()
 
 voteOnComment :: IdeaTitle -> CommentText -> UpDown -> Behavior ()
 voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()
 
-voteOnCommentComment :: IdeaTitle -> CommentText -> CommentText -> UpDown -> Behavior ()
-voteOnCommentComment idea comment1 comment2 vote =
-    liftF $ VoteOnCommentComment idea comment1 comment2 vote ()
+voteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> Behavior ()
+voteOnCommentReply idea comment1 comment2 vote =
+    liftF $ VoteOnCommentReply idea comment1 comment2 vote ()

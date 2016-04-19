@@ -183,7 +183,7 @@ runClient (Free (CommentIdea t c k)) = do
     postcondition $ checkIdeaComment t c
     runClient k
 
-runClient (Free (CommentOnComment t cp c k)) = do
+runClient (Free (ReplyComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     _ <- step . lift $
         (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor) (Markdown c)
@@ -203,7 +203,7 @@ runClient (Free (VoteOnComment t cp v k)) = do
         noOfVotes' `shouldBe` (noOfVotes + 1)
     runClient k
 
-runClient (Free (VoteOnCommentComment t c1 c2 v k)) = do
+runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
     -- FIXME: Check if the user already voted, if yes the number of votes
     -- should be the same.
     Just (idea, Just (comment1, Just comment2)) <-
@@ -239,7 +239,7 @@ findCommentCommentByText c t = find ((t ==) . fromMarkdown . _commentText) . Map
 
 findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
 findIdeaAndComment it cp =
-    fmap (fmap (\idea -> (idea, findCommentByText idea cp))) (findIdeaByTitle it)
+    fmap (fmap (id &&& flip findCommentByText cp)) (findIdeaByTitle it)
 
 findIdeaAndCommentComment
     :: (ActionM m)

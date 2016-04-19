@@ -343,9 +343,11 @@ likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea = currentUserAddDb_ . AddVoteToIdea
 
+-- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
 voteIdeaComment loc ideaId = currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId []
 
+-- ASSUMPTION: Idea is in the given idea location.
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
 voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
@@ -353,9 +355,11 @@ voteIdeaCommentReply loc ideaId commentId =
 
 -- * Reporting and deleting comments
 
+-- ASSUMPTION: Idea is in the given idea location.
 deleteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> ActionPersist m => m ()
 deleteIdeaComment loc ideaId = update . DeleteComment . CommentKey loc ideaId []
 
+-- ASSUMPTION: Idea is in the given idea location.
 deleteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment ->
                           ActionPersist m => m ()
 deleteIdeaCommentReply loc ideaId commentId =
@@ -388,6 +392,7 @@ reportCommentById ck = do
         , _msgHtml = Nothing -- Not supported yet
         }
 
+-- ASSUMPTION: Idea is in the given idea location.
 reportIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment
                   -> (ActionPersist m, ActionSendMail m) => m ()
 reportIdeaComment loc ideaId = reportCommentById . CommentKey loc ideaId []

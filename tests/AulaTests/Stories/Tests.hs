@@ -29,9 +29,9 @@ topicTimeoutStory = do
     editIdea idea1a idea1 "desc1" CatRules
     likeIdea idea1
     commentIdea idea1 comment1
-    commentOnComment idea1 comment1 comment2
+    replyComment idea1 comment1 comment2
     voteOnComment idea1 comment1 Up
-    voteOnCommentComment idea1 comment1 comment2 Up
+    voteOnCommentReply idea1 comment1 comment2 Up
     createTopic idea1 topic1a "desc"
     editTopic topic1a topic1 "desc1"
     timeoutTopic topic1
