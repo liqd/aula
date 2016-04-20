@@ -337,7 +337,7 @@ instance Arbitrary IdeaLocation where
 instance Arbitrary User where
     arbitrary = garbitrary <**> (set userRole <$> garbitrary)
 
-instance Arbitrary Profile where
+instance Arbitrary UserProfile where
     arbitrary = garbitrary
 
 instance Arbitrary UserSettings where
@@ -748,7 +748,7 @@ instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""
 instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Profile where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserProfile where toJSON = Aeson.gtoJson
 
 newtype D3DN = D3DN DelegationNetwork
 

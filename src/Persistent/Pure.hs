@@ -606,7 +606,7 @@ userFromProto metainfo uLogin uPassword proto = User
         { _userSettingsPassword = uPassword
         , _userSettingsEmail    = proto ^. protoUserEmail
         }
-    , _userProfile   = Profile
+    , _userProfile   = UserProfile
         { _profileAvatar = Nothing
         , _profileDesc   = proto ^. protoUserDesc
         }

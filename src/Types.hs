@@ -430,13 +430,13 @@ followsPhase _               _                   = False
 
 -- * user
 
-data Profile = Profile
+data UserProfile = UserProfile
     { _profileAvatar :: Maybe URL
     , _profileDesc   :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic Profile
+instance SOP.Generic UserProfile
 
 data UserSettings = UserSettings
     { _userSettingsPassword :: UserPass
@@ -452,7 +452,7 @@ data User = User
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
     , _userRole      :: Role
-    , _userProfile   :: Profile
+    , _userProfile   :: UserProfile
     , _userSettings  :: UserSettings
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -795,7 +795,7 @@ instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
-instance Binary Profile
+instance Binary UserProfile
 instance Binary SchoolClass
 instance Binary Topic
 instance Binary UpDown
@@ -851,7 +851,7 @@ makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''GMetaInfo
 makeLenses ''Phase
-makeLenses ''Profile
+makeLenses ''UserProfile
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
@@ -902,7 +902,7 @@ deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
-deriveSafeCopy 0 'base ''Profile
+deriveSafeCopy 0 'base ''UserProfile
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
 deriveSafeCopy 0 'base ''Settings

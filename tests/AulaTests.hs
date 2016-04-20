@@ -124,7 +124,7 @@ someTestUser = user
         , _userFirstName = "Vorname"
         , _userLastName  = "Name"
         , _userRole      = Admin
-        , _userProfile   = Profile
+        , _userProfile   = UserProfile
             { _profileAvatar = Nothing
             , _profileDesc   = Markdown nil
             }
