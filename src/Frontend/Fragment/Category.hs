@@ -11,13 +11,10 @@
 
 module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
-    , IdeasFilterApi
-    , IdeasFilterQuery
     , categoryFilterButtons
     , categoryToUiText
     , categoryUiTexts
     , formPageSelectCategory
-    , ideasFilterQuery
     , linkToCategory
     , makeFormSelectCategory
     )
@@ -31,15 +28,6 @@ import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
-
-
-type IdeasFilterApi = QueryParam "category" Category
-type IdeasFilterQuery = Maybe Category
-
-ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
-ideasFilterQuery = \case
-    (Just cat) -> filter ((== Just cat) . view ideaCategory)
-    Nothing    -> id
 
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep

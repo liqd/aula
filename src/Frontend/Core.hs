@@ -50,6 +50,10 @@ module Frontend.Core
     , Frame(..), frameBody, frameUser
     , makeFrame
 
+      -- * sort & filter
+    , IdeasFilterApi, IdeasFilterQuery
+    , ideasFilterQuery
+
       -- * js glue
     , JsCallback(..), onclickJs
     )
@@ -439,6 +443,17 @@ footerMarkup = do
                     "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
+
+
+-- * sort & filter
+
+type IdeasFilterApi = QueryParam "category" Category
+type IdeasFilterQuery = Maybe Category
+
+ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
+ideasFilterQuery = \case
+    (Just cat) -> filter ((== Just cat) . view ideaCategory)
+    Nothing    -> id
 
 
 -- * js glue
