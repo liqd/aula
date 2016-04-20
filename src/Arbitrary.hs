@@ -267,6 +267,9 @@ instance Arbitrary ListInfoForIdea where
 instance Arbitrary IdeaCapability where
     arbitrary = garbitrary
 
+instance Arbitrary SortIdeasBy where
+    arbitrary = garbitrary
+
 
 -- * comment
 

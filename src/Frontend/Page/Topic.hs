@@ -108,12 +108,14 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicIdeas _ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
         div_ [class_ "ideas-list"] $ do
-            categoryFilterButtons (topicIdeaLocation topic) (tab ^? viewTopicTabQuery . _1 . _Just)
+            categoryFilterButtons (topicIdeaLocation topic)
+                (fromMaybe (Nothing, Nothing) $ tab ^? viewTopicTabQuery)
             div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
                 i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
                 ul_ [class_ "pop-menu-list"] $ do
                     let mkLink by = Lucid.href_ $
-                          listIdeasWithQuery (topicIdeaLocation topic) (Nothing, Just by)  -- TODO: do not lose category filter
+                          listIdeasWithQuery (topicIdeaLocation topic)
+                              (tab ^? viewTopicTabQuery . _1 . _Just, Just by)
                     li_ [class_ "pop-menu-list-item"] $
                         a_ [mkLink SortIdeasBySupport] "Unterstützung"
                     li_ [class_ "pop-menu-list-item"] $
@@ -279,7 +281,7 @@ viewTopic tab topicId = do
               do
                 let q = fromMaybe (Nothing, Nothing) $ tab ^? viewTopicTabQuery
                 ideas <- ideasRunQuery q <$> findIdeasByTopic topic
-                ideasAndNumVoters <- ListItemIdeas ctx (fst q) <$> (getListInfoForIdea `mapM` ideas)
+                ideasAndNumVoters <- ListItemIdeas ctx q <$> (getListInfoForIdea `mapM` ideas)
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 

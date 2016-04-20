@@ -75,15 +75,15 @@ categoryUiTexts :: IsString s => [(Category, s)]
 categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
-categoryFilterButtons :: Monad m => IdeaLocation -> IdeasFilterQuery -> HtmlT m ()
-categoryFilterButtons loc filterQuery = div_ [class_ "icon-list"] $ do
+categoryFilterButtons :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
+categoryFilterButtons loc (qf, qs) = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) :
-                [ "m-active" | filterQuery == Just cat ]
+                [ "m-active" | qf == Just cat ]
             ] $
-            let filterQuery' = if filterQuery == Just cat
+            let qf' = if qf == Just cat
                   then Nothing
                   else Just cat
-            in a_ [Lucid.href_ $ listIdeasWithQuery loc (filterQuery', Nothing)]  -- TODO: do not lose sort order.
+            in a_ [Lucid.href_ $ listIdeasWithQuery loc (qf', qs)]
                 (categoryToUiText cat)

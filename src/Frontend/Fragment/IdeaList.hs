@@ -36,7 +36,7 @@ data ListItemIdea = ListItemIdea
 data ListItemIdeas =
     ListItemIdeas
         { _ideasAndNumVotersCtx    :: RenderContext
-        , _ideasAndNumVotersFilter :: IdeasFilterQuery
+        , _ideasAndNumVotersFilter :: IdeasQuery
         , _ideasAndNumVotersData   :: [ListInfoForIdea]
         }
   deriving (Eq, Show, Read, Generic)
@@ -84,11 +84,11 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx filterq []) = semanticDiv p $ do
+    toHtml p@(ListItemIdeas _ctx ideaQuery []) = semanticDiv p $ do
         p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
-        mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> filterq
+        mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> fst ideaQuery
 
     toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
         for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic

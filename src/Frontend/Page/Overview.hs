@@ -33,7 +33,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace IdeasFilterQuery ListItemIdeas
+data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace IdeasQuery ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -56,9 +56,9 @@ viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageIdeasOverview
 viewIdeas space ideasQuery = do
     ctx <- renderContext
-    PageIdeasOverview ctx space (fst ideasQuery) <$> equery (do
+    PageIdeasOverview ctx space ideasQuery <$> equery (do
         is  <- ideasRunQuery ideasQuery <$> findWildIdeasBySpace space
-        ListItemIdeas ctx (fst ideasQuery) <$> getListInfoForIdea `mapM` is)
+        ListItemIdeas ctx ideasQuery <$> getListInfoForIdea `mapM` is)
 
 viewTopics :: ActionPersist m => IdeaSpace -> m PageIdeasInDiscussion
 viewTopics space = PageIdeasInDiscussion space <$> query (findTopicsBySpace space)

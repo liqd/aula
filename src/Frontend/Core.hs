@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -69,6 +70,7 @@ import Control.Monad (replicateM_)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String.Conversions
 import Data.Typeable
+import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
@@ -80,6 +82,7 @@ import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -462,7 +465,9 @@ type IdeasSortApi = QueryParam "sortby" SortIdeasBy
 type IdeasSortQuery = Maybe SortIdeasBy
 
 data SortIdeasBy = SortIdeasByAge | SortIdeasBySupport
-  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+
+instance SOP.Generic SortIdeasBy
 
 instance FromHttpApiData SortIdeasBy where
     parseUrlPiece = \case

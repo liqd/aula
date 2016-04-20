@@ -189,7 +189,7 @@ createdIdeas userId = do
     ctx <- renderContext
     equery (do
         user  <- maybe404 =<< findUser userId
-        ideas <- ListItemIdeas ctx Nothing
+        ideas <- ListItemIdeas ctx (Nothing, Nothing)
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
         pure $ PageUserProfileCreatedIdeas ctx user ideas)
 
