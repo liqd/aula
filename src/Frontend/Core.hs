@@ -26,7 +26,7 @@ module Frontend.Core
     , Beside(..)
     , tabSelected
     , redirect
-    , avatarImgFromMaybeURL, avatarImgFromHasMeta
+    , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
     , numLikes, percentLikes
 
       -- * render context
@@ -49,10 +49,6 @@ module Frontend.Core
       -- * frames
     , Frame(..), frameBody, frameUser
     , makeFrame
-
-      -- * TODO: move this section to one or two Fragments module(s).
-    , CommentVotesWidget(..)
-    , AuthorWidget(..)
 
       -- * js glue
     , JsCallback(..), onclickJs
@@ -84,8 +80,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import LifeCycle
-import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
+import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
@@ -444,43 +439,6 @@ footerMarkup = do
                     "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
-
-
--- * TODO: move this section to one or two Fragments module(s).
-
-data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
-
-instance ToHtml CommentVotesWidget where
-    toHtmlRaw = toHtml
-    toHtml p@(CommentVotesWidget caps comment) = semanticDiv p $ do
-        div_ [class_ "comment-votes"] $ do
-            voteButton Up
-            voteButton Down
-      where
-        votes = comment ^. commentVotes
-        voteButton v = do
-            span_ [class_ $ "comment-vote-" <> vs] $ do
-                countCommentVotes v votes ^. showed . html
-                let likeButton = if CanVoteComment `elem` caps
-                        then postButton_ [ class_ "btn"
-                                         , onclickJs . JsReloadOnClick . P.anchor $ comment ^. _Id
-                                         ]
-                                     (P.voteComment comment v)
-                        else div_ [class_ "btn"]
-                likeButton $
-                    i_ [class_ $ "icon-thumbs-o-" <> vs] nil
-          where vs = cs . lowerFirst $ show v
-
-
-newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
-
-instance (Typeable a) => ToHtml (AuthorWidget a) where
-    toHtmlRaw = toHtml
-    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        div_ [class_ "author"] .
-            a_ [href_ $ P.User (mi ^. metaCreatedBy) P.UserIdeas] $ do
-                span_ [class_ "author-image"] $ avatarImgFromMeta mi
-                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . unUserLogin . html
 
 
 -- * js glue
