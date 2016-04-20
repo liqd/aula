@@ -283,7 +283,7 @@ topicApi space
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi (IdeaLocationSpace space)
-  :<|> uncurry . makeFrame . Page.viewIdeas space
+  :<|> curry (makeFrame . Page.viewIdeas space)
   :<|> topicApi                   space
 
 type AulaUser =
