@@ -22,7 +22,7 @@ feasibilityVerdict renderJuryButtons idea caps = div_ $ do
 
     case _ideaJuryResult idea of
         -- Render the mark buttons only for princical
-        -- QUESTION: Can principal change his/her mind?
+        -- FIXME: support principals changing their mind.
         Nothing -> when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
             div_ [class_ "admin-buttons"] $ do
                 button_ [ class_ "btn-cta m-valid"
