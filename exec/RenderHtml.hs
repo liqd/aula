@@ -52,12 +52,10 @@ import Frontend.Prelude hiding ((<.>), (</>))
 
 
 -- | config section: add new page types here.
---
--- TODO: rename pagesView to runPages, pagesForm to runForms?
-pagesView :: forall b.
+pagesPlain :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml a, Page a) => Proxy a -> b)
     -> [b]
-pagesView f =
+pagesPlain f =
     [ f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     , f (Proxy :: Proxy PageAdminSettingsGaPClassesEdit)
     , f (Proxy :: Proxy PageAdminSettingsGaPClassesView)
@@ -171,7 +169,7 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
 -- "1"]]@ to the default 'extraPageHeaders' in "Frontend.Core".
 dynamicRender :: ST -> IO ST
 dynamicRender s = do
-    vs <- sequence $ pagesView (runRW runWriteView) <> pagesForm (runRW runWriteForm)
+    vs <- sequence $ pagesPlain (runRW runWriteView) <> pagesForm (runRW runWriteForm)
     case vs ^? each . _Just of
         Just v -> return v
         Nothing -> error . unlines $
