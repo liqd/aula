@@ -483,7 +483,6 @@ data ProtoUser = ProtoUser
 
 instance SOP.Generic ProtoUser
 
--- Edit topic description and add ideas to topic.
 data EditUserData = EditUserData
     { _editUserFirstName :: UserFirstName
     , _editUserLastName  :: UserLastName
