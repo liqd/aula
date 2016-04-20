@@ -11,11 +11,12 @@ where
 import Text.Digestive
 
 import Action (ActionM, query)
-import Persistent
 import qualified Action
+import Persistent
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
+import qualified Lucid
 
 
 -- * page
@@ -81,12 +82,21 @@ instance ToHtml LoginDemoHints where
     toHtml (LoginDemoHints users) = do
         hr_ []
         div_ $ do
-            "DEMO-SYSTEM.  LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"
+            "DEMO-SYSTEM."
+            br_ []
+            br_ []
+            "mailinator-emails können "
+            a_ [Lucid.href_ "https://mailinator.com/"] "hier eingesehen werden."
+            br_ []
+            br_ []
+            "LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"
+            br_ []
             table_ [class_ "admin-table", style_ "padding: 30px"] $ do
                 tr_ $ do
                     th_ "login"
                     th_ "rolle"
                     th_ "klasse"
+                    th_ "email"
                     th_ "password"
                 (\u -> tr_ $ do
                     td_ . toHtml $ u ^. userLogin . unUserLogin
@@ -98,6 +108,7 @@ instance ToHtml LoginDemoHints where
                               Moderator     -> nil
                               Principal     -> nil
                               Admin         -> nil
+                    td_ . toHtml $ (u ^. userEmailAddress :: ST)
                     td_ . toHtml . (\case (UserPassInitial s) -> s; s -> cs $ show s) $ u ^. userPassword)
                   `mapM_` users
 

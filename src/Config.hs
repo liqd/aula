@@ -13,6 +13,7 @@ module Config
     , PersistenceImpl(..)
     , aulaRoot
     , dbPath
+    , defaultRecipient
     , exposedUrl
     , getSamplesPath
     , htmlStatic
@@ -66,10 +67,11 @@ data PersistenceImpl = AcidStateInMem | AcidStateOnDisk
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON, Enum, Bounded)
 
 data SmtpConfig = SmtpConfig
-    { _senderName   :: String
-    , _senderEmail  :: String
-    , _sendmailPath :: String
-    , _sendmailArgs :: [String]
+    { _senderName       :: String
+    , _senderEmail      :: String
+    , _defaultRecipient :: Maybe String  -- (e.g. for use in demo data.)
+    , _sendmailPath     :: String
+    , _sendmailArgs     :: [String]
    -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
@@ -115,10 +117,12 @@ instance GetCsrfSecret Config where
 
 defaultSmtpConfig :: SmtpConfig
 defaultSmtpConfig = SmtpConfig
-    { _senderName   = "Aula Notifications"
-    , _senderEmail  = "aula@example.com"
-    , _sendmailPath = "/usr/sbin/sendmail"
-    , _sendmailArgs = ["-t"] }
+    { _senderName       = "Aula Notifications"
+    , _senderEmail      = "aula@example.com"
+    , _defaultRecipient = Nothing
+    , _sendmailPath     = "/usr/sbin/sendmail"
+    , _sendmailArgs     = ["-t"]
+    }
 
 defaultPersistConfig :: PersistConfig
 defaultPersistConfig = PersistConfig

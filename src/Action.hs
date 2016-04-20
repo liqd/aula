@@ -232,6 +232,8 @@ addWithUser addA user protoA = do
     now <- getCurrentTimestamp
     update $ addA (EnvWith user now protoA)
 
+-- FIXME: rename @{currentUserAddDb,addWithCurrentUser}*@ for consistency with 'addWithUser'.
+
 currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
                     (EnvWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
