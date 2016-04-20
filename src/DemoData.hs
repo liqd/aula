@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), set, re, pre)
+import Control.Lens (Getter, (^.), (^?), (.~), (#), (&), set, re, pre, _Just)
 import Control.Monad (zipWithM_)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
@@ -26,6 +26,7 @@ import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
 
 import qualified Test.QuickCheck.Gen as QC
+import qualified Config
 
 
 -- * Constants
@@ -152,6 +153,20 @@ genCommentVote comments_in_context students = do
 updateAvatar :: User -> URL -> forall m . ActionM m => m ()
 updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
+addUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
+addUserWithEmailFromConfig puser =
+    setEmailFromConfig puser >>= currentUserAddDb AddUser
+
+addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
+addFirstUserWithEmailFromConfig puser =
+    setEmailFromConfig puser >>= update . AddFirstUser constantSampleTimestamp
+
+setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
+setEmailFromConfig puser = do
+    cfg <- Config.viewConfig
+    let em = cfg ^? Config.smtpConfig . Config.defaultRecipient . _Just . emailAddress
+    pure $ (puser & protoUserEmail .~ em)
+
 
 -- * Universe
 
@@ -164,11 +179,11 @@ mkUniverse = do
 -- for transaction granularity here that speeds things up considerably.)
 universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
-    admin <- update . AddFirstUser constantSampleTimestamp =<< gen rnd genFirstUser
+    admin <- addFirstUserWithEmailFromConfig =<< gen rnd genFirstUser
     loginByUser admin
 
-    generate 3 rnd (genUser (pure Principal)) >>= mapM_ (currentUserAddDb AddUser)
-    generate 8 rnd (genUser (pure Moderator)) >>= mapM_ (currentUserAddDb AddUser)
+    generate 3 rnd (genUser (pure Principal)) >>= mapM_ addUserWithEmailFromConfig
+    generate 8 rnd (genUser (pure Moderator)) >>= mapM_ addUserWithEmailFromConfig
 
     ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
@@ -176,7 +191,7 @@ universe rnd = do
     assert' (not $ null classes)
 
     students' <- generate numberOfStudents rnd (genStudent classes)
-    students  <- mapM (currentUserAddDb AddUser) students'
+    students  <- mapM addUserWithEmailFromConfig students'
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
