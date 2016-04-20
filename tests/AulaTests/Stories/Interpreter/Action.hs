@@ -17,7 +17,7 @@ where
 
 import Control.Arrow ((&&&))
 import Control.Lens
-import Control.Monad (join, unless)
+import Control.Monad (join, unless, void)
 import Control.Monad.Free
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
@@ -56,6 +56,7 @@ type ActionClient m a = StateT ClientState m a
 
 -- FIXME: Check pre and post conditions
 -- FIXME: Find comment by part of its description
+-- FIXME: Add email mocking
 runClient :: (ActionM m) => Behavior a -> ActionClient m a
 runClient (Pure r) = pure r
 
@@ -90,7 +91,7 @@ runClient (Free (CreateIdea t d c k)) = do
     Nothing <- precondition $ findIdeaByTitle t
     Just i <- use csIdeaSpace
     let location = IdeaLocationSpace i
-    _ <- step . lift . (Page.createIdea location ^. formProcessor) $
+    step . lift . (Page.createIdea location ^. formProcessor) $
         ProtoIdea t (Markdown d) (Just c) location
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
@@ -100,7 +101,7 @@ runClient (Free (EditIdea ot nt d c k)) = do
         Just idea <- findIdeaByTitle ot
         Nothing <- findIdeaByTitle nt
         pure idea
-    _ <- step . lift . (Page.editIdea (idea ^. _Id) ^. formProcessor) $
+    step . lift . (Page.editIdea (idea ^. _Id) ^. formProcessor) $
         ProtoIdea nt (Markdown d) (Just c) (idea ^. ideaLocation)
     postcondition $ do
         Nothing <- findIdeaByTitle ot
@@ -119,10 +120,18 @@ runClient (Free (LikeIdea t k)) = do
         noOfLikes' `shouldBe` (noOfLikes + 1)
     runClient k
 
+runClient (Free (DeleteIdea _t k)) = do
+    -- FIXME: Implement delete idea.
+    runClient k
+
+runClient (Free (ReportIdea _t k)) = do
+    -- FIXME: Implement report idea.
+    runClient k
+
 runClient (Free (CreateTopic it tt td k)) = do
     Just idea <- precondition $ findIdeaByTitle it
     Just ideaSpace <- use csIdeaSpace
-    _ <- lift $ do
+    step . lift $ do
         end <- getCurrentTimestamp >>= \now -> query $ phaseEndRefinement now
         (Page.createTopic ideaSpace ^. formProcessor) $
             ProtoTopic tt (Markdown td) "http://url.com" ideaSpace [idea ^. _Id] end
@@ -134,7 +143,7 @@ runClient (Free (EditTopic ot nt d k)) = do
         Just topic <- findTopicByTitle ot
         Nothing <- findTopicByTitle nt
         pure topic
-    _ <- step . lift $ do
+    step . lift $ do
         let editTopicPage = Page.editTopic (topic ^. _Id)
         -- FIXME: Add idea handling
         (editTopicPage ^. formProcessor) $ EditTopicData nt (Markdown d) []
@@ -146,7 +155,7 @@ runClient (Free (EditTopic ot nt d k)) = do
 
 runClient (Free (TimeoutTopic t k)) = do
     Just topic <- precondition $ findTopicByTitle t
-    _ <- step . lift $ Action.makeTopicTimeout (topic ^. _Id)
+    step . lift $ Action.makeTopicTimeout (topic ^. _Id)
     postcondition $ do
         Just topic' <- findTopicByTitle t
         let phase1 = topic ^. topicPhase
@@ -156,7 +165,7 @@ runClient (Free (TimeoutTopic t k)) = do
 
 runClient (Free (MarkIdea t v k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    _ <- step . lift $ case v of
+    step . lift $ case v of
         Left v'  -> (Page.judgeIdea (idea ^. _Id) (ideaJuryResultValueToType v') ^. formProcessor) v'
         Right v' -> Action.markIdeaInResultPhase (idea ^. _Id) v'
     postcondition $ do
@@ -168,7 +177,7 @@ runClient (Free (MarkIdea t v k)) = do
 
 runClient (Free (VoteIdea t v k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    _ <- step . lift $ Action.voteIdea (idea ^. _Id) v
+    step . lift $ Action.voteIdea (idea ^. _Id) v
     postcondition $ do
         Just idea' <- findIdeaByTitle t
         let noOfVotes  = Map.size $ idea  ^. ideaVotes
@@ -177,15 +186,19 @@ runClient (Free (VoteIdea t v k)) = do
         noOfVotes' `shouldBe` (noOfVotes + 1)
     runClient k
 
+runClient (Free (MoveIdea _i _ot _nt k)) = do
+    -- FIXME: Implement move topic.
+    runClient k
+
 runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    _ <- step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor) (Markdown c)
+    step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
 runClient (Free (ReplyComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
-    _ <- step . lift $
+    step . lift $
         (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor) (Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
@@ -194,7 +207,7 @@ runClient (Free (VoteOnComment t cp v k)) = do
     -- FIXME: Check if the user already voted, if yes the number of votes
     -- should be the same.
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
-    _ <- step . lift $ do
+    step . lift $ do
         Action.voteIdeaComment (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) v
     postcondition $ do
         Just (_idea, Just comment') <- findIdeaAndComment t cp
@@ -208,7 +221,7 @@ runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
     -- should be the same.
     Just (idea, Just (comment1, Just comment2)) <-
         precondition $ findIdeaAndCommentComment t c1 c2
-    _ <- step . lift $ do
+    step . lift $ do
         Action.voteIdeaCommentReply
             (idea ^. ideaLocation)
             (idea ^. _Id)
@@ -222,6 +235,41 @@ runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
         let noOfVotes' = Map.size $ comment2' ^. commentVotes
         noOfVotes' `shouldBe` (noOfVotes + 1)
         runClient k
+
+runClient (Free (DeleteComment t c k)) = do
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t c
+    step . lift $ do
+        Action.deleteIdeaComment
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment ^. _Id)
+    postcondition $ do
+        Just (_idea, Just comment') <- findIdeaAndComment t c
+        (comment' ^. commentDeleted) `shouldBe` True
+    runClient k
+
+runClient (Free (ReportComment t c k)) = do
+    Just (idea, Just comment) <- precondition $ findIdeaAndComment t c
+    step . lift $ do
+        Action.reportIdeaComment
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment ^. _Id)
+    -- FIXME: Add postcondition checking. Test email sending?
+    runClient k
+
+runClient (Free (ReportCommentReply t c1 c2 k)) = do
+    Just (idea, Just (comment1, Just comment2)) <-
+        precondition $ findIdeaAndCommentComment t c1 c2
+    step . lift $ do
+        Action.reportIdeaCommentReply
+            (idea ^. ideaLocation)
+            (idea ^. _Id)
+            (comment1 ^. _Id)
+            (comment2 ^. _Id)
+    -- FIXME: Add postcondition checking. Test email sending?
+    runClient k
+
 
 -- * helpers
 
@@ -267,13 +315,14 @@ shouldBe actual expected =
         (actual == expected)
     -- FIXME: give source code location of the call.
 
+
 -- ** Notations for test step sections
 
 precondition :: Monad m => m a -> m a
 precondition = id
 
-step :: Monad m => m a -> m a
-step = id
+step :: Monad m => m a -> m ()
+step = void
 
 postcondition :: Monad m => m a -> m a
 postcondition = id

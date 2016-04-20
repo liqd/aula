@@ -35,14 +35,20 @@ data Step a where
     CreateIdea       :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     EditIdea         :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> a -> Step a
     LikeIdea         :: IdeaTitle -> a -> Step a
+    DeleteIdea       :: IdeaTitle -> a -> Step a
+    ReportIdea       :: IdeaTitle -> a -> Step a
     CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     EditTopic        :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
     VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
+    MoveIdea         :: IdeaTitle -> TopicTitle -> TopicTitle -> a -> Step a
     CommentIdea      :: IdeaTitle -> CommentText -> a -> Step a
     ReplyComment     :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     VoteOnComment    :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
     VoteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
+    ReportComment      :: IdeaTitle -> CommentText -> a -> Step a
+    ReportCommentReply :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    DeleteComment      :: IdeaTitle -> CommentText -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -68,6 +74,12 @@ editIdea oldTitle newTitle desc cat = liftF $ EditIdea oldTitle newTitle desc ca
 likeIdea :: IdeaTitle -> Behavior ()
 likeIdea title = liftF $ LikeIdea title ()
 
+deleteIdea :: IdeaTitle -> Behavior ()
+deleteIdea title = liftF $ DeleteIdea title ()
+
+reportIdea :: IdeaTitle -> Behavior ()
+reportIdea title = liftF $ ReportIdea title ()
+
 createTopic :: IdeaTitle -> TopicTitle -> TopicDescription -> Behavior ()
 createTopic ititle ttitle tdesc = liftF $ CreateTopic ititle ttitle tdesc ()
 
@@ -83,6 +95,9 @@ markIdea title value = liftF $ MarkIdea title value ()
 voteIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
 voteIdea title vote = liftF $ VoteIdea title vote ()
 
+moveIdea :: IdeaTitle -> TopicTitle -> TopicTitle -> Behavior ()
+moveIdea idea oldTopic newTopic = liftF $ MoveIdea idea oldTopic newTopic ()
+
 commentIdea :: IdeaTitle -> CommentText -> Behavior ()
 commentIdea title text = liftF $ CommentIdea title text ()
 
@@ -95,3 +110,13 @@ voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()
 voteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> Behavior ()
 voteOnCommentReply idea comment1 comment2 vote =
     liftF $ VoteOnCommentReply idea comment1 comment2 vote ()
+
+reportComment :: IdeaTitle -> CommentText -> Behavior ()
+reportComment idea comment1 = liftF $ ReportComment idea comment1 ()
+
+reportCommentReply :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
+reportCommentReply idea comment1 comment2 = liftF $ ReportCommentReply idea comment1 comment2 ()
+
+deleteComment :: IdeaTitle -> CommentText -> Behavior ()
+deleteComment idea comment =
+    liftF $ DeleteComment idea comment ()

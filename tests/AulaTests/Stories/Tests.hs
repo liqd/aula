@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
 
-{-# OPTIONS_GHC -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures #-}
 
 module AulaTests.Stories.Tests where
 
@@ -14,15 +14,17 @@ import Types
 
 import AulaTests.Stories.DSL
 
+
+idea1 = "idea1"
+idea1a = "idea1a"
+topic1 = "topic1"
+topic1a = "topic1a"
+comment1 = "This is the comment 1"
+comment2 = "This is the comment 2"
+
 -- FIXME: Idea, Topic creation should be done by different users.
 topicTimeoutStory :: Behavior ()
 topicTimeoutStory = do
-    let idea1 = "idea1"
-    let idea1a = "idea1a"
-    let topic1 = "topic1"
-    let topic1a = "topic1a"
-    let comment1 = "This is a comment1"
-    let comment2 = "This is a comment2"
     login "admin"
     selectIdeaSpace "school"
     createIdea idea1a "desc" CatRules
@@ -39,4 +41,19 @@ topicTimeoutStory = do
     voteIdea idea1 Yes
     timeoutTopic topic1
     markIdea idea1 (Right $ Winning Nothing)
+    logout
+
+-- Collection of steps under development, no test design involved.
+someUserBehavior :: Behavior ()
+someUserBehavior = do
+    login "admin"
+    selectIdeaSpace "school"
+    createIdea idea1 "desc" CatRules
+    commentIdea idea1 comment1
+    replyComment idea1 comment1 comment2
+    reportComment idea1 comment1
+    reportCommentReply idea1 comment1 comment2
+    deleteComment idea1 comment1
+    reportIdea idea1
+    deleteIdea idea1
     logout
