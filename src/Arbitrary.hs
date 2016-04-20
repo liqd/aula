@@ -142,6 +142,9 @@ instance Arbitrary PageUserProfileDelegatedVotes where
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
 
+instance Arbitrary EditUserProfile where
+    arbitrary = EditUserProfile <$> arb
+
 instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicPhaseDuration
 
@@ -334,6 +337,12 @@ instance Arbitrary IdeaLocation where
 instance Arbitrary User where
     arbitrary = garbitrary <**> (set userRole <$> garbitrary)
 
+instance Arbitrary UserProfile where
+    arbitrary = garbitrary
+
+instance Arbitrary UserSettings where
+    arbitrary = garbitrary
+
 instance Arbitrary ProtoUser where
     arbitrary = garbitrary
 
@@ -345,6 +354,9 @@ instance Arbitrary UserFirstName where
 
 instance Arbitrary UserLastName where
     arbitrary = UserLastName <$> arbWord
+
+instance Arbitrary EditUserData where
+    arbitrary = garbitrary
 
 instance Arbitrary Role where
     arbitrary = garbitrary
@@ -633,7 +645,7 @@ mkFishUser mSchoolClass avatarPath = do
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam role (UserPassInitial "dummy password") Nothing
+    let pu = ProtoUser Nothing fnam lnam role (UserPassInitial "dummy password") Nothing (Markdown nil)
     user <- currentUserAddDb AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
@@ -652,7 +664,7 @@ fishDelegationNetworkIO = do
             now <- getCurrentTimestamp
             admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                Admin (UserPassInitial "admin") Nothing
+                Admin (UserPassInitial "admin") Nothing (Markdown nil)
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 
@@ -723,6 +735,7 @@ instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
@@ -734,6 +747,8 @@ instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""
 instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserProfile where toJSON = Aeson.gtoJson
 
 newtype D3DN = D3DN DelegationNetwork
 

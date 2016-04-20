@@ -39,7 +39,6 @@ import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
 import Arbitrary (sampleEventLog)
 import Config
-import DemoData
 import Data.UriPath
 import EventLog
 import Frontend.Core
@@ -146,13 +145,14 @@ type AulaMain =
 
        -- enter user profile
   :<|> User ::> AulaUser
+  :<|> "user" :> "profile"  :> FormHandler EditUserProfile
   :<|> "user" :> "settings" :> FormHandler PageUserSettings
 
        -- enter admin api
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegation" :> "edit" :> FormHandlerT PageDelegateVote () --FIXME: Correct page type
+  :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote
   :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
 
        -- static content
@@ -169,45 +169,60 @@ aulaMain =
        makeFrame Page.viewRooms
   :<|> aulaSpace
 
-  :<|> (Frame frameUserHack . PageShow <$> Action.query getUsers)
+  :<|> makeFrame (PageShow <$> Action.query getUsers)
   :<|> aulaUser
+  :<|> form Page.editUserProfile
   :<|> form Page.userSettings
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
   :<|> makeFrame Page.viewDelegationNetwork
 
-  :<|> pure (Frame frameUserHack PageStaticImprint) -- FIXME: Generate header with menu when the user is logged in.
-  :<|> pure (Frame frameUserHack PageStaticTermsOfUse) -- FIXME: Generate header with menu when the user is logged in.
+  :<|> makeFrame (pure PageStaticImprint)
+  :<|> makeFrame (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
   :<|> (logout >> (redirect . absoluteUriPath . relPath $ U.Login))
+
+type CommentApi
+       -- reply on a comment
+    = "reply" :> FormHandler CommentIdea
+       -- vote on a comment
+  :<|> UpDown ::> PostH
+       -- vote on a reply of a comment
+  :<|> Reply ::> UpDown ::> PostH
+       -- delete a comment
+  :<|> "delete" :> PostH
+       -- delete a comment reply
+  :<|> Reply ::> "delete" :> PostH
+       -- report a comment
+  :<|> "report" :> PostH
+       -- report a comment reply
+  :<|> Reply ::> "report" :> PostH
+
+commentApi :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
+commentApi loc iid cid
+    =  form (Page.replyCommentIdea   loc iid cid)
+  :<|> Action.voteIdeaComment        loc iid cid
+  :<|> Action.voteIdeaCommentReply   loc iid cid
+  :<|> Action.deleteIdeaComment      loc iid cid
+  :<|> Action.deleteIdeaCommentReply loc iid cid
+  :<|> Action.reportIdeaComment      loc iid cid
+  :<|> Action.reportIdeaCommentReply loc iid cid
 
 type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)
     =  Idea ::> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
-  :<|> Idea ::> "edit" :> FormHandlerT Page.EditIdea Idea
+  :<|> Idea ::> "edit" :> FormHandler Page.EditIdea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH
        -- vote on an idea
   :<|> Idea ::> IdeaVoteValue ::> PostH
        -- comment on an idea
-  :<|> Idea ::> "comment" :> FormHandlerT CommentIdea Idea
-       -- reply on a comment
-  :<|> Idea ::> Comment ::> "reply" :> FormHandlerT CommentIdea Idea
-       -- vote on a comment
-  :<|> Idea ::> Comment ::> UpDown ::> PostH
-       -- vote on a reply of a comment
-  :<|> Idea ::> Comment ::> Reply ::> UpDown ::> PostH
-       -- delete a comment
-  :<|> Idea ::> Comment ::> "delete" :> PostH
-       -- delete a comment reply
-  :<|> Idea ::> Comment ::> Reply ::> "delete" :> PostH
-       -- report a comment
-  :<|> Idea ::> Comment ::> "report" :> PostH
-       -- report a comment reply
-  :<|> Idea ::> Comment ::> Reply ::> "report" :> PostH
+  :<|> Idea ::> "comment" :> FormHandler CommentIdea
+       -- API specific to one comment
+  :<|> Idea ::> Comment ::> CommentApi
        -- jury an idea
   :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
        -- create wild idea
@@ -244,13 +259,7 @@ ideaApi loc
   :<|> Action.likeIdea
   :<|> Action.voteIdea
   :<|> (form . Page.commentIdea loc)
-  :<|> app2 form (Page.replyCommentIdea loc)
-  :<|> Action.voteIdeaComment loc
-  :<|> Action.voteIdeaCommentReply loc
-  :<|> Action.deleteIdeaComment loc
-  :<|> Action.deleteIdeaCommentReply loc
-  :<|> Action.reportIdeaComment loc
-  :<|> Action.reportIdeaCommentReply loc
+  :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
   :<|> form (Page.createIdea loc)
 

@@ -28,7 +28,7 @@ import Types
 import qualified Action
 import qualified Action.Implementation as Action
 
-import AulaTests (testConfig, passes)
+import AulaTests (testConfig, passes, someTestUser)
 
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
@@ -88,7 +88,7 @@ addDbSpecProp imp name getXs addX propX =
             t = it "adds one" $ \rp -> do
                     before' <- length <$> runQ rp getXs
                     (now, p) <- liftIO $ generate arbitrary
-                    r <- runU rp $ addX (EnvWith frameUserHack now p)
+                    r <- runU rp $ addX (EnvWith someTestUser now p)
                     after' <- length <$> runQ rp getXs
                     after' `shouldBe` before' + 1
                     propX p r

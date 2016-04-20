@@ -40,6 +40,12 @@ data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes User [Delegat
 
 instance Page PageUserProfileDelegatedVotes
 
+-- | 8.X User profile: Editing the public profile
+data EditUserProfile = EditUserProfile User
+  deriving (Eq, Show, Read)
+
+instance Page EditUserProfile
+
 
 -- * templates
 
@@ -127,12 +133,12 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
         pure ()
 
 userHeaderDiv :: (Monad m) => User -> HtmlT m ()
-userHeaderDiv _user =
+userHeaderDiv user =
     div_ $ do
-        div_ [class_ "heroic-avatar"] "Avatar"
-        h1_ [class_ "main-heading"] "Username"
-        span_ [class_ "post-title"] "Klasse"
-        p_ [class_ "sub-header"] "Ein kleiner freier Beschreibungstext ..."  -- FIXME: get this from 'User' value!
+        div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
+        h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
+        span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
+        p_ [class_ "sub-header"] $ user ^. userDesc . html
         div_ [class_ "heroic-btn-group"] $ do
             button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
                 i_ [class_ "icon-bullhorn"] nil
@@ -146,8 +152,15 @@ userHeaderDiv _user =
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileCreatedIdeas _ctx user ideas) = semanticDiv p $ do
+    toHtml p@(PageUserProfileCreatedIdeas ctx user ideas) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
+            when (ctx ^. renderContextUser . _Id == user ^. _Id) $ do
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] $ do
+                            a_ [href_ U.UserProfile] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                "bearbeiten"
             userHeaderDiv user
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
@@ -230,3 +243,47 @@ delegatedVotes userId = do
     let dv = []  -- FIXME
     user :: User <- mquery $ findUser userId
     pure $ PageUserProfileDelegatedVotes user dv
+
+
+-- ** User Profile: Edit profile
+
+instance FormPage EditUserProfile where
+    type FormPagePayload EditUserProfile = EditUserData
+
+    formAction EditUserProfile{} = U.UserProfile
+
+    redirectOf (EditUserProfile u) _ = U.viewUser u
+
+    makeForm (EditUserProfile user) =
+        EditUserData
+        <$> ("firstname" .: field userFirstName _UserFirstName)
+        <*> ("lastname"  .: field userLastName  _UserLastName)
+        <*> ("desc"      .: field userDesc      _Markdown)
+
+      where
+        -- FIXME: use me elsewhere
+        field :: Monad m => Getter User a -> Traversal' a ST -> DF.Form (Html ()) m a
+        field l p = user ^. l & p %%~ DF.text . Just
+
+    formPage v form p = do
+        semanticDiv p $ do
+            div_ [class_ "container-main popup-page"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    h1_ [class_ "main-heading"] "User profile" -- FIXME english
+                    form $ do
+                        label_ $ do
+                            span_ [class_ "label-text"] "Firstname" -- FIXME english
+                            inputText_ [class_ "m-small"] "firstname" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Lastname" -- FIXME english
+                            inputText_ [class_ "m-small"] "lastname" v
+                        label_ $ do
+                            span_ [class_ "label-text"] "Desc" -- FIXME english
+                            inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
+                        footer_ [class_ "form-footer"] $ do
+                            DF.inputSubmit "Änderungen speichern"
+
+editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
+editUserProfile = FormPageHandler
+    { _formGetPage   = EditUserProfile <$> currentUser
+    , _formProcessor = \up -> update . (`EditUser` up) =<< currentUserId }

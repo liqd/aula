@@ -444,14 +444,14 @@ adminSettingsGaPClassesView :: ActionPersist m => m PageAdminSettingsGaPClassesV
 adminSettingsGaPClassesView = PageAdminSettingsGaPClassesView <$> query getSchoolClasses
 
 adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
-adminSettingsGaPUserEdit uid = FormPageHandler editUserPage editUser
+adminSettingsGaPUserEdit uid = FormPageHandler editUserPage changeUser
   where
     editUserPage = equery $
         PageAdminSettingsGaPUsersEdit
         <$> (maybe404 =<< findUser uid)
         <*> getSchoolClasses
 
-    editUser = update . SetUserRole uid . payloadToUserRole
+    changeUser = update . SetUserRole uid . payloadToUserRole
 
 payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
@@ -553,6 +553,7 @@ adminSettingsGaPClassesCreate = FormPageHandler (pure PageAdminSettingsGaPClasse
             , _protoUserRole      = Student schoolcl
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
+            , _protoUserDesc      = Markdown nil
             }
 
 

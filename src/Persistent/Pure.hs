@@ -82,6 +82,7 @@ module Persistent.Pure
     , mkMetaInfo
     , mkUserLogin
     , modifyUser
+    , editUser
     , setUserEmail
     , setUserPass
     , setUserRole
@@ -392,6 +393,13 @@ modifyIdea = modifyAMap dbIdeaMap
 modifyUser :: AUID User -> (User -> User) -> AUpdate ()
 modifyUser = modifyAMap dbUserMap
 
+editUser :: AUID User -> EditUserData -> AUpdate ()
+editUser uid = modifyUser uid . changeUser
+  where
+    changeUser up = (userFirstName .~ (up ^. editUserFirstName))
+                  . (userLastName  .~ (up ^. editUserLastName))
+                  . (userDesc      .~ (up ^. editUserDesc))
+
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)
 
@@ -428,12 +436,7 @@ getUsersInClass :: SchoolClass -> Query [User]
 getUsersInClass clss = filter (isClassInRole clss . view userRole) <$> view dbUsers
 
 isClassInRole :: SchoolClass -> Role -> Bool
-isClassInRole clss (Student clss')    = clss == clss'
-isClassInRole clss (ClassGuest clss') = clss == clss'
-isClassInRole _    SchoolGuest        = False
-isClassInRole _    Moderator          = False
-isClassInRole _    Principal          = False
-isClassInRole _    Admin              = False
+isClassInRole clss role = role ^? roleSchoolClass == Just clss
 
 getSchoolClasses :: Query [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
@@ -598,10 +601,15 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userLogin     = uLogin
     , _userFirstName = proto ^. protoUserFirstName
     , _userLastName  = proto ^. protoUserLastName
-    , _userAvatar    = Nothing
     , _userRole      = proto ^. protoUserRole
-    , _userPassword  = uPassword
-    , _userEmail     = proto ^. protoUserEmail
+    , _userSettings  = UserSettings
+        { _userSettingsPassword = uPassword
+        , _userSettingsEmail    = proto ^. protoUserEmail
+        }
+    , _userProfile   = UserProfile
+        { _profileAvatar = Nothing
+        , _profileDesc   = proto ^. protoUserDesc
+        }
     }
 
 addUser :: AddDb User

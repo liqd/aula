@@ -25,7 +25,7 @@ module Frontend.Core
     , PageShow(PageShow)
     , Beside(Beside)
     , Frame(..), makeFrame, pageFrame, frameBody, frameUser
-    , FormHandler, FormHandlerT
+    , FormHandler
     , FormPage, FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, guardPage
     , FormPageHandler(..), formGetPage, formProcessor
@@ -180,8 +180,7 @@ makeLenses ''Frame
 -- for more details).
 type GetH = Get '[HTML, PlainText]
 type PostH = Post '[HTML] ()
-type FormHandlerT p a = FormH '[HTML, PlainText] (Frame (FormPageRep p)) a
-type FormHandler p = FormHandlerT p ST
+type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageResult p)
 
 -- | Render Form based Views
 class Page p => FormPage p where

@@ -430,15 +430,30 @@ followsPhase _               _                   = False
 
 -- * user
 
+data UserProfile = UserProfile
+    { _profileAvatar :: Maybe URL
+    , _profileDesc   :: Document
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic UserProfile
+
+data UserSettings = UserSettings
+    { _userSettingsPassword :: UserPass
+    , _userSettingsEmail    :: Maybe EmailAddress
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic UserSettings
+
 data User = User
     { _userMeta      :: MetaInfo User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userAvatar    :: Maybe URL
     , _userRole      :: Role
-    , _userPassword  :: UserPass
-    , _userEmail     :: Maybe EmailAddress
+    , _userProfile   :: UserProfile
+    , _userSettings  :: UserSettings
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -462,10 +477,20 @@ data ProtoUser = ProtoUser
     , _protoUserRole      :: Role
     , _protoUserPassword  :: UserPass
     , _protoUserEmail     :: Maybe EmailAddress
+    , _protoUserDesc      :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoUser
+
+data EditUserData = EditUserData
+    { _editUserFirstName :: UserFirstName
+    , _editUserLastName  :: UserLastName
+    , _editUserDesc      :: Document
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EditUserData
 
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
@@ -770,6 +795,7 @@ instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
+instance Binary UserProfile
 instance Binary SchoolClass
 instance Binary Topic
 instance Binary UpDown
@@ -777,6 +803,7 @@ instance Binary User
 instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
+instance Binary UserSettings
 instance Binary DurationDays
 instance Binary Durations
 instance Binary Quorums
@@ -813,6 +840,7 @@ makeLenses ''DelegationNetwork
 makeLenses ''Document
 makeLenses ''Durations
 makeLenses ''EditTopicData
+makeLenses ''EditUserData
 makeLenses ''Idea
 makeLenses ''IdeaLocation
 makeLenses ''IdeaLike
@@ -823,6 +851,7 @@ makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
 makeLenses ''GMetaInfo
 makeLenses ''Phase
+makeLenses ''UserProfile
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
@@ -838,6 +867,7 @@ makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserPass
+makeLenses ''UserSettings
 makeLenses ''Quorums
 
 deriveSafeCopy 0 'base ''AUID
@@ -853,6 +883,7 @@ deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
+deriveSafeCopy 0 'base ''EditUserData
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaLike
@@ -871,6 +902,7 @@ deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
+deriveSafeCopy 0 'base ''UserProfile
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
 deriveSafeCopy 0 'base ''Settings
@@ -882,6 +914,7 @@ deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserPass
+deriveSafeCopy 0 'base ''UserSettings
 deriveSafeCopy 0 'base ''Quorums
 
 class Ord (IdOf a) => HasMetaInfo a where
@@ -1095,3 +1128,15 @@ countCommentVotes v = countEq v commentVoteValue
 traverseParents :: [AUID Comment] -> Traversal' Comments Comments
 traverseParents []     = id
 traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
+
+userAvatar :: Lens' User (Maybe URL)
+userAvatar = userProfile . profileAvatar
+
+userDesc :: Lens' User Document
+userDesc = userProfile . profileDesc
+
+userPassword :: Lens' User UserPass
+userPassword = userSettings . userSettingsPassword
+
+userEmail :: Lens' User (Maybe EmailAddress)
+userEmail = userSettings . userSettingsEmail

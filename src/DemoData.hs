@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), (.~), set, re, pre)
+import Control.Lens (Getter, (^.), (^?), set, re, pre)
 import Control.Monad (zipWithM_)
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
@@ -235,6 +235,7 @@ genInitialTestDb = do
         , _protoUserRole      = Admin
         , _protoUserPassword  = UserPassInitial "pssst"
         , _protoUserEmail     = Nothing
+        , _protoUserDesc      = Markdown nil
         }
 
     user2 <- update $ AddUser (EnvWith user1 constantSampleTimestamp ProtoUser
@@ -244,6 +245,7 @@ genInitialTestDb = do
         , _protoUserRole      = Admin
         , _protoUserPassword  = UserPassInitial "geheim"
         , _protoUserEmail     = Nothing
+        , _protoUserDesc      = Markdown nil
         })
 
     _wildIdea <- update $ AddIdea (EnvWith user1 constantSampleTimestamp ProtoIdea
@@ -272,24 +274,3 @@ genInitialTestDb = do
     update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()
-
-
--- FIXME
-frameUserHack :: User
-frameUserHack = user
-  where
-    user = User
-      { _userMeta      = metainfo
-      , _userLogin     = "VorNam"
-      , _userFirstName = "Vorname"
-      , _userLastName  = "Name"
-      , _userAvatar    = Nothing
-      , _userRole      = Admin
-      , _userPassword  = UserPassInitial ""
-      , _userEmail     = Nothing
-      }
-    uid = AUID 0
-    oid = AUID 1
-    cUser = _Id .~ uid $ user  -- the user creates himself
-    metainfo :: MetaInfo User
-    metainfo = mkMetaInfo cUser constantSampleTimestamp oid
