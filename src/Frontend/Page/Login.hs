@@ -86,7 +86,7 @@ instance ToHtml LoginDemoHints where
             br_ []
             br_ []
             "mailinator-emails können "
-            a_ [Lucid.href_ "https://mailinator.com/"] $ "hier eingesehen werden."
+            a_ [Lucid.href_ "https://mailinator.com/"] "hier eingesehen werden."
             br_ []
             br_ []
             "LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"

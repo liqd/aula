@@ -165,7 +165,7 @@ setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
 setEmailFromConfig puser = do
     cfg <- Config.viewConfig
     let em = cfg ^? Config.smtpConfig . Config.defaultRecipient . _Just . emailAddress
-    pure $ (puser & protoUserEmail .~ em)
+    pure $ puser & protoUserEmail .~ em
 
 
 -- * Universe
