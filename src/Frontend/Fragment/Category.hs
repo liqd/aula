@@ -15,7 +15,6 @@ module Frontend.Fragment.Category
     , categoryToUiText
     , categoryUiTexts
     , formPageSelectCategory
-    , linkToCategory
     , makeFormSelectCategory
     )
 where
@@ -23,7 +22,6 @@ where
 import Frontend.Prelude
 
 import qualified Data.Text as ST
-import qualified Frontend.Path as U
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -77,11 +75,6 @@ categoryUiTexts :: IsString s => [(Category, s)]
 categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
-linkToCategory :: IdeaLocation -> Maybe Category -> ST
-linkToCategory loc mcat =
-       (absoluteUriPath . relPath . U.listIdeas $ loc)
-    <> maybe nil (("?category=" <>) . toUrlPiece) mcat
-
 categoryFilterButtons :: Monad m => IdeaLocation -> IdeasFilterQuery -> HtmlT m ()
 categoryFilterButtons loc filterQuery = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
@@ -92,5 +85,5 @@ categoryFilterButtons loc filterQuery = div_ [class_ "icon-list"] $ do
             let filterQuery' = if filterQuery == Just cat
                   then Nothing
                   else Just cat
-            in a_ [Lucid.href_ $ linkToCategory loc filterQuery']
+            in a_ [Lucid.href_ $ listIdeasWithQuery loc (filterQuery', Nothing)]  -- TODO: do not lose sort order.
                 (categoryToUiText cat)

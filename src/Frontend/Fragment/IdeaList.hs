@@ -45,6 +45,8 @@ instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
 instance SOP.Generic ListItemIdeas
 
+-- TODO: ListItemIdea should contain category filter and sort order menu (which would have the nice
+-- effect that wild ideas can't help but have a sort button as well).
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml

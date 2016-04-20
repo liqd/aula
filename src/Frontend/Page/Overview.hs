@@ -53,12 +53,12 @@ viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageRoomsOverview
 viewRooms = PageRoomsOverview <$> getSpacesForCurrentUser
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
-    => IdeaSpace -> IdeasFilterQuery -> m PageIdeasOverview
-viewIdeas space mcat = do
+    => IdeaSpace -> IdeasQuery -> m PageIdeasOverview
+viewIdeas space ideasQuery = do
     ctx <- renderContext
-    PageIdeasOverview ctx space mcat <$> equery (do
-        is  <- ideasFilterQuery mcat <$> findWildIdeasBySpace space
-        ListItemIdeas ctx mcat <$> getListInfoForIdea `mapM` is)
+    PageIdeasOverview ctx space (fst ideasQuery) <$> equery (do
+        is  <- ideasRunQuery ideasQuery <$> findWildIdeasBySpace space
+        ListItemIdeas ctx (fst ideasQuery) <$> getListInfoForIdea `mapM` is)
 
 viewTopics :: ActionPersist m => IdeaSpace -> m PageIdeasInDiscussion
 viewTopics space = PageIdeasInDiscussion space <$> query (findTopicsBySpace space)

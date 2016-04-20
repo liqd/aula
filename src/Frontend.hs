@@ -235,10 +235,10 @@ type TopicApi =
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
   :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
 
        -- create new topic
@@ -249,7 +249,7 @@ type TopicApi =
 type AulaSpace
     =  IdeaApi
        -- browse wild ideas in an idea space
-  :<|> "ideas" :> IdeasFilterApi :> GetH (Frame PageIdeasOverview)
+  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
   :<|> TopicApi
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
@@ -278,12 +278,12 @@ topicApi space
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
   where
-    viewTopicTab tab tid qf = makeFrame $ Page.viewTopic (tab qf) tid
+    viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (qf, qs)) tid
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi (IdeaLocationSpace space)
-  :<|> makeFrame . Page.viewIdeas space
+  :<|> (\qf qs -> makeFrame $ Page.viewIdeas space (qf, qs))
   :<|> topicApi                   space
 
 type AulaUser =

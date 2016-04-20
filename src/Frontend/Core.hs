@@ -52,7 +52,10 @@ module Frontend.Core
 
       -- * sort & filter
     , IdeasFilterApi, IdeasFilterQuery
-    , ideasFilterQuery
+    , IdeasSortApi, IdeasSortQuery, SortIdeasBy(..)
+    , IdeasQuery
+    , ideasRunQuery
+    , listIdeasWithQuery
 
       -- * js glue
     , JsCallback(..), onclickJs
@@ -63,6 +66,7 @@ import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_)
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.String.Conversions
 import Data.Typeable
 import GHC.TypeLits (Symbol)
@@ -453,6 +457,51 @@ ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
 ideasFilterQuery = \case
     (Just cat) -> filter ((== Just cat) . view ideaCategory)
     Nothing    -> id
+
+type IdeasSortApi = QueryParam "sortby" SortIdeasBy
+type IdeasSortQuery = Maybe SortIdeasBy
+
+data SortIdeasBy = SortIdeasByAge | SortIdeasBySupport
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
+
+instance FromHttpApiData SortIdeasBy where
+    parseUrlPiece = \case
+        "age" -> Right SortIdeasByAge
+        "sup" -> Right SortIdeasBySupport
+        _     -> Left "no parse"
+
+instance ToHttpApiData SortIdeasBy where
+    toUrlPiece = \case
+        SortIdeasByAge     -> "age"
+        SortIdeasBySupport -> "sup"
+
+ideasSortQuery :: IdeasSortQuery -> [Idea] -> [Idea]
+ideasSortQuery = f . fromMaybe minBound
+  where
+    f SortIdeasByAge     = age
+    f SortIdeasBySupport = sup . age
+
+    age = sortOn $ ideaLikes . to length
+    sup = sortOn createdAt
+
+type IdeasQuery = (IdeasFilterQuery, IdeasSortQuery)
+
+ideasRunQuery :: IdeasQuery -> [Idea] -> [Idea]
+ideasRunQuery (f, s) = ideasSortQuery s . ideasFilterQuery f
+
+listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> URL
+listIdeasWithQuery loc (qf, qs) = (absoluteUriPath . relPath . P.listIdeas $ loc)
+                               <> renderBoth (catMaybes [renderFilter <$> qf, renderSort <$> qs])
+  where
+    renderFilter :: Category -> ST
+    renderFilter v = "category=" <> toUrlPiece v
+
+    renderSort :: SortIdeasBy -> ST
+    renderSort v = "sortby=" <> toUrlPiece v
+
+    renderBoth :: [ST] -> ST
+    renderBoth []  = nil
+    renderBoth kvs = "?" <> ST.intercalate "&" kvs
 
 
 -- * js glue
