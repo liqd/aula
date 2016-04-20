@@ -14,7 +14,7 @@ import qualified Frontend.Path as U
 
 
 feasibilityVerdict :: Bool -> Idea -> [IdeaCapability] -> Monad m => HtmlT m ()
-feasibilityVerdict renderJuryButtons idea caps = div_ $ do
+feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
         explToHtml (Markdown text) = do
             p_ "Begründung:"

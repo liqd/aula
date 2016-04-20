@@ -383,6 +383,8 @@ instance FormPage JudgeIdea where
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 
     redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic
+        -- FIXME: we would like to say `U.listTopicIdeas topic </#> U.anchor (idea ^. _Id)` here,
+        -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
