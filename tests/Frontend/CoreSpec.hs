@@ -123,7 +123,7 @@ instance PayloadToEnv ProtoIdea where
 
 instance PayloadToEnv User where
     payloadToEnvMapping _ u = \case
-        "user" -> pure [TextInput $ u ^. userLogin . fromUserLogin]
+        "user" -> pure [TextInput $ u ^. userLogin . unUserLogin]
         "pass" -> pure []
 
 ideaCheckboxValue iids path =
@@ -157,8 +157,8 @@ instance PayloadToEnv UserSettingData where
 
 instance PayloadToEnv Durations where
     payloadToEnvMapping _ (Durations elab vote) = \case
-        "elab-duration" -> pure [TextInput (cs . show . fromDurationDays $ elab)]
-        "vote-duration" -> pure [TextInput (cs . show . fromDurationDays $ vote)]
+        "elab-duration" -> pure [TextInput (cs . show . unDurationDays $ elab)]
+        "vote-duration" -> pure [TextInput (cs . show . unDurationDays $ vote)]
 
 instance PayloadToEnv Quorums where
     payloadToEnvMapping _ (Quorums school clss) = \case

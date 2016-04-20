@@ -286,7 +286,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                     div_ [class_ "pop-menu"] $ do
                         div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
                         span_ [class_ "user-name"] $ do
-                            "Hi " <> (usr ^. userLogin . fromUserLogin . html)
+                            "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
@@ -383,7 +383,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
         div_ [class_ "author"] .
             a_ [href_ $ P.User (mi ^. metaCreatedBy) P.UserIdeas] $ do
                 span_ [class_ "author-image"] $ avatarImgFromMeta mi
-                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . fromUserLogin . html
+                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . unUserLogin . html
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep (View (Html ())) ST p

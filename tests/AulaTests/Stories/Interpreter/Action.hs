@@ -232,10 +232,10 @@ findTopicByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Topic)
 findTopicByTitle t = lift $ query (findTopicBy topicTitle t)
 
 findCommentByText :: Idea -> CommentText -> Maybe Comment
-findCommentByText i t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ i ^. ideaComments
+findCommentByText i t = find ((t ==) . unMarkdown . _commentText) . Map.elems $ i ^. ideaComments
 
 findCommentCommentByText :: Comment -> CommentText -> Maybe Comment
-findCommentCommentByText c t = find ((t ==) . fromMarkdown . _commentText) . Map.elems $ c ^. commentReplies
+findCommentCommentByText c t = find ((t ==) . unMarkdown . _commentText) . Map.elems $ c ^. commentReplies
 
 findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
 findIdeaAndComment it cp =

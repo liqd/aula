@@ -86,7 +86,7 @@ csi = iso cs cs
 showed :: Show a => Getter a String
 showed = to show
 
-newtype DurationDays = DurationDays { fromDurationDays :: Int }
+newtype DurationDays = DurationDays { unDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
 instance SOP.Generic DurationDays
@@ -444,13 +444,13 @@ data User = User
 
 instance SOP.Generic User
 
-newtype UserLogin     = UserLogin     { _fromUserLogin     :: ST }
+newtype UserLogin     = UserLogin     { _unUserLogin     :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
-newtype UserFirstName = UserFirstName { _fromUserFirstName :: ST }
+newtype UserFirstName = UserFirstName { _unUserFirstName :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
-newtype UserLastName  = UserLastName  { _fromUserLastName  :: ST }
+newtype UserLastName  = UserLastName  { _unUserLastName  :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
 type instance Proto User = ProtoUser
@@ -653,12 +653,12 @@ instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
 type MetaInfo a = GMetaInfo a (KeyOf a)
 
 -- | Markdown content.
-newtype Document = Markdown { fromMarkdown :: ST }
+newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance ToHtml Document where
-    toHtml    = toHtml    . fromMarkdown
-    toHtmlRaw = toHtmlRaw . fromMarkdown
+    toHtml    = toHtml    . unMarkdown
+    toHtmlRaw = toHtmlRaw . unMarkdown
 
 
 -- * general-purpose types
@@ -669,7 +669,7 @@ instance ToHtml Document where
 -- a newtype to prevent them; see also: #31.)
 type URL = ST
 
-newtype Timestamp = Timestamp { fromTimestamp :: UTCTime }
+newtype Timestamp = Timestamp { unTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
 
 instance Binary Timestamp where
@@ -688,7 +688,7 @@ parseTimestamp :: String -> Maybe Timestamp
 parseTimestamp = fmap Timestamp . parseTimeM True defaultTimeLocale timestampFormat
 
 showTimestamp :: Timestamp -> String
-showTimestamp = formatTime defaultTimeLocale timestampFormat . fromTimestamp
+showTimestamp = formatTime defaultTimeLocale timestampFormat . unTimestamp
 
 timestampFormat :: String
 timestampFormat = "%F_%T_%q"

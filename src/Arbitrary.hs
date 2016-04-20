@@ -417,7 +417,7 @@ instance (Generic id, Arbitrary id) => Arbitrary (GMetaInfo a id) where
     arbitrary = garbitrary
 
 instance Arbitrary Document where
-    arbitrary = Markdown . ST.unlines . fmap fromParagraph <$> scale (`div` 5) arb
+    arbitrary = Markdown . ST.unlines . fmap unParagraph <$> scale (`div` 5) arb
 
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
@@ -594,7 +594,7 @@ arbPhrase = (+ 3) . (`mod` 5) <$> arbitrary >>= arbPhraseOf
 arbPhraseOf :: Int -> Gen ST
 arbPhraseOf n = ST.intercalate " " <$> replicateM n arbWord
 
-newtype Paragraph = Paragraph { fromParagraph :: ST }
+newtype Paragraph = Paragraph { unParagraph :: ST }
 
 instance Arbitrary Paragraph where
     arbitrary = Paragraph <$> (arbitrary >>= create . (+ 13) . abs)
@@ -747,7 +747,7 @@ instance Aeson.ToJSON D3DN where
             ]
 
         renderNode n = object
-            [ "name"   .= (n ^. userLogin . fromUserLogin)
+            [ "name"   .= (n ^. userLogin . unUserLogin)
             , "avatar" .= (n ^. userAvatar)
             , "power"  .= getPower n links
             ]

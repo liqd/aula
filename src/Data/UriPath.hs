@@ -20,7 +20,7 @@ import Data.String.Conversions
 
 import qualified Data.Text as ST
 
-newtype UriPart = SlashFreeUriPart { fromUriPart :: ST }
+newtype UriPart = SlashFreeUriPart { unUriPart :: ST }
 
 instance IsString UriPart where
     fromString s
@@ -28,7 +28,7 @@ instance IsString UriPart where
         | otherwise    = SlashFreeUriPart . cs $ s
 
 instance s ~ ST => ConvertibleStrings UriPart s where
-    convertString = fromUriPart
+    convertString = unUriPart
 
 -- | An @UriPath@ is a list of @UriPart@s stored as a difference list.
 newtype UriPath = DiffUriParts { appendUriParts :: [UriPart] -> [UriPart] }
