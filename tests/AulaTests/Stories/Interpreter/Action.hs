@@ -270,6 +270,7 @@ runClient (Free (ReportCommentReply t c1 c2 k)) = do
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)
@@ -313,6 +314,7 @@ shouldBe actual expected =
         (unwords [show actual, "should be", show expected])
         (actual == expected)
     -- FIXME: give source code location of the call.
+
 
 -- ** Notations for test step sections
 
