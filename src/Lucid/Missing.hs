@@ -4,6 +4,9 @@
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE TypeFamilies          #-}
 
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
+
+
 -- | (FIXME: push most of this upstream to lucid or digestive-functors-lucid?  it'll be tricky in
 -- some places as we are using Data.UriPath from this package.)
 module Lucid.Missing

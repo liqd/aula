@@ -266,7 +266,7 @@ ideaApi loc
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
     =  makeFrame (Page.viewTopics space)
-  :<|> ideaApi        . IdeaLocationTopic space
+  :<|> ideaApi . IdeaLocationTopic space
 
   :<|> viewTopicTab TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
   :<|> viewTopicTab TabAllIdeas

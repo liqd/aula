@@ -13,7 +13,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Core
     ( -- * helpers for routing tables
