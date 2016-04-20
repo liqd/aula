@@ -33,13 +33,12 @@ data ListItemIdea = ListItemIdea
       }
   deriving (Eq, Show, Read, Generic)
 
-data ListItemIdeas =
-    ListItemIdeas
-        { _ideasAndNumVotersCtx    :: RenderContext  -- TODO: rename field accessors to match type name.
-        , _ideasAndNumVotersLocation :: IdeaLocation
-        , _ideasAndNumVotersFilter :: IdeasQuery
-        , _ideasAndNumVotersData   :: [ListInfoForIdea]
-        }
+data ListItemIdeas = ListItemIdeas
+      { _listItemIdeasCtx      :: RenderContext
+      , _listItemIdeasLocation :: IdeaLocation
+      , _listItemIdeasFilter   :: IdeasQuery
+      , _listItemIdeasData     :: [ListInfoForIdea]
+      }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic WhatListPage
