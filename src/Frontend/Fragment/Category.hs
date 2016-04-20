@@ -9,7 +9,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
-module Frontend.Page.Category
+module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
     , IdeasFilterApi
     , IdeasFilterQuery

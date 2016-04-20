@@ -26,8 +26,8 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , markIdeaInJuryPhase
               )
 import LifeCycle
+import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
-import Frontend.Page.Category
 import Frontend.Page.Overview
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)

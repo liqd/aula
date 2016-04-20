@@ -19,7 +19,7 @@ module Frontend.Page.Overview
 where
 
 import Action
-import Frontend.Page.Category
+import Frontend.Fragment.Category
 import Frontend.Prelude
 import LifeCycle
 
