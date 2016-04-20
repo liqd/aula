@@ -28,6 +28,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
 import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
+import Frontend.Fragment.QuorumBar
 import Frontend.Page.Overview
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)

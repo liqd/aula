@@ -61,6 +61,7 @@ import Config
 import EventLog
 import Frontend.Core
 import Frontend.Fragment.Comment
+import Frontend.Fragment.IdeaList
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
 import LifeCycle
