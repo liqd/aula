@@ -62,8 +62,7 @@ module Frontend.Core
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
-import Control.Monad (when, replicateM_)
-import Data.Maybe (isJust, fromJust)
+import Control.Monad (replicateM_)
 import Data.String.Conversions
 import Data.Typeable
 import GHC.TypeLits (Symbol)
@@ -321,7 +320,7 @@ form formHandler = getH :<|> postH
 
     guard page = do
         r <- guardPage page
-        when (isJust r) . redirect . absoluteUriPath $ fromJust r
+        maybe (pure ()) (redirect . absoluteUriPath) r
 
     getH = makeFrame $ do
         page <- getPage
