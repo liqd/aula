@@ -107,6 +107,9 @@ app2 f g x y = f $ g x y
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
 
+sortOnDesc :: Ord b => Getter a b -> [a] -> [a]
+sortOnDesc l = reverse . sortOn l
+
 
 -- * prototypes for types
 
