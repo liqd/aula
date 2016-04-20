@@ -28,6 +28,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
 import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
+import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
@@ -153,6 +154,8 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
+
+            feasibilityVerdict True idea caps
 
             when False . div_ $ do
                 -- FIXME: needs design/layout
@@ -380,6 +383,8 @@ instance FormPage JudgeIdea where
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 
     redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic
+        -- FIXME: we would like to say `U.listTopicIdeas topic </#> U.anchor (idea ^. _Id)` here,
+        -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
