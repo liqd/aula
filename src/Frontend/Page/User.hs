@@ -179,7 +179,8 @@ createdIdeas userId = do
     ctx <- renderContext
     equery (do
         user  <- maybe404 =<< findUser userId
-        ideas <- ListItemIdeas ctx (IdeaLocationSpace SchoolSpace) (Nothing, Nothing)
+        ideas <- ListItemIdeas ctx IdeaInUserProfile
+                    (IdeaLocationSpace SchoolSpace) (Nothing, Nothing)
 
                     -- TODO:
                     -- * there are no queries for this page.  but we probably want that.

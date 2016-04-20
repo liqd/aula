@@ -35,6 +35,7 @@ data ListItemIdea = ListItemIdea
 
 data ListItemIdeas = ListItemIdeas
       { _listItemIdeasCtx      :: RenderContext
+      , _listItemIdeasWhatPage :: WhatListPage
       , _listItemIdeasLocation :: IdeaLocation
       , _listItemIdeasFilter   :: IdeasQuery
       , _listItemIdeasData     :: [ListInfoForIdea]
@@ -82,16 +83,16 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx loc ideaQuery []) = semanticDiv p $ do
+    toHtml p@(ListItemIdeas _ctx _whatPage loc ideaQuery []) = semanticDiv p $ do
         ideaListHeader loc ideaQuery
         p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> fst ideaQuery
 
-    toHtml p@(ListItemIdeas ctx loc ideaQuery ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(ListItemIdeas ctx whatPage loc ideaQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader loc ideaQuery
-        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic  -- TODO: IdeaInViewTopic shouldn't be fix here, no?
+        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
 
 
 ideaListHeader :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()

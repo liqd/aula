@@ -268,7 +268,7 @@ viewTopic tab topicId = do
                     ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
                                $ tab ^? viewTopicTabQuery
                 ideas <- ideasRunQuery ideasQuery <$> findIdeasByTopic topic
-                ideasAndNumVoters <- ListItemIdeas ctx loc ideasQuery <$>
+                ideasAndNumVoters <- ListItemIdeas ctx IdeaInViewTopic loc ideasQuery <$>
                                             (getListInfoForIdea `mapM` ideas)
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
