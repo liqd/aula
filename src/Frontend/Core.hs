@@ -38,7 +38,6 @@ module Frontend.Core
     , html
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromHasMeta, avatarImgFromMeta
-    -- Test only  -- (TODO: "Test only" comment should be removed, right?)
     , FormPageRep(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
     , numLikes
     , percentLikes
