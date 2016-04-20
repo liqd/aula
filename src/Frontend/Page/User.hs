@@ -181,13 +181,6 @@ createdIdeas userId = do
         user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) (Nothing, Nothing)
-
-                    -- TODO:
-                    -- * there are no queries for this page.  but we probably want that.
-                    -- * idea location is used to calculate the urls for the filter and sort links.
-                    --   for users, we need something slightly different.  shouldn't be too hard to
-                    --   refactor that, though.
-
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
         pure $ PageUserProfileCreatedIdeas ctx user ideas)
 

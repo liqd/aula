@@ -83,20 +83,23 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx _whatPage loc ideaQuery []) = semanticDiv p $ do
-        ideaListHeader loc ideaQuery
+    toHtml p@(ListItemIdeas _ctx whatPage loc ideaQuery []) = semanticDiv p $ do
+        ideaListHeader whatPage loc ideaQuery
         p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> fst ideaQuery
 
     toHtml p@(ListItemIdeas ctx whatPage loc ideaQuery ideasAndNumVoters) = semanticDiv p $ do
-        ideaListHeader loc ideaQuery
+        ideaListHeader whatPage loc ideaQuery
         for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
 
 
-ideaListHeader :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
-ideaListHeader loc ideaQuery = do
+-- | FUTUREWORK: there are no queries for IdeaInUserProfile.  to implement that, we need to refactor
+-- the idea location that is currently used to calculate the urls for the filter and sort links.
+ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
+ideaListHeader IdeaInUserProfile _ _ = nil
+ideaListHeader _ loc ideaQuery = do
     categoryFilterButtons loc ideaQuery
 
     div_ [class_ "btn-settings pop-menu"] $ do
