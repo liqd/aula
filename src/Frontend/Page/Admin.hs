@@ -69,6 +69,11 @@ data PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEdit User [SchoolC
 
 instance Page PageAdminSettingsGaPUsersEdit
 
+data PageAdminSettingsGaPUserDelete = PageAdminSettingsGaPUserDelete User
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsGaPUserDelete
+
 data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
   deriving (Eq, Show, Read)
 
@@ -120,6 +125,9 @@ instance ToMenuItem PageAdminSettingsGaPUsersCreate where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPUsersEdit where
+    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+
+instance ToMenuItem PageAdminSettingsGaPUserDelete where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
 instance ToMenuItem PageAdminSettingsGaPClassesView where
@@ -413,7 +421,7 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                     inputSelect_ [class_ "m-stretch"]  "user-class" v
                 a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                 div_ [class_ "admin-buttons"] $ do
-                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
+                    a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml PageAdminSettingsGaPClassesEdit where
@@ -461,6 +469,36 @@ adminSettingsGaPClassesEdit :: ActionPersist m => SchoolClass -> m PageAdminSett
 adminSettingsGaPClassesEdit clss =
     PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
 
+instance FormPage PageAdminSettingsGaPUserDelete where
+    type FormPagePayload PageAdminSettingsGaPUserDelete = ()
+
+    type FormPageResult PageAdminSettingsGaPUserDelete = ()
+
+    formAction (PageAdminSettingsGaPUserDelete user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
+
+    redirectOf _ _ = U.Admin $ U.AdminAccess PermUserView
+
+    makeForm _ = pure ()
+
+    formPage _v form p@(PageAdminSettingsGaPUserDelete user) =
+        adminFrame p . semanticDiv p . form $ do
+            p_ "Are you sure???"
+            a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Cancel"
+            DF.inputSubmit "Nutzer löschen"
+
+    guardPage _ = do
+        role <- view userRole <$> currentUser
+        -- FIXME: Log invalid user deletion attempt.
+        pure $ if (role /= Admin)
+                then Just . relPath $ U.Logout
+                else Nothing
+
+adminSettingsGaPUserDelete :: forall m. (ActionM m)
+                           => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete
+adminSettingsGaPUserDelete uid =
+    FormPageHandler
+        (PageAdminSettingsGaPUserDelete <$> (equery $ maybe404 =<< findUser uid))
+        (const $ Action.deleteUser uid)
 
 -- ** Events protocol
 

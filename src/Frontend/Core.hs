@@ -283,7 +283,8 @@ class Page p => FormPage p where
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
     -- | Guard the form, if the 'guardPage' returns an UriPath the page will
-    -- be redirected. It only guards GET handlers.
+    -- be redirected.
+    -- TODO: Use P.Main
     guardPage :: (ActionM m) => p -> m (Maybe UriPath)
     guardPage _ = pure Nothing
 
@@ -338,6 +339,7 @@ form formHandler = getH :<|> postH
 
     postH formData = makeFrame $ do
         page <- getPage
+        guard page
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)

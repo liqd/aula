@@ -308,6 +308,7 @@ type AulaAdmin =
   :<|> "access" :> "perm-class-create" :> FormHandler PageAdminSettingsGaPClassesCreate
   :<|> User ::> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit
   :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
+  :<|> User ::> "delete" :> FormHandler PageAdminSettingsGaPUserDelete
        -- event log
   :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
   :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
@@ -325,6 +326,7 @@ aulaAdmin =
   :<|> form Page.adminSettingsGaPClassesCreate
   :<|> form . Page.adminSettingsGaPUserEdit
   :<|> makeFrame . Page.adminSettingsGaPClassesEdit
+  :<|> form . Page.adminSettingsGaPUserDelete
   :<|> makeFrame Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing

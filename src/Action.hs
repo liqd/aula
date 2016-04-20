@@ -37,6 +37,7 @@ module Action
     , validUserState
     , validLoggedIn
     , getSpacesForCurrentUser
+    , deleteUser
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken
@@ -276,6 +277,12 @@ getSpacesForCurrentUser = do
         query $ getSpacesForRole (user ^. userRole)
     else
         pure []
+
+-- TOOD: Implement it
+deleteUser :: (ActionPersist m) => AUID User -> m ()
+deleteUser uid = do
+    -- FIXME: Authorization
+    pure ()
 
 -- * Phase Transitions
 
