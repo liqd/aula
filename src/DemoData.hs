@@ -11,7 +11,7 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
-import Control.Monad (zipWithM_)
+import Control.Monad (zipWithM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -154,12 +154,12 @@ updateAvatar :: User -> URL -> forall m . ActionM m => m ()
 updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
 addUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
-addUserWithEmailFromConfig puser =
-    setEmailFromConfig puser >>= currentUserAddDb AddUser
+addUserWithEmailFromConfig =
+    setEmailFromConfig >=> currentUserAddDb AddUser
 
 addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
-addFirstUserWithEmailFromConfig puser =
-    setEmailFromConfig puser >>= update . AddFirstUser constantSampleTimestamp
+addFirstUserWithEmailFromConfig =
+    setEmailFromConfig >=> update . AddFirstUser constantSampleTimestamp
 
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
 setEmailFromConfig puser = do
