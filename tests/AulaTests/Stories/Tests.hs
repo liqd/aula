@@ -44,8 +44,8 @@ topicTimeoutStory = do
     logout
 
 -- Collection of steps under development, no test design involved.
-randomUserBehavior :: Behavior ()
-randomUserBehavior = do
+someUserBehavior :: Behavior ()
+someUserBehavior = do
     login "admin"
     selectIdeaSpace "school"
     createIdea idea1 "desc" CatRules
