@@ -100,6 +100,11 @@ function reloadOnClick(hash) {
 }
 
 function createPageSample() {
-    setTimeout(function() { document.location.search = "?create_page_sample=true"; }, 50);
-    // TODO: extend existing queries, not break the uri with multiple '?'!
+    setTimeout(function() {
+        if (document.location.search === "") {
+            document.location.search = "?create_page_sample=true";
+        } else {
+            document.location.search += "&create_page_sample=true";
+        }
+    }, 50);
 }
