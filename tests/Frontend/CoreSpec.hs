@@ -27,6 +27,7 @@ import Action.Implementation
 import Arbitrary (arb, arbPhrase, schoolClasses)
 import Config
 import Frontend.Core
+import Frontend.Fragment.Comment
 import Frontend.Page
 import Types
 

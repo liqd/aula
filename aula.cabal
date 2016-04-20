@@ -86,10 +86,12 @@ library
       EventLog
       Frontend
       Frontend.Core
+      Frontend.Fragment.Category
+      Frontend.Fragment.Comment
+      Frontend.Fragment.IdeaList
+      Frontend.Fragment.QuorumBar
       Frontend.Page
       Frontend.Page.Admin
-      Frontend.Page.Category
-      Frontend.Page.Comment
       Frontend.Page.Delegation
       Frontend.Page.Idea
       Frontend.Page.Login

@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Idea
   ( ViewIdea(..)
@@ -26,9 +26,9 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , markIdeaInJuryPhase
               )
 import LifeCycle
-import Frontend.Page.Category
-import Frontend.Page.Comment
-import Frontend.Page.Overview
+import Frontend.Fragment.Category
+import Frontend.Fragment.Comment
+import Frontend.Fragment.QuorumBar
 import Frontend.Prelude hiding (editIdea)
 import Persistent.Api hiding (EditIdea)
 
