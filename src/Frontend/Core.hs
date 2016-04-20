@@ -133,17 +133,6 @@ renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
 renderContext = RenderContext <$> currentUser
 
 
--- | FIXME: Could this be a PR for lucid?
-instance ToHtml (HtmlT Identity ()) where
-    toHtmlRaw = toHtml
-    toHtml = HtmlT . return . runIdentity . runHtmlT
-
--- | FIXME: Could this be a PR for lucid?
-instance ToHtml () where
-    toHtmlRaw = toHtml
-    toHtml = nil
-
-
 -- | This will generate the following snippet:
 --
 -- > <div data-aula="PageIdea"> ... </div>
