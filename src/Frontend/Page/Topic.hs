@@ -23,13 +23,11 @@ where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
-import Frontend.Fragment.Category
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
 import qualified Action (createTopic)
 import qualified Frontend.Path as U
-import qualified Lucid
 import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -107,20 +105,7 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicIdeas _ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
-        div_ [class_ "ideas-list"] $ do
-            categoryFilterButtons (topicIdeaLocation topic)
-                (fromMaybe (Nothing, Nothing) $ tab ^? viewTopicTabQuery)
-            div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
-                i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
-                ul_ [class_ "pop-menu-list"] $ do
-                    let mkLink by = Lucid.href_ $
-                          listIdeasWithQuery (topicIdeaLocation topic)
-                              (tab ^? viewTopicTabQuery . _1 . _Just, Just by)
-                    li_ [class_ "pop-menu-list-item"] $
-                        a_ [mkLink SortIdeasBySupport] "Unterstützung"
-                    li_ [class_ "pop-menu-list-item"] $
-                        a_ [mkLink SortIdeasByAge] "Datum"
-            toHtml ideasAndNumVoters
+        div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
@@ -279,9 +264,12 @@ viewTopic tab topicId = do
                 pure $ ViewTopicDelegations topic delegations
             _ ->
               do
-                let q = fromMaybe (Nothing, Nothing) $ tab ^? viewTopicTabQuery
-                ideas <- ideasRunQuery q <$> findIdeasByTopic topic
-                ideasAndNumVoters <- ListItemIdeas ctx q <$> (getListInfoForIdea `mapM` ideas)
+                let loc = topicIdeaLocation topic
+                    ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
+                               $ tab ^? viewTopicTabQuery
+                ideas <- ideasRunQuery ideasQuery <$> findIdeasByTopic topic
+                ideasAndNumVoters <- ListItemIdeas ctx loc ideasQuery <$>
+                                            (getListInfoForIdea `mapM` ideas)
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 

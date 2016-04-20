@@ -17,7 +17,6 @@ module Frontend.Page.Overview
 where
 
 import Action
-import Frontend.Fragment.Category
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.QuorumBar ()
 import Frontend.Prelude
@@ -33,7 +32,7 @@ data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace IdeasQuery ListItemIdeas
+data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -56,9 +55,9 @@ viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageIdeasOverview
 viewIdeas space ideasQuery = do
     ctx <- renderContext
-    PageIdeasOverview ctx space ideasQuery <$> equery (do
+    PageIdeasOverview ctx space <$> equery (do
         is  <- ideasRunQuery ideasQuery <$> findWildIdeasBySpace space
-        ListItemIdeas ctx ideasQuery <$> getListInfoForIdea `mapM` is)
+        ListItemIdeas ctx (IdeaLocationSpace space) ideasQuery <$> getListInfoForIdea `mapM` is)
 
 viewTopics :: ActionPersist m => IdeaSpace -> m PageIdeasInDiscussion
 viewTopics space = PageIdeasInDiscussion space <$> query (findTopicsBySpace space)
@@ -94,7 +93,7 @@ instance Page PageRoomsOverview
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview _ctx space filterQuery ideas) = semanticDiv p $ do
+    toHtml p@(PageIdeasOverview _ctx space ideasAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -104,9 +103,8 @@ instance ToHtml PageIdeasOverview where
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
             button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
-        categoryFilterButtons (IdeaLocationSpace space) filterQuery
         div_ [class_ "m-shadow"] $ do
-            div_ [class_ "ideas-list"] . toHtml $ ideas
+            div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]

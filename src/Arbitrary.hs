@@ -101,7 +101,7 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb <*> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb

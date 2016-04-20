@@ -16,8 +16,8 @@ import Frontend.Fragment.QuorumBar
 import LifeCycle
 
 import qualified Frontend.Path as U
-
 import qualified Generics.SOP as SOP
+import qualified Lucid
 
 
 data WhatListPage
@@ -35,7 +35,8 @@ data ListItemIdea = ListItemIdea
 
 data ListItemIdeas =
     ListItemIdeas
-        { _ideasAndNumVotersCtx    :: RenderContext
+        { _ideasAndNumVotersCtx    :: RenderContext  -- TODO: rename field accessors to match type name.
+        , _ideasAndNumVotersLocation :: IdeaLocation
         , _ideasAndNumVotersFilter :: IdeasQuery
         , _ideasAndNumVotersData   :: [ListInfoForIdea]
         }
@@ -45,8 +46,6 @@ instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
 instance SOP.Generic ListItemIdeas
 
--- TODO: ListItemIdea should contain category filter and sort order menu (which would have the nice
--- effect that wild ideas can't help but have a sort button as well).
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
@@ -84,11 +83,28 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx ideaQuery []) = semanticDiv p $ do
+    toHtml p@(ListItemIdeas _ctx loc ideaQuery []) = semanticDiv p $ do
+        ideaListHeader loc ideaQuery
         p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> fst ideaQuery
 
-    toHtml (ListItemIdeas ctx _filterq ideasAndNumVoters) = do
-        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic
+    toHtml p@(ListItemIdeas ctx loc ideaQuery ideasAndNumVoters) = semanticDiv p $ do
+        ideaListHeader loc ideaQuery
+        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx IdeaInViewTopic  -- TODO: IdeaInViewTopic shouldn't be fix here, no?
+
+
+ideaListHeader :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
+ideaListHeader loc ideaQuery = do
+    categoryFilterButtons loc ideaQuery
+
+    div_ [class_ "btn-settings pop-menu"] $ do
+        i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
+        ul_ [class_ "pop-menu-list"] $ do
+            let mk by text = do
+                    li_ [class_ "pop-menu-list-item"] $
+                        a_ [Lucid.href_ $ listIdeasWithQuery loc (fst ideaQuery, Just by)] text
+
+            mk SortIdeasBySupport "Unterstützung"
+            mk SortIdeasByAge     "Datum"
