@@ -489,7 +489,7 @@ instance FormPage PageAdminSettingsGaPUserDelete where
     guardPage _ = do
         role <- view userRole <$> currentUser
         -- FIXME: Log invalid user deletion attempt.
-        pure $ if (role /= Admin)
+        pure $ if role /= Admin
                 then Just . relPath $ U.Logout
                 else Nothing
 
@@ -497,7 +497,7 @@ adminSettingsGaPUserDelete :: forall m. (ActionM m)
                            => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete
 adminSettingsGaPUserDelete uid =
     FormPageHandler
-        (PageAdminSettingsGaPUserDelete <$> (equery $ maybe404 =<< findUser uid))
+        (PageAdminSettingsGaPUserDelete <$> equery (maybe404 =<< findUser uid))
         (const $ Action.deleteUser uid)
 
 -- ** Events protocol

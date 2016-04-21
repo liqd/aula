@@ -280,7 +280,7 @@ getSpacesForCurrentUser = do
 
 -- TOOD: Implement it
 deleteUser :: (ActionPersist m) => AUID User -> m ()
-deleteUser uid = do
+deleteUser _uid = do
     -- FIXME: Authorization
     pure ()
 
