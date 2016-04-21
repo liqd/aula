@@ -110,9 +110,9 @@ instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
 instance Arbitrary ViewTopicTab where
-    arbitrary = elements [ TabAllIdeas (Nothing, Nothing)
-                         , TabVotingIdeas (Nothing, Nothing)
-                         , TabWinningIdeas (Nothing, Nothing)
+    arbitrary = elements [ TabAllIdeas emptyIdeasQuery
+                         , TabVotingIdeas emptyIdeasQuery
+                         , TabWinningIdeas emptyIdeasQuery
                          , TabDelegation
                          ]
 
@@ -262,6 +262,9 @@ instance Arbitrary ListItemIdea where
     arbitrary = garbitrary
 
 instance Arbitrary ListItemIdeas where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeasQuery where
     arbitrary = garbitrary
 
 instance Arbitrary ListInfoForIdea where

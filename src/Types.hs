@@ -38,8 +38,9 @@ import Network.Mail.Mime (Address(Address))
 import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
 import Text.Read (readMaybe)
 
-import qualified Data.Text as ST
 import qualified Data.Csv as CSV
+import qualified Data.Ord (Down(Down))
+import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Email.Validate as Email
 
@@ -107,8 +108,8 @@ app2 f g x y = f $ g x y
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
 
-sortOnDesc :: Ord b => Getter a b -> [a] -> [a]
-sortOnDesc l = reverse . sortOn l
+downSortOn :: Ord b => Getter a b -> [a] -> [a]
+downSortOn l = sortOn (l . to Data.Ord.Down)
 
 
 -- * prototypes for types

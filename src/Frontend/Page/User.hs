@@ -177,7 +177,7 @@ createdIdeas userId = do
     equery (do
         user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx IdeaInUserProfile
-                    (IdeaLocationSpace SchoolSpace) (Nothing, Nothing)
+                    (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
         pure $ PageUserProfileCreatedIdeas ctx user ideas)
 

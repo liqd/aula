@@ -278,13 +278,13 @@ topicApi space
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
   where
-    viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (qf, qs)) tid
+    viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (IdeasQuery qf qs)) tid
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi (IdeaLocationSpace space)
-  :<|> curry (makeFrame . Page.viewIdeas space)
-  :<|> topicApi                   space
+  :<|> app2 (makeFrame . Page.viewIdeas space) IdeasQuery
+  :<|> topicApi space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
