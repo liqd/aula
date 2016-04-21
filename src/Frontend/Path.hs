@@ -255,7 +255,8 @@ data AdminPs =
   | AdminDeleteUser (AUID User)
   | AdminEvent
   | AdminDlPass SchoolClass
-  | AdminDlEvents IdeaSpace
+  | AdminDlEvents
+  | AdminDlEventsF IdeaSpace
   deriving (Generic, Show)
 
 instance SOP.Generic AdminPs
@@ -269,7 +270,8 @@ admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
 admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "passwords" </> uriPart clss
-admin (AdminDlEvents spc)   path = path </> "events" </> uriPart spc
+admin AdminDlEvents         path = path </> "events"
+admin (AdminDlEventsF spc)  path = path </> "events" </> uriPart spc
 
 data CommentMode
     = ReplyComment

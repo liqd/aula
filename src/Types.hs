@@ -1043,6 +1043,13 @@ showIdeaSpace (ClassSpace c) = showSchoolClass c
 showSchoolClass :: SchoolClass -> String
 showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
+showIdeaSpaceUI :: IdeaSpace -> String
+showIdeaSpaceUI SchoolSpace    = "Schule"
+showIdeaSpaceUI (ClassSpace c) = showSchoolClassUI c
+
+showSchoolClassUI :: SchoolClass -> String
+showSchoolClassUI c = cs (c ^. className)
+
 showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
 showIdeaSpaceCategory (ClassSpace _) = "class"

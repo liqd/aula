@@ -493,34 +493,37 @@ adminSettingsGaPUserDelete uid =
         (PageAdminSettingsGaPUserDelete <$> equery (maybe404 =<< findUser uid))
         (const $ Action.deleteUser uid)
 
+
 -- ** Events protocol
 
-instance ToHtml PageAdminSettingsEventsProtocol where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = adminFrame p . semanticDiv p $ do
+data EventsProtocolFilter = EventsProtocolFilter (Maybe IdeaSpace)
+  deriving (Eq, Ord, Show, Read)
+
+instance FormPage PageAdminSettingsEventsProtocol where
+    type FormPagePayload PageAdminSettingsEventsProtocol = EventsProtocolFilter
+    type FormPageResult PageAdminSettingsEventsProtocol = EventsProtocolFilter
+
+    formAction (PageAdminSettingsEventsProtocol _) = U.Admin U.AdminEvent
+    redirectOf _ (EventsProtocolFilter Nothing)      = U.Admin U.AdminDlEvents
+    redirectOf _ (EventsProtocolFilter (Just space)) = U.Admin (U.AdminDlEventsF space)
+
+    makeForm (PageAdminSettingsEventsProtocol spaces) = EventsProtocolFilter <$> ("space" .: DF.choice vs Nothing)
+      where
+        vs :: [(Maybe IdeaSpace, Html ())]
+        vs = (Nothing, "(Alle Ideenräume)") : ((Just &&& toHtml . showIdeaSpaceUI) <$> spaces)
+
+    formPage v form p@(PageAdminSettingsEventsProtocol _) = adminFrame p . semanticDiv p . form $ do
         label_ $ do
             span_ [class_ "label-text"] "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
-        -- FIXME: Clientside JavaScript. Change the download button link
-        -- If the value of the selection is changes.
-            select_ [name_ "idea"] . forM_ ideaSpaces $ \idea ->
-                option_ [value_ (makeValue idea)] (makeText idea)
+            inputSelect_ [class_ "m-stretch"] "space" v
         div_ [class_ "download-box"] $ do
             header_ [class_ "download-box-header"] $ do
                 "Event-Protokoll"
-            -- FIXME: Link to the correct page.
                 button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
-            p_ [class_ "download-box-body"] "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
-      where
-        makeValue :: IdeaSpace -> ST
-        makeValue SchoolSpace = "idea-schoolspace"
-        makeValue (ClassSpace (SchoolClass year name))
-            = cs $ mconcat ["idea-class-", show year, "-", show name]
+            p_ [class_ "download-box-body"] "Das Event-Protokoll enthält alle Aktivitäten der NutzerInnen auf Aula"
 
-        makeText SchoolSpace = "Schule"
-        makeText (ClassSpace (SchoolClass _year name)) = toHtml name
-
-adminEventsProtocol :: ActionPersist m => m PageAdminSettingsEventsProtocol
-adminEventsProtocol = PageAdminSettingsEventsProtocol <$> query getSpaces
+adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
+adminEventsProtocol = FormPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
 
 -- * Classes Create

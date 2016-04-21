@@ -310,13 +310,13 @@ type AulaAdmin =
   :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
   :<|> User ::> "delete" :> FormHandler PageAdminSettingsGaPUserDelete
        -- event log
-  :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
+  :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
   :<|> "events" :> Get '[CSV] EventLog
   :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] EventLog
 
 
-aulaAdmin :: ActionM m => ServerT AulaAdmin m
+aulaAdmin :: forall m. ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
@@ -327,7 +327,7 @@ aulaAdmin =
   :<|> form . Page.adminSettingsGaPUserEdit
   :<|> makeFrame . Page.adminSettingsGaPClassesEdit
   :<|> form . Page.adminSettingsGaPUserDelete
-  :<|> makeFrame Page.adminEventsProtocol
+  :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing
   :<|> adminEventLogCsv . Just
