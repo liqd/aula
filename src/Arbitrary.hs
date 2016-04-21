@@ -465,7 +465,7 @@ instance Arbitrary P.CommentMode where
 instance Arbitrary P.Space where
     arbitrary = garbitrary
 
-instance Arbitrary P.UserPs where
+instance Arbitrary P.UserMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.AdminMode where

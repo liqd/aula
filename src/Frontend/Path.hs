@@ -23,7 +23,7 @@ module Frontend.Path
     ( Top(..)
     , Main(..)
     , Space(..)
-    , UserPs(..)
+    , UserMode(..)
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
@@ -69,7 +69,7 @@ data Main =
   | Space IdeaSpace Space
   | IdeaPath IdeaLocation IdeaMode
   | ListUsers
-  | User (AUID User) UserPs
+  | User (AUID User) UserMode
   | UserProfile
   | UserSettings
   | Admin AdminMode
@@ -244,14 +244,14 @@ space CreateTopic                 root = root </> "topic" </> "create"
 space (MoveIdeasToTopic tid)      root = root </> "topic" </> uriPart tid </> "idea" </> "move"
 space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
 
-data UserPs =
+data UserMode =
     UserIdeas
   | UserDelegations
   deriving (Generic, Show)
 
-instance SOP.Generic UserPs
+instance SOP.Generic UserMode
 
-user :: UserPs -> UriPath -> UriPath
+user :: UserMode -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
 
