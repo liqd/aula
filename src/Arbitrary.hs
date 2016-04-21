@@ -45,7 +45,10 @@ import Servant
 import System.FilePath (takeBaseName)
 import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.QuickCheck (Arbitrary(..), Gen, elements, oneof, scale, generate, arbitrary, listOf, suchThat, resize)
+import Test.QuickCheck
+    ( Arbitrary(..), Gen
+    , elements, oneof, vectorOf, scale, generate, arbitrary, listOf, suchThat
+    )
 import Test.QuickCheck.Instances ()
 
 import qualified Data.Vector as V
@@ -804,7 +807,9 @@ instance Aeson.ToJSON D3DN where
 -- * event log
 
 instance Arbitrary EventLog where
-    arbitrary = garbitrary
+    arbitrary = EventLog <$> arbWord <*> nonEmpty
+      where
+        nonEmpty = (:) <$> garbitrary <*> garbitrary
 
 instance Arbitrary EventLogItem where
     arbitrary = garbitrary
@@ -823,9 +828,7 @@ sampleEventLog :: Config -> EventLog
 sampleEventLog = unsafePerformIO . sampleEventLogIO
 
 sampleEventLogIO :: Config -> IO EventLog
-sampleEventLogIO cfg = do
-    EventLog _ rows <- generate $ resize 1000 arbitrary
-    pure $ EventLog (cs $ cfg ^. exposedUrl) rows
+sampleEventLogIO cfg = EventLog (cs $ cfg ^. exposedUrl) <$> generate (vectorOf 1000 arbitrary)
 
 
 -- * constant sample values
