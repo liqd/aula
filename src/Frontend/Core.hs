@@ -24,6 +24,8 @@ module Frontend.Core
       -- * helpers for handlers
     , semanticDiv
     , html
+    , DfTextField
+    , dfTextField
     , Beside(..)
     , tabSelected
     , redirect
@@ -158,6 +160,18 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 -- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
+
+type DfTextField s = forall m a. Monad m => Getter s a -> Traversal' a ST -> DF.Form (Html ()) m a
+
+-- Usage:
+--    SomeConstructor
+--    <$> ("field1" .: field someLens1 _SomePrism1)
+--    <*> ("field2" .: field someLens2 _SomePrism2)
+--  where
+--    field :: DfTextField SomeType
+--    field = dfTextField someData
+dfTextField :: s -> DfTextField s
+dfTextField s l p = s ^. l & p %%~ DF.text . Just
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml

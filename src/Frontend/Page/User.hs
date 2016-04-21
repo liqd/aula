@@ -249,11 +249,9 @@ instance FormPage EditUserProfile where
         <$> ("firstname" .: field userFirstName _UserFirstName)
         <*> ("lastname"  .: field userLastName  _UserLastName)
         <*> ("desc"      .: field userDesc      _Markdown)
-
       where
-        -- FIXME: use me elsewhere
-        field :: Monad m => Getter User a -> Traversal' a ST -> DF.Form (Html ()) m a
-        field l p = user ^. l & p %%~ DF.text . Just
+        field :: DfTextField User
+        field = dfTextField user
 
     formPage v form p = do
         semanticDiv p $ do
