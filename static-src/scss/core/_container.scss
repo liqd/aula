@@ -3,10 +3,11 @@ body, html {
 }
 
 .page-wrapper {
+    @include rem(margin-bottom, -$main-menu-height);
+    @include rem(margin-top, -$main-menu-height);
     min-height: 100%;
-    margin-bottom: -$main-menu-height;
 
-    &:after {
+    &:after, &:before {
         content: "";
         display: block;
         height: $main-menu-height;
@@ -38,11 +39,12 @@ body.m-shadow {
     }
 }
 
+.main-grid-container {
+    @include rem(margin, -57px auto);
+}
+
 .main-grid {
-    @include rem(margin-bottom, -$main-menu-height);
-    @include rem(margin-top, -$main-menu-height);
-    @include rem(padding-bottom, $main-menu-height);
-    @include rem(padding-top, $main-menu-height);
+    @include rem(padding, 57px 0);
     overflow: visible;
     min-height: 100%;
 
