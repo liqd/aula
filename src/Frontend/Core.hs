@@ -54,7 +54,7 @@ module Frontend.Core
       -- * sort & filter
     , IdeasFilterApi, IdeasFilterQuery
     , IdeasSortApi, IdeasSortQuery, SortIdeasBy(..)
-    , IdeasQuery
+    , IdeasQuery(..), ideasQueryF, ideasQueryS, emptyIdeasQuery
     , ideasRunQuery
     , listIdeasWithQuery
 
@@ -489,14 +489,24 @@ ideasSortQuery = f . fromMaybe minBound
     age = downSortOn createdAt
     sup = downSortOn $ ideaLikes . to length
 
-type IdeasQuery = (IdeasFilterQuery, IdeasSortQuery)
+data IdeasQuery = IdeasQuery
+    { _ideasQueryF :: IdeasFilterQuery
+    , _ideasQueryS :: IdeasSortQuery
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeasQuery
+
+emptyIdeasQuery :: IdeasQuery
+emptyIdeasQuery = IdeasQuery Nothing Nothing
 
 ideasRunQuery :: IdeasQuery -> [Idea] -> [Idea]
-ideasRunQuery (f, s) = ideasSortQuery s . ideasFilterQuery f
+ideasRunQuery (IdeasQuery f s) = ideasSortQuery s . ideasFilterQuery f
 
 listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> URL
-listIdeasWithQuery loc (qf, qs) = (absoluteUriPath . relPath . P.listIdeas $ loc)
-                               <> renderBoth (catMaybes [renderFilter <$> qf, renderSort <$> qs])
+listIdeasWithQuery loc (IdeasQuery qf qs) =
+        (absoluteUriPath . relPath . P.listIdeas $ loc)
+      <> renderBoth (catMaybes [renderFilter <$> qf, renderSort <$> qs])
   where
     renderFilter :: Category -> ST
     renderFilter v = "category=" <> toUrlPiece v
@@ -524,3 +534,4 @@ onclickJs (JsReloadOnClick hash) = Lucid.onclick_ $ "reloadOnClick(" <> cs (show
 makeLenses ''RenderContext
 makeLenses ''FormPageHandler
 makeLenses ''Frame
+makeLenses ''IdeasQuery

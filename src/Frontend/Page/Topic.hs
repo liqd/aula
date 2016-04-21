@@ -143,9 +143,9 @@ viewTopicHeaderDiv topic tab = do
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab (TabAllIdeas (Nothing, Nothing))
-                t2 = tabLink topic tab (TabVotingIdeas (Nothing, Nothing))
-                t3 = tabLink topic tab (TabWinningIdeas (Nothing, Nothing))
+            let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
+                t2 = tabLink topic tab (TabVotingIdeas emptyIdeasQuery)
+                t3 = tabLink topic tab (TabWinningIdeas emptyIdeasQuery)
                 t4 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.
