@@ -24,7 +24,7 @@ module Frontend.Path
     , Main(..)
     , Space(..)
     , UserPs(..)
-    , AdminPs(..)
+    , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
@@ -41,7 +41,7 @@ import Data.UriPath
 
 import qualified Generics.SOP as SOP
 
-import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil, PermissionContext
+import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
              , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
              , IdeaJuryResultType(..), ckIdeaLocation, CommentKey(CommentKey))
 
@@ -72,7 +72,7 @@ data Main =
   | User (AUID User) UserPs
   | UserProfile
   | UserSettings
-  | Admin AdminPs
+  | Admin AdminMode
   | DelegationEdit
   | DelegationView
   | Imprint
@@ -258,27 +258,33 @@ user UserDelegations = (</> "delegations")
 viewUser :: User -> Main
 viewUser u = User (u ^. _Id) UserIdeas
 
-data AdminPs =
+data AdminMode =
     AdminDuration
   | AdminQuorum
-  | AdminAccess PermissionContext
+  | AdminCreateUser
   | AdminEditUser (AUID User)
   | AdminDeleteUser (AUID User)
+  | AdminViewUsers
+  | AdminCreateClass
   | AdminEditClass SchoolClass
+  | AdminViewClasses
   | AdminEvent
   | AdminDlPass SchoolClass
   | AdminDlEvents
   | AdminDlEventsF IdeaSpace
   deriving (Generic, Show)
 
-instance SOP.Generic AdminPs
+instance SOP.Generic AdminMode
 
-admin :: AdminPs -> UriPath -> UriPath
+admin :: AdminMode -> UriPath -> UriPath
 admin AdminDuration         path = path </> "duration"
 admin AdminQuorum           path = path </> "quorum"
-admin (AdminAccess ctx)     path = path </> "access" </> uriPart ctx
+admin AdminViewUsers        path = path </> "users"
+admin AdminCreateUser       path = path </> "user" </> "create"
 admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
+admin AdminViewClasses      path = path </> "classes"
+admin AdminCreateClass      path = path </> "class" </> "create"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss

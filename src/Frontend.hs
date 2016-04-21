@@ -302,10 +302,10 @@ type AulaAdmin =
        -- quorum
   :<|> "quorum" :> FormHandler PageAdminSettingsQuorum
        -- groups and permissions
-  :<|> "access" :> "perm-user-view"    :> GetH (Frame AdminViewUsers)
-  :<|> "access" :> "perm-user-create"  :> GetH (Frame AdminCreateUser)
-  :<|> "access" :> "perm-class-view"   :> GetH (Frame AdminViewClasses)
-  :<|> "access" :> "perm-class-create" :> FormHandler AdminCreateClass
+  :<|> "users" :> GetH (Frame AdminViewUsers)
+  :<|> "user" :> "create" :> GetH (Frame AdminCreateUser)
+  :<|> "classes" :> GetH (Frame AdminViewClasses)
+  :<|> "class" :> "create" :> FormHandler AdminCreateClass
   :<|> User ::> "edit" :> FormHandler AdminEditUser
   :<|> SchoolClass ::> "edit" :> GetH (Frame AdminEditClass)
   :<|> User ::> "delete" :> FormHandler AdminDeleteUser

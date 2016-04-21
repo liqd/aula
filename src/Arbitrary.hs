@@ -414,9 +414,6 @@ instance Arbitrary Durations where
 instance Arbitrary Quorums where
     arbitrary = garbitrary
 
-instance Arbitrary PermissionContext where
-    arbitrary = garbitrary
-
 instance Arbitrary RoleSelection where
     arbitrary = garbitrary
 
@@ -471,7 +468,7 @@ instance Arbitrary P.Space where
 instance Arbitrary P.UserPs where
     arbitrary = garbitrary
 
-instance Arbitrary P.AdminPs where
+instance Arbitrary P.AdminMode where
     arbitrary = garbitrary
 
 

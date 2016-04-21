@@ -98,12 +98,14 @@ instance Page PageAdminSettingsEventsProtocol
 data MenuItem
     = MenuItemDurations
     | MenuItemQuorum
-    | MenuItemGroupsAndPermissions (Maybe PermissionContext)
+    | MenuItemClasses
+    | MenuItemUsers
+    | MenuItemClassesAndUsers
     | MenuItemEventsProtocol
   deriving (Eq, Show)
 
 class ToMenuItem t where
-    toMenuItem :: t -> MenuItem
+    toMenuItem :: proxy t -> MenuItem
 
 -- | 11.1 Admin settings: Durations
 instance ToMenuItem PageAdminSettingsDurations where
@@ -115,25 +117,25 @@ instance ToMenuItem PageAdminSettingsQuorum where
 
 -- | 11.3 Admin settings: Manage groups & permissions
 instance ToMenuItem AdminViewUsers where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+    toMenuItem _ = MenuItemUsers
 
 instance ToMenuItem AdminCreateUser where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+    toMenuItem _ = MenuItemUsers
 
 instance ToMenuItem AdminEditUser where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+    toMenuItem _ = MenuItemUsers
 
 instance ToMenuItem AdminDeleteUser where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+    toMenuItem _ = MenuItemUsers
 
 instance ToMenuItem AdminViewClasses where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+    toMenuItem _ = MenuItemClasses
 
 instance ToMenuItem AdminCreateClass where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+    toMenuItem _ = MenuItemClasses
 
 instance ToMenuItem AdminEditClass where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+    toMenuItem _ = MenuItemClasses
 
 -- | 11.4 Admin settings: Events protocol
 instance ToMenuItem PageAdminSettingsEventsProtocol where
@@ -152,23 +154,21 @@ adminFrame t bdy = do
             ul_ [] $ do
                 li_ [] $ menulink tab MenuItemDurations
                 li_ [] $ menulink tab MenuItemQuorum
-                if isPermissionsMenuItem tab
+                if tab `elem` [MenuItemUsers, MenuItemClasses]
                     then do
                         li_ [] $ do
                             "Gruppen & Nutzer"
                             ul_ $ do
-                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                                li_ [] $ menulink tab MenuItemUsers
+                                li_ [] $ menulink tab MenuItemClasses
                     else do
-                        li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                        li_ [] $ menulink tab MenuItemClassesAndUsers
                 li_ [] $ menulink tab MenuItemEventsProtocol
     div_ [class_ "col-10-12 admin-body"] bdy
   where
-    tab = toMenuItem t
-    isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
-    isPermissionsMenuItem _ = False
+    tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST U.AdminPs ST
+data MenuLink = MenuLink ST U.AdminMode ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
@@ -187,16 +187,12 @@ menulink' targetMenuItem =
         -> MenuLink "tab-duration" U.AdminDuration "Dauer der Phasen"
     MenuItemQuorum
         -> MenuLink "tab-qourum" U.AdminQuorum "Quorum"
-    MenuItemGroupsAndPermissions (Just PermUserView)
-        -> MenuLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
-    MenuItemGroupsAndPermissions (Just PermUserCreate)
-        -> MenuLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
-    MenuItemGroupsAndPermissions (Just PermClassView)
-        -> MenuLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
-    MenuItemGroupsAndPermissions (Just PermClassCreate)
-        -> MenuLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
-    MenuItemGroupsAndPermissions Nothing
-        -> MenuLink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
+    MenuItemUsers
+        -> MenuLink "tab-groups-perms-user"  U.AdminViewUsers "Nutzer"
+    MenuItemClasses
+        -> MenuLink "tab-groups-perms-class" U.AdminViewClasses "Klasse"
+    MenuItemClassesAndUsers
+        -> MenuLink "tab-groups-perms"       U.AdminViewUsers "Gruppen & Nutzer"
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
 
@@ -282,7 +278,7 @@ instance ToHtml AdminViewUsers where
                     th_ "Name"
                     th_ "Klasse"
                     th_ "Rolle [<>]"
-                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "Nutzer anlegen"
+                    th_ $ button_ [class_ "btn-cta", onclick_ $ U.Admin U.AdminCreateUser] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             input_ [type_ "text", class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
@@ -305,7 +301,7 @@ instance ToHtml AdminViewUsers where
 
 instance ToHtml AdminCreateUser where
     toHtml = toHtmlRaw
-    toHtmlRaw p@AdminCreateUser =
+    toHtmlRaw p =
         adminFrame p . semanticDiv p $ do
             div_ [class_ "admin-container"] $ do
                 form_ $ do -- FIXME
@@ -318,11 +314,11 @@ instance ToHtml AdminCreateUser where
                             "UserName" -- FIXME
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Nutzerrolle"
-                            -- FIXME inputSelect_ [class_ "m-stretch"] "user-role" v
+                            -- FIXME inputSelect_ [class_ "m-stretch"] "role" v
                             select_ [class_ "m-stretch"] nil
                         label_ [class_ "col-6-12"] $ do
                             span_ [class_ "label-text"] "Klasse"
-                            -- FIXME inputSelect_ [class_ "m-stretch"]  "user-class" v
+                            -- FIXME inputSelect_ [class_ "m-stretch"]  "class" v
                             select_ [class_ "m-stretch"] nil
                         a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                         div_ [class_ "admin-buttons"] $ do
@@ -337,7 +333,7 @@ instance ToHtml AdminViewClasses where
                     th_ "Klasse"
                     th_ $ button_
                             [ class_ "btn-cta"
-                            , onclick_ . U.Admin $ U.AdminAccess PermClassCreate
+                            , onclick_ $ U.Admin U.AdminCreateClass
                             ]
                             "Klasse anlegen"
                     th_ $ do
@@ -372,32 +368,32 @@ roleSelectionChoices =
              , (RoleGuest, "Gast")
              ]
 
+chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
+chooseRole mr = DF.choice roleSelectionChoices (selectRole =<< mr)
+  where
+    selectRole = \case
+        Student _    -> Just RoleStudent
+        ClassGuest _ -> Just RoleGuest
+        _            -> Nothing  -- FIXME: see RoleSelection
+
+chooseClass :: [SchoolClass] -> Maybe SchoolClass -> Monad m => DF.Form (Html ()) m SchoolClass
+chooseClass classes = DF.choice classValues
+      where
+        classValues = (id &&& toHtml . view className) <$> classes
+
 instance FormPage AdminEditUser where
     type FormPagePayload AdminEditUser = EditUserPayload
 
     formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
 
-    redirectOf (AdminEditUser _user _classes) _ =
-        U.Admin . U.AdminAccess $ PermUserView
+    redirectOf _ _ = U.Admin U.AdminViewUsers
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminEditUser user classes) =
         EditUserPayload
-            <$> ("user-role"  .: DF.choice roleSelectionChoices role)
-            <*> ("user-class" .: DF.choice classValues clval)
-      where
-        classValues = (id &&& toHtml . view className) <$> classes
-
-        role = case user ^. userRole of
-            Student _    -> Just RoleStudent
-            ClassGuest _ -> Just RoleGuest
-            _            -> Nothing  -- FIXME: see RoleSelection
-
-        clval = case user ^. userRole of
-            Student cl    -> Just cl
-            ClassGuest cl -> Just cl
-            _             -> Nothing  -- FIXME: see RoleSelection
+            <$> ("role"  .: chooseRole (user ^? userRole))
+            <*> ("class" .: chooseClass classes (user ^? userRole . roleSchoolClass))
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
@@ -411,10 +407,10 @@ instance FormPage AdminEditUser where
                     toHtml (user ^. userLogin . unUserLogin)
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
-                    inputSelect_ [class_ "m-stretch"] "user-role" v
+                    inputSelect_ [class_ "m-stretch"] "role" v
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Klasse"
-                    inputSelect_ [class_ "m-stretch"]  "user-class" v
+                    inputSelect_ [class_ "m-stretch"]  "class" v
                 a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                 div_ [class_ "admin-buttons"] $ do
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
@@ -470,7 +466,7 @@ instance FormPage AdminDeleteUser where
     type FormPageResult AdminDeleteUser = ()
 
     formAction (AdminDeleteUser user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
-    redirectOf _ _ = U.Admin $ U.AdminAccess PermUserView
+    redirectOf _ _ = U.Admin U.AdminViewUsers
 
     makeForm _ = pure ()
 
@@ -532,17 +528,14 @@ instance SOP.Generic BatchCreateUsersFormData
 instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
-    formAction AdminCreateClass =
-        U.Admin $ U.AdminAccess PermClassCreate
+    formAction _   = U.Admin U.AdminCreateClass
+    redirectOf _ _ = U.Admin U.AdminViewClasses
 
-    redirectOf AdminCreateClass _ =
-        U.Admin $ U.AdminAccess PermClassView
+    makeForm _ = BatchCreateUsersFormData
+        <$> ("classname" .: DF.text Nothing)  -- FIXME: validate
+        <*> ("file"      .: DF.file)
 
-    makeForm AdminCreateClass = BatchCreateUsersFormData
-        <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
-        <*> ("file"      DF..: DF.file)
-
-    formPage v form p@AdminCreateClass = adminFrame p . semanticDiv p $ do
+    formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
         a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
         form $ do
