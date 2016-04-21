@@ -302,13 +302,13 @@ type AulaAdmin =
        -- quorum
   :<|> "quorum" :> FormHandler PageAdminSettingsQuorum
        -- groups and permissions
-  :<|> "access" :> "perm-user-view"    :> GetH (Frame PageAdminSettingsGaPUsersView)
-  :<|> "access" :> "perm-user-create"  :> GetH (Frame PageAdminSettingsGaPUsersCreate)
-  :<|> "access" :> "perm-class-view"   :> GetH (Frame PageAdminSettingsGaPClassesView)
-  :<|> "access" :> "perm-class-create" :> FormHandler PageAdminSettingsGaPClassesCreate
-  :<|> User ::> "edit" :> FormHandler PageAdminSettingsGaPUsersEdit
-  :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
-  :<|> User ::> "delete" :> FormHandler PageAdminSettingsGaPUserDelete
+  :<|> "access" :> "perm-user-view"    :> GetH (Frame AdminViewUsers)
+  :<|> "access" :> "perm-user-create"  :> GetH (Frame AdminCreateUser)
+  :<|> "access" :> "perm-class-view"   :> GetH (Frame AdminViewClasses)
+  :<|> "access" :> "perm-class-create" :> FormHandler AdminCreateClass
+  :<|> User ::> "edit" :> FormHandler AdminEditUser
+  :<|> SchoolClass ::> "edit" :> GetH (Frame AdminEditClass)
+  :<|> User ::> "delete" :> FormHandler AdminDeleteUser
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
@@ -320,13 +320,13 @@ aulaAdmin :: forall m. ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
-  :<|> makeFrame Page.adminSettingsGaPUsersView
-  :<|> makeFrame Page.adminSettingsGaPUsersCreate
-  :<|> makeFrame Page.adminSettingsGaPClassesView
-  :<|> form Page.adminSettingsGaPClassesCreate
-  :<|> form . Page.adminSettingsGaPUserEdit
-  :<|> makeFrame . Page.adminSettingsGaPClassesEdit
-  :<|> form . Page.adminSettingsGaPUserDelete
+  :<|> makeFrame Page.adminViewUsers
+  :<|> makeFrame Page.adminCreateUser
+  :<|> makeFrame Page.adminViewClasses
+  :<|> form Page.adminCreateClass
+  :<|> form . Page.adminEditUser
+  :<|> makeFrame . Page.adminEditClass
+  :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing

@@ -46,14 +46,14 @@ spec = do
         , H (arb :: Gen ViewIdea)
         , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
-        , H (arb :: Gen PageAdminSettingsGaPUsersView)
-        , H (arb :: Gen PageAdminSettingsGaPUsersCreate)
-        , H (arb :: Gen PageAdminSettingsGaPClassesView)
+        , H (arb :: Gen AdminViewUsers)
+        , H (arb :: Gen AdminCreateUser)
+        , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
-        , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
+        , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         ]
     context "PageFormView" $ mapM_ testForm [
@@ -67,7 +67,7 @@ spec = do
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
---        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
+--        , F (arb :: Gen AdminEditUser) -- FIXME
         ]
 
 
@@ -288,5 +288,5 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         -- result generation should select from those ideas only.
         <*> pure (view _Id <$> ideas)
 
-instance ArbFormPagePayload PageAdminSettingsGaPUsersEdit where
+instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary

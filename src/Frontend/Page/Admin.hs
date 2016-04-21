@@ -49,43 +49,41 @@ data PageAdminSettingsQuorum =
 
 instance Page PageAdminSettingsQuorum
 
--- FIXME: the following names are a little ridiculous.  s/PageAdminSettingsGaPUsersView/GroupPermUserView/?9
-
 -- | 11.3 Admin settings: Manage groups & permissions
-data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
+data AdminViewUsers = AdminViewUsers [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersView
+instance Page AdminViewUsers
 
-data PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreate
+data AdminCreateUser = AdminCreateUser
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersCreate
+instance Page AdminCreateUser
 
-data PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEdit User [SchoolClass]
+data AdminEditUser = AdminEditUser User [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersEdit
+instance Page AdminEditUser
 
-data PageAdminSettingsGaPUserDelete = PageAdminSettingsGaPUserDelete User
+data AdminDeleteUser = AdminDeleteUser User
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUserDelete
+instance Page AdminDeleteUser
 
-data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
+data AdminViewClasses = AdminViewClasses [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesView
+instance Page AdminViewClasses
 
-data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
+data AdminCreateClass = AdminCreateClass
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesCreate
+instance Page AdminCreateClass
 
-data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolClass [User]
+data AdminEditClass = AdminEditClass SchoolClass [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesEdit
+instance Page AdminEditClass
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
@@ -116,25 +114,25 @@ instance ToMenuItem PageAdminSettingsQuorum where
     toMenuItem _ = MenuItemQuorum
 
 -- | 11.3 Admin settings: Manage groups & permissions
-instance ToMenuItem PageAdminSettingsGaPUsersView where
+instance ToMenuItem AdminViewUsers where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
-instance ToMenuItem PageAdminSettingsGaPUsersCreate where
+instance ToMenuItem AdminCreateUser where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
-instance ToMenuItem PageAdminSettingsGaPUsersEdit where
+instance ToMenuItem AdminEditUser where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
-instance ToMenuItem PageAdminSettingsGaPUserDelete where
+instance ToMenuItem AdminDeleteUser where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
 
-instance ToMenuItem PageAdminSettingsGaPClassesView where
+instance ToMenuItem AdminViewClasses where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
-instance ToMenuItem PageAdminSettingsGaPClassesCreate where
+instance ToMenuItem AdminCreateClass where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
-instance ToMenuItem PageAdminSettingsGaPClassesEdit where
+instance ToMenuItem AdminEditClass where
     toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
 
 -- | 11.4 Admin settings: Events protocol
@@ -274,9 +272,9 @@ adminQuorum =
 
 -- ** roles and permisisons
 
-instance ToHtml PageAdminSettingsGaPUsersView where
+instance ToHtml AdminViewUsers where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
+    toHtmlRaw p@(AdminViewUsers users) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -305,9 +303,9 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                 tbody_ $ renderUserRow `mapM_` users
 
 
-instance ToHtml PageAdminSettingsGaPUsersCreate where
+instance ToHtml AdminCreateUser where
     toHtml = toHtmlRaw
-    toHtmlRaw p@PageAdminSettingsGaPUsersCreate =
+    toHtmlRaw p@AdminCreateUser =
         adminFrame p . semanticDiv p $ do
             div_ [class_ "admin-container"] $ do
                 form_ $ do -- FIXME
@@ -330,9 +328,9 @@ instance ToHtml PageAdminSettingsGaPUsersCreate where
                         div_ [class_ "admin-buttons"] $ do
                             DF.inputSubmit "Speichern"
 
-instance ToHtml PageAdminSettingsGaPClassesView where
+instance ToHtml AdminViewClasses where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
+    toHtmlRaw p@(AdminViewClasses classes) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -374,17 +372,17 @@ roleSelectionChoices =
              , (RoleGuest, "Gast")
              ]
 
-instance FormPage PageAdminSettingsGaPUsersEdit where
-    type FormPagePayload PageAdminSettingsGaPUsersEdit = EditUserPayload
+instance FormPage AdminEditUser where
+    type FormPagePayload AdminEditUser = EditUserPayload
 
-    formAction (PageAdminSettingsGaPUsersEdit user _classes) =
+    formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
 
-    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) _ =
+    redirectOf (AdminEditUser _user _classes) _ =
         U.Admin . U.AdminAccess $ PermUserView
 
     -- FIXME: Show the user's role and class as default in the selections.
-    makeForm (PageAdminSettingsGaPUsersEdit user classes) =
+    makeForm (AdminEditUser user classes) =
         EditUserPayload
             <$> ("user-role"  .: DF.choice roleSelectionChoices role)
             <*> ("user-class" .: DF.choice classValues clval)
@@ -401,7 +399,7 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
             ClassGuest cl -> Just cl
             _             -> Nothing  -- FIXME: see RoleSelection
 
-    formPage v form p@(PageAdminSettingsGaPUsersEdit user _classes) =
+    formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
             div_ [class_ "col-3-12"] $ do
                 div_ [class_ "upload-avatar"] $ do
@@ -422,9 +420,9 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
 
-instance ToHtml PageAdminSettingsGaPClassesEdit where
+instance ToHtml AdminEditClass where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit schoolClss users) =
+    toHtmlRaw p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
             div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
@@ -440,20 +438,20 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
-adminSettingsGaPUsersView :: ActionPersist m => m PageAdminSettingsGaPUsersView
-adminSettingsGaPUsersView = PageAdminSettingsGaPUsersView <$> query getUsers
+adminViewUsers :: ActionPersist m => m AdminViewUsers
+adminViewUsers = AdminViewUsers <$> query getUsers
 
-adminSettingsGaPUsersCreate :: Applicative m => m PageAdminSettingsGaPUsersCreate
-adminSettingsGaPUsersCreate = pure PageAdminSettingsGaPUsersCreate
+adminCreateUser :: Applicative m => m AdminCreateUser
+adminCreateUser = pure AdminCreateUser
 
-adminSettingsGaPClassesView :: ActionPersist m => m PageAdminSettingsGaPClassesView
-adminSettingsGaPClassesView = PageAdminSettingsGaPClassesView <$> query getSchoolClasses
+adminViewClasses :: ActionPersist m => m AdminViewClasses
+adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
-adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
-adminSettingsGaPUserEdit uid = FormPageHandler editUserPage changeUser
+adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
+adminEditUser uid = FormPageHandler editUserPage changeUser
   where
     editUserPage = equery $
-        PageAdminSettingsGaPUsersEdit
+        AdminEditUser
         <$> (maybe404 =<< findUser uid)
         <*> getSchoolClasses
 
@@ -463,20 +461,20 @@ payloadToUserRole :: EditUserPayload -> Role
 payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
 payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
 
-adminSettingsGaPClassesEdit :: ActionPersist m => SchoolClass -> m PageAdminSettingsGaPClassesEdit
-adminSettingsGaPClassesEdit clss =
-    PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
+adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
+adminEditClass clss =
+    AdminEditClass clss <$> query (getUsersInClass clss)
 
-instance FormPage PageAdminSettingsGaPUserDelete where
-    type FormPagePayload PageAdminSettingsGaPUserDelete = ()
-    type FormPageResult PageAdminSettingsGaPUserDelete = ()
+instance FormPage AdminDeleteUser where
+    type FormPagePayload AdminDeleteUser = ()
+    type FormPageResult AdminDeleteUser = ()
 
-    formAction (PageAdminSettingsGaPUserDelete user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
+    formAction (AdminDeleteUser user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
     redirectOf _ _ = U.Admin $ U.AdminAccess PermUserView
 
     makeForm _ = pure ()
 
-    formPage _v form p@(PageAdminSettingsGaPUserDelete user) =
+    formPage _v form p@(AdminDeleteUser user) =
         adminFrame p . semanticDiv p . form $ do
             div_ [class_ "container-confirm"] $ do
                 h1_ "Nutzer löschen"
@@ -485,11 +483,10 @@ instance FormPage PageAdminSettingsGaPUserDelete where
                     DF.inputSubmit "Nutzer löschen"
                     a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
-adminSettingsGaPUserDelete :: forall m. (ActionM m)
-                           => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete
-adminSettingsGaPUserDelete uid =
+adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
+adminDeleteUser uid =
     FormPageHandler
-        (PageAdminSettingsGaPUserDelete <$> equery (maybe404 =<< findUser uid))
+        (AdminDeleteUser <$> equery (maybe404 =<< findUser uid))
         (const $ Action.deleteUser uid)
 
 
@@ -532,20 +529,20 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 
 instance SOP.Generic BatchCreateUsersFormData
 
-instance FormPage PageAdminSettingsGaPClassesCreate where
-    type FormPagePayload PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+instance FormPage AdminCreateClass where
+    type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
-    formAction PageAdminSettingsGaPClassesCreate =
+    formAction AdminCreateClass =
         U.Admin $ U.AdminAccess PermClassCreate
 
-    redirectOf PageAdminSettingsGaPClassesCreate _ =
+    redirectOf AdminCreateClass _ =
         U.Admin $ U.AdminAccess PermClassView
 
-    makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+    makeForm AdminCreateClass = BatchCreateUsersFormData
         <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
         <*> ("file"      DF..: DF.file)
 
-    formPage v form p@PageAdminSettingsGaPClassesCreate = adminFrame p . semanticDiv p $ do
+    formPage v form p@AdminCreateClass = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
         a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
         form $ do
@@ -557,9 +554,9 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
-                              => FormPageHandler m PageAdminSettingsGaPClassesCreate
-adminSettingsGaPClassesCreate = FormPageHandler (pure PageAdminSettingsGaPClassesCreate) q
+adminCreateClass :: forall m. (ActionTempCsvFiles m, ActionM m)
+                              => FormPageHandler m AdminCreateClass
+adminCreateClass = FormPageHandler (pure AdminCreateClass) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
