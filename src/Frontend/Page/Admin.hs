@@ -471,22 +471,20 @@ adminSettingsGaPClassesEdit clss =
 
 instance FormPage PageAdminSettingsGaPUserDelete where
     type FormPagePayload PageAdminSettingsGaPUserDelete = ()
-
     type FormPageResult PageAdminSettingsGaPUserDelete = ()
 
     formAction (PageAdminSettingsGaPUserDelete user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
-
     redirectOf _ _ = U.Admin $ U.AdminAccess PermUserView
 
     makeForm _ = pure ()
 
     formPage _v form p@(PageAdminSettingsGaPUserDelete user) =
         adminFrame p . semanticDiv p . form $ do
-            p_ "Are you sure deleting this user???"
-            DF.inputSubmit "Nutzer löschen"
-            a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Cancel"
-
-    guardPage _ = pure Nothing
+            div_ "Nutzer löschen"
+            div_ $ "Wollen Sie " >> toHtml (userLongName user) >> " wirklich loschen?"
+            div_ [class_ "heroic-btn-group"] $ do
+                DF.inputSubmit "Nutzer löschen"
+                a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
 adminSettingsGaPUserDelete :: forall m. (ActionM m)
                            => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete

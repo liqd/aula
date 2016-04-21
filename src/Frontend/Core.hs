@@ -284,7 +284,7 @@ class Page p => FormPage p where
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
     -- | Guard the form, if the 'guardPage' returns an UriPath the page will
     -- be redirected.
-    -- TODO: Use P.Main
+    -- FIXME: Use P.Main
     guardPage :: (ActionM m) => p -> m (Maybe UriPath)
     guardPage _ = pure Nothing
 

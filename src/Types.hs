@@ -1006,6 +1006,11 @@ userEmailAddress = userEmail . _Just . re emailAddress
 userFullName :: User -> ST
 userFullName u = u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName
 
+userLongName :: User -> ST
+userLongName u = userFullName u <> " [" <> u ^. userLogin . unUserLogin <> email <> "]"
+  where
+    email = maybe nil ((", " <>) . (emailAddress #)) $ u ^. userEmail
+
 userAddress :: User -> Maybe Address
 userAddress u = u ^? userEmailAddress . to (Address . Just $ userFullName u)
 
