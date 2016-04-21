@@ -636,7 +636,7 @@ instance MimeRender CSV EventLog where
     mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
     mimeRender Proxy (EventLog domainUrl rows) =
         cs (intercalate "," eventLogItemCsvHeaders <> "\n")
-        <> Csv.encode ((domainUrl,) <$> rows)
+        <> Csv.encode (URLEventLogItem domainUrl <$> rows)
 
 
 csvUserRecordHeaders :: [String]
