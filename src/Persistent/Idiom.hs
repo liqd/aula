@@ -126,4 +126,4 @@ setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
 
 deactivateUser :: AUID User -> AUpdate ()
 deactivateUser uid
-    = modifyUser uid (set (userSettings . userSettingsPassword) UserPassDeactivated)
+    = modifyUser uid (userSettings . userSettingsPassword .~ UserPassDeactivated)
