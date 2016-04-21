@@ -75,7 +75,7 @@ module Action
 where
 
 import Control.Lens
-import Control.Monad (void, when)
+import Control.Monad ((>=>), void, when)
 import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
@@ -213,13 +213,17 @@ type ActionError m = (MonadError ActionExcept m)
 
 -- * User Handling
 
+checkActiveUser :: ActionUserHandler m => User -> m User
+checkActiveUser user =
+    if isDeletedUser user
+        then logout >> throwError500 "Unknown user identitifer"
+        else pure user
+
 loginByUser :: ActionUserHandler m => User -> m ()
-loginByUser = login . view _Id
+loginByUser = checkActiveUser >=> login . view _Id
 
 loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
-loginByName n = do
-    Just u <- query $ findUserByLogin n  -- FIXME: handle 'Nothing'
-    loginByUser u
+loginByName u = loginByUser =<< mquery (findUserByLogin u)
 
 -- | Returns the current user ID
 currentUserId :: ActionUserHandler m => m (AUID User)
@@ -251,13 +255,15 @@ currentUser = do
     uid <- currentUserId
     muser <- query (findUser uid)
     case muser of
-        Just user -> pure user
-        Nothing   -> logout >> throwError500 "Unknown user identitifer"
+        Just user | isActiveUser user
+            -> pure user
+        _   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
 modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
                   => (AUID User -> ev) -> m a
-modifyCurrentUser ev = currentUserId >>= update . ev
+modifyCurrentUser ev =
+    currentUser >>= checkActiveUser >>= update . ev . view _Id
 
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn

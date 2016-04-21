@@ -38,7 +38,7 @@ aulaTesting =
        (PublicFrame . PageShow <$> Action.query getIdeas)
   :<|> (PublicFrame . PageShow <$> Action.query getSpaces)
   :<|> (PublicFrame . PageShow <$> Action.query getTopics)
-  :<|> (PublicFrame . PageShow <$> Action.query getUsers)
+  :<|> (PublicFrame . PageShow <$> Action.query getAllUsers)
 
   :<|> (PageShow <$> mkRandomPassword)
   :<|> undefined  -- (intentional)

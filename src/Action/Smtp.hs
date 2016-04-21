@@ -97,6 +97,8 @@ sendMailToAddressIO receiver msg = do
   where
 
 sendMailToUser :: HasSendMail e r m => [SendMailFlag] -> User -> EmailMessage -> m ()
+sendMailToUser _ user _
+    | isDeletedUser user = pure () -- FIXME: Log this edge case
 sendMailToUser flags user msg = do
     case userAddress user of
         Just address -> sendMailToAddress address msg

@@ -29,13 +29,13 @@ data PageUserSettings = PageUserSettings User
 instance Page PageUserSettings
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext User ListItemIdeas
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext UserView ListItemIdeas
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas
 
 -- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes RenderContext User [Delegation]
+data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes RenderContext UserView [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes
@@ -113,8 +113,13 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
         update $ SetUserPass uid oldPass newPass1 newPass2
         pure ()
 
-userHeaderDiv :: (Monad m) => RenderContext -> User -> HtmlT m ()
-userHeaderDiv ctx user =
+userHeaderDiv :: (Monad m) => RenderContext -> UserView -> HtmlT m ()
+userHeaderDiv _   (DeletedUser user) =
+    div_ $ do
+        h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
+        p_ "Dieser Nutzer ist gelöscht"
+
+userHeaderDiv ctx (ActiveUser user) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -137,9 +142,12 @@ userHeaderDiv ctx user =
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileCreatedIdeas ctx user ideas) = semanticDiv p $ do
+    toHtml p@(PageUserProfileCreatedIdeas ctx u@(DeletedUser _user) _ideas) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv ctx user
+            userHeaderDiv ctx u
+    toHtml p@(PageUserProfileCreatedIdeas ctx u@(ActiveUser user) ideas) = semanticDiv p $ do
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv ctx u
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
@@ -156,7 +164,7 @@ createdIdeas :: (ActionPersist m, ActionUserHandler m)
 createdIdeas userId = do
     ctx <- renderContext
     equery (do
-        user  <- maybe404 =<< findUser userId
+        user  <- makeUserView <$> (maybe404 =<< findUser userId)
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
@@ -167,9 +175,12 @@ createdIdeas userId = do
 
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileDelegatedVotes ctx user delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileDelegatedVotes ctx u@(DeletedUser _user) _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv ctx user
+            userHeaderDiv ctx u
+    toHtml p@(PageUserProfileDelegatedVotes ctx u@(ActiveUser user) delegations) = semanticDiv p $ do
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv ctx u
             div_ [class_ "heroic-tabs"] $ do
                 a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
                     "Erstellte Ideen"
@@ -210,10 +221,10 @@ renderDelegations _ = do
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
 delegatedVotes userId = do
-    ctx <- renderContext
-    let dv = []  -- FIXME
-    user :: User <- mquery $ findUser userId
-    pure $ PageUserProfileDelegatedVotes ctx user dv
+    PageUserProfileDelegatedVotes
+    <$> renderContext
+    <*> (makeUserView <$> mquery (findUser userId))
+    <*> pure [] -- FIXME
 
 
 -- ** User Profile: Edit profile
