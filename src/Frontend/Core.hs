@@ -486,8 +486,8 @@ ideasSortQuery = f . fromMaybe minBound
     f SortIdeasByAge     = age
     f SortIdeasBySupport = sup . age
 
-    age = sortOnDesc createdAt
-    sup = sortOnDesc $ ideaLikes . to length
+    age = downSortOn createdAt
+    sup = downSortOn $ ideaLikes . to length
 
 type IdeasQuery = (IdeasFilterQuery, IdeasSortQuery)
 
