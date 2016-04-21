@@ -12,13 +12,12 @@
 {-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Admin
 where
 
 import Control.Arrow ((&&&))
-import Network.HTTP.Media ((//))
 import Servant
 
 import qualified Data.Csv as Csv
@@ -28,7 +27,6 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
-import EventLog
 import Persistent.Api
 import Frontend.Prelude
 
@@ -609,9 +607,6 @@ data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
 
 instance SOP.Generic InitialPasswordsCsv
 
-type InitialPasswordsCsvH = Headers '[HeaderListEntry__] InitialPasswordsCsv
-type HeaderListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
-
 
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
 -- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
@@ -656,33 +651,17 @@ instance Csv.ToRecord CsvUserRecord where
         ]
 
 
-data CSV
-
-instance Accept CSV where
-    contentType Proxy = "text" // "csv"
-
-instance MimeRender CSV InitialPasswordsCsv where
+instance MimeRender CSV InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
     mimeRender Proxy (InitialPasswordsCsv rows) =
         cs (intercalate "," csvUserRecordHeaders <> "\n")
         <> Csv.encode rows
 
-instance MimeRender CSV EventLog where
-    mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
-    mimeRender Proxy (EventLog domainUrl rows) =
-        cs (intercalate "," eventLogItemCsvHeaders <> "\n")
-        <> Csv.encode (URLEventLogItem domainUrl <$> rows)
-
-
 csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
 
-instance MimeRender CSV InitialPasswordsCsvH where
-    mimeRender proxy (Headers v _) = mimeRender proxy v
-
-
-adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsvH
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss =
-    addHeader ("attachment; filename=" <> showSchoolClass clss <> ".csv") .
+    csvHeaders (showSchoolClass clss) .
     InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of

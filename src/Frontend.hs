@@ -311,7 +311,7 @@ type AulaAdmin =
   :<|> User ::> "delete" :> FormHandler PageAdminSettingsGaPUserDelete
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
-  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
+  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
   :<|> "events" :> Get '[CSV] EventLog
   :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] EventLog
 

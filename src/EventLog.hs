@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE FlexibleInstances           #-}
 {-# LANGUAGE LambdaCase                  #-}
+{-# LANGUAGE MultiParamTypeClasses       #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
@@ -16,8 +17,10 @@ where
 
 import Control.Lens
 import Data.Maybe (fromMaybe)
+import Data.List (intercalate)
 import Data.String.Conversions
 import GHC.Generics (Generic)
+import Servant
 
 import qualified Data.Csv as CSV
 import qualified Data.Text as ST
@@ -27,6 +30,8 @@ import Data.UriPath
 import Frontend.Path as U
 import Types
 
+
+-- * event logs
 
 data EventLog = EventLog URL [EventLogItem]
   deriving (Eq, Ord, Show, Read, Generic)
@@ -68,6 +73,13 @@ filterEventLog mspc (EventLog domainUrl rows) = EventLog domainUrl $ filter f ro
 
 eventLogItemCsvHeaders :: [String]
 eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
+
+
+instance MimeRender CSV EventLog where
+    mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
+    mimeRender Proxy (EventLog domainUrl rows) =
+        cs (intercalate "," eventLogItemCsvHeaders <> "\n")
+        <> CSV.encode (URLEventLogItem domainUrl <$> rows)
 
 
 instance CSV.ToRecord URLEventLogItem where
