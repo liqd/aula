@@ -480,11 +480,12 @@ instance FormPage PageAdminSettingsGaPUserDelete where
 
     formPage _v form p@(PageAdminSettingsGaPUserDelete user) =
         adminFrame p . semanticDiv p . form $ do
-            div_ "Nutzer löschen"
-            div_ $ "Wollen Sie " >> toHtml (userLongName user) >> " wirklich loschen?"
-            div_ [class_ "heroic-btn-group"] $ do
-                DF.inputSubmit "Nutzer löschen"
-                a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
+            div_ [class_ "container-confirm"] $ do
+                h1_ "Nutzer löschen"
+                p_ $ "Wollen Sie " >> toHtml (userLongName user) >> " wirklich loschen?"
+                div_ [class_ "admin-buttons"] $ do
+                    DF.inputSubmit "Nutzer löschen"
+                    a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
 adminSettingsGaPUserDelete :: forall m. (ActionM m)
                            => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete

@@ -202,3 +202,11 @@ $avatar-size: 118px;
     @include rem(top, -30px);
     position: relative;
 }
+
+.container-confirm {
+    color: $color-negative;
+
+    .admin-buttons {
+        @include rem(margin-top, 20px);
+    }
+}
