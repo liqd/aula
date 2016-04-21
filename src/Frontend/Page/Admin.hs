@@ -661,7 +661,7 @@ csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (fall
 
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss =
-    csvHeaders (showSchoolClass clss) .
+    csvHeaders ("Passwortliste " <> showSchoolClass clss) .
     InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of

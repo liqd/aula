@@ -312,8 +312,8 @@ type AulaAdmin =
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
-  :<|> "events" :> Get '[CSV] EventLog
-  :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] EventLog
+  :<|> "events" :> Get '[CSV] (CsvHeaders EventLog)
+  :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
 
 
 aulaAdmin :: forall m. ActionM m => ServerT AulaAdmin m
@@ -334,8 +334,9 @@ aulaAdmin =
 
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
-adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m EventLog
-adminEventLogCsv mspc = filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
+adminEventLogCsv mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" showIdeaSpaceUI mspc) .
+    filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
 
 
 catch404 :: Middleware
