@@ -325,9 +325,7 @@ form formHandler = getH :<|> postH
     getPage = _formGetPage formHandler
     processor = _formProcessor formHandler
 
-    guard page = do
-        r <- guardPage page
-        maybe (pure ()) (redirect . absoluteUriPath) r
+    guard page = mapM_ (redirect . absoluteUriPath) =<< guardPage page
 
     getH = makeFrame $ do
         page <- getPage
