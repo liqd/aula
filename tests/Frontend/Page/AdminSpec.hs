@@ -36,3 +36,5 @@ spec = do
         context "filtered with bad idea space identifier" . it "works" $ \wreq -> do
             get wreq "/admin/events/no-such-space"
                 `shouldRespond` [codeShouldBe 404]
+
+        -- FIXME: test empty event log.
