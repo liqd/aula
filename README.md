@@ -59,9 +59,14 @@ Now, to have a quick look at the pages, do
 
 ```shell
 make aula-server
+make content
 ```
 
-then point your browser to localhost:8080
+The second line generates some demo content, but also the initial user
+without which you can't login and create more users.  (This is work in
+progress.)
+
+Now point your browser to localhost:8080
 
 
 ## Using sensei for file-watch testing during development (with docker)
@@ -99,14 +104,23 @@ any of `thentos-*` or `aula` will trigger a re-run.
 
 ## HTML hacking
 
-To create arbitrary (randomized) test content and browse it (mostly
-for work on HTML / css):
+In demo mode, the aula footer contains a link "create sample page"
+that points you to a text page that contains the data describing the
+status of the web page you are looking at.
+
+If you cut&paste this value into a file, and move it to
+`$HOME/aula-samples`, you can use the following process to work on the
+`ToHtml` instance of that page in real-time, having instantaneous
+refresh on your changes.  This is also valuable if you want to report
+an issue with the contents of a page.
+
+Again, start the server like above, but this time make sure that
+outside of the docker container, you have $AULA_SAMPLES defined:
 
 ```shell
 export AULA_SAMPLES=$HOME/aula-samples/
 ./docker/run.sh  # do not use --connect here!
 # now you are inside the container.
-make click-dummies-recreate
 make aula-server
 ```
 
