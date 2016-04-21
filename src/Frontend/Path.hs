@@ -252,6 +252,7 @@ data AdminPs =
   | AdminAccess PermissionContext
   | AdminEditUser (AUID User)
   | AdminEditClass SchoolClass
+  | AdminDeleteUser (AUID User)
   | AdminEvent
   | AdminDlPass SchoolClass
   | AdminDlEvents IdeaSpace
@@ -265,6 +266,7 @@ admin AdminQuorum           path = path </> "quorum"
 admin (AdminAccess ctx)     path = path </> "access" </> uriPart ctx
 admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
+admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
 admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "passwords" </> uriPart clss
 admin (AdminDlEvents spc)   path = path </> "events" </> uriPart spc

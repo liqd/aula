@@ -480,6 +480,11 @@ newtype UserLastName  = UserLastName  { _unUserLastName  :: ST }
 
 type instance Proto User = ProtoUser
 
+data UserView
+    = ActiveUser  { _activeUser :: User }
+    | DeletedUser
+  deriving (Eq, Ord, Show, Read, Generic)
+
 data ProtoUser = ProtoUser
     { _protoUserLogin     :: Maybe UserLogin
     , _protoUserFirstName :: UserFirstName
@@ -518,6 +523,7 @@ instance SOP.Generic Role
 data UserPass =
     UserPassInitial   { _userPassInitial   :: ST }
   | UserPassEncrypted { _userPassEncrypted :: SBS } -- FIXME: use "Crypto.Scrypt.EncryptedPass"
+  | UserPassDeactivated
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserPass
@@ -1001,8 +1007,22 @@ userEmailAddress = userEmail . _Just . re emailAddress
 userFullName :: User -> ST
 userFullName u = u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName
 
+userLongName :: User -> ST
+userLongName u = userFullName u <> " [" <> u ^. userLogin . unUserLogin <> email <> "]"
+  where
+    email = maybe nil ((", " <>) . (emailAddress #)) $ u ^. userEmail
+
 userAddress :: User -> Maybe Address
 userAddress u = u ^? userEmailAddress . to (Address . Just $ userFullName u)
+
+isDeletedUser :: User -> Bool
+isDeletedUser = has $ userSettings . userSettingsPassword . _UserPassDeactivated
+
+makeUserView :: User -> UserView
+makeUserView u =
+    if isDeletedUser u
+        then DeletedUser
+        else ActiveUser u
 
 notFeasibleIdea :: Idea -> Bool
 notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible

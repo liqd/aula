@@ -171,6 +171,9 @@ instance Arbitrary PageAdminSettingsGaPUsersView where
 instance Arbitrary PageAdminSettingsGaPUsersEdit where
     arbitrary = PageAdminSettingsGaPUsersEdit <$> arb <*> arb
 
+instance Arbitrary PageAdminSettingsGaPUserDelete where
+    arbitrary = PageAdminSettingsGaPUserDelete <$> arb
+
 instance Arbitrary PageAdminSettingsGaPUsersCreate where
     arbitrary = pure PageAdminSettingsGaPUsersCreate
 
