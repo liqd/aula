@@ -34,6 +34,8 @@ data EventLog = EventLog URL [EventLogItem]
 data EventLogItem = EventLogItem IdeaSpace Timestamp User EventLogItemValue
   deriving (Eq, Ord, Show, Read, Generic)
 
+data URLEventLogItem = URLEventLogItem URL EventLogItem
+
 data EventLogItemValue =
     EventLogUserCreates           (Either3 Topic Idea Comment)
   | EventLogUserEdits             (Either3 Topic Idea Comment)
@@ -68,8 +70,8 @@ eventLogItemCsvHeaders :: [String]
 eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
 
 
-instance CSV.ToRecord (URL, EventLogItem) where
-    toRecord (domainUrl, EventLogItem ispace timestamp user ev) = CSV.toRecord
+instance CSV.ToRecord URLEventLogItem where
+    toRecord (URLEventLogItem domainUrl (EventLogItem ispace timestamp user ev)) = CSV.toRecord
         [ showIdeaSpace ispace
         , showTimestamp timestamp
         , user ^. userLogin . unUserLogin . csi

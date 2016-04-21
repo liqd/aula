@@ -34,7 +34,7 @@ library
     , binary
     , bytestring
     , case-insensitive
-    , cassava
+    , cassava >= 0.4.5.0
     , containers
     , cookie
     , digestive-functors
@@ -132,7 +132,7 @@ executable aula-html-dummies
     , binary
     , bytestring
     , case-insensitive
-    , cassava
+    , cassava >= 0.4.5.0
     , containers
     , cookie
     , digestive-functors
@@ -194,7 +194,7 @@ executable aula-server
     , binary
     , bytestring
     , case-insensitive
-    , cassava
+    , cassava >= 0.4.5.0
     , containers
     , cookie
     , digestive-functors
@@ -254,7 +254,7 @@ test-suite spec
     , binary
     , bytestring
     , case-insensitive
-    , cassava
+    , cassava >= 0.4.5.0
     , containers
     , cookie
     , digestive-functors
