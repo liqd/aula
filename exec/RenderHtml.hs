@@ -85,6 +85,7 @@ pagesForm f =
     , f (Proxy :: Proxy EditTopic)
     , f (Proxy :: Proxy PageAdminSettingsDurations)
     , f (Proxy :: Proxy PageAdminSettingsGaPClassesCreate)
+    , f (Proxy :: Proxy PageAdminSettingsGaPUserDelete)
     , f (Proxy :: Proxy PageAdminSettingsGaPUsersEdit)
     , f (Proxy :: Proxy PageAdminSettingsQuorum)
     , f (Proxy :: Proxy PageHomeWithLoginPrompt)
@@ -98,7 +99,7 @@ doGenerateDelegationNetworksHack :: Bool
 doGenerateDelegationNetworksHack = False
 
 main :: IO ()
-main = error "this really works best if you run via `make click-dummies-refresh`."
+main = error "i'm going to do nothing.  this really works best if you run via `make click-dummies-refresh`."
 
 
 -- | hspec test case: for the sensei loop
