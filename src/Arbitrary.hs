@@ -142,7 +142,7 @@ instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserProfileDelegatedVotes where
-    arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb
+    arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
 
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb

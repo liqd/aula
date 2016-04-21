@@ -35,7 +35,7 @@ data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext Use
 instance Page PageUserProfileCreatedIdeas
 
 -- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes User [Delegation]
+data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes RenderContext User [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes
@@ -132,20 +132,24 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
         update $ SetUserPass uid oldPass newPass1 newPass2
         pure ()
 
-userHeaderDiv :: (Monad m) => User -> HtmlT m ()
-userHeaderDiv user =
+userHeaderDiv :: (Monad m) => RenderContext -> User -> HtmlT m ()
+userHeaderDiv ctx user =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
         span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
         p_ [class_ "sub-header"] $ user ^. userDesc . html
-        div_ [class_ "heroic-btn-group"] $ do
-            button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
-                i_ [class_ "icon-bullhorn"] nil
-                "Klassenweit beauftragen" --FIXME
-            button_ [class_ "heroic-cta btn-cta", value_ ""] $ do
-                i_ [class_ "icon-bullhorn"] nil
-                "Schulweit beauftragen" -- FIXME
+
+        let isOwnProfile = ctx ^. renderContextUser . _Id == user ^. _Id
+            btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
+
+        div_ [class_ "heroic-btn-group"] $ if isOwnProfile
+            then do
+                btn U.UserProfile "+ Profile bearbeiten"
+            else do
+                btn U.Broken "Klassenweit beauftragen"
+                btn U.Broken "Schulweit beauftragen"
+                btn U.Broken "melden"
 
 
 -- ** User Profile: Created Ideas
@@ -154,14 +158,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
     toHtml p@(PageUserProfileCreatedIdeas ctx user ideas) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            when (ctx ^. renderContextUser . _Id == user ^. _Id) $ do
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ do
-                            a_ [href_ U.UserProfile] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-            userHeaderDiv user
+            userHeaderDiv ctx user
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
@@ -189,9 +186,9 @@ createdIdeas userId = do
 
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileDelegatedVotes user delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileDelegatedVotes ctx user delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv user
+            userHeaderDiv ctx user
             div_ [class_ "heroic-tabs"] $ do
                 a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
                     "Erstellte Ideen"
@@ -229,11 +226,13 @@ renderDelegations _ = do
                         a_ [href_ U.Broken] "UserName, "
                         a_ [href_ U.Broken] "UserName"
 
-delegatedVotes :: ActionPersist m => AUID User -> m PageUserProfileDelegatedVotes
+delegatedVotes :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileDelegatedVotes
 delegatedVotes userId = do
+    ctx <- renderContext
     let dv = []  -- FIXME
     user :: User <- mquery $ findUser userId
-    pure $ PageUserProfileDelegatedVotes user dv
+    pure $ PageUserProfileDelegatedVotes ctx user dv
 
 
 -- ** User Profile: Edit profile
