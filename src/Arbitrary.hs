@@ -101,15 +101,15 @@ instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb <*> arb
+    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
 
 instance Arbitrary ViewTopicTab where
-    arbitrary = elements [ TabAllIdeas Nothing
-                         , TabVotingIdeas Nothing
-                         , TabWinningIdeas Nothing
+    arbitrary = elements [ TabAllIdeas (Nothing, Nothing)
+                         , TabVotingIdeas (Nothing, Nothing)
+                         , TabWinningIdeas (Nothing, Nothing)
                          , TabDelegation
                          ]
 
@@ -265,6 +265,9 @@ instance Arbitrary ListInfoForIdea where
     arbitrary = garbitrary
 
 instance Arbitrary IdeaCapability where
+    arbitrary = garbitrary
+
+instance Arbitrary SortIdeasBy where
     arbitrary = garbitrary
 
 

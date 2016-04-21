@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -13,46 +14,63 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Core
-    ( Singular, CaptureData, (::>), Reply
-    , RenderContext(..)
-    , renderContext, renderContextUser
-    , GetH
-    , PostH
-    , Page, isPrivatePage, extraPageHeaders, extraBodyClasses
-    , PageShow(PageShow)
-    , Beside(Beside)
-    , Frame(..), makeFrame, pageFrame, frameBody, frameUser
-    , FormHandler
-    , FormPage, FormPagePayload, FormPageResult
+    ( -- * helpers for routing tables
+      Singular, CaptureData, (::>), Reply
+    , GetH, PostH, FormHandler
+
+      -- * helpers for handlers
+    , semanticDiv
+    , html
+    , Beside(..)
+    , tabSelected
+    , redirect
+    , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
+    , numLikes, percentLikes
+
+      -- * render context
+    , RenderContext(RenderContext), _renderContextUser, renderContextUser
+    , renderContext
+
+      -- * pages
+    , Page(..)
+    , PageShow(..)
+
+      -- * forms
+    , FormPage
+    , FormPagePayload, FormPageResult
     , formAction, redirectOf, makeForm, formPage, guardPage
+
+    , FormPageRep(..)
     , FormPageHandler(..), formGetPage, formProcessor
     , form
-    , AuthorWidget(AuthorWidget)
-    , CommentVotesWidget(CommentVotesWidget)
-    , semanticDiv
-    , showed
-    , tabSelected
-    , html
-    , redirect
-    , avatarImgFromMaybeURL, avatarImgFromHasMeta, avatarImgFromMeta
-    -- Test only  -- (TODO: "Test only" comment should be removed, right?)
-    , FormPageRep(..) -- FIXME: Create Frontend.Core.Internal module, and not export this one.
-    , numLikes
-    , percentLikes
+
+      -- * frames
+    , Frame(..), frameBody, frameUser
+    , makeFrame
+
+      -- * sort & filter
+    , IdeasFilterApi, IdeasFilterQuery
+    , IdeasSortApi, IdeasSortQuery, SortIdeasBy(..)
+    , IdeasQuery
+    , ideasRunQuery
+    , listIdeasWithQuery
+
+      -- * js glue
     , JsCallback(..), onclickJs
     )
-where
+  where
 
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
-import Control.Monad (when, replicateM_)
-import Data.Maybe (isJust, fromJust)
+import Control.Monad (replicateM_)
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.String.Conversions
 import Data.Typeable
+import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
@@ -64,6 +82,7 @@ import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -71,22 +90,13 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Config
 import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
-import LifeCycle
-import Lucid.Missing (script_, href_, src_, postButton_, nbsp)
+import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
 import qualified Frontend.Path as P
 
 
--- | js glue
-onclickJs :: JsCallback -> Attribute
-onclickJs (JsReloadOnClick hash) = Lucid.onclick_ $ "reloadOnClick(" <> cs (show hash) <> ")"
-
--- | (see 'onclickJs')
-data JsCallback =
-    JsReloadOnClick ST
-  deriving (Eq, Ord, Show, Read)
-
+-- * helpers for routing tables
 
 -- FIXME could use closed-type families
 type family Singular    a :: Symbol
@@ -119,30 +129,20 @@ type instance CaptureData UpDown             = UpDown
 type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 
+-- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
+-- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
+-- plaintext version of any page can be requested using curl on the resp. URL with @-H"content-type:
+-- text/plain"@.
+--
+-- Using this via `curl` is complicated by the fact that we need cookie authentication, so this
+-- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
+-- for more details).
+type GetH = Get '[HTML, PlainText]
+type PostH = Post '[HTML] ()
+type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageResult p)
 
--- | Contains all the information which is needed to render a user role dependent functionality.
-data RenderContext = RenderContext
-      { _renderContextUser     :: User
-      }
-  deriving (Eq, Read, Show)
 
-makeLenses ''RenderContext
-
--- | Calculates the render context for role sensitive page rendering
-renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
-renderContext = RenderContext <$> currentUser
-
-
--- | FIXME: Could this be a PR for lucid?
-instance ToHtml (HtmlT Identity ()) where
-    toHtmlRaw = toHtml
-    toHtml = HtmlT . return . runIdentity . runHtmlT
-
--- | FIXME: Could this be a PR for lucid?
-instance ToHtml () where
-    toHtmlRaw = toHtml
-    toHtml = nil
-
+-- * helpers for handlers
 
 -- | This will generate the following snippet:
 --
@@ -159,28 +159,108 @@ instance ToHtml () where
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
+html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
+html = to toHtml
 
--- * building blocks
+data Beside a b = Beside a b
 
--- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
-data Frame body
-    = Frame { _frameUser :: User, _frameBody :: body }
-    | PublicFrame               { _frameBody :: body }
-  deriving (Show, Read, Functor)
+instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
+    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
+    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
-makeLenses ''Frame
 
--- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
--- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
--- plaintext version of any page can be requested using curl on the resp. URL with @-H"content-type:
--- text/plain"@.
---
--- Using this via `curl` is complicated by the fact that we need cookie authentication, so this
--- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
--- for more details).
-type GetH = Get '[HTML, PlainText]
-type PostH = Post '[HTML] ()
-type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageResult p)
+tabSelected :: Eq tab => tab -> tab -> ST
+tabSelected curTab targetTab
+    | curTab == targetTab = "tab-selected"
+    | otherwise           = "tab-not-selected"
+
+
+redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
+redirect uri = throwServantErr $
+    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+
+avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
+avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
+
+avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
+avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
+
+avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
+avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
+
+
+numLikes :: Idea -> Int
+numLikes idea = Map.size $ idea ^. ideaLikes
+
+-- div by zero is caught silently: if there are no voters, the quorum is 100% (no likes is enough
+-- likes in that case).
+-- FIXME: we could assert that values are always between 0..100, but the inconsistent test
+-- data violates that invariant.
+percentLikes :: Idea -> Int -> Int
+percentLikes idea numVoters = {- assert c -} v
+  where
+    -- c = numVoters >= 0 && v >= 0 && v <= 100
+    v = if numVoters == 0
+          then 100
+          else (numLikes idea * 100) `div` numVoters
+
+
+-- * render context
+
+-- | Contains all the information which is needed to render a user role dependent functionality.
+data RenderContext = RenderContext
+      { _renderContextUser     :: User
+      }
+  deriving (Eq, Read, Show)
+
+-- | Calculates the render context for role sensitive page rendering
+renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
+renderContext = RenderContext <$> currentUser
+
+
+-- * pages
+
+-- | Defines some properties for pages
+class Page p where
+    isPrivatePage :: proxy p -> Bool
+    isPrivatePage _ = True
+
+    extraPageHeaders  :: p -> Html ()
+    extraPageHeaders _ = nil
+
+    extraBodyClasses  :: p -> [ST]
+    extraBodyClasses _ = nil
+
+instance Page () where
+    isPrivatePage _ = False
+
+instance Page ST where
+    isPrivatePage _ = True -- safer default, might need to be changed if needed
+
+instance (Page a, Page b) => Page (Beside a b) where
+    isPrivatePage _ = isPrivatePage (Proxy :: Proxy a) || isPrivatePage (Proxy :: Proxy b)
+    extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
+
+instance Page p => Page (Frame p) where
+    isPrivatePage  _ = isPrivatePage (Proxy :: Proxy p)
+    extraPageHeaders = extraPageHeaders . _frameBody
+
+
+-- | Debugging page, uses the 'Show' instance of the underlying type.
+newtype PageShow a = PageShow { _unPageShow :: a }
+    deriving (Show)
+
+instance Page (PageShow a)
+
+instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
+    mimeRender Proxy = cs . ppShow
+
+instance Show a => ToHtml (PageShow a) where
+    toHtmlRaw = toHtml
+    toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
+
+
+-- * forms
 
 -- | Render Form based Views
 class Page p => FormPage p where
@@ -207,31 +287,78 @@ class Page p => FormPage p where
     guardPage :: (ActionM m) => p -> m (Maybe UriPath)
     guardPage _ = pure Nothing
 
+-- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
+data FormPageRep p = FormPageRep (View (Html ())) ST p
 
--- | Defines some properties for pages
-class Page p where
-    isPrivatePage :: proxy p -> Bool
-    isPrivatePage _ = True
+instance (Show p) => Show (FormPageRep p) where
+    show (FormPageRep _v _a p) = show p
 
-    extraPageHeaders  :: p -> Html ()
-    extraPageHeaders _ = nil
+instance Page p => Page (FormPageRep p) where
+    isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)
+    extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
 
-    extraBodyClasses  :: p -> [ST]
-    extraBodyClasses _ = nil
+instance FormPage p => ToHtml (FormPageRep p) where
+    toHtmlRaw = toHtml
+    toHtml (FormPageRep v a p) =  toHtml $ formPage v frm p
+      where
+        frm bdy = DF.childErrorList "" v >> DF.form v a bdy
 
-instance Page () where
-    isPrivatePage _ = False
+data FormPageHandler m p = FormPageHandler
+    { _formGetPage   :: m p
+    , _formProcessor :: FormPagePayload p -> m (FormPageResult p)
+    }
 
-instance Page ST where
-    isPrivatePage _ = True -- safer default, might need to be changed if needed
+-- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
+-- move parts of it there?)
+--
+-- Note on file upload: The 'processor' argument is responsible for reading all file contents before
+-- returning a WHNF from 'popTempCsvFile'.  'cleanupTempCsvFiles' will be called from within this
+-- function as a 'processor' finalizer, so be weary of lazy IO!
+--
+-- Note that since we read (or write to) files eagerly and close them in obviously safe
+-- places (e.g., a parent thread of all potentially file-opening threads, after they all
+-- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
+-- the `resourcet` engine and it's use pattern.
+form :: (FormPage p, Page p, ActionM m) => FormPageHandler m p -> ServerT (FormHandler p) m
+form formHandler = getH :<|> postH
+  where
+    getPage = _formGetPage formHandler
+    processor = _formProcessor formHandler
 
-instance (Page a, Page b) => Page (Beside a b) where
-    isPrivatePage _ = isPrivatePage (Proxy :: Proxy a) || isPrivatePage (Proxy :: Proxy b)
-    extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
+    guard page = do
+        r <- guardPage page
+        maybe (pure ()) (redirect . absoluteUriPath) r
 
-instance Page p => Page (Frame p) where
-    isPrivatePage  _ = isPrivatePage (Proxy :: Proxy p)
-    extraPageHeaders = extraPageHeaders . view frameBody
+    getH = makeFrame $ do
+        page <- getPage
+        guard page
+        let fa = absoluteUriPath . relPath $ formAction page
+        v <- getForm fa (processor1 page)
+        pure $ FormPageRep v fa page
+
+    postH formData = makeFrame $ do
+        page <- getPage
+        let fa = absoluteUriPath . relPath $ formAction page
+            env = getFormDataEnv formData
+        (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
+        (case mpayload of
+            Just payload -> processor2 page payload >>= redirect
+            Nothing      -> pure $ FormPageRep v fa page)
+            `finally` cleanupTempCsvFiles formData
+
+    -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
+    -- produces a type error.  is this a ghc bug, or a bug in our code?)
+    processor1 = makeForm
+    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
+
+
+-- * frames
+
+-- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
+data Frame body
+    = Frame { _frameUser :: User, _frameBody :: body }
+    | PublicFrame               { _frameBody :: body }
+  deriving (Show, Read, Functor)
 
 makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => m p -> m (Frame p)
@@ -324,157 +451,76 @@ footerMarkup = do
     script_ [src_ $ P.TopStatic "js/custom.js"]
 
 
-tabSelected :: Eq tab => tab -> tab -> ST
-tabSelected curTab targetTab
-    | curTab == targetTab = "tab-selected"
-    | otherwise           = "tab-not-selected"
+-- * sort & filter
 
-html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
-html = to toHtml
+type IdeasFilterApi = QueryParam "category" Category
+type IdeasFilterQuery = Maybe Category
 
-data Beside a b = Beside a b
+ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
+ideasFilterQuery = \case
+    (Just cat) -> filter ((== Just cat) . view ideaCategory)
+    Nothing    -> id
 
-instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
-    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
-    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
+type IdeasSortApi = QueryParam "sortby" SortIdeasBy
+type IdeasSortQuery = Maybe SortIdeasBy
 
--- | Debugging page, uses the 'Show' instance of the underlying type.
-newtype PageShow a = PageShow { _unPageShow :: a }
-    deriving (Show)
+data SortIdeasBy = SortIdeasByAge | SortIdeasBySupport
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
-instance Page (PageShow a)
+instance SOP.Generic SortIdeasBy
 
-instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
-    mimeRender Proxy = cs . ppShow
+instance FromHttpApiData SortIdeasBy where
+    parseUrlPiece = \case
+        "age" -> Right SortIdeasByAge
+        "sup" -> Right SortIdeasBySupport
+        _     -> Left "no parse"
 
-instance Show a => ToHtml (PageShow a) where
-    toHtmlRaw = toHtml
-    toHtml = pre_ . code_ . toHtml . ppShow . _unPageShow
+instance ToHttpApiData SortIdeasBy where
+    toUrlPiece = \case
+        SortIdeasByAge     -> "age"
+        SortIdeasBySupport -> "sup"
 
-data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
+ideasSortQuery :: IdeasSortQuery -> [Idea] -> [Idea]
+ideasSortQuery = f . fromMaybe minBound
+  where
+    f SortIdeasByAge     = age
+    f SortIdeasBySupport = sup . age
 
-instance ToHtml CommentVotesWidget where
-    toHtmlRaw = toHtml
-    toHtml p@(CommentVotesWidget caps comment) = semanticDiv p $ do
-        div_ [class_ "comment-votes"] $ do
-            voteButton Up
-            voteButton Down
-      where
-        votes = comment ^. commentVotes
-        voteButton v = do
-            span_ [class_ $ "comment-vote-" <> vs] $ do
-                countCommentVotes v votes ^. showed . html
-                let likeButton = if CanVoteComment `elem` caps
-                        then postButton_ [ class_ "btn"
-                                         , onclickJs . JsReloadOnClick . P.anchor $ comment ^. _Id
-                                         ]
-                                     (P.voteComment comment v)
-                        else div_ [class_ "btn"]
-                likeButton $
-                    i_ [class_ $ "icon-thumbs-o-" <> vs] nil
-          where vs = cs . lowerFirst $ show v
+    age = sortOnDesc createdAt
+    sup = sortOnDesc $ ideaLikes . to length
 
-newtype AuthorWidget a = AuthorWidget { _authorWidgetMeta :: MetaInfo a }
+type IdeasQuery = (IdeasFilterQuery, IdeasSortQuery)
 
-instance (Typeable a) => ToHtml (AuthorWidget a) where
-    toHtmlRaw = toHtml
-    toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
-        div_ [class_ "author"] .
-            a_ [href_ $ P.User (mi ^. metaCreatedBy) P.UserIdeas] $ do
-                span_ [class_ "author-image"] $ avatarImgFromMeta mi
-                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . unUserLogin . html
+ideasRunQuery :: IdeasQuery -> [Idea] -> [Idea]
+ideasRunQuery (f, s) = ideasSortQuery s . ideasFilterQuery f
 
--- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
-data FormPageRep p = FormPageRep (View (Html ())) ST p
+listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> URL
+listIdeasWithQuery loc (qf, qs) = (absoluteUriPath . relPath . P.listIdeas $ loc)
+                               <> renderBoth (catMaybes [renderFilter <$> qf, renderSort <$> qs])
+  where
+    renderFilter :: Category -> ST
+    renderFilter v = "category=" <> toUrlPiece v
 
-instance (Show p) => Show (FormPageRep p) where
-    show (FormPageRep _v _a p) = show p
+    renderSort :: SortIdeasBy -> ST
+    renderSort v = "sortby=" <> toUrlPiece v
 
-instance Page p => Page (FormPageRep p) where
-    isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)
-    extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
+    renderBoth :: [ST] -> ST
+    renderBoth []  = nil
+    renderBoth kvs = "?" <> ST.intercalate "&" kvs
 
-instance FormPage p => ToHtml (FormPageRep p) where
-    toHtmlRaw = toHtml
-    toHtml (FormPageRep v a p) =  toHtml $ formPage v form p
-      where
-        form bdy = DF.childErrorList "" v >> DF.form v a bdy
 
-redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
-redirect uri = throwServantErr $
-    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+-- * js glue
 
-avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
-avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
+data JsCallback =
+    JsReloadOnClick ST
+  deriving (Eq, Ord, Show, Read)
 
-avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
-avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
+onclickJs :: JsCallback -> Attribute
+onclickJs (JsReloadOnClick hash) = Lucid.onclick_ $ "reloadOnClick(" <> cs (show hash) <> ")"
 
-avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
-avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
 
-data FormPageHandler m p = FormPageHandler
-    { _formGetPage   :: m p
-    , _formProcessor :: FormPagePayload p -> m (FormPageResult p)
-    }
+-- * lenses
 
+makeLenses ''RenderContext
 makeLenses ''FormPageHandler
-
--- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
--- move parts of it there?)
---
--- Note on file upload: The 'processor' argument is responsible for reading all file contents before
--- returning a WHNF from 'popTempCsvFile'.  'cleanupTempCsvFiles' will be called from within this
--- function as a 'processor' finalizer, so be weary of lazy IO!
---
--- Note that since we read (or write to) files eagerly and close them in obviously safe
--- places (e.g., a parent thread of all potentially file-opening threads, after they all
--- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
--- the `resourcet` engine and it's use pattern.
-form :: (FormPage p, Page p, ActionM m) => FormPageHandler m p -> ServerT (FormHandler p) m
-form formHandler = getH :<|> postH
-  where
-    getPage = formHandler ^. formGetPage
-    processor = formHandler ^. formProcessor
-
-    guard page = do
-        r <- guardPage page
-        when (isJust r) . redirect . absoluteUriPath $ fromJust r
-
-    getH = makeFrame $ do
-        page <- getPage
-        guard page
-        let fa = absoluteUriPath . relPath $ formAction page
-        v <- getForm fa (processor1 page)
-        pure $ FormPageRep v fa page
-
-    postH formData = makeFrame $ do
-        page <- getPage
-        let fa = absoluteUriPath . relPath $ formAction page
-            env = getFormDataEnv formData
-        (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
-        (case mpayload of
-            Just payload -> processor2 page payload >>= redirect
-            Nothing      -> pure $ FormPageRep v fa page)
-            `finally` cleanupTempCsvFiles formData
-
-    -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
-    -- produces a type error.  is this a ghc bug, or a bug in our code?)
-    processor1 = makeForm
-    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
-
-
-numLikes :: Idea -> Int
-numLikes idea = Map.size $ idea ^. ideaLikes
-
--- div by zero is caught silently: if there are no voters, the quorum is 100% (no likes is enough
--- likes in that case).
--- FIXME: we could assert that values are always between 0..100, but the inconsistent test
--- data violates that invariant.
-percentLikes :: Idea -> Int -> Int
-percentLikes idea numVoters = {- assert c -} v
-  where
-    -- c = numVoters >= 0 && v >= 0 && v <= 100
-    v = if numVoters == 0
-          then 100
-          else (numLikes idea * 100) `div` numVoters
+makeLenses ''Frame

@@ -170,17 +170,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
-            div_ [class_ "grid"] $ do
-                -- Settings button
-                div_ [class_ "ideas-list"] $ do
-                    div_ [class_ "btn-settings pop-menu"] $ do
-                        i_ [class_ "icon-sort", title_ "Sort by"] nil  -- FIXME German
-                        ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"] $ do
-                                a_ [href_ U.Broken] "popularity" -- FIXME German / Dummy
-                            li_ [class_ "pop-menu-list-item"] $ do
-                                a_ [href_ U.Broken] "date"  -- FIXME German / Dummy
-                    toHtml ideas
+            div_ [class_ "grid"] $ toHtml ideas
 
 -- | List all the created ideas for the given user.
 createdIdeas :: (ActionPersist m, ActionUserHandler m)
@@ -189,7 +179,8 @@ createdIdeas userId = do
     ctx <- renderContext
     equery (do
         user  <- maybe404 =<< findUser userId
-        ideas <- ListItemIdeas ctx Nothing
+        ideas <- ListItemIdeas ctx IdeaInUserProfile
+                    (IdeaLocationSpace SchoolSpace) (Nothing, Nothing)
               <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
         pure $ PageUserProfileCreatedIdeas ctx user ideas)
 

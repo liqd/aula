@@ -4,8 +4,9 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -22,7 +23,6 @@ where
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
-import Frontend.Fragment.Category
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 
@@ -36,9 +36,9 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * types
 
 data ViewTopicTab
-  = TabAllIdeas     { _viewTopicTabFilter :: IdeasFilterQuery }
-  | TabVotingIdeas  { _viewTopicTabFilter :: IdeasFilterQuery }
-  | TabWinningIdeas { _viewTopicTabFilter :: IdeasFilterQuery }
+  = TabAllIdeas     { _viewTopicTabQuery :: IdeasQuery }
+  | TabVotingIdeas  { _viewTopicTabQuery :: IdeasQuery }
+  | TabWinningIdeas { _viewTopicTabQuery :: IdeasQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -105,16 +105,7 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicIdeas _ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
-        div_ [class_ "ideas-list"] $ do
-            categoryFilterButtons (topicIdeaLocation topic) (tab ^? viewTopicTabFilter . _Just)
-            div_ [class_ "btn-settings pop-menu"] $ do  -- not sure what settings are meant here?
-                i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
-                ul_ [class_ "pop-menu-list"] $ do
-                    li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [href_ U.Broken] "Unterstützung"  -- FIXME Dummy
-                    li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [href_ U.Broken] "Datum"  -- FIXME Dummy
-            toHtml ideasAndNumVoters
+        div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
 viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
@@ -152,9 +143,9 @@ viewTopicHeaderDiv topic tab = do
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab (TabAllIdeas Nothing)
-                t2 = tabLink topic tab (TabVotingIdeas Nothing)
-                t3 = tabLink topic tab (TabWinningIdeas Nothing)
+            let t1 = tabLink topic tab (TabAllIdeas (Nothing, Nothing))
+                t2 = tabLink topic tab (TabVotingIdeas (Nothing, Nothing))
+                t3 = tabLink topic tab (TabWinningIdeas (Nothing, Nothing))
                 t4 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.
@@ -273,12 +264,12 @@ viewTopic tab topicId = do
                 pure $ ViewTopicDelegations topic delegations
             _ ->
               do
-                ideas <- ideasFilterQuery (tab ^? viewTopicTabFilter . _Just)
-                      <$> findIdeasByTopic topic
-                ideasAndNumVoters <- ListItemIdeas
-                    ctx
-                    (tab ^? viewTopicTabFilter . _Just)
-                    <$> (getListInfoForIdea `mapM` ideas)
+                let loc = topicIdeaLocation topic
+                    ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
+                               $ tab ^? viewTopicTabQuery
+                ideas <- ideasRunQuery ideasQuery <$> findIdeasByTopic topic
+                ideasAndNumVoters <- ListItemIdeas ctx IdeaInViewTopic loc ideasQuery <$>
+                                            (getListInfoForIdea `mapM` ideas)
 
                 pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
 

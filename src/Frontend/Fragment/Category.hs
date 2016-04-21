@@ -11,14 +11,10 @@
 
 module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
-    , IdeasFilterApi
-    , IdeasFilterQuery
     , categoryFilterButtons
     , categoryToUiText
     , categoryUiTexts
     , formPageSelectCategory
-    , ideasFilterQuery
-    , linkToCategory
     , makeFormSelectCategory
     )
 where
@@ -26,20 +22,10 @@ where
 import Frontend.Prelude
 
 import qualified Data.Text as ST
-import qualified Frontend.Path as U
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
-
-
-type IdeasFilterApi = QueryParam "category" Category
-type IdeasFilterQuery = Maybe Category
-
-ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
-ideasFilterQuery = \case
-    (Just cat) -> filter ((== Just cat) . view ideaCategory)
-    Nothing    -> id
 
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
@@ -89,20 +75,15 @@ categoryUiTexts :: IsString s => [(Category, s)]
 categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
-linkToCategory :: IdeaLocation -> Maybe Category -> ST
-linkToCategory loc mcat =
-       (absoluteUriPath . relPath . U.listIdeas $ loc)
-    <> maybe nil (("?category=" <>) . toUrlPiece) mcat
-
-categoryFilterButtons :: Monad m => IdeaLocation -> IdeasFilterQuery -> HtmlT m ()
-categoryFilterButtons loc filterQuery = div_ [class_ "icon-list"] $ do
+categoryFilterButtons :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
+categoryFilterButtons loc (qf, qs) = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) :
-                [ "m-active" | filterQuery == Just cat ]
+                [ "m-active" | qf == Just cat ]
             ] $
-            let filterQuery' = if filterQuery == Just cat
+            let qf' = if qf == Just cat
                   then Nothing
                   else Just cat
-            in a_ [Lucid.href_ $ linkToCategory loc filterQuery']
+            in a_ [Lucid.href_ $ listIdeasWithQuery loc (qf', qs)]
                 (categoryToUiText cat)

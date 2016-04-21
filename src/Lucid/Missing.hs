@@ -4,6 +4,9 @@
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE TypeFamilies          #-}
 
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
+
+
 -- | (FIXME: push most of this upstream to lucid or digestive-functors-lucid?  it'll be tricky in
 -- some places as we are using Data.UriPath from this package.)
 module Lucid.Missing
@@ -117,3 +120,12 @@ postButton_ attrs path = formMethodPost_ [] path . Lucid.button_ ([ type_ "submi
 -- | non-breaking space with a type.
 nbsp :: ST
 nbsp = "&nbsp;"
+
+
+instance Lucid.ToHtml (Lucid.HtmlT Identity ()) where
+    toHtmlRaw = toHtml
+    toHtml = Lucid.HtmlT . return . runIdentity . Lucid.runHtmlT
+
+instance Lucid.ToHtml () where
+    toHtmlRaw = Lucid.toHtml
+    toHtml () = ""

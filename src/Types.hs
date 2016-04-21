@@ -23,6 +23,8 @@ import Control.Lens
 import Control.Monad
 import Data.Binary
 import Data.Char
+import Data.Function (on)
+import Data.List (sortBy)
 import Data.Map (Map, fromList)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
@@ -101,6 +103,13 @@ instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a
 
 app2 :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 app2 f g x y = f $ g x y
+
+sortOn :: Ord b => Getter a b -> [a] -> [a]
+sortOn l = sortBy (compare `on` view l)
+
+sortOnDesc :: Ord b => Getter a b -> [a] -> [a]
+sortOnDesc l = reverse . sortOn l
+
 
 -- * prototypes for types
 
