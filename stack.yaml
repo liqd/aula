@@ -27,6 +27,7 @@ extra-deps:
 # for thentos-core
 - attoparsec-0.13.0.1
 - bcrypt-0.0.8
+- cassava-0.4.5.0
 - configifier-0.1.0
 - digestive-functors-blaze-0.6.0.6
 - elocrypt-0.4.1
