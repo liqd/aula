@@ -74,4 +74,5 @@ $(makeAcidic ''AulaData
     , 'setUserPass
     , 'setUserRole
     , 'deleteComment
+    , 'deactivateUser
     ])

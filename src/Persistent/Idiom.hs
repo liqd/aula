@@ -123,3 +123,7 @@ checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
 
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
+
+deactivateUser :: AUID User -> AUpdate ()
+deactivateUser uid
+    = modifyUser uid (set (userSettings . userSettingsPassword) UserPassDeactivated)

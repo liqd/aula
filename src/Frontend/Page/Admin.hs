@@ -482,16 +482,11 @@ instance FormPage PageAdminSettingsGaPUserDelete where
 
     formPage _v form p@(PageAdminSettingsGaPUserDelete user) =
         adminFrame p . semanticDiv p . form $ do
-            p_ "Are you sure???"
-            a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Cancel"
+            p_ "Are you sure deleting this user???"
             DF.inputSubmit "Nutzer löschen"
+            a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Cancel"
 
-    guardPage _ = do
-        role <- view userRole <$> currentUser
-        -- FIXME: Log invalid user deletion attempt.
-        pure $ if role /= Admin
-                then Just . relPath $ U.Logout
-                else Nothing
+    guardPage _ = pure Nothing
 
 adminSettingsGaPUserDelete :: forall m. (ActionM m)
                            => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete
