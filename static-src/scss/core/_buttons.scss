@@ -5,6 +5,7 @@
     font-family: $font-family-regular;
     line-height: $button-height;
     text-transform: uppercase;
+    vertical-align: middle;
 
     &:hover, &:focus {
         text-decoration: none;

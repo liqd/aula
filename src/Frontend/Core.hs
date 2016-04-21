@@ -386,10 +386,11 @@ pageFrame p mUser bdy = do
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
+        headerMarkup mUser
         _ <- div_ [class_ "page-wrapper"] $ do
-            headerMarkup mUser
-            div_ [class_ "grid main-grid"] $ do
-                bdy
+            div_ [class_ "main-grid-container"] $ do
+                div_ [class_ "grid main-grid"] $ do
+                    bdy
         footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
