@@ -71,29 +71,10 @@ instance FormPage PageUserSettings where
 
     makeForm (PageUserSettings user) =
         UserSettingData
-        <$> ("email"         .: emailField)
+        <$> ("email"         .: emailField (user ^. userEmail))
         <*> ("old-password"  .: DF.optionalText Nothing)
         <*> ("new-password1" .: DF.optionalText Nothing)
         <*> ("new-password2" .: DF.optionalText Nothing)
-
-      where
-        email = user ^. userEmail
-        emailField =
-            {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
-                from texts to @EmailAddress@. Here we want to traverse the text of an email address
-                thus one needs to reverse this prisms. While Prisms cannot be reversed in full
-                generality we could expect a weaker form which also traversals, this would look
-                like that:
-
-                email & rev emailAddress %%~ DF.optionalText
-
-                Instead we have the code below which extracts the text of the email address if
-                there is such an email address, optionalText gets a @Maybe ST@, finally the
-                result of optionalText is processed with a pure function from @Maybe ST@ to
-                @Maybe EmailAddress@ where only a valid text representation of an email gets
-                mapped to @Just@  of an @EmailAddress@.
-            -}
-            (>>= preview emailAddress) <$> DF.optionalText (email ^? _Just . re emailAddress)
 
     formPage v form p = do
         semanticDiv p $ do
