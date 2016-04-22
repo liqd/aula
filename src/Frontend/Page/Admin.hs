@@ -403,15 +403,7 @@ roleSelection = to $ \case
     Admin        -> RoleSelAdmin
 
 chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
-chooseRole mr = DF.choice roleSelectionChoices (Just . selectRole =<< mr)
-  where
-    selectRole = \case
-        Student _    -> RoleSelStudent
-        ClassGuest _ -> RoleSelClassGuest
-        SchoolGuest  -> RoleSelSchoolGuest
-        Moderator    -> RoleSelModerator
-        Principal    -> RoleSelPrincipal
-        Admin        -> RoleSelAdmin
+chooseRole mr = DF.choice roleSelectionChoices (mr ^? _Just . roleSelection)
 
 chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
 chooseClass classes = DF.choice classValues
