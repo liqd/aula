@@ -309,7 +309,7 @@ instance ToHtml AdminViewUsers where
                     renderUserRow (DeletedUser user) = tr_ $ do
                         td_ nil
                         renderUserInfoRow user
-                        td_ "deleted"
+                        td_ "[gelöscht]"
 
                     renderUserRow (ActiveUser user) = tr_ $ do
                         td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
