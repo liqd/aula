@@ -344,7 +344,7 @@ instance FormPage AdminCreateUser where
                         span_ [class_ "label-text"] "Nutzerrolle"
                         inputSelect_ [class_ "m-stretch"] "role" v
                     label_ [class_ "col-6-12"] $ do
-                        span_ [class_ "label-text"] "Klasse"
+                        span_ [class_ "label-text"] "Klasse"  -- FIXME: see FIXME in AdminEditUser below.
                         inputSelect_ [class_ "m-stretch"] "class" v
                 div_ [class_ "admin-buttons"] $ do
                     DF.inputSubmit "Änderungen speichern"
@@ -440,7 +440,11 @@ instance FormPage AdminEditUser where
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
                     inputSelect_ [class_ "m-stretch"] "role" v
-                label_ [class_ "col-6-12"] $ do
+                label_ [class_ "col-6-12"] $ do  -- FIXME: we need a js hook that checks the value
+                                                 -- of the role field, and if that's not one of the
+                                                 -- first two, the "school class" field here should
+                                                 -- be hidden.  (nothing needs to be done to the
+                                                 -- form logic, this is a pure UI task.)
                     span_ [class_ "label-text"] "Klasse"
                     inputSelect_ [class_ "m-stretch"]  "class" v
                 a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
