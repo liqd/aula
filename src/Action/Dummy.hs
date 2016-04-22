@@ -34,9 +34,9 @@ notImplemented :: (Monad m, ThrowError500 e) => String -> String -> DummyT e m a
 notImplemented meth cl = throwError500 $ unlines
     ["Method ", meth, " from class ", cl, " not implemented for instance Dummy"]
 
-instance Monad m => ActionTempCsvFiles (DummyT ActionExcept m) where
-    popTempCsvFile _      = notImplemented "PersistM" "popTempCsvFile"
-    cleanupTempCsvFiles _ = notImplemented "PersistM" "cleanupTempCsvFiles"
+instance Monad m => ActionTempFiles (DummyT ActionExcept m) where
+    readTempFile     _ = notImplemented "PersistM" "readTempFile"
+    cleanupTempFiles _ = notImplemented "PersistM" "cleanupTempFiles"
 
 instance Monad m => ActionLog (DummyT ActionExcept m) where
     logEvent _ = pure ()

@@ -75,7 +75,7 @@ module Action
     , topicInVotingResetToJury
 
       -- * extras
-    , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
+    , ActionTempFiles(readTempFile, cleanupTempFiles), readTempCsvFile, decodeCsv
 
     , MonadServantErr, ThrowServantErr(..)
 
@@ -169,7 +169,7 @@ type ActionM m =
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
-      , ActionTempCsvFiles m
+      , ActionTempFiles m
       , ActionRandomPassword m
       , ActionCurrentTimestamp m
       , ActionSendMail m
@@ -561,9 +561,12 @@ topicForceNextPhase tid = do
 
 -- * csv temp files
 
-class ActionTempCsvFiles m where
-    popTempCsvFile :: (Csv.FromRecord r) => FilePath -> m (Either String [r])
-    cleanupTempCsvFiles :: FormData -> m ()
+class Monad m => ActionTempFiles m where
+    readTempFile :: FilePath -> m LBS
+    cleanupTempFiles :: FormData -> m ()
+
+readTempCsvFile :: (ActionTempFiles m, Csv.FromRecord r) => FilePath -> m (Either String [r])
+readTempCsvFile = fmap decodeCsv . readTempFile
 
 decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
