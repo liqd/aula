@@ -329,10 +329,6 @@ instance FormPage AdminCreateUser where
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
-            div_ [class_ "col-3-12"] $ do
-                div_ [class_ "upload-avatar"] $ do
-                    a_ [href_ U.Broken] $ do -- TODO
-                        i_ [class_ "upload-avatar-icon icon-camera"] nil
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     label_ [class_ "input-append"] $ do
@@ -349,9 +345,8 @@ instance FormPage AdminCreateUser where
                         inputSelect_ [class_ "m-stretch"] "role" v
                     label_ [class_ "col-6-12"] $ do
                         span_ [class_ "label-text"] "Klasse"
-                        inputSelect_ [class_ "m-stretch"]  "class" v
+                        inputSelect_ [class_ "m-stretch"] "class" v
                 div_ [class_ "admin-buttons"] $ do
-                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml AdminViewClasses where
@@ -429,11 +424,6 @@ instance FormPage AdminEditUser where
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
-            div_ [class_ "col-3-12"] $ do
-                div_ [class_ "upload-avatar"] $ do
-                    a_ [href_ U.Broken] $ do
-                        i_ [class_ "upload-avatar-icon icon-camera"] nil
-                        avatarImgFromHasMeta user
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     toHtml (user ^. userLogin . unUserLogin)
