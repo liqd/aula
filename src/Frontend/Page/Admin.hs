@@ -215,7 +215,7 @@ instance FormPage PageAdminSettingsDurations where
 
     formAction _ = U.Admin U.AdminDuration
 
-    -- FIXME: Do we redirect to the same page???
+    -- FIXME: Do we redirect to the same page?
     redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
@@ -335,10 +335,6 @@ instance FormPage AdminCreateUser where
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
-            div_ [class_ "col-3-12"] $ do
-                div_ [class_ "upload-avatar"] $ do
-                    a_ [href_ U.Broken] $ do -- TODO
-                        i_ [class_ "upload-avatar-icon icon-camera"] nil
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     label_ [class_ "input-append"] $ do
@@ -354,10 +350,9 @@ instance FormPage AdminCreateUser where
                         span_ [class_ "label-text"] "Nutzerrolle"
                         inputSelect_ [class_ "m-stretch"] "role" v
                     label_ [class_ "col-6-12"] $ do
-                        span_ [class_ "label-text"] "Klasse"
-                        inputSelect_ [class_ "m-stretch"]  "class" v
+                        span_ [class_ "label-text"] "Klasse"  -- FIXME: see FIXME in AdminEditUser below.
+                        inputSelect_ [class_ "m-stretch"] "class" v
                 div_ [class_ "admin-buttons"] $ do
-                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml AdminViewClasses where
@@ -384,32 +379,37 @@ instance ToHtml AdminViewClasses where
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
 -- role, and the class field should be hidden / displayed as appropriate.  see issue #197.
 data RoleSelection
-    = RoleStudent
-    | RoleGuest
+    = RoleSelStudent
+    | RoleSelClassGuest
+    | RoleSelSchoolGuest
+    | RoleSelModerator
+    | RoleSelPrincipal
+    | RoleSelAdmin
   deriving (Eq, Generic, Show)
 
 instance SOP.Generic RoleSelection
 
 roleSelectionChoices :: IsString s => [(RoleSelection, s)]
 roleSelectionChoices =
-             [ (RoleStudent, "Schüler")
-             , (RoleGuest, "Gast")
+             [ (RoleSelStudent,     "Schüler")
+             , (RoleSelClassGuest,  "Gast (Klasse)")
+             , (RoleSelSchoolGuest, "Gast (Schule)")
+             , (RoleSelModerator,   "Moderator")
+             , (RoleSelPrincipal,   "Direktor")
+             , (RoleSelAdmin,       "Admin")
              ]
 
-roleSelection :: Getter Role (Maybe RoleSelection)
+roleSelection :: Getter Role RoleSelection
 roleSelection = to $ \case
-    Student{}    -> Just RoleStudent
-    ClassGuest{} -> Just RoleGuest
-    _            -> Nothing
-
+    Student{}    -> RoleSelStudent
+    ClassGuest{} -> RoleSelClassGuest
+    SchoolGuest  -> RoleSelSchoolGuest
+    Moderator    -> RoleSelModerator
+    Principal    -> RoleSelPrincipal
+    Admin        -> RoleSelAdmin
 
 chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
-chooseRole mr = DF.choice roleSelectionChoices (selectRole =<< mr)
-  where
-    selectRole = \case
-        Student _    -> Just RoleStudent
-        ClassGuest _ -> Just RoleGuest
-        _            -> Nothing  -- FIXME: see RoleSelection
+chooseRole mr = DF.choice roleSelectionChoices (mr ^? _Just . roleSelection)
 
 chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
 chooseClass classes = DF.choice classValues
@@ -435,18 +435,17 @@ instance FormPage AdminEditUser where
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
-            div_ [class_ "col-3-12"] $ do
-                div_ [class_ "upload-avatar"] $ do
-                    a_ [href_ U.Broken] $ do
-                        i_ [class_ "upload-avatar-icon icon-camera"] nil
-                        avatarImgFromHasMeta user
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     toHtml (user ^. userLogin . unUserLogin)
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
                     inputSelect_ [class_ "m-stretch"] "role" v
-                label_ [class_ "col-6-12"] $ do
+                label_ [class_ "col-6-12"] $ do  -- FIXME: we need a js hook that checks the value
+                                                 -- of the role field, and if that's not one of the
+                                                 -- first two, the "school class" field here should
+                                                 -- be hidden.  (nothing needs to be done to the
+                                                 -- form logic, this is a pure UI task.)
                     span_ [class_ "label-text"] "Klasse"
                     inputSelect_ [class_ "m-stretch"]  "class" v
                 a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
@@ -504,8 +503,12 @@ adminEditUser uid = FormPageHandler
     }
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
-fromRoleSelection RoleStudent = Student
-fromRoleSelection RoleGuest   = ClassGuest
+fromRoleSelection RoleSelStudent     = Student
+fromRoleSelection RoleSelClassGuest  = ClassGuest
+fromRoleSelection RoleSelSchoolGuest = const SchoolGuest
+fromRoleSelection RoleSelModerator   = const Moderator
+fromRoleSelection RoleSelPrincipal   = const Principal
+fromRoleSelection RoleSelAdmin       = const Admin
 
 adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
 adminEditClass clss =
