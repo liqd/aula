@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -10,7 +11,7 @@ where
 
 import Lucid hiding (href_)
 import Servant
-import Servant.Missing (throwError500)
+import Servant.Missing (redirect, throwError500)
 import Thentos.Prelude
 
 import Frontend.Core
@@ -30,6 +31,7 @@ type AulaTesting =
   :<|> "error500" :> GetH ()
   :<|> "error303" :> GetH ()
   :<|> "topic" :> Capture "topic" (AUID Topic) :> "timeout" :> GetH ()
+  :<|> "topic" :> Capture "topic" (AUID Topic) :> "next-phase" :> GetH ()
 
 aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
@@ -42,7 +44,9 @@ aulaTesting =
   :<|> undefined
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
-  :<|> makeTopicTimeout
+  :<|> (\tid -> Servant.Missing.redirect $ "/testing/topic/"
+          <> show (fromIntegral tid :: Int) <> "/next-phase")  -- FIXME: deprecated!  remove!
+  :<|> topicForceNextPhase
 
 data Page404 = Page404
 
@@ -54,10 +58,19 @@ instance ToHtml Page404 where
     toHtml Page404 = div_ $ p_ "404"
 
 -- | Make a topic timeout if the timeout is applicable.
-makeTopicTimeout :: (ActionPersist m, ActionUserHandler m, ActionSendMail m) => AUID Topic -> m ()
-makeTopicTimeout tid = do
+topicForceNextPhase :: (ActionPersist m, ActionUserHandler m, ActionSendMail m, ActionCurrentTimestamp m)
+      => AUID Topic -> m ()
+topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
         PhaseRefinement _ -> topicInRefinementTimedOut tid
+        PhaseJury         -> makeEverythingFeasible topic
         PhaseVoting     _ -> topicInVotingTimedOut tid
-        _                 -> return ()
+        PhaseResult       -> throwError500 "No phase after result phase!"
+
+makeEverythingFeasible :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m, ActionSendMail m)
+      => Topic -> m ()
+makeEverythingFeasible topic = do
+    loginByName "admin"
+    ideas :: [Idea] <- query $ findIdeasByTopic topic
+    (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
