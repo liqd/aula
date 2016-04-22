@@ -165,28 +165,28 @@ instance Arbitrary PageAdminSettingsDurations where
 instance Arbitrary PageAdminSettingsQuorum where
     arbitrary = PageAdminSettingsQuorum <$> arb
 
-instance Arbitrary PageAdminSettingsGaPUsersView where
-    arbitrary = PageAdminSettingsGaPUsersView <$> arb
+instance Arbitrary AdminViewUsers where
+    arbitrary = AdminViewUsers <$> arb
 
-instance Arbitrary PageAdminSettingsGaPUsersEdit where
-    arbitrary = PageAdminSettingsGaPUsersEdit <$> arb <*> arb
+instance Arbitrary AdminEditUser where
+    arbitrary = AdminEditUser <$> arb <*> arb
 
-instance Arbitrary PageAdminSettingsGaPUserDelete where
-    arbitrary = PageAdminSettingsGaPUserDelete <$> arb
+instance Arbitrary AdminDeleteUser where
+    arbitrary = AdminDeleteUser <$> arb
 
-instance Arbitrary PageAdminSettingsGaPUsersCreate where
-    arbitrary = pure PageAdminSettingsGaPUsersCreate
+instance Arbitrary AdminCreateUser where
+    arbitrary = AdminCreateUser <$> arb
 
-instance Arbitrary PageAdminSettingsGaPClassesView where
-    arbitrary = PageAdminSettingsGaPClassesView <$> arb
+instance Arbitrary AdminViewClasses where
+    arbitrary = AdminViewClasses <$> arb
 
-instance Arbitrary PageAdminSettingsGaPClassesCreate where
-    arbitrary = pure PageAdminSettingsGaPClassesCreate
+instance Arbitrary AdminCreateClass where
+    arbitrary = pure AdminCreateClass
 
-instance Arbitrary PageAdminSettingsGaPClassesEdit where
+instance Arbitrary AdminEditClass where
     arbitrary = do
         clss <- arb
-        PageAdminSettingsGaPClassesEdit clss <$> listOf (userForClass clss)
+        AdminEditClass clss <$> listOf (userForClass clss)
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
@@ -414,13 +414,7 @@ instance Arbitrary Durations where
 instance Arbitrary Quorums where
     arbitrary = garbitrary
 
-instance Arbitrary PermissionContext where
-    arbitrary = garbitrary
-
 instance Arbitrary RoleSelection where
-    arbitrary = garbitrary
-
-instance Arbitrary EditUserPayload where
     arbitrary = garbitrary
 
 instance Arbitrary InitialPasswordsCsv where
@@ -468,10 +462,10 @@ instance Arbitrary P.CommentMode where
 instance Arbitrary P.Space where
     arbitrary = garbitrary
 
-instance Arbitrary P.UserPs where
+instance Arbitrary P.UserMode where
     arbitrary = garbitrary
 
-instance Arbitrary P.AdminPs where
+instance Arbitrary P.AdminMode where
     arbitrary = garbitrary
 
 

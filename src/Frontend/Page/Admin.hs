@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
@@ -49,43 +50,41 @@ data PageAdminSettingsQuorum =
 
 instance Page PageAdminSettingsQuorum
 
--- FIXME: the following names are a little ridiculous.  s/PageAdminSettingsGaPUsersView/GroupPermUserView/?9
-
 -- | 11.3 Admin settings: Manage groups & permissions
-data PageAdminSettingsGaPUsersView = PageAdminSettingsGaPUsersView [User]
+data AdminViewUsers = AdminViewUsers [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersView
+instance Page AdminViewUsers
 
-data PageAdminSettingsGaPUsersCreate = PageAdminSettingsGaPUsersCreate
+data AdminCreateUser = AdminCreateUser [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersCreate
+instance Page AdminCreateUser
 
-data PageAdminSettingsGaPUsersEdit = PageAdminSettingsGaPUsersEdit User [SchoolClass]
+data AdminEditUser = AdminEditUser User [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUsersEdit
+instance Page AdminEditUser
 
-data PageAdminSettingsGaPUserDelete = PageAdminSettingsGaPUserDelete User
+data AdminDeleteUser = AdminDeleteUser User
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPUserDelete
+instance Page AdminDeleteUser
 
-data PageAdminSettingsGaPClassesView = PageAdminSettingsGaPClassesView [SchoolClass]
+data AdminViewClasses = AdminViewClasses [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesView
+instance Page AdminViewClasses
 
-data PageAdminSettingsGaPClassesCreate = PageAdminSettingsGaPClassesCreate
+data AdminCreateClass = AdminCreateClass
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesCreate
+instance Page AdminCreateClass
 
-data PageAdminSettingsGaPClassesEdit = PageAdminSettingsGaPClassesEdit SchoolClass [User]
+data AdminEditClass = AdminEditClass SchoolClass [User]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsGaPClassesEdit
+instance Page AdminEditClass
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
@@ -94,18 +93,33 @@ data PageAdminSettingsEventsProtocol =
 
 instance Page PageAdminSettingsEventsProtocol
 
+data CreateUserPayload = CreateUserPayload
+    { _createUserFirstName :: UserFirstName
+    , _createUserLastName  :: UserLastName
+    , _createUserLogin     :: Maybe UserLogin
+    , _createUserEmail     :: Maybe EmailAddress
+    , _createUserRole      :: Role
+    }
+  deriving (Eq, Generic, Show)
+
+instance SOP.Generic CreateUserPayload
+
+makeLenses ''CreateUserPayload
+
 
 -- * tabs
 
 data MenuItem
     = MenuItemDurations
     | MenuItemQuorum
-    | MenuItemGroupsAndPermissions (Maybe PermissionContext)
+    | MenuItemClasses
+    | MenuItemUsers
+    | MenuItemClassesAndUsers
     | MenuItemEventsProtocol
   deriving (Eq, Show)
 
 class ToMenuItem t where
-    toMenuItem :: t -> MenuItem
+    toMenuItem :: proxy t -> MenuItem
 
 -- | 11.1 Admin settings: Durations
 instance ToMenuItem PageAdminSettingsDurations where
@@ -116,26 +130,26 @@ instance ToMenuItem PageAdminSettingsQuorum where
     toMenuItem _ = MenuItemQuorum
 
 -- | 11.3 Admin settings: Manage groups & permissions
-instance ToMenuItem PageAdminSettingsGaPUsersView where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+instance ToMenuItem AdminViewUsers where
+    toMenuItem _ = MenuItemUsers
 
-instance ToMenuItem PageAdminSettingsGaPUsersCreate where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+instance ToMenuItem AdminCreateUser where
+    toMenuItem _ = MenuItemUsers
 
-instance ToMenuItem PageAdminSettingsGaPUsersEdit where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+instance ToMenuItem AdminEditUser where
+    toMenuItem _ = MenuItemUsers
 
-instance ToMenuItem PageAdminSettingsGaPUserDelete where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermUserView)
+instance ToMenuItem AdminDeleteUser where
+    toMenuItem _ = MenuItemUsers
 
-instance ToMenuItem PageAdminSettingsGaPClassesView where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+instance ToMenuItem AdminViewClasses where
+    toMenuItem _ = MenuItemClasses
 
-instance ToMenuItem PageAdminSettingsGaPClassesCreate where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+instance ToMenuItem AdminCreateClass where
+    toMenuItem _ = MenuItemClasses
 
-instance ToMenuItem PageAdminSettingsGaPClassesEdit where
-    toMenuItem _ = MenuItemGroupsAndPermissions (Just PermClassView)
+instance ToMenuItem AdminEditClass where
+    toMenuItem _ = MenuItemClasses
 
 -- | 11.4 Admin settings: Events protocol
 instance ToMenuItem PageAdminSettingsEventsProtocol where
@@ -154,23 +168,21 @@ adminFrame t bdy = do
             ul_ [] $ do
                 li_ [] $ menulink tab MenuItemDurations
                 li_ [] $ menulink tab MenuItemQuorum
-                if isPermissionsMenuItem tab
+                if tab `elem` [MenuItemUsers, MenuItemClasses]
                     then do
                         li_ [] $ do
                             "Gruppen & Nutzer"
                             ul_ $ do
-                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermUserView))
-                                li_ [] $ menulink tab (MenuItemGroupsAndPermissions (Just PermClassView))
+                                li_ [] $ menulink tab MenuItemUsers
+                                li_ [] $ menulink tab MenuItemClasses
                     else do
-                        li_ [] $ menulink tab (MenuItemGroupsAndPermissions Nothing)
+                        li_ [] $ menulink tab MenuItemClassesAndUsers
                 li_ [] $ menulink tab MenuItemEventsProtocol
     div_ [class_ "col-10-12 admin-body"] bdy
   where
-    tab = toMenuItem t
-    isPermissionsMenuItem (MenuItemGroupsAndPermissions _) = True
-    isPermissionsMenuItem _ = False
+    tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST U.AdminPs ST
+data MenuLink = MenuLink ST U.AdminMode ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
@@ -189,16 +201,12 @@ menulink' targetMenuItem =
         -> MenuLink "tab-duration" U.AdminDuration "Dauer der Phasen"
     MenuItemQuorum
         -> MenuLink "tab-qourum" U.AdminQuorum "Quorum"
-    MenuItemGroupsAndPermissions (Just PermUserView)
-        -> MenuLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
-    MenuItemGroupsAndPermissions (Just PermUserCreate)
-        -> MenuLink "tab-groups-perms-user"  (U.AdminAccess PermUserView) "Nutzer"
-    MenuItemGroupsAndPermissions (Just PermClassView)
-        -> MenuLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
-    MenuItemGroupsAndPermissions (Just PermClassCreate)
-        -> MenuLink "tab-groups-perms-class" (U.AdminAccess PermClassView) "Klasse"
-    MenuItemGroupsAndPermissions Nothing
-        -> MenuLink "tab-groups-perms"       (U.AdminAccess PermUserView) "Gruppen & Nutzer"
+    MenuItemUsers
+        -> MenuLink "tab-groups-perms-user"  U.AdminViewUsers "Nutzer"
+    MenuItemClasses
+        -> MenuLink "tab-groups-perms-class" U.AdminViewClasses "Klasse"
+    MenuItemClassesAndUsers
+        -> MenuLink "tab-groups-perms"       U.AdminViewUsers "Gruppen & Nutzer"
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
 
@@ -274,9 +282,9 @@ adminQuorum =
 
 -- ** roles and permisisons
 
-instance ToHtml PageAdminSettingsGaPUsersView where
+instance ToHtml AdminViewUsers where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPUsersView users) =
+    toHtmlRaw p@(AdminViewUsers users) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -284,7 +292,7 @@ instance ToHtml PageAdminSettingsGaPUsersView where
                     th_ "Name"
                     th_ "Klasse"
                     th_ "Rolle [<>]"
-                    th_ $ button_ [class_ "btn-cta", onclick_ . U.Admin . U.AdminAccess $ PermUserCreate] "Nutzer anlegen"
+                    th_ $ button_ [class_ "btn-cta", onclick_ $ U.Admin U.AdminCreateUser] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             input_ [type_ "text", class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
@@ -304,42 +312,58 @@ instance ToHtml PageAdminSettingsGaPUsersView where
 
                 tbody_ $ renderUserRow `mapM_` users
 
+instance FormPage AdminCreateUser where
+    type FormPagePayload AdminCreateUser = CreateUserPayload
 
-instance ToHtml PageAdminSettingsGaPUsersCreate where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@PageAdminSettingsGaPUsersCreate =
-        adminFrame p . semanticDiv p $ do
-            div_ [class_ "admin-container"] $ do
-                form_ $ do -- FIXME
-                    div_ [class_ "col-3-12"] $ do
-                        div_ [class_ "upload-avatar"] $ do
-                            a_ [href_ U.Broken] $ do
-                                i_ [class_ "upload-avatar-icon icon-camera"] nil
-                    div_ [class_ "col-9-12"] $ do
-                        h1_ [class_ "admin-main-heading"] $ do
-                            "UserName" -- FIXME
-                        label_ [class_ "col-6-12"] $ do
-                            span_ [class_ "label-text"] "Nutzerrolle"
-                            -- FIXME inputSelect_ [class_ "m-stretch"] "user-role" v
-                            select_ [class_ "m-stretch"] nil
-                        label_ [class_ "col-6-12"] $ do
-                            span_ [class_ "label-text"] "Klasse"
-                            -- FIXME inputSelect_ [class_ "m-stretch"]  "user-class" v
-                            select_ [class_ "m-stretch"] nil
-                        a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
-                        div_ [class_ "admin-buttons"] $ do
-                            DF.inputSubmit "Speichern"
+    formAction _   = U.Admin U.AdminCreateUser
+    redirectOf _ _ = U.Admin U.AdminViewUsers
 
-instance ToHtml PageAdminSettingsGaPClassesView where
+    -- FIXME: Show the user's role and class as default in the selections.
+    makeForm (AdminCreateUser classes) =
+        CreateUserPayload
+            <$> ("firstname"  .: (UserFirstName <$> DF.text Nothing))
+            <*> ("lastname"   .: (UserLastName  <$> DF.text Nothing))
+            <*> ("login"      .: (UserLogin    <$$> DF.optionalText Nothing))
+            <*> emailField Nothing
+            <*> roleForm Nothing Nothing classes
+
+    formPage v form p =
+        adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
+            div_ [class_ "col-3-12"] $ do
+                div_ [class_ "upload-avatar"] $ do
+                    a_ [href_ U.Broken] $ do -- TODO
+                        i_ [class_ "upload-avatar-icon icon-camera"] nil
+            div_ [class_ "col-9-12"] $ do
+                h1_ [class_ "admin-main-heading"] $ do
+                    label_ [class_ "input-append"] $ do
+                        span_ [class_ "label-text col-6-12"] "Vorname:"
+                        inputText_ [class_ "m-small col-6-12"] "firstname" v
+                    label_ [class_ "input-append"] $ do
+                        span_ [class_ "label-text col-6-12"] "Nachname:"
+                        inputText_ [class_ "m-small col-6-12"] "lastname" v
+                    label_ [class_ "input-append"] $ do
+                        span_ [class_ "label-text col-6-12"] "Login:"
+                        inputText_ [class_ "m-small col-6-12"] "login" v
+                    label_ [class_ "col-6-12"] $ do
+                        span_ [class_ "label-text"] "Nutzerrolle"
+                        inputSelect_ [class_ "m-stretch"] "role" v
+                    label_ [class_ "col-6-12"] $ do
+                        span_ [class_ "label-text"] "Klasse"
+                        inputSelect_ [class_ "m-stretch"]  "class" v
+                div_ [class_ "admin-buttons"] $ do
+                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
+                    DF.inputSubmit "Änderungen speichern"
+
+instance ToHtml AdminViewClasses where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPClassesView classes) =
+    toHtmlRaw p@(AdminViewClasses classes) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ "Klasse"
                     th_ $ button_
                             [ class_ "btn-cta"
-                            , onclick_ . U.Admin $ U.AdminAccess PermClassCreate
+                            , onclick_ $ U.Admin U.AdminCreateClass
                             ]
                             "Klasse anlegen"
                     th_ $ do
@@ -360,48 +384,50 @@ data RoleSelection
 
 instance SOP.Generic RoleSelection
 
-data EditUserPayload = EditUserPayload
-    { editUserRole  :: RoleSelection
-    , editUserClass :: SchoolClass
-    }
-  deriving (Eq, Generic, Show)
-
-instance SOP.Generic EditUserPayload
-
 roleSelectionChoices :: IsString s => [(RoleSelection, s)]
 roleSelectionChoices =
              [ (RoleStudent, "Schüler")
              , (RoleGuest, "Gast")
              ]
 
-instance FormPage PageAdminSettingsGaPUsersEdit where
-    type FormPagePayload PageAdminSettingsGaPUsersEdit = EditUserPayload
+roleSelection :: Getter Role (Maybe RoleSelection)
+roleSelection = to $ \case
+    Student{}    -> Just RoleStudent
+    ClassGuest{} -> Just RoleGuest
+    _            -> Nothing
 
-    formAction (PageAdminSettingsGaPUsersEdit user _classes) =
+
+chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
+chooseRole mr = DF.choice roleSelectionChoices (selectRole =<< mr)
+  where
+    selectRole = \case
+        Student _    -> Just RoleStudent
+        ClassGuest _ -> Just RoleGuest
+        _            -> Nothing  -- FIXME: see RoleSelection
+
+chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
+chooseClass classes = DF.choice classValues
+  where
+    classValues = (id &&& toHtml . view className) <$> classes
+
+roleForm :: Maybe Role -> Maybe SchoolClass -> [SchoolClass] -> DfForm Role
+roleForm mrole mclass classes =
+    fromRoleSelection
+        <$> ("role"  .: chooseRole mrole)
+        <*> ("class" .: chooseClass classes mclass)
+
+instance FormPage AdminEditUser where
+    type FormPagePayload AdminEditUser = Role
+
+    formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
 
-    redirectOf (PageAdminSettingsGaPUsersEdit _user _classes) _ =
-        U.Admin . U.AdminAccess $ PermUserView
+    redirectOf _ _ = U.Admin U.AdminViewUsers
 
-    -- FIXME: Show the user's role and class as default in the selections.
-    makeForm (PageAdminSettingsGaPUsersEdit user classes) =
-        EditUserPayload
-            <$> ("user-role"  .: DF.choice roleSelectionChoices role)
-            <*> ("user-class" .: DF.choice classValues clval)
-      where
-        classValues = (id &&& toHtml . view className) <$> classes
+    makeForm (AdminEditUser user classes) =
+        roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
 
-        role = case user ^. userRole of
-            Student _    -> Just RoleStudent
-            ClassGuest _ -> Just RoleGuest
-            _            -> Nothing  -- FIXME: see RoleSelection
-
-        clval = case user ^. userRole of
-            Student cl    -> Just cl
-            ClassGuest cl -> Just cl
-            _             -> Nothing  -- FIXME: see RoleSelection
-
-    formPage v form p@(PageAdminSettingsGaPUsersEdit user _classes) =
+    formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
             div_ [class_ "col-3-12"] $ do
                 div_ [class_ "upload-avatar"] $ do
@@ -413,18 +439,18 @@ instance FormPage PageAdminSettingsGaPUsersEdit where
                     toHtml (user ^. userLogin . unUserLogin)
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
-                    inputSelect_ [class_ "m-stretch"] "user-role" v
+                    inputSelect_ [class_ "m-stretch"] "role" v
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Klasse"
-                    inputSelect_ [class_ "m-stretch"]  "user-class" v
+                    inputSelect_ [class_ "m-stretch"]  "class" v
                 a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                 div_ [class_ "admin-buttons"] $ do
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
 
-instance ToHtml PageAdminSettingsGaPClassesEdit where
+instance ToHtml AdminEditClass where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsGaPClassesEdit schoolClss users) =
+    toHtmlRaw p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
             div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
@@ -440,43 +466,54 @@ instance ToHtml PageAdminSettingsGaPClassesEdit where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
-adminSettingsGaPUsersView :: ActionPersist m => m PageAdminSettingsGaPUsersView
-adminSettingsGaPUsersView = PageAdminSettingsGaPUsersView <$> query getUsers
+adminViewUsers :: ActionPersist m => m AdminViewUsers
+adminViewUsers = AdminViewUsers <$> query getUsers
 
-adminSettingsGaPUsersCreate :: Applicative m => m PageAdminSettingsGaPUsersCreate
-adminSettingsGaPUsersCreate = pure PageAdminSettingsGaPUsersCreate
+adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
+                    ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
+adminCreateUser = FormPageHandler
+    { _formGetPage   = AdminCreateUser <$> query getSchoolClasses
+    , _formProcessor = \up -> do
+        forM_ (up ^? createUserRole . roleSchoolClass) $
+            update . AddIdeaSpaceIfNotExists . ClassSpace
+        pwd <- mkRandomPassword
+        currentUserAddDb_ AddUser ProtoUser
+            { _protoUserLogin     = up ^. createUserLogin
+            , _protoUserFirstName = up ^. createUserFirstName
+            , _protoUserLastName  = up ^. createUserLastName
+            , _protoUserRole      = up ^. createUserRole
+            , _protoUserPassword  = pwd
+            , _protoUserEmail     = up ^. createUserEmail
+            , _protoUserDesc      = Markdown nil
+            }
+    }
 
-adminSettingsGaPClassesView :: ActionPersist m => m PageAdminSettingsGaPClassesView
-adminSettingsGaPClassesView = PageAdminSettingsGaPClassesView <$> query getSchoolClasses
+adminViewClasses :: ActionPersist m => m AdminViewClasses
+adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
-adminSettingsGaPUserEdit :: ActionM m => AUID User -> FormPageHandler m PageAdminSettingsGaPUsersEdit
-adminSettingsGaPUserEdit uid = FormPageHandler editUserPage changeUser
-  where
-    editUserPage = equery $
-        PageAdminSettingsGaPUsersEdit
-        <$> (maybe404 =<< findUser uid)
-        <*> getSchoolClasses
+adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
+adminEditUser uid = FormPageHandler
+    { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findUser uid) <*> getSchoolClasses
+    , _formProcessor = update . SetUserRole uid
+    }
 
-    changeUser = update . SetUserRole uid . payloadToUserRole
+fromRoleSelection :: RoleSelection -> SchoolClass -> Role
+fromRoleSelection RoleStudent = Student
+fromRoleSelection RoleGuest   = ClassGuest
 
-payloadToUserRole :: EditUserPayload -> Role
-payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
-payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
+adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
+adminEditClass clss =
+    AdminEditClass clss <$> query (getUsersInClass clss)
 
-adminSettingsGaPClassesEdit :: ActionPersist m => SchoolClass -> m PageAdminSettingsGaPClassesEdit
-adminSettingsGaPClassesEdit clss =
-    PageAdminSettingsGaPClassesEdit clss <$> query (getUsersInClass clss)
+instance FormPage AdminDeleteUser where
+    type FormPagePayload AdminDeleteUser = ()
 
-instance FormPage PageAdminSettingsGaPUserDelete where
-    type FormPagePayload PageAdminSettingsGaPUserDelete = ()
-    type FormPageResult PageAdminSettingsGaPUserDelete = ()
-
-    formAction (PageAdminSettingsGaPUserDelete user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
-    redirectOf _ _ = U.Admin $ U.AdminAccess PermUserView
+    formAction (AdminDeleteUser user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
+    redirectOf _ _ = U.Admin U.AdminViewUsers
 
     makeForm _ = pure ()
 
-    formPage _v form p@(PageAdminSettingsGaPUserDelete user) =
+    formPage _v form p@(AdminDeleteUser user) =
         adminFrame p . semanticDiv p . form $ do
             div_ [class_ "container-confirm"] $ do
                 h1_ "Nutzer löschen"
@@ -485,11 +522,10 @@ instance FormPage PageAdminSettingsGaPUserDelete where
                     DF.inputSubmit "Nutzer löschen"
                     a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
-adminSettingsGaPUserDelete :: forall m. (ActionM m)
-                           => AUID User -> FormPageHandler m PageAdminSettingsGaPUserDelete
-adminSettingsGaPUserDelete uid =
+adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
+adminDeleteUser uid =
     FormPageHandler
-        (PageAdminSettingsGaPUserDelete <$> equery (maybe404 =<< findUser uid))
+        (AdminDeleteUser <$> equery (maybe404 =<< findUser uid))
         (const $ Action.deleteUser uid)
 
 
@@ -532,20 +568,17 @@ data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
 
 instance SOP.Generic BatchCreateUsersFormData
 
-instance FormPage PageAdminSettingsGaPClassesCreate where
-    type FormPagePayload PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
+instance FormPage AdminCreateClass where
+    type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
-    formAction PageAdminSettingsGaPClassesCreate =
-        U.Admin $ U.AdminAccess PermClassCreate
+    formAction _   = U.Admin U.AdminCreateClass
+    redirectOf _ _ = U.Admin U.AdminViewClasses
 
-    redirectOf PageAdminSettingsGaPClassesCreate _ =
-        U.Admin $ U.AdminAccess PermClassView
+    makeForm _ = BatchCreateUsersFormData
+        <$> ("classname" .: DF.text Nothing)  -- FIXME: validate
+        <*> ("file"      .: DF.file)
 
-    makeForm PageAdminSettingsGaPClassesCreate = BatchCreateUsersFormData
-        <$> ("classname" DF..: DF.text Nothing)  -- FIXME: validate
-        <*> ("file"      DF..: DF.file)
-
-    formPage v form p@PageAdminSettingsGaPClassesCreate = adminFrame p . semanticDiv p $ do
+    formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
         a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
         form $ do
@@ -557,33 +590,34 @@ instance FormPage PageAdminSettingsGaPClassesCreate where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-adminSettingsGaPClassesCreate :: forall m. (ActionTempCsvFiles m, ActionM m)
-                              => FormPageHandler m PageAdminSettingsGaPClassesCreate
-adminSettingsGaPClassesCreate = FormPageHandler (pure PageAdminSettingsGaPClassesCreate) q
+adminCreateClass :: forall m. (ActionTempCsvFiles m, ActionM m)
+                              => FormPageHandler m AdminCreateClass
+adminCreateClass = FormPageHandler (pure AdminCreateClass) q
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
         throwError500 "upload FAILED: no file!"  -- FIXME: status code?
     q (BatchCreateUsersFormData clname (Just file)) = do
-        let schoolcl = SchoolClass theOnlySchoolYearHack clname
         eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
         case eCsv of
             Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
                                              -- FIXME: status code?
-            Right records -> mapM_ (p schoolcl) records
+            Right records -> do
+                let schoolcl = SchoolClass theOnlySchoolYearHack clname
+                update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
+                forM_ records . p $ Student schoolcl
 
-    p :: SchoolClass -> CsvUserRecord -> m ()
+    p :: Role -> CsvUserRecord -> m ()
     p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
         throwError500 "upload FAILED: internal error!"
-    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+    p role (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
-        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
         pwd <- mkRandomPassword
         currentUserAddDb AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
-            , _protoUserRole      = Student schoolcl
+            , _protoUserRole      = role
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = Markdown nil

@@ -19,7 +19,7 @@ import qualified Frontend.Path as U
 
 fileUploadPath :: (IsString s) => String -> s
 fileUploadPath rest =
-    fromString $ (cs . absoluteUriPath . relPath . U.Admin $ U.AdminAccess PermClassCreate) <> rest
+    fromString $ (cs . absoluteUriPath . relPath $ U.Admin U.AdminCreateClass) <> rest
 
 spec :: Spec
 spec = describe "file upload" $ do

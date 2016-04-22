@@ -46,14 +46,13 @@ spec = do
         , H (arb :: Gen ViewIdea)
         , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
-        , H (arb :: Gen PageAdminSettingsGaPUsersView)
-        , H (arb :: Gen PageAdminSettingsGaPUsersCreate)
-        , H (arb :: Gen PageAdminSettingsGaPClassesView)
+        , H (arb :: Gen AdminViewUsers)
+        , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
-        , H (arb :: Gen PageAdminSettingsGaPClassesEdit)
+        , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         ]
     context "PageFormView" $ mapM_ testForm [
@@ -64,10 +63,11 @@ spec = do
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen Frontend.Page.EditTopic)
+        -- , F (arb :: Gen AdminCreateUser) -- FIXME
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
---        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
+--        , F (arb :: Gen AdminEditUser) -- FIXME
         ]
 
 
@@ -166,11 +166,11 @@ instance PayloadToEnv Quorums where
         "school-quorum" -> pure [TextInput (cs $ show school)]
         "class-quorum"  -> pure [TextInput (cs $ show clss)]
 
-instance PayloadToEnv EditUserPayload where
-    payloadToEnvMapping v (EditUserPayload r c) = \case
-        "user-role"  -> pure [TextInput $ selectValue "user-role" v roleSelectionChoices r]
+instance PayloadToEnv Role where
+    payloadToEnvMapping v r = \case
+        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^?! roleSelection . _Just)]
         -- FIXME: Selection does not work for composite types like school class.
-        "user-class" -> pure [TextInput $ selectValue "user-class" v classes c]
+        "class" -> pure [TextInput $ selectValue "class" v classes (r ^?! roleSchoolClass)]
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
@@ -288,5 +288,5 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         -- result generation should select from those ideas only.
         <*> pure (view _Id <$> ideas)
 
-instance ArbFormPagePayload PageAdminSettingsGaPUsersEdit where
+instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary

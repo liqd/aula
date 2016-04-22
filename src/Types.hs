@@ -772,44 +772,6 @@ genArbitrary :: (GenArbitrary m, Arbitrary a) => m a
 genArbitrary = genGen arbitrary
 
 
--- * admin pages
-
--- FIXME: rename this.  it's not just about permissions, but also about links and menu items.
--- (also, it's weird that we are not using PermissionContext as a capture in the routing table in
--- Frontend any more, but still in Frontend.Path to construct safe uris.  Not a real problem, but
--- perhaps we can resolve this assymetry somehow if we think about it more?)
-data PermissionContext
-    = PermUserView
-    | PermUserCreate
-    | PermClassView
-    | PermClassCreate
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic PermissionContext
-
-pContextToUriStr :: PermissionContext -> ST
-pContextToUriStr PermUserView    = "perm-user-view"
-pContextToUriStr PermUserCreate  = "perm-user-create"
-pContextToUriStr PermClassView   = "perm-class-view"
-pContextToUriStr PermClassCreate = "perm-class-create"
-
-uriStrToPContext :: ST -> Maybe PermissionContext
-uriStrToPContext "perm-user-view"    = Just PermUserView
-uriStrToPContext "perm-user-create"  = Just PermUserCreate
-uriStrToPContext "perm-class-view"   = Just PermClassView
-uriStrToPContext "perm-class-create" = Just PermClassCreate
-uriStrToPContext _                   = Nothing
-
-instance FromHttpApiData PermissionContext where
-    parseUrlPiece x =
-        maybe (Left "No parse")
-              Right
-              $ uriStrToPContext (cs x)
-
-instance HasUriPart PermissionContext where
-    uriPart = uriPart . pContextToUriStr
-
-
 -- * boilerplate: binary, lens (alpha order), SafeCopy
 
 instance Binary (AUID a)
@@ -863,7 +825,6 @@ makePrisms ''Phase
 makePrisms ''Role
 makePrisms ''UserPass
 makePrisms ''DelegationContext
-makePrisms ''PermissionContext
 makePrisms ''EmailAddress
 makePrisms ''UserLastName
 makePrisms ''UserFirstName
@@ -1155,7 +1116,7 @@ isWild (IdeaLocationTopic _ _) = False
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
--- | german role name
+-- | German role name
 roleLabel :: IsString s => Role -> s
 roleLabel (Student _)    = "Schüler"
 roleLabel (ClassGuest _) = "Gast (Klasse)"
