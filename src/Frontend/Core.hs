@@ -282,6 +282,13 @@ class Page p => FormPage p where
     -- a feature, not a problem.  For those cases, we may need to extend this part of the API in the
     -- future.  We could make the result type a @Maybe a@, where 'Nothing' means redirect, and
     -- 'Just' means not redirect.  Or we could add a more flexible variant of the 'FormPage' class.
+    --
+    -- If we stick to form handlers which always redirect we can simplify our infrastructure by
+    -- removing `FormPageResult` and `redirectOf`.  Instead, each form must return the redirect path
+    -- ('Path.Main').  This would be simpler shorter and slightly less convoluted at the expense of
+    -- making impossible to not redirect one day.
+    --
+    -- Context: github #398, #83.
     redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
     makeForm :: ActionM m => p -> DF.Form (Html ()) m (FormPagePayload p)

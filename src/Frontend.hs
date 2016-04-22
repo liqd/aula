@@ -316,7 +316,7 @@ type AulaAdmin =
   :<|> "downloads" :> "events" :> Capture "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
 
 
-aulaAdmin :: forall m. ActionM m => ServerT AulaAdmin m
+aulaAdmin :: ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
