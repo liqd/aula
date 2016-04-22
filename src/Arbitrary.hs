@@ -89,6 +89,12 @@ garbitrary' scaling = to <$> (hsequence =<< elements subs)
 garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
 garbitrary = garbitrary' (max 0 . subtract 10)
 
+gshrink :: Generic a => a -> [SOP I (Code a)]
+gshrink a = [from a]
+-- 1. Convert data to its representation
+-- 2. Get the branches and call shrink on them.
+-- 3. 
+
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
 
