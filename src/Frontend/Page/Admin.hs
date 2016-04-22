@@ -336,13 +336,13 @@ instance FormPage AdminCreateUser where
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     label_ [class_ "input-append"] $ do
-                        span_ [class_ "label-text col-6-12"] "Firstname:" -- FIXME english
+                        span_ [class_ "label-text col-6-12"] "Vorname:"
                         inputText_ [class_ "m-small col-6-12"] "firstname" v
                     label_ [class_ "input-append"] $ do
-                        span_ [class_ "label-text col-6-12"] "Lastname:" -- FIXME english
+                        span_ [class_ "label-text col-6-12"] "Nachname:"
                         inputText_ [class_ "m-small col-6-12"] "lastname" v
                     label_ [class_ "input-append"] $ do
-                        span_ [class_ "label-text col-6-12"] "Login:" -- FIXME english
+                        span_ [class_ "label-text col-6-12"] "Login:"
                         inputText_ [class_ "m-small col-6-12"] "login" v
                     label_ [class_ "col-6-12"] $ do
                         span_ [class_ "label-text"] "Nutzerrolle"

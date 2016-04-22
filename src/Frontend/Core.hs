@@ -180,15 +180,15 @@ emailField :: Maybe EmailAddress -> DfForm (Maybe EmailAddress)
 emailField email =
     {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
         from texts to @EmailAddress@. Here we want to traverse the text of an email address
-        thus one needs to reverse this prisms. While Prisms cannot be reversed in full
-        generality we could expect a weaker form which also traversals, this would look
+        thus one needs to reverse this prism. While Prisms cannot be reversed in full
+        generality, we could expect a weaker form which also traversals. This would look
         like that:
 
         email & rev emailAddress %%~ DF.optionalText
 
-        Instead we have the code below which extracts the text of the email address if
-        there is such an email address, optionalText gets a @Maybe ST@, finally the
-        result of optionalText is processed with a pure function from @Maybe ST@ to
+        Instead, we have the code below which extracts the text of the email address if
+        there is such an email address.  'optionalText' gets a @Maybe ST@, finally the
+        result of 'optionalText' is processed with a pure function from @Maybe ST@ to
         @Maybe EmailAddress@ where only a valid text representation of an email gets
         mapped to @Just@  of an @EmailAddress@.
     -}

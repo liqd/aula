@@ -1116,7 +1116,7 @@ isWild (IdeaLocationTopic _ _) = False
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
--- | german role name
+-- | German role name
 roleLabel :: IsString s => Role -> s
 roleLabel (Student _)    = "Schüler"
 roleLabel (ClassGuest _) = "Gast (Klasse)"

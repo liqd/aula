@@ -238,16 +238,16 @@ instance FormPage EditUserProfile where
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "User profile" -- FIXME english
+                    h1_ [class_ "main-heading"] "Profil bearbeiten"
                     form $ do
                         label_ $ do
-                            span_ [class_ "label-text"] "Firstname" -- FIXME english
+                            span_ [class_ "label-text"] "Vorname:"
                             inputText_ [class_ "m-small"] "firstname" v
                         label_ $ do
-                            span_ [class_ "label-text"] "Lastname" -- FIXME english
+                            span_ [class_ "label-text"] "Nachname:"
                             inputText_ [class_ "m-small"] "lastname" v
                         label_ $ do
-                            span_ [class_ "label-text"] "Desc" -- FIXME english
+                            span_ [class_ "label-text"] "Beschreibung:"
                             inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"
