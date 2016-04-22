@@ -56,8 +56,7 @@ pagesPlain :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, ToHtml a, Page a) => Proxy a -> b)
     -> [b]
 pagesPlain f =
-    [ f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
-    , f (Proxy :: Proxy PageAdminSettingsGaPClassesEdit)
+    [ f (Proxy :: Proxy PageAdminSettingsGaPClassesEdit)
     , f (Proxy :: Proxy PageAdminSettingsGaPClassesView)
     , f (Proxy :: Proxy PageAdminSettingsGaPUsersCreate)
     , f (Proxy :: Proxy PageAdminSettingsGaPUsersView)
@@ -90,6 +89,7 @@ pagesForm f =
     , f (Proxy :: Proxy PageAdminSettingsQuorum)
     , f (Proxy :: Proxy PageHomeWithLoginPrompt)
     , f (Proxy :: Proxy PageUserSettings)
+    , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     ]
 
 

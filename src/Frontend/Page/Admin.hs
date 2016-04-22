@@ -12,13 +12,12 @@
 {-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Admin
 where
 
 import Control.Arrow ((&&&))
-import Network.HTTP.Media ((//))
 import Servant
 
 import qualified Data.Csv as Csv
@@ -28,7 +27,6 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
-import EventLog
 import Persistent.Api
 import Frontend.Prelude
 
@@ -494,34 +492,37 @@ adminSettingsGaPUserDelete uid =
         (PageAdminSettingsGaPUserDelete <$> equery (maybe404 =<< findUser uid))
         (const $ Action.deleteUser uid)
 
+
 -- ** Events protocol
 
-instance ToHtml PageAdminSettingsEventsProtocol where
-    toHtml = toHtmlRaw
-    toHtmlRaw p@(PageAdminSettingsEventsProtocol ideaSpaces) = adminFrame p . semanticDiv p $ do
+data EventsProtocolFilter = EventsProtocolFilter (Maybe IdeaSpace)
+  deriving (Eq, Ord, Show, Read)
+
+instance FormPage PageAdminSettingsEventsProtocol where
+    type FormPagePayload PageAdminSettingsEventsProtocol = EventsProtocolFilter
+    type FormPageResult PageAdminSettingsEventsProtocol = EventsProtocolFilter
+
+    formAction (PageAdminSettingsEventsProtocol _) = U.Admin U.AdminEvent
+    redirectOf _ (EventsProtocolFilter Nothing)      = U.Admin U.AdminDlEvents
+    redirectOf _ (EventsProtocolFilter (Just space)) = U.Admin (U.AdminDlEventsF space)
+
+    makeForm (PageAdminSettingsEventsProtocol spaces) = EventsProtocolFilter <$> ("space" .: DF.choice vs Nothing)
+      where
+        vs :: [(Maybe IdeaSpace, Html ())]
+        vs = (Nothing, "(Alle Ideenräume)") : ((Just &&& toHtml . showIdeaSpaceUI) <$> spaces)
+
+    formPage v form p@(PageAdminSettingsEventsProtocol _) = adminFrame p . semanticDiv p . form $ do
         label_ $ do
             span_ [class_ "label-text"] "Hier konnen Sie das Event-Protokoll als CSV-Datei herunterladen"
-        -- FIXME: Clientside JavaScript. Change the download button link
-        -- If the value of the selection is changes.
-            select_ [name_ "idea"] . forM_ ideaSpaces $ \idea ->
-                option_ [value_ (makeValue idea)] (makeText idea)
+            inputSelect_ [class_ "m-stretch"] "space" v
         div_ [class_ "download-box"] $ do
             header_ [class_ "download-box-header"] $ do
                 "Event-Protokoll"
-            -- FIXME: Link to the correct page.
                 button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
-            p_ [class_ "download-box-body"] "Das Event-Protokoll beinhaltet alle Aktivieren der Nutzerlennen auf Aula"
-      where
-        makeValue :: IdeaSpace -> ST
-        makeValue SchoolSpace = "idea-schoolspace"
-        makeValue (ClassSpace (SchoolClass year name))
-            = cs $ mconcat ["idea-class-", show year, "-", show name]
+            p_ [class_ "download-box-body"] "Das Event-Protokoll enthält alle Aktivitäten der NutzerInnen auf Aula"
 
-        makeText SchoolSpace = "Schule"
-        makeText (ClassSpace (SchoolClass _year name)) = toHtml name
-
-adminEventsProtocol :: ActionPersist m => m PageAdminSettingsEventsProtocol
-adminEventsProtocol = PageAdminSettingsEventsProtocol <$> query getSpaces
+adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
+adminEventsProtocol = FormPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
 
 -- * Classes Create
@@ -607,9 +608,6 @@ data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
 
 instance SOP.Generic InitialPasswordsCsv
 
-type InitialPasswordsCsvH = Headers '[HeaderListEntry__] InitialPasswordsCsv
-type HeaderListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
-
 
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
 -- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
@@ -654,33 +652,17 @@ instance Csv.ToRecord CsvUserRecord where
         ]
 
 
-data CSV
-
-instance Accept CSV where
-    contentType Proxy = "text" // "csv"
-
-instance MimeRender CSV InitialPasswordsCsv where
+instance MimeRender CSV InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
     mimeRender Proxy (InitialPasswordsCsv rows) =
         cs (intercalate "," csvUserRecordHeaders <> "\n")
         <> Csv.encode rows
 
-instance MimeRender CSV EventLog where
-    mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
-    mimeRender Proxy (EventLog domainUrl rows) =
-        cs (intercalate "," eventLogItemCsvHeaders <> "\n")
-        <> Csv.encode (URLEventLogItem domainUrl <$> rows)
-
-
 csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
 
-instance MimeRender CSV InitialPasswordsCsvH where
-    mimeRender proxy (Headers v _) = mimeRender proxy v
-
-
-adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m InitialPasswordsCsvH
+adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss =
-    addHeader ("attachment; filename=" <> showSchoolClass clss <> ".csv") .
+    csvHeaders ("Passwortliste " <> showSchoolClass clss) .
     InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of

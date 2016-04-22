@@ -1,15 +1,19 @@
 {-# LANGUAGE ConstraintKinds             #-}
-{-# LANGUAGE DeriveGeneric               #-}
+{-# LANGUAGE DataKinds                   #-}
 {-# LANGUAGE DefaultSignatures           #-}
+{-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE FlexibleInstances           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE KindSignatures              #-}
 {-# LANGUAGE LambdaCase                  #-}
+{-# LANGUAGE MultiParamTypeClasses       #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
+{-# LANGUAGE TypeSynonymInstances        #-}
 {-# LANGUAGE ViewPatterns                #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -34,8 +38,12 @@ import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw)
+import Network.HTTP.Media ((//))
 import Network.Mail.Mime (Address(Address))
-import Servant.API (FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece))
+import Servant.API
+    ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece)
+    , Accept, MimeRender, Headers(..), Header, contentType, mimeRender, addHeader
+    )
 import Text.Read (readMaybe)
 
 import qualified Data.Csv as CSV
@@ -110,6 +118,23 @@ sortOn l = sortBy (compare `on` view l)
 
 downSortOn :: Ord b => Getter a b -> [a] -> [a]
 downSortOn l = sortOn (l . to Data.Ord.Down)
+
+
+-- * csv helpers
+
+data CSV
+
+instance Accept CSV where
+    contentType Proxy = "text" // "csv"
+
+type CsvHeaders a = Headers '[CsvHeadersContentDisposition] a
+type CsvHeadersContentDisposition = Header "Content-Disposition" String  -- appease hlint v1.9.22
+
+instance MimeRender CSV a => MimeRender CSV (CsvHeaders a) where
+    mimeRender proxy (Headers v _) = mimeRender proxy v
+
+csvHeaders :: String -> a -> CsvHeaders a
+csvHeaders filename = addHeader $ "attachment; filename=" <> filename <> ".csv"
 
 
 -- * prototypes for types
@@ -1042,6 +1067,13 @@ showIdeaSpace (ClassSpace c) = showSchoolClass c
 
 showSchoolClass :: SchoolClass -> String
 showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
+
+showIdeaSpaceUI :: IdeaSpace -> String
+showIdeaSpaceUI SchoolSpace    = "Schule"
+showIdeaSpaceUI (ClassSpace c) = showSchoolClassUI c
+
+showSchoolClassUI :: SchoolClass -> String
+showSchoolClassUI c = cs (c ^. className)
 
 showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"

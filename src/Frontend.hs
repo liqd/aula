@@ -310,13 +310,13 @@ type AulaAdmin =
   :<|> SchoolClass ::> "edit" :> GetH (Frame PageAdminSettingsGaPClassesEdit)
   :<|> User ::> "delete" :> FormHandler PageAdminSettingsGaPUserDelete
        -- event log
-  :<|> "event"  :> GetH (Frame PageAdminSettingsEventsProtocol)
-  :<|> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] InitialPasswordsCsvH
-  :<|> "events" :> Get '[CSV] EventLog
-  :<|> "events" :> Capture "space" IdeaSpace :> Get '[CSV] EventLog
+  :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
+  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
+  :<|> "downloads" :> "events" :> Get '[CSV] (CsvHeaders EventLog)
+  :<|> "downloads" :> "events" :> Capture "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
 
 
-aulaAdmin :: ActionM m => ServerT AulaAdmin m
+aulaAdmin :: forall m. ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
@@ -327,15 +327,17 @@ aulaAdmin =
   :<|> form . Page.adminSettingsGaPUserEdit
   :<|> makeFrame . Page.adminSettingsGaPClassesEdit
   :<|> form . Page.adminSettingsGaPUserDelete
-  :<|> makeFrame Page.adminEventsProtocol
+  :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing
-  :<|> adminEventLogCsv . Just
+  :<|> adminEventLogCsv . Just  -- FIXME: with QueryParam, we could melt these two routes into one.
+                                -- this isn't a hard task, but we need to extend 'UriPath' type.
 
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
-adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m EventLog
-adminEventLogCsv mspc = filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
+adminEventLogCsv mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" showIdeaSpaceUI mspc) .
+    filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
 
 
 catch404 :: Middleware

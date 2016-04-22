@@ -6,7 +6,19 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
--- | rule: always add (and expect) trailing slashes.
+-- | Typed paths.
+--
+-- This is a collection of ADTs for all the URL paths of the Aula application, plus the functions to
+-- translate them into 'UriPath's.  The constructors and mappings must be maintained in sync with
+-- the routing tables in "Frontend" manually.  The "PathSpec" tests make sure that all constructors
+-- defined here map to existing routes.
+--
+-- Servant offers safe links as a solution to the same problem.  We hoped that our own solution
+-- isn't any more fragile or awkward, and probably less so.  An idea that requires less manual
+-- synchronization would be to add string literal types to the end points, check them for
+-- uniqueness, and write type-level functions that map those on paths.
+--
+-- Rule: always add (and expect) trailing slashes.
 module Frontend.Path
     ( Top(..)
     , Main(..)
@@ -255,7 +267,8 @@ data AdminPs =
   | AdminDeleteUser (AUID User)
   | AdminEvent
   | AdminDlPass SchoolClass
-  | AdminDlEvents IdeaSpace
+  | AdminDlEvents
+  | AdminDlEventsF IdeaSpace
   deriving (Generic, Show)
 
 instance SOP.Generic AdminPs
@@ -268,8 +281,9 @@ admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
 admin AdminEvent            path = path </> "event"
-admin (AdminDlPass clss)    path = path </> "passwords" </> uriPart clss
-admin (AdminDlEvents spc)   path = path </> "events" </> uriPart spc
+admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
+admin AdminDlEvents         path = path </> "downloads" </> "events"
+admin (AdminDlEventsF spc)  path = path </> "downloads" </> "events" </> uriPart spc
 
 data CommentMode
     = ReplyComment

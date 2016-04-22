@@ -49,7 +49,6 @@ spec = do
         , H (arb :: Gen PageAdminSettingsGaPUsersView)
         , H (arb :: Gen PageAdminSettingsGaPUsersCreate)
         , H (arb :: Gen PageAdminSettingsGaPClassesView)
-        , H (arb :: Gen PageAdminSettingsEventsProtocol)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
@@ -67,6 +66,7 @@ spec = do
         , F (arb :: Gen Frontend.Page.EditTopic)
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
+--        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
 --        , F (arb :: Gen PageAdminSettingsGaPUsersEdit) -- FIXME
         ]
 
