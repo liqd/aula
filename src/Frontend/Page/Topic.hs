@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
@@ -61,7 +62,10 @@ instance Page ViewTopic where
     extraBodyClasses _ = ["m-shadow"]
 
 -- | 10.1 Create topic: Create topic
-data CreateTopic = CreateTopic IdeaSpace [Idea] Timestamp
+data CreateTopic = CreateTopic
+    { _createTopicIdeaSpace   :: IdeaSpace
+    , _createTopicIdeas       :: [Idea]
+    , _createTopicRefPhaseEnd :: Timestamp }
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic
@@ -189,14 +193,14 @@ instance FormPage CreateTopic where
 
     redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
-    makeForm (CreateTopic space ideas timestamp) =
+    makeForm CreateTopic{..} =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
-        <*> pure space
-        <*> makeFormIdeaSelection ideas
-        <*> pure timestamp
+        <*> pure _createTopicIdeaSpace
+        <*> makeFormIdeaSelection _createTopicIdeas
+        <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
         semanticDiv p $ do

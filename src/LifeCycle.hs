@@ -1,5 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ViewPatterns   #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -32,7 +34,7 @@ import Types
 data PhaseChange
     = RefinementPhaseTimeOut
     | RefinementPhaseMarkedByModerator
-    | AllIdeasAreMarked Timestamp
+    | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
     | VotingPhaseTimeOut
     | VotingPhaseSetbackToJuryPhase
   deriving (Eq, Show)
@@ -50,8 +52,8 @@ phaseTrans (PhaseRefinement _) RefinementPhaseTimeOut
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
 phaseTrans (PhaseRefinement _) RefinementPhaseMarkedByModerator
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseJury (AllIdeasAreMarked newPhaseDuration)
-    = Just (PhaseVoting newPhaseDuration, [])
+phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
+    = Just (PhaseVoting _phaseChangeVotPhaseEnd, [])
 phaseTrans (PhaseVoting _) VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
 phaseTrans (PhaseVoting _) VotingPhaseSetbackToJuryPhase

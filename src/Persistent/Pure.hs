@@ -699,7 +699,7 @@ instance FromProto Topic where
         , _topicDesc      = t ^. protoTopicDesc
         , _topicImage     = t ^. protoTopicImage
         , _topicIdeaSpace = t ^. protoTopicIdeaSpace
-        , _topicPhase     = PhaseRefinement $ t ^. protoTopicRefinDays
+        , _topicPhase     = PhaseRefinement $ t ^. protoTopicRefPhaseEnd
         }
 
 instance FromProto Delegation where

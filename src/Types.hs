@@ -417,12 +417,12 @@ data Topic = Topic
 instance SOP.Generic Topic
 
 data ProtoTopic = ProtoTopic
-    { _protoTopicTitle     :: ST
-    , _protoTopicDesc      :: Document
-    , _protoTopicImage     :: URL
-    , _protoTopicIdeaSpace :: IdeaSpace
-    , _protoTopicIdeas     :: [AUID Idea]
-    , _protoTopicRefinDays :: Timestamp
+    { _protoTopicTitle       :: ST
+    , _protoTopicDesc        :: Document
+    , _protoTopicImage       :: URL
+    , _protoTopicIdeaSpace   :: IdeaSpace
+    , _protoTopicIdeas       :: [AUID Idea]
+    , _protoTopicRefPhaseEnd :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -443,9 +443,11 @@ instance SOP.Generic EditTopicData
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseRefinement Timestamp  -- ^ 2. "Ausarbeitungsphase"
+    PhaseRefinement { _refPhaseEnd :: Timestamp }
+                               -- ^ 2. "Ausarbeitungsphase"
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
-  | PhaseVoting     Timestamp  -- ^ 4. "Abstimmungsphase"
+  | PhaseVoting     { _votPhaseEnd :: Timestamp }
+                               -- ^ 4. "Abstimmungsphase"
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
