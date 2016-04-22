@@ -378,7 +378,6 @@ instance FormPage CommentIdea where
 
 instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue
-    type FormPageResult JudgeIdea = ()
 
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 

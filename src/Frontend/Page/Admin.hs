@@ -462,7 +462,6 @@ adminEditClass clss =
 
 instance FormPage AdminDeleteUser where
     type FormPagePayload AdminDeleteUser = ()
-    type FormPageResult AdminDeleteUser = ()
 
     formAction (AdminDeleteUser user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
     redirectOf _ _ = U.Admin U.AdminViewUsers
