@@ -281,9 +281,9 @@ admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
 admin AdminEvent            path = path </> "event"
-admin (AdminDlPass clss)    path = path </> "passwords" </> uriPart clss
-admin AdminDlEvents         path = path </> "events"
-admin (AdminDlEventsF spc)  path = path </> "events" </> uriPart spc
+admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
+admin AdminDlEvents         path = path </> "downloads" </> "events"
+admin (AdminDlEventsF spc)  path = path </> "downloads" </> "events" </> uriPart spc
 
 data CommentMode
     = ReplyComment

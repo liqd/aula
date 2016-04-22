@@ -22,19 +22,19 @@ spec = do
               intercalate ("," :: String) eventLogItemCsvHeaders
 
         context "unfiltered" . it "works" $ \wreq -> do
-            get wreq "/admin/events"
+            get wreq "/admin/downloads/events"
                 `shouldRespond` [codeShouldBe 200, shouldHaveHeaders]
 
         context "filtered on existing idea space" . it "works" $ \wreq -> do
-            get wreq "/admin/events/school"
+            get wreq "/admin/downloads/events/school"
                 `shouldRespond` [codeShouldBe 200, shouldHaveHeaders]
 
         context "filtered on non-existent idea space" . it "works" $ \wreq -> do
-            get wreq "/admin/events/2016-980917"
+            get wreq "/admin/downloads/events/2016-980917"
                 `shouldRespond` [codeShouldBe 200, bodyShouldBe "[Keine Daten]"]
 
         context "filtered with bad idea space identifier" . it "works" $ \wreq -> do
-            get wreq "/admin/events/no-such-space"
+            get wreq "/admin/downloads/events/no-such-space"
                 `shouldRespond` [codeShouldBe 404]
 
         -- FIXME: test empty event log.
