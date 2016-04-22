@@ -93,7 +93,7 @@ instance CSV.ToRecord URLEventLogItem where
         objDesc (Left3   t) = "Thema " <> t ^. topicTitle . showed . csi
         objDesc (Middle3 i) = "Idee "  <> i ^. ideaTitle  . showed . csi
         objDesc (Right3  c) = "Verbesserungsvorschlag "
-                           <> ST.take 30 (c ^. commentText . showed . csi) <> "..."
+                           <> ST.take 30 (c ^. commentText . to unMarkdown . csi) <> "..."
 
         objLink :: Either3 Topic Idea Comment -> ST
         objLink = (domainUrl <>) . absoluteUriPath . relPath . objLink'
