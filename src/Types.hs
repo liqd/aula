@@ -127,8 +127,8 @@ data CSV
 instance Accept CSV where
     contentType Proxy = "text" // "csv"
 
-type CsvHeaders a = Headers '[CsvHeadersListEntry__] a
-type CsvHeadersListEntry__ = Header "Content-Disposition" String  -- appease hlint v1.9.22
+type CsvHeaders a = Headers '[CsvHeadersContentDisposition] a
+type CsvHeadersContentDisposition = Header "Content-Disposition" String  -- appease hlint v1.9.22
 
 instance MimeRender CSV a => MimeRender CSV (CsvHeaders a) where
     mimeRender proxy (Headers v _) = mimeRender proxy v
