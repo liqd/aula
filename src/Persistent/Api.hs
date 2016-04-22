@@ -68,7 +68,6 @@ $(makeAcidic ''AulaData
     , 'dangerousResetAulaData
     , 'editIdea
     , 'editTopic
-    , 'editUser
     , 'moveIdeasToLocation
     , 'saveAndEnactFreeze
     , 'saveDurations
@@ -78,6 +77,7 @@ $(makeAcidic ''AulaData
     , 'setUserEmail
     , 'setUserPass
     , 'setUserRole
+    , 'setUserProfile
     , 'deleteComment
     , 'deactivateUser
     ])

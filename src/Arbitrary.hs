@@ -383,9 +383,6 @@ instance Arbitrary UserFirstName where
 instance Arbitrary UserLastName where
     arbitrary = UserLastName <$> arbWord
 
-instance Arbitrary EditUserData where
-    arbitrary = garbitrary
-
 instance Arbitrary Role where
     arbitrary = garbitrary
 

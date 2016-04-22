@@ -11,13 +11,14 @@ where
 
 import Action
 import Frontend.Fragment.IdeaList
-import Frontend.Prelude
+import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent.Api
 import qualified Frontend.Path as P
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import System.FilePath
 
 
 -- * page
@@ -231,20 +232,16 @@ delegatedVotes userId = do
 -- ** User Profile: Edit profile
 
 instance FormPage EditUserProfile where
-    type FormPagePayload EditUserProfile = EditUserData
+    type FormPagePayload EditUserProfile = UserProfile
 
     formAction EditUserProfile{} = U.UserProfile
 
     redirectOf (EditUserProfile u) _ = U.viewUser u
 
     makeForm (EditUserProfile user) =
-        EditUserData
-        <$> ("firstname" .: field userFirstName _UserFirstName)
-        <*> ("lastname"  .: field userLastName  _UserLastName)
-        <*> ("desc"      .: field userDesc      _Markdown)
-      where
-        field :: DfTextField User
-        field = dfTextField user
+        UserProfile
+        <$> ("avatar" .: (cs <$$> DF.file))
+        <*> ("desc"   .: dfTextField user userDesc _Markdown)
 
     formPage v form p = do
         semanticDiv p $ do
@@ -252,12 +249,9 @@ instance FormPage EditUserProfile where
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Profil bearbeiten"
                     form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Vorname:"
-                            inputText_ [class_ "m-small"] "firstname" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Nachname:"
-                            inputText_ [class_ "m-small"] "lastname" v
+                        label_ $ do -- FIXME style
+                            span_ [class_ "label-text"] "Avatar" -- FIXME english
+                            DF.inputFile "avatar" v
                         label_ $ do
                             span_ [class_ "label-text"] "Beschreibung:"
                             inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
@@ -267,4 +261,15 @@ instance FormPage EditUserProfile where
 editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
 editUserProfile = FormPageHandler
     { _formGetPage   = EditUserProfile <$> currentUser
-    , _formProcessor = \up -> update . (`EditUser` up) =<< currentUserId }
+    , _formProcessor = \up ->
+        case up ^. profileAvatar of
+            Nothing -> throwError500 "upload FAILED: no file!"  -- FIXME: status code?
+            Just file -> do
+                uid <- currentUserId
+                let ext = takeExtension (cs file)
+                    dst = "static" </> "avatars" </> show uid <.> ext
+                    url = "/" <> dst
+                -- TODO: resize image
+                -- TODO: copy the resulting image to dst
+                update . SetUserProfile uid $ up & profileAvatar ?~ cs url
+    }
