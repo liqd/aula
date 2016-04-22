@@ -215,7 +215,7 @@ instance FormPage PageAdminSettingsDurations where
 
     formAction _ = U.Admin U.AdminDuration
 
-    -- FIXME: Do we redirect to the same page???
+    -- FIXME: Do we redirect to the same page?
     redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
