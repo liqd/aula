@@ -373,31 +373,41 @@ instance ToHtml AdminViewClasses where
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
 -- role, and the class field should be hidden / displayed as appropriate.  see issue #197.
 data RoleSelection
-    = RoleStudent
-    | RoleGuest
+    = RoleSelStudent
+    | RoleSelClassGuest
+    | RoleSelSchoolGuest
+    | RoleSelModerator
+    | RoleSelPrincipal
+    | RoleSelAdmin
   deriving (Eq, Generic, Show)
 
 instance SOP.Generic RoleSelection
 
 roleSelectionChoices :: IsString s => [(RoleSelection, s)]
 roleSelectionChoices =
-             [ (RoleStudent, "Schüler")
-             , (RoleGuest, "Gast")
+             [ (RoleSelStudent,     "Schüler")
+             , (RoleSelClassGuest,  "Gast (Klasse)")
+             , (RoleSelSchoolGuest, "Gast (Schule)")
+             , (RoleSelModerator,   "Moderator")
+             , (RoleSelPrincipal,   "Direktor")
+             , (RoleSelAdmin,       "Admin")
              ]
 
-roleSelection :: Getter Role (Maybe RoleSelection)
+roleSelection :: Getter Role RoleSelection
 roleSelection = to $ \case
-    Student{}    -> Just RoleStudent
-    ClassGuest{} -> Just RoleGuest
-    _            -> Nothing
-
+    Student{}    -> RoleSelStudent
+    ClassGuest{} -> RoleSelClassGuest
+    SchoolGuest  -> RoleSelSchoolGuest
+    Moderator    -> RoleSelModerator
+    Principal    -> RoleSelPrincipal
+    Admin        -> RoleSelAdmin
 
 chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
 chooseRole mr = DF.choice roleSelectionChoices (selectRole =<< mr)
   where
     selectRole = \case
-        Student _    -> Just RoleStudent
-        ClassGuest _ -> Just RoleGuest
+        Student _    -> Just RoleSelStudent
+        ClassGuest _ -> Just RoleSelClassGuest
         _            -> Nothing  -- FIXME: see RoleSelection
 
 chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
@@ -488,8 +498,12 @@ adminEditUser uid = FormPageHandler
     }
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
-fromRoleSelection RoleStudent = Student
-fromRoleSelection RoleGuest   = ClassGuest
+fromRoleSelection RoleSelStudent     = Student
+fromRoleSelection RoleSelClassGuest  = ClassGuest
+fromRoleSelection RoleSelSchoolGuest = const SchoolGuest
+fromRoleSelection RoleSelModerator   = const Moderator
+fromRoleSelection RoleSelPrincipal   = const Principal
+fromRoleSelection RoleSelAdmin       = const Admin
 
 adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
 adminEditClass clss =
