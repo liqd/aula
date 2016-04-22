@@ -330,7 +330,8 @@ aulaAdmin =
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv Nothing
-  :<|> adminEventLogCsv . Just
+  :<|> adminEventLogCsv . Just  -- FIXME: with QueryParam, we could melt these two routes into one.
+                                -- this isn't a hard task, but we need to extend 'UriPath' type.
 
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
