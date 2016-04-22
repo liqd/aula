@@ -553,25 +553,26 @@ adminCreateClass = FormPageHandler (pure AdminCreateClass) q
     q (BatchCreateUsersFormData _clname Nothing) =
         throwError500 "upload FAILED: no file!"  -- FIXME: status code?
     q (BatchCreateUsersFormData clname (Just file)) = do
-        let schoolcl = SchoolClass theOnlySchoolYearHack clname
         eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
         case eCsv of
             Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
                                              -- FIXME: status code?
-            Right records -> mapM_ (p schoolcl) records
+            Right records -> do
+                let schoolcl = SchoolClass theOnlySchoolYearHack clname
+                update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
+                forM_ records . p $ Student schoolcl
 
-    p :: SchoolClass -> CsvUserRecord -> m ()
+    p :: Role -> CsvUserRecord -> m ()
     p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
         throwError500 "upload FAILED: internal error!"
-    p schoolcl (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+    p role (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
-        update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
         pwd <- mkRandomPassword
         currentUserAddDb AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
-            , _protoUserRole      = Student schoolcl
+            , _protoUserRole      = role
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = Markdown nil
