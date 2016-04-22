@@ -168,7 +168,7 @@ instance PayloadToEnv Quorums where
 
 instance PayloadToEnv Role where
     payloadToEnvMapping v r = \case
-        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^?! roleSelection . _Just)]
+        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
         -- FIXME: Selection does not work for composite types like school class.
         "class" -> pure [TextInput $ selectValue "class" v classes (r ^?! roleSchoolClass)]
       where
