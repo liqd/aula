@@ -175,7 +175,7 @@ instance Arbitrary AdminDeleteUser where
     arbitrary = AdminDeleteUser <$> arb
 
 instance Arbitrary AdminCreateUser where
-    arbitrary = pure AdminCreateUser
+    arbitrary = AdminCreateUser <$> arb
 
 instance Arbitrary AdminViewClasses where
     arbitrary = AdminViewClasses <$> arb

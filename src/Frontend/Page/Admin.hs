@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
@@ -55,7 +56,7 @@ data AdminViewUsers = AdminViewUsers [User]
 
 instance Page AdminViewUsers
 
-data AdminCreateUser = AdminCreateUser
+data AdminCreateUser = AdminCreateUser [SchoolClass]
   deriving (Eq, Show, Read)
 
 instance Page AdminCreateUser
@@ -91,6 +92,19 @@ data PageAdminSettingsEventsProtocol =
   deriving (Eq, Show, Read)
 
 instance Page PageAdminSettingsEventsProtocol
+
+data CreateUserPayload = CreateUserPayload
+    { _createUserFirstName :: UserFirstName
+    , _createUserLastName  :: UserLastName
+    , _createUserLogin     :: Maybe UserLogin
+    , _createUserEmail     :: Maybe EmailAddress
+    , _createUserRole      :: Role
+    }
+  deriving (Eq, Generic, Show)
+
+instance SOP.Generic CreateUserPayload
+
+makeLenses ''CreateUserPayload
 
 
 -- * tabs
@@ -298,31 +312,47 @@ instance ToHtml AdminViewUsers where
 
                 tbody_ $ renderUserRow `mapM_` users
 
+instance FormPage AdminCreateUser where
+    type FormPagePayload AdminCreateUser = CreateUserPayload
 
-instance ToHtml AdminCreateUser where
-    toHtml = toHtmlRaw
-    toHtmlRaw p =
-        adminFrame p . semanticDiv p $ do
-            div_ [class_ "admin-container"] $ do
-                form_ $ do -- FIXME
-                    div_ [class_ "col-3-12"] $ do
-                        div_ [class_ "upload-avatar"] $ do
-                            a_ [href_ U.Broken] $ do
-                                i_ [class_ "upload-avatar-icon icon-camera"] nil
-                    div_ [class_ "col-9-12"] $ do
-                        h1_ [class_ "admin-main-heading"] $ do
-                            "UserName" -- FIXME
-                        label_ [class_ "col-6-12"] $ do
-                            span_ [class_ "label-text"] "Nutzerrolle"
-                            -- FIXME inputSelect_ [class_ "m-stretch"] "role" v
-                            select_ [class_ "m-stretch"] nil
-                        label_ [class_ "col-6-12"] $ do
-                            span_ [class_ "label-text"] "Klasse"
-                            -- FIXME inputSelect_ [class_ "m-stretch"]  "class" v
-                            select_ [class_ "m-stretch"] nil
-                        a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
-                        div_ [class_ "admin-buttons"] $ do
-                            DF.inputSubmit "Speichern"
+    formAction _   = U.Admin U.AdminCreateUser
+    redirectOf _ _ = U.Admin U.AdminViewUsers
+
+    -- FIXME: Show the user's role and class as default in the selections.
+    makeForm (AdminCreateUser classes) =
+        CreateUserPayload
+            <$> ("firstname"  .: (UserFirstName <$> DF.text Nothing))
+            <*> ("lastname"   .: (UserLastName  <$> DF.text Nothing))
+            <*> ("login"      .: (UserLogin    <$$> DF.optionalText Nothing))
+            <*> emailField Nothing
+            <*> roleForm Nothing Nothing classes
+
+    formPage v form p =
+        adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
+            div_ [class_ "col-3-12"] $ do
+                div_ [class_ "upload-avatar"] $ do
+                    a_ [href_ U.Broken] $ do -- TODO
+                        i_ [class_ "upload-avatar-icon icon-camera"] nil
+            div_ [class_ "col-9-12"] $ do
+                h1_ [class_ "admin-main-heading"] $ do
+                    label_ [class_ "input-append"] $ do
+                        span_ [class_ "label-text col-6-12"] "Firstname:" -- FIXME english
+                        inputText_ [class_ "m-small col-6-12"] "firstname" v
+                    label_ [class_ "input-append"] $ do
+                        span_ [class_ "label-text col-6-12"] "Lastname:" -- FIXME english
+                        inputText_ [class_ "m-small col-6-12"] "lastname" v
+                    label_ [class_ "input-append"] $ do
+                        span_ [class_ "label-text col-6-12"] "Login:" -- FIXME english
+                        inputText_ [class_ "m-small col-6-12"] "login" v
+                    label_ [class_ "col-6-12"] $ do
+                        span_ [class_ "label-text"] "Nutzerrolle"
+                        inputSelect_ [class_ "m-stretch"] "role" v
+                    label_ [class_ "col-6-12"] $ do
+                        span_ [class_ "label-text"] "Klasse"
+                        inputSelect_ [class_ "m-stretch"]  "class" v
+                div_ [class_ "admin-buttons"] $ do
+                    a_ [href_ U.Broken, class_ "btn-cta"] "Nutzer löschen"
+                    DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml AdminViewClasses where
     toHtml = toHtmlRaw
@@ -394,7 +424,6 @@ instance FormPage AdminEditUser where
 
     redirectOf _ _ = U.Admin U.AdminViewUsers
 
-    -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminEditUser user classes) =
         roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
 
@@ -440,8 +469,24 @@ instance ToHtml AdminEditClass where
 adminViewUsers :: ActionPersist m => m AdminViewUsers
 adminViewUsers = AdminViewUsers <$> query getUsers
 
-adminCreateUser :: Applicative m => m AdminCreateUser
-adminCreateUser = pure AdminCreateUser
+adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
+                    ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
+adminCreateUser = FormPageHandler
+    { _formGetPage   = AdminCreateUser <$> query getSchoolClasses
+    , _formProcessor = \up -> do
+        forM_ (up ^? createUserRole . roleSchoolClass) $
+            update . AddIdeaSpaceIfNotExists . ClassSpace
+        pwd <- mkRandomPassword
+        currentUserAddDb_ AddUser ProtoUser
+            { _protoUserLogin     = up ^. createUserLogin
+            , _protoUserFirstName = up ^. createUserFirstName
+            , _protoUserLastName  = up ^. createUserLastName
+            , _protoUserRole      = up ^. createUserRole
+            , _protoUserPassword  = pwd
+            , _protoUserEmail     = up ^. createUserEmail
+            , _protoUserDesc      = Markdown nil
+            }
+    }
 
 adminViewClasses :: ActionPersist m => m AdminViewClasses
 adminViewClasses = AdminViewClasses <$> query getSchoolClasses

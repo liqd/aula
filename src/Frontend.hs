@@ -303,7 +303,7 @@ type AulaAdmin =
   :<|> "quorum" :> FormHandler PageAdminSettingsQuorum
        -- groups and permissions
   :<|> "users" :> GetH (Frame AdminViewUsers)
-  :<|> "user" :> "create" :> GetH (Frame AdminCreateUser)
+  :<|> "user" :> "create" :> FormHandler AdminCreateUser
   :<|> "classes" :> GetH (Frame AdminViewClasses)
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
   :<|> User ::> "edit" :> FormHandler AdminEditUser
@@ -321,7 +321,7 @@ aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
   :<|> makeFrame Page.adminViewUsers
-  :<|> makeFrame Page.adminCreateUser
+  :<|> form Page.adminCreateUser
   :<|> makeFrame Page.adminViewClasses
   :<|> form Page.adminCreateClass
   :<|> form . Page.adminEditUser

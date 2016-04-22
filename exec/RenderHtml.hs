@@ -58,7 +58,6 @@ pagesPlain :: forall b.
 pagesPlain f =
     [ f (Proxy :: Proxy AdminEditClass)
     , f (Proxy :: Proxy AdminViewClasses)
-    , f (Proxy :: Proxy AdminCreateUser)
     , f (Proxy :: Proxy AdminViewUsers)
     , f (Proxy :: Proxy PageDelegateVote)
     , f (Proxy :: Proxy PageDelegationNetwork)
@@ -83,6 +82,7 @@ pagesForm f =
     , f (Proxy :: Proxy EditIdea)
     , f (Proxy :: Proxy EditTopic)
     , f (Proxy :: Proxy PageAdminSettingsDurations)
+    , f (Proxy :: Proxy AdminCreateUser)
     , f (Proxy :: Proxy AdminCreateClass)
     , f (Proxy :: Proxy AdminDeleteUser)
     , f (Proxy :: Proxy AdminEditUser)

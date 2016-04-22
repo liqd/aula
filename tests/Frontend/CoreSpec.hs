@@ -47,7 +47,6 @@ spec = do
         , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen AdminViewUsers)
-        , H (arb :: Gen AdminCreateUser)
         , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
@@ -64,6 +63,7 @@ spec = do
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen Frontend.Page.EditTopic)
+        -- , F (arb :: Gen AdminCreateUser) -- FIXME
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
