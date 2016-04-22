@@ -23,6 +23,7 @@ where
 
 import Control.Lens
 import Data.Monoid
+import Data.Time
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
 
@@ -37,6 +38,8 @@ data PhaseChange
     | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
     | VotingPhaseTimeOut
     | VotingPhaseSetbackToJuryPhase
+    | PhaseFreeze { _phaseChangeFreezeNow :: Timestamp }
+    | PhaseThaw { _phaseChangeThawNow :: Timestamp }
   deriving (Eq, Show)
 
 data PhaseAction
@@ -48,16 +51,24 @@ data PhaseAction
 
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans (PhaseRefinement _) RefinementPhaseTimeOut
+phaseTrans PhaseRefinement{} RefinementPhaseTimeOut
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans (PhaseRefinement _) RefinementPhaseMarkedByModerator
+phaseTrans PhaseRefinement{} RefinementPhaseMarkedByModerator
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
+phaseTrans PhaseRefinement{_refPhaseEnd} (PhaseFreeze now)
+    = Just (PhaseRefFrozen {_refPhaseLeftover = realToFrac $ unTimestamp _refPhaseEnd `diffUTCTime` unTimestamp now}, [])
+phaseTrans PhaseRefFrozen{_refPhaseLeftover} (PhaseThaw now)
+    = Just (PhaseRefinement {_refPhaseEnd = Timestamp $ realToFrac _refPhaseLeftover `addUTCTime` unTimestamp now}, [])
 phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
     = Just (PhaseVoting _phaseChangeVotPhaseEnd, [])
-phaseTrans (PhaseVoting _) VotingPhaseTimeOut
+phaseTrans PhaseVoting{} VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
 phaseTrans (PhaseVoting _) VotingPhaseSetbackToJuryPhase
     = Just (PhaseJury, [UnmarkAllIdeas])
+phaseTrans PhaseVoting{_votPhaseEnd} (PhaseFreeze now)
+    = Just (PhaseVotFrozen {_votPhaseLeftover  =realToFrac $ unTimestamp _votPhaseEnd `diffUTCTime` unTimestamp now}, [])
+phaseTrans PhaseVotFrozen{_votPhaseLeftover} (PhaseFreeze now)
+    = Just (PhaseVoting {_votPhaseEnd = Timestamp $ realToFrac _votPhaseLeftover `addUTCTime` unTimestamp now}, [])
 phaseTrans _ _ = Nothing
 
 
@@ -95,14 +106,26 @@ moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
 phaseCap _ r i Nothing  = wildIdeaCap i r
 phaseCap u r i (Just p) = case p of
+    PhaseWildIdeaFrozen -> wildIdeaFrozenCap i r
     PhaseRefinement _ -> phaseRefinementCap i r
+    PhaseRefFrozen _  -> phaseRefFrozenCap i r
     PhaseJury         -> phaseJuryCap i r
     PhaseVoting     _ -> phaseVotingCap i r
+    PhaseVotFrozen _  -> phaseVotFrozenCap i r
     PhaseResult       -> phaseResultCap u i r
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+wildIdeaFrozenCap :: Idea -> Role -> [IdeaCapability]
+wildIdeaFrozenCap _i = \case
+    Student    _clss -> [CanLike, CanComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -118,6 +141,15 @@ phaseRefinementCap _i = \case
     Principal        -> []
     Admin            -> []
 
+phaseRefFrozenCap :: Idea -> Role -> [IdeaCapability]
+phaseRefFrozenCap _i = \case
+    Student    _clss -> [CanComment]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []  -- TODO: can thaw; capture here or not here
+
 phaseJuryCap :: Idea -> Role -> [IdeaCapability]
 phaseJuryCap _i = \case
     Student    _clss -> []
@@ -130,6 +162,15 @@ phaseJuryCap _i = \case
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
     Student    _clss -> onFeasibleIdea i [CanVote]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+phaseVotFrozenCap :: Idea -> Role -> [IdeaCapability]
+phaseVotFrozenCap _i = \case
+    Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []

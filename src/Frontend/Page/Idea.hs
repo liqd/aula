@@ -154,9 +154,12 @@ instance ToHtml ViewIdea where
 
                 case phase of
                     Nothing                  -> l >> c
-                    Just (PhaseRefinement _) -> c
+                    Just PhaseWildIdeaFrozen -> l >> c
+                    Just PhaseRefinement{}   -> c
+                    Just PhaseRefFrozen{}    -> c
                     Just PhaseJury           -> c
-                    Just (PhaseVoting _)     -> v >> c
+                    Just PhaseVoting{}       -> v >> c
+                    Just PhaseVotFrozen{}    -> v >> c
                     Just PhaseResult         -> v >> c
 
             div_ [class_ "sub-heading"] $ do
@@ -301,9 +304,12 @@ instance ToHtml IdeaVoteLikeBars where
 
         case phase of
             Nothing                  -> toHtml $ likeBar likeButtons
-            Just (PhaseRefinement _) -> nil
+            Just PhaseWildIdeaFrozen -> toHtml $ likeBar likeButtons
+            Just PhaseRefinement{}   -> nil
+            Just PhaseRefFrozen{}    -> nil
             Just PhaseJury           -> nil
-            Just (PhaseVoting _)     -> toHtml $ voteBar voteButtons
+            Just PhaseVoting{}       -> toHtml $ voteBar voteButtons
+            Just PhaseVotFrozen{}    -> toHtml $ voteBar nil
             Just PhaseResult         -> toHtml $ voteBar nil
 
 

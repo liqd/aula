@@ -443,11 +443,15 @@ instance SOP.Generic EditTopicData
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseRefinement { _refPhaseEnd :: Timestamp }
+    PhaseWildIdeaFrozen
+  | PhaseRefinement { _refPhaseEnd :: Timestamp }
                                -- ^ 2. "Ausarbeitungsphase"
+  | PhaseRefFrozen  { _refPhaseLeftover :: Double }
+      -- morally @NominalDiffTime@, but it has no @Read@ instance (and Pico has no @Binary@)
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
   | PhaseVoting     { _votPhaseEnd :: Timestamp }
                                -- ^ 4. "Abstimmungsphase"
+  | PhaseVotFrozen  { _votPhaseLeftover :: Double }
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -455,9 +459,12 @@ instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
+    PhaseWildIdeaFrozen -> ""
     PhaseRefinement _ -> "Ausarbeitungsphase"
+    PhaseRefFrozen _  -> "Ausarbeitungsphase"
     PhaseJury         -> "Prüfungsphase"
     PhaseVoting     _ -> "Abstimmungsphase"
+    PhaseVotFrozen  _ -> "Abstimmungsphase"
     PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
@@ -633,6 +640,7 @@ instance SOP.Generic Quorums
 data Settings = Settings
     { _durations :: Durations
     , _quorums   :: Quorums
+    , _frozen    :: Bool
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -642,6 +650,7 @@ defaultSettings :: Settings
 defaultSettings = Settings
     { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
     , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
+    , _frozen = False
     }
 
 -- * aula-specific helper types

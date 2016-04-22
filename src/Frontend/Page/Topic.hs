@@ -160,9 +160,12 @@ viewTopicHeaderDiv ctx topic tab = do
                       "Stimme Beauftragen"
 
             case phase of
+                PhaseWildIdeaFrozen -> error "TODO"
                 PhaseRefinement _ -> createIdeaButton >> delegateVoteButton
+                PhaseRefFrozen  _ -> createIdeaButton >> delegateVoteButton
                 PhaseJury         -> delegateVoteButton
                 PhaseVoting     _ -> delegateVoteButton
+                PhaseVotFrozen  _ -> delegateVoteButton
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
@@ -176,9 +179,12 @@ viewTopicHeaderDiv ctx topic tab = do
               -- forth between delegation and idea tabs, either.
 
             case phase of
+                PhaseWildIdeaFrozen -> error "TODO"
                 PhaseRefinement _ -> t1
+                PhaseRefFrozen  _ -> t1
                 PhaseJury         -> t1
                 PhaseVoting     _ -> t1 >> t2
+                PhaseVotFrozen  _ -> t1 >> t2
                 PhaseResult       -> t1 >> t2 >> t3 >> t4
   where
     phase   = topic ^. topicPhase
