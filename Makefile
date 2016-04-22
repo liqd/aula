@@ -74,6 +74,5 @@ content:
 	curl -XPOST http://localhost:8080/api/manage-state/create-init
 	curl -XPOST http://localhost:8080/api/manage-state/create-demo
 
-tags:
-	echo ':etags' | cabal exec -- ghci -isrc -itests -idist/build/autogen exec/Aula.hs 
-
+tags: .phony
+	hasktags -b src/ tests/ exec/ dist/build/autogen/
