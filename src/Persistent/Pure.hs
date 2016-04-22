@@ -73,7 +73,8 @@ module Persistent.Pure
     , findUser
     , findUserByLogin
     , findUsersByRole
-    , getUsers
+    , getActiveUsers
+    , getAllUsers
     , getUsersInClass
     , isClassInRole
     , getSchoolClasses
@@ -95,20 +96,12 @@ module Persistent.Pure
     , findTopic
     , findTopicBy
     , findTopicsBySpace
-    , dbIdeas
-    , dbUsers
-    , dbTopics
-    , dbSpaceSet
-    , dbIdeaMap
-    , dbUserMap
-    , dbTopicMap
     , dbElaborationDuration
     , dbVoteDuration
     , dbSchoolQuorum
     , dbClassQuorum
     , dbDurations
     , dbQuorums
-    , dbSettings
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
@@ -429,11 +422,14 @@ modifyTopic = modifyAMap dbTopicMap
 findUser :: AUID User -> MQuery User
 findUser = findInById dbUserMap
 
-getUsers :: Query [User]
-getUsers = view dbUsers
+getActiveUsers :: Query [User]
+getActiveUsers = filter isActiveUser <$> view dbUsers
+
+getAllUsers :: Query [User]
+getAllUsers = view dbUsers
 
 getUsersInClass :: SchoolClass -> Query [User]
-getUsersInClass clss = filter (isClassInRole clss . view userRole) <$> view dbUsers
+getUsersInClass clss = filter (isClassInRole clss . view userRole) <$> getActiveUsers
 
 isClassInRole :: SchoolClass -> Role -> Bool
 isClassInRole clss role = role ^? roleSchoolClass == Just clss
@@ -480,7 +476,7 @@ findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
 
 findUsersByRole :: Role -> Query [User]
-findUsersByRole = findAllInBy dbUsers userRole
+findUsersByRole = fmap (filter isActiveUser) . findAllInBy dbUsers userRole
 
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap

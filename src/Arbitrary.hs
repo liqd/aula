@@ -35,6 +35,7 @@ import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
+import Data.Functor.Infix ((<$$>))
 import Data.Aeson as Aeson
 import Data.Char
 import Data.List as List
@@ -186,7 +187,8 @@ instance Arbitrary AdminCreateClass where
 instance Arbitrary AdminEditClass where
     arbitrary = do
         clss <- arb
-        AdminEditClass clss <$> listOf (userForClass clss)
+        AdminEditClass clss
+            <$> (makeUserView <$$> listOf (userForClass clss))
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
@@ -350,6 +352,9 @@ instance Arbitrary IdeaLocation where
 
 instance Arbitrary User where
     arbitrary = garbitrary <**> (set userRole <$> garbitrary)
+
+instance Arbitrary UserView where
+    arbitrary = makeUserView <$> arbitrary
 
 instance Arbitrary UserProfile where
     arbitrary = garbitrary
@@ -769,6 +774,7 @@ instance Aeson.ToJSON D3DN where
             , "ctxs"  .= array (List.sort . nub $ renderCtx <$> links)
             ]
 
+        -- FIXME: It shouldn't be rendered for deleted users.
         renderNode n = object
             [ "name"   .= (n ^. userLogin . unUserLogin)
             , "avatar" .= (n ^. userAvatar)

@@ -21,6 +21,7 @@ import Control.Monad (join, unless, void)
 import Control.Monad.Free
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.State
+import Data.Functor.Infix ((<$$>))
 import Data.List (find)
 import qualified Data.Map as Map (elems, size)
 import Data.String.Conversions
@@ -287,7 +288,7 @@ findCommentCommentByText c t = find ((t ==) . unMarkdown . _commentText) . Map.e
 
 findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
 findIdeaAndComment it cp =
-    fmap (fmap (id &&& flip findCommentByText cp)) (findIdeaByTitle it)
+    (id &&& flip findCommentByText cp) <$$> findIdeaByTitle it
 
 findIdeaAndCommentComment
     :: (ActionM m)

@@ -11,6 +11,7 @@ where
 
 import Control.Lens
 import Control.Monad (unless)
+import Data.Functor.Infix ((<$$>))
 import Data.Time
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
@@ -32,7 +33,7 @@ ideaQuorumOk iid = do
 
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
 getVotersForIdea :: Idea -> Query [User]
-getVotersForIdea idea = filter hasAccess <$> getUsers
+getVotersForIdea idea = filter hasAccess <$> getActiveUsers
   where
     hasAccess u = case idea ^. ideaLocation . ideaLocationSpace of
         SchoolSpace   -> isStudent u
@@ -100,7 +101,7 @@ ideaTopic idea = case idea ^. ideaLocation of
         pure $ Just topic
 
 ideaPhase :: Idea -> MQuery Phase
-ideaPhase = fmap (fmap (view topicPhase)) . ideaTopic
+ideaPhase = (view topicPhase <$$>) . ideaTopic
 
 checkInPhase :: (Phase -> Bool) -> Idea -> Topic -> EQuery ()
 checkInPhase isPhase idea topic =
@@ -127,3 +128,9 @@ setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
 deactivateUser :: AUID User -> AUpdate ()
 deactivateUser uid
     = modifyUser uid (userSettings . userSettingsPassword .~ UserPassDeactivated)
+
+getUserViews :: Query [UserView]
+getUserViews = makeUserView <$$> getAllUsers
+
+findActiveUser :: AUID User -> MQuery User
+findActiveUser uid = (((^? activeUser) . makeUserView) =<<) <$> findUser uid

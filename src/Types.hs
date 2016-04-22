@@ -30,6 +30,7 @@ import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
 import Data.Map (Map, fromList)
+import Data.Maybe (mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
 import Data.String
@@ -505,9 +506,10 @@ newtype UserLastName  = UserLastName  { _unUserLastName  :: ST }
 
 type instance Proto User = ProtoUser
 
+-- FIXME: Reduce the information which stored in the 'DeleteUser' constructor.
 data UserView
-    = ActiveUser  { _activeUser :: User }
-    | DeletedUser
+    = ActiveUser  { _activeUser  :: User }
+    | DeletedUser { _deletedUser :: User }
   deriving (Eq, Ord, Show, Read, Generic)
 
 data ProtoUser = ProtoUser
@@ -706,7 +708,7 @@ instance HasUriPart (AUID a) where
 data GMetaInfo a k = MetaInfo
     { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
-    , _metaCreatedByLogin  :: UserLogin
+    , _metaCreatedByLogin  :: UserLogin -- FIXME: If the user is deleted it still contains the user information
     , _metaCreatedByAvatar :: Maybe URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
@@ -829,6 +831,7 @@ makePrisms ''EmailAddress
 makePrisms ''UserLastName
 makePrisms ''UserFirstName
 makePrisms ''UserLogin
+makePrisms ''UserView
 
 makeLenses ''Category
 makeLenses ''Comment
@@ -864,6 +867,7 @@ makeLenses ''Settings
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
+makeLenses ''UserView
 makeLenses ''EmailAddress
 makeLenses ''UserLogin
 makeLenses ''UserFirstName
@@ -990,13 +994,22 @@ unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddres
 userEmailAddress :: CSI' s SBS => Fold User s
 userEmailAddress = userEmail . _Just . re emailAddress
 
+onActiveUser :: a -> (User -> a) -> User -> a
+onActiveUser x f u
+    | isActiveUser u = f u
+    | otherwise      = x
+
 userFullName :: User -> ST
-userFullName u = u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName
+userFullName = onActiveUser
+    "[Nutzer gelöscht]"
+    (\u -> u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName)
 
 userLongName :: User -> ST
-userLongName u = userFullName u <> " [" <> u ^. userLogin . unUserLogin <> email <> "]"
+userLongName = onActiveUser
+    "[Nutzer gelöscht]"
+    (\u -> userFullName u <> " [" <> u ^. userLogin . unUserLogin <> email u <> "]")
   where
-    email = maybe nil ((", " <>) . (emailAddress #)) $ u ^. userEmail
+    email u = maybe nil ((", " <>) . (emailAddress #)) $ u ^. userEmail
 
 userAddress :: User -> Maybe Address
 userAddress u = u ^? userEmailAddress . to (Address . Just $ userFullName u)
@@ -1004,11 +1017,17 @@ userAddress u = u ^? userEmailAddress . to (Address . Just $ userFullName u)
 isDeletedUser :: User -> Bool
 isDeletedUser = has $ userSettings . userSettingsPassword . _UserPassDeactivated
 
+isActiveUser :: User -> Bool
+isActiveUser = not . isDeletedUser
+
 makeUserView :: User -> UserView
 makeUserView u =
     if isDeletedUser u
-        then DeletedUser
+        then DeletedUser u
         else ActiveUser u
+
+activeUsers :: [UserView] -> [User]
+activeUsers = mapMaybe (^? activeUser)
 
 notFeasibleIdea :: Idea -> Bool
 notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible

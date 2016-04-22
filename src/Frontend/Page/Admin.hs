@@ -51,7 +51,7 @@ data PageAdminSettingsQuorum =
 instance Page PageAdminSettingsQuorum
 
 -- | 11.3 Admin settings: Manage groups & permissions
-data AdminViewUsers = AdminViewUsers [User]
+data AdminViewUsers = AdminViewUsers [UserView]
   deriving (Eq, Show, Read)
 
 instance Page AdminViewUsers
@@ -81,7 +81,7 @@ data AdminCreateClass = AdminCreateClass
 
 instance Page AdminCreateClass
 
-data AdminEditClass = AdminEditClass SchoolClass [User]
+data AdminEditClass = AdminEditClass SchoolClass [UserView]
   deriving (Eq, Show, Read)
 
 instance Page AdminEditClass
@@ -298,16 +298,22 @@ instance ToHtml AdminViewUsers where
                             input_ [type_ "text", class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
 
-                let renderUserRow :: forall m. (Monad m) => User -> HtmlT m ()
-                    renderUserRow user = tr_ $ do
-                        td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
+                let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
+                    renderUserInfoRow user = do
                         td_ $ user ^. userLogin . unUserLogin . html
-                        td_ (case user ^. userRole of
-                                Student cl    -> toHtml $ showSchoolClass cl
-                                ClassGuest cl -> toHtml $ showSchoolClass cl
-                                _             -> nil)
+                        td_ $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
                         td_ $ roleLabel (user ^. userRole)
                         td_ (toHtmlRaw nbsp)
+
+                let renderUserRow :: forall m. (Monad m) => UserView -> HtmlT m ()
+                    renderUserRow (DeletedUser user) = tr_ $ do
+                        td_ nil
+                        renderUserInfoRow user
+                        td_ "[gelöscht]"
+
+                    renderUserRow (ActiveUser user) = tr_ $ do
+                        td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
+                        renderUserInfoRow user
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
                 tbody_ $ renderUserRow `mapM_` users
@@ -460,14 +466,14 @@ instance ToHtml AdminEditClass where
                     th_ nil
                     th_ "Name"
                     th_ nil
-                tbody_ . forM_ users $ \user -> tr_ $ do
+                tbody_ . forM_ (activeUsers users) $ \user -> tr_ $ do
                     td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                     td_ . toHtml $ user ^. userLogin . unUserLogin
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
 adminViewUsers :: ActionPersist m => m AdminViewUsers
-adminViewUsers = AdminViewUsers <$> query getUsers
+adminViewUsers = AdminViewUsers <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
                     ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
@@ -493,7 +499,7 @@ adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = FormPageHandler
-    { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findUser uid) <*> getSchoolClasses
+    { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses
     , _formProcessor = update . SetUserRole uid
     }
 
@@ -503,7 +509,8 @@ fromRoleSelection RoleGuest   = ClassGuest
 
 adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
 adminEditClass clss =
-    AdminEditClass clss <$> query (getUsersInClass clss)
+    AdminEditClass clss
+    <$> (makeUserView <$$> query (getUsersInClass clss))
 
 instance FormPage AdminDeleteUser where
     type FormPagePayload AdminDeleteUser = ()
@@ -525,7 +532,7 @@ instance FormPage AdminDeleteUser where
 adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
 adminDeleteUser uid =
     FormPageHandler
-        (AdminDeleteUser <$> equery (maybe404 =<< findUser uid))
+        (AdminDeleteUser <$> mquery (findActiveUser uid))
         (const $ Action.deleteUser uid)
 
 

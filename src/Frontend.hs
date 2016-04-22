@@ -169,7 +169,7 @@ aulaMain =
        makeFrame Page.viewRooms
   :<|> aulaSpace
 
-  :<|> makeFrame (PageShow <$> Action.query getUsers)
+  :<|> makeFrame (PageShow <$> Action.query getActiveUsers)
   :<|> aulaUser
   :<|> form Page.editUserProfile
   :<|> form Page.userSettings

@@ -173,13 +173,13 @@ persistApiSpec imp = do
     getDbSpec imp "getWildIdeas"      getWildIdeas
     getDbSpec imp "getIdeasWithTopic" getIdeasWithTopic
 
-    getDbSpec imp "getUsers" getUsers
-    addDbSpec imp "addUsers" getUsers AddUser
+    getDbSpec imp "getUsers" getAllUsers
+    addDbSpec imp "addUsers" getAllUsers AddUser
 
     getDbSpec imp "getTopics" getTopics
     addDbSpec imp "addTopics" getTopics AddTopic
 
-    findInBySpec imp "findUserByLogin" getUsers findUserByLogin userLogin ("not" <>)
+    findInBySpec imp "findUserByLogin" getAllUsers findUserByLogin userLogin ("not" <>)
     findInBySpec imp "findTopic" getTopics findTopic _Id changeAUID
 
     let elements' [] = arbitrary
