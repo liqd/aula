@@ -417,9 +417,6 @@ instance Arbitrary Quorums where
 instance Arbitrary RoleSelection where
     arbitrary = garbitrary
 
-instance Arbitrary EditUserPayload where
-    arbitrary = garbitrary
-
 instance Arbitrary InitialPasswordsCsv where
     arbitrary = garbitrary
 

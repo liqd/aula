@@ -354,19 +354,18 @@ data RoleSelection
 
 instance SOP.Generic RoleSelection
 
-data EditUserPayload = EditUserPayload
-    { editUserRole  :: RoleSelection
-    , editUserClass :: SchoolClass
-    }
-  deriving (Eq, Generic, Show)
-
-instance SOP.Generic EditUserPayload
-
 roleSelectionChoices :: IsString s => [(RoleSelection, s)]
 roleSelectionChoices =
              [ (RoleStudent, "Schüler")
              , (RoleGuest, "Gast")
              ]
+
+roleSelection :: Getter Role (Maybe RoleSelection)
+roleSelection = to $ \case
+    Student{}    -> Just RoleStudent
+    ClassGuest{} -> Just RoleGuest
+    _            -> Nothing
+
 
 chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
 chooseRole mr = DF.choice roleSelectionChoices (selectRole =<< mr)
@@ -376,13 +375,19 @@ chooseRole mr = DF.choice roleSelectionChoices (selectRole =<< mr)
         ClassGuest _ -> Just RoleGuest
         _            -> Nothing  -- FIXME: see RoleSelection
 
-chooseClass :: [SchoolClass] -> Maybe SchoolClass -> Monad m => DF.Form (Html ()) m SchoolClass
+chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
 chooseClass classes = DF.choice classValues
-      where
-        classValues = (id &&& toHtml . view className) <$> classes
+  where
+    classValues = (id &&& toHtml . view className) <$> classes
+
+roleForm :: Maybe Role -> Maybe SchoolClass -> [SchoolClass] -> DfForm Role
+roleForm mrole mclass classes =
+    fromRoleSelection
+        <$> ("role"  .: chooseRole mrole)
+        <*> ("class" .: chooseClass classes mclass)
 
 instance FormPage AdminEditUser where
-    type FormPagePayload AdminEditUser = EditUserPayload
+    type FormPagePayload AdminEditUser = Role
 
     formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
@@ -391,9 +396,7 @@ instance FormPage AdminEditUser where
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminEditUser user classes) =
-        EditUserPayload
-            <$> ("role"  .: chooseRole (user ^? userRole))
-            <*> ("class" .: chooseClass classes (user ^? userRole . roleSchoolClass))
+        roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
@@ -444,18 +447,14 @@ adminViewClasses :: ActionPersist m => m AdminViewClasses
 adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
-adminEditUser uid = FormPageHandler editUserPage changeUser
-  where
-    editUserPage = equery $
-        AdminEditUser
-        <$> (maybe404 =<< findUser uid)
-        <*> getSchoolClasses
+adminEditUser uid = FormPageHandler
+    { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findUser uid) <*> getSchoolClasses
+    , _formProcessor = update . SetUserRole uid
+    }
 
-    changeUser = update . SetUserRole uid . payloadToUserRole
-
-payloadToUserRole :: EditUserPayload -> Role
-payloadToUserRole (EditUserPayload RoleStudent clss) = Student clss
-payloadToUserRole (EditUserPayload RoleGuest   clss) = ClassGuest clss
+fromRoleSelection :: RoleSelection -> SchoolClass -> Role
+fromRoleSelection RoleStudent = Student
+fromRoleSelection RoleGuest   = ClassGuest
 
 adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
 adminEditClass clss =
