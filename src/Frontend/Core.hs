@@ -274,7 +274,14 @@ class Page p => FormPage p where
 
     -- | The form action used in form generation
     formAction :: p -> P.Main
-    -- | Calculates a redirect address from the given page
+    -- | Calculates a redirect address from the given page.
+    --
+    -- Currently, 'FormPage' forces you to redirect after a form has been processed successfully.
+    -- This may not always be what you want.  For instance, a `preview` button of a text field
+    -- containing markdown does not change the state of the server, and multiple re-submissions are
+    -- a feature, not a problem.  For those cases, we may need to extend this part of the API in the
+    -- future.  We could make the result type a @Maybe a@, where 'Nothing' means redirect, and
+    -- 'Just' means not redirect.  Or we could add a more flexible variant of the 'FormPage' class.
     redirectOf :: p -> FormPageResult p -> P.Main
     -- | Generates a Html view from the given page
     makeForm :: ActionM m => p -> DF.Form (Html ()) m (FormPagePayload p)

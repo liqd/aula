@@ -6,7 +6,19 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
--- | rule: always add (and expect) trailing slashes.
+-- | Typed paths.
+--
+-- This is a collection of ADTs for all the URL paths of the Aula application, plus the functions to
+-- translate them into 'UriPath's.  The constructors and mappings must be maintained in sync with
+-- the routing tables in "Frontend" manually.  The "PathSpec" tests make sure that all constructors
+-- defined here map to existing routes.
+--
+-- Servant offers safe links as a solution to the same problem.  We hoped that our own solution
+-- isn't any more fragile or awkward, and probably less so.  An idea that requires less manual
+-- synchronization would be to add string literal types to the end points, check them for
+-- uniqueness, and write type-level functions that map those on paths.
+--
+-- Rule: always add (and expect) trailing slashes.
 module Frontend.Path
     ( Top(..)
     , Main(..)
