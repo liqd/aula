@@ -41,7 +41,7 @@ aulaTesting =
   :<|> (PublicFrame . PageShow <$> Action.query getUsers)
 
   :<|> (PageShow <$> mkRandomPassword)
-  :<|> undefined
+  :<|> undefined  -- (intentional)
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
   :<|> (\tid -> Servant.Missing.redirect $ "/testing/topic/"
