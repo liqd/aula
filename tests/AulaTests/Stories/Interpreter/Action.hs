@@ -30,7 +30,7 @@ import Persistent
 import Types
 import Frontend.Core
 import qualified Frontend.Page as Page
-import Frontend.Testing as Action (makeTopicTimeout)
+import Frontend.Testing as Action (topicForceNextPhase)
 
 import AulaTests.Stories.DSL
 
@@ -155,7 +155,7 @@ runClient (Free (EditTopic ot nt d k)) = do
 
 runClient (Free (TimeoutTopic t k)) = do
     Just topic <- precondition $ findTopicByTitle t
-    step . lift $ Action.makeTopicTimeout (topic ^. _Id)
+    step . lift $ Action.topicForceNextPhase (topic ^. _Id)
     postcondition $ do
         Just topic' <- findTopicByTitle t
         let phase1 = topic ^. topicPhase

@@ -422,7 +422,10 @@ reportIdeaCommentReply loc ideaId commentId = reportCommentById . CommentKey loc
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase ::
+    (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m,
+     HasSendMail ActionExcept ActionEnv m)
+    => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     -- FIXME: should this be one transaction?
     idea  <- mquery $ findIdea iid
@@ -431,7 +434,9 @@ markIdeaInJuryPhase iid rv = do
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
-checkCloseJuryPhase :: ActionM m => Topic -> m ()
+checkCloseJuryPhase ::
+      (ActionPersist m, ActionCurrentTimestamp m, HasSendMail ActionExcept ActionEnv m)
+      => Topic -> m ()
 checkCloseJuryPhase topic = do
     -- FIXME: should this be one transaction?  [~~mf] -- I think so, and the same above. I think an
     -- alternative is to check (in the operations above that modify the DB, internally, necessarily
