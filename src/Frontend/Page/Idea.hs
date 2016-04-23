@@ -10,13 +10,13 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
-  , CommentIdea(..)
+  , CommentIdea(..)   -- FIXME: rename to 'CommentOnIdea'
   , JudgeIdea(..)
   , viewIdea
   , createIdea
   , editIdea
-  , commentIdea
-  , replyCommentIdea
+  , commentIdea       -- FIXME: rename to 'commentOnIdea'
+  , replyCommentIdea  -- FIXME: rename to 'commentOnComment'
   , judgeIdea
   )
 where
@@ -156,49 +156,6 @@ instance ToHtml ViewIdea where
                 toHtml $ IdeaVoteLikeBars caps p
 
             feasibilityVerdict True idea caps
-
-            when False . div_ $ do
-                -- FIXME: needs design/layout
-                -- FIXME: the forms have the desired effect, but they do not trigger a re-load.
-                -- this can probably be fixed with a simple click-handler (thanks, @np!).
-                div_ ">>>>>>>>>>> some phase-specific stuff"
-
-                postLink_ [] (U.likeIdea idea)         "like this idea"
-                postLink_ [] (U.voteIdea idea Yes)     "vote yes on idea"
-                postLink_ [] (U.voteIdea idea No)      "vote no on idea"
-                postLink_ [] (U.voteIdea idea Neutral) "vote neutral on idea"
-
-                pre_ . toHtml $ ppShow (idea ^. ideaLikes)
-                pre_ . toHtml $ ppShow (idea ^. ideaVotes)
-
-                div_ ">>>>>>>>>>> some phase-specific stuff"
-
-            {- FIXME: data model is not clear yet.  read process specs again!
-
-            div_ [class_ "heroic-badges"] $ do
-                case idea ^. ideaResult of
-                    NotFeasible _reason -> do
-                        div_ [class_ "m-not-feasable"] $ do
-                        i_ [class_ "icon-times"] nil
-                        "vom Direktor abgelehnt"
-                        -- FIXME display the _reason (do we? shall we?)
-                when (winningIdea idea) $ do
-                    div_ [class_ "m-feasable"] $ do
-                        i_ [class_ "icon-check"] nil
-                        ""
-
-            -}
-
-            -- visual vote stats
-            {- FIXME plug this in to my nice widget pls
-            when (phase >= Just PhaseVoting) . div_ [id_ "votes-stats"] . pre_ $ do
-                let y = countIdeaVotes Yes $ idea ^. ideaVotes
-                    n = countIdeaVotes No  $ idea ^. ideaVotes
-                div_ $ do
-                    span_ . toHtml $ "    " <> replicate y '+' <> ":" <> replicate n '-'
-                div_ $ do
-                    span_ . toHtml $ replicate (4 + y - length (show y)) ' ' <> show y <> ":" <> show n
-            -}
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do

@@ -157,7 +157,7 @@ commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
 onComment :: Comment -> CommentMode -> Main
-onComment comment = IdeaPath (ck ^. ckIdeaLocation) .  OnComment ck
+onComment comment = IdeaPath (ck ^. ckIdeaLocation) . OnComment ck
   where ck = comment ^. _Key
 
 replyComment :: Comment -> Main
@@ -199,7 +199,7 @@ ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
 ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
                                        </> uriPart v
 ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment ck m) root = commentMode ck m root
+ideaMode (OnComment ck m)  root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
 
 anchor :: IsString s => AUID a -> s
@@ -220,9 +220,9 @@ commentMode (CommentKey _loc i parents commentId) m root =
     -- and replying up to depth 1.
     base n =
         case take n (parents <> [commentId]) of
-            [p]   -> root </> "idea" </> uriPart i </> "comment" </> uriPart p
-            [p,c] -> root </> "idea" </> uriPart i </> "comment" </> uriPart p </> "reply" </> uriPart c
-            _     -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
+            [p]    -> root </> "idea" </> uriPart i </> "comment" </> uriPart p
+            [p, c] -> root </> "idea" </> uriPart i </> "comment" </> uriPart p </> "reply" </> uriPart c
+            _      -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
 
 ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
 ideaPath loc mode root =

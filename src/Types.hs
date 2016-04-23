@@ -815,22 +815,22 @@ instance Binary Quorums
 instance Binary Settings
 
 makePrisms ''AUID
-makePrisms ''IdeaLocation
 makePrisms ''Category
+makePrisms ''DelegationContext
 makePrisms ''Document
-makePrisms ''IdeaVoteValue
+makePrisms ''EmailAddress
 makePrisms ''IdeaJuryResultValue
-makePrisms ''IdeaVoteResultValue
-makePrisms ''UpDown
+makePrisms ''IdeaLocation
 makePrisms ''IdeaSpace
+makePrisms ''IdeaVoteResultValue
+makePrisms ''IdeaVoteValue
 makePrisms ''Phase
 makePrisms ''Role
-makePrisms ''UserPass
-makePrisms ''DelegationContext
-makePrisms ''EmailAddress
-makePrisms ''UserLastName
+makePrisms ''UpDown
 makePrisms ''UserFirstName
+makePrisms ''UserLastName
 makePrisms ''UserLogin
+makePrisms ''UserPass
 makePrisms ''UserView
 
 makeLenses ''Category
@@ -846,35 +846,35 @@ makeLenses ''Document
 makeLenses ''Durations
 makeLenses ''EditTopicData
 makeLenses ''EditUserData
+makeLenses ''EmailAddress
+makeLenses ''GMetaInfo
 makeLenses ''Idea
-makeLenses ''IdeaLocation
-makeLenses ''IdeaLike
 makeLenses ''IdeaJuryResult
-makeLenses ''IdeaVoteResult
-makeLenses ''IdeaVoteLikeKey
+makeLenses ''IdeaLike
+makeLenses ''IdeaLocation
 makeLenses ''IdeaSpace
 makeLenses ''IdeaVote
-makeLenses ''GMetaInfo
+makeLenses ''IdeaVoteLikeKey
+makeLenses ''IdeaVoteResult
 makeLenses ''Phase
-makeLenses ''UserProfile
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
+makeLenses ''Quorums
 makeLenses ''Role
 makeLenses ''SchoolClass
 makeLenses ''Settings
 makeLenses ''Topic
 makeLenses ''UpDown
 makeLenses ''User
-makeLenses ''UserView
-makeLenses ''EmailAddress
-makeLenses ''UserLogin
 makeLenses ''UserFirstName
 makeLenses ''UserLastName
+makeLenses ''UserLogin
 makeLenses ''UserPass
+makeLenses ''UserProfile
 makeLenses ''UserSettings
-makeLenses ''Quorums
+makeLenses ''UserView
 
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
@@ -884,31 +884,30 @@ deriveSafeCopy 0 'base ''CommentVote
 deriveSafeCopy 0 'base ''CommentVoteKey
 deriveSafeCopy 0 'base ''Delegation
 deriveSafeCopy 0 'base ''DelegationContext
--- deriveSafeCopy 0 'base ''DelegationNetwork
+deriveSafeCopy 0 'base ''DelegationNetwork
 deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''EditUserData
+deriveSafeCopy 0 'base ''GMetaInfo
 deriveSafeCopy 0 'base ''Idea
-deriveSafeCopy 0 'base ''IdeaVoteLikeKey
+deriveSafeCopy 0 'base ''IdeaJuryResult
+deriveSafeCopy 0 'base ''IdeaJuryResultValue
 deriveSafeCopy 0 'base ''IdeaLike
 deriveSafeCopy 0 'base ''IdeaLocation
--- deriveSafeCopy 0 'base ''IdeaLike
-deriveSafeCopy 0 'base ''IdeaJuryResult
-deriveSafeCopy 0 'base ''IdeaVoteResult
-deriveSafeCopy 0 'base ''IdeaJuryResultValue
-deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaSpace
 deriveSafeCopy 0 'base ''IdeaVote
+deriveSafeCopy 0 'base ''IdeaVoteLikeKey
+deriveSafeCopy 0 'base ''IdeaVoteResult
+deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
-deriveSafeCopy 0 'base ''GMetaInfo
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
-deriveSafeCopy 0 'base ''UserProfile
+deriveSafeCopy 0 'base ''Quorums
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
 deriveSafeCopy 0 'base ''Settings
@@ -916,12 +915,12 @@ deriveSafeCopy 0 'base ''Timestamp
 deriveSafeCopy 0 'base ''Topic
 deriveSafeCopy 0 'base ''UpDown
 deriveSafeCopy 0 'base ''User
-deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
+deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserPass
+deriveSafeCopy 0 'base ''UserProfile
 deriveSafeCopy 0 'base ''UserSettings
-deriveSafeCopy 0 'base ''Quorums
 
 class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
