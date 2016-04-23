@@ -549,13 +549,12 @@ instance FormPage PageAdminSettingsEventsProtocol where
     type FormPageResult PageAdminSettingsEventsProtocol = EventsProtocolFilter
 
     formAction (PageAdminSettingsEventsProtocol _) = U.Admin U.AdminEvent
-    redirectOf _ (EventsProtocolFilter Nothing)      = U.Admin U.AdminDlEvents
-    redirectOf _ (EventsProtocolFilter (Just space)) = U.Admin (U.AdminDlEventsF space)
+    redirectOf _ (EventsProtocolFilter mspace)     = U.Admin (U.AdminDlEvents mspace)
 
     makeForm (PageAdminSettingsEventsProtocol spaces) = EventsProtocolFilter <$> ("space" .: DF.choice vs Nothing)
       where
         vs :: [(Maybe IdeaSpace, Html ())]
-        vs = (Nothing, "(Alle Ideenräume)") : ((Just &&& toHtml . showIdeaSpaceUI) <$> spaces)
+        vs = (Nothing, "(Alle Ideenräume)") : ((Just &&& toHtml . toUrlPiece) <$> spaces)
 
     formPage v form p@(PageAdminSettingsEventsProtocol _) = adminFrame p . semanticDiv p . form $ do
         label_ $ do

@@ -43,10 +43,9 @@ import Data.UriPath
 import EventLog
 import Frontend.Core
 import Frontend.Page as Page
+import Frontend.Prelude
 import Frontend.Testing
-import Persistent
 import Persistent.Api
-import Types
 
 import qualified Action
 import qualified Backend
@@ -312,8 +311,7 @@ type AulaAdmin =
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
-  :<|> "downloads" :> "events" :> Get '[CSV] (CsvHeaders EventLog)
-  :<|> "downloads" :> "events" :> Capture "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
+  :<|> "downloads" :> "events" :> QueryParam "space" ST :> Get '[CSV] (CsvHeaders EventLog)
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
@@ -329,15 +327,24 @@ aulaAdmin =
   :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
-  :<|> adminEventLogCsv Nothing
-  :<|> adminEventLogCsv . Just  -- FIXME: with QueryParam, we could melt these two routes into one.
-                                -- this isn't a hard task, but we need to extend 'UriPath' type.
+  :<|> adminEventLogCsv
 
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
-adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
-adminEventLogCsv mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" showIdeaSpaceUI mspc) .
-    filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
+--
+-- Morally, the query param arg should be parsed by servant, but servant doesn't support
+-- distinguishing between missing param and parse error (please open an issue if you find that has
+-- changed), so we'll just parse it ourselves here.
+adminEventLogCsv :: ActionM m => Maybe ST -> m (CsvHeaders EventLog)
+adminEventLogCsv mraw = case mraw of
+    Nothing -> resp Nothing
+    Just raw -> case parseUrlPiece raw of
+        Right mspc -> resp $ Just mspc
+        Left msg   -> throwError500 ("malformed idea space in uri query: " <> cs msg)
+                      -- FIXME: status shouldn't be 500
+  where
+    resp mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" showIdeaSpaceUI mspc) .
+                filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
 
 
 catch404 :: Middleware

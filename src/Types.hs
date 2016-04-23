@@ -1075,6 +1075,9 @@ parseSchoolClass s = case ST.splitOn "-" s of
 instance FromHttpApiData IdeaSpace where
     parseUrlPiece = parseIdeaSpace
 
+instance ToHttpApiData IdeaSpace where
+    toUrlPiece = cs . showIdeaSpace
+
 instance FromHttpApiData SchoolClass where
     parseUrlPiece = parseSchoolClass
 

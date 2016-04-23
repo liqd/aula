@@ -38,6 +38,7 @@ where
 import GHC.Generics
 import Thentos.Prelude
 import Data.UriPath
+import Servant.API (toUrlPiece)
 
 import qualified Generics.SOP as SOP
 
@@ -270,8 +271,7 @@ data AdminMode =
   | AdminViewClasses
   | AdminEvent
   | AdminDlPass SchoolClass
-  | AdminDlEvents
-  | AdminDlEventsF IdeaSpace
+  | AdminDlEvents (Maybe IdeaSpace)
   deriving (Generic, Show)
 
 instance SOP.Generic AdminMode
@@ -288,8 +288,8 @@ admin AdminCreateClass      path = path </> "class" </> "create"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
-admin AdminDlEvents         path = path </> "downloads" </> "events"
-admin (AdminDlEventsF spc)  path = path </> "downloads" </> "events" </> uriPart spc
+admin (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
+                                   </?> ("space", cs . toUrlPiece <$> mspc)
 
 data CommentMode
     = ReplyComment

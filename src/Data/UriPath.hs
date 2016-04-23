@@ -46,6 +46,7 @@ instance Monoid UriPath where
 
 infixl 7 </>
 infixl 7 </#>
+infixl 7 </?>
 
 (</>) :: UriPath -> UriPart -> UriPath
 DiffUriParts ps qs </> p = DiffUriParts (ps . (p :)) qs
@@ -56,8 +57,8 @@ ps </#> p = ps </> addHash p
 addHash :: UriPart -> UriPart
 addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
 
-(</?>) :: UriPath -> HTTP.Query -> UriPath
-(DiffUriParts ps q) </?> q' = DiffUriParts ps (q <> q')
+(</?>) :: UriPath -> HTTP.QueryItem -> UriPath
+(DiffUriParts ps q) </?> q' = DiffUriParts ps (q' : q)
 
 instance IsString UriPath where
     fromString s = DiffUriParts (ps ++) []  -- TODO: why is this `++` not captured by hlint?
