@@ -61,7 +61,7 @@ addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
 (DiffUriParts ps q) </?> q' = DiffUriParts ps (q' : q)
 
 instance IsString UriPath where
-    fromString s = DiffUriParts (ps ++) []  -- TODO: why is this `++` not captured by hlint?
+    fromString s = DiffUriParts (ps <>) []
         where ps = SlashFreeUriPart <$> ST.splitOn "/" (cs s)
 
 relativeUriPath :: UriPath -> ST
