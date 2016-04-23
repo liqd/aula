@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
@@ -199,7 +199,9 @@ instance FormPage CreateTopic where
 
     redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
-    makeForm CreateTopic{..} =
+    makeForm CreateTopic{ _createTopicIdeaSpace
+                        , _createTopicIdeas
+                        , _createTopicRefPhaseEnd } =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))

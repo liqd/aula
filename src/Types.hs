@@ -650,7 +650,7 @@ defaultSettings :: Settings
 defaultSettings = Settings
     { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
     , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
-    , _frozen = False
+    , _frozen    = False
     }
 
 -- * aula-specific helper types
