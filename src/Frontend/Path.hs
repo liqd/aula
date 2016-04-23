@@ -100,7 +100,6 @@ isPostOnly = \case
     -- FIXME[#312] Logout -> True
     _ -> False
 
--- FIXME: fix & remove
 isBroken :: Main -> Bool
 isBroken Broken = True
 isBroken _      = False
@@ -138,8 +137,8 @@ data Space =
 
 instance SOP.Generic Space
 
-viewIdea :: Idea -> Main
-viewIdea idea = IdeaPath (idea ^. ideaLocation) $ ViewIdea (idea ^. _Id)
+viewIdea :: Idea -> Maybe (AUID Comment) -> Main
+viewIdea idea manchor = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) manchor)
 
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
@@ -191,7 +190,8 @@ listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
 ideaMode ListIdeas         root = root </> "ideas"
-ideaMode (ViewIdea i)      root = root </> "idea" </> uriPart i </> "view"
+ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
+                                  root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (LikeIdea i)      root = root </> "idea" </> uriPart i </> "like"
 ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
@@ -304,7 +304,7 @@ instance SOP.Generic CommentMode
 data IdeaMode =
       ListIdeas
     | CreateIdea
-    | ViewIdea (AUID Idea)
+    | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
     | VoteIdea (AUID Idea) IdeaVoteValue
