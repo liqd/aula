@@ -278,6 +278,7 @@ data AdminMode =
   | AdminDlEvents (Maybe IdeaSpace)
   | AdminTopicNextPhase (AUID Topic)
   | AdminTopicVotingPrevPhase (AUID Topic)
+  | AdminChangePhase
   deriving (Generic, Show)
 
 instance SOP.Generic AdminMode
@@ -298,6 +299,7 @@ admin (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
                                    </?> ("space", cs . toUrlPiece <$> mspc)
 admin (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> "next-phase"
 admin (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
+admin AdminChangePhase                path = path </> "change-phase"
 
 data CommentMode
     = ReplyComment
