@@ -296,10 +296,12 @@ deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
 
-topicPhaseChange
-    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
-       ,ActionCurrentTimestamp m)
-    => Topic -> PhaseChange -> m ()
+type ActionPhaseChange m =
+    ( ActionPersist m, ActionSendMail m
+    , ActionUserHandler m, ActionCurrentTimestamp m
+    )
+
+topicPhaseChange :: (ActionPhaseChange m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -307,10 +309,7 @@ topicPhaseChange topic change = do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout
-    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
-       ,ActionCurrentTimestamp m)
-    => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionPhaseChange m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -322,8 +321,7 @@ sendMailToRole role msg = do
         sendMailToUser [IgnoreMissingEmails] user msg
 
 phaseAction
-    :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m
-       ,ActionUserHandler m, ActionCurrentTimestamp m)
+    :: (MonadReaderConfig r m, ActionPhaseChange m)
     => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
     cfg <- viewConfig
@@ -503,16 +501,10 @@ markIdeaInResultPhase iid rv = do
 
 -- * Topic handling
 
-topicInRefinementTimedOut
-    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
-       ,ActionCurrentTimestamp m)
-    => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut
-    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
-       ,ActionCurrentTimestamp m)
-    => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
 
@@ -530,7 +522,6 @@ topicForceNextPhase tid = do
         PhaseVoting     _ -> topicInVotingTimedOut tid
         PhaseResult       -> throwError500 "No phase after result phase!"
   where
-    -- TODO: Make this as a valid transition action.
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
