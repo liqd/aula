@@ -219,8 +219,7 @@ menulink' targetMenuItem =
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
     MenuItemPhaseChange
-        -- TODO: Translation
-        -> MenuLink "tab-phase-change" U.AdminChangePhase "Phase change"
+        -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
@@ -657,6 +656,11 @@ adminPhaseChangeForTopic = FormPageHandler
 data PhaseChangeDir = Forward | Backward
   deriving (Eq, Show)
 
+instance ToHtml PhaseChangeDir where
+    toHtmlRaw = toHtml
+    toHtml Forward  = "vorwärts"
+    toHtml Backward = "zurück"
+
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
 
 -- FIXME: Add test
@@ -672,20 +676,18 @@ instance FormPage AdminPhaseChangeForTopic where
             <$> ((AUID . read . cs) <$> "topic-id" .: DF.text Nothing)
             <*> (                       "dir"      .: DF.choice choices Nothing)
       where
-        choices = map (id &&& (toHtml . show)) [Forward, Backward]
+        choices = map (id &&& toHtml) [Forward, Backward]
 
     formPage v form p = adminFrame p . semanticDiv p $ do
-        -- TODO: Translation
-        h3_ "Phase change"
+        h3_ "Phasen verschieben"
         form $ do
             div_ $ do
-                p_ "Topic"
+                p_ "ID-Nummer der Themas aus der URL"
                 DF.inputText "topic-id" v
             div_ $ do
-                p_ "Direction"
+                p_ "Vorwärts/Rückwärts"
                 DF.inputSelect "dir" v
-            DF.inputSubmit "Change!"
-
+            DF.inputSubmit "Verschieben!"
 
 
 -- * csv file handling

@@ -148,14 +148,12 @@ viewTopicHeaderDiv ctx topic tab = do
                 postLink_
                     [class_ "pop-menu-list-item"]
                     (U.Admin $ U.AdminTopicNextPhase topicId)
-                    -- TODO: Translation
-                    "next phase"
+                    "Nächste Phase"
             when (CanPhaseBackwardTopic `elem` caps) $
                 postLink_
                     [class_ "pop-menu-list-item"]
                     (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
-                    -- TODO: Translation
-                    "prev phase"
+                    "Vorherige Phase"
 
         div_ [class_ "heroic-tabs"] $ do
             let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
