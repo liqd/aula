@@ -57,7 +57,7 @@ instance HasSendMail ActionExcept ActionEnv Action where
     sendMailToAddress addr msg = MkAction $ sendMailToAddressIO addr msg
 
 instance ActionLog Action where
-    logEvent = actionIO . print
+    logEvent msg = actionIO =<< views envLogger ($ msg)
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where

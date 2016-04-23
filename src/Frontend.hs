@@ -12,6 +12,8 @@
 module Frontend
 where
 
+import Prelude hiding (log)
+
 import Control.Exception (assert)
 import Control.Monad.Trans.Except
 import Data.List (partition)
@@ -31,7 +33,7 @@ import System.FilePath (addTrailingPathSeparator)
 
 import qualified Data.ByteString.Builder as Builder
 
-import Thentos.Prelude
+import Thentos.Prelude hiding (logger)
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
@@ -40,6 +42,7 @@ import Action.Implementation (Action, mkRunAction)
 import Arbitrary (sampleEventLog)
 import Config
 import Data.UriPath
+import Daemon
 import EventLog
 import Frontend.Core
 import Frontend.Page as Page
@@ -59,14 +62,17 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 
 -- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()
-runFrontend cfg = withPersist cfg (runFrontend' cfg)
+runFrontend cfg = do
+    log <- logDaemon (logger cfg)
+    void $ log ^. msgDaemonStart
+    withPersist cfg (runFrontend' cfg (log ^. msgDaemonSend))
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
-runFrontend' :: Config -> RunPersist -> IO ()
-runFrontend' cfg rp = do
+runFrontend' :: Config -> SendLogMsg -> RunPersist -> IO ()
+runFrontend' cfg log rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv rp cfg)
+        runAction = mkRunAction (ActionEnv rp cfg log)
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState

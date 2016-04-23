@@ -22,7 +22,7 @@ module Action
     , ActionSendMail
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), envRunPersist, envConfig
+    , ActionEnv(..), envRunPersist, envConfig, envLogger
 
       -- * user handling
     , loginByUser, loginByName
@@ -97,6 +97,7 @@ import qualified Data.Vector as V
 
 import Action.Smtp
 import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
+import Daemon
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
 import Persistent
@@ -123,6 +124,7 @@ userLoggedOut = UserState Nothing Nothing Nothing
 data ActionEnv = ActionEnv
     { _envRunPersist :: RunPersist
     , _envConfig     :: Config
+    , _envLogger     :: SendLogMsg
     }
 
 makeLenses ''ActionEnv
