@@ -45,7 +45,7 @@ story name program expected = it name $ do
 
             let runAction :: Action :~> IO
                 runAction = exceptToFail
-                        . mkRunAction (Action.ActionEnv persist cfg)
+                        . mkRunAction (Action.ActionEnv persist cfg print)
 
             a <- unNat runAction $ do
                   genInitialTestDb

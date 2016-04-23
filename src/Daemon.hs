@@ -10,8 +10,8 @@ import Control.Concurrent.STM
 import Control.Exception hiding (handle)
 import Control.Lens
 import Control.Monad (forever, join)
-import Data.String.Conversions (ST)
-
+import Data.String.Conversions (ST, cs)
+import System.IO (hPutStrLn, stderr)
 
 type SystemLogger = String -> IO ()
 
@@ -20,62 +20,68 @@ type SystemLogger = String -> IO ()
 --
 -- For the message all the daemon instances started with the
 -- same method will listen on the same message channel.
-data Daemon a
-    = MessageDaemon
-        { _start       :: IO ThreadId
-        , _sendMessage :: a -> IO ()
-        }
-    | TimeoutDeamon
-        { _start       :: IO ThreadId
-        }
+data MsgDaemon a = MsgDaemon
+    { _msgDaemonStart :: IO ThreadId
+    , _msgDaemonSend  :: a -> IO ()
+    }
+
+data TimeoutDeamon = TimeoutDeamon
+    { _timeoutDaemonStart :: IO ThreadId }
 
 msgDaemon
     :: SystemLogger
     -> String
     -> (a -> IO ())
     -> (SomeException -> IO ())
-    -> IO (Daemon a)
+    -> IO (MsgDaemon a)
 msgDaemon logger name computation handleException = do
     chan <- newTChanIO
 
     let sendMsg = atomically . writeTChan chan
 
-    let loop = forkIO . forever $ do
-        join $ atomically $ do
-            x <- readTChan chan
-            return $ do
-                logger $ concat ["daemon [", name ,"] recieved a message."]
-                computation x
-        `catch`
-            \e@(SomeException e') -> do
-                logger $ concat ["error occured in daemon [", name ,"] ", show e']
-                handleException e
+    let run = join . atomically $ do
+                    x <- readTChan chan
+                    return $ do
+                        logger $ concat ["daemon [", name, "] recieved a message."]
+                        computation x
 
-    return $ MessageDaemon loop sendMsg
+    let handle e@(SomeException e') = do
+                    logger $ concat ["error occured in daemon [", name, "] ", show e']
+                    handleException e
+
+    let loop = forkIO . forever $ run `catch` handle
+
+    return $ MsgDaemon loop sendMsg
 
 timeoutDaemon
     :: SystemLogger
     -> String
     -> Int
-    -> (IO ())
-    -> (SomeException -> IO ()) -> Daemon ()
+    -> IO ()
+    -> (SomeException -> IO ())
+    -> TimeoutDeamon
 timeoutDaemon logger name delay_us computation handleException = TimeoutDeamon $ do
 
     let run = do
-            logger $ concat ["daemon [", name ,"] timed out after ", show delay_us, " us."]
+            logger $ concat ["daemon [", name, "] timed out after ", show delay_us, " us."]
             computation
 
     let handle e@(SomeException e') = do
-            logger $ concat ["error occured in daemon [", name ,"] ", show e']
+            logger $ concat ["error occured in daemon [", name, "] ", show e']
             handleException e
 
     forkIO . forever $ do
         run `catch` handle
         threadDelay delay_us
 
--- | Create a log deamon
-logDaemon :: SystemLogger -> IO (Daemon ST)
-logDaemon systemLog = msgDaemon systemLog "logger" print (const $ pure ())
+type SendLogMsg = ST -> IO ()
 
-makeLenses ''Daemon
-makePrisms ''Daemon
+-- | Create a log deamon
+logDaemon :: SystemLogger -> IO (MsgDaemon ST)
+logDaemon systemLog = msgDaemon systemLog "logger" logMsg (const $ pure ())
+  where
+    -- FIXME: Use event logging
+    logMsg = hPutStrLn stderr . cs
+
+makeLenses ''MsgDaemon
+makeLenses ''TimeoutDeamon

@@ -53,7 +53,7 @@ mkState setup impl k = do
 
 runA :: Config -> RunPersist -> Action.Action a -> IO a
 runA cfg rp = fmap (either (error . show) id)
-            . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg))
+            . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg print))
 
 runQ :: (MonadIO m) => RunPersist -> Query a -> m a
 runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery

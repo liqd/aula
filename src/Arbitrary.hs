@@ -686,7 +686,7 @@ fishDelegationNetworkIO = do
         -- FIXME: we should use AulaTests.testConfig here, but that's under /tests/
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
-            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
+            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg print)) action)
             either (throwIO . ErrorCall . ppShow) pure v
     withPersist cfg runAction
 
