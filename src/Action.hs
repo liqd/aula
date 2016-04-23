@@ -68,7 +68,7 @@ module Action
 
       -- * admin activity
     , topicForceNextPhase
-    , topicSetbackTopicToJuryPhase
+    , topicInVotingSetbackTopicToJuryPhase
 
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
@@ -507,6 +507,13 @@ topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
+topicInVotingSetbackTopicToJuryPhase
+    :: (ActionPhaseChange m) => AUID Topic -> m ()
+topicInVotingSetbackTopicToJuryPhase tid = do
+    topic <- mquery $ findTopic tid
+    case topic ^. topicPhase of
+        PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
+        _             -> pure ()
 
 -- * Admin activities
 
@@ -525,17 +532,6 @@ topicForceNextPhase tid = do
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
-
-topicSetbackTopicToJuryPhase
-    :: (ActionPersist m, HasSendMail ActionExcept ActionEnv m
-       ,ActionUserHandler m, ActionCurrentTimestamp m)
-    => AUID Topic -> m ()
-topicSetbackTopicToJuryPhase tid = do
-    topic <- mquery $ findTopic tid
-    case topic ^. topicPhase of
-        PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
-        _             -> pure ()
-
 
 -- * csv temp files
 

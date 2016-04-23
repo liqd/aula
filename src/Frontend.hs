@@ -331,7 +331,7 @@ aulaAdmin =
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv
   :<|> Action.topicForceNextPhase
-  :<|> Action.topicSetbackTopicToJuryPhase
+  :<|> Action.topicInVotingSetbackTopicToJuryPhase
 
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
