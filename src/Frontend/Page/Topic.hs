@@ -275,7 +275,7 @@ viewTopic tab topicId = do
         case tab of
             TabDelegation ->
                 ViewTopicDelegations ctx topic
-                    <$> (findDelegationsByContext $ DlgCtxTopicId topicId)
+                    <$> findDelegationsByContext (DlgCtxTopicId topicId)
             _ ->
               do
                 let loc = topicIdeaLocation topic
