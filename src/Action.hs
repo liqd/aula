@@ -10,6 +10,8 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 
+{-# OPTIONS_GHC -Werror -Wall       #-}
+
 -- | The 'Action' module contains an API which
 module Action
     ( -- * constraint types
@@ -63,6 +65,10 @@ module Action
       -- * page handling
     , createTopic
     , createIdea
+
+      -- * admin activity
+    , topicForceNextPhase
+    , topicSetbackTopicToJuryPhase
 
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
@@ -290,7 +296,10 @@ deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionPersist m, ActionSendMail m) => Topic -> PhaseChange -> m ()
+topicPhaseChange
+    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
+       ,ActionCurrentTimestamp m)
+    => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -298,7 +307,10 @@ topicPhaseChange topic change = do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPersist m, ActionSendMail m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout
+    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
+       ,ActionCurrentTimestamp m)
+    => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -307,10 +319,12 @@ sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage ->
 sendMailToRole role msg = do
     users <- query $ findUsersByRole role
     forM_ users $ \user ->
-        sendMailToUser [] user msg
+        sendMailToUser [IgnoreMissingEmails] user msg
 
-phaseAction :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m)
-            => Topic -> PhaseAction -> m ()
+phaseAction
+    :: (MonadReaderConfig r m, ActionPersist m, ActionSendMail m
+       ,ActionUserHandler m, ActionCurrentTimestamp m)
+    => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
     cfg <- viewConfig
     let topicTemplate addr phase = ST.unlines
@@ -344,6 +358,10 @@ phaseAction topic phasact = do
               , _msgBody    = topicTemplate "Moderatoren" "Ergebnisphase"
               , _msgHtml    = Nothing -- Not supported yet
               }
+      UnmarkAllIdeas -> do
+          ideas :: [Idea] <- query $ findIdeasByTopic topic
+          (\idea -> unmarkIdeaInJuryPhase (idea ^. _Id)) `mapM_` ideas
+
 
 
 -- * Page Handling
@@ -424,6 +442,17 @@ reportIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comm
                        -> (ActionPersist m, ActionSendMail m) => m ()
 reportIdeaCommentReply loc ideaId commentId = reportCommentById . CommentKey loc ideaId [commentId]
 
+getIdeaTopicInJuryPhase ::
+    (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m,
+     HasSendMail ActionExcept ActionEnv m)
+    => AUID Idea -> m Topic
+getIdeaTopicInJuryPhase iid = do
+    -- FIXME: should this be one transaction?
+    idea  <- mquery $ findIdea iid
+    topic <- mquery $ ideaTopic idea
+    equery $ checkInPhase (PhaseJury ==) idea topic
+    pure topic
+
 -- | Mark idea as feasible if the idea is in the Jury phase, if not throws an exception.
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
@@ -433,15 +462,21 @@ markIdeaInJuryPhase ::
      HasSendMail ActionExcept ActionEnv m)
     => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
-    -- FIXME: should this be one transaction?
-    idea  <- mquery $ findIdea iid
-    topic <- mquery $ ideaTopic idea
-    equery $ checkInPhase (PhaseJury ==) idea topic
+    topic <- getIdeaTopicInJuryPhase iid
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
+unmarkIdeaInJuryPhase ::
+    (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m,
+     HasSendMail ActionExcept ActionEnv m)
+    => AUID Idea -> m ()
+unmarkIdeaInJuryPhase iid = do
+    void $ getIdeaTopicInJuryPhase iid
+    update $ RemoveIdeaJuryResult iid
+
 checkCloseJuryPhase ::
-      (ActionPersist m, ActionCurrentTimestamp m, HasSendMail ActionExcept ActionEnv m)
+      (ActionPersist m, ActionCurrentTimestamp m, HasSendMail ActionExcept ActionEnv m
+      ,ActionUserHandler m)
       => Topic -> m ()
 checkCloseJuryPhase topic = do
     -- FIXME: should this be one transaction?  [~~mf] -- I think so, and the same above. I think an
@@ -468,11 +503,47 @@ markIdeaInResultPhase iid rv = do
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
+topicInRefinementTimedOut
+    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
+       ,ActionCurrentTimestamp m)
+    => AUID Topic -> m ()
 topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 
-topicInVotingTimedOut :: (ActionPersist m, ActionSendMail m) => AUID Topic -> m ()
+topicInVotingTimedOut
+    :: (ActionPersist m, ActionSendMail m, ActionUserHandler m
+       ,ActionCurrentTimestamp m)
+    => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
+
+
+-- * Admin activities
+
+-- | Make a topic timeout if the timeout is applicable.
+-- FIXME: Only admin can do that
+topicForceNextPhase :: (ActionPersist m, ActionUserHandler m, ActionSendMail m, ActionCurrentTimestamp m)
+      => AUID Topic -> m ()
+topicForceNextPhase tid = do
+    topic <- mquery $ findTopic tid
+    case topic ^. topicPhase of
+        PhaseRefinement _ -> topicInRefinementTimedOut tid
+        PhaseJury         -> makeEverythingFeasible topic
+        PhaseVoting     _ -> topicInVotingTimedOut tid
+        PhaseResult       -> throwError500 "No phase after result phase!"
+  where
+    -- TODO: Make this as a valid transition action.
+    makeEverythingFeasible topic = do
+        ideas :: [Idea] <- query $ findIdeasByTopic topic
+        (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
+
+topicSetbackTopicToJuryPhase
+    :: (ActionPersist m, HasSendMail ActionExcept ActionEnv m
+       ,ActionUserHandler m, ActionCurrentTimestamp m)
+    => AUID Topic -> m ()
+topicSetbackTopicToJuryPhase tid = do
+    topic <- mquery $ findTopic tid
+    case topic ^. topicPhase of
+        PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
+        _             -> pure ()
 
 
 -- * csv temp files

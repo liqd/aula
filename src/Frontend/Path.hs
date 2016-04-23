@@ -97,7 +97,11 @@ isPostOnly = \case
                     ViewComment   -> False
                     ReplyComment  -> False
             _ -> False
-
+    Admin m ->
+      case m of
+          AdminTopicNextPhase _       -> True
+          AdminTopicVotingPrevPhase _ -> True
+          _                           -> False
     -- FIXME[#312] Logout -> True
     _ -> False
 
@@ -272,6 +276,8 @@ data AdminMode =
   | AdminEvent
   | AdminDlPass SchoolClass
   | AdminDlEvents (Maybe IdeaSpace)
+  | AdminTopicNextPhase (AUID Topic)
+  | AdminTopicVotingPrevPhase (AUID Topic)
   deriving (Generic, Show)
 
 instance SOP.Generic AdminMode
@@ -290,6 +296,8 @@ admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
 admin (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
                                    </?> ("space", cs . toUrlPiece <$> mspc)
+admin (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> "next-phase"
+admin (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
 
 data CommentMode
     = ReplyComment

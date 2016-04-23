@@ -31,7 +31,6 @@ import Persistent
 import Types
 import Frontend.Core
 import qualified Frontend.Page as Page
-import Frontend.Testing as Action (topicForceNextPhase)
 
 import AulaTests.Stories.DSL
 

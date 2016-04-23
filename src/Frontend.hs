@@ -312,6 +312,8 @@ type AulaAdmin =
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
   :<|> "downloads" :> "events" :> QueryParam "space" ST :> Get '[CSV] (CsvHeaders EventLog)
+  :<|> Topic ::> "next-phase" :> PostH
+  :<|> Topic ::> "voting-prev-phase" :> PostH
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
@@ -328,6 +330,8 @@ aulaAdmin =
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv
+  :<|> Action.topicForceNextPhase
+  :<|> Action.topicSetbackTopicToJuryPhase
 
 -- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
 -- condition as long as we pull data from Arbitrary rather than from the actual events.
