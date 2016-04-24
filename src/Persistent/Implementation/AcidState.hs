@@ -28,6 +28,7 @@ import Data.Acid.Memory (openMemoryState)
 import Data.Monoid ((<>))
 
 import Config
+import Daemon
 import Persistent.Pure
 import Persistent.Api
 
@@ -50,21 +51,18 @@ mkRunPersistOnDisk cfg =
   where
     opn aulaData = do
         st <- openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
-        tid <- forkIO . forever $ do
-            let run = do
-                    logger cfg "[create acid-state checkpoint, archive]"
-                    createCheckpoint st
-                    createArchive st
+        let delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
+        let delay_us = delay_min * 1000000 * 60
 
-                catchAll (SomeException e) = do
-                    logger cfg ("error creating checkpoint or archiving changelog: " <> show e)
+        let checkpoint = do
+                logger cfg "[create acid-state checkpoint, archive]"
+                createCheckpoint st
+                createArchive st
+        let logException (SomeException e) = do
+                logger cfg ("error creating checkpoint or archiving changelog: " <> show e)
 
-                delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
-                delay_us = delay_min * 1000000 * 60
-
-            run `catch` catchAll
-            threadDelay delay_us
-
+        let deamon = timeoutDaemon (logger cfg) "checkpoint" delay_us checkpoint logException
+        tid <- deamon ^. timeoutDaemonStart
         pure (st, tid)
 
     cls st tid = do
