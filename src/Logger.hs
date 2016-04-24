@@ -22,3 +22,6 @@ data LogEntry = LogEntry LogLevel ST
   deriving (Eq, Show)
 
 type SendLogMsg = LogEntry -> IO ()
+
+nullLog :: LogEntry -> IO ()
+nullLog LogEntry{} = pure ()

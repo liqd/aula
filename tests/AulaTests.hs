@@ -32,16 +32,18 @@ import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
 import Arbitrary (constantSampleTimestamp)
+import Logger (LogLevel(..), nullLog)
 
 
 testConfig :: IO Config
 testConfig = do
-    cfg <- readConfig DontWarnMissing
+    cfg <- readConfig nullLog DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     cfg & listenerPort   .~ pop
               -- (in case somebody accidentally tests on a production system: change dbPath.)
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
+        & logLevel                        .~ NOLOG
         & pure
 
 

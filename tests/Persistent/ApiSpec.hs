@@ -21,6 +21,7 @@ import Test.QuickCheck
 import Arbitrary ()
 import DemoData hiding (generate)
 import Config
+import Logger (nullLog)
 import Persistent
 import Persistent.Api
 import Types
@@ -45,16 +46,15 @@ data MkStateSetup = MkStateEmpty | MkStateInitial
 mkState :: MkStateSetup -> PersistenceImpl -> (RunPersist -> IO a) -> IO a
 mkState setup impl k = do
     cfg <- (persistConfig . persistenceImpl .~ impl) <$> testConfig
-    withPersist cfg $ \rp -> do
+    withPersist nullLog cfg $ \rp -> do
         case setup of
             MkStateEmpty   -> pure ()
             MkStateInitial -> runA cfg rp genInitialTestDb
         k rp
 
--- FIXME: Do not use print.
 runA :: Config -> RunPersist -> Action.Action a -> IO a
 runA cfg rp = fmap (either (error . show) id)
-            . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg print))
+            . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg nullLog))
 
 runQ :: (MonadIO m) => RunPersist -> Query a -> m a
 runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery

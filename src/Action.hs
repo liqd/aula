@@ -82,7 +82,7 @@ import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.Monoid
-import Data.String.Conversions (ST, LBS)
+import Data.String.Conversions (LBS)
 import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
@@ -97,7 +97,6 @@ import qualified Data.Vector as V
 
 import Action.Smtp
 import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
-import Daemon
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
 import Logger

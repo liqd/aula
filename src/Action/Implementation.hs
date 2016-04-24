@@ -3,6 +3,8 @@
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 -- | The 'Action.Implementation' module contains a monad stack implmententation of the 'Action'
 -- interface.
 module Action.Implementation
@@ -55,8 +57,8 @@ instance GenArbitrary Action where  -- FIXME: remove
 
 instance HasSendMail ActionExcept ActionEnv Action where
     sendMailToAddress addr msg = MkAction $ do
-        log <- view envLogger
-        sendMailToAddressIO log addr msg
+        logger <- view envLogger
+        sendMailToAddressIO logger addr msg
 
 instance ActionLog Action where
     logEvent msg = actionIO =<< views envLogger ($ msg)
