@@ -64,7 +64,7 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
     log <- logDaemon (logger cfg)
-    void $ log ^. msgDaemonStart
+    void $ log ^. start
     withPersist cfg (runFrontend' cfg (log ^. msgDaemonSend))
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are

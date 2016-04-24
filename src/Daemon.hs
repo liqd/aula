@@ -28,6 +28,18 @@ data MsgDaemon a = MsgDaemon
 data TimeoutDeamon = TimeoutDeamon
     { _timeoutDaemonStart :: IO ThreadId }
 
+makeLenses ''MsgDaemon
+makeLenses ''TimeoutDeamon
+
+class Daemon d where
+    start :: Getter d (IO ThreadId)
+
+instance Daemon (MsgDaemon a) where
+    start = msgDaemonStart
+
+instance Daemon TimeoutDeamon where
+    start = timeoutDaemonStart
+
 msgDaemon
     :: SystemLogger
     -> String
@@ -82,6 +94,3 @@ logDaemon systemLog = msgDaemon systemLog "logger" logMsg (const $ pure ())
   where
     -- FIXME: Use event logging
     logMsg = hPutStrLn stderr . cs
-
-makeLenses ''MsgDaemon
-makeLenses ''TimeoutDeamon

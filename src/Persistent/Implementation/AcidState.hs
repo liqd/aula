@@ -62,7 +62,7 @@ mkRunPersistOnDisk cfg =
                 logger cfg ("error creating checkpoint or archiving changelog: " <> show e)
 
         let deamon = timeoutDaemon (logger cfg) "checkpoint" delay_us checkpoint logException
-        tid <- deamon ^. timeoutDaemonStart
+        tid <- deamon ^. start
         pure (st, tid)
 
     cls st tid = do
