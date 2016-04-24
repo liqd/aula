@@ -61,7 +61,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                 "melden"
             when (CanDeleteComment `elem` comCaps) .
                 postButton_ [ class_ "btn comment-footer-button"
-                            , onclickJs . JsReloadOnClick . Just . U.anchor $ comment ^. _Id
+                            , onclickJs . jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil
@@ -87,7 +87,7 @@ instance ToHtml CommentVotesWidget where
                 countCommentVotes v votes ^. showed . html
                 let likeButton = if CanVoteComment `elem` caps
                         then postButton_ [ class_ "btn"
-                                         , onclickJs . JsReloadOnClick . Just . U.anchor
+                                         , onclickJs . jsReloadOnClickAnchor . U.anchor
                                                $ comment ^. _Id
                                          ]
                                      (U.voteComment comment v)

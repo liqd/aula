@@ -204,7 +204,7 @@ instance ToHtml IdeaVoteLikeBars where
             likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
                         postButton_ [ class_ "btn"
-                                    , onclickJs . JsReloadOnClick . Just $ U.anchor (idea ^. _Id)
+                                    , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
                                     ]
                                     (U.likeIdea idea)
                             "dafür!"
