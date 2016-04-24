@@ -663,6 +663,12 @@ instance ToHtml PhaseChangeDir where
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
 
+-- FIXME: if we keep this, there needs to be some sort of feedback to the admin what happened with
+-- the phase change.  we could redirect to a page showing a message of the form "topic with title
+-- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
+-- session state that gets flushed and appended to the digestive functors errors implicitly whenever
+-- we show a form.
+--
 -- FIXME: Add test
 instance FormPage AdminPhaseChange where
     type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
