@@ -146,12 +146,12 @@ viewTopicHeaderDiv ctx topic tab = do
 
             when (CanPhaseForwardTopic `elem` caps) $
                 postLink_
-                    [class_ "pop-menu-list-item"]
+                    [class_ "pop-menu-list-item", onclickJs $ JsReloadOnClick Nothing]
                     (U.Admin $ U.AdminTopicNextPhase topicId)
                     "Nächste Phase"
             when (CanPhaseBackwardTopic `elem` caps) $
                 postLink_
-                    [class_ "pop-menu-list-item"]
+                    [class_ "pop-menu-list-item", onclickJs $ JsReloadOnClick Nothing]
                     (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
                     "Vorherige Phase"
 
