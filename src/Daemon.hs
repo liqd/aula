@@ -108,5 +108,6 @@ logDaemon minLevel =
     msgDaemon logMsg "logger" logMsg (const $ pure ())
   where
     -- FIXME: Use event logging
+    logMsg (LogEntry NOLOG _) = pure ()
     logMsg (LogEntry level msg) =
         when (level >= minLevel) $ hPutStrLn stderr (cs msg)

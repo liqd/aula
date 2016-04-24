@@ -15,6 +15,7 @@ data LogLevel
     | INFO
     | WARN
     | ERROR
+    | NOLOG
   deriving (Eq, Generic, Ord, Show, FromJSON, ToJSON)
 
 data LogEntry = LogEntry LogLevel ST
