@@ -103,8 +103,11 @@ instance CSV.ToRecord URLEventLogItem where
 
         objLink' :: Either3 Topic Idea Comment -> U.Main
         objLink' (Left3   t) = U.listTopicIdeas t
-        objLink' (Middle3 i) = U.IdeaPath (i ^. ideaLocation) (U.ViewIdea (i ^. _Id))
-        objLink' (Right3 _c) = U.Broken
+        objLink' (Middle3 i) = U.IdeaPath (i ^. ideaLocation) (U.ViewIdea (i ^. _Id) Nothing)
+        objLink' (Right3  c) = U.IdeaPath iloc (U.ViewIdea iid (Just $ c ^. _Id))
+          where
+            iloc = c ^. _Key . ckIdeaLocation
+            iid = c ^. _Key . ckIdeaId
 
         f (EventLogUserCreates obj) = CSV.toRecord
             [ "legt " <> objDesc obj <> " an.", objLink obj ]

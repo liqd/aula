@@ -38,6 +38,7 @@ where
 import GHC.Generics
 import Thentos.Prelude
 import Data.UriPath
+import Servant.API (toUrlPiece)
 
 import qualified Generics.SOP as SOP
 
@@ -100,7 +101,6 @@ isPostOnly = \case
     -- FIXME[#312] Logout -> True
     _ -> False
 
--- FIXME: fix & remove
 isBroken :: Main -> Bool
 isBroken Broken = True
 isBroken _      = False
@@ -138,8 +138,8 @@ data Space =
 
 instance SOP.Generic Space
 
-viewIdea :: Idea -> Main
-viewIdea idea = IdeaPath (idea ^. ideaLocation) $ ViewIdea (idea ^. _Id)
+viewIdea :: Idea -> Maybe (AUID Comment) -> Main
+viewIdea idea manchor = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) manchor)
 
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
@@ -157,7 +157,7 @@ commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
 onComment :: Comment -> CommentMode -> Main
-onComment comment = IdeaPath (ck ^. ckIdeaLocation) .  OnComment ck
+onComment comment = IdeaPath (ck ^. ckIdeaLocation) . OnComment ck
   where ck = comment ^. _Key
 
 replyComment :: Comment -> Main
@@ -191,7 +191,8 @@ listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
 ideaMode ListIdeas         root = root </> "ideas"
-ideaMode (ViewIdea i)      root = root </> "idea" </> uriPart i </> "view"
+ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
+                                  root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (LikeIdea i)      root = root </> "idea" </> uriPart i </> "like"
 ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
@@ -199,7 +200,7 @@ ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
 ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
                                        </> uriPart v
 ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment ck m) root = commentMode ck m root
+ideaMode (OnComment ck m)  root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
 
 anchor :: IsString s => AUID a -> s
@@ -220,9 +221,9 @@ commentMode (CommentKey _loc i parents commentId) m root =
     -- and replying up to depth 1.
     base n =
         case take n (parents <> [commentId]) of
-            [p]   -> root </> "idea" </> uriPart i </> "comment" </> uriPart p
-            [p,c] -> root </> "idea" </> uriPart i </> "comment" </> uriPart p </> "reply" </> uriPart c
-            _     -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
+            [p]    -> root </> "idea" </> uriPart i </> "comment" </> uriPart p
+            [p, c] -> root </> "idea" </> uriPart i </> "comment" </> uriPart p </> "reply" </> uriPart c
+            _      -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
 
 ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
 ideaPath loc mode root =
@@ -270,8 +271,7 @@ data AdminMode =
   | AdminViewClasses
   | AdminEvent
   | AdminDlPass SchoolClass
-  | AdminDlEvents
-  | AdminDlEventsF IdeaSpace
+  | AdminDlEvents (Maybe IdeaSpace)
   deriving (Generic, Show)
 
 instance SOP.Generic AdminMode
@@ -288,8 +288,8 @@ admin AdminCreateClass      path = path </> "class" </> "create"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"
 admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
-admin AdminDlEvents         path = path </> "downloads" </> "events"
-admin (AdminDlEventsF spc)  path = path </> "downloads" </> "events" </> uriPart spc
+admin (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
+                                   </?> ("space", cs . toUrlPiece <$> mspc)
 
 data CommentMode
     = ReplyComment
@@ -304,7 +304,7 @@ instance SOP.Generic CommentMode
 data IdeaMode =
       ListIdeas
     | CreateIdea
-    | ViewIdea (AUID Idea)
+    | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
     | VoteIdea (AUID Idea) IdeaVoteValue
