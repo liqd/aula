@@ -572,11 +572,12 @@ listIdeasWithQuery loc (IdeasQuery qf qs) =
 -- * js glue
 
 data JsCallback =
-    JsReloadOnClick ST
+    JsReloadOnClick (Maybe ST)
   deriving (Eq, Ord, Show, Read)
 
 onclickJs :: JsCallback -> Attribute
-onclickJs (JsReloadOnClick hash) = Lucid.onclick_ $ "reloadOnClick(" <> cs (show hash) <> ")"
+onclickJs (JsReloadOnClick hash) =
+    Lucid.onclick_ $ "reloadOnClick(" <> maybe nil (cs . show) hash <> ")"
 
 
 -- * lenses
