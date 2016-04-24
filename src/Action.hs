@@ -100,6 +100,7 @@ import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Daemon
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
+import Logger
 import Persistent
 import Persistent.Api
 import Types
@@ -164,7 +165,7 @@ type ActionM m =
 
 class Monad m => ActionLog m where
     -- | Log events
-    logEvent :: ST -> m ()
+    logEvent :: LogEntry -> m ()
 
 -- | A monad that can run acid-state.
 --

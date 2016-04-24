@@ -33,7 +33,7 @@ import System.FilePath (addTrailingPathSeparator)
 
 import qualified Data.ByteString.Builder as Builder
 
-import Thentos.Prelude hiding (logger)
+import Thentos.Prelude hiding (logger, DEBUG)
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
@@ -48,6 +48,7 @@ import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Prelude
 import Frontend.Testing
+import Logger
 import Persistent.Api
 
 import qualified Action
@@ -63,9 +64,10 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 -- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    log <- logDaemon (logger cfg)
+    log <- logDaemon (cfg ^. logLevel)
     void $ log ^. start
-    withPersist cfg (runFrontend' cfg (log ^. msgDaemonSend))
+    let logMsg = log ^. msgDaemonSend
+    withPersist logMsg cfg (runFrontend' cfg logMsg)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)

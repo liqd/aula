@@ -54,7 +54,9 @@ instance GenArbitrary Action where  -- FIXME: remove
     genGen = actionIO . generate
 
 instance HasSendMail ActionExcept ActionEnv Action where
-    sendMailToAddress addr msg = MkAction $ sendMailToAddressIO addr msg
+    sendMailToAddress addr msg = MkAction $ do
+        log <- view envLogger
+        sendMailToAddressIO log addr msg
 
 instance ActionLog Action where
     logEvent msg = actionIO =<< views envLogger ($ msg)

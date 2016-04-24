@@ -44,6 +44,7 @@ story name program expected = it name $ do
         Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO
+                -- FIXME: Do not use print.
                 runAction = exceptToFail
                         . mkRunAction (Action.ActionEnv persist cfg print)
 

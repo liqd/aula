@@ -51,6 +51,7 @@ mkState setup impl k = do
             MkStateInitial -> runA cfg rp genInitialTestDb
         k rp
 
+-- FIXME: Do not use print.
 runA :: Config -> RunPersist -> Action.Action a -> IO a
 runA cfg rp = fmap (either (error . show) id)
             . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg print))

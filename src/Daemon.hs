@@ -3,23 +3,36 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Daemon
+    ( SystemLogger
+    , MsgDaemon
+    , TimeoutDeamon
+    , Daemon(..)
+    , msgDaemon
+    , msgDaemonSend
+    , timeoutDaemon
+    , logDaemon
+    )
 where
 
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Exception hiding (handle)
 import Control.Lens
-import Control.Monad (forever, join)
-import Data.String.Conversions (ST, cs)
+import Control.Monad (forever, join, when)
+import Data.String.Conversions (cs)
 import System.IO (hPutStrLn, stderr)
 
-type SystemLogger = String -> IO ()
+import Logger
+
+
+type SystemLogger = LogEntry -> IO ()
 
 -- | The daemon is implemented as a thread. With the _start
 -- one can start a new daemon of a given kind.
 --
 -- For the message all the daemon instances started with the
 -- same method will listen on the same message channel.
+
 data MsgDaemon a = MsgDaemon
     { _msgDaemonStart :: IO ThreadId
     , _msgDaemonSend  :: a -> IO ()
@@ -54,11 +67,11 @@ msgDaemon logger name computation handleException = do
     let run = join . atomically $ do
                     x <- readTChan chan
                     return $ do
-                        logger $ concat ["daemon [", name, "] recieved a message."]
+                        logger . LogEntry INFO . cs $ concat ["daemon [", name, "] recieved a message."]
                         computation x
 
     let handle e@(SomeException e') = do
-                    logger $ concat ["error occured in daemon [", name, "] ", show e']
+                    logger . LogEntry ERROR . cs $ concat ["error occured in daemon [", name, "] ", show e']
                     handleException e
 
     let loop = forkIO . forever $ run `catch` handle
@@ -75,22 +88,25 @@ timeoutDaemon
 timeoutDaemon logger name delay_us computation handleException = TimeoutDeamon $ do
 
     let run = do
-            logger $ concat ["daemon [", name, "] timed out after ", show delay_us, " us."]
+            logger . LogEntry INFO . cs $ concat ["daemon [", name, "] timed out after ", show delay_us, " us."]
             computation
 
     let handle e@(SomeException e') = do
-            logger $ concat ["error occured in daemon [", name, "] ", show e']
+            logger . LogEntry ERROR . cs $ concat ["error occured in daemon [", name, "] ", show e']
             handleException e
 
     forkIO . forever $ do
         run `catch` handle
         threadDelay delay_us
 
-type SendLogMsg = ST -> IO ()
+
+-- * Log Daemon
 
 -- | Create a log deamon
-logDaemon :: SystemLogger -> IO (MsgDaemon ST)
-logDaemon systemLog = msgDaemon systemLog "logger" logMsg (const $ pure ())
+logDaemon :: LogLevel -> IO (MsgDaemon LogEntry)
+logDaemon minLevel =
+    msgDaemon logMsg "logger" logMsg (const $ pure ())
   where
     -- FIXME: Use event logging
-    logMsg = hPutStrLn stderr . cs
+    logMsg (LogEntry level msg) =
+        when (level >= minLevel) $ hPutStrLn stderr (cs msg)

@@ -25,9 +25,11 @@ import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
 import Data.Monoid ((<>))
+import Data.String.Conversions (cs)
 
 import Config
 import Daemon
+import Logger
 import Persistent.Pure
 import Persistent.Api
 
@@ -44,8 +46,8 @@ mkRunPersistGeneric desc openState closeState = do
                     , _rpClose  = closeState st handle
                     }
 
-mkRunPersistOnDisk :: Config -> IO RunPersist
-mkRunPersistOnDisk cfg =
+mkRunPersistOnDisk :: SendLogMsg -> Config -> IO RunPersist
+mkRunPersistOnDisk logger cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls
   where
     opn aulaData = do
@@ -54,13 +56,13 @@ mkRunPersistOnDisk cfg =
         let delay_us = delay_min * 1000000 * 60
 
         let checkpoint = do
-                logger cfg "[create acid-state checkpoint, archive]"
+                logger . LogEntry INFO $ cs ("[create acid-state checkpoint, archive]" :: String)
                 createCheckpoint st
                 createArchive st
         let logException (SomeException e) = do
-                logger cfg ("error creating checkpoint or archiving changelog: " <> show e)
+                logger . LogEntry ERROR $ cs ("error creating checkpoint or archiving changelog: " <> show e)
 
-        let deamon = timeoutDaemon (logger cfg) "checkpoint" delay_us checkpoint logException
+        let deamon = timeoutDaemon logger "checkpoint" delay_us checkpoint logException
         tid <- deamon ^. start
         pure (st, tid)
 

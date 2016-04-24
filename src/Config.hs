@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 
-{-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Config
     ( Config(Config), SmtpConfig(SmtpConfig)
@@ -19,7 +19,6 @@ module Config
     , htmlStatic
     , listenerInterface
     , listenerPort
-    , logger
     , persistConfig
     , persistenceImpl
     , readConfig
@@ -31,12 +30,12 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
     , snapshotIntervalMinutes
+    , logLevel
     )
 where
 
 import Control.Exception (throwIO, ErrorCall(ErrorCall))
 import Control.Lens
-import Control.Monad (when)
 import Control.Monad.Reader (MonadReader)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
@@ -48,8 +47,9 @@ import GHC.Generics
 import System.Directory
 import System.Environment
 import System.FilePath ((</>))
-import System.IO (hPutStrLn, stderr)
 import Thentos.Frontend.CSRF (GetCsrfSecret(..), CsrfSecret(..))
+
+import Logger
 
 import qualified Paths_aula as Paths
 -- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
@@ -93,7 +93,7 @@ data Config = Config
     , _listenerPort      :: Int
     , _htmlStatic        :: FilePath
     , _cfgCsrfSecret     :: CsrfSecret
-    , _logLevel          :: Bool  -- (see 'logger' below)
+    , _logLevel          :: LogLevel
     , _persistConfig     :: PersistConfig
     , _smtpConfig        :: SmtpConfig
     }
@@ -139,7 +139,7 @@ defaultConfig = Config
     , _htmlStatic        = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
-    , _logLevel          = False
+    , _logLevel          = ERROR
     , _persistConfig     = defaultPersistConfig
     , _smtpConfig        = defaultSmtpConfig
     }
@@ -147,8 +147,8 @@ defaultConfig = Config
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
-readConfig :: WarnMissing -> IO Config
-readConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
+readConfig :: SendLogMsg -> WarnMissing -> IO Config
+readConfig logger warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
   where
     dflt :: IO Config
     dflt = pure defaultConfig
@@ -172,7 +172,7 @@ readConfig warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dfl
     errr :: [String] -> IO ()
     errr msgH = case warnMissing of
         DontWarnMissing -> pure ()
-        WarnMissing     -> logger (logLevel .~ True $ defaultConfig) msgs
+        WarnMissing     -> logger . LogEntry ERROR $ cs msgs
         CrashMissing    -> throwIO . ErrorCall $ msgs
       where
         msgs = unlines $ [""] <> msgH <> ["", cs $ encode defaultConfig]
@@ -191,14 +191,6 @@ getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
   where
     var = "AULA_SAMPLES"
     msg = "please set $" <> var <> " to a path (will be created if n/a)"
-
-
--- * logging
-
--- | FIXME: this will become more sophisticated.  related: #65
-logger :: Config -> String -> IO ()
-logger cfg = when (cfg ^. logLevel) . hPutStrLn stderr
-
 
 -- * release version
 
