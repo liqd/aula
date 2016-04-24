@@ -86,10 +86,10 @@ data AdminEditClass = AdminEditClass SchoolClass [UserView]
 
 instance Page AdminEditClass
 
-data AdminPhaseChangeForTopic = AdminPhaseChangeForTopic
+data AdminPhaseChange = AdminPhaseChange
   deriving (Eq, Show, Read)
 
-instance Page AdminPhaseChangeForTopic
+instance Page AdminPhaseChange
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
@@ -161,7 +161,7 @@ instance ToMenuItem AdminEditClass where
 instance ToMenuItem PageAdminSettingsEventsProtocol where
     toMenuItem _ = MenuItemEventsProtocol
 
-instance ToMenuItem AdminPhaseChangeForTopic where
+instance ToMenuItem AdminPhaseChange where
     toMenuItem _ = MenuItemPhaseChange
 
 -- * templates
@@ -643,14 +643,14 @@ adminCreateClass = FormPageHandler (pure AdminCreateClass) q
             , _protoUserDesc      = Markdown nil
             }
 
-adminPhaseChangeForTopic
+adminPhaseChange
     :: forall m . (ActionM m)
-    => FormPageHandler m AdminPhaseChangeForTopic
-adminPhaseChangeForTopic = FormPageHandler
-    { _formGetPage   = pure AdminPhaseChangeForTopic
+    => FormPageHandler m AdminPhaseChange
+adminPhaseChange = FormPageHandler
+    { _formGetPage   = pure AdminPhaseChange
     , _formProcessor = \(AdminPhaseChangeForTopicData tid dir) -> case dir of
             Forward -> Action.topicForceNextPhase tid
-            Backward -> Action.topicInVotingSetbackTopicToJuryPhase tid
+            Backward -> Action.topicInVotingResetToJury tid
     }
 
 data PhaseChangeDir = Forward | Backward
@@ -664,8 +664,8 @@ instance ToHtml PhaseChangeDir where
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
 
 -- FIXME: Add test
-instance FormPage AdminPhaseChangeForTopic where
-    type FormPagePayload AdminPhaseChangeForTopic = AdminPhaseChangeForTopicData
+instance FormPage AdminPhaseChange where
+    type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
 
     formAction _   = U.Admin U.AdminChangePhase
     redirectOf _ _ = U.Admin U.AdminChangePhase

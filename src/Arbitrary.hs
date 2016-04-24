@@ -193,8 +193,8 @@ instance Arbitrary AdminEditClass where
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
 
-instance Arbitrary AdminPhaseChangeForTopic where
-    arbitrary = pure AdminPhaseChangeForTopic
+instance Arbitrary AdminPhaseChange where
+    arbitrary = pure AdminPhaseChange
 
 instance Arbitrary PageDelegateVote where
     arbitrary = pure PageDelegateVote

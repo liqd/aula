@@ -68,7 +68,7 @@ module Action
 
       -- * admin activity
     , topicForceNextPhase
-    , topicInVotingSetbackTopicToJuryPhase
+    , topicInVotingResetToJury
 
       -- * extras
     , ActionTempCsvFiles(popTempCsvFile, cleanupTempCsvFiles), decodeCsv
@@ -507,9 +507,9 @@ topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
 topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
-topicInVotingSetbackTopicToJuryPhase
+topicInVotingResetToJury
     :: (ActionPhaseChange m) => AUID Topic -> m ()
-topicInVotingSetbackTopicToJuryPhase tid = do
+topicInVotingResetToJury tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
         PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
