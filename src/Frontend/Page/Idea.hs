@@ -304,7 +304,7 @@ instance ToHtml IdeaVoteLikeBars where
 
         case phase of
             PhaseWildIdea     -> toHtml $ likeBar likeButtons
-            PhaseWildFrozen   -> toHtml $ likeBar likeButtons
+            PhaseWildFrozen   -> toHtml $ likeBar nil
             PhaseRefinement{} -> nil
             PhaseRefFrozen{}  -> nil
             PhaseJury         -> nil
