@@ -94,9 +94,11 @@ function reloadOnClick(hash) {
     // will usually be reloaded before the POST request updating the
     // score can be processed.
     setTimeout(function() {
-        document.location.hash = hash;
+        if (hash) {
+            document.location.hash = hash;
+        }
         document.location.reload(true);
-    }, 100);
+    }, 250);
 }
 
 function createPageSample() {
