@@ -34,7 +34,13 @@ spec = do
 
     describe "Timespan" $ do
         it "aeson encode and decode are inverses" . property $
-            \x -> Aeson.decode (Aeson.encode x) == Just (x :: Timespan)
+            \(x :: Timespan) ->
+                  -- because historically, there has been a distinction between top-level values
+                  -- (arrays and objects), and internal values (also literals like strings), and
+                  -- because we depend on a rather old aeson version, we work on an object in this
+                  -- test.
+                  let x' = Aeson.object ["value" Aeson..= x]
+                  in Aeson.decode (Aeson.encode x') == Just x'
 
     when beThorough $ do
         describe "DelegationNetwork" $ do

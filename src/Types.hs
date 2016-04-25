@@ -793,24 +793,35 @@ timespanMs (TimespanHours i) = fromIntegral $ i `div` (1000 * 1000 * 3600)
 timespanMs (TimespanDays  i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
 
 instance Aeson.FromJSON Timespan where
-    parseJSON = Aeson.withText "Timestamp value" $ \s -> case ST.break (not . isDigit) s of
-        ("", _)   -> fail $ "bad Timestamp value: " <> cs s
-        (i, "us") -> pure . TimespanUs    . read . cs $ i
-        (i, "ms") -> pure . TimespanMs    . read . cs $ i
-        (i, "s")  -> pure . TimespanSecs  . read . cs $ i
-        (i, "m")  -> pure . TimespanMins  . read . cs $ i
-        (i, "h")  -> pure . TimespanHours . read . cs $ i
-        (i, "d")  -> pure . TimespanDays  . read . cs $ i
-        _         -> fail $ "bad Timestamp value: " <> cs s
+    parseJSON = Aeson.withText "Timestamp value" $ \raw -> do
+        let (digits, units) = ST.break (`notElem` ("-0123456789" :: String)) raw
+
+            bad = fail $ "bad Timestamp value: " <> cs (show raw)
+
+            construct :: Monad m => ST -> (Integer -> Timespan) -> m Timespan
+            construct i cns = pure . cns . read . cs $ i
+
+        case (digits, units) of
+            ("", _)   -> bad
+            (i, "us") -> construct i TimespanUs
+            (i, "ms") -> construct i TimespanMs
+            (i, "s")  -> construct i TimespanSecs
+            (i, "m")  -> construct i TimespanMins
+            (i, "h")  -> construct i TimespanHours
+            (i, "d")  -> construct i TimespanDays
+            _         -> bad
 
 instance Aeson.ToJSON Timespan where
     toJSON = \case
-        (TimespanUs    i) -> Aeson.String $ cs (show i) <> "us"
-        (TimespanMs    i) -> Aeson.String $ cs (show i) <> "ms"
-        (TimespanSecs  i) -> Aeson.String $ cs (show i) <> "s"
-        (TimespanMins  i) -> Aeson.String $ cs (show i) <> "m"
-        (TimespanHours i) -> Aeson.String $ cs (show i) <> "h"
-        (TimespanDays  i) -> Aeson.String $ cs (show i) <> "d"
+        (TimespanUs    i) -> render i "us"
+        (TimespanMs    i) -> render i "ms"
+        (TimespanSecs  i) -> render i "s"
+        (TimespanMins  i) -> render i "m"
+        (TimespanHours i) -> render i "h"
+        (TimespanDays  i) -> render i "d"
+      where
+        render :: Integer -> String -> Aeson.Value
+        render i unit = Aeson.String . cs $ show i <> unit
 
 
 -- | FIXME: should either go to the test suite or go away completely.
