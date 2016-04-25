@@ -51,6 +51,7 @@ spec = do
             [ U (arb :: Gen IdeaSpace)
             , U (arb :: Gen SchoolClass)
             , U (arb :: Gen IdeaVoteValue)
+            , U (arb :: Gen IdeaJuryResultType)
             , U (arb :: Gen UpDown)
             ]
 
