@@ -67,6 +67,7 @@ module Persistent.Pure
     , findComment'
     , addLikeToIdea
     , addVoteToIdea
+    , removeVoteFromIdea
     , addCommentToIdea
     , addReply
     , addCommentVote
@@ -523,6 +524,10 @@ instance FromProto IdeaVote where
 -- FIXME: Check also that the given idea exists and is in the right phase.
 addVoteToIdea :: AUID Idea -> AddDb IdeaVote
 addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaVotes)
+
+-- Removes the vote of the given user.
+removeVoteFromIdea :: AUID Idea -> AUID User -> AUpdate ()
+removeVoteFromIdea iid uid = modifyIdea iid (set (ideaVotes . at uid) Nothing)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m

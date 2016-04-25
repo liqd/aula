@@ -30,6 +30,7 @@ module Frontend.Path
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
+    , removeVote
     , viewUser
     , anchor
     )
@@ -87,8 +88,9 @@ isPostOnly :: Main -> Bool
 isPostOnly = \case
     IdeaPath _ m ->
         case m of
-            LikeIdea{} -> True
-            VoteIdea{} -> True
+            LikeIdea{}     -> True
+            VoteIdea{}     -> True
+            RemoveVote{}   -> True
             OnComment _ cm ->
                 case cm of
                     VoteComment{} -> True
@@ -154,6 +156,9 @@ likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 voteIdea :: Idea -> IdeaVoteValue -> Main
 voteIdea idea = IdeaPath (idea ^. ideaLocation) . VoteIdea (idea ^. _Id)
 
+removeVote :: Idea -> User -> Main
+removeVote idea u = IdeaPath (idea ^. ideaLocation) $ RemoveVote (idea ^. _Id) (u ^. _Id)
+
 judgeIdea :: Idea -> IdeaJuryResultType -> Main
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 
@@ -201,6 +206,7 @@ ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (LikeIdea i)      root = root </> "idea" </> uriPart i </> "like"
 ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
                                        </> uriPart v
+ideaMode (RemoveVote i u)  root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
 ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
                                        </> uriPart v
 ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
@@ -318,6 +324,7 @@ data IdeaMode =
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
     | VoteIdea (AUID Idea) IdeaVoteValue
+    | RemoveVote (AUID Idea) (AUID User)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentIdea (AUID Idea)
 

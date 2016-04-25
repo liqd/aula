@@ -51,6 +51,7 @@ module Action
     , voteIdeaCommentReply
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
+    , removeVote
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -393,6 +394,8 @@ voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Commen
 voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
+removeVote :: (ActionPersist m) => AUID Idea -> AUID User -> m ()
+removeVote = app2 update RemoveVoteFromIdea
 
 -- * Reporting and deleting comments
 

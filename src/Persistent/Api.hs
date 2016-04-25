@@ -61,6 +61,7 @@ $(makeAcidic ''AulaData
     , 'addTopic
     , 'addUser
     , 'addVoteToIdea
+    , 'removeVoteFromIdea
     , 'askDb
     , 'dangerousResetAulaData
     , 'editIdea

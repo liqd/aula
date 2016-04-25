@@ -105,7 +105,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -192,7 +192,7 @@ instance ToHtml ViewIdea where
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars caps
-                (ViewIdea _ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
+                (ViewIdea ctx (ListInfoForIdea idea phase quo voters))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 toHtml (QuorumBar $ percentLikes idea quo)
@@ -213,37 +213,64 @@ instance ToHtml IdeaVoteLikeBars where
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
-                span_ [class_ "progress-bar m-against"] $ do
+                span_ [class_ "progress-bar"] $ do
+                    span_ [ class_ "progress-bar-votes-for"
+                          , style_ . cs $ concat ["width: ", show yesPercent, "%"]
+                          ] nil
+                    span_ [ class_ "progress-bar-votes-against"
+                          , style_ . cs $ concat ["width: ", show noPercent, "%"]
+                          ] nil
                     span_ [ class_ "progress-bar-progress"
-                            -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
-                          , style_ "width: 75%"
-                          ] $ do
-                        span_ [class_ "progress-bar-votes-for"]     $ toHtml (show yesVotes)
-                        span_ [class_ "progress-bar-votes-against"] $ toHtml (show noVotes)
+                          , style_ . cs $ concat ["width: ", show (100 - yesPercent - noPercent), "%"]
+                          ] nil
+
+                    div_ $ toHtml (show (yesVotes, noVotes, yesPercent, noPercent))
+
+                    -- FIXME: what i want is this:
+                    --
+                    -- [progress-bar..........................................]
+                    -- [[yes...][no............][no vote cast................]]
+                    --
+                    -- but obviously this doesn't work.  time for css hackers to take over?
+
                 bs
               where
-                yesVotes :: Int = 6
-                noVotes  :: Int = 12
+                yesVotes   = numVotes idea Yes
+                noVotes    = numVotes idea No
+                yesPercent = percentVotes idea voters Yes
+                noPercent  = percentVotes idea voters No
+
+            user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
             voteButtons = if CanVote `elem` caps
                 then div_ [class_ "voting-buttons"] $ do
-                    voteButton Yes     "dafür"
-                    voteButton Neutral "neutral"
-                    voteButton No      "dagegen"
+                    voteButton vote Yes     "dafür"
+                    voteButton vote Neutral "neutral"
+                    voteButton vote No      "dagegen"
                 else nil
+              where
+                vote = userVoteOnIdea user idea
 
-            voteButton v =
-                postButton_ [class_ "btn-cta voting-button"]
+            -- FIXME: The button for the selected vote value is white.
+            -- Should it be in other color?
+            voteButton (Just w) v | w == v =
+                postButton_ [class_ "btn voting-button"
+                            , onclickJs jsReloadOnClick
+                            ]
+                            (U.removeVote idea user)
+            voteButton _        v =
+                postButton_ [class_ "btn-cta voting-button"
+                            , onclickJs jsReloadOnClick
+                            ]
                             (U.voteIdea idea v)
 
         case phase of
             Nothing                  -> toHtml $ likeBar likeButtons
             Just (PhaseRefinement _) -> nil
             Just PhaseJury           -> nil
-            Just (PhaseVoting _)     -> toHtml $ voteBar nil
-            Just PhaseResult         -> toHtml $ voteBar voteButtons
-
+            Just (PhaseVoting _)     -> toHtml $ voteBar voteButtons
+            Just PhaseResult         -> toHtml $ voteBar nil
 
 
 instance FormPage CreateIdea where
