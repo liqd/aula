@@ -75,9 +75,6 @@ body.m-shadow {
 .container-not-found {
     @include rem(padding, 20px);
     background: #fff;
+    clear: left;
     text-align: center;
-}
-
-.container-float {
-    overflow: hidden;
 }

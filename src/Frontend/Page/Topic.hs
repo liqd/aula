@@ -144,11 +144,6 @@ viewTopicHeaderDiv ctx topic tab = do
                 PhaseVoting     _ -> delegateVoteButton
                 PhaseResult       -> nil
 
-            when (CanPhaseForwardTopic `elem` caps) $
-                postLink_
-                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
-                    (U.Admin $ U.AdminTopicNextPhase topicId)
-                    "Nächste Phase"
             when (CanPhaseBackwardTopic `elem` caps) $
                 postLink_
                     [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]

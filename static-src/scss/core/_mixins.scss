@@ -87,3 +87,11 @@ $rem-px-only: false !default;
         }
     }
 }
+
+.clearfix {
+    &:after {
+        content:"";
+        display:block;
+        clear:both;
+    }
+}

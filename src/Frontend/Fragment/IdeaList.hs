@@ -102,7 +102,7 @@ ideaListHeader IdeaInUserProfile _ _ = nil
 ideaListHeader _ loc ideasQuery = do
     categoryFilterButtons loc ideasQuery
 
-    div_ [class_ "container-float"] $ do
+    div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
             i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
             ul_ [class_ "pop-menu-list"] $ do
