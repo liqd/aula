@@ -102,12 +102,13 @@ ideaListHeader IdeaInUserProfile _ _ = nil
 ideaListHeader _ loc ideasQuery = do
     categoryFilterButtons loc ideasQuery
 
-    div_ [class_ "btn-settings pop-menu"] $ do
-        i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
-        ul_ [class_ "pop-menu-list"] $ do
-            let mk by text = do
-                    li_ [class_ "pop-menu-list-item"] $
-                        a_ [Lucid.href_ $ listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ Just by)] text
+    div_ [class_ "container-float"] $ do
+        div_ [class_ "btn-settings pop-menu"] $ do
+            i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
+            ul_ [class_ "pop-menu-list"] $ do
+                let mk by text = do
+                        li_ [class_ "pop-menu-list-item"] $
+                            a_ [Lucid.href_ $ listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ Just by)] text
 
-            mk SortIdeasBySupport "Unterstützung"
-            mk SortIdeasByAge     "Datum"
+                mk SortIdeasBySupport "Unterstützung"
+                mk SortIdeasByAge     "Datum"
