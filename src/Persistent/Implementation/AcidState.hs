@@ -56,11 +56,12 @@ mkRunPersistOnDisk logger cfg =
         let delay = cfg ^. persistConfig . snapshotIntervalMinutes
 
         let checkpoint = do
-                logger . LogEntry INFO $ cs ("[create acid-state checkpoint, archive]" :: String)
+                logger $ LogEntry INFO "[create acid-state checkpoint, archive]"
                 createCheckpoint st
                 createArchive st
         let logException (SomeException e) = do
-                logger . LogEntry ERROR $ cs ("error creating checkpoint or archiving changelog: " <> show e)
+                logger . LogEntry ERROR $
+                    "error creating checkpoint or archiving changelog: " <> cs (show e)
 
         let daemon = timeoutDaemon logger "checkpoint" delay checkpoint logException
         tid <- daemon ^. start
