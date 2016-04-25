@@ -63,7 +63,7 @@ phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
     = Just (PhaseVoting _phaseChangeVotPhaseEnd, [])
 phaseTrans PhaseVoting{} VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans (PhaseVoting _) VotingPhaseSetbackToJuryPhase
+phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
     = Just (PhaseJury, [UnmarkAllIdeas])
 phaseTrans PhaseVoting{_votPhaseEnd} (PhaseFreeze now)
     = Just (PhaseVotFrozen {_votPhaseLeftover  =realToFrac $ unTimestamp _votPhaseEnd `diffUTCTime` unTimestamp now}, [])

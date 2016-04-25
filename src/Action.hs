@@ -536,9 +536,12 @@ topicForceNextPhase :: (ActionPersist m, ActionUserHandler m, ActionSendMail m, 
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
+        PhaseWildIdeaFrozen -> throwError500 "Cannot transition from a frozen phase"
         PhaseRefinement _ -> topicInRefinementTimedOut tid
+        PhaseRefFrozen{}  -> throwError500 "Cannot transition from a frozen phase"
         PhaseJury         -> makeEverythingFeasible topic
         PhaseVoting     _ -> topicInVotingTimedOut tid
+        PhaseVotFrozen{}  -> throwError500 "Cannot transition from a frozen phase"
         PhaseResult       -> throwError500 "No phase after result phase!"
   where
     makeEverythingFeasible topic = do
