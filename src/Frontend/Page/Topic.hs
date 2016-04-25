@@ -121,16 +121,16 @@ viewTopicHeaderDiv ctx topic tab = do
                         a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
                             i_ [class_ "icon-pencil"] nil
                             "Thema bearbeiten"
-                    when (CanPhaseForwardTopic `elem` caps) $
-                        li_ [class_ "pop-menu-list-item m-form"] $ do
+                    when (CanPhaseForwardTopic `elem` caps) .
+                        li_ [class_ "pop-menu-list-item m-form"] .
                             div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
                                 i_ [class_ "icon-step-forward"] nil
                                 postLink_
                                     [class_ "btn-plain", onclickJs jsReloadOnClick]
                                     (U.Admin $ U.AdminTopicNextPhase topicId)
                                     "Nächste Phase"
-                    when (CanPhaseBackwardTopic `elem` caps) $
-                        li_ [class_ "pop-menu-list-item m-form"] $ do
+                    when (CanPhaseBackwardTopic `elem` caps) .
+                        li_ [class_ "pop-menu-list-item m-form"] .
                             div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
                                 i_ [class_ "icon-step-forward"] nil
                                 postLink_
