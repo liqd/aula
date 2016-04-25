@@ -38,7 +38,7 @@ import Data.String.Conversions
 import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
-import Lucid (ToHtml, toHtml, toHtmlRaw)
+import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 import Network.HTTP.Media ((//))
 import Network.Mail.Mime (Address(Address))
 import Servant.API
@@ -725,8 +725,8 @@ newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance ToHtml Document where
-    toHtml    = toHtml    . unMarkdown
-    toHtmlRaw = toHtmlRaw . unMarkdown
+    toHtmlRaw = div_ [class_ "markdown"] . toHtmlRaw . unMarkdown
+    toHtml    = div_ [class_ "markdown"] . toHtml    . unMarkdown
 
 
 -- * general-purpose types
