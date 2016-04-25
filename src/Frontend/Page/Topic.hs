@@ -130,9 +130,6 @@ viewTopicHeaderDiv ctx topic tab = do
                                     (U.Admin $ U.AdminTopicNextPhase topicId)
                                     "Nächste Phase"
 
-
-
-
         h1_   [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] . toHtml $ phaseName phase
             toHtml $ topic ^. topicTitle
