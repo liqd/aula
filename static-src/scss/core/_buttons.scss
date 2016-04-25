@@ -1,4 +1,4 @@
-.btn, .btn-cta, input[type=submit] {
+.btn, .btn-cta, input[type=submit]:not(.btn-plain) {
     border: 0;
     display: inline-block;
     font-weight: bold;
@@ -22,8 +22,9 @@
     }
 }
 
-.btn {
+.btn, .btn-plain {
     background: transparent;
+    border: 0;
     color: $color-text;
     padding: 0;
 
@@ -33,7 +34,7 @@
 }
 
 .btn-cta,
-input[type=submit] {
+input[type=submit]:not(.btn-plain) {
     @include rem(padding, 0 15px);
     background: $button-cta-base-color;
     border-radius: $button-height / 2;

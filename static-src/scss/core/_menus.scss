@@ -113,15 +113,26 @@ $arrow-width: 6px;
     border-bottom: 1px solid $color-grey-light;
     line-height: 1.4;
 
-    a {
+    a, .pop-menu-list-item-form-wrapper {
         @include rem(padding, 5px 10px);
         color: $color-text;
         display: block;
         text-decoration: none;
         white-space: nowrap;
 
-        &:hover, &:focus {
+        &:hover, &:focus, & input:hover, & input:focus {
             color: $color-link;
+            text-decoration: underline;
+        }
+
+        form {
+            display: inline-block;
+        }
+
+        i {
+            display: inline-block;
+            vertical-align: middle;
+            min-width: 15px;
         }
     }
 }
