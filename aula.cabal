@@ -81,6 +81,7 @@ library
       Arbitrary
       Backend
       Config
+      Daemon
       Data.UriPath
       DemoData
       EventLog
@@ -104,6 +105,7 @@ library
       Frontend.Prelude
       Frontend.Testing
       LifeCycle
+      Logger
       Lucid.Missing
       Persistent
       Persistent.Api

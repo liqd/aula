@@ -24,7 +24,7 @@ module Action
     , ActionSendMail
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), envRunPersist, envConfig
+    , ActionEnv(..), envRunPersist, envConfig, envLogger
 
       -- * user handling
     , loginByUser, loginByName
@@ -88,7 +88,7 @@ import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.Monoid
-import Data.String.Conversions (ST, LBS)
+import Data.String.Conversions (LBS)
 import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
@@ -105,6 +105,7 @@ import Action.Smtp
 import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
+import Logger
 import Persistent
 import Persistent.Api
 import Types
@@ -129,6 +130,7 @@ userLoggedOut = UserState Nothing Nothing Nothing
 data ActionEnv = ActionEnv
     { _envRunPersist :: RunPersist
     , _envConfig     :: Config
+    , _envLogger     :: SendLogMsg
     }
 
 makeLenses ''ActionEnv
@@ -168,7 +170,7 @@ type ActionM m =
 
 class Monad m => ActionLog m where
     -- | Log events
-    logEvent :: ST -> m ()
+    logEvent :: LogEntry -> m ()
 
 -- | A monad that can run acid-state.
 --

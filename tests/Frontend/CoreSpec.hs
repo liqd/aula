@@ -29,6 +29,7 @@ import Config
 import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
+import Logger (nullLog)
 import Types
 
 import AulaTests
@@ -212,8 +213,8 @@ renderForm (F g) =
 
 runFailOnError :: Action a -> PropertyM IO a
 runFailOnError action = run $ do
-    cfg <- readConfig DontWarnMissing
-    let env :: ActionEnv = ActionEnv (error "Dummy RunPersist") cfg
+    cfg <- readConfig nullLog DontWarnMissing
+    let env :: ActionEnv = ActionEnv (error "Dummy RunPersist") cfg nullLog
     fmap (either (error . show) id) . runExceptT . unNat (mkRunAction env) $ action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.

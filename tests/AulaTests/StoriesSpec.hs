@@ -18,6 +18,7 @@ import Test.Hspec
 
 import Action.Implementation
 import DemoData (genInitialTestDb)
+import Logger (nullLog)
 
 import qualified Action
 import qualified Persistent
@@ -41,11 +42,11 @@ story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story name program expected = it name $ do
     join $ do
         cfg <- testConfig
-        Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
+        Persistent.withPersist nullLog cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO
                 runAction = exceptToFail
-                        . mkRunAction (Action.ActionEnv persist cfg)
+                        . mkRunAction (Action.ActionEnv persist cfg nullLog)
 
             a <- unNat runAction $ do
                   genInitialTestDb

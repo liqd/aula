@@ -14,7 +14,8 @@ import Action.Smtp
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
-    cfg <- readConfig CrashMissing
+    -- FIXME: Do not use print.
+    cfg <- readConfig print CrashMissing
     checkSendMail cfg
 
     wd <- getCurrentDirectory

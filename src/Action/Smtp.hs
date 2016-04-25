@@ -22,11 +22,12 @@ module Action.Smtp
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Network.Mail.Mime (Address(Address), sendmailCustomCaptureOutput, simpleMail', renderMail')
-import Thentos.Prelude hiding (logger)
+import Thentos.Prelude hiding (logger, DEBUG)
 
 import qualified Data.ByteString as SB
 
 import Config
+import Logger
 import Types
 
 data SendMailError
@@ -67,11 +68,13 @@ class (MonadSendMailError e m, MonadReaderConfig r m) => HasSendMail e r m where
     sendMailToAddress :: Address -> EmailMessage -> m ()
 
     default sendMailToAddress :: MonadIO m => Address -> EmailMessage -> m ()
-    sendMailToAddress = sendMailToAddressIO
+    -- FIXME: Do not use print.
+    sendMailToAddress = sendMailToAddressIO print
 
-sendMailToAddressIO :: (MonadSendMailError e m, MonadReaderConfig r m, MonadIO m) =>
-                       Address -> EmailMessage -> m ()
-sendMailToAddressIO receiver msg = do
+sendMailToAddressIO
+    :: (MonadSendMailError e m, MonadReaderConfig r m, MonadIO m)
+    => SendLogMsg -> Address -> EmailMessage -> m ()
+sendMailToAddressIO logger receiver msg = do
     -- FIXME: when logger gets its config implicitely one can use a "viewSmtpConfig"
     -- It would be actually even nicer to un-tangle the logger using a MonadWriter.
     -- Then only the SmtpConfig would be pulled in.
@@ -81,17 +84,17 @@ sendMailToAddressIO receiver msg = do
         subj   = "[" <> msg ^. msgISpace . to showIdeaSpace . csi <> "] " <> msg ^. msgSubject
         mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody)
     r <- liftIO $ do
-        logger cfg {- debug -} $ "sending email: " <> ppShow (receiver, msg)
-        when (isJust $ msg ^. msgHtml) . logger cfg {- warn -} $ "No support for the optional HTML part"
+        logger . LogEntry DEBUG . cs $ "sending email: " <> ppShow (receiver, msg)
+        when (isJust $ msg ^. msgHtml) . logger . LogEntry WARN $ "No support for the optional HTML part"
         renderedMail <- renderMail' mail
         try $ sendmailCustomCaptureOutput (scfg ^. sendmailPath) (scfg ^. sendmailArgs) renderedMail
     case r of
         Right (out, err) -> do
             liftIO $ do
                 unless (SB.null out) .
-                    logger cfg {- warn -} $ "sendmail produced output on stdout: " <> cs out
+                    logger . LogEntry WARN $ "sendmail produced output on stdout: " <> cs out
                 unless (SB.null err) .
-                    logger cfg {- warn -} $ "sendmail produced output on stderr: " <> cs err
+                    logger . LogEntry WARN $ "sendmail produced output on stderr: " <> cs err
         Left (e :: IOException) ->
             throwSendMailError $ IOErrorRunningSendMail e
   where
@@ -116,7 +119,7 @@ checkSendMail cfg = do
         msg     = EmailMessage SchoolSpace "Test Mail" "This is a test" Nothing
 
         action :: ReaderT Config (ExceptT SendMailError IO) ()
-        action = sendMailToAddressIO address msg
+        action = sendMailToAddressIO print address msg
 
     r <- runExceptT (runReaderT action cfg)
     case r of

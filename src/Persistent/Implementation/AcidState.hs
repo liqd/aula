@@ -21,15 +21,17 @@ where
 import Control.Concurrent
 import Control.Exception hiding (handle)
 import Control.Lens
-import Control.Monad
 import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
 import Data.Monoid ((<>))
+import Data.String.Conversions (cs)
 
 import Config
-import Persistent.Pure
+import Daemon
+import Logger
 import Persistent.Api
+import Persistent.Pure
 
 
 mkRunPersistGeneric :: String
@@ -44,27 +46,24 @@ mkRunPersistGeneric desc openState closeState = do
                     , _rpClose  = closeState st handle
                     }
 
-mkRunPersistOnDisk :: Config -> IO RunPersist
-mkRunPersistOnDisk cfg =
+mkRunPersistOnDisk :: SendLogMsg -> Config -> IO RunPersist
+mkRunPersistOnDisk logger cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls
   where
     opn aulaData = do
         st <- openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
-        tid <- forkIO . forever $ do
-            let run = do
-                    logger cfg "[create acid-state checkpoint, archive]"
-                    createCheckpoint st
-                    createArchive st
+        let delay = cfg ^. persistConfig . snapshotIntervalMinutes
 
-                catchAll (SomeException e) = do
-                    logger cfg ("error creating checkpoint or archiving changelog: " <> show e)
+        let checkpoint = do
+                logger $ LogEntry INFO "[create acid-state checkpoint, archive]"
+                createCheckpoint st
+                createArchive st
+        let logException (SomeException e) = do
+                logger . LogEntry ERROR $
+                    "error creating checkpoint or archiving changelog: " <> cs (show e)
 
-                delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
-                delay_us = delay_min * 1000000 * 60
-
-            run `catch` catchAll
-            threadDelay delay_us
-
+        let daemon = timeoutDaemon logger "checkpoint" delay checkpoint logException
+        tid <- daemon ^. start
         pure (st, tid)
 
     cls st tid = do

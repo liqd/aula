@@ -500,6 +500,9 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
+instance Arbitrary Timespan where
+    arbitrary = garbitrary
+
 
 -- * arbitrary readable text
 
@@ -685,13 +688,14 @@ fishDelegationNetworkIO = do
             fishDelegationNetworkAction Nothing
 
     cfg <- (persistConfig . persistenceImpl .~ AcidStateInMem)
-        <$> Config.readConfig Config.DontWarnMissing
+        <$> Config.readConfig print Config.DontWarnMissing
         -- FIXME: we should use AulaTests.testConfig here, but that's under /tests/
     let runAction :: RunPersist -> IO DelegationNetwork
         runAction rp = do
-            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg)) action)
+            -- FIXME: Do not use print
+            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg print)) action)
             either (throwIO . ErrorCall . ppShow) pure v
-    withPersist cfg runAction
+    withPersist print cfg runAction
 
 fishDelegationNetworkAction :: Maybe SchoolClass ->
     (GenArbitrary m, ActionM m) => m DelegationNetwork

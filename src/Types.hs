@@ -47,6 +47,7 @@ import Servant.API
     )
 import Text.Read (readMaybe)
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
 import qualified Data.Ord (Down(Down))
 import qualified Data.Text as ST
@@ -763,6 +764,64 @@ timestampFormat = "%F_%T_%q"
 
 timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
+
+data Timespan =  -- FIXME: import this from thentos?  create a package thentos-base?
+    TimespanUs    Integer
+  | TimespanMs    Integer
+  | TimespanSecs  Integer
+  | TimespanMins  Integer
+  | TimespanHours Integer
+  | TimespanDays  Integer
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic Timespan
+
+showTimespan :: Timespan -> String
+showTimespan (TimespanUs    i) = show i <> "us"
+showTimespan (TimespanMs    i) = show i <> "ms"
+showTimespan (TimespanSecs  i) = show i <> "s"
+showTimespan (TimespanMins  i) = show i <> "m"
+showTimespan (TimespanHours i) = show i <> "h"
+showTimespan (TimespanDays  i) = show i <> "d"
+
+timespanMs :: Timespan -> Int
+timespanMs (TimespanUs    i) = fromIntegral   i
+timespanMs (TimespanMs    i) = fromIntegral $ i `div` 1000
+timespanMs (TimespanSecs  i) = fromIntegral $ i `div` (1000 * 1000)
+timespanMs (TimespanMins  i) = fromIntegral $ i `div` (1000 * 1000 * 60)
+timespanMs (TimespanHours i) = fromIntegral $ i `div` (1000 * 1000 * 3600)
+timespanMs (TimespanDays  i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
+
+instance Aeson.FromJSON Timespan where
+    parseJSON = Aeson.withText "Timestamp value" $ \raw -> do
+        let (digits, units) = ST.break (`notElem` ("-0123456789" :: String)) raw
+
+            bad = fail $ "bad Timestamp value: " <> cs (show raw)
+
+            construct :: Monad m => ST -> (Integer -> Timespan) -> m Timespan
+            construct i cns = pure . cns . read . cs $ i
+
+        case (digits, units) of
+            ("", _)   -> bad
+            (i, "us") -> construct i TimespanUs
+            (i, "ms") -> construct i TimespanMs
+            (i, "s")  -> construct i TimespanSecs
+            (i, "m")  -> construct i TimespanMins
+            (i, "h")  -> construct i TimespanHours
+            (i, "d")  -> construct i TimespanDays
+            _         -> bad
+
+instance Aeson.ToJSON Timespan where
+    toJSON = \case
+        (TimespanUs    i) -> render i "us"
+        (TimespanMs    i) -> render i "ms"
+        (TimespanSecs  i) -> render i "s"
+        (TimespanMins  i) -> render i "m"
+        (TimespanHours i) -> render i "h"
+        (TimespanDays  i) -> render i "d"
+      where
+        render :: Integer -> String -> Aeson.Value
+        render i unit = Aeson.String . cs $ show i <> unit
 
 
 -- | FIXME: should either go to the test suite or go away completely.
