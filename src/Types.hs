@@ -783,7 +783,7 @@ showTimespan (TimespanHours i) = show i <> "h"
 showTimespan (TimespanDays  i) = show i <> "d"
 
 timespanMs :: Timespan -> Int
-timespanMs (TimespanUs    i) = fromIntegral $ i
+timespanMs (TimespanUs    i) = fromIntegral   i
 timespanMs (TimespanMs    i) = fromIntegral $ i `div` 1000
 timespanMs (TimespanSecs  i) = fromIntegral $ i `div` (1000 * 1000)
 timespanMs (TimespanMins  i) = fromIntegral $ i `div` (1000 * 1000 * 60)

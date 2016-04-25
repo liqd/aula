@@ -32,7 +32,6 @@ import Daemon
 import Logger
 import Persistent.Api
 import Persistent.Pure
-import Types
 
 
 mkRunPersistGeneric :: String
