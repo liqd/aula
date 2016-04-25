@@ -129,6 +129,14 @@ viewTopicHeaderDiv ctx topic tab = do
                                     [class_ "btn-plain", onclickJs jsReloadOnClick]
                                     (U.Admin $ U.AdminTopicNextPhase topicId)
                                     "Nächste Phase"
+                    when (CanPhaseBackwardTopic `elem` caps) $
+                        li_ [class_ "pop-menu-list-item m-form"] $ do
+                            div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                i_ [class_ "icon-step-forward"] nil
+                                postLink_
+                                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
+                                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
+                                    "Vorherige Phase"
 
         h1_   [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] . toHtml $ phaseName phase
@@ -152,12 +160,6 @@ viewTopicHeaderDiv ctx topic tab = do
                 PhaseJury         -> delegateVoteButton
                 PhaseVoting     _ -> delegateVoteButton
                 PhaseResult       -> nil
-
-            when (CanPhaseBackwardTopic `elem` caps) $
-                postLink_
-                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
-                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
-                    "Vorherige Phase"
 
         div_ [class_ "heroic-tabs"] $ do
             let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
