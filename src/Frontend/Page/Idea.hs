@@ -241,8 +241,8 @@ instance ToHtml IdeaVoteLikeBars where
             Nothing                  -> toHtml $ likeBar likeButtons
             Just (PhaseRefinement _) -> nil
             Just PhaseJury           -> nil
-            Just (PhaseVoting _)     -> toHtml $ voteBar nil
-            Just PhaseResult         -> toHtml $ voteBar voteButtons
+            Just (PhaseVoting _)     -> toHtml $ voteBar voteButtons
+            Just PhaseResult         -> toHtml $ voteBar nil
 
 
 
