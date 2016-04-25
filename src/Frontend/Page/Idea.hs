@@ -250,7 +250,7 @@ instance ToHtml IdeaVoteLikeBars where
                     voteButton vote No      "dagegen"
                 else nil
               where
-                vote = userSVoteOnIdea user idea
+                vote = userVoteOnIdea user idea
 
             -- FIXME: The button for the selected vote value is white.
             -- Should it be in other color?

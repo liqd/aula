@@ -29,7 +29,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
-import Data.Map as Map (Map, fromList, lookup)
+import Data.Map as Map (Map, fromList)
 import Data.Maybe (mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
@@ -1133,9 +1133,9 @@ isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
 
-userSVoteOnIdea:: User -> Idea -> Maybe IdeaVoteValue
-userSVoteOnIdea u i =
-    view ideaVoteValue <$> Map.lookup (u ^. _Id) (i ^. ideaVotes)
+userVoteOnIdea :: User -> Idea -> Maybe IdeaVoteValue
+userVoteOnIdea user idea =
+    idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue
 
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation
