@@ -85,7 +85,7 @@ instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdeas _ctx whatPage loc ideasQuery []) = semanticDiv p $ do
         ideaListHeader whatPage loc ideasQuery
-        p_ . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
+        div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
       where
         mCatInfo :: Maybe ST
         mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> (ideasQuery ^. ideasQueryF)
