@@ -52,6 +52,7 @@ data ListInfoForIdea = ListInfoForIdea
     { _listInfoForIdeaIt     :: Idea
     , _listInfoForIdeaPhase  :: Maybe Phase
     , _listInfoForIdeaQuorum :: Int
+    , _listInfoForIdeaNoOfVoters :: Int
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -66,7 +67,8 @@ getListInfoForIdea idea = do
         <- case idea ^. ideaMaybeTopicId of
             Nothing -> pure Nothing
             Just tid -> Just <$> (maybe404 =<< findTopic tid)
-    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) quVotesRequired
+    voters <- length <$> getVotersForIdea idea
+    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) quVotesRequired voters
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent

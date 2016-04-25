@@ -218,6 +218,8 @@ type IdeaApi
   :<|> Idea ::> "like" :> PostH
        -- vote on an idea
   :<|> Idea ::> IdeaVoteValue ::> PostH
+       -- remove vote from idea
+  :<|> Idea ::> User ::> "remove" :> PostH
        -- comment on an idea
   :<|> Idea ::> "comment" :> FormHandler CommentIdea
        -- API specific to one comment
@@ -257,6 +259,7 @@ ideaApi loc
   :<|> form . Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteIdea
+  :<|> Action.removeVote
   :<|> (form . Page.commentIdea loc)
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea

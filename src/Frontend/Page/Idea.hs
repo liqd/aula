@@ -105,7 +105,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -192,7 +192,7 @@ instance ToHtml ViewIdea where
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars caps
-                (ViewIdea _ctx (ListInfoForIdea idea phase quo))) = semanticDiv p $ do
+                (ViewIdea ctx (ListInfoForIdea idea phase quo voters))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 toHtml (QuorumBar $ percentLikes idea quo)
@@ -214,27 +214,44 @@ instance ToHtml IdeaVoteLikeBars where
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
                 span_ [class_ "progress-bar m-against"] $ do
+                    let per = percentage (on (/) double yesVotes voters)
                     span_ [ class_ "progress-bar-progress"
-                            -- FIXME: dummy data (some of this has been solved for idea-as-list-item in Core.)
-                          , style_ "width: 75%"
+                          , style_ . cs $ concat ["width: ", show per, "%"]
                           ] $ do
                         span_ [class_ "progress-bar-votes-for"]     $ toHtml (show yesVotes)
                         span_ [class_ "progress-bar-votes-against"] $ toHtml (show noVotes)
                 bs
               where
-                yesVotes :: Int = 6
-                noVotes  :: Int = 12
+                double :: Int -> Double
+                double = fromIntegral
+
+                votes = idea ^. ideaVotes
+                yesVotes = countIdeaVotes Yes votes
+                noVotes  = countIdeaVotes No  votes
+
+            user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
             voteButtons = if CanVote `elem` caps
                 then div_ [class_ "voting-buttons"] $ do
-                    voteButton Yes     "dafür"
-                    voteButton Neutral "neutral"
-                    voteButton No      "dagegen"
+                    voteButton vote Yes     "dafür"
+                    voteButton vote Neutral "neutral"
+                    voteButton vote No      "dagegen"
                 else nil
+              where
+                vote = userSVoteOnIdea user idea
 
-            voteButton v =
-                postButton_ [class_ "btn-cta voting-button"]
+            -- FIXME: The button for the selected vote value is white.
+            -- Should it be in other color?
+            voteButton (Just w) v | w == v =
+                postButton_ [class_ "btn voting-button"
+                            , onclickJs jsReloadOnClick
+                            ]
+                            (U.removeVote idea user)
+            voteButton _        v =
+                postButton_ [class_ "btn-cta voting-button"
+                            , onclickJs jsReloadOnClick
+                            ]
                             (U.voteIdea idea v)
 
         case phase of
@@ -243,7 +260,6 @@ instance ToHtml IdeaVoteLikeBars where
             Just PhaseJury           -> nil
             Just (PhaseVoting _)     -> toHtml $ voteBar voteButtons
             Just PhaseResult         -> toHtml $ voteBar nil
-
 
 
 instance FormPage CreateIdea where

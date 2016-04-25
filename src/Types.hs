@@ -29,7 +29,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
-import Data.Map (Map, fromList)
+import Data.Map as Map (Map, fromList, lookup)
 import Data.Maybe (mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
@@ -82,6 +82,9 @@ toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
+
+percentage :: (RealFrac f) => f -> Int
+percentage x = round (100 * x)
 
 type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
 type CSI' s a = CSI s s a a
@@ -1132,6 +1135,10 @@ ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
 isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
+
+userSVoteOnIdea:: User -> Idea -> Maybe IdeaVoteValue
+userSVoteOnIdea u i =
+    view ideaVoteValue <$> Map.lookup (u ^. _Id) (i ^. ideaVotes)
 
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation
