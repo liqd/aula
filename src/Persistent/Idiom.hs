@@ -68,7 +68,7 @@ getListInfoForIdea idea = do
             Nothing -> do
                 dbIsFrozen <- view dbFrozen
                 return $ Just $ if dbIsFrozen
-                                then PhaseWildIdeaFrozen
+                                then PhaseWildFrozen
                                 else PhaseWildIdea
             Just tid -> view topicPhase <$$> findTopic tid
     voters <- length <$> getVotersForIdea idea

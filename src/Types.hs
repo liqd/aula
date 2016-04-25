@@ -444,7 +444,7 @@ instance SOP.Generic EditTopicData
 -- constructor for that here.)
 data Phase =
     PhaseWildIdea
-  | PhaseWildIdeaFrozen
+  | PhaseWildFrozen
   | PhaseRefinement { _refPhaseEnd :: Timestamp }
                                -- ^ 2. "Ausarbeitungsphase"
   | PhaseRefFrozen  { _refPhaseLeftover :: Double }
@@ -460,14 +460,14 @@ instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
-    PhaseWildIdea       -> ""
-    PhaseWildIdeaFrozen -> ""
-    PhaseRefinement{}   -> "Ausarbeitungsphase"
-    PhaseRefFrozen{}    -> "Ausarbeitungsphase"
-    PhaseJury           -> "Prüfungsphase"
-    PhaseVoting{}       -> "Abstimmungsphase"
-    PhaseVotFrozen{}    -> "Abstimmungsphase"
-    PhaseResult         -> "Ergebnisphase"
+    PhaseWildIdea     -> ""
+    PhaseWildFrozen   -> ""
+    PhaseRefinement{} -> "Ausarbeitungsphase"
+    PhaseRefFrozen{}  -> "Ausarbeitungsphase"
+    PhaseJury         -> "Prüfungsphase"
+    PhaseVoting{}     -> "Abstimmungsphase"
+    PhaseVotFrozen{}  -> "Abstimmungsphase"
+    PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
 followsPhase PhaseJury       (PhaseRefinement _) = True

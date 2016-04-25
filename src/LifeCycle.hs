@@ -105,14 +105,14 @@ moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 
 phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
 phaseCap u r i p = case p of
-    PhaseWildIdea       -> wildIdeaCap i r
-    PhaseWildIdeaFrozen -> wildIdeaFrozenCap i r
-    PhaseRefinement{}   -> phaseRefinementCap i r
-    PhaseRefFrozen{}    -> phaseRefFrozenCap i r
-    PhaseJury           -> phaseJuryCap i r
-    PhaseVoting{}       -> phaseVotingCap i r
-    PhaseVotFrozen{}    -> phaseVotFrozenCap i r
-    PhaseResult         -> phaseResultCap u i r
+    PhaseWildIdea     -> wildIdeaCap i r
+    PhaseWildFrozen   -> wildFrozenCap i r
+    PhaseRefinement{} -> phaseRefinementCap i r
+    PhaseRefFrozen{}  -> phaseRefFrozenCap i r
+    PhaseJury         -> phaseJuryCap i r
+    PhaseVoting{}     -> phaseVotingCap i r
+    PhaseVotFrozen{}  -> phaseVotFrozenCap i r
+    PhaseResult       -> phaseResultCap u i r
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
@@ -123,8 +123,8 @@ wildIdeaCap _i = \case
     Principal        -> []
     Admin            -> []
 
-wildIdeaFrozenCap :: Idea -> Role -> [IdeaCapability]
-wildIdeaFrozenCap _i = \case
+wildFrozenCap :: Idea -> Role -> [IdeaCapability]
+wildFrozenCap _i = \case
     Student    _clss -> [CanLike, CanComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
