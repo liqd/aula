@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE OverloadedStrings    #-}
 
 module TypesSpec where
 
