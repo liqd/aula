@@ -134,7 +134,7 @@ viewTopicHeaderDiv ctx topic tab = do
                             div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
                                 i_ [class_ "icon-step-forward"] nil
                                 postLink_
-                                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
+                                    [class_ "btn-plain", onclickJs jsReloadOnClick]
                                     (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
                                     "Vorherige Phase"
 
