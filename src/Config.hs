@@ -50,6 +50,8 @@ import System.FilePath ((</>))
 import Thentos.Frontend.CSRF (GetCsrfSecret(..), CsrfSecret(..))
 
 import Logger
+import Types
+
 
 import qualified Paths_aula as Paths
 -- (if you are running ghci and Paths_aula is not available, try `-idist/build/autogen`.)
@@ -81,7 +83,7 @@ makeLenses ''SmtpConfig
 data PersistConfig = PersistConfig
     { _dbPath                  :: String
     , _persistenceImpl         :: PersistenceImpl
-    , _snapshotIntervalMinutes :: Int
+    , _snapshotIntervalMinutes :: Timespan
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
@@ -128,7 +130,7 @@ defaultPersistConfig :: PersistConfig
 defaultPersistConfig = PersistConfig
     { _dbPath                  = "./state/AulaData"
     , _persistenceImpl         = AcidStateInMem
-    , _snapshotIntervalMinutes = 47
+    , _snapshotIntervalMinutes = TimespanMins 47
     }
 
 defaultConfig :: Config

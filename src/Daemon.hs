@@ -23,6 +23,7 @@ import Data.String.Conversions (cs)
 import System.IO (hPutStrLn, stderr)
 
 import Logger
+import Types
 
 
 type SystemLogger = LogEntry -> IO ()
@@ -84,14 +85,14 @@ msgDaemon logger name computation handleException = do
 timeoutDaemon
     :: SystemLogger
     -> String
-    -> Int
+    -> Timespan
     -> IO ()
     -> (SomeException -> IO ())
     -> TimeoutDeamon
-timeoutDaemon logger name delay_us computation handleException = TimeoutDeamon $ do
+timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
     let run = do
             logger . LogEntry INFO . cs $
-                concat ["daemon [", name, "] timed out after ", show delay_us, " us."]
+                concat ["daemon [", name, "] timed out after ", showTimespan delay, "."]
             computation
 
         handle e@(SomeException e') = do
@@ -101,7 +102,7 @@ timeoutDaemon logger name delay_us computation handleException = TimeoutDeamon $
 
     forkIO . forever $ do
         run `catch` handle
-        threadDelay delay_us
+        threadDelay (timespanMs delay)
 
 
 -- * Log Daemon

@@ -30,8 +30,9 @@ import Data.String.Conversions (cs)
 import Config
 import Daemon
 import Logger
-import Persistent.Pure
 import Persistent.Api
+import Persistent.Pure
+import Types
 
 
 mkRunPersistGeneric :: String
@@ -52,8 +53,7 @@ mkRunPersistOnDisk logger cfg =
   where
     opn aulaData = do
         st <- openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
-        let delay_min = cfg ^. persistConfig . snapshotIntervalMinutes
-        let delay_us = delay_min * 1000000 * 60
+        let delay = cfg ^. persistConfig . snapshotIntervalMinutes
 
         let checkpoint = do
                 logger . LogEntry INFO $ cs ("[create acid-state checkpoint, archive]" :: String)
@@ -62,7 +62,7 @@ mkRunPersistOnDisk logger cfg =
         let logException (SomeException e) = do
                 logger . LogEntry ERROR $ cs ("error creating checkpoint or archiving changelog: " <> show e)
 
-        let deamon = timeoutDaemon logger "checkpoint" delay_us checkpoint logException
+        let deamon = timeoutDaemon logger "checkpoint" delay checkpoint logException
         tid <- deamon ^. start
         pure (st, tid)
 
