@@ -103,6 +103,7 @@ module Persistent.Pure
     , dbClassQuorum
     , dbDurations
     , dbQuorums
+    , dbFrozen
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
@@ -728,9 +729,11 @@ editIdea ideaId = modifyIdea ideaId . newIdea
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums
+dbFrozen    :: Lens' AulaData Bool
 
 dbDurations = dbSettings . durations
 dbQuorums   = dbSettings . quorums
+dbFrozen    = dbSettings . frozen
 
 dbElaborationDuration :: Lens' AulaData DurationDays
 dbVoteDuration        :: Lens' AulaData DurationDays

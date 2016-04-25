@@ -50,7 +50,7 @@ getVotersForIdea idea = filter hasAccess <$> getActiveUsers
 -- reached.
 data ListInfoForIdea = ListInfoForIdea
     { _listInfoForIdeaIt         :: Idea
-    , _listInfoForIdeaPhase      :: Maybe Phase
+    , _listInfoForIdeaPhase      :: Phase
     , _listInfoForIdeaQuorum     :: Int
     , _listInfoForIdeaNoOfVoters :: Int
     }
@@ -63,12 +63,16 @@ getListInfoForIdea idea = do
     vs <- getVotersForIdea idea
     quPercent <- quorum idea
     let quVotesRequired = length vs * quPercent `div` 100
-    mtopic :: Maybe Topic
-        <- case idea ^. ideaMaybeTopicId of
-            Nothing -> pure Nothing
-            Just tid -> Just <$> (maybe404 =<< findTopic tid)
+    phase :: Phase
+        <- maybe404 =<< case idea ^. ideaMaybeTopicId of
+            Nothing -> do
+                dbIsFrozen <- view dbFrozen
+                return $ Just $ if dbIsFrozen
+                                then PhaseWildIdeaFrozen
+                                else PhaseWildIdea
+            Just tid -> view topicPhase <$$> findTopic tid
     voters <- length <$> getVotersForIdea idea
-    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) quVotesRequired voters
+    pure $ ListInfoForIdea idea phase quVotesRequired voters
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent

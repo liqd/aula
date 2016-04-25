@@ -443,7 +443,8 @@ instance SOP.Generic EditTopicData
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseWildIdeaFrozen
+    PhaseWildIdea
+  | PhaseWildIdeaFrozen
   | PhaseRefinement { _refPhaseEnd :: Timestamp }
                                -- ^ 2. "Ausarbeitungsphase"
   | PhaseRefFrozen  { _refPhaseLeftover :: Double }
@@ -459,13 +460,14 @@ instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
+    PhaseWildIdea       -> ""
     PhaseWildIdeaFrozen -> ""
-    PhaseRefinement _ -> "Ausarbeitungsphase"
-    PhaseRefFrozen _  -> "Ausarbeitungsphase"
-    PhaseJury         -> "Prüfungsphase"
-    PhaseVoting     _ -> "Abstimmungsphase"
-    PhaseVotFrozen  _ -> "Abstimmungsphase"
-    PhaseResult       -> "Ergebnisphase"
+    PhaseRefinement{}   -> "Ausarbeitungsphase"
+    PhaseRefFrozen{}    -> "Ausarbeitungsphase"
+    PhaseJury           -> "Prüfungsphase"
+    PhaseVoting{}       -> "Abstimmungsphase"
+    PhaseVotFrozen{}    -> "Abstimmungsphase"
+    PhaseResult         -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
 followsPhase PhaseJury       (PhaseRefinement _) = True

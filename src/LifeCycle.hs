@@ -91,9 +91,9 @@ data IdeaCapability
 
 instance SOP.Generic IdeaCapability
 
-ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
-ideaCapabilities u r i mp =
-       phaseCap u r i mp
+ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
+ideaCapabilities u r i p =
+       phaseCap u r i p
     <> editCap u r i
     <> moveBetweenTopicsCap r
 
@@ -103,16 +103,16 @@ editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
 moveBetweenTopicsCap :: Role -> [IdeaCapability]
 moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 
-phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
-phaseCap _ r i Nothing  = wildIdeaCap i r
-phaseCap u r i (Just p) = case p of
+phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
+phaseCap u r i p = case p of
+    PhaseWildIdea       -> wildIdeaCap i r
     PhaseWildIdeaFrozen -> wildIdeaFrozenCap i r
-    PhaseRefinement _ -> phaseRefinementCap i r
-    PhaseRefFrozen _  -> phaseRefFrozenCap i r
-    PhaseJury         -> phaseJuryCap i r
-    PhaseVoting     _ -> phaseVotingCap i r
-    PhaseVotFrozen _  -> phaseVotFrozenCap i r
-    PhaseResult       -> phaseResultCap u i r
+    PhaseRefinement{}   -> phaseRefinementCap i r
+    PhaseRefFrozen{}    -> phaseRefFrozenCap i r
+    PhaseJury           -> phaseJuryCap i r
+    PhaseVoting{}       -> phaseVotingCap i r
+    PhaseVotFrozen{}    -> phaseVotFrozenCap i r
+    PhaseResult         -> phaseResultCap u i r
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case

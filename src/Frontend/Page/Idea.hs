@@ -153,14 +153,14 @@ instance ToHtml ViewIdea where
                         numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
 
                 case phase of
-                    Nothing                  -> l >> c
-                    Just PhaseWildIdeaFrozen -> l >> c
-                    Just PhaseRefinement{}   -> c
-                    Just PhaseRefFrozen{}    -> c
-                    Just PhaseJury           -> c
-                    Just PhaseVoting{}       -> v >> c
-                    Just PhaseVotFrozen{}    -> v >> c
-                    Just PhaseResult         -> v >> c
+                    PhaseWildIdea       -> l >> c
+                    PhaseWildIdeaFrozen -> l >> c
+                    PhaseRefinement{}   -> c
+                    PhaseRefFrozen{}    -> c
+                    PhaseJury           -> c
+                    PhaseVoting{}       -> v >> c
+                    PhaseVotFrozen{}    -> v >> c
+                    PhaseResult         -> v >> c
 
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
@@ -303,14 +303,14 @@ instance ToHtml IdeaVoteLikeBars where
                             (U.voteIdea idea v)
 
         case phase of
-            Nothing                  -> toHtml $ likeBar likeButtons
-            Just PhaseWildIdeaFrozen -> toHtml $ likeBar likeButtons
-            Just PhaseRefinement{}   -> nil
-            Just PhaseRefFrozen{}    -> nil
-            Just PhaseJury           -> nil
-            Just PhaseVoting{}       -> toHtml $ voteBar voteButtons
-            Just PhaseVotFrozen{}    -> toHtml $ voteBar nil
-            Just PhaseResult         -> toHtml $ voteBar nil
+            PhaseWildIdea       -> toHtml $ likeBar likeButtons
+            PhaseWildIdeaFrozen -> toHtml $ likeBar likeButtons
+            PhaseRefinement{}   -> nil
+            PhaseRefFrozen{}    -> nil
+            PhaseJury           -> nil
+            PhaseVoting{}       -> toHtml $ voteBar voteButtons
+            PhaseVotFrozen{}    -> toHtml $ voteBar nil
+            PhaseResult         -> toHtml $ voteBar nil
 
 
 instance FormPage CreateIdea where

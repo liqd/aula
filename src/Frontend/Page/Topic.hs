@@ -160,6 +160,7 @@ viewTopicHeaderDiv ctx topic tab = do
                       "Stimme Beauftragen"
 
             case phase of
+                PhaseWildIdea -> error "TODO"
                 PhaseWildIdeaFrozen -> error "TODO"
                 PhaseRefinement _ -> createIdeaButton >> delegateVoteButton
                 PhaseRefFrozen  _ -> createIdeaButton >> delegateVoteButton
@@ -179,6 +180,7 @@ viewTopicHeaderDiv ctx topic tab = do
               -- forth between delegation and idea tabs, either.
 
             case phase of
+                PhaseWildIdea -> error "TODO"
                 PhaseWildIdeaFrozen -> error "TODO"
                 PhaseRefinement _ -> t1
                 PhaseRefFrozen  _ -> t1
