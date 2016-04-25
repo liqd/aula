@@ -213,21 +213,34 @@ instance ToHtml IdeaVoteLikeBars where
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
-                span_ [class_ "progress-bar m-against"] $ do
-                    let per = percentage (on (/) double yesVotes voters)
+                span_ [class_ "progress-bar"] $ do
+                    span_ [ class_ "progress-bar-votes-for"
+                          , style_ . cs $ concat ["width: ", show yesPercent, "%"]
+                          ] nil
+                    span_ [ class_ "progress-bar-votes-against"
+                          , style_ . cs $ concat ["width: ", show noPercent, "%"]
+                          ] nil
                     span_ [ class_ "progress-bar-progress"
-                          , style_ . cs $ concat ["width: ", show per, "%"]
-                          ] $ do
-                        span_ [class_ "progress-bar-votes-for"]     $ toHtml (show yesVotes)
-                        span_ [class_ "progress-bar-votes-against"] $ toHtml (show noVotes)
+                          , style_ . cs $ concat ["width: ", show (100 - yesPercent - noPercent), "%"]
+                          ] nil
+
+                    -- FIXME: what i want is this:
+                    --
+                    -- [progress-bar..........................................]
+                    -- [[yes...][no............][no vote cast................]]
+                    --
+                    -- but obviously this doesn't work.  time for css hackers to take over?
+
                 bs
               where
+                votes      = idea ^. ideaVotes
+                yesVotes   = countIdeaVotes Yes votes
+                noVotes    = countIdeaVotes No  votes
+                yesPercent = percentage (on (/) double yesVotes voters)
+                noPercent  = percentage (on (/) double noVotes  voters)
+
                 double :: Int -> Double
                 double = fromIntegral
-
-                votes = idea ^. ideaVotes
-                yesVotes = countIdeaVotes Yes votes
-                noVotes  = countIdeaVotes No  votes
 
             user = ctx ^. renderContextUser
 
