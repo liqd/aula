@@ -28,12 +28,11 @@ import Types
 
 type SystemLogger = LogEntry -> IO ()
 
--- | The daemon is implemented as a thread. With the _start
--- one can start a new daemon of a given kind.
+-- | The daemon is implemented as a thread.  `_msgDaemonStart` starts a new daemon.
 --
--- For the message all the daemon instances started with the
--- same method will listen on the same message channel.
-
+-- All implementations of `_msgDaemonStart` can be called several times.  The deamon threads thus
+-- created share one channel and will race each other for the messages.  Use this to start up
+-- concurrent threads if message handling takes a long time, and would otherwise block the channel.
 data MsgDaemon a = MsgDaemon
     { _msgDaemonStart :: IO ThreadId
     , _msgDaemonSend  :: a -> IO ()
