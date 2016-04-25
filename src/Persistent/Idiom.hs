@@ -49,9 +49,9 @@ getVotersForIdea idea = filter hasAccess <$> getActiveUsers
 -- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
 -- reached.
 data ListInfoForIdea = ListInfoForIdea
-    { _listInfoForIdeaIt     :: Idea
-    , _listInfoForIdeaPhase  :: Maybe Phase
-    , _listInfoForIdeaQuorum :: Int
+    { _listInfoForIdeaIt         :: Idea
+    , _listInfoForIdeaPhase      :: Maybe Phase
+    , _listInfoForIdeaQuorum     :: Int
     , _listInfoForIdeaNoOfVoters :: Int
     }
   deriving (Eq, Ord, Show, Read, Generic)
