@@ -497,6 +497,9 @@ arbMaybe g = oneof [pure Nothing, Just <$> g]
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
 
+instance Arbitrary Timespan where
+    arbitrary = garbitrary
+
 
 -- * arbitrary readable text
 

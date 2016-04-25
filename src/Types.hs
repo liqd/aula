@@ -774,6 +774,8 @@ data Timespan =  -- FIXME: import this from thentos?  create a package thentos-b
   | TimespanDays  Integer
   deriving (Eq, Ord, Show, Read, Generic)
 
+instance SOP.Generic Timespan
+
 showTimespan :: Timespan -> String
 showTimespan (TimespanUs    i) = show i <> "us"
 showTimespan (TimespanMs    i) = show i <> "ms"

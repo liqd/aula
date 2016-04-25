@@ -32,6 +32,10 @@ spec = do
         it "parseTimestamp should fail on noise" . property $
             isNothing . parseTimestamp . (<> "noise") . showTimestamp
 
+    describe "Timespan" $ do
+        it "aeson encode and decode are inverses" . property $
+            \x -> Aeson.decode (Aeson.encode x) == Just (x :: Timespan)
+
     when beThorough $ do
         describe "DelegationNetwork" $ do
             it "generates" . property $
