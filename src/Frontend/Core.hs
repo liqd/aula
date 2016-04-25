@@ -63,7 +63,7 @@ module Frontend.Core
     , listIdeasWithQuery
 
       -- * js glue
-    , JsCallback(..), onclickJs
+    , JsCallback, onclickJs, jsReloadOnClick, jsReloadOnClickAnchor
     )
   where
 
@@ -572,11 +572,18 @@ listIdeasWithQuery loc (IdeasQuery qf qs) =
 -- * js glue
 
 data JsCallback =
-    JsReloadOnClick ST
+    JsReloadOnClick (Maybe ST)
   deriving (Eq, Ord, Show, Read)
 
+jsReloadOnClick :: JsCallback
+jsReloadOnClick = JsReloadOnClick Nothing
+
+jsReloadOnClickAnchor :: ST -> JsCallback
+jsReloadOnClickAnchor = JsReloadOnClick . Just
+
 onclickJs :: JsCallback -> Attribute
-onclickJs (JsReloadOnClick hash) = Lucid.onclick_ $ "reloadOnClick(" <> cs (show hash) <> ")"
+onclickJs (JsReloadOnClick hash) =
+    Lucid.onclick_ $ "reloadOnClick(" <> maybe nil (cs . show) hash <> ")"
 
 
 -- * lenses

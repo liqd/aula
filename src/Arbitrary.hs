@@ -121,7 +121,7 @@ instance Arbitrary ViewTopic where
     arbitrary = do
         tab <- arb
         case tab of
-            TabDelegation -> ViewTopicDelegations <$> arb <*> arb
+            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb
             _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
 
 instance Arbitrary ViewIdea where
@@ -192,6 +192,9 @@ instance Arbitrary AdminEditClass where
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
+
+instance Arbitrary AdminPhaseChange where
+    arbitrary = pure AdminPhaseChange
 
 instance Arbitrary PageDelegateVote where
     arbitrary = pure PageDelegateVote

@@ -106,6 +106,7 @@ module Persistent.Pure
     , addDelegation
     , findDelegationsByContext
     , addIdeaJuryResult
+    , removeIdeaJuryResult
     , addIdeaVoteResult
     , editIdea
     , deleteComment
@@ -567,6 +568,9 @@ instance FromProto IdeaJuryResult where
 addIdeaJuryResult :: AUID Idea -> AddDb IdeaJuryResult
 addIdeaJuryResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaJuryResult)
+
+removeIdeaJuryResult :: AUID Idea -> AUpdate ()
+removeIdeaJuryResult iid = modifyIdea iid (set ideaJuryResult Nothing)
 
 instance FromProto IdeaVoteResult where
     fromProto = flip IdeaVoteResult

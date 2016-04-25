@@ -5,6 +5,19 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module LifeCycle
+      -- * phase transition
+    ( PhaseChange(..)
+    , PhaseAction(..)
+    , phaseTrans
+
+      -- * capabilities
+    , IdeaCapability(..)
+    , ideaCapabilities
+    , CommentCapability(..)
+    , commentCapabilities
+    , TopicCapability(..)
+    , topicCapabilities
+    )
 where
 
 import Control.Lens
@@ -22,11 +35,13 @@ data PhaseChange
     | RefinementPhaseMarkedByModerator
     | AllIdeasAreMarked Timestamp
     | VotingPhaseTimeOut
+    | VotingPhaseSetbackToJuryPhase
   deriving (Eq, Show)
 
 data PhaseAction
     = JuryPhasePrincipalEmail
     | ResultPhaseModeratorEmail
+    | UnmarkAllIdeas
     -- FIXME: Add more action here.
   deriving (Eq, Show)
 
@@ -40,6 +55,8 @@ phaseTrans PhaseJury (AllIdeasAreMarked newPhaseDuration)
     = Just (PhaseVoting newPhaseDuration, [])
 phaseTrans (PhaseVoting _) VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
+phaseTrans (PhaseVoting _) VotingPhaseSetbackToJuryPhase
+    = Just (PhaseJury, [UnmarkAllIdeas])
 phaseTrans _ _ = Nothing
 
 
@@ -148,6 +165,9 @@ isFeasibleIdea _
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
 
+
+-- * Comment Capabilities
+
 -- These capabilities are specific to a particular comment. Using IdeaCapability would
 -- be too coarse and would not allow distinguish that authors can delete only their own
 -- comments.
@@ -167,3 +187,19 @@ commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
 commentCapabilities uid role comment =
     [CanDeleteComment | canDeleteComment uid role comment ] <>
     [CanReplyComment  | not $ comment ^. commentDeleted   ]
+
+
+-- * Topic capabilities
+
+-- FIXME: Extend the list
+data TopicCapability
+    = CanPhaseForwardTopic
+    | CanPhaseBackwardTopic
+  deriving (Eq, Show)
+
+topicCapabilities :: Role -> Phase -> [TopicCapability]
+topicCapabilities Admin (PhaseRefinement _) = [CanPhaseForwardTopic]
+topicCapabilities Admin PhaseJury           = [CanPhaseForwardTopic]
+topicCapabilities Admin (PhaseVoting _)     = [CanPhaseForwardTopic, CanPhaseBackwardTopic]
+topicCapabilities Admin PhaseResult         = []
+topicCapabilities _     _                   = []

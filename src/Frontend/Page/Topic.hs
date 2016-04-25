@@ -25,6 +25,7 @@ import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestam
 import Control.Exception (assert)
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
+import LifeCycle (TopicCapability(..), topicCapabilities)
 
 import qualified Action (createTopic)
 import qualified Frontend.Path as U
@@ -53,7 +54,7 @@ makePrisms ''ViewTopicTab
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
   = ViewTopicIdeas RenderContext ViewTopicTab Topic ListItemIdeas
-  | ViewTopicDelegations Topic [Delegation]
+  | ViewTopicDelegations RenderContext Topic [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page ViewTopic where
@@ -96,20 +97,21 @@ tabLink topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
-    toHtml p@(ViewTopicDelegations topic delegations) = semanticDiv p $ do
-        viewTopicHeaderDiv topic TabDelegation
+    toHtml p@(ViewTopicDelegations ctx topic delegations) = semanticDiv p $ do
+        viewTopicHeaderDiv ctx topic TabDelegation
         -- related: Frontend.Page.User.renderDelegations
         -- FIXME: implement!
         pre_ $ topic ^. showed . html
         pre_ $ delegations ^. showed . html
 
-    toHtml p@(ViewTopicIdeas _ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
-        assert (tab /= TabDelegation) $ viewTopicHeaderDiv topic tab
+    toHtml p@(ViewTopicIdeas ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
+        assert (tab /= TabDelegation) $ viewTopicHeaderDiv ctx topic tab
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
-viewTopicHeaderDiv :: Monad m => Topic -> ViewTopicTab -> HtmlT m ()
-viewTopicHeaderDiv topic tab = do
+viewTopicHeaderDiv :: Monad m => RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
+viewTopicHeaderDiv ctx topic tab = do
+    let caps = topicCapabilities (ctx ^. renderContextUser . userRole) phase
     div_ [class_ "topic-header"] $ do
         header_ [class_ "detail-header"] $ do
             a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
@@ -141,6 +143,17 @@ viewTopicHeaderDiv topic tab = do
                 PhaseJury         -> delegateVoteButton
                 PhaseVoting     _ -> delegateVoteButton
                 PhaseResult       -> nil
+
+            when (CanPhaseForwardTopic `elem` caps) $
+                postLink_
+                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
+                    (U.Admin $ U.AdminTopicNextPhase topicId)
+                    "Nächste Phase"
+            when (CanPhaseBackwardTopic `elem` caps) $
+                postLink_
+                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
+                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
+                    "Vorherige Phase"
 
         div_ [class_ "heroic-tabs"] $ do
             let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
@@ -259,9 +272,8 @@ viewTopic tab topicId = do
         topic <- maybe404 =<< findTopic topicId
         case tab of
             TabDelegation ->
-              do
-                delegations <- findDelegationsByContext $ DlgCtxTopicId topicId
-                pure $ ViewTopicDelegations topic delegations
+                ViewTopicDelegations ctx topic
+                    <$> findDelegationsByContext (DlgCtxTopicId topicId)
             _ ->
               do
                 let loc = topicIdeaLocation topic

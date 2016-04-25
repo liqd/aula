@@ -86,6 +86,11 @@ data AdminEditClass = AdminEditClass SchoolClass [UserView]
 
 instance Page AdminEditClass
 
+data AdminPhaseChange = AdminPhaseChange
+  deriving (Eq, Show, Read)
+
+instance Page AdminPhaseChange
+
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
@@ -116,6 +121,7 @@ data MenuItem
     | MenuItemUsers
     | MenuItemClassesAndUsers
     | MenuItemEventsProtocol
+    | MenuItemPhaseChange
   deriving (Eq, Show)
 
 class ToMenuItem t where
@@ -155,6 +161,8 @@ instance ToMenuItem AdminEditClass where
 instance ToMenuItem PageAdminSettingsEventsProtocol where
     toMenuItem _ = MenuItemEventsProtocol
 
+instance ToMenuItem AdminPhaseChange where
+    toMenuItem _ = MenuItemPhaseChange
 
 -- * templates
 
@@ -178,6 +186,7 @@ adminFrame t bdy = do
                     else do
                         li_ [] $ menulink tab MenuItemClassesAndUsers
                 li_ [] $ menulink tab MenuItemEventsProtocol
+                li_ [] $ menulink tab MenuItemPhaseChange
     div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem [t]
@@ -209,6 +218,8 @@ menulink' targetMenuItem =
         -> MenuLink "tab-groups-perms"       U.AdminViewUsers "Gruppen & Nutzer"
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
+    MenuItemPhaseChange
+        -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
@@ -631,6 +642,58 @@ adminCreateClass = FormPageHandler (pure AdminCreateClass) q
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = Markdown nil
             }
+
+adminPhaseChange
+    :: forall m . (ActionM m)
+    => FormPageHandler m AdminPhaseChange
+adminPhaseChange = FormPageHandler
+    { _formGetPage   = pure AdminPhaseChange
+    , _formProcessor = \(AdminPhaseChangeForTopicData tid dir) -> case dir of
+            Forward -> Action.topicForceNextPhase tid
+            Backward -> Action.topicInVotingResetToJury tid
+    }
+
+data PhaseChangeDir = Forward | Backward
+  deriving (Eq, Show)
+
+instance ToHtml PhaseChangeDir where
+    toHtmlRaw = toHtml
+    toHtml Forward  = "vorwärts"
+    toHtml Backward = "zurück"
+
+data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
+
+-- FIXME: if we keep this, there needs to be some sort of feedback to the admin what happened with
+-- the phase change.  we could redirect to a page showing a message of the form "topic with title
+-- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
+-- session state that gets flushed and appended to the digestive functors errors implicitly whenever
+-- we show a form.
+--
+-- FIXME: Add test
+instance FormPage AdminPhaseChange where
+    type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
+
+    formAction _   = U.Admin U.AdminChangePhase
+    redirectOf _ _ = U.Admin U.AdminChangePhase
+
+    -- | Generates a Html view from the given page
+    makeForm _ =
+        AdminPhaseChangeForTopicData
+            <$> ((AUID . read . cs) <$> "topic-id" .: DF.text Nothing)
+            <*> (                       "dir"      .: DF.choice choices Nothing)
+      where
+        choices = map (id &&& toHtml) [Forward, Backward]
+
+    formPage v form p = adminFrame p . semanticDiv p $ do
+        h3_ "Phasen verschieben"
+        form $ do
+            div_ $ do
+                p_ "ID-Nummer der Themas aus der URL"
+                DF.inputText "topic-id" v
+            div_ $ do
+                p_ "Vorwärts/Rückwärts"
+                DF.inputSelect "dir" v
+            DF.inputSubmit "Verschieben!"
 
 
 -- * csv file handling
