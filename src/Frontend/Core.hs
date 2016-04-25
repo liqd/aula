@@ -70,7 +70,7 @@ module Frontend.Core
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
-import Control.Monad (replicateM_)
+import Control.Monad (replicateM_, when)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String.Conversions
 import Data.Typeable
@@ -472,10 +472,11 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                                 . a_ [href_ P.UserSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.Admin P.AdminDuration] $ do
-                                i_ [class_ "pop-menu-list-icon icon-bolt"] nil
-                                "Prozessverwaltung"
+                            when (usr ^. userRole == Admin) .
+                                li_ [class_ "pop-menu-list-item"]
+                                    . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                                    i_ [class_ "pop-menu-list-icon icon-bolt"] nil
+                                    "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ P.Logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
