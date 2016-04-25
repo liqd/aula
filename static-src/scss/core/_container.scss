@@ -71,3 +71,10 @@ body.m-shadow {
         padding: 0;
     }
 }
+
+.container-not-found {
+    @include rem(padding, 20px);
+    background: #fff;
+    clear: left;
+    text-align: center;
+}

@@ -121,6 +121,23 @@ viewTopicHeaderDiv ctx topic tab = do
                         a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
                             i_ [class_ "icon-pencil"] nil
                             "Thema bearbeiten"
+                    when (CanPhaseForwardTopic `elem` caps) .
+                        li_ [class_ "pop-menu-list-item m-form"] .
+                            div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                i_ [class_ "icon-step-forward"] nil
+                                postLink_
+                                    [class_ "btn-plain", onclickJs jsReloadOnClick]
+                                    (U.Admin $ U.AdminTopicNextPhase topicId)
+                                    "Nächste Phase"
+                    when (CanPhaseBackwardTopic `elem` caps) .
+                        li_ [class_ "pop-menu-list-item m-form"] .
+                            div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                i_ [class_ "icon-step-forward"] nil
+                                postLink_
+                                    [class_ "btn-plain", onclickJs jsReloadOnClick]
+                                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
+                                    "Vorherige Phase"
+
         h1_   [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] . toHtml $ phaseName phase
             toHtml $ topic ^. topicTitle
@@ -143,17 +160,6 @@ viewTopicHeaderDiv ctx topic tab = do
                 PhaseJury         -> delegateVoteButton
                 PhaseVoting     _ -> delegateVoteButton
                 PhaseResult       -> nil
-
-            when (CanPhaseForwardTopic `elem` caps) $
-                postLink_
-                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
-                    (U.Admin $ U.AdminTopicNextPhase topicId)
-                    "Nächste Phase"
-            when (CanPhaseBackwardTopic `elem` caps) $
-                postLink_
-                    [class_ "pop-menu-list-item", onclickJs jsReloadOnClick]
-                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
-                    "Vorherige Phase"
 
         div_ [class_ "heroic-tabs"] $ do
             let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
