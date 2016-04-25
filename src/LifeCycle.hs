@@ -55,20 +55,30 @@ phaseTrans PhaseRefinement{} RefinementPhaseTimeOut
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
 phaseTrans PhaseRefinement{} RefinementPhaseMarkedByModerator
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseRefinement{_refPhaseEnd} (PhaseFreeze now)
-    = Just (PhaseRefFrozen {_refPhaseLeftover = realToFrac $ unTimestamp _refPhaseEnd `diffUTCTime` unTimestamp now}, [])
-phaseTrans PhaseRefFrozen{_refPhaseLeftover} (PhaseThaw now)
-    = Just (PhaseRefinement {_refPhaseEnd = Timestamp $ realToFrac _refPhaseLeftover `addUTCTime` unTimestamp now}, [])
 phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
     = Just (PhaseVoting _phaseChangeVotPhaseEnd, [])
 phaseTrans PhaseVoting{} VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
 phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
     = Just (PhaseJury, [UnmarkAllIdeas])
+-- Freezing and thawing.
+--
+-- There are no frozen variants of @PhaseJury@ and @PhaseResult@.
+-- Consequently we don't catch illegal phase transitions when they are frozen,
+-- but
+phaseTrans PhaseRefinement{_refPhaseEnd} (PhaseFreeze now)
+    = Just (PhaseRefFrozen {_refPhaseLeftover = realToFrac $ unTimestamp _refPhaseEnd `diffUTCTime` unTimestamp now}, [])
+phaseTrans PhaseRefFrozen{_refPhaseLeftover} (PhaseThaw now)
+    = Just (PhaseRefinement {_refPhaseEnd = Timestamp $ realToFrac _refPhaseLeftover `addUTCTime` unTimestamp now}, [])
+phaseTrans PhaseJury PhaseFreeze{} = Just (PhaseJury, [])
+phaseTrans PhaseJury PhaseThaw{} = Just (PhaseJury, [])
 phaseTrans PhaseVoting{_votPhaseEnd} (PhaseFreeze now)
-    = Just (PhaseVotFrozen {_votPhaseLeftover  =realToFrac $ unTimestamp _votPhaseEnd `diffUTCTime` unTimestamp now}, [])
+    = Just (PhaseVotFrozen {_votPhaseLeftover = realToFrac $ unTimestamp _votPhaseEnd `diffUTCTime` unTimestamp now}, [])
 phaseTrans PhaseVotFrozen{_votPhaseLeftover} (PhaseFreeze now)
     = Just (PhaseVoting {_votPhaseEnd = Timestamp $ realToFrac _votPhaseLeftover `addUTCTime` unTimestamp now}, [])
+phaseTrans PhaseResult PhaseFreeze{} = Just (PhaseResult, [])
+phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
+-- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
 
 

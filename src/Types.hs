@@ -460,8 +460,8 @@ instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
-    PhaseWildIdea     -> ""
-    PhaseWildFrozen   -> ""
+    PhaseWildIdea     -> error "Wild idea name"
+    PhaseWildFrozen   -> error "Wild idea name"
     PhaseRefinement{} -> "Ausarbeitungsphase"
     PhaseRefFrozen{}  -> "Ausarbeitungsphase"
     PhaseJury         -> "Prüfungsphase"
