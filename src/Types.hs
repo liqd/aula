@@ -83,9 +83,6 @@ toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
-percentage :: (RealFrac f) => f -> Int
-percentage x = round (100 * x)
-
 type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
 type CSI' s a = CSI s s a a
 

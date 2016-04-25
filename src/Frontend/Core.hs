@@ -32,7 +32,7 @@ module Frontend.Core
     , tabSelected
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
-    , numLikes, percentLikes
+    , numLikes, percentLikes, numVotes, percentVotes
 
       -- * render context
     , RenderContext(RenderContext), _renderContextUser, renderContextUser
@@ -238,6 +238,17 @@ percentLikes idea numVoters = {- assert c -} v
     v = if numVoters == 0
           then 100
           else (numLikes idea * 100) `div` numVoters
+
+numVotes :: Idea -> IdeaVoteValue -> Int
+numVotes idea vv = countIdeaVotes vv $ idea ^. ideaVotes
+
+percentVotes :: Idea -> Int -> IdeaVoteValue -> Int
+percentVotes idea numVoters vv = {- assert c -} v
+  where
+    -- c = numVoters >= 0 && v >= 0 && v <= 100
+    v = if numVoters == 0
+          then 100
+          else (numVotes idea vv * 100) `div` numVoters
 
 
 -- * render context

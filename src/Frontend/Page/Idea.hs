@@ -224,6 +224,8 @@ instance ToHtml IdeaVoteLikeBars where
                           , style_ . cs $ concat ["width: ", show (100 - yesPercent - noPercent), "%"]
                           ] nil
 
+                    div_ $ toHtml (show (yesVotes, noVotes, yesPercent, noPercent))
+
                     -- FIXME: what i want is this:
                     --
                     -- [progress-bar..........................................]
@@ -233,14 +235,10 @@ instance ToHtml IdeaVoteLikeBars where
 
                 bs
               where
-                votes      = idea ^. ideaVotes
-                yesVotes   = countIdeaVotes Yes votes
-                noVotes    = countIdeaVotes No  votes
-                yesPercent = percentage (on (/) double yesVotes voters)
-                noPercent  = percentage (on (/) double noVotes  voters)
-
-                double :: Int -> Double
-                double = fromIntegral
+                yesVotes   = numVotes idea Yes
+                noVotes    = numVotes idea No
+                yesPercent = percentVotes idea voters Yes
+                noPercent  = percentVotes idea voters No
 
             user = ctx ^. renderContextUser
 
