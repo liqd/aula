@@ -26,7 +26,7 @@ import Config
 
 import Network.Wreq     as X hiding (get, post, put, head_, Proxy, Link)
 import Test.Hspec       as X
-import Action           as X
+import Action           as X hiding (setCreatorStatement)
 import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
