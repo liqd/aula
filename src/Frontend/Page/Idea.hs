@@ -172,8 +172,8 @@ instance ToHtml ViewIdea where
                             ] $ do
                         i_ [class_ "icon-check"] nil
                         if newStatement
-                            then "ADD CREATOR STATEMENT"
-                            else "EDIT CREATOR STATEMENT"
+                            then "Statement abgeben"
+                            else "Statement ändern"
 
             -- creator statement
             maybe
@@ -424,24 +424,23 @@ instance FormPage CreatorStatement where
     type FormPageResult CreatorStatement = ()
 
     formAction (CreatorStatement idea) = U.creatorStatement idea
-
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea Nothing
 
     makeForm (CreatorStatement idea) =
         "statement-text" .: (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
 
     -- FIXME styling
-    -- TODO: Translation
     formPage v form p@(CreatorStatement idea) =
         semanticDiv p $ do
             div_ [class_ "container-creator-statement"] $ do
-                h1_ [class_ "main-heading"] $ "CREATOR STATEMENT FOR " <> idea ^. ideaTitle . html
+                h1_ [class_ "main-heading"] $ "Ansage des Gewinners zur Idee " <> idea ^. ideaTitle . html
                 form $ do
                     label_ $ do
                         span_ [class_ "label-text"] "Was möchtest du sagen?"
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "statement-text" v
                     footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "SAVE STATEMENT"
+                        DF.inputSubmit "Abschicken"
+
 
 -- * handlers
 
