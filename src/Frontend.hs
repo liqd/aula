@@ -234,6 +234,10 @@ type IdeaApi
   :<|> Idea ::> Comment ::> CommentApi
        -- jury an idea
   :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
+       -- mark winner idea
+  :<|> Idea ::> "markwinner" :> PostH
+       -- revoke winner status
+  :<|> Idea ::> "revokewinner" :> PostH
        -- add creator statement
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create wild idea
@@ -273,6 +277,8 @@ ideaApi loc
   :<|> (form . Page.commentIdea loc)
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
+  :<|> flip Action.markIdeaInResultPhase (Winning Nothing)
+  :<|> Action.revokeWinnerStatusOfIdea
   :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
 

@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase    #-}
-{-# LANGUAGE ViewPatterns  #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -149,18 +148,6 @@ phaseResultCap u i = \case
 
 onFeasibleIdea :: Idea -> [IdeaCapability] -> [IdeaCapability]
 onFeasibleIdea i cs = if isFeasibleIdea i then cs else []
-
--- | An alternative implementation with lenses instead of view patterns:
---
--- >>> isFeasibleIdea :: Idea -> Bool
--- >>> isFeasibleIdea idea = case idea ^? ideaResult . _Just . ideaResultValue of
--- >>>     Just (Feasible _) -> True
--- >>>     _ -> False
-isFeasibleIdea :: Idea -> Bool
-isFeasibleIdea (view ideaJuryResult -> (Just (view ideaJuryResultValue -> Feasible _)))
-    = True
-isFeasibleIdea _
-    = False
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy

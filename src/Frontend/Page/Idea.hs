@@ -164,6 +164,7 @@ instance ToHtml ViewIdea where
 
             feasibilityVerdict True idea caps
 
+            -- creator statement
             when (CanAddCreatorStatement `elem` caps) $ do
                 div_ [class_ "creator-statement-button"] $ do
                     button_ [ class_ "btn-cta m-valid"
@@ -177,6 +178,29 @@ instance ToHtml ViewIdea where
             mapM_
                 (div_ [class_ "creator-statement"] . view html)
                 (creatorStatementOfIdea idea)
+
+            -- mark winning idea
+            -- TODO: Translation
+            -- TODO: Styling
+            when (isFeasibleIdea idea) $ do
+                div_ [class_ "winning-idea"] $ do
+                    when (CanMarkWinner `elem` caps) $ do
+                        let winnerButton =
+                                postButton_
+                                    [class_ "btn-cta mark-winner-button"
+                                    , onclickJs jsReloadOnClick
+                                    ]
+
+                        when (isNothing (idea ^. ideaVoteResult)) $
+                            winnerButton (U.markWinnerIdea idea) "Mark as winner!"
+                        when (isWinning idea) $
+                            winnerButton (U.revokeWinnerIdea idea) "Revoke winner!"
+
+                    when (isWinning idea) $
+                        -- FIXME: Style, invalid is a red button
+                        div_ [class_ "btn-cta m-invalid"]
+                            "Winner idea!"
+                    -- FIXME: Add information about not enough votes.
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do

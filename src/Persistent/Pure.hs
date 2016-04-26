@@ -110,6 +110,7 @@ module Persistent.Pure
     , removeIdeaJuryResult
     , setCreatorStatement
     , addIdeaVoteResult
+    , revokeWinnerStatus
     , editIdea
     , deleteComment
     , saveDurations
@@ -591,6 +592,9 @@ instance FromProto IdeaVoteResult where
 addIdeaVoteResult :: AUID Idea -> AddDb IdeaVoteResult
 addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
+
+revokeWinnerStatus :: AUID Idea -> AUpdate ()
+revokeWinnerStatus iid = modifyIdea iid (set ideaVoteResult Nothing)
 
 dbComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> AulaTraversal Comment
 dbComment' iid parents ck =

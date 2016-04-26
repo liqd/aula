@@ -42,6 +42,7 @@ topicTimeoutStory = do
     timeoutTopic topic1
     markIdea idea1 (Right $ Winning Nothing)
     setCreatorStatement idea1 "Winner"
+    revokeWinner idea1
     logout
 
 -- Collection of steps under development, no test design involved.
