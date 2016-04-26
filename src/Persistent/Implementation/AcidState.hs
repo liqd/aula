@@ -19,16 +19,14 @@ module Persistent.Implementation.AcidState
 where
 
 import Control.Concurrent
-import Control.Exception
+import Control.Exception (SomeException(SomeException), handle)
 import Control.Lens
-import Control.Exception (throwIO)
 import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
 import Data.Monoid ((<>))
 import Data.String.Conversions (cs)
 import System.Exit
-import System.IO
 
 import Config
 import Daemon
@@ -77,8 +75,8 @@ mkRunPersistOnDisk logger cfg =
     explainException = handle $ \(SomeException e) -> do
         let msg = "openLocalStateFrom failed: " <> show e
         logger . LogEntry ERROR . cs $ msg
-        hPutStrLn stdout msg  -- if we write this to stderr and a `print` logger is running, the
-                              -- output will be interleaved byte-by-byte.
+        putStrLn msg  -- if we write this to stderr and a `print` logger is running, the
+                      -- output will be interleaved byte-by-byte.
         exitWith $ ExitFailure 1
 
 mkRunPersistInMemory :: IO RunPersist
