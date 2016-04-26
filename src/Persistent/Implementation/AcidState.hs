@@ -19,13 +19,16 @@ module Persistent.Implementation.AcidState
 where
 
 import Control.Concurrent
-import Control.Exception hiding (handle)
+import Control.Exception
 import Control.Lens
+import Control.Exception (throwIO)
 import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
 import Data.Monoid ((<>))
 import Data.String.Conversions (cs)
+import System.Exit
+import System.IO
 
 import Config
 import Daemon
@@ -39,11 +42,11 @@ mkRunPersistGeneric :: String
                     -> (AcidState AulaData -> a -> IO ())
                     -> IO RunPersist
 mkRunPersistGeneric desc openState closeState = do
-    (st, handle) <- openState emptyAulaData
+    (st, h) <- openState emptyAulaData
     pure RunPersist { _rpDesc   = desc
                     , _rpQuery  = query st AskDb
                     , _rpUpdate = update st
-                    , _rpClose  = closeState st handle
+                    , _rpClose  = closeState st h
                     }
 
 mkRunPersistOnDisk :: SendLogMsg -> Config -> IO RunPersist
@@ -51,7 +54,7 @@ mkRunPersistOnDisk logger cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls
   where
     opn aulaData = do
-        st <- openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
+        st <- explainException $ openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
         let delay = cfg ^. persistConfig . snapshotIntervalMinutes
 
         let checkpoint = do
@@ -69,6 +72,14 @@ mkRunPersistOnDisk logger cfg =
     cls st tid = do
         killThread tid
         createCheckpointAndClose st
+
+    explainException :: IO a -> IO a
+    explainException = handle $ \(SomeException e) -> do
+        let msg = "openLocalStateFrom failed: " <> show e
+        logger . LogEntry ERROR . cs $ msg
+        hPutStrLn stdout msg  -- if we write this to stderr and a `print` logger is running, the
+                              -- output will be interleaved byte-by-byte.
+        exitWith $ ExitFailure 1
 
 mkRunPersistInMemory :: IO RunPersist
 mkRunPersistInMemory =
