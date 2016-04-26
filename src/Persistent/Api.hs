@@ -54,6 +54,7 @@ $(makeAcidic ''AulaData
     , 'addIdea
     , 'addIdeaJuryResult
     , 'removeIdeaJuryResult
+    , 'setCreatorStatement
     , 'addIdeaSpaceIfNotExists
     , 'addIdeaVoteResult
     , 'addLikeToIdea
