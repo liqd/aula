@@ -241,13 +241,13 @@ instance ToHtml IdeaVoteLikeBars where
                         span_ [ class_ "progress-bar-progress progress-bar-progress-for"
                               , style_ . cs $ concat ["width: ", show yesPercent, "%"]
                               ] $ do
-                            span_ [class_ "votes"] $ toHtml (show (yesVotes))
+                            span_ [class_ "votes"] $ toHtml (show yesVotes)
                         span_ [ class_ "progress-bar-progress progress-bar-progress-against"
                               , style_ . cs $ concat ["width: ", show noPercent, "%"]
                               ] $ do
-                            span_ [class_ "votes"] $ toHtml (show (noVotes))
+                            span_ [class_ "votes"] $ toHtml (show noVotes)
                         span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
-                            span_ [class_ "votes"] $ toHtml (show (totalVotes))
+                            span_ [class_ "votes"] $ toHtml (show totalVotes)
                 bs
               where
                 yesVotes    = numVotes idea Yes
