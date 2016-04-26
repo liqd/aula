@@ -30,7 +30,7 @@ module Frontend.Path
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
-    , removeVote, creatorStatement
+    , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
     , viewUser
     , anchor
     )
@@ -88,9 +88,11 @@ isPostOnly :: Main -> Bool
 isPostOnly = \case
     IdeaPath _ m ->
         case m of
-            LikeIdea{}     -> True
-            VoteIdea{}     -> True
-            RemoveVote{}   -> True
+            LikeIdea{}         -> True
+            VoteIdea{}         -> True
+            RemoveVote{}       -> True
+            MarkWinnerIdea{}   -> True
+            RevokeWinnerIdea{} -> True
             OnComment _ cm ->
                 case cm of
                     VoteComment{} -> True
@@ -162,6 +164,12 @@ removeVote idea u = IdeaPath (idea ^. ideaLocation) $ RemoveVote (idea ^. _Id) (
 judgeIdea :: Idea -> IdeaJuryResultType -> Main
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 
+markWinnerIdea :: Idea -> Main
+markWinnerIdea idea = IdeaPath (idea ^. ideaLocation) $ MarkWinnerIdea (idea ^. _Id)
+
+revokeWinnerIdea :: Idea -> Main
+revokeWinnerIdea idea = IdeaPath (idea ^. ideaLocation) $ RevokeWinnerIdea (idea ^. _Id)
+
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
@@ -216,6 +224,8 @@ ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
 ideaMode (OnComment ck m)  root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
 ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
+ideaMode (MarkWinnerIdea i)   root = root </> "idea" </> uriPart i </> "markwinner"
+ideaMode (RevokeWinnerIdea i) root = root </> "idea" </> uriPart i </> "revokewinner"
 
 anchor :: IsString s => AUID a -> s
 anchor (AUID c) = fromString $ "auid-" <> show c
@@ -331,6 +341,8 @@ data IdeaMode =
     | RemoveVote (AUID Idea) (AUID User)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentIdea (AUID Idea)
+    | MarkWinnerIdea (AUID Idea)
+    | RevokeWinnerIdea (AUID Idea)
 
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
     -- CommentKey

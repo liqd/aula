@@ -53,6 +53,7 @@ module Action
     , markIdeaInResultPhase
     , removeVote
     , Action.setCreatorStatement
+    , revokeWinnerStatusOfIdea
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -506,6 +507,9 @@ markIdeaInResultPhase iid rv = do
 
 setCreatorStatement :: ActionM m => AUID Idea -> Document -> m ()
 setCreatorStatement = app2 update SetCreatorStatement
+
+revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
+revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 -- * Topic handling
 

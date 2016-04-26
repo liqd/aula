@@ -196,6 +196,17 @@ runClient (Free (CommentIdea t c k)) = do
     postcondition $ checkIdeaComment t c
     runClient k
 
+runClient (Free (RevokeWinner t k)) = do
+    idea <- precondition $ do
+        Just idea <- findIdeaByTitle t
+        let (Just (Winning _x)) = idea ^? ideaVoteResult . _Just . ideaVoteResultValue
+        pure idea
+    step . lift $ Action.revokeWinnerStatusOfIdea (idea ^. _Id)
+    postcondition $ do
+        Just idea' <- findIdeaByTitle t
+        (idea' ^. ideaVoteResult) `shouldBe` Nothing
+    runClient k
+
 runClient (Free (ReplyComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     step . lift $

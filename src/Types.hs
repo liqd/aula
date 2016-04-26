@@ -1188,6 +1188,22 @@ ideaLocationMaybeTopicId f = \case
 ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
 ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
 
+-- | An alternative implementation with lenses instead of view patterns:
+--
+-- >>> isFeasibleIdea :: Idea -> Bool
+-- >>> isFeasibleIdea idea = case idea ^? ideaResult . _Just . ideaResultValue of
+-- >>>     Just (Feasible _) -> True
+-- >>>     _ -> False
+isFeasibleIdea :: Idea -> Bool
+isFeasibleIdea (view ideaJuryResult -> (Just (view ideaJuryResultValue -> Feasible _)))
+    = True
+isFeasibleIdea _
+    = False
+
+isWinning :: Idea -> Bool
+isWinning (view ideaVoteResult -> (Just (view ideaVoteResultValue -> Winning _))) = True
+isWinning _ = False
+
 isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
