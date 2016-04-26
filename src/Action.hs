@@ -120,13 +120,12 @@ import qualified Frontend.Path as U
 
 type StatusMessage = ST
 
--- TODO: Align
 -- | User representation during an action
 data UserState = UserState
     { _usSessionToken :: Maybe ThentosSessionToken
-    , _usCsrfToken :: Maybe CsrfToken
-    , _usUserId :: Maybe (AUID User)
-    , _usMessages :: [StatusMessage]
+    , _usCsrfToken    :: Maybe CsrfToken
+    , _usUserId       :: Maybe (AUID User)
+    , _usMessages     :: [StatusMessage]
     }
   deriving (Show, Eq)
 

@@ -51,12 +51,11 @@ instance Monad m => ActionRandomPassword (DummyT ActionExcept m) where
 instance Monad m => ActionCurrentTimestamp (DummyT ActionExcept m) where
     getCurrentTimestamp = notImplemented "ActionCurrentTimestamp" "getCurrentTimestamp"
 
--- TODO: align
 instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
-    login _     = pure ()
-    logout      = pure ()
-    userState _ = notImplemented "ActionUserHandler" "userState"
-    addMessage _ = notImplemented "ActionUserHandler" "addMessage"
+    login _       = pure ()
+    logout        = pure ()
+    userState _   = notImplemented "ActionUserHandler" "userState"
+    addMessage _  = notImplemented "ActionUserHandler" "addMessage"
     flushMessages = notImplemented "ActionUserHandler" "flushMessage"
 
 instance Monad m => MonadReader ActionEnv (DummyT ActionExcept m) where
