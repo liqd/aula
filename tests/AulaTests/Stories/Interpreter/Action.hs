@@ -270,9 +270,9 @@ runClient (Free (ReportCommentReply t c1 c2 k)) = do
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
-runClient (Free (AddCreatorStatement t s k)) = do
+runClient (Free (SetCreatorStatement t s k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    step . lift . Action.addCreatorStatement (idea ^. _Id) $ Markdown s
+    step . lift . Action.setCreatorStatement (idea ^. _Id) $ Markdown s
     postcondition $ do
         Just idea' <- findIdeaByTitle t
         (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just) `shouldBe` (Just (Markdown s))

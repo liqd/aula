@@ -50,7 +50,7 @@ data Step a where
     ReportComment      :: IdeaTitle -> CommentText -> a -> Step a
     ReportCommentReply :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     DeleteComment      :: IdeaTitle -> CommentText -> a -> Step a
-    AddCreatorStatement :: IdeaTitle -> Statement -> a -> Step a
+    SetCreatorStatement :: IdeaTitle -> Statement -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -123,6 +123,6 @@ deleteComment :: IdeaTitle -> CommentText -> Behavior ()
 deleteComment idea comment =
     liftF $ DeleteComment idea comment ()
 
-addCreatorStatement :: IdeaTitle -> Statement -> Behavior ()
-addCreatorStatement idea statement =
-    liftF $ AddCreatorStatement idea statement ()
+setCreatorStatement :: IdeaTitle -> Statement -> Behavior ()
+setCreatorStatement idea statement =
+    liftF $ SetCreatorStatement idea statement ()

@@ -26,7 +26,7 @@ where
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, equery, mquery, update
               , markIdeaInJuryPhase
-              , addCreatorStatement
+              , setCreatorStatement
               )
 import LifeCycle
 import Frontend.Fragment.Category
@@ -496,4 +496,4 @@ creatorStatement :: ActionM m => AUID Idea -> FormPageHandler m CreatorStatement
 creatorStatement ideaId =
     FormPageHandler
         (CreatorStatement <$> mquery (findIdea ideaId))
-        (Action.addCreatorStatement ideaId)
+        (Action.setCreatorStatement ideaId)
