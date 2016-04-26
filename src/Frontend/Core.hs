@@ -70,7 +70,7 @@ module Frontend.Core
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
-import Control.Monad (replicateM_, void, when)
+import Control.Monad (replicateM_, when)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String.Conversions
 import Data.Typeable
@@ -530,14 +530,15 @@ makePrisms ''Frame
 
 instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
     toHtmlRaw = toHtml
-    toHtml f = pageFrame (f ^. frameBody) (frameBody %~ toHtml $ f)
+    toHtml    = pageFrame
 
 instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
     mimeRender Proxy = cs . ppShow
 
-pageFrame :: (Monad m, Page p) => p -> Frame (HtmlT m a) -> HtmlT m ()
-pageFrame p frame = do
-    let hdrs = extraPageHeaders p
+pageFrame :: (Monad m, Page p, ToHtml p) => Frame p -> HtmlT m ()
+pageFrame frame = do
+    let p = frame ^. frameBody
+        hdrs = extraPageHeaders p
         bodyClasses = extraBodyClasses p
     head_ $ do
         title_ "AuLA"
@@ -551,7 +552,7 @@ pageFrame p frame = do
         div_ [class_ "page-wrapper"] $ do
             div_ [class_ "main-grid-container"] $ do
                 div_ [class_ "grid main-grid"] $ do
-                    void (frame ^. frameBody)
+                    frame ^. frameBody . html
         footerMarkup
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
