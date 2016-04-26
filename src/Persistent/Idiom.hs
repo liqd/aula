@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE Rank2Types          #-}
@@ -9,6 +10,7 @@
 module Persistent.Idiom
 where
 
+import Control.Exception (assert)
 import Control.Lens
 import Control.Monad (unless)
 import Data.Functor.Infix ((<$$>))
@@ -19,6 +21,7 @@ import Servant.Missing (throwError500)
 import qualified Data.Map as Map (size)
 import qualified Generics.SOP as SOP
 
+import LifeCycle
 import Types
 import Persistent.Pure
 
@@ -140,3 +143,24 @@ getUserViews = makeUserView <$$> getAllUsers
 
 findActiveUser :: AUID User -> MQuery User
 findActiveUser uid = (((^? activeUser) . makeUserView) =<<) <$> findUser uid
+
+-- This operation is idempotent, that is, freezing a frozen state
+-- has no effect and similarly for thawing. Otherwise we'd need to make
+-- sure the form treats vacuus setting of the freeze state as invalid.
+--
+-- Note that this operation is atomic, thus ensuring that all topics
+-- are frozen or all are not frozen. Problem could arise, e.g., when
+-- two admins concurrently freeze and thaw, with different speeds.
+saveAndEnactFreeze :: Timestamp -> Freeze -> AUpdate ()
+saveAndEnactFreeze now shouldBeFrozenOrNot = do
+  dbFreeze .= shouldBeFrozenOrNot
+  let change | shouldBeFrozenOrNot == Frozen = PhaseFreeze now
+             | otherwise = PhaseThaw now
+      freezeOrNot topic = do
+          case phaseTrans (topic ^. topicPhase) change of
+            Nothing -> return ()  -- ignored, probably repeated freeze or thaw
+            Just (phase', actions) -> do
+                let !_A = assert (null actions) ()  -- wrong monad to execute'em
+                setTopicPhase (topic ^. _Id) phase'
+  topics <- liftAQuery getTopics
+  mapM_ freezeOrNot topics

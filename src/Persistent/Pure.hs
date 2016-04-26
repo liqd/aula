@@ -116,7 +116,6 @@ module Persistent.Pure
     , deleteComment
     , saveDurations
     , saveQuorums
-    , saveFreeze
     , dangerousResetAulaData
     )
 where
@@ -751,9 +750,6 @@ saveDurations = (dbDurations .=)
 
 saveQuorums :: Quorums -> AUpdate ()
 saveQuorums = (dbQuorums .=)
-
-saveFreeze :: Freeze -> AUpdate ()
-saveFreeze = (dbFreeze .=)
 
 dangerousResetAulaData :: AUpdate ()
 dangerousResetAulaData = put emptyAulaData

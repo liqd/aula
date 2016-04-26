@@ -331,7 +331,9 @@ adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
 adminFreeze =
     FormPageHandler
         (PageAdminSettingsFreeze <$> query (view dbFreeze))
-        (update . SaveFreeze)
+        (\payload -> do
+             now <- getCurrentTimestamp
+             update $ SaveAndEnactFreeze now payload)
 
 
 -- ** roles and permisisons
