@@ -174,9 +174,7 @@ instance ToHtml ViewIdea where
                             then "Statement abgeben"
                             else "Statement ändern"
 
-            -- creator statement
-            maybe
-                nil
+            mapM_
                 (div_ [class_ "creator-statement"] . view html)
                 (creatorStatementOfIdea idea)
 
