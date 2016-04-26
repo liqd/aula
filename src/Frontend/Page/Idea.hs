@@ -165,13 +165,12 @@ instance ToHtml ViewIdea where
             feasibilityVerdict True idea caps
 
             when (CanAddCreatorStatement `elem` caps) $ do
-                let newStatement = isNothing $ creatorStatementOfIdea idea
                 div_ [class_ "creator-statement-button"] $ do
                     button_ [ class_ "btn-cta m-valid"
                             , onclick_ $ U.creatorStatement idea
                             ] $ do
                         i_ [class_ "icon-check"] nil
-                        if newStatement
+                        if isNothing $ creatorStatementOfIdea idea
                             then "Statement abgeben"
                             else "Statement ändern"
 
@@ -179,7 +178,7 @@ instance ToHtml ViewIdea where
             maybe
                 nil
                 (div_ [class_ "creator-statement"] . view html)
-                (idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just)
+                (creatorStatementOfIdea idea)
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do
