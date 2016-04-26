@@ -130,8 +130,8 @@ instance ToHtml PageIdeasInDiscussion where
                            , href_ . U.listIdeas $ IdeaLocationTopic space (topic ^. _Id)
                            ] $ do
                             img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
-                                      PhaseWildIdea     -> error "Wild idea"
-                                      PhaseWildFrozen   -> error "Wild idea"
+                                      PhaseWildIdea     -> "theme_aus.png"  -- FIXME
+                                      PhaseWildFrozen   -> "theme_aus.png"  -- FIXME
                                       PhaseRefinement{} -> "theme_aus.png"
                                       PhaseRefFrozen{}  -> "theme_aus.png"
                                       PhaseJury         -> "theme_pruf.png"
