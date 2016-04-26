@@ -247,12 +247,11 @@ instance ToHtml IdeaVoteLikeBars where
                               ] $ do
                             span_ [class_ "votes"] $ toHtml (show noVotes)
                         span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
-                            span_ [class_ "votes"] $ toHtml (show totalVotes)
+                            span_ [class_ "votes"] $ toHtml (show voters)
                 bs
               where
                 yesVotes    = numVotes idea Yes
                 noVotes     = numVotes idea No
-                totalVotes  = voters
                 yesPercent  = max (percentVotes idea voters Yes) 5
                 noPercent   = max (percentVotes idea voters No) 5
 
