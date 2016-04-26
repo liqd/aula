@@ -88,10 +88,10 @@ isPostOnly :: Main -> Bool
 isPostOnly = \case
     IdeaPath _ m ->
         case m of
-            LikeIdea{}     -> True
-            VoteIdea{}     -> True
-            RemoveVote{}   -> True
-            MarkWinnerIdea{} -> True
+            LikeIdea{}         -> True
+            VoteIdea{}         -> True
+            RemoveVote{}       -> True
+            MarkWinnerIdea{}   -> True
             RevokeWinnerIdea{} -> True
             OnComment _ cm ->
                 case cm of
