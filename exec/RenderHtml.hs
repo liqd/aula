@@ -87,6 +87,7 @@ pagesForm f =
     , f (Proxy :: Proxy AdminDeleteUser)
     , f (Proxy :: Proxy AdminEditUser)
     , f (Proxy :: Proxy PageAdminSettingsQuorum)
+    , f (Proxy :: Proxy PageAdminSettingsFreeze)
     , f (Proxy :: Proxy PageHomeWithLoginPrompt)
     , f (Proxy :: Proxy PageUserSettings)
     , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)

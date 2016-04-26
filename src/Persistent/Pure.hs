@@ -103,7 +103,7 @@ module Persistent.Pure
     , dbClassQuorum
     , dbDurations
     , dbQuorums
-    , dbFrozen
+    , dbFreeze
     , adminUsernameHack
     , addDelegation
     , findDelegationsByContext
@@ -116,6 +116,7 @@ module Persistent.Pure
     , deleteComment
     , saveDurations
     , saveQuorums
+    , saveFreeze
     , dangerousResetAulaData
     )
 where
@@ -729,11 +730,11 @@ editIdea ideaId = modifyIdea ideaId . newIdea
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums
-dbFrozen    :: Lens' AulaData Bool
+dbFreeze    :: Lens' AulaData Freeze
 
 dbDurations = dbSettings . durations
 dbQuorums   = dbSettings . quorums
-dbFrozen    = dbSettings . frozen
+dbFreeze    = dbSettings . freeze
 
 dbElaborationDuration :: Lens' AulaData DurationDays
 dbVoteDuration        :: Lens' AulaData DurationDays
@@ -750,6 +751,9 @@ saveDurations = (dbDurations .=)
 
 saveQuorums :: Quorums -> AUpdate ()
 saveQuorums = (dbQuorums .=)
+
+saveFreeze :: Freeze -> AUpdate ()
+saveFreeze = (dbFreeze .=)
 
 dangerousResetAulaData :: AUpdate ()
 dangerousResetAulaData = put emptyAulaData

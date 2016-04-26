@@ -66,8 +66,8 @@ getListInfoForIdea idea = do
     phase :: Phase
         <- maybe404 =<< case idea ^. ideaMaybeTopicId of
             Nothing -> do
-                dbIsFrozen <- view dbFrozen
-                return $ Just $ if dbIsFrozen
+                dbFrozen <- view dbFreeze
+                return . Just $ if dbFrozen == Frozen
                                 then PhaseWildFrozen
                                 else PhaseWildIdea
             Just tid -> view topicPhase <$$> findTopic tid

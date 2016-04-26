@@ -67,6 +67,7 @@ spec = do
         -- , F (arb :: Gen AdminCreateUser) -- FIXME
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
+        , F (arb :: Gen PageAdminSettingsFreeze)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
 --        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
@@ -168,6 +169,10 @@ instance PayloadToEnv Quorums where
         "school-quorum" -> pure [TextInput (cs $ show school)]
         "class-quorum"  -> pure [TextInput (cs $ show clss)]
 
+instance PayloadToEnv Freeze where
+    payloadToEnvMapping _ b = \case
+        "freeze" -> pure [TextInput (cs $ show b)]
+
 instance PayloadToEnv Role where
     payloadToEnvMapping v r = \case
         "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
@@ -263,6 +268,9 @@ instance ArbFormPagePayload CommentIdea where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
+    arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload PageAdminSettingsFreeze where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsDurations where

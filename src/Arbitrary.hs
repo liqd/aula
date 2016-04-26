@@ -169,6 +169,9 @@ instance Arbitrary PageAdminSettingsDurations where
 instance Arbitrary PageAdminSettingsQuorum where
     arbitrary = PageAdminSettingsQuorum <$> arb
 
+instance Arbitrary PageAdminSettingsFreeze where
+    arbitrary = PageAdminSettingsFreeze <$> arb
+
 instance Arbitrary AdminViewUsers where
     arbitrary = AdminViewUsers <$> arb
 
@@ -423,6 +426,9 @@ instance Arbitrary Durations where
     arbitrary = garbitrary
 
 instance Arbitrary Quorums where
+    arbitrary = garbitrary
+
+instance Arbitrary Freeze where
     arbitrary = garbitrary
 
 instance Arbitrary RoleSelection where

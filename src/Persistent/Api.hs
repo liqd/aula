@@ -72,6 +72,7 @@ $(makeAcidic ''AulaData
     , 'moveIdeasToLocation
     , 'saveDurations
     , 'saveQuorums
+    , 'saveFreeze
     , 'setTopicPhase
     , 'setUserAvatar
     , 'setUserEmail

@@ -286,6 +286,7 @@ viewUser u = User (u ^. _Id) UserIdeas
 data AdminMode =
     AdminDuration
   | AdminQuorum
+  | AdminFreeze
   | AdminCreateUser
   | AdminEditUser (AUID User)
   | AdminDeleteUser (AUID User)
@@ -306,6 +307,7 @@ instance SOP.Generic AdminMode
 admin :: AdminMode -> UriPath -> UriPath
 admin AdminDuration         path = path </> "duration"
 admin AdminQuorum           path = path </> "quorum"
+admin AdminFreeze           path = path </> "freeze"
 admin AdminViewUsers        path = path </> "users"
 admin AdminCreateUser       path = path </> "user" </> "create"
 admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"

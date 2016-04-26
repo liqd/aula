@@ -639,10 +639,15 @@ data Quorums = Quorums
 
 instance SOP.Generic Quorums
 
+data Freeze = NotFrozen | Frozen
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic Freeze
+
 data Settings = Settings
     { _durations :: Durations
     , _quorums   :: Quorums
-    , _frozen    :: Bool
+    , _freeze    :: Freeze
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -652,7 +657,7 @@ defaultSettings :: Settings
 defaultSettings = Settings
     { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
     , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
-    , _frozen    = False
+    , _freeze    = NotFrozen
     }
 
 -- * aula-specific helper types
@@ -884,6 +889,7 @@ instance Binary UserSettings
 instance Binary DurationDays
 instance Binary Durations
 instance Binary Quorums
+instance Binary Freeze
 instance Binary Settings
 
 makePrisms ''AUID
@@ -919,6 +925,7 @@ makeLenses ''Durations
 makeLenses ''EditTopicData
 makeLenses ''EditUserData
 makeLenses ''EmailAddress
+makeLenses ''Freeze
 makeLenses ''GMetaInfo
 makeLenses ''Idea
 makeLenses ''IdeaJuryResult
@@ -962,6 +969,7 @@ deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''EditUserData
+deriveSafeCopy 0 'base ''Freeze
 deriveSafeCopy 0 'base ''GMetaInfo
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaJuryResult
