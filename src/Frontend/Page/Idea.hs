@@ -213,32 +213,25 @@ instance ToHtml IdeaVoteLikeBars where
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
-                span_ [class_ "progress-bar"] $ do
-                    span_ [ class_ "progress-bar-votes-for"
-                          , style_ . cs $ concat ["width: ", show yesPercent, "%"]
-                          ] nil
-                    span_ [ class_ "progress-bar-votes-against"
-                          , style_ . cs $ concat ["width: ", show noPercent, "%"]
-                          ] nil
-                    span_ [ class_ "progress-bar-progress"
-                          , style_ . cs $ concat ["width: ", show (100 - yesPercent - noPercent), "%"]
-                          ] nil
-
-                    div_ $ toHtml (show (yesVotes, noVotes, yesPercent, noPercent))
-
-                    -- FIXME: what i want is this:
-                    --
-                    -- [progress-bar..........................................]
-                    -- [[yes...][no............][no vote cast................]]
-                    --
-                    -- but obviously this doesn't work.  time for css hackers to take over?
-
+                span_ [class_ "progress-bar m-show-abstain"] $ do
+                    span_ [class_ "progress-bar-row"] $ do
+                        span_ [ class_ "progress-bar-progress progress-bar-progress-for"
+                              , style_ . cs $ concat ["width: ", show yesPercent, "%"]
+                              ] $ do
+                            span_ [class_ "votes"] $ toHtml (show (yesVotes))
+                        span_ [ class_ "progress-bar-progress progress-bar-progress-against"
+                              , style_ . cs $ concat ["width: ", show noPercent, "%"]
+                              ] $ do
+                            span_ [class_ "votes"] $ toHtml (show (noVotes))
+                        span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
+                            span_ [class_ "votes"] $ toHtml (show (totalVotes))
                 bs
               where
-                yesVotes   = numVotes idea Yes
-                noVotes    = numVotes idea No
-                yesPercent = percentVotes idea voters Yes
-                noPercent  = percentVotes idea voters No
+                yesVotes    = numVotes idea Yes
+                noVotes     = numVotes idea No
+                totalVotes  = voters
+                yesPercent  = max (percentVotes idea voters Yes) 5
+                noPercent   = max (percentVotes idea voters No) 5
 
             user = ctx ^. renderContextUser
 

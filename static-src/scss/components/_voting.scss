@@ -37,6 +37,41 @@ $progress-bar-height: 5px;
         @include rem(right, -20px);
         color: $color-negative;
     }
+
+    &.m-show-abstain {
+        display: table;
+        overflow: visible;
+        width: 100%;
+
+        .progress-bar-row {
+            display: table-row;
+        }
+
+        .progress-bar-progress {
+            display: table-cell;
+            text-align: right;
+        }
+
+        .progress-bar-progress-for {
+            border-radius: ($progress-bar-height/2) 0 0 ($progress-bar-height/2);
+        }
+
+        .progress-bar-progress-against {
+            background: $color-negative;
+        }
+
+        .progress-bar-progress-abstain {
+            border-radius: 0 ($progress-bar-height/2) ($progress-bar-height/2) 0;
+            background: $color-neutral;
+        }
+
+        .votes {
+            @include rem(font-size, $font-size-smaller);
+            @include rem(top, $progress-bar-height + 3px);
+            display: block;
+            position: absolute;
+        }
+    }
 }
 
 .voting-widget {
