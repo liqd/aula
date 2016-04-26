@@ -176,9 +176,10 @@ instance ToHtml ViewIdea where
                             else "EDIT CREATOR STATEMENT"
 
             -- creator statement
-            flip (maybe nil)
-                 (idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just)
-                 $ (div_ [class_ "creator-statement"] . (view html))
+            maybe
+                nil
+                (div_ [class_ "creator-statement"] . view html)
+                (idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just)
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do
