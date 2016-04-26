@@ -52,6 +52,7 @@ module Action
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
     , removeVote
+    , Action.setCreatorStatement
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -503,6 +504,8 @@ markIdeaInResultPhase iid rv = do
     equery $ checkInPhase (PhaseResult ==) idea topic
     currentUserAddDb_ (AddIdeaVoteResult iid) rv
 
+setCreatorStatement :: ActionM m => AUID Idea -> Document -> m ()
+setCreatorStatement = app2 update SetCreatorStatement
 
 -- * Topic handling
 

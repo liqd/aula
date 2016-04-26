@@ -12,18 +12,21 @@ module Frontend.Page.Idea
   , EditIdea(..)
   , CommentIdea(..)   -- FIXME: rename to 'CommentOnIdea'
   , JudgeIdea(..)
+  , CreatorStatement(..)
   , viewIdea
   , createIdea
   , editIdea
   , commentIdea       -- FIXME: rename to 'commentOnIdea'
   , replyCommentIdea  -- FIXME: rename to 'commentOnComment'
   , judgeIdea
+  , creatorStatement
   )
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, equery, mquery, update
               , markIdeaInJuryPhase
+              , setCreatorStatement
               )
 import LifeCycle
 import Frontend.Fragment.Category
@@ -84,6 +87,10 @@ data JudgeIdea = JudgeIdea IdeaJuryResultType Idea Topic
 
 instance Page JudgeIdea where
 
+data CreatorStatement = CreatorStatement Idea
+  deriving (Eq, Show, Read)
+
+instance Page CreatorStatement where
 
 -- ** non-page types
 
@@ -156,6 +163,22 @@ instance ToHtml ViewIdea where
                 toHtml $ IdeaVoteLikeBars caps p
 
             feasibilityVerdict True idea caps
+
+            when (CanAddCreatorStatement `elem` caps) $ do
+                div_ [class_ "creator-statement-button"] $ do
+                    button_ [ class_ "btn-cta m-valid"
+                            , onclick_ $ U.creatorStatement idea
+                            ] $ do
+                        i_ [class_ "icon-check"] nil
+                        if isNothing $ creatorStatementOfIdea idea
+                            then "Statement abgeben"
+                            else "Statement ändern"
+
+            -- creator statement
+            maybe
+                nil
+                (div_ [class_ "creator-statement"] . view html)
+                (creatorStatementOfIdea idea)
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do
@@ -395,6 +418,28 @@ instance FormPage JudgeIdea where
             IdeaFeasible    -> "[Angenommen zur Wahl] "
             IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
 
+instance FormPage CreatorStatement where
+    type FormPagePayload CreatorStatement = Document
+    type FormPageResult CreatorStatement = ()
+
+    formAction (CreatorStatement idea) = U.creatorStatement idea
+    redirectOf (CreatorStatement idea) _ = U.viewIdea idea Nothing
+
+    makeForm (CreatorStatement idea) =
+        "statement-text" .: (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
+
+    -- FIXME styling
+    formPage v form p@(CreatorStatement idea) =
+        semanticDiv p $ do
+            div_ [class_ "container-creator-statement"] $ do
+                h1_ [class_ "main-heading"] $ "Ansage des Gewinners zur Idee " <> idea ^. ideaTitle . html
+                form $ do
+                    label_ $ do
+                        span_ [class_ "label-text"] "Was möchtest du sagen?"
+                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "statement-text" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Abschicken"
+
 
 -- * handlers
 
@@ -442,3 +487,12 @@ judgeIdea ideaId juryType =
             topic <- maybe404 =<< ideaTopic idea
             pure $ JudgeIdea juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
+
+creatorStatementOfIdea :: Idea -> Maybe Document
+creatorStatementOfIdea idea = idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
+
+creatorStatement :: ActionM m => AUID Idea -> FormPageHandler m CreatorStatement
+creatorStatement ideaId =
+    FormPageHandler
+        (CreatorStatement <$> mquery (findIdea ideaId))
+        (Action.setCreatorStatement ideaId)
