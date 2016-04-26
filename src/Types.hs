@@ -786,11 +786,11 @@ showTimespan (TimespanDays  i) = show i <> "d"
 
 timespanMs :: Timespan -> Int
 timespanMs (TimespanUs    i) = fromIntegral   i
-timespanMs (TimespanMs    i) = fromIntegral $ i `div` 1000
-timespanMs (TimespanSecs  i) = fromIntegral $ i `div` (1000 * 1000)
-timespanMs (TimespanMins  i) = fromIntegral $ i `div` (1000 * 1000 * 60)
-timespanMs (TimespanHours i) = fromIntegral $ i `div` (1000 * 1000 * 3600)
-timespanMs (TimespanDays  i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
+timespanMs (TimespanMs    i) = fromIntegral $ i * 1000
+timespanMs (TimespanSecs  i) = fromIntegral $ i * (1000 * 1000)
+timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
+timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
+timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
 
 instance Aeson.FromJSON Timespan where
     parseJSON = Aeson.withText "Timestamp value" $ \raw -> do

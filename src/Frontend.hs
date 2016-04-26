@@ -232,6 +232,8 @@ type IdeaApi
   :<|> Idea ::> Comment ::> CommentApi
        -- jury an idea
   :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
+       -- add creator statement
+  :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
@@ -268,6 +270,7 @@ ideaApi loc
   :<|> (form . Page.commentIdea loc)
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
+  :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m

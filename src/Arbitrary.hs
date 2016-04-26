@@ -139,6 +139,9 @@ instance Arbitrary CommentIdea where
 instance Arbitrary JudgeIdea where
     arbitrary = JudgeIdea <$> arb <*> arb <*> arb
 
+instance Arbitrary CreatorStatement where
+    arbitrary = CreatorStatement <$> arb
+
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
 

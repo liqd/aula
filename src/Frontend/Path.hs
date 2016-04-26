@@ -30,6 +30,7 @@ module Frontend.Path
     , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
+    , creatorStatement
     , viewUser
     , anchor
     )
@@ -160,6 +161,9 @@ judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
+creatorStatement :: Idea -> Main
+creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea ^. _Id)
+
 onComment :: Comment -> CommentMode -> Main
 onComment comment = IdeaPath (ck ^. ckIdeaLocation) . OnComment ck
   where ck = comment ^. _Key
@@ -206,6 +210,7 @@ ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
 ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
 ideaMode (OnComment ck m)  root = commentMode ck m root
 ideaMode CreateIdea        root = root </> "idea" </> "create"
+ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
 
 anchor :: IsString s => AUID a -> s
 anchor (AUID c) = fromString $ "auid-" <> show c
@@ -324,6 +329,7 @@ data IdeaMode =
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
     -- CommentKey
     | OnComment CommentKey CommentMode
+    | CreatorStatement (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaMode

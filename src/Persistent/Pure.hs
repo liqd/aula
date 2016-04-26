@@ -107,6 +107,7 @@ module Persistent.Pure
     , findDelegationsByContext
     , addIdeaJuryResult
     , removeIdeaJuryResult
+    , setCreatorStatement
     , addIdeaVoteResult
     , editIdea
     , deleteComment
@@ -571,6 +572,13 @@ addIdeaJuryResult iid =
 
 removeIdeaJuryResult :: AUID Idea -> AUpdate ()
 removeIdeaJuryResult iid = modifyIdea iid (set ideaJuryResult Nothing)
+
+setCreatorStatement :: AUID Idea -> Document -> AUpdate ()
+setCreatorStatement iid statement = modifyIdea iid
+    (set (  ideaVoteResult
+          . _Just
+          . ideaVoteResultValue
+          . _Winning) (Just statement))
 
 instance FromProto IdeaVoteResult where
     fromProto = flip IdeaVoteResult

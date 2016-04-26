@@ -68,7 +68,8 @@ spec = do
         , F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
---        , F (arb :: Gen AdminEditUser) -- FIXME
+--        , F (arb :: Gen AdminEditUser) -- FIXME:
+--        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
         ]
 
 
