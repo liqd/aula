@@ -23,6 +23,7 @@ type IdeaDescription = ST
 type TopicTitle = ST
 type TopicDescription = ST
 type CommentText = ST
+type Statement = ST
 
 
 -- * the dsl ("the action sentences")
@@ -49,6 +50,7 @@ data Step a where
     ReportComment      :: IdeaTitle -> CommentText -> a -> Step a
     ReportCommentReply :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     DeleteComment      :: IdeaTitle -> CommentText -> a -> Step a
+    AddCreatorStatement :: IdeaTitle -> Statement -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -120,3 +122,7 @@ reportCommentReply idea comment1 comment2 = liftF $ ReportCommentReply idea comm
 deleteComment :: IdeaTitle -> CommentText -> Behavior ()
 deleteComment idea comment =
     liftF $ DeleteComment idea comment ()
+
+addCreatorStatement :: IdeaTitle -> Statement -> Behavior ()
+addCreatorStatement idea statement =
+    liftF $ AddCreatorStatement idea statement ()
