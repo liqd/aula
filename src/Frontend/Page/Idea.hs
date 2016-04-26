@@ -180,8 +180,7 @@ instance ToHtml ViewIdea where
                 (creatorStatementOfIdea idea)
 
             -- mark winning idea
-            -- TODO: Translation
-            -- TODO: Styling
+            -- FIXME: Styling
             when (isFeasibleIdea idea) $ do
                 div_ [class_ "winning-idea"] $ do
                     when (CanMarkWinner `elem` caps) $ do
@@ -192,14 +191,12 @@ instance ToHtml ViewIdea where
                                     ]
 
                         when (isNothing (idea ^. ideaVoteResult)) $
-                            winnerButton (U.markWinnerIdea idea) "Mark as winner!"
+                            winnerButton (U.markWinnerIdea idea) "Idee hat gewonnen"
                         when (isWinning idea) $
-                            winnerButton (U.revokeWinnerIdea idea) "Revoke winner!"
+                            winnerButton (U.revokeWinnerIdea idea) "\"gewonnen\" zurücknehmen"
 
                     when (isWinning idea) $
-                        -- FIXME: Style, invalid is a red button
-                        div_ [class_ "btn-cta m-invalid"]
-                            "Winner idea!"
+                        div_ [class_ "btn-cta"] "gewonnen"
                     -- FIXME: Add information about not enough votes.
 
         -- article
