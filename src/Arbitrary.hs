@@ -483,7 +483,7 @@ instance Arbitrary P.AdminMode where
 -- * servant-mock
 
 instance Arbitrary a => Arbitrary (Frame a) where
-    arbitrary = oneof [ Frame <$> arb <*> arb, PublicFrame <$> arb ]
+    arbitrary = oneof [ Frame <$> arb <*> arb <*> arb, PublicFrame <$> arb ]
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb

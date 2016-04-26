@@ -89,6 +89,13 @@ instance ActionUserHandler Action where
         sessionToken <- freshSessionToken
         usSessionToken .= Just sessionToken
 
+    addMessage msg = usMessages %= (msg:)
+
+    flushMessages = do
+        msgs <- userState usMessages
+        usMessages .= []
+        pure $ reverse msgs
+
     userState = use
 
     logout = put userLoggedOut

@@ -288,7 +288,9 @@ adminQuorum :: ActionM m => FormPageHandler m PageAdminSettingsQuorum
 adminQuorum =
     FormPageHandler
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
-        (update . SaveQuorums)
+        (\qs -> do
+            update $ SaveQuorums qs
+            addMessage "Quorums are saved.")
 
 
 -- ** roles and permisisons
