@@ -52,6 +52,7 @@ data Step a where
     ReportCommentReply :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     DeleteComment      :: IdeaTitle -> CommentText -> a -> Step a
     SetCreatorStatement :: IdeaTitle -> Statement -> a -> Step a
+    SetFreeze        :: Freeze -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
@@ -130,3 +131,6 @@ deleteComment idea comment =
 setCreatorStatement :: IdeaTitle -> Statement -> Behavior ()
 setCreatorStatement idea statement =
     liftF $ SetCreatorStatement idea statement ()
+
+setFreeze :: Freeze -> Behavior ()
+setFreeze shouldBeFrozenOrNot = liftF $ SetFreeze shouldBeFrozenOrNot ()

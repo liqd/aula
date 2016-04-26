@@ -292,6 +292,15 @@ runClient (Free (SetCreatorStatement t s k)) = do
         (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just) `shouldBe` Just (Markdown s)
     runClient k
 
+runClient (Free (SetFreeze shouldBeFrozenOrNot k)) = do
+    precondition $ return ()
+    step . lift $ do
+        Page.adminFreeze ^. formProcessor $ shouldBeFrozenOrNot
+    postcondition $ do
+        dbFrozen <- lift $ query $ view dbFreeze
+        dbFrozen `shouldBe` shouldBeFrozenOrNot
+    runClient k
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)

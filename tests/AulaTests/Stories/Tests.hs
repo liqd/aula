@@ -29,7 +29,9 @@ topicTimeoutStory = do
     selectIdeaSpace "school"
     createIdea idea1a "desc" CatRules
     editIdea idea1a idea1 "desc1" CatRules
-    likeIdea idea1
+    setFreeze Frozen
+    likeIdea idea1  -- succeeds, prevented by hiding UI elements
+    setFreeze NotFrozen
     commentIdea idea1 comment1
     replyComment idea1 comment1 comment2
     voteOnComment idea1 comment1 Up
@@ -38,8 +40,13 @@ topicTimeoutStory = do
     editTopic topic1a topic1 "desc1"
     timeoutTopic topic1
     markIdea idea1 (Left $ Feasible Nothing)
-    voteIdea idea1 Yes
-    timeoutTopic topic1
+    setFreeze Frozen
+    voteIdea idea1 Yes   -- FIXME: should fail, capabilities should forbid it
+    -- FIXME: how to catch the expected error below?
+      -- timeoutTopic topic1  -- fails, phase change illegal;
+    setFreeze NotFrozen
+    voteIdea idea1 Yes   -- now succeeds
+    timeoutTopic topic1  -- now succeeds
     markIdea idea1 (Right $ Winning Nothing)
     setCreatorStatement idea1 "Winner"
     revokeWinner idea1
