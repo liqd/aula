@@ -90,6 +90,7 @@ module Persistent.Pure
     , setUserRole
     , setUserAvatar
     , getTopics
+    , setTopicPhase
     , addTopic
     , editTopic
     , modifyTopic
@@ -459,16 +460,26 @@ moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
         modifyIdea ideaId $ ideaLocation .~ location
 
+setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
+setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
+
 addTopic :: AddDb Topic
 addTopic pt = do
     t <- addDb dbTopicMap pt
+    dbFrozen <- liftAQuery $ view dbFreeze
+    -- FIXME: the invariant that topics start in Ref phases is now spread
+    -- across a couple of different places. To merge it, or when it no longer
+    -- holds, use the full @phaseChange@ machinery (requiring @now@, etc.).
+    when (dbFrozen == Frozen) $ setTopicPhase (t ^. _Id) (PhaseRefFrozen 0)
+    -- (failure to match the following can only be caused by an inconsistent state)
+    Just topic <- liftAQuery $ findTopic (t ^. _Id)
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will
     -- hide this risk since only ideas without topics will be visible.
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation t)
-    return t
+    moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
+    return topic
 
 addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap

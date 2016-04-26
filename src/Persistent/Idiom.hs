@@ -131,9 +131,6 @@ checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
         Just (Feasible _)    -> True
         _                    -> False
 
-setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
-setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
-
 deactivateUser :: AUID User -> AUpdate ()
 deactivateUser uid
     = modifyUser uid (userSettings . userSettingsPassword .~ UserPassDeactivated)
