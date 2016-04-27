@@ -133,7 +133,7 @@ wildIdeaCap _i = \case
 
 wildFrozenCap :: Idea -> Role -> [IdeaCapability]
 wildFrozenCap _i = \case
-    Student    _clss -> [CanLike, CanComment]
+    Student    _clss -> [CanComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
