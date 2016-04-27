@@ -158,7 +158,7 @@ phaseRefFrozenCap _i = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> []  -- TODO: can thaw; capture here or not here
+    Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
 phaseJuryCap :: Idea -> Role -> [IdeaCapability]
 phaseJuryCap _i = \case
