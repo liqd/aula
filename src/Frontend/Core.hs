@@ -544,22 +544,20 @@ pageFrame frame = do
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
-        headerMarkup (frame ^? frameUser) (frame ^? frameMessages)
+        headerMarkup (frame ^? frameUser)
         div_ [class_ "page-wrapper"] $ do
             div_ [class_ "main-grid-container"] $ do
                 div_ [class_ "grid main-grid"] $ do
+                    renderStatusMessages `mapM_` (frame ^? frameMessages)  -- FIXME: styling
                     frame ^. frameBody . html
         footerMarkup
 
-headerMarkup :: (Monad m) => Maybe User -> Maybe [StatusMessage] -> HtmlT m ()
-headerMarkup mUser msgs = header_ [class_ "main-header", id_ "main-header"] $ do
+headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
+headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
     div_ [class_ "grid"] $ do
         a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
         button_ [id_ "mobile-menu-button"] $ do
             i_ [class_ "icon-bars", title_ "Menu"] nil
-
-        renderStatusMessages `mapM_` msgs  -- FIXME: styling
-
         case mUser of
             Nothing -> nil
             Just usr -> do
@@ -593,8 +591,9 @@ headerMarkup mUser msgs = header_ [class_ "main-header", id_ "main-header"] $ do
                                 "Logout"
 
 renderStatusMessages :: (Monad m) => [StatusMessage] -> HtmlT m ()
+renderStatusMessages [] = nil
 renderStatusMessages msgs = do
-    div_ [class_ "ui-messages"] $ do
+    div_ [class_ "ui-messages m-visible"] $ do
         ul_ $ do
             renderStatusMessage `mapM_` msgs
 

@@ -69,6 +69,13 @@ if(imageSelect) {
     }
 }
 
+// UI Messages
+
+document.onclick = function() {
+    var msg = getElementByClassName("ui-messages m-visible");
+    removeClass(msg, "m-visible");
+}
+
 // helpers
 
 function getElementByClassName(el, parent) {

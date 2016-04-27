@@ -1,0 +1,25 @@
+.ui-messages {
+    left: 0;
+    opacity: 0;
+    position: absolute;
+    text-align: center;
+    transition: visibility 0.5s, opacity 0.5s linear;
+    top: 0;
+    visibility: hidden;
+    width: 100%;
+
+    &.m-visible {
+        opacity: 0.75;
+        visibility: visible;
+    }
+
+    ul {
+        @include rem(padding, 3px 10px);
+        background: $color-negative;
+        border-radius: 0 0 4px 4px;
+        color: white;
+        display: inline-block;
+        margin: 0 auto;
+        width: 60%;
+    }
+}
