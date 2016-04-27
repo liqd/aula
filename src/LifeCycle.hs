@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric  #-}
 {-# LANGUAGE LambdaCase     #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ViewPatterns   #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
