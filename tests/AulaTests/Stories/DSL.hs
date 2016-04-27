@@ -30,29 +30,29 @@ type Statement = ST
 
 data Step a where
     -- User actions
-    Login            :: UserLogin -> a -> Step a
-    Logout           :: a -> Step a
-    SelectIdeaSpace  :: IdeaSpaceName -> a -> Step a
-    CreateIdea       :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
-    EditIdea         :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> a -> Step a
-    LikeIdea         :: IdeaTitle -> a -> Step a
-    DeleteIdea       :: IdeaTitle -> a -> Step a
-    ReportIdea       :: IdeaTitle -> a -> Step a
-    CreateTopic      :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
-    EditTopic        :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
-    MarkIdea         :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
-    VoteIdea         :: IdeaTitle -> IdeaVoteValue -> a -> Step a
-    MoveIdea         :: IdeaTitle -> TopicTitle -> TopicTitle -> a -> Step a
-    CommentIdea      :: IdeaTitle -> CommentText -> a -> Step a
-    RevokeWinner     :: IdeaTitle -> a -> Step a
-    ReplyComment     :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
-    VoteOnComment    :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
-    VoteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
-    ReportComment      :: IdeaTitle -> CommentText -> a -> Step a
-    ReportCommentReply :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
-    DeleteComment      :: IdeaTitle -> CommentText -> a -> Step a
+    Login               :: UserLogin -> a -> Step a
+    Logout              :: a -> Step a
+    SelectIdeaSpace     :: IdeaSpaceName -> a -> Step a
+    CreateIdea          :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
+    EditIdea            :: IdeaTitle -> IdeaTitle -> IdeaDescription -> Category -> a -> Step a
+    LikeIdea            :: IdeaTitle -> a -> Step a
+    DeleteIdea          :: IdeaTitle -> a -> Step a
+    ReportIdea          :: IdeaTitle -> a -> Step a
+    CreateTopic         :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
+    EditTopic           :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
+    MarkIdea            :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
+    VoteIdea            :: IdeaTitle -> IdeaVoteValue -> a -> Step a
+    MoveIdea            :: IdeaTitle -> TopicTitle -> TopicTitle -> a -> Step a
+    CommentIdea         :: IdeaTitle -> CommentText -> a -> Step a
+    RevokeWinner        :: IdeaTitle -> a -> Step a
+    ReplyComment        :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    VoteOnComment       :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
+    VoteOnCommentReply  :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
+    ReportComment       :: IdeaTitle -> CommentText -> a -> Step a
+    ReportCommentReply  :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    DeleteComment       :: IdeaTitle -> CommentText -> a -> Step a
     SetCreatorStatement :: IdeaTitle -> Statement -> a -> Step a
-    SetFreeze        :: Freeze -> a -> Step a
+    SetFreeze           :: Freeze -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
     TimeoutTopic     :: TopicTitle -> a -> Step a
