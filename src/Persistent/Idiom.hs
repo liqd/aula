@@ -151,8 +151,9 @@ findActiveUser uid = (((^? activeUser) . makeUserView) =<<) <$> findUser uid
 saveAndEnactFreeze :: Timestamp -> Freeze -> AUpdate ()
 saveAndEnactFreeze now shouldBeFrozenOrNot = do
   dbFreeze .= shouldBeFrozenOrNot
-  let change | shouldBeFrozenOrNot == Frozen = PhaseFreeze now
-             | otherwise = PhaseThaw now
+  let change = case shouldBeFrozenOrNot of
+          NotFrozen -> PhaseThaw   now
+          Frozen    -> PhaseFreeze now
       freezeOrNot topic = do
           case phaseTrans (topic ^. topicPhase) change of
             Nothing -> return ()  -- ignored, probably repeated freeze or thaw

@@ -63,7 +63,9 @@ phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
 -- Freezing and thawing.
 --
 -- There are no frozen variants of @PhaseJury@ and @PhaseResult@.
--- Freezing or thawing those phases has no effect.
+-- Freezing or thawing those phases has no effect.  (We do not throw
+-- an exception for these because that would require to handle this
+-- case in other places where it is less convenient, I think.)
 phaseTrans PhaseRefinement{_refPhaseEnd} (PhaseFreeze now)
     = Just (PhaseRefFrozen {_refPhaseLeftover = realToFrac $ unTimestamp _refPhaseEnd `diffUTCTime` unTimestamp now}, [])
 phaseTrans PhaseRefFrozen{_refPhaseLeftover} (PhaseThaw now)
