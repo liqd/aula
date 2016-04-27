@@ -290,7 +290,7 @@ adminQuorum =
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
         (\qs -> do
             update $ SaveQuorums qs
-            addMessage "Quorums are saved.")
+            addMessage "Die neue Werte wurden gespeichert.")
 
 
 -- ** roles and permisisons
