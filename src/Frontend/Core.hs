@@ -561,17 +561,15 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
         button_ [id_ "mobile-menu-button"] $ do
             i_ [class_ "icon-bars", title_ "Menu"] nil
         case mUser of
-            Just _usr -> do
+            Nothing -> nil
+            Just usr -> do
                 ul_ [class_ "main-header-menu"] $ do
                     li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
                     li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
-            Nothing -> nil
 
-        -- FIXME: please add class m-selected to currently selected menu item
-        div_ [class_ "main-header-user"] $ do
-            case mUser of
-                Just usr -> do
+                div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu"] $ do
+                        -- FIXME: please add class m-selected to currently selected menu item
                         div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
                         span_ [class_ "user-name"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
@@ -593,7 +591,6 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                                 . a_ [href_ P.Logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
                                 "Logout"
-                Nothing -> nil
 
 footerMarkup :: (Monad m) => HtmlT m ()
 footerMarkup = do
