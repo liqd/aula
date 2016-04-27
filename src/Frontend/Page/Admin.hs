@@ -317,14 +317,21 @@ instance FormPage PageAdminSettingsFreeze where
     makeForm (PageAdminSettingsFreeze current) =
         "freeze" .: DF.choice ((id &&& showOption) <$> [minBound..]) (Just current)
       where
-        showOption NotFrozen = "Auftauen"
-        showOption Frozen    = "Einfrieren"
+        showOption NotFrozen = "Normalbetrieb (aufgetaut)"
+        showOption Frozen    = "Ferienbetrieb (eingefroren)"
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
+        p_ "Im Ferienbetrieb sind die folgenden Änderungen zu beachten:"
+        ul_ $ do
+            li_ "Die Zeit bis zum Ablauf von Ausarbeitungsphase und Abstimmungsphase wird angehalten."
+            li_ "In der wilde-Ideen-Phase kann nicht mehr gewählt werden."
+            li_ "In der Abstimmugnsphase kann nicht mehr gewählt werden."
+            li_ "Es kann nicht mehr auf Kommentare abgestimmt werden."
+
         label_ [class_ "input-append"] $ do
-            span_ [class_ "label-text"] "Einfrieren / Auftauen"
+            span_ [class_ "label-text"] "Aktueller status"
             DF.inputSelect "freeze" v
-        DF.inputSubmit "Speichern!"
+        DF.inputSubmit "Status setzen!"
 
 adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
 adminFreeze =
