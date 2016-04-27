@@ -384,7 +384,9 @@ createIdea :: Create Idea
 createIdea = currentUserAddDb AddIdea
 
 createTopic :: Create Topic
-createTopic = currentUserAddDb AddTopic
+createTopic proto = do
+    now <- getCurrentTimestamp
+    currentUserAddDb (AddTopic now) proto
 
 
 -- * Vote Handling

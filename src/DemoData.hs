@@ -195,9 +195,11 @@ universe rnd = do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics  <- mapM (currentUserAddDb AddTopic) =<< generate numberOfTopics rnd (genTopic ideaSpaces)
+    topics <- mapM (currentUserAddDb (AddTopic constantSampleTimestamp ))
+                =<< generate numberOfTopics rnd (genTopic ideaSpaces)
 
-    ideas  <- mapM (currentUserAddDb AddIdea) =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
+    ideas <- mapM (currentUserAddDb AddIdea)
+                =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
     sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
 
@@ -277,7 +279,7 @@ genInitialTestDb = do
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topic <- update $ AddTopic (EnvWith user1 constantSampleTimestamp ProtoTopic
+    topic <- update $ AddTopic constantSampleTimestamp (EnvWith user1 constantSampleTimestamp ProtoTopic
         { _protoTopicTitle       = "topic-title"
         , _protoTopicDesc        = Markdown "topic-desc"
         , _protoTopicImage       = ""

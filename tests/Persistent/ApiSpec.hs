@@ -9,6 +9,7 @@
 
 module Persistent.ApiSpec where
 
+import Control.Exception (assert)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
@@ -178,7 +179,7 @@ persistApiSpec imp = do
     addDbSpec imp "addUsers" getAllUsers AddUser
 
     getDbSpec imp "getTopics" getTopics
-    addDbSpec imp "addTopics" getTopics AddTopic
+    addDbSpec imp "addTopics" getTopics (AddTopic (assert False $ error "(no current time for freezing)"))
 
     findInBySpec imp "findUserByLogin" getAllUsers findUserByLogin userLogin ("not" <>)
     findInBySpec imp "findTopic" getTopics findTopic _Id changeAUID
