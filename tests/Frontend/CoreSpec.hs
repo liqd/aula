@@ -171,7 +171,11 @@ instance PayloadToEnv Quorums where
 
 instance PayloadToEnv Freeze where
     payloadToEnvMapping _ b = \case
-        "freeze" -> pure [TextInput (cs $ show b)]
+        "freeze" -> pure [TextInput $ showOption b]
+      where
+        -- (using internal df keys here is a bit fragile, but it works for now.)
+        showOption NotFrozen = "/admin/freeze.freeze.0"
+        showOption Frozen    = "/admin/freeze.freeze.1"
 
 instance PayloadToEnv Role where
     payloadToEnvMapping v r = \case
