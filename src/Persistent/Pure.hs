@@ -121,6 +121,7 @@ module Persistent.Pure
     )
 where
 
+import Control.Exception (assert)
 import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, runReader, asks)
@@ -145,6 +146,7 @@ import qualified Data.Set  as Set
 import qualified Data.Text as ST
 
 import Types
+import qualified LifeCycle
 
 
 -- * state type
@@ -463,14 +465,15 @@ moveIdeasToLocation ideaIds location =
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
 
-addTopic :: AddDb Topic
-addTopic pt = do
+addTopic :: Timestamp -> AddDb Topic
+addTopic now pt = do
     t <- addDb dbTopicMap pt
     dbFrozen <- liftAQuery $ view dbFreeze
-    -- FIXME: the invariant that topics start in Ref phases is now spread
-    -- across a couple of different places. To merge it, or when it no longer
-    -- holds, use the full @phaseChange@ machinery (requiring @now@, etc.).
-    when (dbFrozen == Frozen) $ setTopicPhase (t ^. _Id) (PhaseRefFrozen 0)
+    when (dbFrozen == Frozen) $ do
+        case LifeCycle.phaseTrans (t ^. topicPhase) (LifeCycle.PhaseFreeze now) of
+            Just (phase'@(PhaseRefFrozen _), [])
+                -> setTopicPhase (t ^. _Id) phase'
+            bad -> assert False . error $ "addTopic: internal error: " <> show bad
     -- (failure to match the following can only be caused by an inconsistent state)
     Just topic <- liftAQuery $ findTopic (t ^. _Id)
     -- FIXME a new topic should not be able to steal ideas from other topics of course the UI will

@@ -22,7 +22,6 @@ where
 
 import Control.Lens
 import Data.Monoid
-import Data.Time
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
 
@@ -67,15 +66,15 @@ phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
 -- an exception for these because that would require to handle this
 -- case in other places where it is less convenient, I think.)
 phaseTrans PhaseRefinement{_refPhaseEnd} (PhaseFreeze now)
-    = Just (PhaseRefFrozen {_refPhaseLeftover = realToFrac $ unTimestamp _refPhaseEnd `diffUTCTime` unTimestamp now}, [])
+    = Just (PhaseRefFrozen {_refPhaseLeftover = _refPhaseEnd `diffTimestamps` now}, [])
 phaseTrans PhaseRefFrozen{_refPhaseLeftover} (PhaseThaw now)
-    = Just (PhaseRefinement {_refPhaseEnd = Timestamp $ realToFrac _refPhaseLeftover `addUTCTime` unTimestamp now}, [])
+    = Just (PhaseRefinement {_refPhaseEnd = _refPhaseLeftover `addTimespan` now}, [])
 phaseTrans PhaseJury PhaseFreeze{} = Just (PhaseJury, [])
 phaseTrans PhaseJury PhaseThaw{} = Just (PhaseJury, [])
 phaseTrans PhaseVoting{_votPhaseEnd} (PhaseFreeze now)
-    = Just (PhaseVotFrozen {_votPhaseLeftover = realToFrac $ unTimestamp _votPhaseEnd `diffUTCTime` unTimestamp now}, [])
+    = Just (PhaseVotFrozen {_votPhaseLeftover = _votPhaseEnd `diffTimestamps` now}, [])
 phaseTrans PhaseVotFrozen{_votPhaseLeftover} (PhaseThaw now)
-    = Just (PhaseVoting {_votPhaseEnd = Timestamp $ realToFrac _votPhaseLeftover `addUTCTime` unTimestamp now}, [])
+    = Just (PhaseVoting {_votPhaseEnd = _votPhaseLeftover `addTimespan` now}, [])
 phaseTrans PhaseResult PhaseFreeze{} = Just (PhaseResult, [])
 phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
 -- Others considered invalid (throw an error later on).

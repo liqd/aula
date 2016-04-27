@@ -447,12 +447,11 @@ data Phase =
   | PhaseWildFrozen
   | PhaseRefinement { _refPhaseEnd :: Timestamp }
                                -- ^ 2. "Ausarbeitungsphase"
-  | PhaseRefFrozen  { _refPhaseLeftover :: Double }
-      -- morally @NominalDiffTime@, but it has no @Read@ instance (and Pico has no @Binary@)
+  | PhaseRefFrozen  { _refPhaseLeftover :: Timespan }
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
   | PhaseVoting     { _votPhaseEnd :: Timestamp }
                                -- ^ 4. "Abstimmungsphase"
-  | PhaseVotFrozen  { _votPhaseLeftover :: Double }
+  | PhaseVotFrozen  { _votPhaseLeftover :: Timespan }
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -841,6 +840,14 @@ instance Aeson.ToJSON Timespan where
         render :: Integer -> String -> Aeson.Value
         render i unit = Aeson.String . cs $ show i <> unit
 
+diffTimestamps :: Timestamp -> Timestamp -> Timespan
+diffTimestamps (Timestamp tfrom) (Timestamp ttill) = TimespanSecs .
+    round $ tfrom `diffUTCTime` ttill
+
+addTimespan :: Timespan -> Timestamp -> Timestamp
+addTimespan tdiff (Timestamp tfrom) = Timestamp $
+    fromIntegral (timespanMs tdiff `div` 1000) `addUTCTime` tfrom
+
 
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where
@@ -877,14 +884,15 @@ instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
-instance Binary UserProfile
 instance Binary SchoolClass
+instance Binary Timespan
 instance Binary Topic
 instance Binary UpDown
 instance Binary User
-instance Binary UserLogin
 instance Binary UserFirstName
 instance Binary UserLastName
+instance Binary UserLogin
+instance Binary UserProfile
 instance Binary UserSettings
 instance Binary DurationDays
 instance Binary Durations
@@ -991,6 +999,7 @@ deriveSafeCopy 0 'base ''Quorums
 deriveSafeCopy 0 'base ''Role
 deriveSafeCopy 0 'base ''SchoolClass
 deriveSafeCopy 0 'base ''Settings
+deriveSafeCopy 0 'base ''Timespan
 deriveSafeCopy 0 'base ''Timestamp
 deriveSafeCopy 0 'base ''Topic
 deriveSafeCopy 0 'base ''UpDown
