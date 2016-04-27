@@ -386,7 +386,7 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
       where
         status  = responseStatus resp
         headers = responseHeaders resp
-        builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404
+        builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404 []
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a

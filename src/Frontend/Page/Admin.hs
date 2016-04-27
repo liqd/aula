@@ -303,7 +303,9 @@ adminQuorum :: ActionM m => FormPageHandler m PageAdminSettingsQuorum
 adminQuorum =
     FormPageHandler
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
-        (update . SaveQuorums)
+        (\qs -> do
+            update $ SaveQuorums qs
+            addMessage "Die neue Werte wurden gespeichert.")
 
 
 -- ** Freeze

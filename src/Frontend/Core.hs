@@ -52,7 +52,7 @@ module Frontend.Core
     , form
 
       -- * frames
-    , Frame(..), frameBody, frameUser
+    , Frame(..), frameBody, frameUser, frameMessages
     , makeFrame
 
       -- * sort & filter
@@ -412,12 +412,12 @@ form formHandler = getH :<|> postH
     processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
 
 
--- * frames
+-- * frame creation
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body
-    = Frame { _frameUser :: User, _frameBody :: body }
-    | PublicFrame               { _frameBody :: body }
+    = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
+    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
 makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
@@ -426,91 +426,8 @@ makeFrame mp = do
   isli <- isLoggedIn
   let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
   if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
-     | isli     || isPrivate -> Frame <$> currentUser <*> mp
-     | otherwise             -> PublicFrame <$> mp
-
-instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
-    toHtmlRaw = toHtml
-    toHtml (Frame usr bdy)   = pageFrame bdy (Just usr) (toHtml bdy)
-    toHtml (PublicFrame bdy) = pageFrame bdy Nothing (toHtml bdy)
-
-instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
-    mimeRender Proxy = cs . ppShow
-
-pageFrame :: (Monad m, Page p) => p -> Maybe User -> HtmlT m a -> HtmlT m ()
-pageFrame p mUser bdy = do
-    let hdrs = extraPageHeaders p
-        bodyClasses = extraBodyClasses p
-    head_ $ do
-        title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
-        toHtml hdrs
-    body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
-        headerMarkup mUser
-        _ <- div_ [class_ "page-wrapper"] $ do
-            div_ [class_ "main-grid-container"] $ do
-                div_ [class_ "grid main-grid"] $ do
-                    bdy
-        footerMarkup
-
-headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
-headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
-    div_ [class_ "grid"] $ do
-        a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
-        button_ [id_ "mobile-menu-button"] $ do
-            i_ [class_ "icon-bars", title_ "Menu"] nil
-        case mUser of
-            Just _usr -> do
-                ul_ [class_ "main-header-menu"] $ do
-                    li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
-                    li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
-            Nothing -> nil
-
-        -- FIXME: please add class m-selected to currently selected menu item
-        div_ [class_ "main-header-user"] $ do
-            case mUser of
-                Just usr -> do
-                    div_ [class_ "pop-menu"] $ do
-                        div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
-                        span_ [class_ "user-name"] $ do
-                            "Hi " <> (usr ^. userLogin . unUserLogin . html)
-                        ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
-                                i_ [class_ "pop-menu-list-icon icon-eye"] nil
-                                "Profil anzeigen"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.UserSettings] $ do
-                                i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
-                                "Einstellungen"
-                            when (usr ^. userRole == Admin) .
-                                li_ [class_ "pop-menu-list-item"]
-                                    . a_ [href_ $ P.Admin P.AdminDuration] $ do
-                                    i_ [class_ "pop-menu-list-icon icon-bolt"] nil
-                                    "Prozessverwaltung"
-                            li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.Logout] $ do
-                                i_ [class_ "pop-menu-list-icon icon-power-off"] nil
-                                "Logout"
-                Nothing -> nil
-
-
-footerMarkup :: (Monad m) => HtmlT m ()
-footerMarkup = do
-    footer_ [class_ "main-footer"] $ do
-        div_ [class_ "grid"] $ do
-            ul_ [class_ "main-footer-menu"] $ do
-                li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-                li_ $ a_ [href_ P.Imprint] "Impressum"
-            span_ [class_ "main-footer-blurb"] $ do
-                "Made with \x2665 by Liqd"
-                replicateM_ 5 $ toHtmlRaw nbsp
-                toHtml Config.releaseVersion
-                replicateM_ 5 $ toHtmlRaw nbsp
-                a_ [Lucid.onclick_ "createPageSample()"]
-                    "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
-    script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
-    script_ [src_ $ P.TopStatic "js/custom.js"]
+     | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> flushMessages
+     | otherwise             -> PublicFrame <$> mp <*> flushMessages
 
 
 -- * sort & filter
@@ -604,3 +521,101 @@ makeLenses ''RenderContext
 makeLenses ''FormPageHandler
 makeLenses ''Frame
 makeLenses ''IdeasQuery
+
+makePrisms ''Frame
+
+
+-- * frame rendering
+
+instance (ToHtml bdy, Page bdy) => ToHtml (Frame bdy) where
+    toHtmlRaw = toHtml
+    toHtml    = pageFrame
+
+instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
+    mimeRender Proxy = cs . ppShow
+
+pageFrame :: (Monad m, Page p, ToHtml p) => Frame p -> HtmlT m ()
+pageFrame frame = do
+    let p = frame ^. frameBody
+        hdrs = extraPageHeaders p
+        bodyClasses = extraBodyClasses p
+    head_ $ do
+        title_ "AuLA"
+        link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        toHtml hdrs
+    body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
+        headerMarkup (frame ^? frameUser) (frame ^? frameMessages)
+        div_ [class_ "page-wrapper"] $ do
+            div_ [class_ "main-grid-container"] $ do
+                div_ [class_ "grid main-grid"] $ do
+                    frame ^. frameBody . html
+        footerMarkup
+
+headerMarkup :: (Monad m) => Maybe User -> Maybe [StatusMessage] -> HtmlT m ()
+headerMarkup mUser msgs = header_ [class_ "main-header", id_ "main-header"] $ do
+    div_ [class_ "grid"] $ do
+        a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
+        button_ [id_ "mobile-menu-button"] $ do
+            i_ [class_ "icon-bars", title_ "Menu"] nil
+
+        renderStatusMessages `mapM_` msgs  -- FIXME: styling
+
+        case mUser of
+            Nothing -> nil
+            Just usr -> do
+                ul_ [class_ "main-header-menu"] $ do
+                    li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
+                    li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+
+                div_ [class_ "main-header-user"] $ do
+                    div_ [class_ "pop-menu"] $ do
+                        -- FIXME: please add class m-selected to currently selected menu item
+                        div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
+                        span_ [class_ "user-name"] $ do
+                            "Hi " <> (usr ^. userLogin . unUserLogin . html)
+                        ul_ [class_ "pop-menu-list"] $ do
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                                i_ [class_ "pop-menu-list-icon icon-eye"] nil
+                                "Profil anzeigen"
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ P.UserSettings] $ do
+                                i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
+                                "Einstellungen"
+                            when (usr ^. userRole == Admin) .
+                                li_ [class_ "pop-menu-list-item"]
+                                    . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                                    i_ [class_ "pop-menu-list-icon icon-bolt"] nil
+                                    "Prozessverwaltung"
+                            li_ [class_ "pop-menu-list-item"]
+                                . a_ [href_ P.Logout] $ do
+                                i_ [class_ "pop-menu-list-icon icon-power-off"] nil
+                                "Logout"
+
+renderStatusMessages :: (Monad m) => [StatusMessage] -> HtmlT m ()
+renderStatusMessages msgs = do
+    div_ [class_ "ui-messages"] $ do
+        ul_ $ do
+            renderStatusMessage `mapM_` msgs
+
+renderStatusMessage :: (Monad m) => StatusMessage -> HtmlT m ()
+renderStatusMessage msg = do
+    li_ (msg ^. html)
+
+
+footerMarkup :: (Monad m) => HtmlT m ()
+footerMarkup = do
+    footer_ [class_ "main-footer"] $ do
+        div_ [class_ "grid"] $ do
+            ul_ [class_ "main-footer-menu"] $ do
+                li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
+                li_ $ a_ [href_ P.Imprint] "Impressum"
+            span_ [class_ "main-footer-blurb"] $ do
+                "Made with \x2665 by Liqd"
+                replicateM_ 5 $ toHtmlRaw nbsp
+                toHtml Config.releaseVersion
+                replicateM_ 5 $ toHtmlRaw nbsp
+                a_ [Lucid.onclick_ "createPageSample()"]
+                    "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
+    script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
+    script_ [src_ $ P.TopStatic "js/custom.js"]

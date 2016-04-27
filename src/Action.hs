@@ -18,13 +18,14 @@ module Action
       ActionM
     , ActionLog(logEvent)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
-    , ActionUserHandler(login, logout, userState)
+    , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
     , ActionRandomPassword(mkRandomPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), envRunPersist, envConfig, envLogger
+    , StatusMessage
 
       -- * user handling
     , loginByUser, loginByName
@@ -42,7 +43,7 @@ module Action
     , deleteUser
 
       -- * user state
-    , UserState(..), usUserId, usCsrfToken, usSessionToken
+    , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
 
       -- * vote handling
     , likeIdea
@@ -91,7 +92,7 @@ import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.Monoid
-import Data.String.Conversions (LBS)
+import Data.String.Conversions (ST, LBS)
 import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
@@ -117,18 +118,21 @@ import qualified Frontend.Path as U
 
 -- * constraint types
 
+type StatusMessage = ST
+
 -- | User representation during an action
 data UserState = UserState
     { _usSessionToken :: Maybe ThentosSessionToken
-    , _usCsrfToken :: Maybe CsrfToken
-    , _usUserId :: Maybe (AUID User)
+    , _usCsrfToken    :: Maybe CsrfToken
+    , _usUserId       :: Maybe (AUID User)
+    , _usMessages     :: [StatusMessage]
     }
   deriving (Show, Eq)
 
 makeLenses ''UserState
 
 userLoggedOut :: UserState
-userLoggedOut = UserState Nothing Nothing Nothing
+userLoggedOut = UserState Nothing Nothing Nothing []
 
 data ActionEnv = ActionEnv
     { _envRunPersist :: RunPersist
@@ -213,6 +217,10 @@ class ActionError m => ActionUserHandler m where
     login  :: AUID User -> m ()
     -- | Read the current user state
     userState :: Getting a UserState a -> m a
+    -- | Add ui messages
+    addMessage :: StatusMessage -> m ()
+    -- | Flush all ui messages
+    flushMessages :: m [StatusMessage]
     -- | Make the user log out
     logout :: m ()
 
