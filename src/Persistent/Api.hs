@@ -70,6 +70,7 @@ $(makeAcidic ''AulaData
     , 'editTopic
     , 'editUser
     , 'moveIdeasToLocation
+    , 'saveAndEnactFreeze
     , 'saveDurations
     , 'saveQuorums
     , 'setTopicPhase

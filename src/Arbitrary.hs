@@ -155,7 +155,7 @@ instance Arbitrary EditUserProfile where
     arbitrary = EditUserProfile <$> arb
 
 instance Arbitrary CreateTopic where
-    arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicPhaseDuration
+    arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicRefPhaseEnd
 
 instance Arbitrary EditTopic where
     arbitrary = EditTopic <$> arb <*> arb <*> arb
@@ -168,6 +168,9 @@ instance Arbitrary PageAdminSettingsDurations where
 
 instance Arbitrary PageAdminSettingsQuorum where
     arbitrary = PageAdminSettingsQuorum <$> arb
+
+instance Arbitrary PageAdminSettingsFreeze where
+    arbitrary = PageAdminSettingsFreeze <$> arb
 
 instance Arbitrary AdminViewUsers where
     arbitrary = AdminViewUsers <$> arb
@@ -332,14 +335,14 @@ schoolClasses = schoolClass <$> years <*> names
 instance Arbitrary ProtoTopic where
     arbitrary =
         scaleDown garbitrary
-        <**> (set protoTopicTitle     <$> arbPhrase)
-        <**> (set protoTopicIdeaSpace <$> pure SchoolSpace)
-        <**> (set protoTopicIdeas     <$> pure [])
-        <**> (set protoTopicRefinDays <$> arbTopicPhaseDuration)
+        <**> (set protoTopicTitle       <$> arbPhrase)
+        <**> (set protoTopicIdeaSpace   <$> pure SchoolSpace)
+        <**> (set protoTopicIdeas       <$> pure [])
+        <**> (set protoTopicRefPhaseEnd <$> arbTopicRefPhaseEnd)
 
--- FIXME: if we don't make this deterministic, tests will fail.
-arbTopicPhaseDuration :: Gen Timestamp
-arbTopicPhaseDuration = pure constantSampleTimestamp
+-- FIXME: for now this needs to be kept deterministic, or tests fail.
+arbTopicRefPhaseEnd :: Gen Timestamp
+arbTopicRefPhaseEnd = pure constantSampleTimestamp
 
 instance Arbitrary Topic where
     arbitrary =
@@ -423,6 +426,9 @@ instance Arbitrary Durations where
     arbitrary = garbitrary
 
 instance Arbitrary Quorums where
+    arbitrary = garbitrary
+
+instance Arbitrary Freeze where
     arbitrary = garbitrary
 
 instance Arbitrary RoleSelection where

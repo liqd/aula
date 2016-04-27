@@ -50,6 +50,13 @@ data PageAdminSettingsQuorum =
 
 instance Page PageAdminSettingsQuorum
 
+-- | Admin settings: Freeze
+data PageAdminSettingsFreeze =
+    PageAdminSettingsFreeze Freeze
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminSettingsFreeze
+
 -- | 11.3 Admin settings: Manage groups & permissions
 data AdminViewUsers = AdminViewUsers [UserView]
   deriving (Eq, Show, Read)
@@ -117,6 +124,7 @@ makeLenses ''CreateUserPayload
 data MenuItem
     = MenuItemDurations
     | MenuItemQuorum
+    | MenuItemFreeze
     | MenuItemClasses
     | MenuItemUsers
     | MenuItemClassesAndUsers
@@ -134,6 +142,10 @@ instance ToMenuItem PageAdminSettingsDurations where
 -- | 11.2 Admin settings: Quorum
 instance ToMenuItem PageAdminSettingsQuorum where
     toMenuItem _ = MenuItemQuorum
+
+-- | Admin settings: Freeze
+instance ToMenuItem PageAdminSettingsFreeze where
+    toMenuItem _ = MenuItemFreeze
 
 -- | 11.3 Admin settings: Manage groups & permissions
 instance ToMenuItem AdminViewUsers where
@@ -176,6 +188,7 @@ adminFrame t bdy = do
             ul_ [] $ do
                 li_ [] $ menulink tab MenuItemDurations
                 li_ [] $ menulink tab MenuItemQuorum
+                li_ [] $ menulink tab MenuItemFreeze
                 if tab `elem` [MenuItemUsers, MenuItemClasses]
                     then do
                         li_ [] $ do
@@ -210,6 +223,8 @@ menulink' targetMenuItem =
         -> MenuLink "tab-duration" U.AdminDuration "Dauer der Phasen"
     MenuItemQuorum
         -> MenuLink "tab-qourum" U.AdminQuorum "Quorum"
+    MenuItemFreeze
+        -> MenuLink "tab-freeze" U.AdminFreeze "Ferienmodus"
     MenuItemUsers
         -> MenuLink "tab-groups-perms-user"  U.AdminViewUsers "Nutzer"
     MenuItemClasses
@@ -289,6 +304,42 @@ adminQuorum =
     FormPageHandler
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
         (update . SaveQuorums)
+
+
+-- ** Freeze
+
+instance FormPage PageAdminSettingsFreeze where
+    type FormPagePayload PageAdminSettingsFreeze = Freeze
+
+    formAction _   = U.Admin U.AdminFreeze
+    redirectOf _ _ = U.Admin U.AdminFreeze
+
+    makeForm (PageAdminSettingsFreeze current) =
+        "freeze" .: DF.choice ((id &&& showOption) <$> [minBound..]) (Just current)
+      where
+        showOption NotFrozen = "Normalbetrieb (aufgetaut)"
+        showOption Frozen    = "Ferienbetrieb (eingefroren)"
+
+    formPage v form p = adminFrame p . semanticDiv p . form $ do
+        p_ "Im Ferienbetrieb sind die folgenden Änderungen zu beachten:"
+        ul_ $ do
+            li_ "Die Zeit bis zum Ablauf von Ausarbeitungsphase und Abstimmungsphase wird angehalten."
+            li_ "In der wilde-Ideen-Phase kann nicht mehr gewählt werden."
+            li_ "In der Abstimmugnsphase kann nicht mehr gewählt werden."
+            li_ "Es kann nicht mehr auf Kommentare abgestimmt werden."
+
+        label_ [class_ "input-append"] $ do
+            span_ [class_ "label-text"] "Aktueller status"
+            DF.inputSelect "freeze" v
+        DF.inputSubmit "Status setzen!"
+
+adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
+adminFreeze =
+    FormPageHandler
+        (PageAdminSettingsFreeze <$> query (view dbFreeze))
+        (\payload -> do
+             now <- getCurrentTimestamp
+             update $ SaveAndEnactFreeze now payload)
 
 
 -- ** roles and permisisons

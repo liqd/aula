@@ -49,13 +49,13 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea mphase quo _voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea phase quo _voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
                         (ctx ^. renderContextUser . userRole)
                         idea
-                        mphase
+                        phase
 
             when (IdeaInViewTopic == whatListPage) $ do
                 feasibilityVerdict False idea caps

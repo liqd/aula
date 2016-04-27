@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
@@ -61,7 +62,10 @@ instance Page ViewTopic where
     extraBodyClasses _ = ["m-shadow"]
 
 -- | 10.1 Create topic: Create topic
-data CreateTopic = CreateTopic IdeaSpace [Idea] Timestamp
+data CreateTopic = CreateTopic
+    { _createTopicIdeaSpace   :: IdeaSpace
+    , _createTopicIdeas       :: [Idea]
+    , _createTopicRefPhaseEnd :: Timestamp }
   deriving (Eq, Show, Read)
 
 instance Page CreateTopic
@@ -156,9 +160,13 @@ viewTopicHeaderDiv ctx topic tab = do
                       "Stimme Beauftragen"
 
             case phase of
-                PhaseRefinement _ -> createIdeaButton >> delegateVoteButton
+                PhaseWildIdea     -> createIdeaButton
+                PhaseWildFrozen   -> createIdeaButton
+                PhaseRefinement{} -> createIdeaButton >> delegateVoteButton
+                PhaseRefFrozen{}  -> createIdeaButton >> delegateVoteButton
                 PhaseJury         -> delegateVoteButton
-                PhaseVoting     _ -> delegateVoteButton
+                PhaseVoting{}     -> delegateVoteButton
+                PhaseVotFrozen{}  -> delegateVoteButton
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
@@ -172,9 +180,13 @@ viewTopicHeaderDiv ctx topic tab = do
               -- forth between delegation and idea tabs, either.
 
             case phase of
-                PhaseRefinement _ -> t1
+                PhaseWildIdea     -> t1
+                PhaseWildFrozen   -> t1
+                PhaseRefinement{} -> t1
+                PhaseRefFrozen{}  -> t1
                 PhaseJury         -> t1
-                PhaseVoting     _ -> t1 >> t2
+                PhaseVoting{}     -> t1 >> t2
+                PhaseVotFrozen{}  -> t1 >> t2
                 PhaseResult       -> t1 >> t2 >> t3 >> t4
   where
     phase   = topic ^. topicPhase
@@ -189,14 +201,16 @@ instance FormPage CreateTopic where
 
     redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
-    makeForm (CreateTopic space ideas timestamp) =
+    makeForm CreateTopic{ _createTopicIdeaSpace
+                        , _createTopicIdeas
+                        , _createTopicRefPhaseEnd } =
         ProtoTopic
         <$> ("title" .: DF.text nil)
         <*> ("desc"  .: (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil)
-        <*> pure space
-        <*> makeFormIdeaSelection ideas
-        <*> pure timestamp
+        <*> pure _createTopicIdeaSpace
+        <*> makeFormIdeaSelection _createTopicIdeas
+        <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
         semanticDiv p $ do

@@ -320,6 +320,8 @@ type AulaAdmin =
        "duration" :> FormHandler PageAdminSettingsDurations
        -- quorum
   :<|> "quorum" :> FormHandler PageAdminSettingsQuorum
+       -- partial freezing
+  :<|> "freeze" :> FormHandler PageAdminSettingsFreeze
        -- groups and permissions
   :<|> "users" :> GetH (Frame AdminViewUsers)
   :<|> "user" :> "create" :> FormHandler AdminCreateUser
@@ -341,6 +343,7 @@ aulaAdmin :: ActionM m => ServerT AulaAdmin m
 aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
+  :<|> form Page.adminFreeze
   :<|> makeFrame Page.adminViewUsers
   :<|> form Page.adminCreateUser
   :<|> makeFrame Page.adminViewClasses

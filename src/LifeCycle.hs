@@ -1,5 +1,6 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -21,6 +22,7 @@ where
 
 import Control.Lens
 import Data.Monoid
+import Data.Time
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
 
@@ -32,9 +34,11 @@ import Types
 data PhaseChange
     = RefinementPhaseTimeOut
     | RefinementPhaseMarkedByModerator
-    | AllIdeasAreMarked Timestamp
+    | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
     | VotingPhaseTimeOut
     | VotingPhaseSetbackToJuryPhase
+    | PhaseFreeze { _phaseChangeFreezeNow :: Timestamp }
+    | PhaseThaw { _phaseChangeThawNow :: Timestamp }
   deriving (Eq, Show)
 
 data PhaseAction
@@ -46,16 +50,35 @@ data PhaseAction
 
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans (PhaseRefinement _) RefinementPhaseTimeOut
+phaseTrans PhaseRefinement{} RefinementPhaseTimeOut
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans (PhaseRefinement _) RefinementPhaseMarkedByModerator
+phaseTrans PhaseRefinement{} RefinementPhaseMarkedByModerator
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseJury (AllIdeasAreMarked newPhaseDuration)
-    = Just (PhaseVoting newPhaseDuration, [])
-phaseTrans (PhaseVoting _) VotingPhaseTimeOut
+phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
+    = Just (PhaseVoting _phaseChangeVotPhaseEnd, [])
+phaseTrans PhaseVoting{} VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans (PhaseVoting _) VotingPhaseSetbackToJuryPhase
+phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
     = Just (PhaseJury, [UnmarkAllIdeas])
+-- Freezing and thawing.
+--
+-- There are no frozen variants of @PhaseJury@ and @PhaseResult@.
+-- Freezing or thawing those phases has no effect.  (We do not throw
+-- an exception for these because that would require to handle this
+-- case in other places where it is less convenient, I think.)
+phaseTrans PhaseRefinement{_refPhaseEnd} (PhaseFreeze now)
+    = Just (PhaseRefFrozen {_refPhaseLeftover = realToFrac $ unTimestamp _refPhaseEnd `diffUTCTime` unTimestamp now}, [])
+phaseTrans PhaseRefFrozen{_refPhaseLeftover} (PhaseThaw now)
+    = Just (PhaseRefinement {_refPhaseEnd = Timestamp $ realToFrac _refPhaseLeftover `addUTCTime` unTimestamp now}, [])
+phaseTrans PhaseJury PhaseFreeze{} = Just (PhaseJury, [])
+phaseTrans PhaseJury PhaseThaw{} = Just (PhaseJury, [])
+phaseTrans PhaseVoting{_votPhaseEnd} (PhaseFreeze now)
+    = Just (PhaseVotFrozen {_votPhaseLeftover = realToFrac $ unTimestamp _votPhaseEnd `diffUTCTime` unTimestamp now}, [])
+phaseTrans PhaseVotFrozen{_votPhaseLeftover} (PhaseThaw now)
+    = Just (PhaseVoting {_votPhaseEnd = Timestamp $ realToFrac _votPhaseLeftover `addUTCTime` unTimestamp now}, [])
+phaseTrans PhaseResult PhaseFreeze{} = Just (PhaseResult, [])
+phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
+-- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
 
 
@@ -78,9 +101,9 @@ data IdeaCapability
 
 instance SOP.Generic IdeaCapability
 
-ideaCapabilities :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
-ideaCapabilities u r i mp =
-       phaseCap u r i mp
+ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
+ideaCapabilities u r i p =
+       phaseCap u r i p
     <> editCap u r i
     <> moveBetweenTopicsCap r
 
@@ -90,17 +113,29 @@ editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
 moveBetweenTopicsCap :: Role -> [IdeaCapability]
 moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 
-phaseCap :: AUID User -> Role -> Idea -> Maybe Phase -> [IdeaCapability]
-phaseCap _ r i Nothing  = wildIdeaCap i r
-phaseCap u r i (Just p) = case p of
-    PhaseRefinement _ -> phaseRefinementCap i r
+phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
+phaseCap u r i p = case p of
+    PhaseWildIdea     -> wildIdeaCap i r
+    PhaseWildFrozen   -> wildFrozenCap i r
+    PhaseRefinement{} -> phaseRefinementCap i r
+    PhaseRefFrozen{}  -> phaseRefFrozenCap i r
     PhaseJury         -> phaseJuryCap i r
-    PhaseVoting     _ -> phaseVotingCap i r
+    PhaseVoting{}     -> phaseVotingCap i r
+    PhaseVotFrozen{}  -> phaseVotFrozenCap i r
     PhaseResult       -> phaseResultCap u i r
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+wildFrozenCap :: Idea -> Role -> [IdeaCapability]
+wildFrozenCap _i = \case
+    Student    _clss -> [CanComment]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -116,6 +151,15 @@ phaseRefinementCap _i = \case
     Principal        -> []
     Admin            -> []
 
+phaseRefFrozenCap :: Idea -> Role -> [IdeaCapability]
+phaseRefFrozenCap _i = \case
+    Student    _clss -> [CanComment]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
+
 phaseJuryCap :: Idea -> Role -> [IdeaCapability]
 phaseJuryCap _i = \case
     Student    _clss -> []
@@ -128,6 +172,15 @@ phaseJuryCap _i = \case
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
     Student    _clss -> onFeasibleIdea i [CanVote]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+phaseVotFrozenCap :: Idea -> Role -> [IdeaCapability]
+phaseVotFrozenCap _i = \case
+    Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []

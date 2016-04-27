@@ -417,12 +417,12 @@ data Topic = Topic
 instance SOP.Generic Topic
 
 data ProtoTopic = ProtoTopic
-    { _protoTopicTitle     :: ST
-    , _protoTopicDesc      :: Document
-    , _protoTopicImage     :: URL
-    , _protoTopicIdeaSpace :: IdeaSpace
-    , _protoTopicIdeas     :: [AUID Idea]
-    , _protoTopicRefinDays :: Timestamp
+    { _protoTopicTitle       :: ST
+    , _protoTopicDesc        :: Document
+    , _protoTopicImage       :: URL
+    , _protoTopicIdeaSpace   :: IdeaSpace
+    , _protoTopicIdeas       :: [AUID Idea]
+    , _protoTopicRefPhaseEnd :: Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -443,9 +443,16 @@ instance SOP.Generic EditTopicData
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseRefinement Timestamp  -- ^ 2. "Ausarbeitungsphase"
+    PhaseWildIdea
+  | PhaseWildFrozen
+  | PhaseRefinement { _refPhaseEnd :: Timestamp }
+                               -- ^ 2. "Ausarbeitungsphase"
+  | PhaseRefFrozen  { _refPhaseLeftover :: Double }
+      -- morally @NominalDiffTime@, but it has no @Read@ instance (and Pico has no @Binary@)
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
-  | PhaseVoting     Timestamp  -- ^ 4. "Abstimmungsphase"
+  | PhaseVoting     { _votPhaseEnd :: Timestamp }
+                               -- ^ 4. "Abstimmungsphase"
+  | PhaseVotFrozen  { _votPhaseLeftover :: Double }
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -453,9 +460,13 @@ instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
-    PhaseRefinement _ -> "Ausarbeitungsphase"
+    PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
+    PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
+    PhaseRefinement{} -> "Ausarbeitungsphase"
+    PhaseRefFrozen{}  -> "Ausarbeitungsphase"
     PhaseJury         -> "Prüfungsphase"
-    PhaseVoting     _ -> "Abstimmungsphase"
+    PhaseVoting{}     -> "Abstimmungsphase"
+    PhaseVotFrozen{}  -> "Abstimmungsphase"
     PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
@@ -628,9 +639,15 @@ data Quorums = Quorums
 
 instance SOP.Generic Quorums
 
+data Freeze = NotFrozen | Frozen
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+
+instance SOP.Generic Freeze
+
 data Settings = Settings
     { _durations :: Durations
     , _quorums   :: Quorums
+    , _freeze    :: Freeze
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -640,6 +657,7 @@ defaultSettings :: Settings
 defaultSettings = Settings
     { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
     , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
+    , _freeze    = NotFrozen
     }
 
 -- * aula-specific helper types
@@ -871,6 +889,7 @@ instance Binary UserSettings
 instance Binary DurationDays
 instance Binary Durations
 instance Binary Quorums
+instance Binary Freeze
 instance Binary Settings
 
 makePrisms ''AUID
@@ -906,6 +925,7 @@ makeLenses ''Durations
 makeLenses ''EditTopicData
 makeLenses ''EditUserData
 makeLenses ''EmailAddress
+makeLenses ''Freeze
 makeLenses ''GMetaInfo
 makeLenses ''Idea
 makeLenses ''IdeaJuryResult
@@ -949,6 +969,7 @@ deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
 deriveSafeCopy 0 'base ''EditUserData
+deriveSafeCopy 0 'base ''Freeze
 deriveSafeCopy 0 'base ''GMetaInfo
 deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaJuryResult

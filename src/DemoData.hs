@@ -278,12 +278,12 @@ genInitialTestDb = do
             })
 
     topic <- update $ AddTopic (EnvWith user1 constantSampleTimestamp ProtoTopic
-        { _protoTopicTitle     = "topic-title"
-        , _protoTopicDesc      = Markdown "topic-desc"
-        , _protoTopicImage     = ""
-        , _protoTopicIdeaSpace = SchoolSpace
-        , _protoTopicIdeas     = []
-        , _protoTopicRefinDays = constantSampleTimestamp
+        { _protoTopicTitle       = "topic-title"
+        , _protoTopicDesc        = Markdown "topic-desc"
+        , _protoTopicImage       = ""
+        , _protoTopicIdeaSpace   = SchoolSpace
+        , _protoTopicIdeas       = []
+        , _protoTopicRefPhaseEnd = constantSampleTimestamp
         })
 
     update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)

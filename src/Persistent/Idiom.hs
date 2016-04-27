@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE Rank2Types          #-}
@@ -9,6 +10,7 @@
 module Persistent.Idiom
 where
 
+import Control.Exception (assert)
 import Control.Lens
 import Control.Monad (unless)
 import Data.Functor.Infix ((<$$>))
@@ -19,6 +21,7 @@ import Servant.Missing (throwError500)
 import qualified Data.Map as Map (size)
 import qualified Generics.SOP as SOP
 
+import LifeCycle
 import Types
 import Persistent.Pure
 
@@ -50,7 +53,7 @@ getVotersForIdea idea = filter hasAccess <$> getActiveUsers
 -- reached.
 data ListInfoForIdea = ListInfoForIdea
     { _listInfoForIdeaIt         :: Idea
-    , _listInfoForIdeaPhase      :: Maybe Phase
+    , _listInfoForIdeaPhase      :: Phase
     , _listInfoForIdeaQuorum     :: Int
     , _listInfoForIdeaNoOfVoters :: Int
     }
@@ -63,12 +66,16 @@ getListInfoForIdea idea = do
     vs <- getVotersForIdea idea
     quPercent <- quorum idea
     let quVotesRequired = length vs * quPercent `div` 100
-    mtopic :: Maybe Topic
-        <- case idea ^. ideaMaybeTopicId of
-            Nothing -> pure Nothing
-            Just tid -> Just <$> (maybe404 =<< findTopic tid)
+    phase :: Phase
+        <- maybe404 =<< case idea ^. ideaMaybeTopicId of
+            Nothing -> do
+                dbFrozen <- view dbFreeze
+                return . Just $ if dbFrozen == Frozen
+                                then PhaseWildFrozen
+                                else PhaseWildIdea
+            Just tid -> view topicPhase <$$> findTopic tid
     voters <- length <$> getVotersForIdea idea
-    pure $ ListInfoForIdea idea (view topicPhase <$> mtopic) quVotesRequired voters
+    pure $ ListInfoForIdea idea phase quVotesRequired voters
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent
@@ -124,9 +131,6 @@ checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
         Just (Feasible _)    -> True
         _                    -> False
 
-setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
-setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
-
 deactivateUser :: AUID User -> AUpdate ()
 deactivateUser uid
     = modifyUser uid (userSettings . userSettingsPassword .~ UserPassDeactivated)
@@ -136,3 +140,25 @@ getUserViews = makeUserView <$$> getAllUsers
 
 findActiveUser :: AUID User -> MQuery User
 findActiveUser uid = (((^? activeUser) . makeUserView) =<<) <$> findUser uid
+
+-- This operation is idempotent, that is, freezing a frozen state
+-- has no effect and similarly for thawing. Otherwise we'd need to make
+-- sure the form treats vacuus setting of the freeze state as invalid.
+--
+-- Note that this operation is atomic, thus ensuring that all topics
+-- are frozen or all are not frozen. Problem could arise, e.g., when
+-- two admins concurrently freeze and thaw, with different speeds.
+saveAndEnactFreeze :: Timestamp -> Freeze -> AUpdate ()
+saveAndEnactFreeze now shouldBeFrozenOrNot = do
+  dbFreeze .= shouldBeFrozenOrNot
+  let change = case shouldBeFrozenOrNot of
+          NotFrozen -> PhaseThaw   now
+          Frozen    -> PhaseFreeze now
+      freezeOrNot topic = do
+          case phaseTrans (topic ^. topicPhase) change of
+            Nothing -> return ()  -- ignored, probably repeated freeze or thaw
+            Just (phase', actions) -> do
+                let !_A = assert (null actions) ()  -- wrong monad to execute'em
+                setTopicPhase (topic ^. _Id) phase'
+  topics <- liftAQuery getTopics
+  mapM_ freezeOrNot topics
