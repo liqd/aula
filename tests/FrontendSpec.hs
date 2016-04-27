@@ -35,5 +35,5 @@ spec = do
             it "bases http response on type `Page404`" $ \wreq -> do
                 get wreq "/nosuchpath" `shouldRespond`
                     [ codeShouldBe 404
-                    , bodyShouldBe . cs . renderText . toHtml $ PublicFrame Page404
+                    , bodyShouldBe . cs . renderText . toHtml $ PublicFrame Page404 []
                     ]

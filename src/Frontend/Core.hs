@@ -417,18 +417,17 @@ form formHandler = getH :<|> postH
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
-    | PublicFrame               { _frameBody :: body }
+    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
 makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => m p -> m (Frame p)
 makeFrame mp = do
   isli <- isLoggedIn
-  msgs <- flushMessages
   let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
   if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
-     | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> pure msgs
-     | otherwise             -> PublicFrame <$> mp
+     | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> flushMessages
+     | otherwise             -> PublicFrame <$> mp <*> flushMessages
 
 
 -- * sort & filter

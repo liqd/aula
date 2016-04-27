@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeOperators              #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -98,7 +99,7 @@ instance ActionUserHandler Action where
 
     userState = use
 
-    logout = put userLoggedOut
+    logout = put userLoggedOut >> addMessage "Danke fürs Mitmachen!"
 
 instance ActionTempCsvFiles Action where
     popTempCsvFile = actionIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile

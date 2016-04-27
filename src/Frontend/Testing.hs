@@ -32,10 +32,10 @@ type AulaTesting =
 
 aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
-       (PublicFrame . PageShow <$> Action.query getIdeas)
-  :<|> (PublicFrame . PageShow <$> Action.query getSpaces)
-  :<|> (PublicFrame . PageShow <$> Action.query getTopics)
-  :<|> (PublicFrame . PageShow <$> Action.query getAllUsers)
+       ((`PublicFrame` []) . PageShow <$> Action.query getIdeas)
+  :<|> ((`PublicFrame` []) . PageShow <$> Action.query getSpaces)
+  :<|> ((`PublicFrame` []) . PageShow <$> Action.query getTopics)
+  :<|> ((`PublicFrame` []) . PageShow <$> Action.query getAllUsers)
 
   :<|> (PageShow <$> mkRandomPassword)
   :<|> undefined  -- (intentional)
