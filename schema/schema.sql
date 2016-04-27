@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS idea_vote (
 );
 
 CREATE TYPE idea_vote_value AS ENUM
-    ('yes', 'no', 'neutral');
+    ('yes', 'no');
 
 CREATE TABLE IF NOT EXISTS feasible (
     id         bigserial   PRIMARY KEY,
