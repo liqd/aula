@@ -234,7 +234,7 @@ instance SOP.Generic IdeaLike
 
 type instance Proto IdeaLike = ()
 
--- | "Stimme" for "Idee".  As opposed to 'CommentVote', which doesn't have neutral.
+-- | "Stimme" for "Idee".  As opposed to 'CommentVote'.
 data IdeaVote = IdeaVote
     { _ideaVoteMeta  :: MetaInfo IdeaVote
     , _ideaVoteValue :: IdeaVoteValue
@@ -1144,7 +1144,7 @@ instance FromHttpApiData IdeaVoteValue where
     parseUrlPiece = \case
         "yes"     -> Right Yes
         "no"      -> Right No
-        _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are allowed"
+        _         -> Left "Ill-formed idea vote value: only `yes' or `no' are allowed"
 
 instance HasUriPart IdeaVoteValue where
     uriPart = fromString . lowerFirst . show
