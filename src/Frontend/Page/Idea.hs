@@ -279,9 +279,8 @@ instance ToHtml IdeaVoteLikeBars where
             voteButtons :: Html ()
             voteButtons = if CanVote `elem` caps
                 then div_ [class_ "voting-buttons"] $ do
-                    voteButton vote Yes     "dafür"
-                    voteButton vote Neutral "neutral"
-                    voteButton vote No      "dagegen"
+                    voteButton vote Yes "dafür"
+                    voteButton vote No  "dagegen"
                 else nil
               where
                 vote = userVoteOnIdea user idea

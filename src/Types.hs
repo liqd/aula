@@ -245,7 +245,7 @@ instance SOP.Generic IdeaVote
 
 type instance Proto IdeaVote = IdeaVoteValue
 
-data IdeaVoteValue = Yes | No | Neutral
+data IdeaVoteValue = Yes | No
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
 
 instance SOP.Generic IdeaVoteValue
@@ -1144,7 +1144,6 @@ instance FromHttpApiData IdeaVoteValue where
     parseUrlPiece = \case
         "yes"     -> Right Yes
         "no"      -> Right No
-        "neutral" -> Right Neutral
         _         -> Left "Ill-formed idea vote value: only `yes', `no' or `neutral' are allowed"
 
 instance HasUriPart IdeaVoteValue where

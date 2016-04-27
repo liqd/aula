@@ -128,7 +128,6 @@ instance CSV.ToRecord URLEventLogItem where
             how = case voteValue of
                     Yes     -> "für"
                     No      -> "gegen"
-                    Neutral -> "neutral zu"
 
         f (EventLogUserVotesOnComment (Middle3 -> idea) comment mcomment updown) = CSV.toRecord
             [ "stimmt " <> how <> " " <> what <> ".", objLink idea ]
