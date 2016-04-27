@@ -640,7 +640,7 @@ data Quorums = Quorums
 instance SOP.Generic Quorums
 
 data Freeze = NotFrozen | Frozen
-  deriving (Eq, Show, Read, Generic)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance SOP.Generic Freeze
 

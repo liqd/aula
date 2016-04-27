@@ -224,7 +224,7 @@ menulink' targetMenuItem =
     MenuItemQuorum
         -> MenuLink "tab-qourum" U.AdminQuorum "Quorum"
     MenuItemFreeze
-        -> MenuLink "tab-freeze" U.AdminFreeze "Freeze"
+        -> MenuLink "tab-freeze" U.AdminFreeze "Ferienmodus"
     MenuItemUsers
         -> MenuLink "tab-groups-perms-user"  U.AdminViewUsers "Nutzer"
     MenuItemClasses
@@ -314,18 +314,17 @@ instance FormPage PageAdminSettingsFreeze where
     formAction _   = U.Admin U.AdminFreeze
     redirectOf _ _ = U.Admin U.AdminFreeze
 
-    makeForm (PageAdminSettingsFreeze q) =  --- FIXME: a big toggle widget?
-        "freeze" .: getFreeze
+    makeForm (PageAdminSettingsFreeze current) =
+        "freeze" .: DF.choice ((id &&& showOption) <$> [minBound..]) (Just current)
       where
-        readFreeze d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
-        getFreeze = readFreeze (defaultSettings ^. freeze) q
+        showOption NotFrozen = "Auftauen"
+        showOption Frozen    = "Einfrieren"
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         label_ [class_ "input-append"] $ do
-            span_ [class_ "label-text"] "FIXME: Freeze?"
-            inputText_ [class_ "input-number input-appendee"] "freeze" v
-            span_ [class_ "input-helper"] "FIXME: NotFrozen/Frozen"
-        DF.inputSubmit "FIXME: Decide!"
+            span_ [class_ "label-text"] "Einfrieren / Auftauen"
+            DF.inputSelect "freeze" v
+        DF.inputSubmit "Speichern!"
 
 adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
 adminFreeze =
