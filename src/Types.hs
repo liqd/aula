@@ -460,8 +460,8 @@ instance SOP.Generic Phase
 
 phaseName :: Phase -> ST
 phaseName = \case
-    PhaseWildIdea     -> "FIXME: Wild idea phase name"
-    PhaseWildFrozen   -> "FIXME: Frozen wild idea phase name"
+    PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
+    PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
     PhaseRefinement{} -> "Ausarbeitungsphase"
     PhaseRefFrozen{}  -> "Ausarbeitungsphase"
     PhaseJury         -> "Prüfungsphase"
