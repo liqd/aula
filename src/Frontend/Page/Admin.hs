@@ -30,7 +30,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Persistent.Api
 import Frontend.Prelude
-import Frontend.Validation (validation, many1, digit)
+import Frontend.Validation hiding (tab, spaces)
 
 import qualified Frontend.Path as U
 
@@ -283,12 +283,15 @@ instance FormPage PageAdminSettingsQuorum where
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
-        <$> ("school-quorum" .: percentage schoolQuorumPercentage)
-        <*> ("class-quorum"  .: percentage classQuorumPercentage)
+        <$> ("school-quorum" .: percentage "School quorum" schoolQuorumPercentage)
+        <*> ("class-quorum"  .: percentage "Class quorum"  classQuorumPercentage)
       where
-        -- TODO: Good error message
-        percentage l = validation (read <$> many1 digit)
-                                  (DF.string (Just (show (q ^. l))))
+        limit n = 1 <= n && n <= 100
+        -- TODO: Translate
+        percentage name getter = validation
+            name
+            (satisfies limit (read <$> many1 digit) <??> "a number between 1 and 100.")
+            (DF.string (Just (show (q ^. getter))))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         label_ [class_ "input-append"] $ do
