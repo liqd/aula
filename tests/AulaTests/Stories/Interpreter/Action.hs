@@ -297,7 +297,7 @@ runClient (Free (SetFreeze shouldBeFrozenOrNot k)) = do
     step . lift $ do
         Page.adminFreeze ^. formProcessor $ shouldBeFrozenOrNot
     postcondition $ do
-        dbFrozen <- lift . query $ view dbFreeze
+        dbFrozen <- lift (query $ view dbFreeze)
         dbFrozen `shouldBe` shouldBeFrozenOrNot
     runClient k
 
