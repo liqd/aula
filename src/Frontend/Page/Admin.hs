@@ -305,7 +305,7 @@ adminQuorum =
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
         (\qs -> do
             update $ SaveQuorums qs
-            addMessage "Die neue Werte wurden gespeichert.")
+            addMessage "Die neuen Werte wurden gespeichert.")
 
 
 -- ** Freeze
@@ -331,7 +331,7 @@ instance FormPage PageAdminSettingsFreeze where
             li_ "Es kann nicht mehr auf Kommentare abgestimmt werden."
 
         label_ [class_ "input-append"] $ do
-            span_ [class_ "label-text"] "Aktueller status"
+            span_ [class_ "label-text"] "Aktueller Status"
             DF.inputSelect "freeze" v
         DF.inputSubmit "Status setzen!"
 
