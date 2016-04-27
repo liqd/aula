@@ -251,15 +251,30 @@ postToForm (F g) = do
         (_, Just payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
         liftIO $ payload' `shouldBe` payload
 
-    it (show (typeOf g) <> " (process *in*valid form input)") $
-        pendingWith "not implemented."  -- FIXME
+    -- TODO: Make a separation
+    it (show (typeOf g) <> " (process *in*valid form input)") . property . monadicIO $ do
+        page <- pick g
+        mpayload <- pick (arbFormPageInvalidPayload page)
+        forM_ mpayload
+            (\payload -> do
+                let frm = makeForm page
+                env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
+
+                (_, payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
+                liftIO $ payload' `shouldBe` Nothing)
+
 
 -- | Arbitrary test data generation for the 'FormPagePayload' type.
 --
 -- In some cases the arbitrary data generation depends on the 'Page' context
 -- and the 'FormPagePayload' has to compute data from the context.
 class FormPage p => ArbFormPagePayload p where
+    -- | Generates valid form inputs.
     arbFormPagePayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen r
+    -- | Generates invalid form inputs, if possible
+    arbFormPageInvalidPayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen (Maybe r)
+    arbFormPageInvalidPayload _ = return Nothing
+
 
 instance ArbFormPagePayload CreateIdea where
     arbFormPagePayload (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
@@ -271,8 +286,15 @@ instance ArbFormPagePayload Frontend.Page.EditIdea where
 instance ArbFormPagePayload CommentIdea where
     arbFormPagePayload _ = arbitrary
 
+-- TODO: Make it nicer
 instance ArbFormPagePayload PageAdminSettingsQuorum where
-    arbFormPagePayload _ = arbitrary
+    arbFormPagePayload _ = Quorums <$> (abs <$> arbitrary)
+                                   <*> (abs <$> arbitrary)
+    arbFormPageInvalidPayload _ =
+        Just <$> (Quorums <$> (((*(-1)) . inc . abs <$> arbitrary))
+                          <*> (((*(-1)) . inc . abs <$> arbitrary)))
+      where
+        inc = (+1)
 
 instance ArbFormPagePayload PageAdminSettingsFreeze where
     arbFormPagePayload _ = arbitrary
