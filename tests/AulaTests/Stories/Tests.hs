@@ -41,11 +41,10 @@ topicTimeoutStory = do
     timeoutTopic topic1
     markIdea idea1 (Left $ Feasible Nothing)
     setFreeze Frozen
-    voteIdea idea1 Yes   -- FIXME: should fail, capabilities should forbid it
+    voteIdea idea1 Yes  -- succeeds, because capabilities only affect UI
     -- FIXME: how to catch the expected error below?
       -- timeoutTopic topic1  -- fails, phase change illegal;
     setFreeze NotFrozen
-    voteIdea idea1 Yes   -- now succeeds
     timeoutTopic topic1  -- now succeeds
     markIdea idea1 (Right $ Winning Nothing)
     setCreatorStatement idea1 "Winner"
