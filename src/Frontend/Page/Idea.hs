@@ -318,7 +318,7 @@ instance FormPage CreateIdea where
 
     formAction (CreateIdea loc) = U.createIdea loc
 
-    redirectOf (CreateIdea _loc) idea = U.viewIdea idea
+    redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
         ProtoIdea
