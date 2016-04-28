@@ -411,8 +411,7 @@ instance FormPage AdminCreateUser where
             -- FIXME: Users with more than one name?
             firstName = validate "First name" (UserFirstName . cs <$> many1 letter <??> "a word")
             lastName = validate "Last name"   (UserLastName . cs <$> many1 letter <??> "a word")
-            -- TODO: Valid username
-            loginName = validateOptional "Login" (UserLogin . cs <$> many1 letter <??> "a word")
+            loginName = validateOptional "Login" (UserLogin . cs <$> manyNM 4 12 letter <??> "a word between 4 and 12 length.")
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
