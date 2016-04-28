@@ -344,7 +344,7 @@ instance ArbFormPagePayload AdminPhaseChange where
 
 -- * helpers
 
--- Make sure taht the boundary values are hit.
+-- Make sure that the boundary values are hit.
 boundary :: (Random a, Num a) => a -> a -> Gen a
 boundary mn mx = frequency
     [ (1, pure mn)
