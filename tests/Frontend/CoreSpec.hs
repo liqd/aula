@@ -341,13 +341,3 @@ instance ArbFormPagePayload AdminEditUser where
 
 instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
-
--- * helpers
-
--- Make sure that the boundary values are hit.
-boundary :: (Random a, Num a) => a -> a -> Gen a
-boundary mn mx = frequency
-    [ (1, pure mn)
-    , (1, pure mx)
-    , (98, choose (mn, mx))
-    ]
