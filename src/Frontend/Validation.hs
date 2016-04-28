@@ -26,11 +26,12 @@ type FieldParser a = Parsec String () a
 -- * field validation
 
 -- FIXME: Use (Error -> Html) instead of toHtml
+-- FIXME: Use red color for error message when displaying them on the form.
 fieldValidation :: String -> FieldParser a -> String -> TD.Result (Html ()) a
 fieldValidation name parser value =
     either (TD.Error . toHtml . errorString) TD.Success $ parse (parser <* eof) name value
   where
-    errorString e = filter (/='\n') $ unwords [sourceName $ errorPos e, errorMsgs $ errorMessages e]
+    errorString e = filter (/='\n') $ unwords [sourceName $ errorPos e, ":", errorMsgs $ errorMessages e]
     -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
     -- are displayed if a parse error happens. Also it gives control to the
     -- client code to make their translation of those connectors.
