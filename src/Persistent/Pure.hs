@@ -124,6 +124,7 @@ module Persistent.Pure
     , commentMetas
     , ideaMetas
     , aulaMetas
+    , aulaUserLogins
     )
 where
 
@@ -223,6 +224,13 @@ aulaMetas t f (AulaData sp is us ts ds st li) =
              <*> (each . metaInfo . t) f ds -- Only one MetaInfo per Delegation
              <*> pure st                    -- No MetaInfo in dbSettings
              <*> pure li                    -- No MetaInfo in dbListId
+
+aulaUserLogins :: AulaSetter UserLogin
+aulaUserLogins = mergeSetters (dbUserMap . each . userLogin) (aulaMetas metaCreatedByLogin)
+  where
+    -- Only valid when the targets of the two setters are non overlapping
+    mergeSetters :: ASetter s t a b -> ASetter t u a b -> Setter s u a b
+    mergeSetters l0 l1 = sets $ \f -> over l1 f . over l0 f
 
 
 -- * transactions
