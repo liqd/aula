@@ -237,12 +237,12 @@ menulink' targetMenuItem =
     MenuItemPhaseChange
         -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
 
-range :: Int -> Int -> FieldParser Int
-range mn mx =
-    satisfies limit (read <$> many1 digit)
-    <??> unwords ["a number between", show mn, "and", show mx, "."]
+inRange :: Int -> Int -> FieldParser Int
+inRange mn mx =
+    satisfies isBetween (read <$> many1 digit)
+    <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."]
   where
-    limit n = mn <= n && n <= mx
+    isBetween n = mn <= n && n <= mx
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
@@ -258,7 +258,7 @@ instance FormPage PageAdminSettingsDurations where
       where
         period name getter = validate
             name
-            (DurationDays <$> range 1 365)
+            (DurationDays <$> inRange 1 366)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
@@ -295,7 +295,7 @@ instance FormPage PageAdminSettingsQuorum where
       where
         percentage name getter = validate
             name
-            (range 1 100)
+            (inRange 1 100)
             (DF.string (Just (show (q ^. getter))))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
