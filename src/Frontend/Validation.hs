@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
--- {-# OPTIONS_GHC -Wall -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 -- TODO: Make it as a structure.
 module Frontend.Validation
@@ -21,12 +21,12 @@ import Frontend.Prelude
 type FieldParser a = Parsec String () a
 
 -- FIXME: Use (Error -> Html) instead of toHtml
-fieldValidation :: String -> FieldParser a -> String -> Result (Html ()) a
-fieldValidation name parser t =
-    either (TD.Error . toHtml . errors) TD.Success $ parse parser name (cs t)
+fieldValidation :: String -> FieldParser a -> String -> TD.Result (Html ()) a
+fieldValidation name parser value =
+    either (TD.Error . toHtml . errorString) TD.Success $ parse parser name value
   where
     -- TODO: Remove '\n' from the error messages
-    errors e = unwords [sourceName $ errorPos e, "-", errorMsgs $ errorMessages e]
+    errorString e = unwords [sourceName $ errorPos e, "-", errorMsgs $ errorMessages e]
     -- TODO: Translation :)
     -- errorMsgs = showErrorMessages "or" "unknown" "excepting" "unexpected" "end of input"
     errorMsgs = showErrorMessages "vagy" "ismeretlen" "ideillo" "nem vart" "sztring vege"
@@ -44,7 +44,7 @@ infix 0 <??>
 p <??> msg = TP.try p <?> msg
 
 satisfies :: (a -> Bool) -> ParsecT s u m a -> ParsecT s u m a
-satisfies pred parser = do
+satisfies predicate parser = do
     x <- parser
-    unless (pred x) $ fail ""
+    unless (predicate x) $ fail ""
     return x
