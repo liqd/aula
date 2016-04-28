@@ -251,7 +251,7 @@ instance FormPage EditUserProfile where
                     h1_ [class_ "main-heading"] "Profil bearbeiten"
                     form $ do
                         label_ $ do -- FIXME style
-                            span_ [class_ "label-text"] "Avatar" -- FIXME english
+                            span_ [class_ "label-text"] "Avatar:"
                             DF.inputFile "avatar" v
                         label_ $ do
                             span_ [class_ "label-text"] "Beschreibung:"
@@ -269,8 +269,6 @@ editUserProfile = FormPageHandler
                 uid <- currentUserId
                 let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
                     url = "/" <> dst
-                -- TODO: resize image
-                -- TODO: copy the resulting image to dst
                 img <- readImageFile (cs file)
                 case img of
                     Left e -> throwError500 $ "image decoding failed: " <> e
