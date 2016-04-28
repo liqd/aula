@@ -22,6 +22,8 @@ module Action
     , ActionRandomPassword(mkRandomPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
+    , ActionAddDb
+    , ActionPhaseChange
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), envRunPersist, envConfig, envLogger
@@ -166,6 +168,10 @@ instance ThrowSendMailError ActionExcept where
 
 type ActionSendMail = HasSendMail ActionExcept ActionEnv
 
+type ActionAddDb m = (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m)
+
+type ActionPhaseChange m = (ActionAddDb m, ActionSendMail m)
+
 type ActionM m =
       ( ActionLog m
       , ActionPersist m
@@ -261,14 +267,12 @@ addWithUser addA user protoA = do
 
 -- FIXME: rename @{currentUserAddDb,addWithCurrentUser}*@ for consistency with 'addWithUser'.
 
-currentUserAddDb :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
-                    (EnvWithProto a -> ev) -> Proto a -> m a
+currentUserAddDb :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
     cUser <- currentUser
     addWithUser addA cUser protoA
 
-currentUserAddDb_ :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) =>
-                     (EnvWithProto a -> ev) -> Proto a -> m ()
+currentUserAddDb_ :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m ()
 currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
 
 -- | Returns the current user
@@ -311,11 +315,6 @@ deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
-
-type ActionPhaseChange m =
-    ( ActionPersist m, ActionSendMail m
-    , ActionUserHandler m, ActionCurrentTimestamp m
-    )
 
 topicPhaseChange :: (ActionPhaseChange m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
@@ -380,8 +379,8 @@ phaseAction topic phasact = do
 
 -- * Page Handling
 
-type Create  a = forall m. (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => Proto a -> m a
-type Create_ a = forall m. (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => Proto a -> m ()
+type Create  a = forall m. (ActionAddDb m) => Proto a -> m a
+type Create_ a = forall m. (ActionAddDb m) => Proto a -> m ()
 
 createIdea :: Create Idea
 createIdea = currentUserAddDb AddIdea
@@ -394,7 +393,7 @@ createTopic proto = do
 
 -- * Vote Handling
 
-likeIdea :: (ActionPersist m, ActionCurrentTimestamp m, ActionUserHandler m) => AUID Idea -> m ()
+likeIdea :: ActionAddDb m => AUID Idea -> m ()
 likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
@@ -460,10 +459,7 @@ reportIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comm
                        -> (ActionPersist m, ActionSendMail m) => m ()
 reportIdeaCommentReply loc ideaId commentId = reportCommentById . CommentKey loc ideaId [commentId]
 
-getIdeaTopicInJuryPhase ::
-    (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m,
-     HasSendMail ActionExcept ActionEnv m)
-    => AUID Idea -> m Topic
+getIdeaTopicInJuryPhase :: ActionPhaseChange m => AUID Idea -> m Topic
 getIdeaTopicInJuryPhase iid = do
     -- FIXME: should this be one transaction?
     idea  <- mquery $ findIdea iid
@@ -475,27 +471,18 @@ getIdeaTopicInJuryPhase iid = do
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase ::
-    (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m,
-     HasSendMail ActionExcept ActionEnv m)
-    => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     topic <- getIdeaTopicInJuryPhase iid
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
     checkCloseJuryPhase topic
 
-unmarkIdeaInJuryPhase ::
-    (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m,
-     HasSendMail ActionExcept ActionEnv m)
-    => AUID Idea -> m ()
+unmarkIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> m ()
 unmarkIdeaInJuryPhase iid = do
     void $ getIdeaTopicInJuryPhase iid
     update $ RemoveIdeaJuryResult iid
 
-checkCloseJuryPhase ::
-      (ActionPersist m, ActionCurrentTimestamp m, HasSendMail ActionExcept ActionEnv m
-      ,ActionUserHandler m)
-      => Topic -> m ()
+checkCloseJuryPhase :: ActionPhaseChange m => Topic -> m ()
 checkCloseJuryPhase topic = do
     -- FIXME: should this be one transaction?  [~~mf] -- I think so, and the same above. I think an
     -- alternative is to check (in the operations above that modify the DB, internally, necessarily
@@ -544,8 +531,7 @@ topicInVotingResetToJury tid = do
 
 -- | Make a topic timeout if the timeout is applicable.
 -- FIXME: Only admin can do that
-topicForceNextPhase :: (ActionPersist m, ActionUserHandler m, ActionSendMail m, ActionCurrentTimestamp m)
-      => AUID Topic -> m ()
+topicForceNextPhase :: ActionPhaseChange m => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of

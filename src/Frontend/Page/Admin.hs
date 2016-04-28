@@ -663,7 +663,7 @@ instance FormPage AdminCreateClass where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-adminCreateClass :: forall m. (ReadTempFile m, ActionM m)
+adminCreateClass :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m)
                               => FormPageHandler m AdminCreateClass
 adminCreateClass = FormPageHandler (pure AdminCreateClass) q
   where
