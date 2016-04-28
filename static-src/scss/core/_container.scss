@@ -44,9 +44,10 @@ body.m-shadow {
 }
 
 .main-grid {
-    @include rem(padding, 57px 0);
+    @include rem(margin, 57px auto);
     overflow: visible;
     min-height: 100%;
+    position: relative;
 
     @media screen and (max-width: $desktop-breakpoint) {
         @include rem(padding-left, 22px);
@@ -54,7 +55,8 @@ body.m-shadow {
     }
 
     @media screen and (max-width: $tablet-breakpoint) {
-        margin: 0;
+        margin-left: 0;
+        margin-right: 0;
         min-height: 1px;
     }
 }
