@@ -33,7 +33,8 @@ import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
-import Frontend.Prelude hiding (editIdea)
+import Frontend.Prelude hiding ((<|>), editIdea)
+import Frontend.Validation
 import Persistent.Api hiding (EditIdea)
 
 import qualified Action (createIdea)
@@ -311,6 +312,12 @@ instance ToHtml IdeaVoteLikeBars where
             PhaseVotFrozen{}  -> toHtml $ voteBar nil
             PhaseResult       -> toHtml $ voteBar nil
 
+validateMarkdown :: Monad m => FieldName -> DfFormM m String -> DfFormM m Document
+validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
+
+-- TODO: Translation
+validateIdeaTitle :: Monad m => DfFormM m String -> DfFormM m ST.Text
+validateIdeaTitle = fmap cs . validate "Idea title" (many1 (alphaNum <|> space))
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
@@ -321,9 +328,10 @@ instance FormPage CreateIdea where
     redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
+        -- TODO: Translation
         ProtoIdea
-        <$> ("title"         .: DF.text Nothing)
-        <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
+        <$> ("title"         .: validateIdeaTitle (DF.string Nothing))
+        <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
@@ -337,9 +345,10 @@ instance FormPage EditIdea where
     redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
+        -- TODO: Translation
         ProtoIdea
-        <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
-        <*> ("idea-text"     .: ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
+        <$> ("title"         .: validateIdeaTitle (DF.string . Just . cs $ idea ^. ideaTitle))
+        <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string . Just . cs . unMarkdown $ idea ^. ideaDesc))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
@@ -442,7 +451,8 @@ instance FormPage CreatorStatement where
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea
 
     makeForm (CreatorStatement idea) =
-        "statement-text" .: (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
+        -- TODO: Translate
+        "statement-text" .: validateMarkdown "Creator Statement" (DF.string (cs . unMarkdown <$> creatorStatementOfIdea idea))
 
     -- FIXME styling
     formPage v form p@(CreatorStatement idea) =
