@@ -237,32 +237,23 @@ menulink' targetMenuItem =
     MenuItemPhaseChange
         -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
 
-inRange :: Int -> Int -> FieldParser Int
-inRange mn mx =
-    satisfies isBetween (read <$> many1 digit)
-    <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."]
-  where
-    isBetween n = mn <= n && n <= mx
-
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
 
     formAction _ = U.Admin U.AdminDuration
-
-    -- FIXME: Do we redirect to the same page?
     redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
-        Durations <$> ("elab-duration" .: period "Elaboration phase" elaborationPhase)
-                  <*> ("vote-duration" .: period "Vote phase" votingPhase)
+        Durations <$> ("elab-duration" .: period (pNam PhaseRefinement) elaborationPhase)
+                  <*> ("vote-duration" .: period (pNam PhaseVoting)     votingPhase)
       where
         period name getter = validate
             name
             (DurationDays <$> inRange 1 366)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
+        pNam ph = cs . phaseName $ ph (error "PageAdminSettingsDurations: impossible")
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
-        -- FIXME these should be "number" fields
         label_ [class_ "input-append"] $ do
             span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
             inputText_ [class_ "input-number input-appendee"] "elab-duration" v
@@ -759,10 +750,9 @@ instance FormPage AdminPhaseChange where
             <$> ("topic-id" .: topicId (DF.string Nothing))
             <*> ("dir"      .: DF.choice choices Nothing)
       where
-        choices = map (id &&& toHtml . phaseChangeDirText) [Forward, Backward]
-        -- TODO: Translation
-        topicId = validate "Topic id"
-            (AUID . read . cs <$> many1 digit <??> "a number")
+        choices = map (id &&& toHtml) [Forward, Backward]
+        topicId = validate "ID des Themas"
+            (AUID . read . cs <$> many1 digit <??> "Ziffern von 0-9")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"

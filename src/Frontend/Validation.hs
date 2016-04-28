@@ -8,6 +8,7 @@ module Frontend.Validation
     , FieldParser
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
+    , inRange
     , (<??>)
     , manyNM
     , satisfies
@@ -43,6 +44,13 @@ validate n p = TD.validate (fieldValidation n p)
 
 validateOptional :: (Monad m) => String -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
 validateOptional n p = TD.validateOptional (fieldValidation n p)
+
+inRange :: Int -> Int -> FieldParser Int
+inRange mn mx =
+    satisfies isBetween (read <$> many1 digit)
+    <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."]
+  where
+    isBetween n = mn <= n && n <= mx
 
 
 -- * missing things from parsec
