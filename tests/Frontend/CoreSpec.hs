@@ -14,7 +14,7 @@ import Control.Monad.Trans.Except
 import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
-import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
+import Test.QuickCheck
 import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)
 import Text.Digestive.Types
 import Text.Digestive.View
@@ -288,19 +288,23 @@ instance ArbFormPagePayload CommentIdea where
 
 -- TODO: Make it nicer
 instance ArbFormPagePayload PageAdminSettingsQuorum where
-    arbFormPagePayload _ = Quorums <$> (abs <$> arbitrary)
-                                   <*> (abs <$> arbitrary)
+    arbFormPagePayload _ = Quorums <$> boundary 1 100
+                                   <*> boundary 1 100
     arbFormPageInvalidPayload _ =
-        Just <$> (Quorums <$> (((*(-1)) . inc . abs <$> arbitrary))
-                          <*> (((*(-1)) . inc . abs <$> arbitrary)))
+        Just <$> (Quorums <$> invalid <*> invalid)
       where
-        inc = (+1)
+        invalid = oneof
+            [ (*(-1)) . abs <$> arbitrary
+            , (100+) . getPositive <$> arbitrary
+            ]
 
 instance ArbFormPagePayload PageAdminSettingsFreeze where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsDurations where
-    arbFormPagePayload _ = arbitrary
+    arbFormPagePayload _ = Durations <$> days <*> days
+      where
+        days = DurationDays . getPositive <$> arbitrary
 
 instance ArbFormPagePayload PageUserSettings where
     arbFormPagePayload _ = arbitrary
@@ -326,3 +330,14 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
 
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary
+
+
+-- * helpers
+
+-- Make sure if the boundary values are hit
+boundary :: (Random a, Num a) => a -> a -> Gen a
+boundary mn mx = frequency
+    [ (1, return mn)
+    , (1, return mx)
+    , (98, choose (mn, mx))
+    ]

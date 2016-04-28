@@ -237,6 +237,13 @@ menulink' targetMenuItem =
     MenuItemPhaseChange
         -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
 
+range :: Int -> Int -> FieldParser Int
+range mn mx =
+    satisfies limit (read <$> many1 digit)
+    <??> unwords ["a number between", show mn, "and", show mx, "."]
+  where
+    limit n = mn <= n && n <= mx
+
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
 
@@ -246,13 +253,13 @@ instance FormPage PageAdminSettingsDurations where
     redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
-        Durations <$> ("elab-duration" .: getPeriod elaborationPhase)
-                  <*> ("vote-duration" .: getPeriod votingPhase)
+        Durations <$> ("elab-duration" .: period "Elaboration phase" elaborationPhase)
+                  <*> ("vote-duration" .: period "Vote phase" votingPhase)
       where
-        defaultDurations = defaultSettings ^. durations
-        readPeriod (DurationDays d) (DurationDays v) =
-            fromMaybe d . readMaybe <$> DF.string (Just (show v))
-        getPeriod l = DurationDays <$> readPeriod (defaultDurations ^. l) (dur ^. l)
+        period name getter = validation
+            name
+            (DurationDays <$> range 1 365)
+            (DF.string (Just (show (dur ^. getter))))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         -- FIXME these should be "number" fields
@@ -272,7 +279,6 @@ adminDurations =
         (PageAdminSettingsDurations <$> query (view dbDurations))
         (update . SaveDurations)
 
-
 -- ** Quorum
 
 instance FormPage PageAdminSettingsQuorum where
@@ -282,15 +288,14 @@ instance FormPage PageAdminSettingsQuorum where
     redirectOf _ _ = U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
+        -- TODO: Translate
         Quorums
         <$> ("school-quorum" .: percentage "School quorum" schoolQuorumPercentage)
         <*> ("class-quorum"  .: percentage "Class quorum"  classQuorumPercentage)
       where
-        limit n = 1 <= n && n <= 100
-        -- TODO: Translate
         percentage name getter = validation
             name
-            (satisfies limit (read <$> many1 digit) <??> "a number between 1 and 100.")
+            (range 1 100)
             (DF.string (Just (show (q ^. getter))))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
