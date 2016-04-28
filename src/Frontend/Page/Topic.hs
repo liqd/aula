@@ -116,7 +116,7 @@ instance ToHtml ViewTopic where
 viewTopicHeaderDiv :: Monad m => RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv ctx topic tab = do
     let caps = topicCapabilities (ctx ^. renderContextUser . userRole) phase
-    div_ [class_ "topic-header"] $ do
+    div_ [class_ $ "topic-header phase-" <> cs (show (topic ^. topicPhase))] $ do
         header_ [class_ "detail-header"] $ do
             a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
