@@ -5,7 +5,8 @@
 -- TODO: Make it as a structure.
 module Frontend.Validation
     ( module TP
-    , validation
+    , Frontend.Validation.validate
+    , Frontend.Validation.validateOptional
     , (<??>)
     , FieldParser
     , satisfies
@@ -31,9 +32,11 @@ fieldValidation name parser value =
     -- errorMsgs = showErrorMessages "or" "unknown" "excepting" "unexpected" "end of input"
     errorMsgs = showErrorMessages "vagy" "ismeretlen" "ideillo" "nem vart" "sztring vege"
 
-validation :: (Monad m) => String -> FieldParser a -> Form (Html ()) m String -> Form (Html ()) m a
-validation n p = TD.validate (fieldValidation n p)
+validate :: (Monad m) => String -> FieldParser a -> Form (Html ()) m String -> Form (Html ()) m a
+validate n p = TD.validate (fieldValidation n p)
 
+validateOptional :: (Monad m) => String -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
+validateOptional n p = TD.validateOptional (fieldValidation n p)
 
 -- Missing from Parsec.
 infix 0 <??>

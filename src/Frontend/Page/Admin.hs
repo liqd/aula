@@ -256,7 +256,7 @@ instance FormPage PageAdminSettingsDurations where
         Durations <$> ("elab-duration" .: period "Elaboration phase" elaborationPhase)
                   <*> ("vote-duration" .: period "Vote phase" votingPhase)
       where
-        period name getter = validation
+        period name getter = validate
             name
             (DurationDays <$> range 1 365)
             (DF.string (Just (show (dur ^. getter))))
@@ -293,7 +293,7 @@ instance FormPage PageAdminSettingsQuorum where
         <$> ("school-quorum" .: percentage "School quorum" schoolQuorumPercentage)
         <*> ("class-quorum"  .: percentage "Class quorum"  classQuorumPercentage)
       where
-        percentage name getter = validation
+        percentage name getter = validate
             name
             (range 1 100)
             (DF.string (Just (show (q ^. getter))))
