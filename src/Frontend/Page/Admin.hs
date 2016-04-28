@@ -717,22 +717,26 @@ adminPhaseChange = FormPageHandler
     }
 
 data PhaseChangeDir = Forward | Backward
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance SOP.Generic PhaseChangeDir
+
+phaseChangeDirText :: PhaseChangeDir -> ST
+phaseChangeDirText Forward  = "vorwärts"
+phaseChangeDirText Backward = "zurück"
 
 instance ToHtml PhaseChangeDir where
     toHtmlRaw = toHtml
-    toHtml Forward  = "vorwärts"
-    toHtml Backward = "zurück"
+    toHtml    = toHtml . phaseChangeDirText
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
+  deriving (Eq, Show)
 
 -- FIXME: if we keep this, there needs to be some sort of feedback to the admin what happened with
 -- the phase change.  we could redirect to a page showing a message of the form "topic with title
 -- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
 -- session state that gets flushed and appended to the digestive functors errors implicitly whenever
 -- we show a form.
---
--- FIXME: Add test
 instance FormPage AdminPhaseChange where
     type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
 
@@ -742,10 +746,13 @@ instance FormPage AdminPhaseChange where
     -- | Generates a Html view from the given page
     makeForm _ =
         AdminPhaseChangeForTopicData
-            <$> ((AUID . read . cs) <$> "topic-id" .: DF.text Nothing)
-            <*> (                       "dir"      .: DF.choice choices Nothing)
+            <$> ("topic-id" .: topicId (DF.string Nothing))
+            <*> ("dir"      .: DF.choice choices Nothing)
       where
-        choices = map (id &&& toHtml) [Forward, Backward]
+        choices = map (id &&& toHtml . phaseChangeDirText) [Forward, Backward]
+        -- TODO: Translation
+        topicId = validate "Topic id"
+            (AUID . read . cs <$> many1 digit <??> "a number")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"

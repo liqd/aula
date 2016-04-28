@@ -71,6 +71,7 @@ spec = do
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
 --        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
+        , F (arb :: Gen AdminPhaseChange)
         ]
 
 
@@ -189,6 +190,13 @@ instance PayloadToEnv Document where
     payloadToEnvMapping _ (Markdown comment) = \case
         "comment-text" -> pure [TextInput comment]
 
+instance PayloadToEnv AdminPhaseChangeForTopicData where
+    payloadToEnvMapping v (AdminPhaseChangeForTopicData (AUID tid) dir) = \case
+        "topic-id" -> pure [TextInput $ cs (show tid)]
+        "dir"      -> pure [TextInput $ selectValue "dir" v dirs dir]
+      where
+        -- dirs :: [(PhaseChangeDir, Html ())]
+        dirs = (id &&& cs . phaseChangeDirText) <$> [Forward, Backward]
 
 -- * machine room
 
@@ -331,6 +339,8 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary
 
+instance ArbFormPagePayload AdminPhaseChange where
+    arbFormPagePayload _ = arbitrary
 
 -- * helpers
 
