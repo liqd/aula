@@ -119,6 +119,11 @@ module Persistent.Pure
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
+
+    , TraverseMetas
+    , commentMetas
+    , ideaMetas
+    , aulaMetas
     )
 where
 
@@ -184,6 +189,40 @@ dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
+
+type TraverseMetas a = forall b. Traversal' (MetaInfo b) a
+
+commentMetas :: TraverseMetas a -> Traversal' Comment a
+commentMetas t f (Comment m text votes replies deleted) =
+    Comment <$> t f m                               -- A MetaInfo
+            <*> pure text                           -- No MetaInfo in commentText
+            <*> (each . metaInfo . t) f votes       -- Only one MetaInfo per CommentVote
+            <*> (each . commentMetas t) f replies   -- See commentMetas
+            <*> pure deleted                        -- No MetaInfo in commentDeleted
+
+ideaMetas :: TraverseMetas a -> Traversal' Idea a
+ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes) =
+    Idea <$> t f m                              -- A MetaInfo
+         <*> pure title                         -- No MetaInfo in ideaTitle
+         <*> pure desc                          -- No MetaInfo in ideaDesc
+         <*> pure cat                           -- No MetaInfo id ideaCategory
+         <*> pure loc                           -- No MetaInfo id ideaLoc
+         <*> (each . commentMetas t) f comments -- See commentMetas
+         <*> (each . metaInfo . t) f likes      -- Only one MetaInfo per IdeaLike
+         <*> (each . metaInfo . t) f votes      -- Only one MetaInfo per IdeaVote
+         <*> (each . metaInfo . t) f juryRes    -- Only one MetaInfo per IdeaJuryResult
+         <*> (each . metaInfo . t) f voteRes    -- Only one MetaInfo per IdeaVoteResult
+
+-- This is using pattern matching on AulaData to force us to adapt this function when extending it.
+aulaMetas :: TraverseMetas a -> AulaTraversal a
+aulaMetas t f (AulaData sp is us ts ds st li) =
+    AulaData <$> pure sp                    -- No MetaInfo in dbSpaceSet
+             <*> (each . ideaMetas  t) f is -- See ideaMetas
+             <*> (each . metaInfo . t) f us -- Only one MetaInfo per User
+             <*> (each . metaInfo . t) f ts -- Only one MetaInfo per Topic
+             <*> (each . metaInfo . t) f ds -- Only one MetaInfo per Delegation
+             <*> pure st                    -- No MetaInfo in dbSettings
+             <*> pure li                    -- No MetaInfo in dbListId
 
 
 -- * transactions
