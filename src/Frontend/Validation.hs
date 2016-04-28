@@ -61,14 +61,13 @@ satisfies predicate parser = do
     unless (predicate x) $ fail ""
     return x
 
--- | Try to apply the given parser minimum 'n' and maximum 'm' times.
+-- | Try to apply the given parser minimum 'n' and maximum 'n+m' times.
 manyNM
     :: forall s u m a t . (Stream s m t)
     => Int -> Int -> ParsecT s u m a -> ParsecT s u m [a]
 manyNM n m p = do
-    let d = m - n
     xs <- replicateM n p
-    ys <- run d []
+    ys <- run m []
     pure $ xs <> ys
   where
     run :: Int -> [a] -> ParsecT s u m [a]
