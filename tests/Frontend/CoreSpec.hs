@@ -72,6 +72,7 @@ spec = do
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
 --        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
         , F (arb :: Gen AdminPhaseChange)
+        , F (arb :: Gen JudgeIdea)
         ]
 
 
@@ -195,8 +196,14 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
         "topic-id" -> pure [TextInput $ cs (show tid)]
         "dir"      -> pure [TextInput $ selectValue "dir" v dirs dir]
       where
-        -- dirs :: [(PhaseChangeDir, Html ())]
         dirs = (id &&& cs . phaseChangeDirText) <$> [Forward, Backward]
+
+instance PayloadToEnv IdeaJuryResultValue where
+    payloadToEnvMapping _ (Feasible mdoc) = \case
+        "jury-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
+    payloadToEnvMapping _ (NotFeasible doc) = \case
+        "jury-text" -> pure [TextInput $ unMarkdown doc]
+
 
 -- * machine room
 
@@ -341,3 +348,9 @@ instance ArbFormPagePayload AdminEditUser where
 
 instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload JudgeIdea where
+    arbFormPagePayload (Frontend.Page.JudgeIdea IdeaFeasible    _ _)
+        = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> nonEmptyMarkdown)]
+    arbFormPagePayload (Frontend.Page.JudgeIdea IdeaNotFeasible _ _)
+        = NotFeasible <$> nonEmptyMarkdown

@@ -418,11 +418,13 @@ instance FormPage JudgeIdea where
         -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
+        -- TODO: Field validation
         Feasible
         <$> "jury-text" .: (Markdown <$$> (`justIfP` (not . ST.null)) <$> DF.text Nothing)
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
+        -- TODO: Translation
         NotFeasible
-        <$> "jury-text" .: (Markdown <$> DF.text Nothing)
+        <$> "jury-text" .: (validateMarkdown "Jury text" (DF.string Nothing))
 
     -- FIXME styling
     formPage v form p@(JudgeIdea juryType idea _topic) =
