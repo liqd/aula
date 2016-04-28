@@ -111,6 +111,7 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
         uid <- currentUserId
         maybe (pure ()) (update . SetUserEmail uid) memail
         update $ SetUserPass uid oldPass newPass1 newPass2
+        addMessage "Die Änderungen wurden gespeichert."
         pure ()
 
 userHeaderDiv :: (Monad m) => RenderContext -> UserView -> HtmlT m ()
