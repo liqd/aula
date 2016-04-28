@@ -33,7 +33,12 @@ instance IsString UriPart where
 instance s ~ ST => ConvertibleStrings UriPart s where
     convertString = unUriPart
 
--- | An @UriPath@ is a list of @UriPart@s stored as a difference list.
+-- | An @UriPath@ is (1) a list of @UriPart@s stored as a difference list, and (2) an assoc list
+-- containing the query.
+--
+-- When concatenating queries in 'Monoid', the query params of the parts are collected at the end of
+-- the path.  Matrix parameters would offer a way to keep query params near the path segments they
+-- aim at.  Mentioned in RFC3986 as "has been witnessed in the wild, but not often".
 data UriPath = DiffUriParts
     { appendUriParts    :: [UriPart] -> [UriPart]
     , diffUriPartsQuery :: HTTP.Query
