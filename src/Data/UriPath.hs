@@ -57,9 +57,9 @@ DiffUriParts ps qs </> p = DiffUriParts (ps . (p :)) qs
 
 (</#>) :: UriPath -> UriPart -> UriPath
 ps </#> p = ps </> addHash p
-
-addHash :: UriPart -> UriPart
-addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
+  where
+    addHash :: UriPart -> UriPart
+    addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
 
 (</?>) :: UriPath -> HTTP.QueryItem -> UriPath
 (DiffUriParts ps q) </?> q' = DiffUriParts ps (q' : q)
