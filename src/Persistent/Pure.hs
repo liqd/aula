@@ -85,6 +85,7 @@ module Persistent.Pure
     , mkUserLogin
     , modifyUser
     , setUserProfile
+    , setUserProfileDesc
     , setUserEmail
     , setUserPass
     , setUserRole
@@ -396,6 +397,9 @@ modifyUser = modifyAMap dbUserMap
 
 setUserProfile :: AUID User -> UserProfile -> AUpdate ()
 setUserProfile uid = modifyUser uid . (userProfile .~)
+
+setUserProfileDesc :: AUID User -> Document -> AUpdate ()
+setUserProfileDesc uid = modifyUser uid . (userProfile . profileDesc .~)
 
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)

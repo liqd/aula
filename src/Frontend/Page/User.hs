@@ -262,11 +262,12 @@ instance FormPage EditUserProfile where
 editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
 editUserProfile = FormPageHandler
     { _formGetPage   = EditUserProfile <$> currentUser
-    , _formProcessor = \up ->
+    , _formProcessor = \up -> do
+        uid <- currentUserId
         case up ^. profileAvatar of
-            Nothing -> throwError500 "upload FAILED: no file!"  -- FIXME: status code?
+            Nothing ->
+                update . SetUserProfileDesc uid $ up ^. profileDesc
             Just file -> do
-                uid <- currentUserId
                 let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
                     url = "/" <> dst
                 img <- readImageFile (cs file)
