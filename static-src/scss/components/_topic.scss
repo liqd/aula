@@ -1,13 +1,49 @@
 .topic-header {
     @extend .hero-unit;
-    background:     url(/static/images/header_vote_left.png) no-repeat left top,
-                    url(/static/images/header_vote_right.png) no-repeat right top,
-                    white;
     min-height: 337px;
 
     @media screen and (max-width: $tablet-breakpoint) {
-        background: url(/static/images/header_vote_left.png) no-repeat center center;
         background-size: cover;
+    }
+
+    &.phase-PhaseRefinement {
+        background:     url(/static/images/ausarbeitungsphase_l.png) no-repeat left top,
+                        url(/static/images/ausarbeitungsphase_r.png) no-repeat right top,
+                        white;
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            background: url(/static/images/ausarbeitungsphase_l.png) no-repeat center center;
+        }
+    }
+
+    &.phase-PhaseJury {
+        background:     url(/static/images/prufungsphase_l.png) no-repeat left top,
+                        url(/static/images/prufungsphase_r.png) no-repeat right top,
+                        white;
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            background: url(/static/images/prufungsphase_l.png) no-repeat center center;
+        }
+    }
+
+    &.phase-PhaseVoting {
+        background:     url(/static/images/header_vote_left.png) no-repeat left top,
+                        url(/static/images/header_vote_right.png) no-repeat right top,
+                        white;
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            background: url(/static/images/header_vote_left.png) no-repeat center center;
+        }
+    }
+
+    &.phase-PhaseResult {
+        background:     url(/static/images/ergebnisphase_l.png) no-repeat left top,
+                        url(/static/images/ergebnisphase_r.png) no-repeat right top,
+                        white;
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            background: url(/static/images/ergebnisphase_l.png) no-repeat center center;
+        }
     }
 }
 
