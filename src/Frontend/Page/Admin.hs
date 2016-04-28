@@ -259,7 +259,7 @@ instance FormPage PageAdminSettingsDurations where
         period name getter = validate
             name
             (DurationDays <$> range 1 365)
-            (DF.string (Just (show (dur ^. getter))))
+            (DF.string (Just (show . unDurationDays $ dur ^. getter)))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         -- FIXME these should be "number" fields
@@ -401,11 +401,18 @@ instance FormPage AdminCreateUser where
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminCreateUser classes) =
         CreateUserPayload
-            <$> ("firstname"  .: (UserFirstName <$> DF.text Nothing))
-            <*> ("lastname"   .: (UserLastName  <$> DF.text Nothing))
-            <*> ("login"      .: (UserLogin    <$$> DF.optionalText Nothing))
+            <$> ("firstname"  .: (firstName (DF.string Nothing)))
+            <*> ("lastname"   .: (lastName  (DF.string Nothing)))
+            <*> ("login"      .: (loginName (DF.optionalString Nothing)))
             <*> emailField Nothing
             <*> roleForm Nothing Nothing classes
+        where
+            -- TODO: Translation
+            -- FIXME: Users with more than one name?
+            firstName = validate "First name" (UserFirstName . cs <$> many1 letter <??> "a word")
+            lastName = validate "Last name"   (UserLastName . cs <$> many1 letter <??> "a word")
+            -- TODO: Valid username
+            loginName = validateOptional "Login" (UserLogin . cs <$> many1 letter <??> "a word")
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
@@ -658,8 +665,14 @@ instance FormPage AdminCreateClass where
     redirectOf _ _ = U.Admin U.AdminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
-        <$> ("classname" .: DF.text Nothing)  -- FIXME: validate
+          -- FIXME: validate
+        <$> ("classname" .: classname (DF.string Nothing))
         <*> ("file"      .: DF.file)
+      where
+        -- TODO: Translation
+        classname = validate
+            "Class name"
+            (cs <$> many1 alphaNum <??> "classname with the following format [TODO]")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
