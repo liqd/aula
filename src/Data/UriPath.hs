@@ -41,8 +41,7 @@ data UriPath = DiffUriParts
 
 instance Monoid UriPath where
     mempty = DiffUriParts id []
-
-    DiffUriParts ps q  `mappend` DiffUriParts ps' q' = DiffUriParts (ps . ps') (q <> q')
+    DiffUriParts ps q `mappend` DiffUriParts ps' q' = DiffUriParts (ps . ps') (q <> q')
 
 infixl 7 </>
 infixl 7 </#>
