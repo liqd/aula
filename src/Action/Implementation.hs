@@ -100,8 +100,10 @@ instance ActionUserHandler Action where
 
     logout = put userLoggedOut >> addMessage "Danke fürs Mitmachen!"
 
-instance ActionTempFiles Action where
+instance ReadTempFile Action where
     readTempFile = actionIO . LBS.readFile
+
+instance CleanupTempFiles Action where
     cleanupTempFiles = actionIO . releaseFormTempFiles
 
 -- | Creates a natural transformation from Action to the servant handler monad.

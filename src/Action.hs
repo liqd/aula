@@ -75,7 +75,9 @@ module Action
     , topicInVotingResetToJury
 
       -- * extras
-    , ActionTempFiles(readTempFile, cleanupTempFiles), readTempCsvFile, decodeCsv
+    , ReadTempFile(readTempFile), readTempCsvFile
+    , CleanupTempFiles(cleanupTempFiles)
+    , decodeCsv
 
     , MonadServantErr, ThrowServantErr(..)
 
@@ -169,7 +171,8 @@ type ActionM m =
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
-      , ActionTempFiles m
+      , ReadTempFile m
+      , CleanupTempFiles m
       , ActionRandomPassword m
       , ActionCurrentTimestamp m
       , ActionSendMail m
@@ -559,13 +562,15 @@ topicForceNextPhase tid = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
 
--- * csv temp files
+-- * temp files
 
-class Monad m => ActionTempFiles m where
+class Monad m => ReadTempFile m where
     readTempFile :: FilePath -> m LBS
+
+class Monad m => CleanupTempFiles m where
     cleanupTempFiles :: FormData -> m ()
 
-readTempCsvFile :: (ActionTempFiles m, Csv.FromRecord r) => FilePath -> m (Either String [r])
+readTempCsvFile :: (ReadTempFile m, Csv.FromRecord r) => FilePath -> m (Either String [r])
 readTempCsvFile = fmap decodeCsv . readTempFile
 
 decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
