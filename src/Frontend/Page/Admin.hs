@@ -401,9 +401,9 @@ instance FormPage AdminCreateUser where
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminCreateUser classes) =
         CreateUserPayload
-            <$> ("firstname"  .: (firstName (DF.string Nothing)))
-            <*> ("lastname"   .: (lastName  (DF.string Nothing)))
-            <*> ("login"      .: (loginName (DF.optionalString Nothing)))
+            <$> ("firstname"  .: firstName (DF.string Nothing))
+            <*> ("lastname"   .: lastName  (DF.string Nothing))
+            <*> ("login"      .: loginName (DF.optionalString Nothing))
             <*> emailField Nothing
             <*> roleForm Nothing Nothing classes
         where

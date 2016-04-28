@@ -62,7 +62,7 @@ manyNM n m p = do
     let d = m - n
     xs <- replicateM n p
     ys <- run d []
-    pure $ xs ++ ys
+    pure $ xs <> ys
   where
     run :: Int -> [a] -> ParsecT s u m [a]
     run 0 xs = return (reverse xs)
