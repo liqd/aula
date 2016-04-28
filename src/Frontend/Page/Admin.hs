@@ -279,6 +279,7 @@ adminDurations =
         (PageAdminSettingsDurations <$> query (view dbDurations))
         (update . SaveDurations)
 
+
 -- ** Quorum
 
 instance FormPage PageAdminSettingsQuorum where
@@ -288,10 +289,9 @@ instance FormPage PageAdminSettingsQuorum where
     redirectOf _ _ = U.Admin U.AdminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
-        -- TODO: Translate
         Quorums
-        <$> ("school-quorum" .: percentage "School quorum" schoolQuorumPercentage)
-        <*> ("class-quorum"  .: percentage "Class quorum"  classQuorumPercentage)
+        <$> ("school-quorum" .: percentage "Schulquorum"    schoolQuorumPercentage)
+        <*> ("class-quorum"  .: percentage "Klassenquorum"  classQuorumPercentage)
       where
         percentage name getter = validate
             name
@@ -407,12 +407,11 @@ instance FormPage AdminCreateUser where
             <*> emailField Nothing
             <*> roleForm Nothing Nothing classes
         where
-            -- TODO: Translation
             -- FIXME: Users with more than one name?
-            firstName = validate "First name" (UserFirstName . cs <$> many1 letter <??> "a word")
-            lastName = validate "Last name"   (UserLastName . cs <$> many1 letter <??> "a word")
+            firstName = validate "Vorname"  (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben")
+            lastName  = validate "Nachname" (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben")
             loginName = validateOptional "Login"
-                (UserLogin . cs <$> manyNM 4 8 letter <??> "a word between 4 and 12 length.")
+                (UserLogin . cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
@@ -665,14 +664,12 @@ instance FormPage AdminCreateClass where
     redirectOf _ _ = U.Admin U.AdminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
-          -- FIXME: validate
         <$> ("classname" .: classname (DF.string Nothing))
         <*> ("file"      .: DF.file)
       where
-        -- TODO: Translation
         classname = validate
-            "Class name"
-            (cs <$> many1 alphaNum <??> "classname with the following format [TODO]")
+            "Name der Klasse"
+            (cs <$> many1 anyChar <??> "nicht leer")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"

@@ -47,10 +47,9 @@ validateOptional n p = TD.validateOptional (fieldValidation n p)
 
 -- * missing things from parsec
 
--- Missing from Parsec.
 infix 0 <??>
 
--- Set the given message if the parser fails as an error message, pretend
+-- | Set the given message if the parser fails as an error message, pretend
 -- no input is consumed.
 (<??>) :: ParsecT s u m a -> String -> ParsecT s u m a
 p <??> msg = TP.try p <?> msg
