@@ -60,7 +60,7 @@ instance ToHtml ListItemIdea where
             when (IdeaInViewTopic == whatListPage) $ do
                 feasibilityVerdict False idea caps
 
-            a_ [href_ $ U.viewIdea idea Nothing] $ do
+            a_ [href_ $ U.viewIdea idea] $ do
                 -- FIXME use the phase
                 div_ [class_ "col-8-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea

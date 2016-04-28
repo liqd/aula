@@ -318,7 +318,7 @@ instance FormPage CreateIdea where
 
     formAction (CreateIdea loc) = U.createIdea loc
 
-    redirectOf (CreateIdea _loc) idea = U.viewIdea idea Nothing
+    redirectOf (CreateIdea _loc) idea = U.viewIdea idea
 
     makeForm (CreateIdea loc) =
         ProtoIdea
@@ -334,7 +334,7 @@ instance FormPage EditIdea where
 
     formAction (EditIdea idea) = U.editIdea idea
 
-    redirectOf (EditIdea idea) _ = U.viewIdea idea Nothing
+    redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
         ProtoIdea
@@ -382,7 +382,7 @@ instance FormPage CommentIdea where
 
     formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
 
-    redirectOf (CommentIdea idea _) = U.viewIdea idea . Just . view _Id
+    redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentIdea{} =
         "comment-text" .: (Markdown <$> DF.text Nothing)
@@ -439,7 +439,7 @@ instance FormPage CreatorStatement where
     type FormPageResult CreatorStatement = ()
 
     formAction (CreatorStatement idea) = U.creatorStatement idea
-    redirectOf (CreatorStatement idea) _ = U.viewIdea idea Nothing
+    redirectOf (CreatorStatement idea) _ = U.viewIdea idea
 
     makeForm (CreatorStatement idea) =
         "statement-text" .: (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
