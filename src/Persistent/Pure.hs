@@ -119,6 +119,7 @@ module Persistent.Pure
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
+    , dangerousRenameAllLogins
 
     , TraverseMetas
     , commentMetas
@@ -814,3 +815,6 @@ saveQuorums = (dbQuorums .=)
 
 dangerousResetAulaData :: AUpdate ()
 dangerousResetAulaData = put emptyAulaData
+
+dangerousRenameAllLogins :: ST -> AUpdate ()
+dangerousRenameAllLogins suffix = aulaUserLogins . _UserLogin <>= suffix

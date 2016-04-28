@@ -10,6 +10,7 @@ where
 
 import Action
 import Arbitrary
+import Data.String.Conversions (ST)
 import DemoData
 import Persistent.Api
 import Servant
@@ -44,9 +45,11 @@ type ManageStateApi =
        "wipe"        :> Post '[JSON] ()
   :<|> "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
+  :<|> "rename-logins" :> Capture "suffix" ST :> Post '[JSON] ()
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        update DangerousResetAulaData
   :<|> genInitialTestDb
   :<|> mkUniverse
+  :<|> update . DangerousRenameAllLogins
