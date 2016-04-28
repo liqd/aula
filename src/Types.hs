@@ -346,7 +346,12 @@ data CommentVoteKey = CommentVoteKey
 
 instance SOP.Generic CommentVoteKey
 
-type instance Proto Comment = Document
+newtype CommentContent = CommentContent { unCommentContent :: Document }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CommentContent
+
+type instance Proto Comment = CommentContent
 
 -- | "Stimme" for "Verbesserungsvorschlag"
 data CommentVote = CommentVote
@@ -866,6 +871,7 @@ instance Binary Comment
 instance Binary CommentKey
 instance Binary CommentVote
 instance Binary CommentVoteKey
+instance Binary CommentContent
 instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
@@ -966,6 +972,7 @@ makeLenses ''UserView
 deriveSafeCopy 0 'base ''AUID
 deriveSafeCopy 0 'base ''Category
 deriveSafeCopy 0 'base ''Comment
+deriveSafeCopy 0 'base ''CommentContent
 deriveSafeCopy 0 'base ''CommentKey
 deriveSafeCopy 0 'base ''CommentVote
 deriveSafeCopy 0 'base ''CommentVoteKey

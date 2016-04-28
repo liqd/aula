@@ -192,7 +192,8 @@ runClient (Free (MoveIdea _i _ot _nt k)) = do
 
 runClient (Free (CommentIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor) (Markdown c)
+    step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor)
+                                    (CommentContent $ Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
@@ -210,7 +211,8 @@ runClient (Free (RevokeWinner t k)) = do
 runClient (Free (ReplyComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     step . lift $
-        (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor) (Markdown c)
+        (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor)
+                               (CommentContent $ Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 

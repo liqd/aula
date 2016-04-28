@@ -384,9 +384,8 @@ createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
                             i_ [class_ "icon-trash-o"] nil
                             "Idee löschen"
 
-
 instance FormPage CommentIdea where
-    type FormPagePayload CommentIdea = Document
+    type FormPagePayload CommentIdea = CommentContent
     type FormPageResult CommentIdea = Comment
 
     formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
@@ -394,7 +393,8 @@ instance FormPage CommentIdea where
     redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentIdea{} =
-        "comment-text" .: (Markdown <$> DF.text Nothing)
+        -- TODO: Translation
+        "comment-text" .: (CommentContent <$> validateMarkdown "Comment" (DF.string Nothing))
 
     -- FIXME styling
     formPage v form p@(CommentIdea idea _mcomment) =

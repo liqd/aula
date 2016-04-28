@@ -308,6 +308,9 @@ instance Arbitrary CommentVote where
 instance Arbitrary CommentVoteKey where
     arbitrary = garbitrary
 
+instance Arbitrary CommentContent where
+    arbitrary = garbitrary
+
 instance Arbitrary UpDown where
     arbitrary = garbitrary
 

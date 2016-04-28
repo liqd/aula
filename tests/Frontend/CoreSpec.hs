@@ -57,8 +57,8 @@ spec = do
         , H (arb :: Gen CommentWidget)
         ]
     context "PageFormView" $ mapM_ testForm [
---          F (arb :: Gen CreateIdea)  -- FIXME
---          F (arb :: Gen Frontend.Page.EditIdea)  -- FIXME
+--          F (arb :: Gen CreateIdea)  -- FIXME: Category selection gets the default Nothing in parsing the protoIdea
+--          F (arb :: Gen Frontend.Page.EditIdea)  -- FIXME:  Category selection gets the default Nothing in parsing the protoIdea
           F (arb :: Gen CommentIdea)
 --      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
@@ -187,8 +187,8 @@ instance PayloadToEnv Role where
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
-instance PayloadToEnv Document where
-    payloadToEnvMapping _ (Markdown comment) = \case
+instance PayloadToEnv CommentContent where
+    payloadToEnvMapping _ (CommentContent (Markdown comment)) = \case
         "comment-text" -> pure [TextInput comment]
 
 instance PayloadToEnv AdminPhaseChangeForTopicData where
@@ -300,7 +300,7 @@ instance ArbFormPagePayload Frontend.Page.EditIdea where
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPagePayload CommentIdea where
-    arbFormPagePayload _ = arbitrary
+    arbFormPagePayload _ = CommentContent <$> nonEmptyMarkdown
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = Quorums <$> boundary 1 100
