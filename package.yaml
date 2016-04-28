@@ -40,6 +40,7 @@ dependencies:
     - http-client
     - http-media
     - http-types
+    - JuicyPixels >=3.2.6.2 && <3.3
     - lens
     - lucid
     - mime-mail

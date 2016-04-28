@@ -20,3 +20,4 @@ packages/
 aula.yaml*
 /TAGS
 /tags
+/static/avatars/*.png

@@ -35,10 +35,14 @@ notImplemented meth cl = throwError500 $ unlines
     ["Method ", meth, " from class ", cl, " not implemented for instance Dummy"]
 
 instance Monad m => ReadTempFile (DummyT ActionExcept m) where
-    readTempFile     _ = notImplemented "PersistM" "readTempFile"
+    readTempFile     _ = notImplemented "ReadTempFile" "readTempFile"
 
 instance Monad m => CleanupTempFiles (DummyT ActionExcept m) where
-    cleanupTempFiles _ = notImplemented "PersistM" "cleanupTempFiles"
+    cleanupTempFiles _ = notImplemented "CleanupTempFiles" "cleanupTempFiles"
+
+instance Monad m => ActionAvatar (DummyT ActionExcept m) where
+    readImageFile _      = notImplemented "ActionAvatar" "readImageFile"
+    savePngImageFile _ _ = notImplemented "ActionAvatar" "savePngImageFile"
 
 instance Monad m => ActionLog (DummyT ActionExcept m) where
     logEvent _ = pure ()

@@ -80,6 +80,7 @@ module Action
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
     , decodeCsv
+    , ActionAvatar(readImageFile, savePngImageFile)
 
     , MonadServantErr, ThrowServantErr(..)
 
@@ -88,6 +89,7 @@ module Action
     )
 where
 
+import Codec.Picture (DynamicImage)
 import Control.Lens
 import Control.Monad ((>=>), void, when)
 import Control.Monad.Reader (runReader, runReaderT)
@@ -178,6 +180,7 @@ type ActionM m =
       , ActionUserHandler m
       , ActionError m
       , ReadTempFile m
+      , ActionAvatar m
       , CleanupTempFiles m
       , ActionRandomPassword m
       , ActionCurrentTimestamp m
@@ -548,7 +551,11 @@ topicForceNextPhase tid = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
 
--- * temp files
+-- * files
+
+class Monad m => ActionAvatar m where
+    readImageFile :: FilePath -> m (Either String DynamicImage)
+    savePngImageFile :: FilePath -> DynamicImage -> m ()
 
 class Monad m => ReadTempFile m where
     readTempFile :: FilePath -> m LBS

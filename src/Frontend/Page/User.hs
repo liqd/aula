@@ -10,6 +10,7 @@ module Frontend.Page.User
 where
 
 import Action
+import Data.Avatar
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent.Api
@@ -266,10 +267,13 @@ editUserProfile = FormPageHandler
             Nothing -> throwError500 "upload FAILED: no file!"  -- FIXME: status code?
             Just file -> do
                 uid <- currentUserId
-                let ext = takeExtension (cs file)
-                    dst = "static" </> "avatars" </> show uid <.> ext
+                let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
                     url = "/" <> dst
                 -- TODO: resize image
                 -- TODO: copy the resulting image to dst
+                img <- readImageFile (cs file)
+                case img of
+                    Left e -> throwError500 $ "image decoding failed: " <> e
+                    Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs url
     }

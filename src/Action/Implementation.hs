@@ -14,6 +14,7 @@ module Action.Implementation
     )
 where
 
+import Codec.Picture
 import Control.Lens
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
@@ -105,6 +106,10 @@ instance ReadTempFile Action where
 
 instance CleanupTempFiles Action where
     cleanupTempFiles = actionIO . releaseFormTempFiles
+
+instance ActionAvatar Action where
+    readImageFile = actionIO . readImage
+    savePngImageFile p = actionIO . savePngImage p
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.
