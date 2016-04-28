@@ -259,7 +259,8 @@ postToForm (F g) = do
         (_, Just payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
         liftIO $ payload' `shouldBe` payload
 
-    -- TODO: Make a separation
+    -- FIXME: Valid and invalid form data generation should
+    -- be separated and has a different type class.
     it (show (typeOf g) <> " (process *in*valid form input)") . property . monadicIO $ do
         page <- pick g
         mpayload <- pick (arbFormPageInvalidPayload page)
@@ -294,7 +295,6 @@ instance ArbFormPagePayload Frontend.Page.EditIdea where
 instance ArbFormPagePayload CommentIdea where
     arbFormPagePayload _ = arbitrary
 
--- TODO: Make it nicer
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = Quorums <$> boundary 1 100
                                    <*> boundary 1 100
@@ -344,10 +344,10 @@ instance ArbFormPagePayload AdminPhaseChange where
 
 -- * helpers
 
--- Make sure if the boundary values are hit
+-- Make sure taht the boundary values are hit.
 boundary :: (Random a, Num a) => a -> a -> Gen a
 boundary mn mx = frequency
-    [ (1, return mn)
-    , (1, return mx)
+    [ (1, pure mn)
+    , (1, pure mx)
     , (98, choose (mn, mx))
     ]
