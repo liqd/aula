@@ -263,8 +263,10 @@ postToForm (F g) = do
         let frm = makeForm page
         env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
 
-        (_, Just payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
-        liftIO $ payload' `shouldBe` payload
+        (_, mpayload) <- runFailOnError $ postForm "" frm (\_ -> pure env)
+        case mpayload of
+            Nothing       -> fail "Form validation has failed."
+            Just payload' -> liftIO $ payload' `shouldBe` payload
 
     -- FIXME: Valid and invalid form data generation should
     -- be separated and has a different type class.
