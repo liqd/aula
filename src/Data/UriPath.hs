@@ -33,7 +33,12 @@ instance IsString UriPart where
 instance s ~ ST => ConvertibleStrings UriPart s where
     convertString = unUriPart
 
--- | An @UriPath@ is a list of @UriPart@s stored as a difference list.
+-- | An @UriPath@ is (1) a list of @UriPart@s stored as a difference list, and (2) an assoc list
+-- containing the query.
+--
+-- When concatenating queries in 'Monoid', the query params of the parts are collected at the end of
+-- the path.  Matrix parameters would offer a way to keep query params near the path segments they
+-- aim at.  Mentioned in RFC3986 as "has been witnessed in the wild, but not often".
 data UriPath = DiffUriParts
     { appendUriParts    :: [UriPart] -> [UriPart]
     , diffUriPartsQuery :: HTTP.Query
@@ -41,8 +46,7 @@ data UriPath = DiffUriParts
 
 instance Monoid UriPath where
     mempty = DiffUriParts id []
-
-    DiffUriParts ps q  `mappend` DiffUriParts ps' q' = DiffUriParts (ps . ps') (q <> q')
+    DiffUriParts ps q `mappend` DiffUriParts ps' q' = DiffUriParts (ps . ps') (q <> q')
 
 infixl 7 </>
 infixl 7 </#>
@@ -53,9 +57,9 @@ DiffUriParts ps qs </> p = DiffUriParts (ps . (p :)) qs
 
 (</#>) :: UriPath -> UriPart -> UriPath
 ps </#> p = ps </> addHash p
-
-addHash :: UriPart -> UriPart
-addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
+  where
+    addHash :: UriPart -> UriPart
+    addHash (SlashFreeUriPart s) = SlashFreeUriPart ("#" <> s)
 
 (</?>) :: UriPath -> HTTP.QueryItem -> UriPath
 (DiffUriParts ps q) </?> q' = DiffUriParts ps (q' : q)

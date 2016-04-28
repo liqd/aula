@@ -27,7 +27,7 @@ module Frontend.Path
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
-    , viewIdea, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
+    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
@@ -146,8 +146,11 @@ data Space =
 
 instance SOP.Generic Space
 
-viewIdea :: Idea -> Maybe (AUID Comment) -> Main
-viewIdea idea manchor = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) manchor)
+viewIdea :: Idea -> Main
+viewIdea idea = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) Nothing)
+
+viewIdeaAtComment :: Idea -> AUID Comment -> Main
+viewIdeaAtComment idea cid = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) (Just cid))
 
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
