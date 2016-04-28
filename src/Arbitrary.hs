@@ -199,6 +199,9 @@ instance Arbitrary AdminEditClass where
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
 
+instance Arbitrary AdminPhaseChangeForTopicData where
+    arbitrary = AdminPhaseChangeForTopicData <$> arb <*> arb
+
 instance Arbitrary AdminPhaseChange where
     arbitrary = pure AdminPhaseChange
 
@@ -444,6 +447,8 @@ instance Arbitrary CsvUserRecord where
 
 -- FIXME: instance Arbitrary DelegationContext
 
+instance Arbitrary PhaseChangeDir where
+    arbitrary = garbitrary
 
 -- * aula-specific helpers
 

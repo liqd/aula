@@ -18,6 +18,7 @@ import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec.Wai (WaiExpectation)
+import Test.QuickCheck (Gen, frequency, choose)
 
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
@@ -149,3 +150,14 @@ passes = return ()
 
 wpasses :: WaiExpectation
 wpasses = return ()
+
+
+-- * quickcheck
+
+-- | Make sure that the boundary values are hit.
+boundary :: (Random a, Num a) => a -> a -> Gen a
+boundary mn mx = frequency
+    [ (1, pure mn)
+    , (1, pure mx)
+    , (98, choose (mn, mx))
+    ]

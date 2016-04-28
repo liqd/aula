@@ -30,6 +30,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import Action
 import Persistent.Api
 import Frontend.Prelude
+import Frontend.Validation hiding (tab, spaces)
 
 import qualified Frontend.Path as U
 
@@ -240,21 +241,19 @@ instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
 
     formAction _ = U.Admin U.AdminDuration
-
-    -- FIXME: Do we redirect to the same page?
     redirectOf _ _ = U.Admin U.AdminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
-        Durations <$> ("elab-duration" .: getPeriod elaborationPhase)
-                  <*> ("vote-duration" .: getPeriod votingPhase)
+        Durations <$> ("elab-duration" .: period (pNam PhaseRefinement) elaborationPhase)
+                  <*> ("vote-duration" .: period (pNam PhaseVoting)     votingPhase)
       where
-        defaultDurations = defaultSettings ^. durations
-        readPeriod (DurationDays d) (DurationDays v) =
-            fromMaybe d . readMaybe <$> DF.string (Just (show v))
-        getPeriod l = DurationDays <$> readPeriod (defaultDurations ^. l) (dur ^. l)
+        period name getter = validate
+            name
+            (DurationDays <$> inRange 1 366)
+            (DF.string (Just (show . unDurationDays $ dur ^. getter)))
+        pNam ph = cs . phaseName $ ph (error "PageAdminSettingsDurations: impossible")
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
-        -- FIXME these should be "number" fields
         label_ [class_ "input-append"] $ do
             span_ [class_ "label-text"] "Wie viele Tage soll die Ausarbeitungphase dauern?"
             inputText_ [class_ "input-number input-appendee"] "elab-duration" v
@@ -282,11 +281,13 @@ instance FormPage PageAdminSettingsQuorum where
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
-        <$> ("school-quorum" .: getPercentage schoolQuorumPercentage)
-        <*> ("class-quorum"  .: getPercentage classQuorumPercentage)
+        <$> ("school-quorum" .: percentage "Schulquorum"    schoolQuorumPercentage)
+        <*> ("class-quorum"  .: percentage "Klassenquorum"  classQuorumPercentage)
       where
-        readPercentage d v = fromMaybe d . readMaybe <$> DF.string (Just (show v))
-        getPercentage l = readPercentage (defaultSettings ^. quorums . l) (q ^. l)
+        percentage name getter = validate
+            name
+            (inRange 1 100)
+            (DF.string (Just (show (q ^. getter))))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         label_ [class_ "input-append"] $ do
@@ -391,11 +392,17 @@ instance FormPage AdminCreateUser where
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminCreateUser classes) =
         CreateUserPayload
-            <$> ("firstname"  .: (UserFirstName <$> DF.text Nothing))
-            <*> ("lastname"   .: (UserLastName  <$> DF.text Nothing))
-            <*> ("login"      .: (UserLogin    <$$> DF.optionalText Nothing))
+            <$> ("firstname"  .: firstName (DF.string Nothing))
+            <*> ("lastname"   .: lastName  (DF.string Nothing))
+            <*> ("login"      .: loginName (DF.optionalString Nothing))
             <*> emailField Nothing
             <*> roleForm Nothing Nothing classes
+        where
+            -- FIXME: Users with more than one name?
+            firstName = validate "Vorname"  (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben")
+            lastName  = validate "Nachname" (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben")
+            loginName = validateOptional "Login"
+                (UserLogin . cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
@@ -648,8 +655,12 @@ instance FormPage AdminCreateClass where
     redirectOf _ _ = U.Admin U.AdminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
-        <$> ("classname" .: DF.text Nothing)  -- FIXME: validate
+        <$> ("classname" .: classname (DF.string Nothing))
         <*> ("file"      .: DF.file)
+      where
+        classname = validate
+            "Name der Klasse"
+            (cs <$> many1 anyChar <??> "nicht leer")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
@@ -707,22 +718,26 @@ adminPhaseChange = FormPageHandler
     }
 
 data PhaseChangeDir = Forward | Backward
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance SOP.Generic PhaseChangeDir
+
+phaseChangeDirText :: PhaseChangeDir -> ST
+phaseChangeDirText Forward  = "vorwärts"
+phaseChangeDirText Backward = "zurück"
 
 instance ToHtml PhaseChangeDir where
     toHtmlRaw = toHtml
-    toHtml Forward  = "vorwärts"
-    toHtml Backward = "zurück"
+    toHtml    = toHtml . phaseChangeDirText
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
+  deriving (Eq, Show)
 
 -- FIXME: if we keep this, there needs to be some sort of feedback to the admin what happened with
 -- the phase change.  we could redirect to a page showing a message of the form "topic with title
 -- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
 -- session state that gets flushed and appended to the digestive functors errors implicitly whenever
 -- we show a form.
---
--- FIXME: Add test
 instance FormPage AdminPhaseChange where
     type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
 
@@ -732,10 +747,12 @@ instance FormPage AdminPhaseChange where
     -- | Generates a Html view from the given page
     makeForm _ =
         AdminPhaseChangeForTopicData
-            <$> ((AUID . read . cs) <$> "topic-id" .: DF.text Nothing)
-            <*> (                       "dir"      .: DF.choice choices Nothing)
+            <$> ("topic-id" .: topicId (DF.string Nothing))
+            <*> ("dir"      .: DF.choice choices Nothing)
       where
         choices = map (id &&& toHtml) [Forward, Backward]
+        topicId = validate "ID des Themas"
+            (AUID . read . cs <$> many1 digit <??> "Ziffern von 0-9")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"

@@ -44,6 +44,7 @@ dependencies:
     - lucid
     - mime-mail
     - mtl
+    - parsec
     - pretty-show
     - process
     - QuickCheck

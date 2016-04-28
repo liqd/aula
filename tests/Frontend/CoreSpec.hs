@@ -14,7 +14,7 @@ import Control.Monad.Trans.Except
 import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
-import Test.QuickCheck (Arbitrary(..), Gen, forAll, property)
+import Test.QuickCheck
 import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)
 import Text.Digestive.Types
 import Text.Digestive.View
@@ -71,6 +71,7 @@ spec = do
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
 --        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
+        , F (arb :: Gen AdminPhaseChange)
         ]
 
 
@@ -189,6 +190,13 @@ instance PayloadToEnv Document where
     payloadToEnvMapping _ (Markdown comment) = \case
         "comment-text" -> pure [TextInput comment]
 
+instance PayloadToEnv AdminPhaseChangeForTopicData where
+    payloadToEnvMapping v (AdminPhaseChangeForTopicData (AUID tid) dir) = \case
+        "topic-id" -> pure [TextInput $ cs (show tid)]
+        "dir"      -> pure [TextInput $ selectValue "dir" v dirs dir]
+      where
+        -- dirs :: [(PhaseChangeDir, Html ())]
+        dirs = (id &&& cs . phaseChangeDirText) <$> [Forward, Backward]
 
 -- * machine room
 
@@ -251,15 +259,31 @@ postToForm (F g) = do
         (_, Just payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
         liftIO $ payload' `shouldBe` payload
 
-    it (show (typeOf g) <> " (process *in*valid form input)") $
-        pendingWith "not implemented."  -- FIXME
+    -- FIXME: Valid and invalid form data generation should
+    -- be separated and has a different type class.
+    it (show (typeOf g) <> " (process *in*valid form input)") . property . monadicIO $ do
+        page <- pick g
+        mpayload <- pick (arbFormPageInvalidPayload page)
+        forM_ mpayload
+            (\payload -> do
+                let frm = makeForm page
+                env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
+
+                (_, payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
+                liftIO $ payload' `shouldBe` Nothing)
+
 
 -- | Arbitrary test data generation for the 'FormPagePayload' type.
 --
 -- In some cases the arbitrary data generation depends on the 'Page' context
 -- and the 'FormPagePayload' has to compute data from the context.
 class FormPage p => ArbFormPagePayload p where
+    -- | Generates valid form inputs.
     arbFormPagePayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen r
+    -- | Generates invalid form inputs, if possible
+    arbFormPageInvalidPayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen (Maybe r)
+    arbFormPageInvalidPayload _ = return Nothing
+
 
 instance ArbFormPagePayload CreateIdea where
     arbFormPagePayload (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
@@ -272,13 +296,23 @@ instance ArbFormPagePayload CommentIdea where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
-    arbFormPagePayload _ = arbitrary
+    arbFormPagePayload _ = Quorums <$> boundary 1 100
+                                   <*> boundary 1 100
+    arbFormPageInvalidPayload _ =
+        Just <$> (Quorums <$> invalid <*> invalid)
+      where
+        invalid = oneof
+            [ (*(-1)) . abs <$> arbitrary
+            , (100+) . getPositive <$> arbitrary
+            ]
 
 instance ArbFormPagePayload PageAdminSettingsFreeze where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsDurations where
-    arbFormPagePayload _ = arbitrary
+    arbFormPagePayload _ = Durations <$> days <*> days
+      where
+        days = DurationDays . getPositive <$> arbitrary
 
 instance ArbFormPagePayload PageUserSettings where
     arbFormPagePayload _ = arbitrary
@@ -303,4 +337,7 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <*> pure (view _Id <$> ideas)
 
 instance ArbFormPagePayload AdminEditUser where
+    arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
