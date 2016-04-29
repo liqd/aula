@@ -115,6 +115,11 @@ instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a
 app2 :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 app2 f g x y = f $ g x y
 
+infixr 9 <..>
+
+(<..>) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+(<..>) = app2
+
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
 

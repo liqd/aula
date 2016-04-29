@@ -89,12 +89,13 @@ checkNonEmpty name xs
 nonEmpty
     :: (Monad m, Monoid v, IsString v, Eq s, Monoid s, ConvertibleStrings s r)
     => FieldName -> Form v m s -> Form v m r
-nonEmpty = TD.validate . (app2 (fmap cs) checkNonEmpty)
+nonEmpty = TD.validate . fmap cs <..> checkNonEmpty
 
 optionalNonEmpty
     :: (Monad m, Monoid v, IsString v)
     => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
 optionalNonEmpty = TD.validateOptional . checkNonEmpty
+
 
 -- * missing things from parsec
 
