@@ -63,9 +63,8 @@ inRange mn mx =
 
 -- * simple validators
 
--- TODO: Translate
 checkNonEmpty :: (IsString v) => FieldName -> String -> TD.Result v String
-checkNonEmpty name [] = TD.Error . fromString $ unwords [name, ":", "can not be empty"]
+checkNonEmpty name [] = TD.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
 checkNonEmpty _    xs = TD.Success xs
 
 nonEmpty :: (Monad m, Monoid v, IsString v) => FieldName -> Form v m String -> Form v m String
