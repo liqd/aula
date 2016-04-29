@@ -14,7 +14,6 @@ import Data.Avatar
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent.Api
-import qualified Frontend.Path as P
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -155,7 +154,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)]
+                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserDelegations)]
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
@@ -185,7 +184,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx u
             div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
+                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserIdeas)]
                     "Erstellte Ideen"
                 span_ [class_ "heroic-tab-item  m-active"]
                     "Erhaltene Stimmen"
