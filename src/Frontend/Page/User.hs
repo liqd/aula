@@ -14,9 +14,11 @@ import Data.Avatar
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent.Api
+import Frontend.Validation
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import System.FilePath
 
@@ -60,6 +62,27 @@ data UserSettingData = UserSettingData
     }
     deriving (Eq, Show)
 
+-- TODO: Translation
+checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
+checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
+checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
+    userPass checkInitialPwd checkEncryptedPwd passwordError
+        . _userSettingsPassword
+        . _userSettings
+    <$> currentUser
+  where
+    passwordError = DF.Error "The given password is invalid"
+
+    checkInitialPwd p
+      | p == pwd  = pure u
+      | otherwise = passwordError
+
+    -- FIXME: Handle encryption
+    checkEncryptedPwd p
+      | p == cs pwd = pure u
+      | otherwise   = passwordError
+
+
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
@@ -70,12 +93,27 @@ instance FormPage PageUserSettings where
     -- form; without that, UX is still a bit confusing.
     redirectOf _ _ = U.UserSettings
 
+    -- TODO: Translation
     makeForm (PageUserSettings user) =
-        UserSettingData
-        <$> ("email"         .: emailField (user ^. userEmail))
-        <*> ("old-password"  .: DF.optionalText Nothing)
-        <*> ("new-password1" .: DF.optionalText Nothing)
-        <*> ("new-password2" .: DF.optionalText Nothing)
+        DF.validateM checkUserPassword
+        $ DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
+        $ UserSettingData
+            <$> ("email"         .:
+                    emailField (user ^. userEmail)) -- TODO: Field validation.
+            <*> ("old-password"  .:
+                    validateOptional "Old password" password (DF.optionalText Nothing))
+            <*> ("new-password1" .:
+                    validateOptional "New password" password (DF.optionalText Nothing))
+            <*> ("new-password2" .:
+                    validateOptional "New password again" password (DF.optionalText Nothing))
+      where
+        checkPwdAllOrNothing u@(UserSettingData _ Nothing  Nothing  Nothing)  = pure u
+        checkPwdAllOrNothing u@(UserSettingData _ (Just _) (Just _) (Just _)) = pure u
+        checkPwdAllOrNothing _ = DF.Error "All 3 passwords field should be filled."
+
+        checkNewPassword u
+          | profileNewPass1 u == profileNewPass2 u = pure u
+          | otherwise = DF.Error "New passwords do not match."
 
     formPage v form p = do
         semanticDiv p $ do
@@ -111,6 +149,7 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
         maybe (pure ()) (update . SetUserEmail uid) memail
+        -- FIXME: SetUserPass does not saves the new password.
         update $ SetUserPass uid oldPass newPass1 newPass2
         addMessage "Die Änderungen wurden gespeichert."
         pure ()

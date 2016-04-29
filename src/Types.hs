@@ -567,6 +567,12 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
+userPass :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
+userPass initial encrypted deactivated = \case
+    UserPassInitial x   -> initial     x
+    UserPassEncrypted x -> encrypted   x
+    UserPassDeactivated -> deactivated
+
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)
 

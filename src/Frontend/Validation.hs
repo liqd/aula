@@ -66,8 +66,9 @@ validate
 validate n p = TD.validate (fieldValidation n p)
 
 validateOptional
-    :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
-validateOptional n p = TD.validateOptional (fieldValidation n p)
+    :: (Monad m, ConvertibleStrings s String)
+    => FieldName -> FieldParser a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
+validateOptional = TD.validateOptional <..> fieldValidation
 
 inRange :: Int -> Int -> FieldParser Int
 inRange mn mx =
