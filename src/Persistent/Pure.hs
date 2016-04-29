@@ -56,7 +56,7 @@ module Persistent.Pure
     , getIdeasWithTopic
     , addIdeaSpaceIfNotExists
     , addIdea
-    , modifyIdea
+    , withIdea
     , findIdea
     , findIdeaBy
     , findIdeasByTopicId
@@ -83,7 +83,7 @@ module Persistent.Pure
     , addFirstUser
     , mkMetaInfo
     , mkUserLogin
-    , modifyUser
+    , withUser
     , setUserProfile
     , setUserProfileDesc
     , setUserEmail
@@ -94,7 +94,7 @@ module Persistent.Pure
     , setTopicPhase
     , addTopic
     , editTopic
-    , modifyTopic
+    , withTopic
     , moveIdeasToLocation
     , findTopic
     , findTopicBy
@@ -435,23 +435,23 @@ findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> (a -> a) -> AUpdate ()
-modifyAMap l ident = (l . at ident . _Just %=)
+withRecord :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> AulaTraversal a
+withRecord l ident = l . at ident . _Just
 
-modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
-modifyIdea = modifyAMap dbIdeaMap
+withIdea :: AUID Idea -> AulaTraversal Idea
+withIdea = withRecord dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> AUpdate ()
-modifyUser = modifyAMap dbUserMap
+withUser :: AUID User -> AulaTraversal User
+withUser = withRecord dbUserMap
 
 setUserProfile :: AUID User -> UserProfile -> AUpdate ()
-setUserProfile uid = modifyUser uid . (userProfile .~)
+setUserProfile uid profile = withUser uid . userProfile .= profile
 
 setUserProfileDesc :: AUID User -> Document -> AUpdate ()
-setUserProfileDesc uid = modifyUser uid . (userProfile . profileDesc .~)
+setUserProfileDesc uid desc = withUser uid . userProfile . profileDesc .= desc
 
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
-setUserEmail uid = modifyUser uid . (userEmail ?~)
+setUserEmail uid email = withUser uid . userEmail ?= email
 
 setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()
 setUserPass _uid _oldPass newPass1 newPass2 = do
@@ -465,21 +465,21 @@ setUserLoginAndRole uid login role = do
     checkAvailableLogin login
     user <- maybe404 =<< liftAQuery (findUser uid)
     aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
-    modifyUser uid $ (userLogin .~ login)
-                   . (userRole  .~ role)
+    withUser uid %= (userLogin .~ login)
+                  . (userRole  .~ role)
 
 setUserAvatar :: AUID User -> URL -> AUpdate ()
-setUserAvatar uid = modifyUser uid . set userAvatar . Just
+setUserAvatar uid url = withUser uid . userAvatar ?= url
 
 editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
 editTopic topicId (EditTopicData title desc ideas) = do
     topic <- maybe404 =<< liftAQuery (findTopic topicId)
     let space = topic ^. topicIdeaSpace
-    modifyTopic topicId (set topicTitle title . set topicDesc desc)
+    withTopic topicId %= (set topicTitle title . set topicDesc desc)
     moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
-modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
-modifyTopic = modifyAMap dbTopicMap
+withTopic :: AUID Topic -> AulaTraversal Topic
+withTopic = withRecord dbTopicMap
 
 findUser :: AUID User -> MQuery User
 findUser = findInById dbUserMap
@@ -514,10 +514,10 @@ getTopics = view dbTopics
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
 moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
-        modifyIdea ideaId $ ideaLocation .~ location
+        withIdea ideaId . ideaLocation .= location
 
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
-setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
+setTopicPhase tid phase = withTopic tid . topicPhase .= phase
 
 addTopic :: Timestamp -> AddDb Topic
 addTopic now pt = do
@@ -598,7 +598,7 @@ addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just .
 
 -- Removes the vote of the given user.
 removeVoteFromIdea :: AUID Idea -> AUID User -> AUpdate ()
-removeVoteFromIdea iid uid = modifyIdea iid (set (ideaVotes . at uid) Nothing)
+removeVoteFromIdea iid uid = withIdea iid . ideaVotes . at uid .= Nothing
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -646,14 +646,11 @@ addIdeaJuryResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaJuryResult)
 
 removeIdeaJuryResult :: AUID Idea -> AUpdate ()
-removeIdeaJuryResult iid = modifyIdea iid (set ideaJuryResult Nothing)
+removeIdeaJuryResult iid = withIdea iid . ideaJuryResult .= Nothing
 
 setCreatorStatement :: AUID Idea -> Document -> AUpdate ()
-setCreatorStatement iid statement = modifyIdea iid
-    (set (  ideaVoteResult
-          . _Just
-          . ideaVoteResultValue
-          . _Winning) (Just statement))
+setCreatorStatement iid statement =
+    withIdea iid . ideaVoteResult . _Just . ideaVoteResultValue . _Winning ?= statement
 
 instance FromProto IdeaVoteResult where
     fromProto = flip IdeaVoteResult
@@ -663,7 +660,7 @@ addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
 revokeWinnerStatus :: AUID Idea -> AUpdate ()
-revokeWinnerStatus iid = modifyIdea iid (set ideaVoteResult Nothing)
+revokeWinnerStatus iid = withIdea iid . ideaVoteResult .= Nothing
 
 dbComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> AulaTraversal Comment
 dbComment' iid parents ck =
@@ -790,11 +787,9 @@ nextMetaInfo :: KeyOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
 nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()
-editIdea ideaId = modifyIdea ideaId . newIdea
-  where
-    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
-                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
-                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+editIdea ideaId protoIdea = withIdea ideaId %= (ideaTitle     .~ (protoIdea ^. protoIdeaTitle))
+                                             . (ideaDesc      .~ (protoIdea ^. protoIdeaDesc))
+                                             . (ideaCategory  .~ (protoIdea ^. protoIdeaCategory))
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums

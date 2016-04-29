@@ -132,8 +132,7 @@ checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
         _                    -> False
 
 deactivateUser :: AUID User -> AUpdate ()
-deactivateUser uid
-    = modifyUser uid (userSettings . userSettingsPassword .~ UserPassDeactivated)
+deactivateUser uid = withUser uid . userSettings . userSettingsPassword .= UserPassDeactivated
 
 getUserViews :: Query [UserView]
 getUserViews = makeUserView <$$> getAllUsers
