@@ -213,7 +213,7 @@ instance FormPage CreateTopic where
                         , _createTopicRefPhaseEnd } =
         ProtoTopic
         <$> ("title" .: validateTopicTitle (DF.text nil))
-        <*> ("desc"  .: validateMarkdown "Topic" (DF.text nil))
+        <*> ("desc"  .: validateMarkdown "Topic" (Markdown <$> DF.text Nothing))
         <*> ("image" .: DF.text nil) -- FIXME: Figure out validation
         <*> pure _createTopicIdeaSpace
         <*> makeFormIdeaSelection _createTopicIdeas
@@ -257,7 +257,7 @@ instance FormPage EditTopic where
         -- TODO: Translation
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
-        <*> ("desc"  .: validateMarkdown "Topic" (DF.text . Just . unMarkdown $ topic ^. topicDesc))
+        <*> ("desc"  .: validateMarkdown "Topic" ((topic ^. topicDesc) & _Markdown %%~ (DF.text . Just)))
         <*> makeFormIdeaSelection ideas
 
     formPage v form p@(EditTopic _space _topic ideas) = do

@@ -143,10 +143,11 @@ password = cs <$> manyNM 4 8 alphaNum <??> "Invalid password"
 title :: StringFieldParser
 title = cs <$> many1 (alphaNum <|> space)
 
+-- FIXME: Use LensLike
 validateMarkdown
-    :: (Monad m, Eq s, Monoid s, ConvertibleStrings s ST)
-    => FieldName -> TD.Form (Html ()) m s -> TD.Form (Html ()) m Document
-validateMarkdown name = fmap Markdown . nonEmpty name
+    :: (Monad m)
+    => FieldName -> TD.Form (Html ()) m Document -> TD.Form (Html ()) m Document
+validateMarkdown name = fmap Markdown . nonEmpty name . fmap unMarkdown
 
 validateOptionalMarkdown
     :: Monad m
