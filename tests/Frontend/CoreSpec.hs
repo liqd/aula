@@ -263,9 +263,10 @@ postToForm (F g) = do
         let frm = makeForm page
         env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
 
-        (_, mpayload) <- runFailOnError $ postForm "" frm (\_ -> pure env)
+        (v, mpayload) <- runFailOnError $ postForm "" frm (\_ -> pure env)
         case mpayload of
-            Nothing       -> fail "Form validation has failed."
+            Nothing       -> fail $ unwords
+                                ("Form validation has failed:": map show (viewErrors v))
             Just payload' -> liftIO $ payload' `shouldBe` payload
 
     -- FIXME: Valid and invalid form data generation should
@@ -295,7 +296,9 @@ class FormPage p => ArbFormPagePayload p where
 
 
 instance ArbFormPagePayload CreateIdea where
-    arbFormPagePayload (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
+    arbFormPagePayload (CreateIdea location) =
+        (set protoIdeaLocation location <$> arbitrary)
+        <**> (set protoIdeaDesc <$> nonEmptyMarkdown)
 
 instance ArbFormPagePayload Frontend.Page.EditIdea where
     arbFormPagePayload (Frontend.Page.EditIdea idea) =
