@@ -8,12 +8,13 @@
 module Frontend.Page.Login
 where
 
-import Text.Digestive
+import Text.Digestive as DF hiding (Error(..), validate)
 
 import Action (ActionM, query)
 import qualified Action
 import Persistent
 import Frontend.Prelude
+import Frontend.Validation
 
 import qualified Frontend.Path as U
 import qualified Lucid
@@ -54,10 +55,12 @@ instance FormPage PageHomeWithLoginPrompt where
     formAction _   = U.Login
     redirectOf _ _ = U.ListSpaces
 
+    -- TODO: Translation
+    -- FIXME: Validation in login case should not propagate information about what went wrong.
     makeForm _ = validateM checkLogin $
         LoginFormData
-        <$> ("user" .: text Nothing)
-        <*> ("pass" .: text Nothing)
+        <$> ("user" .: validate "Login" username (DF.string Nothing))
+        <*> ("pass" .: validate "Password" password (DF.string Nothing))
 
     formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do

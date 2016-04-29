@@ -390,19 +390,19 @@ instance FormPage AdminCreateUser where
     redirectOf _ _ = U.Admin U.AdminViewUsers
 
     -- FIXME: Show the user's role and class as default in the selections.
+    -- TODO: Field validation
     makeForm (AdminCreateUser classes) =
         CreateUserPayload
             <$> ("firstname"  .: firstName (DF.string Nothing))
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
-            <*> emailField Nothing
-            <*> roleForm Nothing Nothing classes
+            <*> emailField Nothing --TODO
+            <*> roleForm Nothing Nothing classes --TODO
         where
             -- FIXME: Users with more than one name?
             firstName = validate "Vorname"  (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben")
             lastName  = validate "Nachname" (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben")
-            loginName = validateOptional "Login"
-                (UserLogin . cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
+            loginName = validateOptional "Login" (UserLogin <$> username)
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do

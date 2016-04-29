@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -5,23 +6,28 @@
 
 module Frontend.Validation
     ( module TP
+      -- * field validation
     , FieldName
     , FieldParser
-
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
     , nonEmpty
     , optionalNonEmpty
 
+      -- * missing parser combinators
     , (<??>)
     , inRange
     , manyNM
     , satisfies
+
+      -- * common validators
+    , username
+    , password
     )
 where
 
 import Text.Digestive as TD
-import Text.Parsec as TP
+import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
 
 import Frontend.Prelude
@@ -35,9 +41,11 @@ type FieldParser a = Parsec String () a
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
-fieldValidation :: FieldName -> FieldParser a -> String -> TD.Result (Html ()) a
+fieldValidation
+    :: (ConvertibleStrings s [Char])
+    => FieldName -> FieldParser a -> s -> TD.Result (Html ()) a
 fieldValidation name parser value =
-    either (TD.Error . toHtml . errorString) TD.Success $ parse (parser <* eof) name value
+    either (TD.Error . toHtml . errorString) TD.Success $ parse (parser <* eof) name (cs value)
   where
     errorString e = filter (/= '\n') $ unwords [sourceName $ errorPos e, ":", errorMsgs $ errorMessages e]
     -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
@@ -47,7 +55,7 @@ fieldValidation name parser value =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
-validate :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m String -> Form (Html ()) m a
+validate :: (Monad m, ConvertibleStrings s [Char]) => FieldName -> FieldParser a -> Form (Html ()) m s -> Form (Html ()) m a
 validate n p = TD.validate (fieldValidation n p)
 
 validateOptional :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
@@ -104,3 +112,13 @@ manyNM n m p = do
     run l xs = optionMaybe (TP.try p) >>= \case
                     Just x -> (run (l-1) (x:xs))
                     Nothing -> run 0 xs
+
+
+-- * common validators
+
+username :: (ConvertibleStrings String s) => FieldParser s
+username = cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben"
+
+-- TODO: Translation
+password :: (ConvertibleStrings String s) => FieldParser s
+password = cs <$> manyNM 4 8 alphaNum <??> "Invalid password"
