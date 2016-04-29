@@ -266,13 +266,18 @@ editUserProfile = FormPageHandler
         uid <- currentUserId
         case up ^. profileAvatar of
             Nothing ->
-                update . SetUserProfileDesc uid $ up ^. profileDesc
+                -- FIXME: this should not be impossible
+                throwError500 $ "IMPOSSIBLE: editUserProfile"
+                -- update . SetUserProfileDesc uid $ up ^. profileDesc
             Just file -> do
                 let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
                     url = "/" <> dst
                 img <- readImageFile (cs file)
                 case img of
-                    Left e -> throwError500 $ "image decoding failed: " <> e
+                    Left _e ->
+                        -- FIXME: this should be dealt with the Nothing case.
+                        -- throwError500 $ "image decoding failed: " <> e
+                        update . SetUserProfileDesc uid $ up ^. profileDesc
                     Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs url
     }
