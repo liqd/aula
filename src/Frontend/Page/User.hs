@@ -267,7 +267,7 @@ editUserProfile = FormPageHandler
         case up ^. profileAvatar of
             Nothing ->
                 -- FIXME: this should not be impossible
-                throwError500 $ "IMPOSSIBLE: editUserProfile"
+                throwError500 "IMPOSSIBLE: editUserProfile"
                 -- update . SetUserProfileDesc uid $ up ^. profileDesc
             Just file -> do
                 let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
