@@ -27,6 +27,7 @@ module Frontend.Core
     , DfForm
     , DfTextField
     , dfTextField
+    , CSFormTransformer
     , emailField
     , Beside(..)
     , tabSelected
@@ -165,6 +166,10 @@ semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
 type DfForm a = forall m. Monad m =>  DF.Form (Html ()) m a
 type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
+
+type CSFormTransformer m r s =
+    (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
+    => DF.Form (Html ()) m r -> DF.Form (Html ()) m s
 
 -- Usage:
 --    SomeConstructor

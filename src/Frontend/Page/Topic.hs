@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
@@ -26,6 +27,7 @@ import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestam
 import Control.Exception (assert)
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
+import Frontend.Validation hiding (space, tab)
 import LifeCycle (TopicCapability(..), topicCapabilities)
 
 import qualified Action (createTopic)
@@ -193,6 +195,10 @@ viewTopicHeaderDiv ctx topic tab = do
     topicId = topic ^. _Id
     space   = topic ^. topicIdeaSpace
 
+-- TODO: Translation.
+validateTopicTitle :: CSFormTransformer m r s
+validateTopicTitle = validate "Topic title" title
+
 instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
     type FormPageResult CreateTopic = Topic
@@ -201,13 +207,14 @@ instance FormPage CreateTopic where
 
     redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
+    -- TODO: Translation
     makeForm CreateTopic{ _createTopicIdeaSpace
                         , _createTopicIdeas
                         , _createTopicRefPhaseEnd } =
         ProtoTopic
-        <$> ("title" .: DF.text nil)
-        <*> ("desc"  .: (Markdown <$> DF.text Nothing))
-        <*> ("image" .: DF.text nil)
+        <$> ("title" .: validateTopicTitle (DF.text nil))
+        <*> ("desc"  .: validateMarkdown "Topic" (DF.string nil))
+        <*> ("image" .: DF.text nil) -- FIXME: Figure out validation
         <*> pure _createTopicIdeaSpace
         <*> makeFormIdeaSelection _createTopicIdeas
         <*> pure _createTopicRefPhaseEnd
@@ -237,7 +244,6 @@ createOrEditTopic v ideas = do
     footer_ [class_ "form-footer"] $ do
         DF.inputSubmit "Veröffentlichen"
 
-
 instance FormPage EditTopic where
     -- While the input page contains all the wild ideas the result page only contains
     -- the ideas to be added to the topic.
@@ -248,9 +254,10 @@ instance FormPage EditTopic where
     redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
 
     makeForm (EditTopic _space topic ideas) =
+        -- TODO: Translation
         EditTopicData
-        <$> ("title" .: DF.text (Just (topic ^. topicTitle)))
-        <*> ("desc"  .: ((topic ^. topicDesc) & _Markdown %%~ (DF.text . Just)))
+        <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
+        <*> ("desc"  .: validateMarkdown "Topic" (DF.string . Just . cs . unMarkdown $ topic ^. topicDesc))
         <*> makeFormIdeaSelection ideas
 
     formPage v form p@(EditTopic _space _topic ideas) = do

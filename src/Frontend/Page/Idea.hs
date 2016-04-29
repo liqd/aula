@@ -39,7 +39,6 @@ import Persistent.Api hiding (EditIdea)
 
 import qualified Action (createIdea)
 import qualified Data.Map as Map
-import qualified Data.Text as ST
 import qualified Frontend.Path as U
 import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
@@ -312,17 +311,8 @@ instance ToHtml IdeaVoteLikeBars where
             PhaseVotFrozen{}  -> toHtml $ voteBar nil
             PhaseResult       -> toHtml $ voteBar nil
 
-validateMarkdown
-    :: Monad m => FieldName -> DF.Form (Html ()) m String -> DF.Form (Html ()) m Document
-validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
-
-validateOptionalMarkdown
-    :: Monad m
-    => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
-validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
-
-validateIdeaTitle :: Monad m => DF.Form (Html ()) m String -> DF.Form (Html ()) m ST.Text
-validateIdeaTitle = fmap cs . validate "Titel der Idee" (many1 (alphaNum <|> space))
+validateIdeaTitle :: CSFormTransformer m r s
+validateIdeaTitle = validate "Titel der Idee" title
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
@@ -334,7 +324,7 @@ instance FormPage CreateIdea where
 
     makeForm (CreateIdea loc) =
         ProtoIdea
-        <$> ("title"         .: validateIdeaTitle (DF.string Nothing))
+        <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
         <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
@@ -350,7 +340,7 @@ instance FormPage EditIdea where
 
     makeForm (EditIdea idea) =
         ProtoIdea
-        <$> ("title"         .: validateIdeaTitle (DF.string . Just . cs $ idea ^. ideaTitle))
+        <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string . Just . cs . unMarkdown $ idea ^. ideaDesc))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)

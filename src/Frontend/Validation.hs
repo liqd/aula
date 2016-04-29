@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -23,14 +24,18 @@ module Frontend.Validation
       -- * common validators
     , username
     , password
+    , title
+    , validateMarkdown
+    , validateOptionalMarkdown
     )
 where
 
+-- TODO: Rename TD to DF
 import Text.Digestive as TD
 import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
 
-import Frontend.Prelude
+import Frontend.Prelude hiding ((<|>))
 
 type FieldName = String
 type FieldParser a = Parsec String () a
@@ -42,7 +47,7 @@ type FieldParser a = Parsec String () a
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
 fieldValidation
-    :: (ConvertibleStrings s [Char])
+    :: (ConvertibleStrings s String)
     => FieldName -> FieldParser a -> s -> TD.Result (Html ()) a
 fieldValidation name parser value =
     either (TD.Error . toHtml . errorString) TD.Success $ parse (parser <* eof) name (cs value)
@@ -55,10 +60,13 @@ fieldValidation name parser value =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
-validate :: (Monad m, ConvertibleStrings s [Char]) => FieldName -> FieldParser a -> Form (Html ()) m s -> Form (Html ()) m a
+validate
+    :: (Monad m, ConvertibleStrings s String)
+    => FieldName -> FieldParser a -> Form (Html ()) m s -> Form (Html ()) m a
 validate n p = TD.validate (fieldValidation n p)
 
-validateOptional :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
+validateOptional
+    :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
 validateOptional n p = TD.validateOptional (fieldValidation n p)
 
 inRange :: Int -> Int -> FieldParser Int
@@ -116,9 +124,23 @@ manyNM n m p = do
 
 -- * common validators
 
-username :: (ConvertibleStrings String s) => FieldParser s
+type StringFieldParser = forall s . ConvertibleStrings String s => FieldParser s
+
+username :: StringFieldParser
 username = cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben"
 
 -- TODO: Translation
-password :: (ConvertibleStrings String s) => FieldParser s
+password :: StringFieldParser
 password = cs <$> manyNM 4 8 alphaNum <??> "Invalid password"
+
+title :: StringFieldParser
+title = cs <$> many1 (alphaNum <|> space)
+
+validateMarkdown
+    :: (Monad m) => FieldName -> TD.Form (Html ()) m String -> TD.Form (Html ()) m Document
+validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
+
+validateOptionalMarkdown
+    :: Monad m
+    => FieldName -> TD.Form (Html ()) m (Maybe String) -> TD.Form (Html ()) m (Maybe Document)
+validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name

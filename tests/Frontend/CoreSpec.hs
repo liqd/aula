@@ -337,6 +337,7 @@ instance ArbFormPagePayload CreateTopic where
             set protoTopicIdeaSpace space
           . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
+        <**> (set protoTopicDesc <$> nonEmptyMarkdown)
 
 instance ArbFormPagePayload Frontend.Page.EditTopic where
     arbFormPagePayload (Frontend.Page.EditTopic _space _topicid ideas) =
@@ -347,6 +348,7 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
         <*> pure (view _Id <$> ideas)
+        <**> (set editTopicDesc <$> nonEmptyMarkdown)
 
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary
