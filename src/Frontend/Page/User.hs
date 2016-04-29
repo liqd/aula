@@ -96,7 +96,7 @@ instance FormPage PageUserSettings where
     -- TODO: Translation
     makeForm (PageUserSettings user) =
         DF.validateM checkUserPassword
-        $ DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
+        . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
         $ UserSettingData
             <$> ("email"         .:
                     emailField (user ^. userEmail)) -- TODO: Field validation.
