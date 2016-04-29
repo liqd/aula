@@ -421,10 +421,10 @@ instance FormPage JudgeIdea where
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
-        <$> "jury-text" .: (validateOptionalMarkdown "Anmerkungen zur Durchführbarkeit" (DF.optionalString Nothing))
+        <$> "jury-text" .: validateOptionalMarkdown "Anmerkungen zur Durchführbarkeit" (DF.optionalString Nothing)
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
         NotFeasible
-        <$> "jury-text" .: (validateMarkdown "Anmerkungen zur Durchführbarkeit" (DF.string Nothing))
+        <$> "jury-text" .: validateMarkdown "Anmerkungen zur Durchführbarkeit" (DF.string Nothing)
 
     -- FIXME styling
     formPage v form p@(JudgeIdea juryType idea _topic) =
