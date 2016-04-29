@@ -312,15 +312,17 @@ instance ToHtml IdeaVoteLikeBars where
             PhaseVotFrozen{}  -> toHtml $ voteBar nil
             PhaseResult       -> toHtml $ voteBar nil
 
-validateMarkdown :: Monad m => FieldName -> DfFormM m String -> DfFormM m Document
+validateMarkdown
+    :: Monad m => FieldName -> DF.Form (Html ()) m String -> DF.Form (Html ()) m Document
 validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
 
 validateOptionalMarkdown
-    :: Monad m => FieldName -> DfFormM m (Maybe String) -> DfFormM m (Maybe Document)
+    :: Monad m
+    => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
 validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
 
 -- TODO: Translation
-validateIdeaTitle :: Monad m => DfFormM m String -> DfFormM m ST.Text
+validateIdeaTitle :: Monad m => DF.Form (Html ()) m String -> DF.Form (Html ()) m ST.Text
 validateIdeaTitle = fmap cs . validate "Idea title" (many1 (alphaNum <|> space))
 
 instance FormPage CreateIdea where
