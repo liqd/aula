@@ -88,7 +88,7 @@ module Persistent.Pure
     , setUserProfileDesc
     , setUserEmail
     , setUserPass
-    , setUserRole
+    , setUserLoginAndRole
     , setUserAvatar
     , getTopics
     , setTopicPhase
@@ -140,6 +140,7 @@ import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
 import Data.Foldable (find, for_)
 import Data.List (nub)
+import Data.Functor
 import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
@@ -459,8 +460,13 @@ setUserPass _uid _oldPass newPass1 newPass2 = do
     -- FIXME: set newPass1
     return ()
 
-setUserRole :: AUID User -> Role -> AUpdate ()
-setUserRole uid = modifyUser uid . set userRole
+setUserLoginAndRole :: AUID User -> UserLogin -> Role -> AUpdate ()
+setUserLoginAndRole uid login role = do
+    checkAvailableLogin login
+    user <- maybe404 =<< liftAQuery (findUser uid)
+    aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
+    modifyUser uid $ (userLogin .~ login)
+                   . (userRole  .~ role)
 
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid = modifyUser uid . set userAvatar . Just
@@ -692,16 +698,17 @@ userFromProto metainfo uLogin uPassword proto = User
         }
     }
 
+checkAvailableLogin :: UserLogin -> AUpdate ()
+checkAvailableLogin li = do
+    existingUser <- liftAQuery $ findUserByLogin li
+    when (isJust existingUser) . throwError $ UserLoginInUse li
+
 addUser :: AddDb User
 addUser (EnvWith cUser now proto) = do
     metainfo <- nextMetaInfo cUser now
     uLogin <- case proto ^. protoUserLogin of
         Nothing -> mkUserLogin proto
-        Just li -> do
-            existingUser <- liftAQuery $ findUserByLogin li
-            case existingUser of
-                Nothing -> pure li
-                Just _  -> throwError $ UserLoginInUse li
+        Just li -> checkAvailableLogin li $> li
     let user = userFromProto metainfo uLogin (proto ^. protoUserPassword) proto
     dbUserMap . at (user ^. _Id) <?= user
 

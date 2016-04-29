@@ -494,7 +494,7 @@ roleForm mrole mclass classes =
         <*> ("class" .: chooseClass classes mclass)
 
 instance FormPage AdminEditUser where
-    type FormPagePayload AdminEditUser = Role
+    type FormPagePayload AdminEditUser = (UserLogin, Role)
 
     formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
@@ -502,13 +502,18 @@ instance FormPage AdminEditUser where
     redirectOf _ _ = U.Admin U.AdminViewUsers
 
     makeForm (AdminEditUser user classes) =
-        roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+        (,) <$> ("login" .: field userLogin _UserLogin)
+            <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+      where
+        field :: DfTextField User
+        field = dfTextField user
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
-                    toHtml (user ^. userLogin . unUserLogin)
+                    span_ [class_ "label-text"] "Login"
+                    inputText_ [class_ "m-stretch"] "login" v
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
                     inputSelect_ [class_ "m-stretch"] "role" v
@@ -570,7 +575,7 @@ adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = FormPageHandler
     { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses
-    , _formProcessor = update . SetUserRole uid
+    , _formProcessor = update . uncurry (SetUserLoginAndRole uid)
     }
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
