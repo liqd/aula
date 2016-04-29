@@ -321,9 +321,8 @@ validateOptionalMarkdown
     => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
 validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
 
--- TODO: Translation
 validateIdeaTitle :: Monad m => DF.Form (Html ()) m String -> DF.Form (Html ()) m ST.Text
-validateIdeaTitle = fmap cs . validate "Idea title" (many1 (alphaNum <|> space))
+validateIdeaTitle = fmap cs . validate "Titel der Idee" (many1 (alphaNum <|> space))
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
@@ -334,7 +333,6 @@ instance FormPage CreateIdea where
     redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
-        -- TODO: Translation
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.string Nothing))
         <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string Nothing))
@@ -351,7 +349,6 @@ instance FormPage EditIdea where
     redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
-        -- TODO: Translation
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.string . Just . cs $ idea ^. ideaTitle))
         <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string . Just . cs . unMarkdown $ idea ^. ideaDesc))
@@ -399,8 +396,7 @@ instance FormPage CommentIdea where
     redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentIdea{} =
-        -- TODO: Translation
-        "comment-text" .: (CommentContent <$> validateMarkdown "Comment" (DF.string Nothing))
+        "comment-text" .: (CommentContent <$> validateMarkdown "Verbesserungsvorschlag" (DF.string Nothing))
 
     -- FIXME styling
     formPage v form p@(CommentIdea idea _mcomment) =
@@ -424,13 +420,11 @@ instance FormPage JudgeIdea where
         -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
-        -- TODO: Translation
         Feasible
-        <$> "jury-text" .: (validateOptionalMarkdown "Jury text" (DF.optionalString Nothing))
+        <$> "jury-text" .: (validateOptionalMarkdown "Anmerkungen zur Durchführbarkeit" (DF.optionalString Nothing))
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
-        -- TODO: Translation
         NotFeasible
-        <$> "jury-text" .: (validateMarkdown "Jury text" (DF.string Nothing))
+        <$> "jury-text" .: (validateMarkdown "Anmerkungen zur Durchführbarkeit" (DF.string Nothing))
 
     -- FIXME styling
     formPage v form p@(JudgeIdea juryType idea _topic) =
@@ -459,8 +453,7 @@ instance FormPage CreatorStatement where
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea
 
     makeForm (CreatorStatement idea) =
-        -- TODO: Translate
-        "statement-text" .: validateMarkdown "Creator Statement" (DF.string (cs . unMarkdown <$> creatorStatementOfIdea idea))
+        "statement-text" .: validateMarkdown "Statement des Autors" (DF.string (cs . unMarkdown <$> creatorStatementOfIdea idea))
 
     -- FIXME styling
     formPage v form p@(CreatorStatement idea) =
