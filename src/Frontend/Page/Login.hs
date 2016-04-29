@@ -3,12 +3,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Login
 where
 
-import Text.Digestive as DF hiding (Error(..), validate)
+import Text.Digestive as DF hiding (validate)
 
 import Action (ActionM, query)
 import qualified Action
