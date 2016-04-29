@@ -33,7 +33,8 @@ import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
-import Frontend.Prelude hiding (editIdea)
+import Frontend.Prelude hiding ((<|>), editIdea)
+import Frontend.Validation
 import Persistent.Api hiding (EditIdea)
 
 import qualified Action (createIdea)
@@ -311,6 +312,17 @@ instance ToHtml IdeaVoteLikeBars where
             PhaseVotFrozen{}  -> toHtml $ voteBar nil
             PhaseResult       -> toHtml $ voteBar nil
 
+validateMarkdown
+    :: Monad m => FieldName -> DF.Form (Html ()) m String -> DF.Form (Html ()) m Document
+validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
+
+validateOptionalMarkdown
+    :: Monad m
+    => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
+validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
+
+validateIdeaTitle :: Monad m => DF.Form (Html ()) m String -> DF.Form (Html ()) m ST.Text
+validateIdeaTitle = fmap cs . validate "Titel der Idee" (many1 (alphaNum <|> space))
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
@@ -322,8 +334,8 @@ instance FormPage CreateIdea where
 
     makeForm (CreateIdea loc) =
         ProtoIdea
-        <$> ("title"         .: DF.text Nothing)
-        <*> ("idea-text"     .: (Markdown <$> DF.text Nothing))
+        <$> ("title"         .: validateIdeaTitle (DF.string Nothing))
+        <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
@@ -338,8 +350,8 @@ instance FormPage EditIdea where
 
     makeForm (EditIdea idea) =
         ProtoIdea
-        <$> ("title"         .: DF.text (Just $ idea ^. ideaTitle))
-        <*> ("idea-text"     .: ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
+        <$> ("title"         .: validateIdeaTitle (DF.string . Just . cs $ idea ^. ideaTitle))
+        <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string . Just . cs . unMarkdown $ idea ^. ideaDesc))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
@@ -375,9 +387,8 @@ createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
                             i_ [class_ "icon-trash-o"] nil
                             "Idee löschen"
 
-
 instance FormPage CommentIdea where
-    type FormPagePayload CommentIdea = Document
+    type FormPagePayload CommentIdea = CommentContent
     type FormPageResult CommentIdea = Comment
 
     formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
@@ -385,7 +396,7 @@ instance FormPage CommentIdea where
     redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentIdea{} =
-        "comment-text" .: (Markdown <$> DF.text Nothing)
+        "comment-text" .: (CommentContent <$> validateMarkdown "Verbesserungsvorschlag" (DF.string Nothing))
 
     -- FIXME styling
     formPage v form p@(CommentIdea idea _mcomment) =
@@ -410,10 +421,10 @@ instance FormPage JudgeIdea where
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible
-        <$> "jury-text" .: (Markdown <$$> (`justIfP` (not . ST.null)) <$> DF.text Nothing)
+        <$> "jury-text" .: validateOptionalMarkdown "Anmerkungen zur Durchführbarkeit" (DF.optionalString Nothing)
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
         NotFeasible
-        <$> "jury-text" .: (Markdown <$> DF.text Nothing)
+        <$> "jury-text" .: validateMarkdown "Anmerkungen zur Durchführbarkeit" (DF.string Nothing)
 
     -- FIXME styling
     formPage v form p@(JudgeIdea juryType idea _topic) =
@@ -442,7 +453,7 @@ instance FormPage CreatorStatement where
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea
 
     makeForm (CreatorStatement idea) =
-        "statement-text" .: (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
+        "statement-text" .: validateMarkdown "Statement des Autors" (DF.string (cs . unMarkdown <$> creatorStatementOfIdea idea))
 
     -- FIXME styling
     formPage v form p@(CreatorStatement idea) =

@@ -57,8 +57,8 @@ spec = do
         , H (arb :: Gen CommentWidget)
         ]
     context "PageFormView" $ mapM_ testForm [
---          F (arb :: Gen CreateIdea)  -- FIXME
---          F (arb :: Gen Frontend.Page.EditIdea)  -- FIXME
+--          F (arb :: Gen CreateIdea)  -- FIXME: Category selection gets the default Nothing in parsing the protoIdea
+--          F (arb :: Gen Frontend.Page.EditIdea)  -- FIXME:  Category selection gets the default Nothing in parsing the protoIdea
           F (arb :: Gen CommentIdea)
 --      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
@@ -72,6 +72,7 @@ spec = do
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
 --        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
         , F (arb :: Gen AdminPhaseChange)
+        , F (arb :: Gen JudgeIdea)
         ]
 
 
@@ -186,8 +187,8 @@ instance PayloadToEnv Role where
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
-instance PayloadToEnv Document where
-    payloadToEnvMapping _ (Markdown comment) = \case
+instance PayloadToEnv CommentContent where
+    payloadToEnvMapping _ (CommentContent (Markdown comment)) = \case
         "comment-text" -> pure [TextInput comment]
 
 instance PayloadToEnv AdminPhaseChangeForTopicData where
@@ -195,8 +196,14 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
         "topic-id" -> pure [TextInput $ cs (show tid)]
         "dir"      -> pure [TextInput $ selectValue "dir" v dirs dir]
       where
-        -- dirs :: [(PhaseChangeDir, Html ())]
         dirs = (id &&& cs . phaseChangeDirText) <$> [Forward, Backward]
+
+instance PayloadToEnv IdeaJuryResultValue where
+    payloadToEnvMapping _ (Feasible mdoc) = \case
+        "jury-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
+    payloadToEnvMapping _ (NotFeasible doc) = \case
+        "jury-text" -> pure [TextInput $ unMarkdown doc]
+
 
 -- * machine room
 
@@ -256,8 +263,11 @@ postToForm (F g) = do
         let frm = makeForm page
         env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
 
-        (_, Just payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
-        liftIO $ payload' `shouldBe` payload
+        (v, mpayload) <- runFailOnError $ postForm "" frm (\_ -> pure env)
+        case mpayload of
+            Nothing       -> fail $ unwords
+                                ("Form validation has failed:": map show (viewErrors v))
+            Just payload' -> liftIO $ payload' `shouldBe` payload
 
     -- FIXME: Valid and invalid form data generation should
     -- be separated and has a different type class.
@@ -286,14 +296,16 @@ class FormPage p => ArbFormPagePayload p where
 
 
 instance ArbFormPagePayload CreateIdea where
-    arbFormPagePayload (CreateIdea location) = set protoIdeaLocation location <$> arbitrary
+    arbFormPagePayload (CreateIdea location) =
+        (set protoIdeaLocation location <$> arbitrary)
+        <**> (set protoIdeaDesc <$> nonEmptyMarkdown)
 
 instance ArbFormPagePayload Frontend.Page.EditIdea where
     arbFormPagePayload (Frontend.Page.EditIdea idea) =
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPagePayload CommentIdea where
-    arbFormPagePayload _ = arbitrary
+    arbFormPagePayload _ = CommentContent <$> nonEmptyMarkdown
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = Quorums <$> boundary 1 100
@@ -341,3 +353,14 @@ instance ArbFormPagePayload AdminEditUser where
 
 instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload JudgeIdea where
+    arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
+        = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> nonEmptyMarkdown)]
+    arbFormPagePayload (JudgeIdea IdeaNotFeasible _ _)
+        = NotFeasible <$> nonEmptyMarkdown
+
+    arbFormPageInvalidPayload (JudgeIdea IdeaFeasible _ _)
+        = pure Nothing
+    arbFormPageInvalidPayload (JudgeIdea IdeaNotFeasible _ _)
+        = pure . Just . NotFeasible $ Markdown ""

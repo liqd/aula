@@ -5,11 +5,16 @@
 
 module Frontend.Validation
     ( module TP
+    , FieldName
     , FieldParser
+
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
-    , inRange
+    , nonEmpty
+    , optionalNonEmpty
+
     , (<??>)
+    , inRange
     , manyNM
     , satisfies
     )
@@ -21,6 +26,7 @@ import Text.Parsec.Error
 
 import Frontend.Prelude
 
+type FieldName = String
 type FieldParser a = Parsec String () a
 
 
@@ -29,7 +35,7 @@ type FieldParser a = Parsec String () a
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
-fieldValidation :: String -> FieldParser a -> String -> TD.Result (Html ()) a
+fieldValidation :: FieldName -> FieldParser a -> String -> TD.Result (Html ()) a
 fieldValidation name parser value =
     either (TD.Error . toHtml . errorString) TD.Success $ parse (parser <* eof) name value
   where
@@ -41,10 +47,10 @@ fieldValidation name parser value =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
-validate :: (Monad m) => String -> FieldParser a -> Form (Html ()) m String -> Form (Html ()) m a
+validate :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m String -> Form (Html ()) m a
 validate n p = TD.validate (fieldValidation n p)
 
-validateOptional :: (Monad m) => String -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
+validateOptional :: (Monad m) => FieldName -> FieldParser a -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe a)
 validateOptional n p = TD.validateOptional (fieldValidation n p)
 
 inRange :: Int -> Int -> FieldParser Int
@@ -54,6 +60,20 @@ inRange mn mx =
   where
     isBetween n = mn <= n && n <= mx
 
+
+-- * simple validators
+
+checkNonEmpty :: (IsString v) => FieldName -> String -> TD.Result v String
+checkNonEmpty name [] = TD.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
+checkNonEmpty _    xs = TD.Success xs
+
+nonEmpty :: (Monad m, Monoid v, IsString v) => FieldName -> Form v m String -> Form v m String
+nonEmpty = TD.validate . checkNonEmpty
+
+optionalNonEmpty
+    :: (Monad m, Monoid v, IsString v)
+    => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
+optionalNonEmpty = TD.validateOptional . checkNonEmpty
 
 -- * missing things from parsec
 

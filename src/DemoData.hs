@@ -133,7 +133,7 @@ genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     let event = AddCommentToIdea (idea ^. ideaLocation) (idea ^. _Id)
         getResult = fmap (CommentInContext idea)
-    getResult . addWithUser event student <$> arbDocument
+    getResult . addWithUser event student . CommentContent <$> arbDocument
 
 genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
@@ -141,7 +141,7 @@ genReply comments_in_context students = do
     (_, student) <- ideaStudentPair [idea] students
     let event = AddReply (comment ^. _Key)
         getResult = fmap (CommentInContext idea)
-    getResult . addWithUser event student <$> arbDocument
+    getResult . addWithUser event student . CommentContent <$> arbDocument
 
 genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do

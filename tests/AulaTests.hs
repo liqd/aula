@@ -18,7 +18,7 @@ import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec.Wai (WaiExpectation)
-import Test.QuickCheck (Gen, frequency, choose)
+import Test.QuickCheck (Gen, frequency, choose, getNonEmpty)
 
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
@@ -32,7 +32,7 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
-import Arbitrary (constantSampleTimestamp)
+import Arbitrary (arb, constantSampleTimestamp)
 import Logger (LogLevel(..), nullLog)
 
 
@@ -161,3 +161,6 @@ boundary mn mx = frequency
     , (1, pure mx)
     , (98, choose (mn, mx))
     ]
+
+nonEmptyMarkdown :: Gen Document
+nonEmptyMarkdown = Markdown . (cs :: String -> ST) . getNonEmpty <$> arb

@@ -548,7 +548,7 @@ removeVoteFromIdea iid uid = modifyIdea iid (set (ideaVotes . at uid) Nothing)
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
-                            , _commentText      = d
+                            , _commentText      = unCommentContent d
                             , _commentReplies   = nil
                             , _commentVotes     = nil
                             , _commentDeleted   = False

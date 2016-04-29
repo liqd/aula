@@ -163,7 +163,7 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
-type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
+type DfForm a = forall m. Monad m =>  DF.Form (Html ()) m a
 type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
 
 -- Usage:
