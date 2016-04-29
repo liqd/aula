@@ -355,7 +355,12 @@ instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload JudgeIdea where
-    arbFormPagePayload (Frontend.Page.JudgeIdea IdeaFeasible    _ _)
+    arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
         = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> nonEmptyMarkdown)]
-    arbFormPagePayload (Frontend.Page.JudgeIdea IdeaNotFeasible _ _)
+    arbFormPagePayload (JudgeIdea IdeaNotFeasible _ _)
         = NotFeasible <$> nonEmptyMarkdown
+
+    arbFormPageInvalidPayload (JudgeIdea IdeaFeasible _ _)
+        = pure Nothing
+    arbFormPageInvalidPayload (JudgeIdea IdeaNotFeasible _ _)
+        = pure . Just . NotFeasible $ Markdown ""

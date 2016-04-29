@@ -11,6 +11,7 @@ module Frontend.Validation
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
     , nonEmpty
+    , optionalNonEmpty
 
     , (<??>)
     , inRange
@@ -63,11 +64,17 @@ inRange mn mx =
 -- * simple validators
 
 -- TODO: Translate
+checkNonEmpty :: (IsString v) => FieldName -> String -> TD.Result v String
+checkNonEmpty name [] = TD.Error . fromString $ unwords [name, ":", "can not be empty"]
+checkNonEmpty _    xs = TD.Success xs
+
 nonEmpty :: (Monad m, Monoid v, IsString v) => FieldName -> Form v m String -> Form v m String
-nonEmpty name = TD.validate checkNonEmpty
-  where
-    checkNonEmpty [] = TD.Error . fromString $ unwords [name, ":", "can not be empty"]
-    checkNonEmpty xs = TD.Success xs
+nonEmpty = TD.validate . checkNonEmpty
+
+optionalNonEmpty
+    :: (Monad m, Monoid v, IsString v)
+    => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
+optionalNonEmpty = TD.validateOptional . checkNonEmpty
 
 -- * missing things from parsec
 

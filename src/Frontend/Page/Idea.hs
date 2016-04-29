@@ -315,6 +315,10 @@ instance ToHtml IdeaVoteLikeBars where
 validateMarkdown :: Monad m => FieldName -> DfFormM m String -> DfFormM m Document
 validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
 
+validateOptionalMarkdown
+    :: Monad m => FieldName -> DfFormM m (Maybe String) -> DfFormM m (Maybe Document)
+validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
+
 -- TODO: Translation
 validateIdeaTitle :: Monad m => DfFormM m String -> DfFormM m ST.Text
 validateIdeaTitle = fmap cs . validate "Idea title" (many1 (alphaNum <|> space))
@@ -418,9 +422,9 @@ instance FormPage JudgeIdea where
         -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
-        -- TODO: Field validation
+        -- TODO: Translation
         Feasible
-        <$> "jury-text" .: (Markdown <$$> (`justIfP` (not . ST.null)) <$> DF.text Nothing)
+        <$> "jury-text" .: (validateOptionalMarkdown "Jury text" (DF.optionalString Nothing))
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
         -- TODO: Translation
         NotFeasible
