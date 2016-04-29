@@ -79,12 +79,17 @@ inRange mn mx =
 
 -- * simple validators
 
-checkNonEmpty :: (IsString v) => FieldName -> String -> TD.Result v String
-checkNonEmpty name [] = TD.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
-checkNonEmpty _    xs = TD.Success xs
+checkNonEmpty
+    :: (Eq m, IsString v, Monoid m)
+    => FieldName -> m -> TD.Result v m
+checkNonEmpty name xs
+   | xs == mempty = TD.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
+   | otherwise    = TD.Success xs
 
-nonEmpty :: (Monad m, Monoid v, IsString v) => FieldName -> Form v m String -> Form v m String
-nonEmpty = TD.validate . checkNonEmpty
+nonEmpty
+    :: (Monad m, Monoid v, IsString v, Eq s, Monoid s, ConvertibleStrings s r)
+    => FieldName -> Form v m s -> Form v m r
+nonEmpty = TD.validate . (app2 (fmap cs) checkNonEmpty)
 
 optionalNonEmpty
     :: (Monad m, Monoid v, IsString v)
@@ -137,8 +142,9 @@ title :: StringFieldParser
 title = cs <$> many1 (alphaNum <|> space)
 
 validateMarkdown
-    :: (Monad m) => FieldName -> TD.Form (Html ()) m String -> TD.Form (Html ()) m Document
-validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
+    :: (Monad m, Eq s, Monoid s, ConvertibleStrings s ST)
+    => FieldName -> TD.Form (Html ()) m s -> TD.Form (Html ()) m Document
+validateMarkdown name = fmap Markdown . nonEmpty name
 
 validateOptionalMarkdown
     :: Monad m
