@@ -49,6 +49,7 @@ library
     , http-client
     , http-media
     , http-types
+    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -83,6 +84,7 @@ library
       Backend
       Config
       Daemon
+      Data.Avatar
       Data.UriPath
       DemoData
       EventLog
@@ -151,6 +153,7 @@ executable aula-html-dummies
     , http-client
     , http-media
     , http-types
+    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -214,6 +217,7 @@ executable aula-server
     , http-client
     , http-media
     , http-types
+    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail
@@ -275,6 +279,7 @@ test-suite spec
     , http-client
     , http-media
     , http-types
+    , JuicyPixels >=3.2.6.2 && <3.3
     , lens
     , lucid
     , mime-mail

@@ -14,7 +14,7 @@ module Action.Implementation
     )
 where
 
-import Control.Exception (SomeException(SomeException), catch)
+import Codec.Picture
 import Control.Lens
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
@@ -101,12 +101,15 @@ instance ActionUserHandler Action where
 
     logout = put userLoggedOut >> addMessage "Danke fürs Mitmachen!"
 
-instance ActionTempCsvFiles Action where
-    popTempCsvFile = actionIO . (`catch` exceptToLeft) . fmap decodeCsv . LBS.readFile
-      where
-        exceptToLeft (SomeException e) = return . Left . show $ e
+instance ReadTempFile Action where
+    readTempFile = actionIO . LBS.readFile
 
-    cleanupTempCsvFiles = actionIO . releaseFormTempFiles
+instance CleanupTempFiles Action where
+    cleanupTempFiles = actionIO . releaseFormTempFiles
+
+instance ActionAvatar Action where
+    readImageFile = actionIO . readImage
+    savePngImageFile p = actionIO . savePngImage p
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.

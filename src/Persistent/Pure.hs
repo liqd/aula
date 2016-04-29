@@ -84,7 +84,8 @@ module Persistent.Pure
     , mkMetaInfo
     , mkUserLogin
     , modifyUser
-    , editUser
+    , setUserProfile
+    , setUserProfileDesc
     , setUserEmail
     , setUserPass
     , setUserRole
@@ -394,12 +395,11 @@ modifyIdea = modifyAMap dbIdeaMap
 modifyUser :: AUID User -> (User -> User) -> AUpdate ()
 modifyUser = modifyAMap dbUserMap
 
-editUser :: AUID User -> EditUserData -> AUpdate ()
-editUser uid = modifyUser uid . changeUser
-  where
-    changeUser up = (userFirstName .~ (up ^. editUserFirstName))
-                  . (userLastName  .~ (up ^. editUserLastName))
-                  . (userDesc      .~ (up ^. editUserDesc))
+setUserProfile :: AUID User -> UserProfile -> AUpdate ()
+setUserProfile uid = modifyUser uid . (userProfile .~)
+
+setUserProfileDesc :: AUID User -> Document -> AUpdate ()
+setUserProfileDesc uid = modifyUser uid . (userProfile . profileDesc .~)
 
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid = modifyUser uid . (userEmail ?~)

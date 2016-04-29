@@ -30,8 +30,11 @@ instance IsString UriPart where
         | '/' `elem` s = error $ "UriPart.fromString: unexpected literal '/' in URI part: " <> s
         | otherwise    = SlashFreeUriPart . cs $ s
 
-instance s ~ ST => ConvertibleStrings UriPart s where
+instance ConvertibleStrings UriPart ST where
     convertString = unUriPart
+
+instance ConvertibleStrings UriPart String where
+    convertString = cs . unUriPart
 
 -- | An @UriPath@ is (1) a list of @UriPart@s stored as a difference list, and (2) an assoc list
 -- containing the query.

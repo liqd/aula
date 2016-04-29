@@ -674,7 +674,7 @@ instance FormPage AdminCreateClass where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-adminCreateClass :: forall m. (ActionTempCsvFiles m, ActionM m)
+adminCreateClass :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m)
                               => FormPageHandler m AdminCreateClass
 adminCreateClass = FormPageHandler (pure AdminCreateClass) q
   where
@@ -682,7 +682,7 @@ adminCreateClass = FormPageHandler (pure AdminCreateClass) q
     q (BatchCreateUsersFormData _clname Nothing) =
         throwError500 "upload FAILED: no file!"  -- FIXME: status code?
     q (BatchCreateUsersFormData clname (Just file)) = do
-        eCsv :: Either String [CsvUserRecord] <- popTempCsvFile file
+        eCsv :: Either String [CsvUserRecord] <- readTempCsvFile file
         case eCsv of
             Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
                                              -- FIXME: status code?

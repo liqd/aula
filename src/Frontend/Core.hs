@@ -373,7 +373,7 @@ data FormPageHandler m p = FormPageHandler
 -- move parts of it there?)
 --
 -- Note on file upload: The 'processor' argument is responsible for reading all file contents before
--- returning a WHNF from 'popTempCsvFile'.  'cleanupTempCsvFiles' will be called from within this
+-- returning a WHNF from 'readTempFile'.  'cleanupTempFiles' will be called from within this
 -- function as a 'processor' finalizer, so be weary of lazy IO!
 --
 -- Note that since we read (or write to) files eagerly and close them in obviously safe
@@ -404,7 +404,7 @@ form formHandler = getH :<|> postH
         (case mpayload of
             Just payload -> processor2 page payload >>= redirect
             Nothing      -> pure $ FormPageRep v fa page)
-            `finally` cleanupTempCsvFiles formData
+            `finally` cleanupTempFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
