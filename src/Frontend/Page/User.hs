@@ -277,10 +277,11 @@ instance FormPage EditUserProfile where
 
     redirectOf (EditUserProfile u) _ = U.viewUser u
 
+    -- TODO: Translation
     makeForm (EditUserProfile user) =
         UserProfile
         <$> ("avatar" .: (cs <$$> DF.file))
-        <*> ("desc"   .: dfTextField user userDesc _Markdown)
+        <*> ("desc"   .: validateMarkdown "Beschreibung" (dfTextField user userDesc _Markdown))
 
     formPage v form p = do
         semanticDiv p $ do
