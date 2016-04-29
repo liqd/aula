@@ -76,3 +76,6 @@ content:
 
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/
+
+grep.%:
+	git grep -Hni $*
