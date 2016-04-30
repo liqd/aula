@@ -66,7 +66,7 @@ data UserSettingData = UserSettingData
 checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
 checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
 checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
-    userPass checkInitialPwd checkEncryptedPwd passwordError
+    userPassElim checkInitialPwd checkEncryptedPwd passwordError
         . _userSettingsPassword
         . _userSettings
     <$> currentUser
@@ -80,12 +80,6 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
     checkEncryptedPwd p
       | p == cs pwd = pure u
       | otherwise   = passwordError
-
-    userPass :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
-    userPass initial encrypted deactivated = \case
-        UserPassInitial x   -> initial     x
-        UserPassEncrypted x -> encrypted   x
-        UserPassDeactivated -> deactivated
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData

@@ -567,6 +567,14 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
+-- | General eliminator for the 'UserPass' type.
+-- It is similar to the 'maybe' function.
+userPassElim :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
+userPassElim initial encrypted deactivated = \case
+    UserPassInitial x   -> initial     x
+    UserPassEncrypted x -> encrypted   x
+    UserPassDeactivated -> deactivated
+
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)
 
