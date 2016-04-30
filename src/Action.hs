@@ -16,7 +16,8 @@
 module Action
     ( -- * constraint types
       ActionM
-    , ActionLog(logEvent)
+    , ActionLog(log)
+    , ActionEventLog(recordEvent, listEvents)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
     , ActionRandomPassword(mkRandomPassword)
@@ -114,6 +115,7 @@ import qualified Data.Vector as V
 import Action.Smtp
 import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
+import EventLog
 import LifeCycle
 import Logger
 import Persistent
@@ -176,6 +178,7 @@ type ActionPhaseChange m = (ActionAddDb m, ActionSendMail m)
 
 type ActionM m =
       ( ActionLog m
+      , ActionEventLog m
       , ActionPersist m
       , ActionUserHandler m
       , ActionError m
@@ -188,8 +191,17 @@ type ActionM m =
       )
 
 class Monad m => ActionLog m where
-    -- | Log events
-    logEvent :: LogEntry -> m ()
+    -- | Log system event
+    log :: LogEntry -> m ()
+
+data EventFilter = All
+  deriving (Eq, Show, Ord)
+
+class Monad m => ActionEventLog m where
+    -- | Log data mining events
+    recordEvent :: EventLogItem -> m ()
+    -- | List events which passes the event filter
+    listEvents :: EventFilter -> m [EventLogItem]
 
 -- | A monad that can run acid-state.
 --
