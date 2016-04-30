@@ -117,13 +117,10 @@ satisfies predicate parser = do
 manyNM
     :: forall s u m a t . (Stream s m t)
     => Int -> Int -> ParsecT s u m a -> ParsecT s u m [a]
-manyNM n m p = do
-    xs <- replicateM n p
-    ys <- run m []
-    pure $ xs <> ys
+manyNM n m p = (<>) <$> replicateM n p <*> run m []
   where
     run :: Int -> [a] -> ParsecT s u m [a]
-    run 0 xs = return (reverse xs)
+    run 0 xs = pure (reverse xs)
     run l xs = optionMaybe (TP.try p) >>= \case
                     Just x -> (run (l-1) (x:xs))
                     Nothing -> run 0 xs
