@@ -99,7 +99,7 @@ instance FormPage PageUserSettings where
         . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
         $ UserSettingData
             <$> ("email"         .:
-                    emailField (user ^. userEmail)) -- TODO: Field validation.
+                    emailField "Email" (user ^. userEmail))
             <*> ("old-password"  .:
                     validateOptional "Old password" password (DF.optionalText Nothing))
             <*> ("new-password1" .:

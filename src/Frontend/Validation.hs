@@ -25,16 +25,18 @@ module Frontend.Validation
     , username
     , password
     , title
+    , emailField
     , validateMarkdown
     , validateOptionalMarkdown
     )
 where
 
 import Text.Digestive as DF
+import Text.Email.Validate as Email
 import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
 
-import Frontend.Prelude hiding ((<|>))
+import Frontend.Prelude as Frontend hiding ((<|>))
 
 type FieldName = String
 type FieldParser a = Parsec String () a
@@ -96,7 +98,6 @@ optionalNonEmpty
     => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
 optionalNonEmpty = DF.validateOptional . checkNonEmpty
 
-
 -- * missing things from parsec
 
 infix 0 <??>
@@ -142,10 +143,34 @@ title = cs <$> many1 (alphaNum <|> space)
 -- FIXME: Use LensLike
 validateMarkdown
     :: (Monad m)
-    => FieldName -> DF.Form (Html ()) m Document -> DF.Form (Html ()) m Document
+    => FieldName -> Form (Html ()) m Document -> Form (Html ()) m Document
 validateMarkdown name = fmap Markdown . nonEmpty name . fmap unMarkdown
 
 validateOptionalMarkdown
     :: Monad m
-    => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
+    => FieldName -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe Document)
 validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
+
+emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
+emailField name emailValue =
+    {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
+        from texts to @EmailAddress@. Here we want to traverse the text of an email address
+        thus one needs to reverse this prism. While Prisms cannot be reversed in full
+        generality, we could expect a weaker form which also traversals. This would look
+        like that:
+
+        email & rev emailAddress %%~ DF.optionalText
+
+        Instead, we have the code below which extracts the text of the email address if
+        there is such an email address.  'optionalText' gets a @Maybe ST@, finally the
+        result of 'optionalText' is processed with a pure function from @Maybe ST@ to
+        @Maybe EmailAddress@ where only a valid text representation of an email gets
+        mapped to @Just@  of an @EmailAddress@.
+    -}
+    DF.validateOptional
+        checkEmail
+        (DF.optionalText (emailValue ^? _Just . re Frontend.emailAddress))
+  where
+    checkEmail value = case Email.emailAddress (cs value) of
+        Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
+        Just e  -> DF.Success $ InternalEmailAddress e

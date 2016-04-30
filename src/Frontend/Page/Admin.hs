@@ -390,14 +390,13 @@ instance FormPage AdminCreateUser where
     redirectOf _ _ = U.Admin U.AdminViewUsers
 
     -- FIXME: Show the user's role and class as default in the selections.
-    -- TODO: Field validation
     makeForm (AdminCreateUser classes) =
         CreateUserPayload
             <$> ("firstname"  .: firstName (DF.string Nothing))
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
-            <*> emailField Nothing --TODO
-            <*> roleForm Nothing Nothing classes --TODO
+            <*> emailField "Email" Nothing
+            <*> roleForm Nothing Nothing classes
         where
             -- FIXME: Users with more than one name?
             firstName = validate "Vorname"  (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben")
