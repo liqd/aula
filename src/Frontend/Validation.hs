@@ -30,8 +30,7 @@ module Frontend.Validation
     )
 where
 
--- TODO: Rename TD to DF
-import Text.Digestive as TD
+import Text.Digestive as DF
 import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
 
@@ -48,9 +47,9 @@ type FieldParser a = Parsec String () a
 -- FIXME: Use red color for error message when displaying them on the form.
 fieldValidation
     :: (ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> s -> TD.Result (Html ()) a
+    => FieldName -> FieldParser a -> s -> DF.Result (Html ()) a
 fieldValidation name parser value =
-    either (TD.Error . toHtml . errorString) TD.Success $ parse (parser <* eof) name (cs value)
+    either (DF.Error . toHtml . errorString) DF.Success $ parse (parser <* eof) name (cs value)
   where
     errorString e = filter (/= '\n') $ unwords [sourceName $ errorPos e, ":", errorMsgs $ errorMessages e]
     -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
@@ -63,12 +62,12 @@ fieldValidation name parser value =
 validate
     :: (Monad m, ConvertibleStrings s String)
     => FieldName -> FieldParser a -> Form (Html ()) m s -> Form (Html ()) m a
-validate n p = TD.validate (fieldValidation n p)
+validate n p = DF.validate (fieldValidation n p)
 
 validateOptional
     :: (Monad m, ConvertibleStrings s String)
     => FieldName -> FieldParser a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
-validateOptional = TD.validateOptional <..> fieldValidation
+validateOptional = DF.validateOptional <..> fieldValidation
 
 inRange :: Int -> Int -> FieldParser Int
 inRange mn mx =
@@ -82,20 +81,20 @@ inRange mn mx =
 
 checkNonEmpty
     :: (Eq m, IsString v, Monoid m)
-    => FieldName -> m -> TD.Result v m
+    => FieldName -> m -> DF.Result v m
 checkNonEmpty name xs
-   | xs == mempty = TD.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
-   | otherwise    = TD.Success xs
+   | xs == mempty = DF.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
+   | otherwise    = DF.Success xs
 
 nonEmpty
     :: (Monad m, Monoid v, IsString v, Eq s, Monoid s, ConvertibleStrings s r)
     => FieldName -> Form v m s -> Form v m r
-nonEmpty = TD.validate . fmap cs <..> checkNonEmpty
+nonEmpty = DF.validate . fmap cs <..> checkNonEmpty
 
 optionalNonEmpty
     :: (Monad m, Monoid v, IsString v)
     => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
-optionalNonEmpty = TD.validateOptional . checkNonEmpty
+optionalNonEmpty = DF.validateOptional . checkNonEmpty
 
 
 -- * missing things from parsec
@@ -143,10 +142,10 @@ title = cs <$> many1 (alphaNum <|> space)
 -- FIXME: Use LensLike
 validateMarkdown
     :: (Monad m)
-    => FieldName -> TD.Form (Html ()) m Document -> TD.Form (Html ()) m Document
+    => FieldName -> DF.Form (Html ()) m Document -> DF.Form (Html ()) m Document
 validateMarkdown name = fmap Markdown . nonEmpty name . fmap unMarkdown
 
 validateOptionalMarkdown
     :: Monad m
-    => FieldName -> TD.Form (Html ()) m (Maybe String) -> TD.Form (Html ()) m (Maybe Document)
+    => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
 validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
