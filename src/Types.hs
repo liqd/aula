@@ -84,6 +84,9 @@ toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
+whenJust :: Monad m => (a -> m b) -> Maybe a -> m ()
+whenJust = mapM_
+
 type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
 type CSI' s a = CSI s s a a
 
@@ -119,6 +122,11 @@ infixr 9 <..>
 
 (<..>) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (<..>) = app2
+
+infixr 9 <...>
+
+(<...>) :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
+(<...>) f g x y z = f $ g x y z
 
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
@@ -651,6 +659,11 @@ data Freeze = NotFrozen | Frozen
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance SOP.Generic Freeze
+
+freezeElim :: t -> t -> Freeze -> t
+freezeElim notFrozen frozen = \case
+    NotFrozen -> notFrozen
+    Frozen    -> frozen
 
 data Settings = Settings
     { _durations :: Durations

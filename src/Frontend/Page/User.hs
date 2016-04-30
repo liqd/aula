@@ -140,15 +140,17 @@ instance FormPage PageUserSettings where
 
 
 userSettings :: forall m . ActionM m => FormPageHandler m PageUserSettings
-userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
+userSettings =
+    formPageHandlerWithMsg
+        (PageUserSettings <$> currentUser)
+        changeUser
+        "Die Änderungen wurden gespeichert."
   where
     changeUser :: UserSettingData -> m ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         update $ SetUserPass uid oldPass newPass1 newPass2
-        addMessage "Die Änderungen wurden gespeichert."
-        pure ()
 
 userHeaderDiv :: (Monad m) => RenderContext -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =
@@ -293,10 +295,11 @@ instance FormPage EditUserProfile where
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"
 
+-- TODO: Translate.
 editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
-editUserProfile = FormPageHandler
-    { _formGetPage   = EditUserProfile <$> currentUser
-    , _formProcessor = \up -> do
+editUserProfile = formPageHandlerWithMsg
+    (EditUserProfile <$> currentUser)
+    (\up -> do
         uid <- currentUserId
         case up ^. profileAvatar of
             Nothing ->
@@ -314,4 +317,5 @@ editUserProfile = FormPageHandler
                         update . SetUserProfileDesc uid $ up ^. profileDesc
                     Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs url
-    }
+    )
+    "The changes are saved."

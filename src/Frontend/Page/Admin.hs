@@ -265,11 +265,13 @@ instance FormPage PageAdminSettingsDurations where
             span_ [class_ "input-helper"] "Tage"
         DF.inputSubmit "Änderungen speichern"
 
+-- TODO: Translate
 adminDurations :: ActionM m => FormPageHandler m PageAdminSettingsDurations
 adminDurations =
-    FormPageHandler
+    formPageHandlerWithMsg
         (PageAdminSettingsDurations <$> query (view dbDurations))
         (update . SaveDurations)
+        "Durations are updated."
 
 
 -- ** Quorum
@@ -303,11 +305,10 @@ instance FormPage PageAdminSettingsQuorum where
 
 adminQuorum :: ActionM m => FormPageHandler m PageAdminSettingsQuorum
 adminQuorum =
-    FormPageHandler
+    formPageHandlerWithMsg
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
-        (\qs -> do
-            update $ SaveQuorums qs
-            addMessage "Die neuen Werte wurden gespeichert.")
+        (update . SaveQuorums)
+        "Die neuen Werte wurden gespeichert."
 
 
 -- ** Freeze
@@ -337,13 +338,15 @@ instance FormPage PageAdminSettingsFreeze where
             DF.inputSelect "freeze" v
         DF.inputSubmit "Status setzen!"
 
+-- TODO: Translation
 adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
 adminFreeze =
-    FormPageHandler
+    formPageHandlerCalcMsg
         (PageAdminSettingsFreeze <$> query (view dbFreeze))
         (\payload -> do
              now <- getCurrentTimestamp
              update $ SaveAndEnactFreeze now payload)
+        (const $ const . freezeElim "The platform is unfrozen." ("The platform is frozen." :: ST))
 
 
 -- ** roles and permisisons
@@ -560,11 +563,12 @@ instance ToHtml AdminEditClass where
 adminViewUsers :: ActionPersist m => m AdminViewUsers
 adminViewUsers = AdminViewUsers <$> query getUserViews
 
+-- TODO: Translation
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
                     ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
-adminCreateUser = FormPageHandler
-    { _formGetPage   = AdminCreateUser <$> query getSchoolClasses
-    , _formProcessor = \up -> do
+adminCreateUser = formPageHandlerCalcMsg
+    (AdminCreateUser <$> query getSchoolClasses)
+    (\up -> do
         forM_ (up ^? createUserRole . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         pwd <- mkRandomPassword
@@ -577,16 +581,38 @@ adminCreateUser = FormPageHandler
             , _protoUserEmail     = up ^. createUserEmail
             , _protoUserDesc      = Markdown nil
             }
-    }
+    )
+    (\_ u _ -> unwords
+        [ "User["
+        , u ^. createUserFirstName . unUserFirstName . to cs
+        , u ^. createUserLastName . unUserLastName . to cs
+        , "] is created."
+        ]
+    )
 
 adminViewClasses :: ActionPersist m => m AdminViewClasses
 adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
+-- TODO: Translation
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
+{-
+<<<<<<< daeefaec2ed441c7e5a0b534a0b8014615e475a6
 adminEditUser uid = FormPageHandler
     { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses
     , _formProcessor = update . uncurry (SetUserLoginAndRole uid)
     }
+=======
+-}
+adminEditUser uid = formPageHandlerCalcMsg
+    (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
+    (update . uncurry (SetUserLoginAndRole uid))
+    (\(AdminEditUser u _) _ _ -> unwords
+        [ "The user"
+        , u ^. userFirstName . unUserFirstName . to cs
+        , u ^. userLastName . unUserLastName . to cs
+        , "is changed."
+        ])
+-- >>>>>>> Add Admin, Idea, Topic and User form messages.
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
 fromRoleSelection RoleSelStudent     = Student
@@ -618,11 +644,19 @@ instance FormPage AdminDeleteUser where
                     DF.inputSubmit "Nutzer löschen"
                     a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
+-- TODO: Translation
 adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
 adminDeleteUser uid =
-    FormPageHandler
+    formPageHandlerCalcMsg
         (AdminDeleteUser <$> mquery (findActiveUser uid))
         (const $ Action.deleteUser uid)
+        (\(AdminDeleteUser u) _ _ -> unwords
+            [ "User"
+            , u ^. userFirstName . unUserFirstName . to cs
+            , u ^. userLastName . unUserLastName . to cs
+            , "is deleted."
+            ]
+        )
 
 
 -- ** Events protocol
@@ -653,7 +687,7 @@ instance FormPage PageAdminSettingsEventsProtocol where
             p_ [class_ "download-box-body"] "Das Event-Protokoll enthält alle Aktivitäten der NutzerInnen auf Aula"
 
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
-adminEventsProtocol = FormPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
+adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
 
 -- * Classes Create
@@ -689,9 +723,10 @@ instance FormPage AdminCreateClass where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
+-- TODO: Translation
 adminCreateClass :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m)
                               => FormPageHandler m AdminCreateClass
-adminCreateClass = FormPageHandler (pure AdminCreateClass) q
+adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q m
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
@@ -721,16 +756,25 @@ adminCreateClass = FormPageHandler (pure AdminCreateClass) q
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = Markdown nil
             }
+    m = "The class created."
 
 adminPhaseChange
     :: forall m . (ActionM m)
     => FormPageHandler m AdminPhaseChange
-adminPhaseChange = FormPageHandler
-    { _formGetPage   = pure AdminPhaseChange
-    , _formProcessor = \(AdminPhaseChangeForTopicData tid dir) -> case dir of
-            Forward -> Action.topicForceNextPhase tid
-            Backward -> Action.topicInVotingResetToJury tid
-    }
+adminPhaseChange =
+    formPageHandler
+        (pure AdminPhaseChange)
+        (\(AdminPhaseChangeForTopicData tid dir) -> do
+            case dir of
+                Forward -> Action.topicForceNextPhase tid
+                Backward -> Action.topicInVotingResetToJury tid
+            topic <- Action.mquery $ findTopic tid
+            addMessage . cs $ unwords
+                [ "Topic is in the"
+                , (topic ^. topicPhase . to show)
+                , "now"
+                ])
+
 
 data PhaseChangeDir = Forward | Backward
   deriving (Eq, Show, Generic)
