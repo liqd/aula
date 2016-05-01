@@ -7,7 +7,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -24,10 +23,6 @@ module Frontend.Core
       -- * helpers for handlers
     , semanticDiv
     , html
-    , DfForm
-    , DfTextField
-    , dfTextField
-    , emailField
     , Beside(..)
     , tabSelected
     , redirect
@@ -162,37 +157,6 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 -- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
-
-type DfForm a = forall m. Monad m =>  DF.Form (Html ()) m a
-type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
-
--- Usage:
---    SomeConstructor
---    <$> ("field1" .: field someLens1 _SomePrism1)
---    <*> ("field2" .: field someLens2 _SomePrism2)
---  where
---    field :: DfTextField SomeType
---    field = dfTextField someData
-dfTextField :: s -> DfTextField s
-dfTextField s l p = s ^. l & p %%~ DF.text . Just
-
-emailField :: Maybe EmailAddress -> DfForm (Maybe EmailAddress)
-emailField email =
-    {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
-        from texts to @EmailAddress@. Here we want to traverse the text of an email address
-        thus one needs to reverse this prism. While Prisms cannot be reversed in full
-        generality, we could expect a weaker form which also traversals. This would look
-        like that:
-
-        email & rev emailAddress %%~ DF.optionalText
-
-        Instead, we have the code below which extracts the text of the email address if
-        there is such an email address.  'optionalText' gets a @Maybe ST@, finally the
-        result of 'optionalText' is processed with a pure function from @Maybe ST@ to
-        @Maybe EmailAddress@ where only a valid text representation of an email gets
-        mapped to @Just@  of an @EmailAddress@.
-    -}
-    (>>= preview emailAddress) <$> DF.optionalText (email ^? _Just . re emailAddress)
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml

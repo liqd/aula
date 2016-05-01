@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -12,6 +13,11 @@ module Frontend.Validation
     , Frontend.Validation.validateOptional
     , nonEmpty
     , optionalNonEmpty
+
+    , DfForm
+    , DfTextField
+    , dfTextField
+    , emailField
 
     , (<??>)
     , inRange
@@ -74,6 +80,38 @@ optionalNonEmpty
     :: (Monad m, Monoid v, IsString v)
     => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
 optionalNonEmpty = TD.validateOptional . checkNonEmpty
+
+
+type DfForm a = forall m. Monad m =>  TD.Form (Html ()) m a
+type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
+
+-- Usage:
+--    SomeConstructor
+--    <$> ("field1" .: field someLens1 _SomePrism1)
+--    <*> ("field2" .: field someLens2 _SomePrism2)
+--  where
+--    field :: DfTextField SomeType
+--    field = dfTextField someData
+dfTextField :: s -> DfTextField s
+dfTextField s l p = s ^. l & p %%~ TD.text . Just
+
+emailField :: Maybe EmailAddress -> DfForm (Maybe EmailAddress)
+emailField email =
+    {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
+        from texts to @EmailAddress@. Here we want to traverse the text of an email address
+        thus one needs to reverse this prism. While Prisms cannot be reversed in full
+        generality, we could expect a weaker form which also traversals. This would look
+        like that:
+
+        email & rev emailAddress %%~ DF.optionalText
+
+        Instead, we have the code below which extracts the text of the email address if
+        there is such an email address.  'optionalText' gets a @Maybe ST@, finally the
+        result of 'optionalText' is processed with a pure function from @Maybe ST@ to
+        @Maybe EmailAddress@ where only a valid text representation of an email gets
+        mapped to @Just@  of an @EmailAddress@.
+    -}
+    (>>= preview emailAddress) <$> TD.optionalText (email ^? _Just . re emailAddress)
 
 
 -- * missing things from parsec
