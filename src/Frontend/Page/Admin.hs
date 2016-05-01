@@ -510,6 +510,7 @@ instance FormPage AdminEditUser where
         validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
 
         go :: forall m. ActionM m => UserLogin -> m (DF.Result (Html ()) (Maybe UserLogin))
+        go "" = pure $ DF.Error "login darf nicht leer sein"
         go lgin = if lgin == user ^. userLogin
             then pure (DF.Success Nothing)
             else do
