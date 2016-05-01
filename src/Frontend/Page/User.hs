@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -80,6 +81,11 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
       | p == cs pwd = pure u
       | otherwise   = passwordError
 
+    userPass :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
+    userPass initial encrypted deactivated = \case
+        UserPassInitial x   -> initial     x
+        UserPassEncrypted x -> encrypted   x
+        UserPassDeactivated -> deactivated
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
