@@ -39,7 +39,6 @@ import Persistent.Api hiding (EditIdea)
 
 import qualified Action (createIdea)
 import qualified Data.Map as Map
-import qualified Data.Text as ST
 import qualified Frontend.Path as U
 import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
@@ -312,17 +311,8 @@ instance ToHtml IdeaVoteLikeBars where
             PhaseVotFrozen{}  -> toHtml $ voteBar nil
             PhaseResult       -> toHtml $ voteBar nil
 
-validateMarkdown
-    :: Monad m => FieldName -> DF.Form (Html ()) m String -> DF.Form (Html ()) m Document
-validateMarkdown name = fmap (Markdown . cs) . nonEmpty name
-
-validateOptionalMarkdown
-    :: Monad m
-    => FieldName -> DF.Form (Html ()) m (Maybe String) -> DF.Form (Html ()) m (Maybe Document)
-validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
-
-validateIdeaTitle :: Monad m => DF.Form (Html ()) m String -> DF.Form (Html ()) m ST.Text
-validateIdeaTitle = fmap cs . validate "Titel der Idee" (many1 (alphaNum <|> space))
+validateIdeaTitle :: FormCS m r s
+validateIdeaTitle = validate "Titel der Idee" title
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
@@ -334,8 +324,8 @@ instance FormPage CreateIdea where
 
     makeForm (CreateIdea loc) =
         ProtoIdea
-        <$> ("title"         .: validateIdeaTitle (DF.string Nothing))
-        <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string Nothing))
+        <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
+        <*> ("idea-text"     .: validateMarkdown "Idee" (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
@@ -350,8 +340,9 @@ instance FormPage EditIdea where
 
     makeForm (EditIdea idea) =
         ProtoIdea
-        <$> ("title"         .: validateIdeaTitle (DF.string . Just . cs $ idea ^. ideaTitle))
-        <*> ("idea-text"     .: validateMarkdown "Idee" (DF.string . Just . cs . unMarkdown $ idea ^. ideaDesc))
+        <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
+        <*> ("idea-text"     .:
+                validateMarkdown "Idee" ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
@@ -396,7 +387,7 @@ instance FormPage CommentIdea where
     redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentIdea{} =
-        "comment-text" .: (CommentContent <$> validateMarkdown "Verbesserungsvorschlag" (DF.string Nothing))
+        "comment-text" .: (CommentContent <$> validateMarkdown "Verbesserungsvorschlag" (Markdown <$> DF.text Nothing))
 
     -- FIXME styling
     formPage v form p@(CommentIdea idea _mcomment) =
@@ -424,7 +415,7 @@ instance FormPage JudgeIdea where
         <$> "jury-text" .: validateOptionalMarkdown "Anmerkungen zur Durchführbarkeit" (DF.optionalString Nothing)
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
         NotFeasible
-        <$> "jury-text" .: validateMarkdown "Anmerkungen zur Durchführbarkeit" (DF.string Nothing)
+        <$> "jury-text" .: validateMarkdown "Anmerkungen zur Durchführbarkeit" (Markdown <$> DF.text Nothing)
 
     -- FIXME styling
     formPage v form p@(JudgeIdea juryType idea _topic) =
@@ -453,7 +444,7 @@ instance FormPage CreatorStatement where
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea
 
     makeForm (CreatorStatement idea) =
-        "statement-text" .: validateMarkdown "Statement des Autors" (DF.string (cs . unMarkdown <$> creatorStatementOfIdea idea))
+        "statement-text" .: validateMarkdown "Statement des Autors" (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
 
     -- FIXME styling
     formPage v form p@(CreatorStatement idea) =

@@ -25,16 +25,16 @@ import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import qualified Text.Digestive.Types as DF
 
 
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
 -- subform src/Frontend/Page/Topic.hs`.)
+-- FIXME: Error and non selected category are inseparable cases.
 makeFormSelectCategory :: (Monad m) => Maybe Category -> DF.Form (Html ()) m (Maybe Category)
-makeFormSelectCategory mcat = DF.validate f $ DF.text (cs . show . fromEnum <$> mcat)
+makeFormSelectCategory mcat = toCategory <$> DF.text (cs . show . fromEnum <$> mcat)
   where
-    f :: ST -> DF.Result (Html ()) (Maybe Category)
-    f = DF.Success . (toEnumMay <=< readMay) . cs
+    toCategory :: ST -> Maybe Category
+    toCategory = (toEnumMay <=< readMay) . cs
 
 -- | see also: static/js/custom.js.
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()

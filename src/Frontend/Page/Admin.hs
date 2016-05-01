@@ -395,14 +395,13 @@ instance FormPage AdminCreateUser where
             <$> ("firstname"  .: firstName (DF.string Nothing))
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
-            <*> emailField Nothing
+            <*> emailField "Email" Nothing
             <*> roleForm Nothing Nothing classes
         where
             -- FIXME: Users with more than one name?
             firstName = validate "Vorname"  (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben")
             lastName  = validate "Nachname" (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben")
-            loginName = validateOptional "Login"
-                (UserLogin . cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
+            loginName = validateOptional "Login" (UserLogin <$> username)
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do

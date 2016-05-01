@@ -412,7 +412,7 @@ voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
 removeVote :: (ActionPersist m) => AUID Idea -> AUID User -> m ()
-removeVote = app2 update RemoveVoteFromIdea
+removeVote = update <..> RemoveVoteFromIdea
 
 -- * Reporting and deleting comments
 
@@ -509,7 +509,7 @@ markIdeaInResultPhase iid rv = do
     currentUserAddDb_ (AddIdeaVoteResult iid) rv
 
 setCreatorStatement :: ActionM m => AUID Idea -> Document -> m ()
-setCreatorStatement = app2 update SetCreatorStatement
+setCreatorStatement = update <..> SetCreatorStatement
 
 revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
