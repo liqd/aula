@@ -147,7 +147,7 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
     changeUser :: UserSettingData -> m ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
-        maybe (pure ()) (update . SetUserEmail uid) memail
+        (update . SetUserEmail uid) `mapM_` memail
         update $ SetUserPass uid oldPass newPass1 newPass2
         addMessage "Die Änderungen wurden gespeichert."
         pure ()

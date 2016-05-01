@@ -133,9 +133,8 @@ type StringFieldParser = forall s . ConvertibleStrings String s => FieldParser s
 username :: StringFieldParser
 username = cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben"
 
--- TODO: Translation
 password :: StringFieldParser
-password = cs <$> manyNM 4 8 alphaNum <??> "Invalid password"
+password = cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)"
 
 title :: StringFieldParser
 title = cs <$> many1 (alphaNum <|> space)
