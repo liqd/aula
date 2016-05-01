@@ -62,7 +62,6 @@ data UserSettingData = UserSettingData
     }
     deriving (Eq, Show)
 
--- TODO: Translation
 checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
 checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
 checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
@@ -71,7 +70,7 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
         . _userSettings
     <$> currentUser
   where
-    passwordError = DF.Error "The given password is invalid"
+    passwordError = DF.Error "Das alte Passwort ist nicht korrekt"
 
     checkInitialPwd p
       | p == pwd  = pure u
@@ -92,7 +91,6 @@ instance FormPage PageUserSettings where
     -- form; without that, UX is still a bit confusing.
     redirectOf _ _ = U.UserSettings
 
-    -- TODO: Translation
     makeForm (PageUserSettings user) =
         DF.validateM checkUserPassword
         . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
@@ -100,19 +98,19 @@ instance FormPage PageUserSettings where
             <$> ("email"         .:
                     emailField "Email" (user ^. userEmail))
             <*> ("old-password"  .:
-                    validateOptional "Old password" password (DF.optionalText Nothing))
+                    validateOptional "aktuelles Passwort" password (DF.optionalText Nothing))
             <*> ("new-password1" .:
-                    validateOptional "New password" password (DF.optionalText Nothing))
+                    validateOptional "neues Passwort" password (DF.optionalText Nothing))
             <*> ("new-password2" .:
-                    validateOptional "New password again" password (DF.optionalText Nothing))
+                    validateOptional "neues Passwort (Wiederholung)" password (DF.optionalText Nothing))
       where
         checkPwdAllOrNothing u@(UserSettingData _ Nothing  Nothing  Nothing)  = pure u
         checkPwdAllOrNothing u@(UserSettingData _ (Just _) (Just _) (Just _)) = pure u
-        checkPwdAllOrNothing _ = DF.Error "All 3 passwords field should be filled."
+        checkPwdAllOrNothing _ = DF.Error "Passwort-Felder sind nur teilweise ausgefüllt."
 
         checkNewPassword u
           | profileNewPass1 u == profileNewPass2 u = pure u
-          | otherwise = DF.Error "New passwords do not match."
+          | otherwise = DF.Error "Die neuen Passwörter passen nicht (Tippfehler?)"
 
     formPage v form p = do
         semanticDiv p $ do
@@ -124,7 +122,7 @@ instance FormPage PageUserSettings where
                             span_ [class_ "label-text"] "E-mailadresse (optional)"
                             inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
                                 "email" v
-                        h2_ [class_ "label-header"] "Passwort andern"
+                        h2_ [class_ "label-header"] "Passwort ändern"
                         label_ $ do
                             span_ [class_ "label-text"] "aktualles Passwort"
                             inputPassword_ [class_ "m-small"]
@@ -134,7 +132,7 @@ instance FormPage PageUserSettings where
                             inputPassword_ [class_ "m-small"]
                                 "new-password1" v
                         label_ $ do
-                            span_ [class_ "label-text"] "neues Passwort bestatigen"
+                            span_ [class_ "label-text"] "neues Passwort bestätigen"
                             inputPassword_ [class_ "m-small"]
                                 "new-password2" v
                         footer_ [class_ "form-footer"] $ do
@@ -275,7 +273,6 @@ instance FormPage EditUserProfile where
 
     redirectOf (EditUserProfile u) _ = U.viewUser u
 
-    -- TODO: Translation
     makeForm (EditUserProfile user) =
         UserProfile
         <$> ("avatar" .: (cs <$$> DF.file))
@@ -287,11 +284,11 @@ instance FormPage EditUserProfile where
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Profil bearbeiten"
                     form $ do
-                        label_ $ do -- FIXME style
-                            span_ [class_ "label-text"] "Avatar:"
+                        label_ $ do
+                            span_ [class_ "label-text"] "Avatar"
                             DF.inputFile "avatar" v
                         label_ $ do
-                            span_ [class_ "label-text"] "Beschreibung:"
+                            span_ [class_ "label-text"] "Beschreibung"
                             inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"

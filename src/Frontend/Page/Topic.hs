@@ -195,9 +195,8 @@ viewTopicHeaderDiv ctx topic tab = do
     topicId = topic ^. _Id
     space   = topic ^. topicIdeaSpace
 
--- TODO: Translation.
 validateTopicTitle :: CSFormTransformer m r s
-validateTopicTitle = validate "Topic title" title
+validateTopicTitle = validate "Title des Themas" title
 
 instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
@@ -207,14 +206,13 @@ instance FormPage CreateTopic where
 
     redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
-    -- TODO: Translation
     makeForm CreateTopic{ _createTopicIdeaSpace
                         , _createTopicIdeas
                         , _createTopicRefPhaseEnd } =
         ProtoTopic
         <$> ("title" .: validateTopicTitle (DF.text nil))
-        <*> ("desc"  .: validateMarkdown "Topic" (Markdown <$> DF.text Nothing))
-        <*> ("image" .: DF.text nil) -- FIXME: Figure out validation
+        <*> ("desc"  .: validateMarkdown "Thema" (Markdown <$> DF.text Nothing))
+        <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
         <*> makeFormIdeaSelection _createTopicIdeas
         <*> pure _createTopicRefPhaseEnd
@@ -254,10 +252,9 @@ instance FormPage EditTopic where
     redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
 
     makeForm (EditTopic _space topic ideas) =
-        -- TODO: Translation
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
-        <*> ("desc"  .: validateMarkdown "Topic" ((topic ^. topicDesc) & _Markdown %%~ (DF.text . Just)))
+        <*> ("desc"  .: validateMarkdown "Thema" ((topic ^. topicDesc) & _Markdown %%~ (DF.text . Just)))
         <*> makeFormIdeaSelection ideas
 
     formPage v form p@(EditTopic _space _topic ideas) = do

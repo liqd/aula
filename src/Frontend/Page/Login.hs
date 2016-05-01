@@ -55,11 +55,10 @@ instance FormPage PageHomeWithLoginPrompt where
     formAction _   = U.Login
     redirectOf _ _ = U.ListSpaces
 
-    -- TODO: Translation
     makeForm _ = validateM checkLogin $
         LoginFormData
         <$> ("user" .: validate "Login" username (DF.string Nothing))
-        <*> ("pass" .: validate "Password" password (DF.string Nothing))
+        <*> ("pass" .: validate "Passwort" password (DF.string Nothing))
 
     formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do
