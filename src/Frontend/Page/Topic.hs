@@ -195,7 +195,7 @@ viewTopicHeaderDiv ctx topic tab = do
     topicId = topic ^. _Id
     space   = topic ^. topicIdeaSpace
 
-validateTopicTitle :: CSFormTransformer m r s
+validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" title
 
 instance FormPage CreateTopic where

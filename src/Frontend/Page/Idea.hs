@@ -311,7 +311,7 @@ instance ToHtml IdeaVoteLikeBars where
             PhaseVotFrozen{}  -> toHtml $ voteBar nil
             PhaseResult       -> toHtml $ voteBar nil
 
-validateIdeaTitle :: CSFormTransformer m r s
+validateIdeaTitle :: FormCS m r s
 validateIdeaTitle = validate "Titel der Idee" title
 
 instance FormPage CreateIdea where
