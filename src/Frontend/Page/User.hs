@@ -98,7 +98,7 @@ instance FormPage PageUserSettings where
     redirectOf _ _ = U.UserSettings
 
     makeForm (PageUserSettings user) =
-        DF.validateM checkUserPassword
+          DF.validateM checkUserPassword
         . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
         $ UserSettingData
             <$> ("email"         .:
