@@ -77,7 +77,6 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
       | p == pwd  = pure u
       | otherwise = passwordError
 
-    -- FIXME: Handle encryption
     checkEncryptedPwd p
       | p == cs pwd = pure u
       | otherwise   = passwordError

@@ -56,7 +56,6 @@ instance FormPage PageHomeWithLoginPrompt where
     redirectOf _ _ = U.ListSpaces
 
     -- TODO: Translation
-    -- FIXME: Validation in login case should not propagate information about what went wrong.
     makeForm _ = validateM checkLogin $
         LoginFormData
         <$> ("user" .: validate "Login" username (DF.string Nothing))
