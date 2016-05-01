@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -17,9 +18,9 @@ import Frontend.Validation
 import Persistent.Api
 import System.FilePath
 
-import qualified Frontend.Path as P
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 
@@ -62,6 +63,30 @@ data UserSettingData = UserSettingData
     }
     deriving (Eq, Show)
 
+checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
+checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
+checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
+    userPass checkInitialPwd checkEncryptedPwd passwordError
+        . _userSettingsPassword
+        . _userSettings
+    <$> currentUser
+  where
+    passwordError = DF.Error "Das alte Passwort ist nicht korrekt"
+
+    checkInitialPwd p
+      | p == pwd  = pure u
+      | otherwise = passwordError
+
+    checkEncryptedPwd p
+      | p == cs pwd = pure u
+      | otherwise   = passwordError
+
+    userPass :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
+    userPass initial encrypted deactivated = \case
+        UserPassInitial x   -> initial     x
+        UserPassEncrypted x -> encrypted   x
+        UserPassDeactivated -> deactivated
+
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
@@ -73,11 +98,25 @@ instance FormPage PageUserSettings where
     redirectOf _ _ = U.UserSettings
 
     makeForm (PageUserSettings user) =
-        UserSettingData
-        <$> ("email"         .: emailField (user ^. userEmail))
-        <*> ("old-password"  .: DF.optionalText Nothing)
-        <*> ("new-password1" .: DF.optionalText Nothing)
-        <*> ("new-password2" .: DF.optionalText Nothing)
+          DF.validateM checkUserPassword
+        . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
+        $ UserSettingData
+            <$> ("email"         .:
+                    emailField "Email" (user ^. userEmail))
+            <*> ("old-password"  .:
+                    validateOptional "aktuelles Passwort" password (DF.optionalText Nothing))
+            <*> ("new-password1" .:
+                    validateOptional "neues Passwort" password (DF.optionalText Nothing))
+            <*> ("new-password2" .:
+                    validateOptional "neues Passwort (Wiederholung)" password (DF.optionalText Nothing))
+      where
+        checkPwdAllOrNothing u@(UserSettingData _ Nothing  Nothing  Nothing)  = pure u
+        checkPwdAllOrNothing u@(UserSettingData _ (Just _) (Just _) (Just _)) = pure u
+        checkPwdAllOrNothing _ = DF.Error "Passwort-Felder sind nur teilweise ausgefüllt."
+
+        checkNewPassword u
+          | profileNewPass1 u == profileNewPass2 u = pure u
+          | otherwise = DF.Error "Die neuen Passwörter passen nicht (Tippfehler?)"
 
     formPage v form p = do
         semanticDiv p $ do
@@ -89,7 +128,7 @@ instance FormPage PageUserSettings where
                             span_ [class_ "label-text"] "E-mailadresse (optional)"
                             inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
                                 "email" v
-                        h2_ [class_ "label-header"] "Passwort andern"
+                        h2_ [class_ "label-header"] "Passwort ändern"
                         label_ $ do
                             span_ [class_ "label-text"] "aktualles Passwort"
                             inputPassword_ [class_ "m-small"]
@@ -99,7 +138,7 @@ instance FormPage PageUserSettings where
                             inputPassword_ [class_ "m-small"]
                                 "new-password1" v
                         label_ $ do
-                            span_ [class_ "label-text"] "neues Passwort bestatigen"
+                            span_ [class_ "label-text"] "neues Passwort bestätigen"
                             inputPassword_ [class_ "m-small"]
                                 "new-password2" v
                         footer_ [class_ "form-footer"] $ do
@@ -112,7 +151,7 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
     changeUser :: UserSettingData -> m ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
-        maybe (pure ()) (update . SetUserEmail uid) memail
+        (update . SetUserEmail uid) `mapM_` memail
         update $ SetUserPass uid oldPass newPass1 newPass2
         addMessage "Die Änderungen wurden gespeichert."
         pure ()
@@ -156,7 +195,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserDelegations)]
+                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserDelegations)]
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
@@ -186,7 +225,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx u
             div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (P.User (user ^. _Id) P.UserIdeas)]
+                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserIdeas)]
                     "Erstellte Ideen"
                 span_ [class_ "heroic-tab-item  m-active"]
                     "Erhaltene Stimmen"
@@ -243,7 +282,7 @@ instance FormPage EditUserProfile where
     makeForm (EditUserProfile user) =
         UserProfile
         <$> ("avatar" .: (cs <$$> DF.file))
-        <*> ("desc"   .: dfTextField user userDesc _Markdown)
+        <*> ("desc"   .: validateMarkdown "Beschreibung" (dfTextField user userDesc _Markdown))
 
     formPage v form p = do
         semanticDiv p $ do
@@ -251,11 +290,11 @@ instance FormPage EditUserProfile where
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Profil bearbeiten"
                     form $ do
-                        label_ $ do -- FIXME style
-                            span_ [class_ "label-text"] "Avatar:"
+                        label_ $ do
+                            span_ [class_ "label-text"] "Avatar"
                             DF.inputFile "avatar" v
                         label_ $ do
-                            span_ [class_ "label-text"] "Beschreibung:"
+                            span_ [class_ "label-text"] "Beschreibung"
                             inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"

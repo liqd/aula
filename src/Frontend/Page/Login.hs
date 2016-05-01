@@ -3,17 +3,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-{-# OPTIONS_GHC -Werror #-}
+{-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Login
 where
 
-import Text.Digestive
+import Text.Digestive as DF hiding (validate)
 
 import Action (ActionM, query)
 import qualified Action
 import Persistent
 import Frontend.Prelude
+import Frontend.Validation
 
 import qualified Frontend.Path as U
 import qualified Lucid
@@ -56,8 +57,8 @@ instance FormPage PageHomeWithLoginPrompt where
 
     makeForm _ = validateM checkLogin $
         LoginFormData
-        <$> ("user" .: text Nothing)
-        <*> ("pass" .: text Nothing)
+        <$> ("user" .: validate "Login" username (DF.string Nothing))
+        <*> ("pass" .: validate "Passwort" password (DF.string Nothing))
 
     formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do

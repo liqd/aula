@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -23,6 +24,7 @@ module Frontend.Core
       -- * helpers for handlers
     , semanticDiv
     , html
+    , FormCS
     , Beside(..)
     , tabSelected
     , redirect
@@ -157,6 +159,10 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 -- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
+
+type FormCS m r s =
+    (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
+    => DF.Form (Html ()) m r -> DF.Form (Html ()) m s
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
