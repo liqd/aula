@@ -494,7 +494,7 @@ roleForm mrole mclass classes =
         <*> ("class" .: chooseClass classes mclass)
 
 instance FormPage AdminEditUser where
-    type FormPagePayload AdminEditUser = (UserLogin, Role)
+    type FormPagePayload AdminEditUser = (Maybe UserLogin, Role)
 
     formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
@@ -502,11 +502,11 @@ instance FormPage AdminEditUser where
     redirectOf _ _ = U.Admin U.AdminViewUsers
 
     makeForm (AdminEditUser user classes) =
-        (,) <$> ("login" .: field userLogin _UserLogin)
+        (,) <$> ("login" .: validateUserLogin)
             <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
       where
-        field :: DfTextField User
-        field = dfTextField user
+        validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
+        validateUserLogin = Just <$> dfTextField user userLogin _UserLogin
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do

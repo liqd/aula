@@ -460,13 +460,17 @@ setUserPass _uid _oldPass newPass1 newPass2 = do
     -- FIXME: set newPass1
     return ()
 
-setUserLoginAndRole :: AUID User -> UserLogin -> Role -> AUpdate ()
-setUserLoginAndRole uid login role = do
-    checkLoginIsAvailable login
+setUserLoginAndRole :: AUID User -> Maybe UserLogin -> Role -> AUpdate ()
+setUserLoginAndRole uid mlogin role = do
     user <- maybe404 =<< liftAQuery (findUser uid)
-    aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
-    withUser uid %= (userLogin .~ login)
-                  . (userRole  .~ role)
+    case mlogin of
+        Nothing -> do
+            withUser uid %= (userRole  .~ role)
+        Just login -> do
+            checkLoginIsAvailable login
+            aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
+            withUser uid %= (userLogin .~ login)
+                          . (userRole  .~ role)
 
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid url = withUser uid . userAvatar ?= url
