@@ -148,7 +148,6 @@ userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
         maybe (pure ()) (update . SetUserEmail uid) memail
-        -- FIXME: SetUserPass does not saves the new password.
         update $ SetUserPass uid oldPass newPass1 newPass2
         addMessage "Die Änderungen wurden gespeichert."
         pure ()
