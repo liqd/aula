@@ -462,7 +462,7 @@ setUserPass _uid _oldPass newPass1 newPass2 = do
 
 setUserLoginAndRole :: AUID User -> UserLogin -> Role -> AUpdate ()
 setUserLoginAndRole uid login role = do
-    checkAvailableLogin login
+    checkLoginIsAvailable login
     user <- maybe404 =<< liftAQuery (findUser uid)
     aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
     withUser uid %= (userLogin .~ login)
@@ -695,8 +695,8 @@ userFromProto metainfo uLogin uPassword proto = User
         }
     }
 
-checkAvailableLogin :: UserLogin -> AUpdate ()
-checkAvailableLogin li = do
+checkLoginIsAvailable :: UserLogin -> AUpdate ()
+checkLoginIsAvailable li = do
     existingUser <- liftAQuery $ findUserByLogin li
     when (isJust existingUser) . throwError $ UserLoginInUse li
 
@@ -705,7 +705,7 @@ addUser (EnvWith cUser now proto) = do
     metainfo <- nextMetaInfo cUser now
     uLogin <- case proto ^. protoUserLogin of
         Nothing -> mkUserLogin proto
-        Just li -> checkAvailableLogin li $> li
+        Just li -> checkLoginIsAvailable li $> li
     let user = userFromProto metainfo uLogin (proto ^. protoUserPassword) proto
     dbUserMap . at (user ^. _Id) <?= user
 
