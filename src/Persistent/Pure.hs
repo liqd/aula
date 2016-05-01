@@ -79,6 +79,7 @@ module Persistent.Pure
     , getUsersInClass
     , isClassInRole
     , getSchoolClasses
+    , loginIsAvailable
     , addUser
     , addFirstUser
     , mkMetaInfo
@@ -701,8 +702,11 @@ userFromProto metainfo uLogin uPassword proto = User
 
 checkLoginIsAvailable :: UserLogin -> AUpdate ()
 checkLoginIsAvailable li = do
-    existingUser <- liftAQuery $ findUserByLogin li
-    when (isJust existingUser) . throwError $ UserLoginInUse li
+    yes <- liftAQuery $ loginIsAvailable li
+    unless yes . throwError $ UserLoginInUse li
+
+loginIsAvailable :: UserLogin -> Query Bool
+loginIsAvailable = fmap isNothing . findUserByLogin
 
 addUser :: AddDb User
 addUser (EnvWith cUser now proto) = do

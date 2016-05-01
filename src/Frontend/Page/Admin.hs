@@ -26,6 +26,7 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Text.Digestive.Types as DF
 
 import Action
 import Persistent.Api
@@ -506,7 +507,16 @@ instance FormPage AdminEditUser where
             <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
       where
         validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
-        validateUserLogin = Just <$> dfTextField user userLogin _UserLogin
+        validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
+
+        go :: forall m. ActionM m => UserLogin -> m (DF.Result (Html ()) (Maybe UserLogin))
+        go lgin = if lgin == user ^. userLogin
+            then pure (DF.Success Nothing)
+            else do
+                yes <- query $ loginIsAvailable lgin
+                if yes then pure . DF.Success $ Just lgin
+                       else pure . DF.Error   $ "login ist bereits vergeben"
+
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
