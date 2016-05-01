@@ -14,14 +14,14 @@ import Action
 import Data.Avatar
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding ((</>), (<.>))
-import Persistent.Api
 import Frontend.Validation
+import Persistent.Api
+import System.FilePath
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
-import System.FilePath
 
 
 -- * page

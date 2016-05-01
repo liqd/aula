@@ -66,6 +66,7 @@ $(makeAcidic ''AulaData
     , 'removeVoteFromIdea
     , 'askDb
     , 'dangerousResetAulaData
+    , 'dangerousRenameAllLogins
     , 'editIdea
     , 'editTopic
     , 'moveIdeasToLocation
@@ -76,7 +77,7 @@ $(makeAcidic ''AulaData
     , 'setUserAvatar
     , 'setUserEmail
     , 'setUserPass
-    , 'setUserRole
+    , 'setUserLoginAndRole
     , 'setUserProfile
     , 'setUserProfileDesc
     , 'deleteComment

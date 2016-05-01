@@ -7,6 +7,7 @@
 
 module Frontend.Validation
     ( module TP
+
       -- * field validation
     , FieldName
     , FieldParser
@@ -14,6 +15,9 @@ module Frontend.Validation
     , Frontend.Validation.validateOptional
     , nonEmpty
     , optionalNonEmpty
+    , DfForm
+    , DfTextField
+    , dfTextField
 
       -- * missing parser combinators
     , (<??>)
@@ -97,6 +101,21 @@ optionalNonEmpty
     :: (Monad m, Monoid v, IsString v)
     => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
 optionalNonEmpty = DF.validateOptional . checkNonEmpty
+
+
+type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
+type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
+
+-- Usage:
+--    SomeConstructor
+--    <$> ("field1" .: field someLens1 _SomePrism1)
+--    <*> ("field2" .: field someLens2 _SomePrism2)
+--  where
+--    field :: DfTextField SomeType
+--    field = dfTextField someData
+dfTextField :: s -> DfTextField s
+dfTextField s l p = s ^. l & p %%~ DF.text . Just
+
 
 -- * missing things from parsec
 

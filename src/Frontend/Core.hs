@@ -7,7 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -24,9 +24,6 @@ module Frontend.Core
       -- * helpers for handlers
     , semanticDiv
     , html
-    , DfForm
-    , DfTextField
-    , dfTextField
     , FormCS
     , Beside(..)
     , tabSelected
@@ -163,22 +160,9 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
 semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
 
-type DfForm a = forall m. Monad m =>  DF.Form (Html ()) m a
-type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
-
 type FormCS m r s =
     (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
     => DF.Form (Html ()) m r -> DF.Form (Html ()) m s
-
--- Usage:
---    SomeConstructor
---    <$> ("field1" .: field someLens1 _SomePrism1)
---    <*> ("field2" .: field someLens2 _SomePrism2)
---  where
---    field :: DfTextField SomeType
---    field = dfTextField someData
-dfTextField :: s -> DfTextField s
-dfTextField s l p = s ^. l & p %%~ DF.text . Just
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml

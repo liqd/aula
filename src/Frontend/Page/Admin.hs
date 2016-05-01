@@ -26,6 +26,7 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Text.Digestive.Types as DF
 
 import Action
 import Persistent.Api
@@ -493,7 +494,7 @@ roleForm mrole mclass classes =
         <*> ("class" .: chooseClass classes mclass)
 
 instance FormPage AdminEditUser where
-    type FormPagePayload AdminEditUser = Role
+    type FormPagePayload AdminEditUser = (Maybe UserLogin, Role)
 
     formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
@@ -501,13 +502,28 @@ instance FormPage AdminEditUser where
     redirectOf _ _ = U.Admin U.AdminViewUsers
 
     makeForm (AdminEditUser user classes) =
-        roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+        (,) <$> ("login" .: validateUserLogin)
+            <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+      where
+        validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
+        validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
+
+        go :: forall m. ActionM m => UserLogin -> m (DF.Result (Html ()) (Maybe UserLogin))
+        go "" = pure $ DF.Error "login darf nicht leer sein"
+        go lgin = if lgin == user ^. userLogin
+            then pure (DF.Success Nothing)
+            else do
+                yes <- query $ loginIsAvailable lgin
+                if yes then pure . DF.Success $ Just lgin
+                       else pure . DF.Error   $ "login ist bereits vergeben"
+
 
     formPage v form p@(AdminEditUser user _classes) =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
-                    toHtml (user ^. userLogin . unUserLogin)
+                    span_ [class_ "label-text"] "Login"
+                    inputText_ [class_ "m-stretch"] "login" v
                 label_ [class_ "col-6-12"] $ do
                     span_ [class_ "label-text"] "Nutzerrolle"
                     inputSelect_ [class_ "m-stretch"] "role" v
@@ -569,7 +585,7 @@ adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = FormPageHandler
     { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses
-    , _formProcessor = update . SetUserRole uid
+    , _formProcessor = update . uncurry (SetUserLoginAndRole uid)
     }
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role

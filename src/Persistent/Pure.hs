@@ -56,7 +56,7 @@ module Persistent.Pure
     , getIdeasWithTopic
     , addIdeaSpaceIfNotExists
     , addIdea
-    , modifyIdea
+    , withIdea
     , findIdea
     , findIdeaBy
     , findIdeasByTopicId
@@ -79,22 +79,23 @@ module Persistent.Pure
     , getUsersInClass
     , isClassInRole
     , getSchoolClasses
+    , loginIsAvailable
     , addUser
     , addFirstUser
     , mkMetaInfo
     , mkUserLogin
-    , modifyUser
+    , withUser
     , setUserProfile
     , setUserProfileDesc
     , setUserEmail
     , setUserPass
-    , setUserRole
+    , setUserLoginAndRole
     , setUserAvatar
     , getTopics
     , setTopicPhase
     , addTopic
     , editTopic
-    , modifyTopic
+    , withTopic
     , moveIdeasToLocation
     , findTopic
     , findTopicBy
@@ -119,6 +120,13 @@ module Persistent.Pure
     , saveDurations
     , saveQuorums
     , dangerousResetAulaData
+    , dangerousRenameAllLogins
+
+    , TraverseMetas
+    , commentMetas
+    , ideaMetas
+    , aulaMetas
+    , aulaUserLogins
     )
 where
 
@@ -133,6 +141,7 @@ import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
 import Data.Foldable (find, for_)
 import Data.List (nub)
+import Data.Functor
 import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
@@ -184,6 +193,47 @@ dbTopics = dbTopicMap . to Map.elems
 
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
+
+type TraverseMetas a = forall b. Traversal' (MetaInfo b) a
+
+commentMetas :: TraverseMetas a -> Traversal' Comment a
+commentMetas t f (Comment m text votes replies deleted) =
+    Comment <$> t f m                               -- A MetaInfo
+            <*> pure text                           -- No MetaInfo in commentText
+            <*> (each . metaInfo . t) f votes       -- Only one MetaInfo per CommentVote
+            <*> (each . commentMetas t) f replies   -- See commentMetas
+            <*> pure deleted                        -- No MetaInfo in commentDeleted
+
+ideaMetas :: TraverseMetas a -> Traversal' Idea a
+ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes) =
+    Idea <$> t f m                              -- A MetaInfo
+         <*> pure title                         -- No MetaInfo in ideaTitle
+         <*> pure desc                          -- No MetaInfo in ideaDesc
+         <*> pure cat                           -- No MetaInfo id ideaCategory
+         <*> pure loc                           -- No MetaInfo id ideaLoc
+         <*> (each . commentMetas t) f comments -- See commentMetas
+         <*> (each . metaInfo . t) f likes      -- Only one MetaInfo per IdeaLike
+         <*> (each . metaInfo . t) f votes      -- Only one MetaInfo per IdeaVote
+         <*> (each . metaInfo . t) f juryRes    -- Only one MetaInfo per IdeaJuryResult
+         <*> (each . metaInfo . t) f voteRes    -- Only one MetaInfo per IdeaVoteResult
+
+-- This is using pattern matching on AulaData to force us to adapt this function when extending it.
+aulaMetas :: TraverseMetas a -> AulaTraversal a
+aulaMetas t f (AulaData sp is us ts ds st li) =
+    AulaData <$> pure sp                    -- No MetaInfo in dbSpaceSet
+             <*> (each . ideaMetas  t) f is -- See ideaMetas
+             <*> (each . metaInfo . t) f us -- Only one MetaInfo per User
+             <*> (each . metaInfo . t) f ts -- Only one MetaInfo per Topic
+             <*> (each . metaInfo . t) f ds -- Only one MetaInfo per Delegation
+             <*> pure st                    -- No MetaInfo in dbSettings
+             <*> pure li                    -- No MetaInfo in dbListId
+
+aulaUserLogins :: AulaSetter UserLogin
+aulaUserLogins = mergeSetters (dbUserMap . each . userLogin) (aulaMetas metaCreatedByLogin)
+  where
+    -- Only valid when the targets of the two setters are non overlapping
+    mergeSetters :: ASetter s t a b -> ASetter t u a b -> Setter s u a b
+    mergeSetters l0 l1 = sets $ \f -> over l1 f . over l0 f
 
 
 -- * transactions
@@ -386,23 +436,23 @@ findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
-modifyAMap :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> (a -> a) -> AUpdate ()
-modifyAMap l ident = (l . at ident . _Just %=)
+withRecord :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> AulaTraversal a
+withRecord l ident = l . at ident . _Just
 
-modifyIdea :: AUID Idea -> (Idea -> Idea) -> AUpdate ()
-modifyIdea = modifyAMap dbIdeaMap
+withIdea :: AUID Idea -> AulaTraversal Idea
+withIdea = withRecord dbIdeaMap
 
-modifyUser :: AUID User -> (User -> User) -> AUpdate ()
-modifyUser = modifyAMap dbUserMap
+withUser :: AUID User -> AulaTraversal User
+withUser = withRecord dbUserMap
 
 setUserProfile :: AUID User -> UserProfile -> AUpdate ()
-setUserProfile uid = modifyUser uid . (userProfile .~)
+setUserProfile uid profile = withUser uid . userProfile .= profile
 
 setUserProfileDesc :: AUID User -> Document -> AUpdate ()
-setUserProfileDesc uid = modifyUser uid . (userProfile . profileDesc .~)
+setUserProfileDesc uid desc = withUser uid . userProfile . profileDesc .= desc
 
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
-setUserEmail uid = modifyUser uid . (userEmail ?~)
+setUserEmail uid email = withUser uid . userEmail ?= email
 
 setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()
 setUserPass _uid _oldPass newPass1 newPass2 = do
@@ -411,21 +461,30 @@ setUserPass _uid _oldPass newPass1 newPass2 = do
     -- FIXME: set newPass1
     return ()
 
-setUserRole :: AUID User -> Role -> AUpdate ()
-setUserRole uid = modifyUser uid . set userRole
+setUserLoginAndRole :: AUID User -> Maybe UserLogin -> Role -> AUpdate ()
+setUserLoginAndRole uid mlogin role = do
+    user <- maybe404 =<< liftAQuery (findUser uid)
+    case mlogin of
+        Nothing -> do
+            withUser uid %= (userRole  .~ role)
+        Just login -> do
+            checkLoginIsAvailable login
+            aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
+            withUser uid %= (userLogin .~ login)
+                          . (userRole  .~ role)
 
 setUserAvatar :: AUID User -> URL -> AUpdate ()
-setUserAvatar uid = modifyUser uid . set userAvatar . Just
+setUserAvatar uid url = withUser uid . userAvatar ?= url
 
 editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
 editTopic topicId (EditTopicData title desc ideas) = do
     topic <- maybe404 =<< liftAQuery (findTopic topicId)
     let space = topic ^. topicIdeaSpace
-    modifyTopic topicId (set topicTitle title . set topicDesc desc)
+    withTopic topicId %= (set topicTitle title . set topicDesc desc)
     moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
-modifyTopic :: AUID Topic -> (Topic -> Topic) -> AUpdate ()
-modifyTopic = modifyAMap dbTopicMap
+withTopic :: AUID Topic -> AulaTraversal Topic
+withTopic = withRecord dbTopicMap
 
 findUser :: AUID User -> MQuery User
 findUser = findInById dbUserMap
@@ -460,10 +519,10 @@ getTopics = view dbTopics
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
 moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
-        modifyIdea ideaId $ ideaLocation .~ location
+        withIdea ideaId . ideaLocation .= location
 
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
-setTopicPhase tid phase = modifyTopic tid $ topicPhase .~ phase
+setTopicPhase tid phase = withTopic tid . topicPhase .= phase
 
 addTopic :: Timestamp -> AddDb Topic
 addTopic now pt = do
@@ -544,7 +603,7 @@ addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just .
 
 -- Removes the vote of the given user.
 removeVoteFromIdea :: AUID Idea -> AUID User -> AUpdate ()
-removeVoteFromIdea iid uid = modifyIdea iid (set (ideaVotes . at uid) Nothing)
+removeVoteFromIdea iid uid = withIdea iid . ideaVotes . at uid .= Nothing
 
 instance FromProto Comment where
     fromProto d m = Comment { _commentMeta      = m
@@ -592,14 +651,11 @@ addIdeaJuryResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaJuryResult)
 
 removeIdeaJuryResult :: AUID Idea -> AUpdate ()
-removeIdeaJuryResult iid = modifyIdea iid (set ideaJuryResult Nothing)
+removeIdeaJuryResult iid = withIdea iid . ideaJuryResult .= Nothing
 
 setCreatorStatement :: AUID Idea -> Document -> AUpdate ()
-setCreatorStatement iid statement = modifyIdea iid
-    (set (  ideaVoteResult
-          . _Just
-          . ideaVoteResultValue
-          . _Winning) (Just statement))
+setCreatorStatement iid statement =
+    withIdea iid . ideaVoteResult . _Just . ideaVoteResultValue . _Winning ?= statement
 
 instance FromProto IdeaVoteResult where
     fromProto = flip IdeaVoteResult
@@ -609,7 +665,7 @@ addIdeaVoteResult iid =
     addDbAppValue (dbIdeaMap . at iid . _Just . ideaVoteResult)
 
 revokeWinnerStatus :: AUID Idea -> AUpdate ()
-revokeWinnerStatus iid = modifyIdea iid (set ideaVoteResult Nothing)
+revokeWinnerStatus iid = withIdea iid . ideaVoteResult .= Nothing
 
 dbComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> AulaTraversal Comment
 dbComment' iid parents ck =
@@ -644,16 +700,20 @@ userFromProto metainfo uLogin uPassword proto = User
         }
     }
 
+checkLoginIsAvailable :: UserLogin -> AUpdate ()
+checkLoginIsAvailable li = do
+    yes <- liftAQuery $ loginIsAvailable li
+    unless yes . throwError $ UserLoginInUse li
+
+loginIsAvailable :: UserLogin -> Query Bool
+loginIsAvailable = fmap isNothing . findUserByLogin
+
 addUser :: AddDb User
 addUser (EnvWith cUser now proto) = do
     metainfo <- nextMetaInfo cUser now
     uLogin <- case proto ^. protoUserLogin of
         Nothing -> mkUserLogin proto
-        Just li -> do
-            existingUser <- liftAQuery $ findUserByLogin li
-            case existingUser of
-                Nothing -> pure li
-                Just _  -> throwError $ UserLoginInUse li
+        Just li -> checkLoginIsAvailable li $> li
     let user = userFromProto metainfo uLogin (proto ^. protoUserPassword) proto
     dbUserMap . at (user ^. _Id) <?= user
 
@@ -735,11 +795,9 @@ nextMetaInfo :: KeyOf a ~ AUID a => User -> Timestamp -> AUpdate (MetaInfo a)
 nextMetaInfo user now = mkMetaInfo user now <$> nextId
 
 editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()
-editIdea ideaId = modifyIdea ideaId . newIdea
-  where
-    newIdea protoIdea = (ideaTitle .~ (protoIdea ^. protoIdeaTitle))
-                      . (ideaDesc .~ (protoIdea ^. protoIdeaDesc))
-                      . (ideaCategory .~ (protoIdea ^. protoIdeaCategory))
+editIdea ideaId protoIdea = withIdea ideaId %= (ideaTitle     .~ (protoIdea ^. protoIdeaTitle))
+                                             . (ideaDesc      .~ (protoIdea ^. protoIdeaDesc))
+                                             . (ideaCategory  .~ (protoIdea ^. protoIdeaCategory))
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums
@@ -767,3 +825,6 @@ saveQuorums = (dbQuorums .=)
 
 dangerousResetAulaData :: AUpdate ()
 dangerousResetAulaData = put emptyAulaData
+
+dangerousRenameAllLogins :: ST -> AUpdate ()
+dangerousRenameAllLogins suffix = aulaUserLogins . _UserLogin <>= suffix
