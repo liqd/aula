@@ -61,8 +61,14 @@ instance HasSendMail ActionExcept ActionEnv Action where
         logger <- view envLogger
         sendMailToAddressIO logger addr msg
 
+instance ActionEventLog Action where
+    -- FIXME: Save events to persistents
+    recordEvent _ = pure ()
+    -- FIXME: Implementation
+    listEvents _ = pure []
+
 instance ActionLog Action where
-    logEvent msg = actionIO =<< views envLogger ($ msg)
+    log msg = actionIO =<< views envLogger ($ msg)
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where

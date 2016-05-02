@@ -595,14 +595,6 @@ adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
 -- TODO: Translation
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
-{-
-<<<<<<< daeefaec2ed441c7e5a0b534a0b8014615e475a6
-adminEditUser uid = FormPageHandler
-    { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses
-    , _formProcessor = update . uncurry (SetUserLoginAndRole uid)
-    }
-=======
--}
 adminEditUser uid = formPageHandlerCalcMsg
     (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
     (update . uncurry (SetUserLoginAndRole uid))
@@ -612,7 +604,6 @@ adminEditUser uid = formPageHandlerCalcMsg
         , u ^. userLastName . unUserLastName . to cs
         , "is changed."
         ])
--- >>>>>>> Add Admin, Idea, Topic and User form messages.
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
 fromRoleSelection RoleSelStudent     = Student
