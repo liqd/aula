@@ -764,7 +764,7 @@ adminPhaseChange =
             topic <- Action.mquery $ findTopic tid
             return $ unwords
                 [ "Topic is in the"
-                , (topic ^. topicPhase . to show)
+                , topic ^. topicPhase . to show
                 , "now"
                 ]
         )
