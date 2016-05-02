@@ -1,43 +1,45 @@
-ul,ol {
-    @include rem(margin-left, 1rem);
+.markdown {
+    ul, ol {
+        @include rem(margin-left, 1rem);
+
+        ul {
+            list-style-type: circle;
+        }
+
+        ol {
+            list-style-type: lower-roman;
+        }
+    }
 
     ul {
-        list-style-type: circle;
+        list-style-type: disc;
     }
 
     ol {
-        list-style-type: lower-roman;
+        list-style-type: decimal;
     }
-}
 
-ul {
-    list-style-type: disc;
-}
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: bold;
+    }
 
-ol {
-    list-style-type: decimal;
-}
+    h1 {
+        font-size: 200%;
+    }
 
-h1, h2, h3, h4, h5, h6 {
-    font-weight: bold;
-}
+    h2 {
+        font-size: 170%;
+    }
 
-h1 {
-    font-size: 200%;
-}
+    h3 {
+        font-size: 150%;
+    }
 
-h2 {
-    font-size: 170%;
-}
+    h4 {
+        font-size: 130%;
+    }
 
-h3 {
-    font-size: 150%;
-}
-
-h4 {
-    font-size: 130%;
-}
-
-h5 {
-    font-size: 120%;
+    h5 {
+        font-size: 120%;
+    }
 }
