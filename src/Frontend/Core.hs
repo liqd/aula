@@ -45,7 +45,9 @@ module Frontend.Core
     , formAction, redirectOf, makeForm, formPage, guardPage
 
     , FormPageRep(..)
-    , FormPageHandler(..), formGetPage, formProcessor
+    , FormPageHandler, formGetPage, formProcessor, formStatusMessage
+    , formPageHandler, formPageHandlerWithMsg
+    , formPageHandlerCalcMsg, formPageHandlerCalcMsgM
     , form
 
       -- * frames
@@ -64,6 +66,7 @@ module Frontend.Core
     )
   where
 
+import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
@@ -335,9 +338,44 @@ instance FormPage p => ToHtml (FormPageRep p) where
         frm bdy = DF.childErrorList "" v >> DF.form v a bdy
 
 data FormPageHandler m p = FormPageHandler
-    { _formGetPage   :: m p
-    , _formProcessor :: FormPagePayload p -> m (FormPageResult p)
+    { _formGetPage       :: m p
+    , _formProcessor     :: FormPagePayload p -> m (FormPageResult p)
+    , _formStatusMessage :: p -> FormPagePayload p -> FormPageResult p -> m (Maybe StatusMessage)
     }
+
+formPageHandler
+    :: Applicative m
+    => m p
+    -> (FormPagePayload p -> m (FormPageResult p))
+    -> FormPageHandler m p
+formPageHandler get processor = FormPageHandler get processor noMsg
+  where
+    noMsg _ _ _ = pure Nothing
+
+formPageHandlerWithMsg
+    :: Applicative m
+    => m p
+    -> (FormPagePayload p -> m (FormPageResult p))
+    -> ST
+    -> FormPageHandler m p
+formPageHandlerWithMsg get processor msg = FormPageHandler get processor (\_ _ _ -> pure . Just . cs $ msg)
+
+formPageHandlerCalcMsg
+    :: (Applicative m, ConvertibleStrings s StatusMessage)
+    => m p
+    -> (FormPagePayload p -> m (FormPageResult p))
+    -> (p -> FormPagePayload p -> FormPageResult p -> s)
+    -> FormPageHandler m p
+formPageHandlerCalcMsg get processor msg = FormPageHandler get processor ((pure . Just . cs) <...> msg)
+
+formPageHandlerCalcMsgM
+    :: (Applicative m, ConvertibleStrings s StatusMessage)
+    => m p
+    -> (FormPagePayload p -> m (FormPageResult p))
+    -> (p -> FormPagePayload p -> FormPageResult p -> m s)
+    -> FormPageHandler m p
+formPageHandlerCalcMsgM get processor msg = FormPageHandler get processor (fmap (Just . cs) <...> msg)
+
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
 -- move parts of it there?)
@@ -355,6 +393,7 @@ form formHandler = getH :<|> postH
   where
     getPage = _formGetPage formHandler
     processor = _formProcessor formHandler
+    formMessage = _formStatusMessage formHandler
 
     guard page = mapM_ (redirect . absoluteUriPath) =<< guardPage page
 
@@ -372,14 +411,18 @@ form formHandler = getH :<|> postH
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
-            Just payload -> processor2 page payload >>= redirect
+            Just payload -> do (redirectPath, msg) <- processor2 page payload
+                               msg >>= mapM_ addMessage
+                               redirect redirectPath
             Nothing      -> pure $ FormPageRep v fa page)
             `finally` cleanupTempFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
-    processor2 page result = absoluteUriPath . relPath . redirectOf page <$> processor result
+    processor2 page result =
+        ((absoluteUriPath . relPath . redirectOf page) &&& formMessage page result)
+        <$> processor result
 
 
 -- * frame creation

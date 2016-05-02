@@ -267,9 +267,10 @@ instance FormPage PageAdminSettingsDurations where
 
 adminDurations :: ActionM m => FormPageHandler m PageAdminSettingsDurations
 adminDurations =
-    FormPageHandler
+    formPageHandlerWithMsg
         (PageAdminSettingsDurations <$> query (view dbDurations))
         (update . SaveDurations)
+        "Alle Änderungen wurden gespeichert."
 
 
 -- ** Quorum
@@ -303,11 +304,10 @@ instance FormPage PageAdminSettingsQuorum where
 
 adminQuorum :: ActionM m => FormPageHandler m PageAdminSettingsQuorum
 adminQuorum =
-    FormPageHandler
+    formPageHandlerWithMsg
         (PageAdminSettingsQuorum <$> query (view dbQuorums))
-        (\qs -> do
-            update $ SaveQuorums qs
-            addMessage "Die neuen Werte wurden gespeichert.")
+        (update . SaveQuorums)
+        "Die neuen Werte wurden gespeichert."
 
 
 -- ** Freeze
@@ -339,11 +339,14 @@ instance FormPage PageAdminSettingsFreeze where
 
 adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
 adminFreeze =
-    FormPageHandler
+    formPageHandlerCalcMsg
         (PageAdminSettingsFreeze <$> query (view dbFreeze))
         (\payload -> do
              now <- getCurrentTimestamp
              update $ SaveAndEnactFreeze now payload)
+        (let msgFrozen   :: ST = "Das System wurde re-aktiviert (Normalbetrieb)."
+             msgUnfrozen :: ST = "Das System wurde eingefroren (Ferienbetrieb)."
+         in const $ const . freezeElim msgFrozen msgUnfrozen)
 
 
 -- ** roles and permisisons
@@ -562,9 +565,9 @@ adminViewUsers = AdminViewUsers <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
                     ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
-adminCreateUser = FormPageHandler
-    { _formGetPage   = AdminCreateUser <$> query getSchoolClasses
-    , _formProcessor = \up -> do
+adminCreateUser = formPageHandlerCalcMsg
+    (AdminCreateUser <$> query getSchoolClasses)
+    (\up -> do
         forM_ (up ^? createUserRole . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         pwd <- mkRandomPassword
@@ -577,16 +580,22 @@ adminCreateUser = FormPageHandler
             , _protoUserEmail     = up ^. createUserEmail
             , _protoUserDesc      = Markdown nil
             }
-    }
+    )
+    (\_ u _ -> unwords ["Nutzer", createUserFullName u, "wurde angelegt."])
+  where
+    -- This is a clone of 'userFullName' for the type we need here.
+    createUserFullName :: CreateUserPayload -> String
+    createUserFullName u = unwords $ cs <$>
+        [u ^. createUserFirstName . _UserFirstName, u ^. createUserLastName . _UserLastName]
 
 adminViewClasses :: ActionPersist m => m AdminViewClasses
 adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
-adminEditUser uid = FormPageHandler
-    { _formGetPage   = equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses
-    , _formProcessor = update . uncurry (SetUserLoginAndRole uid)
-    }
+adminEditUser uid = formPageHandlerCalcMsg
+    (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
+    (update . uncurry (SetUserLoginAndRole uid))
+    (\(AdminEditUser u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
 fromRoleSelection RoleSelStudent     = Student
@@ -620,9 +629,10 @@ instance FormPage AdminDeleteUser where
 
 adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
 adminDeleteUser uid =
-    FormPageHandler
+    formPageHandlerCalcMsg
         (AdminDeleteUser <$> mquery (findActiveUser uid))
         (const $ Action.deleteUser uid)
+        (\(AdminDeleteUser u) _ _ -> unwords ["Nutzer", userFullName u, "wurde gelöscht"])
 
 
 -- ** Events protocol
@@ -653,7 +663,7 @@ instance FormPage PageAdminSettingsEventsProtocol where
             p_ [class_ "download-box-body"] "Das Event-Protokoll enthält alle Aktivitäten der NutzerInnen auf Aula"
 
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
-adminEventsProtocol = FormPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
+adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
 
 -- * Classes Create
@@ -691,7 +701,7 @@ instance FormPage AdminCreateClass where
 
 adminCreateClass :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m)
                               => FormPageHandler m AdminCreateClass
-adminCreateClass = FormPageHandler (pure AdminCreateClass) q
+adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
@@ -722,15 +732,29 @@ adminCreateClass = FormPageHandler (pure AdminCreateClass) q
             , _protoUserDesc      = Markdown nil
             }
 
+    msgOk :: ST
+    msgOk = "Die Klasse wurde angelegt."
+
 adminPhaseChange
     :: forall m . (ActionM m)
     => FormPageHandler m AdminPhaseChange
-adminPhaseChange = FormPageHandler
-    { _formGetPage   = pure AdminPhaseChange
-    , _formProcessor = \(AdminPhaseChangeForTopicData tid dir) -> case dir of
-            Forward -> Action.topicForceNextPhase tid
-            Backward -> Action.topicInVotingResetToJury tid
-    }
+adminPhaseChange =
+    formPageHandlerCalcMsgM
+        (pure AdminPhaseChange)
+        (\(AdminPhaseChangeForTopicData tid dir) -> do
+            case dir of
+                Forward -> Action.topicForceNextPhase tid
+                Backward -> Action.topicInVotingResetToJury tid
+        )
+        (\_ (AdminPhaseChangeForTopicData tid _) _ -> do
+            topic <- Action.mquery $ findTopic tid
+            return $ unwords
+                [ "Das Thema wurde in Phase"
+                , topic ^. topicPhase . to show
+                , "verschoben."
+                ]
+        )
+
 
 data PhaseChangeDir = Forward | Backward
   deriving (Eq, Show, Generic)

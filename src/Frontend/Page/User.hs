@@ -66,7 +66,7 @@ data UserSettingData = UserSettingData
 checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
 checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
 checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
-    userPass checkInitialPwd checkEncryptedPwd passwordError
+    userPassElim checkInitialPwd checkEncryptedPwd passwordError
         . _userSettingsPassword
         . _userSettings
     <$> currentUser
@@ -80,12 +80,6 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
     checkEncryptedPwd p
       | p == cs pwd = pure u
       | otherwise   = passwordError
-
-    userPass :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
-    userPass initial encrypted deactivated = \case
-        UserPassInitial x   -> initial     x
-        UserPassEncrypted x -> encrypted   x
-        UserPassDeactivated -> deactivated
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
@@ -146,15 +140,17 @@ instance FormPage PageUserSettings where
 
 
 userSettings :: forall m . ActionM m => FormPageHandler m PageUserSettings
-userSettings = FormPageHandler (PageUserSettings <$> currentUser) changeUser
+userSettings =
+    formPageHandlerWithMsg
+        (PageUserSettings <$> currentUser)
+        changeUser
+        "Die Änderungen wurden gespeichert."
   where
     changeUser :: UserSettingData -> m ()
     changeUser (UserSettingData memail oldPass newPass1 newPass2) = do
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         update $ SetUserPass uid oldPass newPass1 newPass2
-        addMessage "Die Änderungen wurden gespeichert."
-        pure ()
 
 userHeaderDiv :: (Monad m) => RenderContext -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =
@@ -174,7 +170,7 @@ userHeaderDiv ctx (ActiveUser user) =
 
         div_ [class_ "heroic-btn-group"] $ if isOwnProfile
             then do
-                btn U.UserProfile "+ Profile bearbeiten"
+                btn U.UserProfile "+ Profil bearbeiten"
             else do
                 btn U.Broken "Klassenweit beauftragen"
                 btn U.Broken "Schulweit beauftragen"
@@ -300,9 +296,9 @@ instance FormPage EditUserProfile where
                             DF.inputSubmit "Änderungen speichern"
 
 editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
-editUserProfile = FormPageHandler
-    { _formGetPage   = EditUserProfile <$> currentUser
-    , _formProcessor = \up -> do
+editUserProfile = formPageHandlerWithMsg
+    (EditUserProfile <$> currentUser)
+    (\up -> do
         uid <- currentUserId
         case up ^. profileAvatar of
             Nothing ->
@@ -320,4 +316,5 @@ editUserProfile = FormPageHandler
                         update . SetUserProfileDesc uid $ up ^. profileDesc
                     Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs url
-    }
+    )
+    "Die Änderungen wurden gespeichert."

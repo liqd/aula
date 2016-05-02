@@ -312,16 +312,21 @@ viewTopic tab topicId = do
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
 createTopic space =
-    FormPageHandler
+    formPageHandlerCalcMsg
         (do
             now <- getCurrentTimestamp
             query $ CreateTopic space
                 <$> findWildIdeasBySpace space
                 <*> phaseEndRefinement now)
         Action.createTopic
+        (\_ _ topic -> unwords ["Das Thema", topic ^. topicTitle . showed, "wurde angelegt."])
 
 editTopic :: ActionM m => AUID Topic -> FormPageHandler m EditTopic
-editTopic topicId = FormPageHandler getPage (update . Persistent.EditTopic topicId)
+editTopic topicId =
+    formPageHandlerWithMsg
+        getPage
+        (update . Persistent.EditTopic topicId)
+        "Das Thema wurde gespeichert."
   where
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId

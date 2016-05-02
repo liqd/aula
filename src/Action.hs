@@ -16,7 +16,7 @@
 module Action
     ( -- * constraint types
       ActionM
-    , ActionLog(logEvent)
+    , ActionLog(log)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
     , ActionRandomPassword(mkRandomPassword)
@@ -188,8 +188,8 @@ type ActionM m =
       )
 
 class Monad m => ActionLog m where
-    -- | Log events
-    logEvent :: LogEntry -> m ()
+    -- | Log system event
+    log :: LogEntry -> m ()
 
 -- | A monad that can run acid-state.
 --

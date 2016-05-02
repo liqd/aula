@@ -470,47 +470,57 @@ viewIdea ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= may
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
-createIdea loc = FormPageHandler (pure $ CreateIdea loc) Action.createIdea
+createIdea loc =
+    formPageHandlerWithMsg
+        (pure $ CreateIdea loc)
+        Action.createIdea
+        "Die Idee wurde angelegt."
 
 -- | FIXME: there is a race condition if several edits happen concurrently.  this can happen if
 -- student and moderator edit an idea at the same time.  One solution would be to carry a
 -- 'last-changed' timestamp in the edit form, and check for it before writing the edits.
 editIdea :: ActionM m => AUID Idea -> FormPageHandler m EditIdea
 editIdea ideaId =
-    FormPageHandler
+    formPageHandlerWithMsg
         (EditIdea <$> mquery (findIdea ideaId))
         (update . Persistent.EditIdea ideaId)
+        "Die Änderungen wurden gespeichert."
 
 commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentIdea
 commentIdea loc ideaId =
-    FormPageHandler
+    formPageHandlerWithMsg
         (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (currentUserAddDb $ AddCommentToIdea loc ideaId)
+        "Der Verbesserungsvorschlag wurde gespeichert."
 
 replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
 replyCommentIdea loc ideaId commentId =
-    FormPageHandler
+    formPageHandlerWithMsg
         (mquery $ do
             midea <- findIdea ideaId
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
         (currentUserAddDb . AddReply $ CommentKey loc ideaId [] commentId)
+        "Der Verbesserungsvorschlag wurde gespeichert."
 
+-- FIXME: Read the idea state from the db
 judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> FormPageHandler m JudgeIdea
 judgeIdea ideaId juryType =
-    FormPageHandler
+    formPageHandlerWithMsg
         (equery $ do
             idea  <- maybe404 =<< findIdea ideaId
             topic <- maybe404 =<< ideaTopic idea
             pure $ JudgeIdea juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
+        ("Die Idee wurde als " <> showJuryResultTypeUI juryType <> " markiert")
 
 creatorStatementOfIdea :: Idea -> Maybe Document
 creatorStatementOfIdea idea = idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
 
 creatorStatement :: ActionM m => AUID Idea -> FormPageHandler m CreatorStatement
 creatorStatement ideaId =
-    FormPageHandler
+    formPageHandlerWithMsg
         (CreatorStatement <$> mquery (findIdea ideaId))
         (Action.setCreatorStatement ideaId)
+        "Das Statement wurde gespeichert."

@@ -117,6 +117,6 @@ instance ToHtml LoginDemoHints where
 -- * handlers
 
 login :: ActionM m => FormPageHandler m PageHomeWithLoginPrompt
-login = FormPageHandler getPage Action.loginByUser
+login = formPageHandler getPage Action.loginByUser
   where
     getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> query getActiveUsers

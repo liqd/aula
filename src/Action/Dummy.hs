@@ -45,7 +45,7 @@ instance Monad m => ActionAvatar (DummyT ActionExcept m) where
     savePngImageFile _ _ = notImplemented "ActionAvatar" "savePngImageFile"
 
 instance Monad m => ActionLog (DummyT ActionExcept m) where
-    logEvent _ = pure ()
+    log _ = pure ()
 
 instance Monad m => ActionPersist (DummyT ActionExcept m) where
     queryDb = notImplemented "ActionPersist" "queryDb"

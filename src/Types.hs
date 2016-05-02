@@ -120,6 +120,11 @@ infixr 9 <..>
 (<..>) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (<..>) = app2
 
+infixr 9 <...>
+
+(<...>) :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
+(<...>) f g x y z = f $ g x y z
+
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
 
@@ -288,6 +293,10 @@ type instance Proto IdeaJuryResult = IdeaJuryResultValue
 ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
 ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
 ideaJuryResultValueToType Feasible{}    = IdeaFeasible
+
+showJuryResultTypeUI :: IdeaJuryResultType -> ST
+showJuryResultTypeUI IdeaNotFeasible = "nicht durchführbar"
+showJuryResultTypeUI IdeaFeasible    = "durchführbar"
 
 instance SOP.Generic IdeaJuryResultValue
 
@@ -567,6 +576,14 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
+-- | General eliminator for the 'UserPass' type.
+-- It is similar to the 'maybe' function.
+userPassElim :: (ST -> t) -> (SBS -> t) -> t -> UserPass -> t
+userPassElim initial encrypted deactivated = \case
+    UserPassInitial x   -> initial     x
+    UserPassEncrypted x -> encrypted   x
+    UserPassDeactivated -> deactivated
+
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)
 
@@ -643,6 +660,12 @@ data Freeze = NotFrozen | Frozen
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance SOP.Generic Freeze
+
+-- | Generic eliminator for 'Freeze'.
+freezeElim :: t -> t -> Freeze -> t
+freezeElim notFrozen frozen = \case
+    NotFrozen -> notFrozen
+    Frozen    -> frozen
 
 data Settings = Settings
     { _durations :: Durations
@@ -1088,8 +1111,8 @@ onActiveUser x f u
     | isActiveUser u = f u
     | otherwise      = x
 
-userFullName :: User -> ST
-userFullName = onActiveUser
+userFullName :: (ConvertibleStrings ST s) => User -> s
+userFullName = cs . onActiveUser
     "[Nutzer gelöscht]"
     (\u -> u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName)
 
