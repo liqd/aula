@@ -753,18 +753,21 @@ adminPhaseChange
     :: forall m . (ActionM m)
     => FormPageHandler m AdminPhaseChange
 adminPhaseChange =
-    formPageHandler
+    formPageHandlerCalcMsgM
         (pure AdminPhaseChange)
         (\(AdminPhaseChangeForTopicData tid dir) -> do
             case dir of
                 Forward -> Action.topicForceNextPhase tid
                 Backward -> Action.topicInVotingResetToJury tid
+        )
+        (\_ (AdminPhaseChangeForTopicData tid _) _ -> do
             topic <- Action.mquery $ findTopic tid
-            addMessage . cs $ unwords
+            return $ unwords
                 [ "Topic is in the"
                 , (topic ^. topicPhase . to show)
                 , "now"
-                ])
+                ]
+        )
 
 
 data PhaseChangeDir = Forward | Backward

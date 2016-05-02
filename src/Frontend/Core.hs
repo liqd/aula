@@ -45,7 +45,7 @@ module Frontend.Core
     , formAction, redirectOf, makeForm, formPage, guardPage
 
     , FormPageRep(..)
-    , FormPageHandler(..), formGetPage, formProcessor, formStatusMessage
+    , FormPageHandler, formGetPage, formProcessor, formStatusMessage
     , formPageHandler, formPageHandlerWithMsg
     , formPageHandlerCalcMsg, formPageHandlerCalcMsgM
     , form
