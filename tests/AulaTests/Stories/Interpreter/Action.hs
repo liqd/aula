@@ -261,18 +261,18 @@ runClient (Free (DeleteComment t c k)) = do
         (comment' ^. commentDeleted) `shouldBe` True
     runClient k
 
-runClient (Free (ReportComment t c k)) = do
+runClient (Free (ReportComment t c d k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t c
     step . lift $ do
         Action.reportIdeaComment
             (idea ^. ideaLocation)
             (idea ^. _Id)
             (comment ^. _Id)
-            (Markdown "") -- TODO
+            (Markdown d)
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
-runClient (Free (ReportCommentReply t c1 c2 k)) = do
+runClient (Free (ReportCommentReply t c1 c2 d k)) = do
     Just (idea, Just (comment1, Just comment2)) <-
         precondition $ findIdeaAndCommentComment t c1 c2
     step . lift $ do
@@ -281,7 +281,7 @@ runClient (Free (ReportCommentReply t c1 c2 k)) = do
             (idea ^. _Id)
             (comment1 ^. _Id)
             (comment2 ^. _Id)
-            (Markdown "") -- TODO
+            (Markdown d)
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
