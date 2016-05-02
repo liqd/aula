@@ -77,7 +77,6 @@ for(i in mdEls) {
         html      = converter.makeHtml(text);
 
     if (mdEls[i].innerHTML) {
-        console.log(converter);
         mdEls[i].innerHTML = html;
     }
 }
