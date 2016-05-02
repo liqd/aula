@@ -106,9 +106,7 @@ ideaListHeader _ loc ideasQuery = do
         div_ [class_ "btn-settings pop-menu"] $ do
             i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
             ul_ [class_ "pop-menu-list"] $ do
-                let mk by text = do
+                let mk by =
                         li_ [class_ "pop-menu-list-item"] $
-                            a_ [href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)] text
-
-                mk SortIdeasBySupport "Unterstützung"
-                mk SortIdeasByTime    "Datum"
+                            a_ [href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)]
+                               (labelSortIdeasBy by)

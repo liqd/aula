@@ -9,8 +9,9 @@
 
 module Frontend.Filter
     ( Filter(Filtered,applyFilter,renderFilter)
+
     , IdeasFilterApi, IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
-    , IdeasSortApi, SortIdeasBy(..)
+    , IdeasSortApi, SortIdeasBy(..), labelSortIdeasBy
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
     , toggleIdeasFilter
     )
@@ -70,6 +71,12 @@ instance Filter     IdeasFilterQuery where
 
 data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+
+-- FIXME make an HasLabel type class roleLabel, phaseName...
+labelSortIdeasBy :: SortIdeasBy -> ST
+labelSortIdeasBy = \case
+    SortIdeasBySupport -> "Unterstützung"
+    SortIdeasByTime    -> "Datum"
 
 type IdeasSortApi = FilterApi SortIdeasBy
 
