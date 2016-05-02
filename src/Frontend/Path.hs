@@ -27,8 +27,8 @@ module Frontend.Path
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
-    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listTopicIdeas
-    , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
+    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listIdeasWithQuery
+    , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
     , viewUser
@@ -36,7 +36,6 @@ module Frontend.Path
     )
 where
 
-import GHC.Generics
 import Thentos.Prelude
 import Data.UriPath
 import Servant.API (toUrlPiece)
@@ -46,6 +45,8 @@ import qualified Generics.SOP as SOP
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
              , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
              , IdeaJuryResultType(..), ckIdeaLocation, CommentKey(CommentKey))
+
+import Frontend.Filter
 
 data Top =
     Top
@@ -207,13 +208,16 @@ createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
 
 listIdeas :: IdeaLocation -> Main
-listIdeas loc = IdeaPath loc ListIdeas
+listIdeas loc = IdeaPath loc $ ListIdeas Nothing
+
+listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> Main
+listIdeasWithQuery loc = IdeaPath loc . ListIdeas . Just
 
 listTopicIdeas :: Topic -> Main
 listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode ListIdeas         root = root </> "ideas"
+ideaMode (ListIdeas mq)    root = renderFilter mq $ root </> "ideas"
 ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
                                   root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
@@ -337,7 +341,7 @@ data CommentMode
 instance SOP.Generic CommentMode
 
 data IdeaMode =
-      ListIdeas
+      ListIdeas (Maybe IdeasQuery)
     | CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)

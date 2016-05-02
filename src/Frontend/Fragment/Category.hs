@@ -21,8 +21,8 @@ where
 
 import Frontend.Prelude
 
+import qualified Frontend.Path as U
 import qualified Data.Text as ST
-import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -76,14 +76,10 @@ categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
 categoryFilterButtons :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
-categoryFilterButtons loc (IdeasQuery qf qs) = div_ [class_ "icon-list"] $ do
+categoryFilterButtons loc q = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
-                ("icon-" <> toUrlPiece cat) :
-                [ "m-active" | qf == Just cat ]
+                ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
             ] $
-            let qf' = if qf == Just cat
-                  then Nothing
-                  else Just cat
-            in a_ [Lucid.href_ $ listIdeasWithQuery loc (IdeasQuery qf' qs)]
+            a_ [href_ $ U.listIdeasWithQuery loc (q & ideasQueryF %~ toggleIdeasFilter cat)]
                 (categoryToUiText cat)

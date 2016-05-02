@@ -90,6 +90,7 @@ library
       EventLog
       Frontend
       Frontend.Core
+      Frontend.Filter
       Frontend.Fragment.Category
       Frontend.Fragment.Comment
       Frontend.Fragment.Feasibility

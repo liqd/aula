@@ -64,6 +64,7 @@ import Action.Implementation
 import Config
 import EventLog
 import Frontend.Core
+import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
@@ -288,6 +289,9 @@ instance Arbitrary ListInfoForIdea where
     arbitrary = garbitrary
 
 instance Arbitrary IdeaCapability where
+    arbitrary = garbitrary
+
+instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary
 
 instance Arbitrary SortIdeasBy where
