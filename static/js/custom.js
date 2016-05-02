@@ -80,9 +80,9 @@ document.onclick = function() {
 
 var mdEls = document.getElementsByClassName("markdown");
 for(i in mdEls) {
-    converter = new showdown.Converter(),
-        text      = mdEls[i].innerHTML,
-        html      = converter.makeHtml(text);
+    converter = new showdown.Converter();
+    text      = mdEls[i].innerHTML;
+    html      = converter.makeHtml(text);
 
     if (mdEls[i].innerHTML) {
         mdEls[i].innerHTML = html;
