@@ -70,6 +70,14 @@ if(imageSelect) {
 }
 
 // UI Messages
+
+document.onclick = function() {
+    var msg = getElementByClassName("ui-messages m-visible");
+    removeClass(msg, "m-visible");
+}
+
+// Markdown
+
 var mdEls = document.getElementsByClassName("markdown");
 for(i in mdEls) {
     converter = new showdown.Converter(),
@@ -80,14 +88,6 @@ for(i in mdEls) {
         mdEls[i].innerHTML = html;
     }
 }
-
-document.onclick = function() {
-    var msg = getElementByClassName("ui-messages m-visible");
-    removeClass(msg, "m-visible");
-}
-
-// Markdown
-
 
 // helpers
 
