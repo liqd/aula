@@ -76,6 +76,16 @@ document.onclick = function() {
     removeClass(msg, "m-visible");
 }
 
+// Markdown
+
+var mdEls = document.getElementsByClassName("markdown");
+var converter = new showdown.Converter();
+for(i in mdEls) {
+    if (mdEls[i].innerHTML) {
+        mdEls[i].innerHTML = converter.makeHtml(mdEls[i].innerHTML);
+    }
+}
+
 // helpers
 
 function getElementByClassName(el, parent) {
