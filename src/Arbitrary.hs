@@ -143,6 +143,9 @@ instance Arbitrary JudgeIdea where
 instance Arbitrary CreatorStatement where
     arbitrary = CreatorStatement <$> arb
 
+instance Arbitrary ReportComment where
+    arbitrary = ReportComment <$> arb
+
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
 
@@ -269,6 +272,9 @@ instance Arbitrary IdeaJuryResultType where
 
 instance Arbitrary DelegationContext where
     arbitrary = garbitrary
+
+instance Arbitrary ReportCommentContent where
+    arbitrary = ReportCommentContent <$> arbitrary
 
 instance Arbitrary Delegation where
     arbitrary = garbitrary

@@ -13,6 +13,8 @@ module Frontend.Page.Idea
   , CommentIdea(..)   -- FIXME: rename to 'CommentOnIdea'
   , JudgeIdea(..)
   , CreatorStatement(..)
+  , ReportComment(..)
+  , ReportCommentContent(..)
   , viewIdea
   , createIdea
   , editIdea
@@ -20,6 +22,8 @@ module Frontend.Page.Idea
   , replyCommentIdea  -- FIXME: rename to 'commentOnComment'
   , judgeIdea
   , creatorStatement
+  , reportComment
+  , reportReply
   )
 where
 
@@ -27,6 +31,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , currentUserAddDb, equery, mquery, update
               , markIdeaInJuryPhase
               , setCreatorStatement
+              , reportIdeaComment, reportIdeaCommentReply
               )
 import LifeCycle
 import Frontend.Fragment.Category
@@ -91,6 +96,11 @@ data CreatorStatement = CreatorStatement Idea
   deriving (Eq, Show, Read)
 
 instance Page CreatorStatement where
+
+data ReportComment = ReportComment Comment
+  deriving (Eq, Show, Read)
+
+instance Page ReportComment where
 
 -- ** non-page types
 
@@ -438,7 +448,6 @@ instance FormPage JudgeIdea where
 
 instance FormPage CreatorStatement where
     type FormPagePayload CreatorStatement = Document
-    type FormPageResult CreatorStatement = ()
 
     formAction (CreatorStatement idea) = U.creatorStatement idea
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea
@@ -455,6 +464,34 @@ instance FormPage CreatorStatement where
                     label_ $ do
                         span_ [class_ "label-text"] "Was möchtest du sagen?"
                         inputTextArea_ [placeholder_ "..."] Nothing Nothing "statement-text" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Abschicken"
+
+newtype ReportCommentContent = ReportCommentContent
+    { unReportCommentContent :: Document }
+  deriving (Eq, Show)
+
+instance FormPage ReportComment where
+    type FormPagePayload ReportComment = ReportCommentContent
+
+    formAction (ReportComment comment) = U.reportComment comment
+
+    -- TODO: Do the normal redirect.
+    redirectOf (ReportComment comment) _ = U.viewIdeaOfComment comment
+
+    makeForm _ =
+        "report-text" .:
+            (ReportCommentContent <$>
+                validateMarkdown "Report text" (Markdown <$> DF.text Nothing))
+
+    formPage v form p =
+        semanticDiv p $ do
+            div_ [class_ "container-creator-statement"] $ do
+                h1_ [class_ "main-heading"] "Report the comment: ..."
+                form $ do
+                    label_ $ do
+                        span_ [class_ "label-text"] "Was möchtest du sagen?"
+                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "report-text" v
                     footer_ [class_ "form-footer"] $ do
                         DF.inputSubmit "Abschicken"
 
@@ -524,3 +561,19 @@ creatorStatement ideaId =
         (CreatorStatement <$> mquery (findIdea ideaId))
         (Action.setCreatorStatement ideaId)
         "Das Statement wurde gespeichert."
+
+reportComment
+    :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment
+    -> FormPageHandler m ReportComment
+reportComment loc iid cid =
+    formPageHandler
+        (ReportComment <$> mquery (findComment $ CommentKey loc iid [] cid))
+        (Action.reportIdeaComment loc iid cid . unReportCommentContent)
+
+reportReply
+    :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment
+    -> FormPageHandler m ReportComment
+reportReply loc iid pcid cid =
+    formPageHandler
+        (ReportComment <$> mquery (findComment $ CommentKey loc iid [pcid] cid))
+        (Action.reportIdeaCommentReply loc iid pcid cid . unReportCommentContent)

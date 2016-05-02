@@ -73,6 +73,7 @@ spec = do
 --        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
         , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen JudgeIdea)
+        , F (arb :: Gen ReportComment)
         ]
 
 
@@ -204,6 +205,9 @@ instance PayloadToEnv IdeaJuryResultValue where
     payloadToEnvMapping _ (NotFeasible doc) = \case
         "jury-text" -> pure [TextInput $ unMarkdown doc]
 
+instance PayloadToEnv ReportCommentContent  where
+    payloadToEnvMapping _ (ReportCommentContent (Markdown m)) = \case
+        "report-text" -> pure [TextInput m]
 
 -- * machine room
 
@@ -366,3 +370,8 @@ instance ArbFormPagePayload JudgeIdea where
         = pure Nothing
     arbFormPageInvalidPayload (JudgeIdea IdeaNotFeasible _ _)
         = pure . Just . NotFeasible $ Markdown ""
+
+instance ArbFormPagePayload ReportComment where
+    arbFormPagePayload _ = ReportCommentContent <$> nonEmptyMarkdown
+
+    arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""

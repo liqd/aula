@@ -203,9 +203,9 @@ type CommentApi
        -- delete a comment reply
   :<|> Reply ::> "delete" :> PostH
        -- report a comment
-  :<|> "report" :> PostH
+  :<|> "report" :> FormHandler ReportComment
        -- report a comment reply
-  :<|> Reply ::> "report" :> PostH
+  :<|> Reply ::> "report" :> FormHandler ReportComment
 
 commentApi :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
 commentApi loc iid cid
@@ -214,8 +214,8 @@ commentApi loc iid cid
   :<|> Action.voteIdeaCommentReply   loc iid cid
   :<|> Action.deleteIdeaComment      loc iid cid
   :<|> Action.deleteIdeaCommentReply loc iid cid
-  :<|> Action.reportIdeaComment      loc iid cid
-  :<|> Action.reportIdeaCommentReply loc iid cid
+  :<|> form (Page.reportComment      loc iid cid)
+  :<|> form . Page.reportReply       loc iid cid
 
 type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)

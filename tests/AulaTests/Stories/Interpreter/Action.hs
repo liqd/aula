@@ -268,6 +268,7 @@ runClient (Free (ReportComment t c k)) = do
             (idea ^. ideaLocation)
             (idea ^. _Id)
             (comment ^. _Id)
+            (Markdown "") -- TODO
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
@@ -280,6 +281,7 @@ runClient (Free (ReportCommentReply t c1 c2 k)) = do
             (idea ^. _Id)
             (comment1 ^. _Id)
             (comment2 ^. _Id)
+            (Markdown "") -- TODO
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
