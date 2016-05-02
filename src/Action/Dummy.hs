@@ -47,10 +47,6 @@ instance Monad m => ActionAvatar (DummyT ActionExcept m) where
 instance Monad m => ActionLog (DummyT ActionExcept m) where
     log _ = pure ()
 
-instance Monad m => ActionEventLog (DummyT ActionExcept m) where
-    recordEvent _ = pure ()
-    listEvents  _ = pure []
-
 instance Monad m => ActionPersist (DummyT ActionExcept m) where
     queryDb = notImplemented "ActionPersist" "queryDb"
     update _ = notImplemented "ActionPersist" "update"
