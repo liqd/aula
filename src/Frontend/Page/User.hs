@@ -170,7 +170,7 @@ userHeaderDiv ctx (ActiveUser user) =
 
         div_ [class_ "heroic-btn-group"] $ if isOwnProfile
             then do
-                btn U.UserProfile "+ Profile bearbeiten"
+                btn U.UserProfile "+ Profil bearbeiten"
             else do
                 btn U.Broken "Klassenweit beauftragen"
                 btn U.Broken "Schulweit beauftragen"
@@ -295,7 +295,6 @@ instance FormPage EditUserProfile where
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"
 
--- TODO: Translate.
 editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
 editUserProfile = formPageHandlerWithMsg
     (EditUserProfile <$> currentUser)
@@ -318,4 +317,4 @@ editUserProfile = formPageHandlerWithMsg
                     Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs url
     )
-    "The changes are saved."
+    "Die Änderungen wurden gespeichert."

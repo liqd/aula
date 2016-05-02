@@ -297,6 +297,10 @@ ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
 ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
 ideaJuryResultValueToType Feasible{}    = IdeaFeasible
 
+showJuryResultTypeUI :: IdeaJuryResultType -> ST
+showJuryResultTypeUI IdeaNotFeasible = "nicht durchführbar"
+showJuryResultTypeUI IdeaFeasible    = "durchführbar"
+
 instance SOP.Generic IdeaJuryResultValue
 
 data IdeaVoteResult = IdeaVoteResult
@@ -660,6 +664,7 @@ data Freeze = NotFrozen | Frozen
 
 instance SOP.Generic Freeze
 
+-- | Generic eliminator for 'Freeze'.
 freezeElim :: t -> t -> Freeze -> t
 freezeElim notFrozen frozen = \case
     NotFrozen -> notFrozen
@@ -1109,8 +1114,8 @@ onActiveUser x f u
     | isActiveUser u = f u
     | otherwise      = x
 
-userFullName :: User -> ST
-userFullName = onActiveUser
+userFullName :: (ConvertibleStrings ST s) => User -> s
+userFullName = cs . onActiveUser
     "[Nutzer gelöscht]"
     (\u -> u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName)
 

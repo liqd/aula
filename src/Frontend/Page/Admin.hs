@@ -265,13 +265,12 @@ instance FormPage PageAdminSettingsDurations where
             span_ [class_ "input-helper"] "Tage"
         DF.inputSubmit "Änderungen speichern"
 
--- TODO: Translate
 adminDurations :: ActionM m => FormPageHandler m PageAdminSettingsDurations
 adminDurations =
     formPageHandlerWithMsg
         (PageAdminSettingsDurations <$> query (view dbDurations))
         (update . SaveDurations)
-        "Durations are updated."
+        "Alle Änderungen wurden gespeichert."
 
 
 -- ** Quorum
@@ -338,7 +337,6 @@ instance FormPage PageAdminSettingsFreeze where
             DF.inputSelect "freeze" v
         DF.inputSubmit "Status setzen!"
 
--- TODO: Translation
 adminFreeze :: ActionM m => FormPageHandler m PageAdminSettingsFreeze
 adminFreeze =
     formPageHandlerCalcMsg
@@ -346,7 +344,9 @@ adminFreeze =
         (\payload -> do
              now <- getCurrentTimestamp
              update $ SaveAndEnactFreeze now payload)
-        (const $ const . freezeElim "The platform is unfrozen." ("The platform is frozen." :: ST))
+        (let msgFrozen   :: ST = "Das System wurde re-aktiviert (Normalbetrieb)."
+             msgUnfrozen :: ST = "Das System wurde eingefroren (Ferienbetrieb)."
+         in const $ const . freezeElim msgFrozen msgUnfrozen)
 
 
 -- ** roles and permisisons
@@ -563,7 +563,6 @@ instance ToHtml AdminEditClass where
 adminViewUsers :: ActionPersist m => m AdminViewUsers
 adminViewUsers = AdminViewUsers <$> query getUserViews
 
--- TODO: Translation
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
                     ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
 adminCreateUser = formPageHandlerCalcMsg
@@ -582,28 +581,21 @@ adminCreateUser = formPageHandlerCalcMsg
             , _protoUserDesc      = Markdown nil
             }
     )
-    (\_ u _ -> unwords
-        [ "User["
-        , u ^. createUserFirstName . unUserFirstName . to cs
-        , u ^. createUserLastName . unUserLastName . to cs
-        , "] is created."
-        ]
-    )
+    (\_ u _ -> unwords ["Nutzer", createUserFullName u, "wurde angelegt."])
+  where
+    -- This is a clone of 'userFullName' for the type we need here.
+    createUserFullName :: CreateUserPayload -> String
+    createUserFullName u = unwords $ cs <$>
+        [u ^. createUserFirstName . _UserFirstName, u ^. createUserLastName . _UserLastName]
 
 adminViewClasses :: ActionPersist m => m AdminViewClasses
 adminViewClasses = AdminViewClasses <$> query getSchoolClasses
 
--- TODO: Translation
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = formPageHandlerCalcMsg
     (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
     (update . uncurry (SetUserLoginAndRole uid))
-    (\(AdminEditUser u _) _ _ -> unwords
-        [ "The user"
-        , u ^. userFirstName . unUserFirstName . to cs
-        , u ^. userLastName . unUserLastName . to cs
-        , "is changed."
-        ])
+    (\(AdminEditUser u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
 fromRoleSelection RoleSelStudent     = Student
@@ -635,19 +627,12 @@ instance FormPage AdminDeleteUser where
                     DF.inputSubmit "Nutzer löschen"
                     a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
--- TODO: Translation
 adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
 adminDeleteUser uid =
     formPageHandlerCalcMsg
         (AdminDeleteUser <$> mquery (findActiveUser uid))
         (const $ Action.deleteUser uid)
-        (\(AdminDeleteUser u) _ _ -> unwords
-            [ "User"
-            , u ^. userFirstName . unUserFirstName . to cs
-            , u ^. userLastName . unUserLastName . to cs
-            , "is deleted."
-            ]
-        )
+        (\(AdminDeleteUser u) _ _ -> unwords ["Nutzer", userFullName u, "wurde gelöscht"])
 
 
 -- ** Events protocol
@@ -714,10 +699,9 @@ instance FormPage AdminCreateClass where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
--- TODO: Translation
 adminCreateClass :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m)
                               => FormPageHandler m AdminCreateClass
-adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q m
+adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
   where
     q :: BatchCreateUsersFormData -> m ()
     q (BatchCreateUsersFormData _clname Nothing) =
@@ -747,7 +731,9 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q m
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = Markdown nil
             }
-    m = "The class created."
+
+    msgOk :: ST
+    msgOk = "Die Klasse wurde angelegt."
 
 adminPhaseChange
     :: forall m . (ActionM m)

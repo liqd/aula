@@ -469,32 +469,29 @@ viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
 viewIdea ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
--- TODO: Translation.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
 createIdea loc =
     formPageHandlerWithMsg
         (pure $ CreateIdea loc)
         Action.createIdea
-        "The idea is created."
+        "Die Idee wurde angelegt."
 
 -- | FIXME: there is a race condition if several edits happen concurrently.  this can happen if
 -- student and moderator edit an idea at the same time.  One solution would be to carry a
 -- 'last-changed' timestamp in the edit form, and check for it before writing the edits.
--- TODO: Translation
 editIdea :: ActionM m => AUID Idea -> FormPageHandler m EditIdea
 editIdea ideaId =
     formPageHandlerWithMsg
         (EditIdea <$> mquery (findIdea ideaId))
         (update . Persistent.EditIdea ideaId)
-        "The idea is changed."
+        "Die Änderungen wurden gespeichert."
 
--- TODO: Translation
 commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentIdea
 commentIdea loc ideaId =
     formPageHandlerWithMsg
         (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (currentUserAddDb $ AddCommentToIdea loc ideaId)
-        "Your comment is saved."
+        "Der Verbesserungsvorschlag wurde gespeichert."
 
 replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
 replyCommentIdea loc ideaId commentId =
@@ -505,9 +502,8 @@ replyCommentIdea loc ideaId commentId =
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
         (currentUserAddDb . AddReply $ CommentKey loc ideaId [] commentId)
-        "Your comment is saved."
+        "Der Verbesserungsvorschlag wurde gespeichert."
 
--- TODO: Translation
 -- FIXME: Read the idea state from the db
 judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> FormPageHandler m JudgeIdea
 judgeIdea ideaId juryType =
@@ -517,15 +513,14 @@ judgeIdea ideaId juryType =
             topic <- maybe404 =<< ideaTopic idea
             pure $ JudgeIdea juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
-        "The idea is marked"
+        ("Die Idee wurde als " <> showJuryResultTypeUI juryType <> " markiert")
 
 creatorStatementOfIdea :: Idea -> Maybe Document
 creatorStatementOfIdea idea = idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
 
--- TODO: Translation
 creatorStatement :: ActionM m => AUID Idea -> FormPageHandler m CreatorStatement
 creatorStatement ideaId =
     formPageHandlerWithMsg
         (CreatorStatement <$> mquery (findIdea ideaId))
         (Action.setCreatorStatement ideaId)
-        "Your statement is saved."
+        "Das Statement wurde gespeichert."

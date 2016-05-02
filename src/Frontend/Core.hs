@@ -337,10 +337,9 @@ instance FormPage p => ToHtml (FormPageRep p) where
       where
         frm bdy = DF.childErrorList "" v >> DF.form v a bdy
 
--- TODO: Align
 data FormPageHandler m p = FormPageHandler
-    { _formGetPage   :: m p
-    , _formProcessor :: FormPagePayload p -> m (FormPageResult p)
+    { _formGetPage       :: m p
+    , _formProcessor     :: FormPagePayload p -> m (FormPageResult p)
     , _formStatusMessage :: p -> FormPagePayload p -> FormPageResult p -> m (Maybe StatusMessage)
     }
 
