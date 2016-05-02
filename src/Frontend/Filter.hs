@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -14,6 +15,10 @@ module Frontend.Filter
     , IdeasSortApi, SortIdeasBy(..), labelSortIdeasBy
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
     , toggleIdeasFilter
+
+    , UsersFilterApi, UsersFilterQuery(..), _AllUsers
+    , UsersSortApi, SortUsersBy(..), labelSortUsersBy
+    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS, emptyUsersQuery
     )
 where
 
@@ -23,6 +28,7 @@ import Data.UriPath
 import Servant.API -- (QueryParam, toUrlPiece)
 
 import qualified Generics.SOP as SOP
+import qualified Data.Ord
 
 import Types
 
@@ -73,7 +79,7 @@ data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 -- FIXME make an HasLabel type class roleLabel, phaseName...
-labelSortIdeasBy :: SortIdeasBy -> ST
+labelSortIdeasBy :: IsString s => SortIdeasBy -> s
 labelSortIdeasBy = \case
     SortIdeasBySupport -> "Unterstützung"
     SortIdeasByTime    -> "Datum"
@@ -128,3 +134,93 @@ instance Filter IdeasQuery where
 
     applyFilter  (IdeasQuery f s) = applyFilter  s . applyFilter  f
     renderFilter (IdeasQuery f s) = renderFilter s . renderFilter f
+
+-- * users sorting
+
+data SortUsersBy = SortUsersByTime | SortUsersByName | SortUsersByClass | SortUsersByRole
+  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
+
+type UsersSortApi = FilterApi SortUsersBy
+
+instance SOP.Generic SortUsersBy
+
+instance FromHttpApiData SortUsersBy where
+    parseUrlPiece = \case
+        "time"  -> Right SortUsersByTime
+        "name"  -> Right SortUsersByName
+        "class" -> Right SortUsersByClass
+        "role"  -> Right SortUsersByRole
+        _       -> Left "no parse"
+
+instance ToHttpApiData SortUsersBy where
+    toUrlPiece = \case
+        SortUsersByTime  -> "time"
+        SortUsersByName  -> "name"
+        SortUsersByClass -> "class"
+        SortUsersByRole  -> "role"
+
+instance Filter   SortUsersBy where
+    type Filtered SortUsersBy = UserView
+
+    applyFilter = \case
+        SortUsersByTime  -> byTime
+        SortUsersByName  -> byName  . byTime
+        SortUsersByClass -> byClass . byTime
+        SortUsersByRole  -> byRole  . byTime
+      where
+        by :: Ord a => Getter User a -> [UserView] -> [UserView]
+        by g    = sortOn (pre $ activeUser . g)
+        byTime  = by $ createdAt . to Data.Ord.Down
+        byName  = by userLogin
+        byClass = by userSchoolClass
+        byRole  = by $ userRole . to (roleLabel :: Role -> ST)
+
+    renderFilter = renderQueryParam
+
+type instance FilterName SortUsersBy = "sortby"
+
+-- FIXME see labelSortIdeasBy
+labelSortUsersBy :: IsString s => SortUsersBy -> s
+labelSortUsersBy = \case
+    SortUsersByTime  -> "Datum"
+    SortUsersByName  -> "Name"
+    SortUsersByClass -> "Klasse"
+    SortUsersByRole  -> "Rolle"
+
+data UsersFilterQuery = AllUsers
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic UsersFilterQuery
+
+type UsersFilterApi = FilterApi Category
+
+makeLenses ''UsersFilterQuery
+makePrisms ''UsersFilterQuery
+
+instance Filter UsersFilterQuery where
+    type Filtered UsersFilterQuery = UserView
+
+    applyFilter  AllUsers = id
+    renderFilter AllUsers = id
+
+data UsersQuery = UsersQuery
+    { _usersQueryF :: UsersFilterQuery
+    , _usersQueryS :: SortUsersBy
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic UsersQuery
+
+makeLenses ''UsersQuery
+
+instance Filter UsersQuery where
+    type Filtered UsersQuery = UserView
+
+    applyFilter  (UsersQuery f s) = applyFilter  s . applyFilter  f
+    renderFilter (UsersQuery f s) = renderFilter s . renderFilter f
+
+mkUsersQuery :: Maybe SortUsersBy -> UsersQuery
+mkUsersQuery ms = UsersQuery AllUsers (fromMaybe minBound ms)
+
+emptyUsersQuery :: UsersQuery
+emptyUsersQuery = UsersQuery AllUsers minBound

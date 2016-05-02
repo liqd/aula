@@ -60,7 +60,7 @@ data PageAdminSettingsFreeze =
 instance Page PageAdminSettingsFreeze
 
 -- | 11.3 Admin settings: Manage groups & permissions
-data AdminViewUsers = AdminViewUsers [UserView]
+data AdminViewUsers = AdminViewUsers UsersQuery [UserView]
   deriving (Eq, Show, Read)
 
 instance Page AdminViewUsers
@@ -228,11 +228,11 @@ menulink' targetMenuItem =
     MenuItemFreeze
         -> MenuLink "tab-freeze" U.AdminFreeze "Ferienmodus"
     MenuItemUsers
-        -> MenuLink "tab-groups-perms-user"  U.AdminViewUsers "Nutzer"
+        -> MenuLink "tab-groups-perms-user"  U.adminViewUsers "Nutzer"
     MenuItemClasses
         -> MenuLink "tab-groups-perms-class" U.AdminViewClasses "Klasse"
     MenuItemClassesAndUsers
-        -> MenuLink "tab-groups-perms"       U.AdminViewUsers "Gruppen & Nutzer"
+        -> MenuLink "tab-groups-perms"       U.adminViewUsers "Gruppen & Nutzer"
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
     MenuItemPhaseChange
@@ -350,14 +350,24 @@ adminFreeze =
 
 instance ToHtml AdminViewUsers where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(AdminViewUsers users) =
+    toHtmlRaw p@(AdminViewUsers filters users) =
         adminFrame p . semanticDiv p $ do
+            div_ [class_ "clearfix"] $ do
+                div_ [class_ "btn-settings pop-menu"] $ do
+                    i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
+                    ul_ [class_ "pop-menu-list"] $ do
+                        sequence_
+                            [ li_ [class_ "pop-menu-list-item"] $
+                                a_ [href_ . U.Admin . U.AdminViewUsers . Just $
+                                        filters & usersQueryS .~ by]
+                                    (labelSortUsersBy by)
+                            | by <- [minBound..] ]
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
                     th_ "Name"
                     th_ "Klasse"
-                    th_ "Rolle [<>]"
+                    th_ "Rolle"
                     th_ $ button_ [class_ "btn-cta", onclick_ $ U.Admin U.AdminCreateUser] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
@@ -382,13 +392,13 @@ instance ToHtml AdminViewUsers where
                         renderUserInfoRow user
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
-                tbody_ $ renderUserRow `mapM_` users
+                tbody_ $ renderUserRow `mapM_` applyFilter filters users
 
 instance FormPage AdminCreateUser where
     type FormPagePayload AdminCreateUser = CreateUserPayload
 
     formAction _   = U.Admin U.AdminCreateUser
-    redirectOf _ _ = U.Admin U.AdminViewUsers
+    redirectOf _ _ = U.Admin U.adminViewUsers
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminCreateUser classes) =
@@ -499,7 +509,7 @@ instance FormPage AdminEditUser where
     formAction (AdminEditUser user _classes) =
         U.Admin . U.AdminEditUser $ user ^. _Id
 
-    redirectOf _ _ = U.Admin U.AdminViewUsers
+    redirectOf _ _ = U.Admin U.adminViewUsers
 
     makeForm (AdminEditUser user classes) =
         (,) <$> ("login" .: validateUserLogin)
@@ -557,8 +567,8 @@ instance ToHtml AdminEditClass where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
-adminViewUsers :: ActionPersist m => m AdminViewUsers
-adminViewUsers = AdminViewUsers <$> query getUserViews
+adminViewUsers :: ActionPersist m => Maybe SortUsersBy -> m AdminViewUsers
+adminViewUsers qs = AdminViewUsers (mkUsersQuery qs) <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
                     ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
@@ -605,7 +615,7 @@ instance FormPage AdminDeleteUser where
     type FormPagePayload AdminDeleteUser = ()
 
     formAction (AdminDeleteUser user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
-    redirectOf _ _ = U.Admin U.AdminViewUsers
+    redirectOf _ _ = U.Admin U.adminViewUsers
 
     makeForm _ = pure ()
 

@@ -323,7 +323,7 @@ type AulaAdmin =
        -- partial freezing
   :<|> "freeze" :> FormHandler PageAdminSettingsFreeze
        -- groups and permissions
-  :<|> "users" :> GetH (Frame AdminViewUsers)
+  :<|> "users" :> UsersSortApi :> GetH (Frame AdminViewUsers)
   :<|> "user" :> "create" :> FormHandler AdminCreateUser
   :<|> "classes" :> GetH (Frame AdminViewClasses)
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
@@ -344,7 +344,7 @@ aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
   :<|> form Page.adminFreeze
-  :<|> makeFrame Page.adminViewUsers
+  :<|> makeFrame . Page.adminViewUsers
   :<|> form Page.adminCreateUser
   :<|> makeFrame Page.adminViewClasses
   :<|> form Page.adminCreateClass
