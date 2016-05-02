@@ -111,4 +111,4 @@ ideaListHeader _ loc ideasQuery = do
                             a_ [href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)] text
 
                 mk SortIdeasBySupport "Unterstützung"
-                mk SortIdeasByAge     "Datum"
+                mk SortIdeasByTime    "Datum"

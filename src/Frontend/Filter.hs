@@ -68,7 +68,7 @@ instance Filter     IdeasFilterQuery where
     applyFilter  f = applyFilter  $ f ^? catFilter
     renderFilter f = renderFilter $ f ^? catFilter
 
-data SortIdeasBy = SortIdeasByAge | SortIdeasBySupport
+data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 type IdeasSortApi = FilterApi SortIdeasBy
@@ -77,24 +77,24 @@ instance SOP.Generic SortIdeasBy
 
 instance FromHttpApiData SortIdeasBy where
     parseUrlPiece = \case
-        "age" -> Right SortIdeasByAge
-        "sup" -> Right SortIdeasBySupport
-        _     -> Left "no parse"
+        "time"    -> Right SortIdeasByTime
+        "support" -> Right SortIdeasBySupport
+        _         -> Left "no parse"
 
 instance ToHttpApiData SortIdeasBy where
     toUrlPiece = \case
-        SortIdeasByAge     -> "age"
-        SortIdeasBySupport -> "sup"
+        SortIdeasByTime    -> "time"
+        SortIdeasBySupport -> "support"
 
 instance Filter   SortIdeasBy where
     type Filtered SortIdeasBy = Idea
 
     applyFilter = \case
-        SortIdeasByAge     -> age
-        SortIdeasBySupport -> sup . age
+        SortIdeasByTime     -> byTime
+        SortIdeasBySupport -> bySupport . byTime
       where
-        age = downSortOn createdAt
-        sup = downSortOn $ ideaLikes . to length
+        byTime = downSortOn createdAt
+        bySupport = downSortOn $ ideaLikes . to length
 
     renderFilter = renderQueryParam
 
