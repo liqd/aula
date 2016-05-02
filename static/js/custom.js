@@ -79,13 +79,10 @@ document.onclick = function() {
 // Markdown
 
 var mdEls = document.getElementsByClassName("markdown");
+var converter = new showdown.Converter();
 for(i in mdEls) {
-    converter = new showdown.Converter();
-    text      = mdEls[i].innerHTML;
-    html      = converter.makeHtml(text);
-
     if (mdEls[i].innerHTML) {
-        mdEls[i].innerHTML = html;
+        mdEls[i].innerHTML = converter.makeHtml(mdEls[i].innerHTML);
     }
 }
 
