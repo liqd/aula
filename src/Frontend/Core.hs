@@ -412,7 +412,7 @@ form formHandler = getH :<|> postH
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
             Just payload -> do (redirectPath, msg) <- processor2 page payload
-                               msg >>= whenJust addMessage
+                               msg >>= mapM_ addMessage
                                redirect redirectPath
             Nothing      -> pure $ FormPageRep v fa page)
             `finally` cleanupTempFiles formData

@@ -191,9 +191,6 @@ class Monad m => ActionLog m where
     -- | Log system event
     log :: LogEntry -> m ()
 
-data EventFilter = All
-  deriving (Eq, Show, Ord)
-
 -- | A monad that can run acid-state.
 --
 -- See 'Query', 'EQuery', 'AUpdate' in "Persistent.Pure" for more a deeper understanging of this.

@@ -84,9 +84,6 @@ toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
-whenJust :: Monad m => (a -> m b) -> Maybe a -> m ()
-whenJust = mapM_
-
 type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
 type CSI' s a = CSI s s a a
 
