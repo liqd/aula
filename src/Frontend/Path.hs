@@ -199,7 +199,7 @@ commentOrReplyIdea idea = \case
 voteComment :: Comment -> UpDown -> Main
 voteComment comment = onComment comment . VoteComment
 
-reportComment :: Comment -> Main -- TODO
+reportComment :: Comment -> Main
 reportComment comment = onComment comment ReportComment
 
 deleteComment :: Comment -> Main

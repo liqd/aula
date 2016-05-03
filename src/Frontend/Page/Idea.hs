@@ -467,12 +467,11 @@ newtype ReportCommentContent = ReportCommentContent
     { unReportCommentContent :: Document }
   deriving (Eq, Show)
 
--- TODO: Translation
 reportCommentNote :: Note ()
 reportCommentNote = Note
-    { noteHeaderText        = const "Report the comment: ..."
-    , noteValidationMessage = "Report text"
-    , noteLabelText         = "Was möchtest du sagen?"
+    { noteHeaderText        = const "Verbesserungsvorschlag melden"
+    , noteValidationMessage = "Bemerkung"
+    , noteLabelText         = "Was möchtest du melden?"
     }
 
 instance FormPage ReportComment where
