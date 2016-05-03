@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 
 module Frontend.Filter
-    ( Filter(Filtered,applyFilter,renderFilter)
+    ( Filter(Filtered, applyFilter, renderFilter)
 
     , IdeasFilterApi, IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
     , IdeasSortApi, SortIdeasBy(..), labelSortIdeasBy
@@ -23,14 +23,17 @@ module Frontend.Filter
 where
 
 import GHC.TypeLits (Symbol, KnownSymbol, symbolVal)
+import Servant.API (QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, toUrlPiece)
 import Thentos.Prelude
-import Data.UriPath
-import Servant.API -- (QueryParam, toUrlPiece)
 
-import qualified Generics.SOP as SOP
 import qualified Data.Ord
+import qualified Generics.SOP as SOP
 
+import Data.UriPath
 import Types
+
+
+-- * filter (also does sort)
 
 class Filter a where
     type Filtered a
@@ -48,6 +51,9 @@ instance Filter a => Filter (Maybe a) where
     type Filtered (Maybe a) = Filtered a
     applyFilter  = maybe id applyFilter
     renderFilter = maybe id renderFilter
+
+
+-- * filter and sort ideas
 
 data IdeasFilterQuery = AllIdeas | IdeasWithCat { _catFilter :: Category }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -78,7 +84,7 @@ instance Filter     IdeasFilterQuery where
 data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
--- FIXME make an HasLabel type class roleLabel, phaseName...
+-- FIXME make an HasLabel type class for roleLabel, phaseName...
 labelSortIdeasBy :: IsString s => SortIdeasBy -> s
 labelSortIdeasBy = \case
     SortIdeasBySupport -> "Unterstützung"
@@ -134,6 +140,7 @@ instance Filter IdeasQuery where
 
     applyFilter  (IdeasQuery f s) = applyFilter  s . applyFilter  f
     renderFilter (IdeasQuery f s) = renderFilter s . renderFilter f
+
 
 -- * users sorting
 
