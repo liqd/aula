@@ -109,7 +109,7 @@ instance Filter   SortIdeasBy where
     type Filtered SortIdeasBy = Idea
 
     applyFilter = \case
-        SortIdeasByTime     -> byTime
+        SortIdeasByTime    -> byTime
         SortIdeasBySupport -> bySupport . byTime
       where
         byTime = downSortOn createdAt
