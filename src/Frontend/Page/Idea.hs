@@ -37,6 +37,7 @@ import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Feasibility
+import Frontend.Fragment.Note
 import Frontend.Fragment.QuorumBar
 import Frontend.Prelude hiding ((<|>), editIdea)
 import Frontend.Validation
@@ -388,6 +389,13 @@ createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
                             i_ [class_ "icon-trash-o"] nil
                             "Idee löschen"
 
+commentIdeaNote :: Note Idea
+commentIdeaNote = Note
+    { noteHeaderText        = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
+    , noteValidationMessage = "Verbesserungsvorschlag"
+    , noteLabelText         = "Was möchtest du sagen?"
+    }
+
 instance FormPage CommentIdea where
     type FormPagePayload CommentIdea = CommentContent
     type FormPageResult CommentIdea = Comment
@@ -397,19 +405,25 @@ instance FormPage CommentIdea where
     redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentIdea{} =
-        "comment-text" .: (CommentContent <$> validateMarkdown "Verbesserungsvorschlag" (Markdown <$> DF.text Nothing))
+        CommentContent <$> noteFormInput commentIdeaNote Nothing
 
-    -- FIXME styling
     formPage v form p@(CommentIdea idea _mcomment) =
         semanticDiv p $ do
-            div_ [class_ "container-comment-idea"] $ do
-                h1_ [class_ "main-heading"] $ "Verbesserungsvorschlag zu " <> idea ^. ideaTitle . html
-                form $ do
-                    label_ $ do
-                        span_ [class_ "label-text"] "Was möchtest du sagen?"
-                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "comment-text" v
-                    footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Verbesserungsvorschlag abgeben"
+            noteForm v form commentIdeaNote idea
+
+judgeIdeaNote :: IdeaJuryResultType -> Note Idea
+judgeIdeaNote juryType = Note
+    { noteHeaderText        = (headerText <>) . view ideaTitle
+    , noteValidationMessage = "Anmerkungen zur Durchführbarkeit"
+    , noteLabelText         = labelText
+    }
+  where
+    headerText = case juryType of
+        IdeaFeasible    -> "[Angenommen zur Wahl] "
+        IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
+    labelText = case juryType of
+        IdeaFeasible    -> "Möchten Sie die Idee kommentieren?"
+        IdeaNotFeasible -> "Bitte formulieren Sie eine Begründung!"
 
 instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue
@@ -421,30 +435,20 @@ instance FormPage JudgeIdea where
         -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible _ _) =
-        Feasible
-        <$> "jury-text" .: validateOptionalMarkdown "Anmerkungen zur Durchführbarkeit" (DF.optionalString Nothing)
+        Feasible <$> noteFormOptionalInput (judgeIdeaNote IdeaFeasible) Nothing
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
-        NotFeasible
-        <$> "jury-text" .: validateMarkdown "Anmerkungen zur Durchführbarkeit" (Markdown <$> DF.text Nothing)
+        NotFeasible <$> noteFormInput (judgeIdeaNote IdeaFeasible) Nothing
 
-    -- FIXME styling
     formPage v form p@(JudgeIdea juryType idea _topic) =
-        semanticDiv p $ do
-            div_ [class_ "container-jury-idea"] $ do
-                h1_ [class_ "main-heading"] $ headerText <> idea ^. ideaTitle . html
-                form $ do
-                    label_ $ do
-                        span_ [class_ "label-text"] $
-                            case juryType of
-                                IdeaFeasible    -> "Möchten Sie die Idee kommentieren?"
-                                IdeaNotFeasible -> "Bitte formulieren Sie eine Begründung!"
-                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "jury-text" v
-                    footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Entscheidung speichern."
-      where
-        headerText = case juryType of
-            IdeaFeasible    -> "[Angenommen zur Wahl] "
-            IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
+        semanticDiv p $
+            noteForm v form (judgeIdeaNote juryType) idea
+
+creatorStatementNote :: Note Idea
+creatorStatementNote = Note
+    { noteHeaderText        = ("Ansage des Gewinners zur Idee " <>) . view ideaTitle
+    , noteValidationMessage = "Statement des Autors"
+    , noteLabelText         = "Was möchtest du sagen?"
+    }
 
 instance FormPage CreatorStatement where
     type FormPagePayload CreatorStatement = Document
@@ -453,48 +457,37 @@ instance FormPage CreatorStatement where
     redirectOf (CreatorStatement idea) _ = U.viewIdea idea
 
     makeForm (CreatorStatement idea) =
-        "statement-text" .: validateMarkdown "Statement des Autors" (Markdown <$> DF.text (unMarkdown <$> creatorStatementOfIdea idea))
+        noteFormInput creatorStatementNote (creatorStatementOfIdea idea)
 
-    -- FIXME styling
     formPage v form p@(CreatorStatement idea) =
         semanticDiv p $ do
-            div_ [class_ "container-creator-statement"] $ do
-                h1_ [class_ "main-heading"] $ "Ansage des Gewinners zur Idee " <> idea ^. ideaTitle . html
-                form $ do
-                    label_ $ do
-                        span_ [class_ "label-text"] "Was möchtest du sagen?"
-                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "statement-text" v
-                    footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Abschicken"
+            noteForm v form creatorStatementNote idea
 
 newtype ReportCommentContent = ReportCommentContent
     { unReportCommentContent :: Document }
   deriving (Eq, Show)
+
+-- TODO: Translation
+reportCommentNote :: Note ()
+reportCommentNote = Note
+    { noteHeaderText        = const "Report the comment: ..."
+    , noteValidationMessage = "Report text"
+    , noteLabelText         = "Was möchtest du sagen?"
+    }
 
 instance FormPage ReportComment where
     type FormPagePayload ReportComment = ReportCommentContent
 
     formAction (ReportComment comment) = U.reportComment comment
 
-    -- TODO: Do the normal redirect.
     redirectOf (ReportComment comment) _ = U.viewIdeaOfComment comment
 
     makeForm _ =
-        "report-text" .:
-            (ReportCommentContent <$>
-                validateMarkdown "Report text" (Markdown <$> DF.text Nothing))
+        ReportCommentContent <$> noteFormInput reportCommentNote Nothing
 
     formPage v form p =
         semanticDiv p $ do
-            div_ [class_ "container-creator-statement"] $ do
-                h1_ [class_ "main-heading"] "Report the comment: ..."
-                form $ do
-                    label_ $ do
-                        span_ [class_ "label-text"] "Was möchtest du sagen?"
-                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "report-text" v
-                    footer_ [class_ "form-footer"] $ do
-                        DF.inputSubmit "Abschicken"
-
+            noteForm v form reportCommentNote ()
 
 -- * handlers
 

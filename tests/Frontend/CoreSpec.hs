@@ -190,7 +190,7 @@ instance PayloadToEnv Role where
 
 instance PayloadToEnv CommentContent where
     payloadToEnvMapping _ (CommentContent (Markdown comment)) = \case
-        "comment-text" -> pure [TextInput comment]
+        "note-text" -> pure [TextInput comment]
 
 instance PayloadToEnv AdminPhaseChangeForTopicData where
     payloadToEnvMapping v (AdminPhaseChangeForTopicData (AUID tid) dir) = \case
@@ -201,13 +201,13 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
 
 instance PayloadToEnv IdeaJuryResultValue where
     payloadToEnvMapping _ (Feasible mdoc) = \case
-        "jury-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
+        "note-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
     payloadToEnvMapping _ (NotFeasible doc) = \case
-        "jury-text" -> pure [TextInput $ unMarkdown doc]
+        "note-text" -> pure [TextInput $ unMarkdown doc]
 
 instance PayloadToEnv ReportCommentContent  where
     payloadToEnvMapping _ (ReportCommentContent (Markdown m)) = \case
-        "report-text" -> pure [TextInput m]
+        "note-text" -> pure [TextInput m]
 
 -- * machine room
 
