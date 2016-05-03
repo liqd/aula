@@ -59,8 +59,8 @@ someUserBehavior = do
     createIdea idea1 "desc" CatRules
     commentIdea idea1 comment1
     replyComment idea1 comment1 comment2
-    reportComment idea1 comment1
-    reportCommentReply idea1 comment1 comment2
+    reportComment idea1 comment1 "Report this"
+    reportCommentReply idea1 comment1 comment2 "Report that"
     deleteComment idea1 comment1
     reportIdea idea1
     deleteIdea idea1

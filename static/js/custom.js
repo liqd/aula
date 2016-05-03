@@ -12,7 +12,8 @@ function addPopEvents(el) {
         toggleMenu(el);
     }
 
-    el.onmouseleave = function() {
+    elList = getElementByClassName("pop-menu-list", el);
+    elList.onmouseleave = function() {
         toggleMenu(el, true);
     }
 }

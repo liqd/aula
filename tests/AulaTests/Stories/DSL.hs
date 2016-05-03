@@ -24,6 +24,7 @@ type TopicTitle = ST
 type TopicDescription = ST
 type CommentText = ST
 type Statement = ST
+type ReportText = ST
 
 
 -- * the dsl ("the action sentences")
@@ -48,8 +49,8 @@ data Step a where
     ReplyComment        :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     VoteOnComment       :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
     VoteOnCommentReply  :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
-    ReportComment       :: IdeaTitle -> CommentText -> a -> Step a
-    ReportCommentReply  :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    ReportComment       :: IdeaTitle -> CommentText -> ReportText -> a -> Step a
+    ReportCommentReply  :: IdeaTitle -> CommentText -> CommentText -> ReportText -> a -> Step a
     DeleteComment       :: IdeaTitle -> CommentText -> a -> Step a
     SetCreatorStatement :: IdeaTitle -> Statement -> a -> Step a
     SetFreeze           :: Freeze -> a -> Step a
@@ -118,11 +119,11 @@ voteOnCommentReply :: IdeaTitle -> CommentText -> CommentText -> UpDown -> Behav
 voteOnCommentReply idea comment1 comment2 vote =
     liftF $ VoteOnCommentReply idea comment1 comment2 vote ()
 
-reportComment :: IdeaTitle -> CommentText -> Behavior ()
-reportComment idea comment1 = liftF $ ReportComment idea comment1 ()
+reportComment :: IdeaTitle -> CommentText -> ReportText -> Behavior ()
+reportComment idea comment1 report = liftF $ ReportComment idea comment1 report ()
 
-reportCommentReply :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
-reportCommentReply idea comment1 comment2 = liftF $ ReportCommentReply idea comment1 comment2 ()
+reportCommentReply :: IdeaTitle -> CommentText -> CommentText -> ReportText -> Behavior ()
+reportCommentReply idea comment1 comment2 report = liftF $ ReportCommentReply idea comment1 comment2 report ()
 
 deleteComment :: IdeaTitle -> CommentText -> Behavior ()
 deleteComment idea comment =

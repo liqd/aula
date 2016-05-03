@@ -31,7 +31,7 @@ module Frontend.Path
     , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
-    , viewUser, adminViewUsers
+    , viewUser, adminViewUsers, viewIdeaOfComment
     , anchor
     )
 where
@@ -44,7 +44,7 @@ import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
              , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , IdeaJuryResultType(..), ckIdeaLocation, CommentKey(CommentKey))
+             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey))
 
 import Frontend.Filter
 
@@ -98,7 +98,7 @@ isPostOnly = \case
                 case cm of
                     VoteComment{} -> True
                     DeleteComment -> True
-                    ReportComment -> True
+                    ReportComment -> False
                     ViewComment   -> False
                     ReplyComment  -> False
             _ -> False
@@ -152,6 +152,10 @@ viewIdea idea = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) Nothing)
 
 viewIdeaAtComment :: Idea -> AUID Comment -> Main
 viewIdeaAtComment idea cid = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) (Just cid))
+
+viewIdeaOfComment :: Comment -> Main
+viewIdeaOfComment comment = IdeaPath (ck ^. ckIdeaLocation) (ViewIdea (ck ^. ckIdeaId) Nothing)
+  where ck = comment ^. _Key
 
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
