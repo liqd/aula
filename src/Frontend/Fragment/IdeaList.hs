@@ -17,7 +17,6 @@ import LifeCycle
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
-import qualified Lucid
 
 
 data WhatListPage
@@ -85,10 +84,11 @@ instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdeas _ctx whatPage loc ideasQuery []) = semanticDiv p $ do
         ideaListHeader whatPage loc ideasQuery
-        div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> fromMaybe nil mCatInfo <> "."
+        div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
       where
-        mCatInfo :: Maybe ST
-        mCatInfo = (" in der Kategorie " <>) . categoryToUiText <$> (ideasQuery ^. ideasQueryF)
+        mCatInfo :: ST
+        mCatInfo = ideasQuery ^. ideasQueryF . _IdeasWithCat . to categoryToUiText
+                 . to (" in der Kategorie " <>)
 
     toHtml p@(ListItemIdeas ctx whatPage loc ideasQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader whatPage loc ideasQuery
@@ -106,9 +106,8 @@ ideaListHeader _ loc ideasQuery = do
         div_ [class_ "btn-settings pop-menu"] $ do
             i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
             ul_ [class_ "pop-menu-list"] $ do
-                let mk by text = do
-                        li_ [class_ "pop-menu-list-item"] $
-                            a_ [Lucid.href_ $ listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ Just by)] text
-
-                mk SortIdeasBySupport "Unterstützung"
-                mk SortIdeasByAge     "Datum"
+                sequence_
+                    [ li_ [class_ "pop-menu-list-item"] $
+                        a_ [href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)]
+                            (labelSortIdeasBy by)
+                    | by <- [minBound..] ]

@@ -56,7 +56,7 @@ viewIdeas :: (ActionPersist m, ActionUserHandler m)
 viewIdeas space ideasQuery = do
     ctx <- renderContext
     PageIdeasOverview ctx space <$> equery (do
-        is  <- ideasRunQuery ideasQuery <$> findWildIdeasBySpace space
+        is  <- applyFilter ideasQuery <$> findWildIdeasBySpace space
         ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery
             <$> getListInfoForIdea `mapM` is)
 

@@ -303,7 +303,7 @@ viewTopic tab topicId = do
                 let loc = topicIdeaLocation topic
                     ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
                                $ tab ^? viewTopicTabQuery
-                ideas <- ideasRunQuery ideasQuery <$> findIdeasByTopic topic
+                ideas <- applyFilter ideasQuery <$> findIdeasByTopic topic
                 ideasAndNumVoters <- ListItemIdeas ctx IdeaInViewTopic loc ideasQuery <$>
                                             (getListInfoForIdea `mapM` ideas)
 

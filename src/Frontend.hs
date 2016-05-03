@@ -297,12 +297,12 @@ topicApi space
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
   where
-    viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (IdeasQuery qf qs)) tid
+    viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi (IdeaLocationSpace space)
-  :<|> app2 (makeFrame . Page.viewIdeas space) IdeasQuery
+  :<|> app2 (makeFrame . Page.viewIdeas space) mkIdeasQuery
   :<|> topicApi space
 
 type AulaUser =
@@ -323,7 +323,7 @@ type AulaAdmin =
        -- partial freezing
   :<|> "freeze" :> FormHandler PageAdminSettingsFreeze
        -- groups and permissions
-  :<|> "users" :> GetH (Frame AdminViewUsers)
+  :<|> "users" :> UsersSortApi :> GetH (Frame AdminViewUsers)
   :<|> "user" :> "create" :> FormHandler AdminCreateUser
   :<|> "classes" :> GetH (Frame AdminViewClasses)
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
@@ -344,7 +344,7 @@ aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
   :<|> form Page.adminFreeze
-  :<|> makeFrame Page.adminViewUsers
+  :<|> makeFrame . Page.adminViewUsers
   :<|> form Page.adminCreateUser
   :<|> makeFrame Page.adminViewClasses
   :<|> form Page.adminCreateClass
