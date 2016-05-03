@@ -135,6 +135,13 @@ $arrow-width: 6px;
             min-width: 15px;
         }
     }
+
+    &.m-active {
+        a {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+    }
 }
 
 .pop-menu-list-icon {
