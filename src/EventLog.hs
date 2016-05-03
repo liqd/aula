@@ -64,6 +64,11 @@ instance SOP.Generic EventLogItem
 instance SOP.Generic EventLogItemValue
 instance SOP.Generic PhaseTransitionTriggeredBy
 
+instance HasUILabel PhaseTransitionTriggeredBy where
+    uilabel = \case
+        (PhaseTransitionTriggeredBy _)           -> "von Hand ausgelöst"
+        PhaseTransitionTriggeredByTimeout        -> "Zeit ist abgelaufen"
+        PhaseTransitionTriggeredByAllIdeasMarked -> "alle Ideen sind geprüft"
 
 filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
 filterEventLog mspc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
@@ -145,13 +150,9 @@ instance CSV.ToRecord URLEventLogItem where
         f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase trigger) = CSV.toRecord
             [ objDesc topic <> " geht von " <> uilabel fromPhase
                             <> " nach "     <> uilabel toPhase
-                            <> showTrigger trigger
+                            <> " ("         <> uilabel trigger <> ")"
             , objLink topic
             ]
-          where
-            showTrigger (PhaseTransitionTriggeredBy _)           = " (von Hand ausgelöst)"
-            showTrigger PhaseTransitionTriggeredByTimeout        = " (Zeit ist abgelaufen)"
-            showTrigger PhaseTransitionTriggeredByAllIdeasMarked = " (alle Ideen sind geprüft)"
 
         f (EventLogIdeaNewTopic (Middle3 -> idea) mt1 mt2) = CSV.toRecord
             [ "verschiebt " <> objDesc idea <> " von " <> show_ mt1 <> " nach " <> show_ mt2 <> "."
