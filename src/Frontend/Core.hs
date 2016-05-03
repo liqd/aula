@@ -630,4 +630,5 @@ footerMarkup = do
                 a_ [Lucid.onclick_ "createPageSample()"]
                     "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
+    script_ [src_ $ P.TopStatic "third-party/showdown/dist/showdown.min.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
