@@ -64,6 +64,7 @@ import Action.Implementation
 import Config
 import EventLog
 import Frontend.Core
+import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
@@ -173,7 +174,7 @@ instance Arbitrary PageAdminSettingsFreeze where
     arbitrary = PageAdminSettingsFreeze <$> arb
 
 instance Arbitrary AdminViewUsers where
-    arbitrary = AdminViewUsers <$> arb
+    arbitrary = AdminViewUsers <$> arb <*> arb
 
 instance Arbitrary AdminEditUser where
     arbitrary = AdminEditUser <$> arb <*> arb
@@ -290,6 +291,9 @@ instance Arbitrary ListInfoForIdea where
 instance Arbitrary IdeaCapability where
     arbitrary = garbitrary
 
+instance Arbitrary IdeasFilterQuery where
+    arbitrary = garbitrary
+
 instance Arbitrary SortIdeasBy where
     arbitrary = garbitrary
 
@@ -390,6 +394,15 @@ instance Arbitrary UserLastName where
     arbitrary = UserLastName <$> arbWord
 
 instance Arbitrary Role where
+    arbitrary = garbitrary
+
+instance Arbitrary UsersFilterQuery where
+    arbitrary = garbitrary
+
+instance Arbitrary SortUsersBy where
+    arbitrary = garbitrary
+
+instance Arbitrary UsersQuery where
     arbitrary = garbitrary
 
 guestOrStudent :: SchoolClass -> Gen Role

@@ -54,13 +54,6 @@ module Frontend.Core
     , Frame(..), frameBody, frameUser, frameMessages
     , makeFrame
 
-      -- * sort & filter
-    , IdeasFilterApi, IdeasFilterQuery
-    , IdeasSortApi, IdeasSortQuery, SortIdeasBy(..)
-    , IdeasQuery(..), ideasQueryF, ideasQueryS, emptyIdeasQuery
-    , ideasRunQuery
-    , listIdeasWithQuery
-
       -- * js glue
     , JsCallback, onclickJs, jsReloadOnClick, jsReloadOnClickAnchor
     )
@@ -71,10 +64,8 @@ import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_, when)
-import Data.Maybe (fromMaybe, catMaybes)
 import Data.String.Conversions
 import Data.Typeable
-import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
@@ -86,7 +77,6 @@ import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
 import qualified Data.Text as ST
-import qualified Generics.SOP as SOP
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -443,74 +433,6 @@ makeFrame mp = do
      | otherwise             -> PublicFrame <$> mp <*> flushMessages
 
 
--- * sort & filter
-
-type IdeasFilterApi = QueryParam "category" Category
-type IdeasFilterQuery = Maybe Category
-
-ideasFilterQuery :: IdeasFilterQuery -> [Idea] -> [Idea]
-ideasFilterQuery = \case
-    (Just cat) -> filter ((== Just cat) . view ideaCategory)
-    Nothing    -> id
-
-type IdeasSortApi = QueryParam "sortby" SortIdeasBy
-type IdeasSortQuery = Maybe SortIdeasBy
-
-data SortIdeasBy = SortIdeasByAge | SortIdeasBySupport
-  deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
-
-instance SOP.Generic SortIdeasBy
-
-instance FromHttpApiData SortIdeasBy where
-    parseUrlPiece = \case
-        "age" -> Right SortIdeasByAge
-        "sup" -> Right SortIdeasBySupport
-        _     -> Left "no parse"
-
-instance ToHttpApiData SortIdeasBy where
-    toUrlPiece = \case
-        SortIdeasByAge     -> "age"
-        SortIdeasBySupport -> "sup"
-
-ideasSortQuery :: IdeasSortQuery -> [Idea] -> [Idea]
-ideasSortQuery = f . fromMaybe minBound
-  where
-    f SortIdeasByAge     = age
-    f SortIdeasBySupport = sup . age
-
-    age = downSortOn createdAt
-    sup = downSortOn $ ideaLikes . to length
-
-data IdeasQuery = IdeasQuery
-    { _ideasQueryF :: IdeasFilterQuery
-    , _ideasQueryS :: IdeasSortQuery
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic IdeasQuery
-
-emptyIdeasQuery :: IdeasQuery
-emptyIdeasQuery = IdeasQuery Nothing Nothing
-
-ideasRunQuery :: IdeasQuery -> [Idea] -> [Idea]
-ideasRunQuery (IdeasQuery f s) = ideasSortQuery s . ideasFilterQuery f
-
-listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> URL
-listIdeasWithQuery loc (IdeasQuery qf qs) =
-        (absoluteUriPath . relPath . P.listIdeas $ loc)
-      <> renderBoth (catMaybes [renderFilter <$> qf, renderSort <$> qs])
-  where
-    renderFilter :: Category -> ST
-    renderFilter v = "category=" <> toUrlPiece v
-
-    renderSort :: SortIdeasBy -> ST
-    renderSort v = "sortby=" <> toUrlPiece v
-
-    renderBoth :: [ST] -> ST
-    renderBoth []  = nil
-    renderBoth kvs = "?" <> ST.intercalate "&" kvs
-
-
 -- * js glue
 
 data JsCallback =
@@ -533,7 +455,6 @@ onclickJs (JsReloadOnClick hash) =
 makeLenses ''RenderContext
 makeLenses ''FormPageHandler
 makeLenses ''Frame
-makeLenses ''IdeasQuery
 
 makePrisms ''Frame
 

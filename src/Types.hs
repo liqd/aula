@@ -1106,6 +1106,9 @@ unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddres
 userEmailAddress :: CSI' s SBS => Fold User s
 userEmailAddress = userEmail . _Just . re emailAddress
 
+userSchoolClass :: Getter User (Maybe SchoolClass)
+userSchoolClass = pre $ userRole . roleSchoolClass
+
 onActiveUser :: a -> (User -> a) -> User -> a
 onActiveUser x f u
     | isActiveUser u = f u
@@ -1116,8 +1119,9 @@ userFullName = cs . onActiveUser
     "[Nutzer gelöscht]"
     (\u -> u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName)
 
-userLongName :: User -> ST
-userLongName = onActiveUser
+-- | Show full name and email address.  Should only be displayed to admins.
+dangerousUserLongName :: User -> ST
+dangerousUserLongName = onActiveUser
     "[Nutzer gelöscht]"
     (\u -> userFullName u <> " [" <> u ^. userLogin . unUserLogin <> email u <> "]")
   where
