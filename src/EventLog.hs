@@ -143,8 +143,8 @@ instance CSV.ToRecord URLEventLogItem where
             ]
 
         f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase trigger) = CSV.toRecord
-            [ objDesc topic <> " geht von " <> labelS fromPhase
-                            <> " nach "     <> labelS toPhase
+            [ objDesc topic <> " geht von " <> uilabel fromPhase
+                            <> " nach "     <> uilabel toPhase
                             <> showTrigger trigger
             , objLink topic
             ]

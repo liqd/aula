@@ -252,7 +252,7 @@ instance FormPage PageAdminSettingsDurations where
             name
             (DurationDays <$> inRange 1 366)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
-        pNam ph = labelS $ ph (error "PageAdminSettingsDurations: impossible")
+        pNam ph = uilabel $ ph (error "PageAdminSettingsDurations: impossible")
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         label_ [class_ "input-append"] $ do
@@ -363,7 +363,7 @@ instance ToHtml AdminViewUsers where
                             [ li_ [class_ "pop-menu-list-item"] $
                                 a_ [href_ . U.Admin . U.AdminViewUsers . Just $
                                         filters & usersQueryS .~ by]
-                                    (labelS by)
+                                    (uilabel by)
                             | by <- [minBound..] ]
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -381,7 +381,7 @@ instance ToHtml AdminViewUsers where
                     renderUserInfoRow user = do
                         td_ $ user ^. userLogin . unUserLogin . html
                         td_ $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
-                        td_ $ user ^. userRole . labeledS
+                        td_ $ user ^. userRole . uilabeled
                         td_ $ toHtmlRaw nbsp
 
                 let renderUserRow :: forall m. (Monad m) => UserView -> HtmlT m ()

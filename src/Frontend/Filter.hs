@@ -84,8 +84,8 @@ instance Filter     IdeasFilterQuery where
 data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
-instance HasLabelS SortIdeasBy where
-    labelS = \case
+instance HasUILabel SortIdeasBy where
+    uilabel = \case
         SortIdeasBySupport -> "Unterstützung"
         SortIdeasByTime    -> "Datum"
 
@@ -179,14 +179,14 @@ instance Filter   SortUsersBy where
         byTime  = by $ createdAt . to Data.Ord.Down
         byName  = by userLogin
         byClass = by userSchoolClass
-        byRole  = by $ userRole . labeledS
+        byRole  = by $ userRole . uilabeled
 
     renderFilter = renderQueryParam
 
 type instance FilterName SortUsersBy = "sortby"
 
-instance HasLabelS SortUsersBy where
-    labelS = \case
+instance HasUILabel SortUsersBy where
+    uilabel = \case
         SortUsersByTime  -> "Datum"
         SortUsersByName  -> "Name"
         SortUsersByClass -> "Klasse"

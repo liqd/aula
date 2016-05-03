@@ -477,8 +477,8 @@ data Phase =
 
 instance SOP.Generic Phase
 
-instance HasLabelS Phase where
-    labelS = \case
+instance HasUILabel Phase where
+    uilabel = \case
         PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
         PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
         PhaseRefinement{} -> "Ausarbeitungsphase"
@@ -773,17 +773,17 @@ instance ToHtml Document where
     toHtml    = div_ [class_ "markdown"] . toHtml    . unMarkdown
 
 -- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
-class HasLabelS a where
-    labelS :: a -> IsString s => s
+class HasUILabel a where
+    uilabel :: a -> IsString s => s
 
-    labelST :: a -> ST
-    labelST = labelS
+    uilabelST :: a -> ST
+    uilabelST = uilabel
 
-    labeledS :: IsString s => Getter a s
-    labeledS = to labelS
+    uilabeled :: IsString s => Getter a s
+    uilabeled = to uilabel
 
-    labeledST :: Getter a ST
-    labeledST = to labelS
+    uilabeledST :: Getter a ST
+    uilabeledST = to uilabel
 
 
 -- * general-purpose types
@@ -1172,13 +1172,13 @@ instance HasUriPart IdeaSpace where
 instance HasUriPart SchoolClass where
     uriPart = fromString . showSchoolClass
 
-instance HasLabelS IdeaSpace where
-    labelS = \case
+instance HasUILabel IdeaSpace where
+    uilabel = \case
         SchoolSpace    -> "Schule"
-        (ClassSpace c) -> labelS c
+        (ClassSpace c) -> uilabel c
 
-instance HasLabelS SchoolClass where
-    labelS = fromString . cs . view className
+instance HasUILabel SchoolClass where
+    uilabel = fromString . cs . view className
 
 showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
@@ -1289,8 +1289,8 @@ userVoteOnIdea user idea =
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
-instance HasLabelS Role where
-    labelS = \case
+instance HasUILabel Role where
+    uilabel = \case
         (Student _)    -> "Schüler"
         (ClassGuest _) -> "Gast (Klasse)"
         SchoolGuest    -> "Gast (Schule)"

@@ -141,7 +141,7 @@ instance ToHtml PageIdeasInDiscussion where
                                  , class_ "theme-grid-item-image"
                                  ]
                             div_ [class_ "theme-grid-item-text"] $ do
-                                span_ [class_ "theme-grid-item-phase"] . toHtml . labelST
+                                span_ [class_ "theme-grid-item-phase"] . toHtml . uilabelST
                                     $ topic ^. topicPhase
                                 h2_   [class_ "theme-grid-item-title"] . toHtml
                                     $ topic ^. topicTitle
