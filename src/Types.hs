@@ -479,8 +479,9 @@ instance SOP.Generic Phase
 
 instance HasUILabel Phase where
     uilabel = \case
-        PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
-        PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
+        PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: unreachable as of the writing of this
+                                                  -- comment, but used for some tests
+        PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: dito
         PhaseRefinement{} -> "Ausarbeitungsphase"
         PhaseRefFrozen{}  -> "Ausarbeitungsphase"
         PhaseJury         -> "Prüfungsphase"
