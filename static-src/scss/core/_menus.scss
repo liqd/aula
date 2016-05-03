@@ -138,8 +138,8 @@ $arrow-width: 6px;
 
     &.m-active {
         a {
+            color: $color-positive;
             font-weight: bold;
-            text-decoration: underline;
         }
     }
 }
