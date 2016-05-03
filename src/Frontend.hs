@@ -372,7 +372,7 @@ adminEventLogCsv mraw = case mraw of
         Left msg   -> throwError500 ("malformed idea space in uri query: " <> cs msg)
                       -- FIXME: status shouldn't be 500
   where
-    resp mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" showIdeaSpaceUI mspc) .
+    resp mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" uilabel mspc) .
                 filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
 
 
