@@ -367,10 +367,9 @@ createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
                 formPageSelectCategory v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Idee veröffentlichen"
-                    a_ [class_ "btn-cta", href_ $ U.listIdeas cancelUrl] $ do
+                    a_ [class_ "btn", href_ $ U.listIdeas cancelUrl] $ do
                         -- FIXME: "are you sure?" dialog.
-                        i_ [class_ "icon-trash-o"] nil
-                        "Idee verwerfen"
+                        "abbrechen"
                     when showDeleteButton .
                         button_ [class_ "btn-cta", value_ ""] $ do
                             -- FIXME: delete ideas.
