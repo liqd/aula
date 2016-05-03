@@ -70,7 +70,7 @@ spec = do
         , F (arb :: Gen PageAdminSettingsFreeze)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
---        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
+        , F (arb :: Gen CreatorStatement)
         , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen JudgeIdea)
         , F (arb :: Gen ReportComment)
@@ -208,6 +208,11 @@ instance PayloadToEnv IdeaJuryResultValue where
 instance PayloadToEnv ReportCommentContent  where
     payloadToEnvMapping _ (ReportCommentContent (Markdown m)) = \case
         "note-text" -> pure [TextInput m]
+
+instance PayloadToEnv Document  where
+    payloadToEnvMapping _ (Markdown m) = \case
+        "note-text" -> pure [TextInput m]
+
 
 -- * machine room
 
@@ -359,6 +364,10 @@ instance ArbFormPagePayload AdminEditUser where
 
 instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload CreatorStatement where
+    arbFormPagePayload _ = nonEmptyMarkdown
+    arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
 
 instance ArbFormPagePayload JudgeIdea where
     arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
