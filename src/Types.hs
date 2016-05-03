@@ -772,6 +772,19 @@ instance ToHtml Document where
     toHtmlRaw = div_ [class_ "markdown"] . toHtmlRaw . unMarkdown
     toHtml    = div_ [class_ "markdown"] . toHtml    . unMarkdown
 
+-- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
+class HasLabelS a where
+    labelS :: a -> IsString s => s
+
+    labelST :: a -> ST
+    labelST = labelS
+
+    labeledS :: IsString s => Getter a s
+    labeledS = to labelS
+
+    labeledST :: Getter a ST
+    labeledST = to labelS
+
 
 -- * general-purpose types
 
