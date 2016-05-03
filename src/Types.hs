@@ -391,6 +391,7 @@ data CommentContext = CommentContext
 
 instance SOP.Generic CommentContext
 
+
 -- * idea space, topic, phase
 
 -- | "Ideenraum" is one of "Klasse", "Schule".
@@ -682,6 +683,7 @@ defaultSettings = Settings
     , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
     , _freeze    = NotFrozen
     }
+
 
 -- * aula-specific helper types
 
