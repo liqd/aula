@@ -18,8 +18,6 @@ function addPopEvents(el) {
     }
 }
 
-var timeout;
-
 function toggleMenu(el, out) {
     if(el.className.indexOf("m-open") > -1) {
         removeClass(el, "m-open");
