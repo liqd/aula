@@ -98,7 +98,7 @@ import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.Monoid
-import Data.String.Conversions (ST, LBS)
+import Data.String.Conversions (ST, LBS, cs)
 import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
@@ -431,8 +431,8 @@ deleteIdeaCommentReply loc ideaId commentId =
 -- One thing could be log the event or count the reports made by one user.
 -- Since no record of the report are kept in base not only multiple users can
 -- report the same comment but the same user can report multiple times.
-reportCommentById :: CommentKey -> (ActionPersist m, ActionSendMail m) => m ()
-reportCommentById ck = do
+reportCommentById :: CommentKey -> Document -> (ActionPersist m, ActionSendMail m) => m ()
+reportCommentById ck doc = do
     comment <- mquery $ findComment ck
     let uri = relPath $ U.viewComment comment
     cfg <- viewConfig
@@ -447,6 +447,9 @@ reportCommentById ck = do
             , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
+            , ""
+            , cs $ unMarkdown doc
+            , ""
             , "hochachtungsvoll,"
             , "Ihr Aula-Benachrichtigungsdienst"
             ]
@@ -454,13 +457,17 @@ reportCommentById ck = do
         }
 
 -- ASSUMPTION: Idea is in the given idea location.
-reportIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment
-                  -> (ActionPersist m, ActionSendMail m) => m ()
-reportIdeaComment loc ideaId = reportCommentById . CommentKey loc ideaId []
+reportIdeaComment
+    :: IdeaLocation -> AUID Idea -> AUID Comment -> Document
+    -> (ActionPersist m, ActionSendMail m) => m ()
+reportIdeaComment loc ideaId commentId
+    = reportCommentById (CommentKey loc ideaId [] commentId)
 
-reportIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment
-                       -> (ActionPersist m, ActionSendMail m) => m ()
-reportIdeaCommentReply loc ideaId commentId = reportCommentById . CommentKey loc ideaId [commentId]
+reportIdeaCommentReply
+    :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Document
+    -> (ActionPersist m, ActionSendMail m) => m ()
+reportIdeaCommentReply loc ideaId parentCommentId commentId
+    = reportCommentById (CommentKey loc ideaId [parentCommentId] commentId)
 
 getIdeaTopicInJuryPhase :: ActionPhaseChange m => AUID Idea -> m Topic
 getIdeaTopicInJuryPhase iid = do

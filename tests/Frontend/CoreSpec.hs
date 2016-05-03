@@ -70,9 +70,10 @@ spec = do
         , F (arb :: Gen PageAdminSettingsFreeze)
 --        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
 --        , F (arb :: Gen AdminEditUser) -- FIXME:
---        , F (arb :: Gen CreatorStatement) -- FIXME: Don't use the PayloadToEnv Markdown type
+        , F (arb :: Gen CreatorStatement)
         , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen JudgeIdea)
+        , F (arb :: Gen ReportComment)
         ]
 
 
@@ -189,7 +190,7 @@ instance PayloadToEnv Role where
 
 instance PayloadToEnv CommentContent where
     payloadToEnvMapping _ (CommentContent (Markdown comment)) = \case
-        "comment-text" -> pure [TextInput comment]
+        "note-text" -> pure [TextInput comment]
 
 instance PayloadToEnv AdminPhaseChangeForTopicData where
     payloadToEnvMapping v (AdminPhaseChangeForTopicData (AUID tid) dir) = \case
@@ -200,9 +201,17 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
 
 instance PayloadToEnv IdeaJuryResultValue where
     payloadToEnvMapping _ (Feasible mdoc) = \case
-        "jury-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
+        "note-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
     payloadToEnvMapping _ (NotFeasible doc) = \case
-        "jury-text" -> pure [TextInput $ unMarkdown doc]
+        "note-text" -> pure [TextInput $ unMarkdown doc]
+
+instance PayloadToEnv ReportCommentContent  where
+    payloadToEnvMapping _ (ReportCommentContent (Markdown m)) = \case
+        "note-text" -> pure [TextInput m]
+
+instance PayloadToEnv Document  where
+    payloadToEnvMapping _ (Markdown m) = \case
+        "note-text" -> pure [TextInput m]
 
 
 -- * machine room
@@ -356,6 +365,10 @@ instance ArbFormPagePayload AdminEditUser where
 instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
 
+instance ArbFormPagePayload CreatorStatement where
+    arbFormPagePayload _ = nonEmptyMarkdown
+    arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
+
 instance ArbFormPagePayload JudgeIdea where
     arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
         = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> nonEmptyMarkdown)]
@@ -366,3 +379,8 @@ instance ArbFormPagePayload JudgeIdea where
         = pure Nothing
     arbFormPageInvalidPayload (JudgeIdea IdeaNotFeasible _ _)
         = pure . Just . NotFeasible $ Markdown ""
+
+instance ArbFormPagePayload ReportComment where
+    arbFormPagePayload _ = ReportCommentContent <$> nonEmptyMarkdown
+
+    arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""

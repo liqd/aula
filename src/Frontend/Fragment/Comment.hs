@@ -55,8 +55,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                 button_ [class_ "btn comment-footer-button", onclick_ $ U.replyComment comment] $ do
                     i_ [class_ "icon-reply"] nil
                     "antworten"
-            postButton_ [class_ "btn comment-footer-button"]
-                        (U.reportComment comment) $ do
+            a_ [class_ "btn comment-footer-button", href_ (U.reportComment comment)] $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
             when (CanDeleteComment `elem` comCaps) .
