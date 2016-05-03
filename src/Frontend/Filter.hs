@@ -15,12 +15,12 @@ module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
 
     , IdeasFilterApi, IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
-    , IdeasSortApi, SortIdeasBy(..), labelSortIdeasBy
+    , IdeasSortApi, SortIdeasBy(..)
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
     , toggleIdeasFilter
 
     , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..), _AllUsers, _UsersWithText, searchUsers
-    , UsersSortApi, SortUsersBy(..), labelSortUsersBy
+    , UsersSortApi, SortUsersBy(..)
     , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS, emptyUsersQuery
     )
 where
@@ -88,11 +88,10 @@ instance Filter     IdeasFilterQuery where
 data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
--- FIXME make an HasLabel type class for roleLabel, phaseName...
-labelSortIdeasBy :: IsString s => SortIdeasBy -> s
-labelSortIdeasBy = \case
-    SortIdeasBySupport -> "Unterstützung"
-    SortIdeasByTime    -> "Datum"
+instance HasUILabel SortIdeasBy where
+    uilabel = \case
+        SortIdeasBySupport -> "Unterstützung"
+        SortIdeasByTime    -> "Datum"
 
 type IdeasSortApi = FilterApi SortIdeasBy
 
@@ -184,19 +183,18 @@ instance Filter   SortUsersBy where
         byTime  = by $ createdAt . to Data.Ord.Down
         byName  = by userLogin
         byClass = by userSchoolClass
-        byRole  = by $ userRole . to (roleLabel :: Role -> ST)
+        byRole  = by $ userRole . uilabeledST
 
     renderFilter = renderQueryParam
 
 type instance FilterName SortUsersBy = "sortby"
 
--- FIXME see labelSortIdeasBy
-labelSortUsersBy :: IsString s => SortUsersBy -> s
-labelSortUsersBy = \case
-    SortUsersByTime  -> "Datum"
-    SortUsersByName  -> "Name"
-    SortUsersByClass -> "Klasse"
-    SortUsersByRole  -> "Rolle"
+instance HasUILabel SortUsersBy where
+    uilabel = \case
+        SortUsersByTime  -> "Datum"
+        SortUsersByName  -> "Name"
+        SortUsersByClass -> "Klasse"
+        SortUsersByRole  -> "Rolle"
 
 newtype SearchUsers = SearchUsers ST
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)

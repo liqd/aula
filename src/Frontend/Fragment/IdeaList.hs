@@ -107,7 +107,9 @@ ideaListHeader _ loc ideasQuery = do
             i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
             ul_ [class_ "pop-menu-list"] $ do
                 sequence_
-                    [ li_ [class_ "pop-menu-list-item"] $
-                        a_ [href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)]
-                            (labelSortIdeasBy by)
+                    [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
+                                  | otherwise                       = nil
+                          hrf = href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)
+                          txt = uilabel by
+                      in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]

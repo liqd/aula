@@ -145,8 +145,8 @@ viewTopicHeaderDiv ctx topic tab = do
                                     "Vorherige Phase"
 
         h1_   [class_ "main-heading"] $ do
-            span_ [class_ "sub-heading"] . toHtml $ phaseName phase
-            toHtml $ topic ^. topicTitle
+            span_ [class_ "sub-heading"] $ phase ^. uilabeledST . html
+            topic ^. topicTitle . html
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
             let createIdeaButton = do
