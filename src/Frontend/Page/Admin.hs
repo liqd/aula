@@ -456,8 +456,8 @@ instance ToHtml AdminViewClasses where
                             input_ [type_ "text", class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
-                    td_ . toHtml $ clss ^. className
-                    td_ (toHtmlRaw nbsp)
+                    td_ $ clss ^. className . html
+                    td_ $ toHtmlRaw nbsp
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
@@ -556,7 +556,7 @@ instance ToHtml AdminEditClass where
     toHtml = toHtmlRaw
     toHtmlRaw p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
-            div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
+            div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
             div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
                 "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
@@ -566,7 +566,7 @@ instance ToHtml AdminEditClass where
                     th_ nil
                 tbody_ . forM_ (activeUsers users) $ \user -> tr_ $ do
                     td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
-                    td_ . toHtml $ user ^. userLogin . unUserLogin
+                    td_ $ user ^. userLogin . unUserLogin . html
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
