@@ -1096,10 +1096,9 @@ userFullName = onActiveUser
     "[Nutzer gelöscht]"
     (\u -> u ^. userFirstName . _UserFirstName <> " " <> u ^. userLastName . _UserLastName)
 
--- userLongName is revealing the email address and thus should only be displayed to the admins.
--- A different name for userLongName could be better.
-userLongName :: User -> ST
-userLongName = onActiveUser
+-- | Show full name and email address.  Should only be displayed to admins.
+dangerousUserLongName :: User -> ST
+dangerousUserLongName = onActiveUser
     "[Nutzer gelöscht]"
     (\u -> userFullName u <> " [" <> u ^. userLogin . unUserLogin <> email u <> "]")
   where

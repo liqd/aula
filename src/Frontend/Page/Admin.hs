@@ -623,7 +623,7 @@ instance FormPage AdminDeleteUser where
         adminFrame p . semanticDiv p . form $ do
             div_ [class_ "container-confirm"] $ do
                 h1_ "Nutzer löschen"
-                p_ $ "Wollen Sie " >> toHtml (userLongName user) >> " wirklich loschen?"
+                p_ $ "Wollen Sie " >> toHtml (dangerousUserLongName user) >> " wirklich loschen?"
                 div_ [class_ "admin-buttons"] $ do
                     DF.inputSubmit "Nutzer löschen"
                     a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
