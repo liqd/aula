@@ -477,16 +477,16 @@ data Phase =
 
 instance SOP.Generic Phase
 
-phaseName :: Phase -> ST
-phaseName = \case
-    PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
-    PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
-    PhaseRefinement{} -> "Ausarbeitungsphase"
-    PhaseRefFrozen{}  -> "Ausarbeitungsphase"
-    PhaseJury         -> "Prüfungsphase"
-    PhaseVoting{}     -> "Abstimmungsphase"
-    PhaseVotFrozen{}  -> "Abstimmungsphase"
-    PhaseResult       -> "Ergebnisphase"
+instance HasLabelS Phase where
+    labelS = \case
+        PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
+        PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
+        PhaseRefinement{} -> "Ausarbeitungsphase"
+        PhaseRefFrozen{}  -> "Ausarbeitungsphase"
+        PhaseJury         -> "Prüfungsphase"
+        PhaseVoting{}     -> "Abstimmungsphase"
+        PhaseVotFrozen{}  -> "Abstimmungsphase"
+        PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
 followsPhase PhaseJury       (PhaseRefinement _) = True
@@ -1172,19 +1172,20 @@ instance HasUriPart IdeaSpace where
 instance HasUriPart SchoolClass where
     uriPart = fromString . showSchoolClass
 
+instance HasLabelS IdeaSpace where
+    labelS = \case
+        SchoolSpace    -> "Schule"
+        (ClassSpace c) -> labelS c
+
+instance HasLabelS SchoolClass where
+    labelS = fromString . cs . view className
+
 showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
 showIdeaSpace (ClassSpace c) = showSchoolClass c
 
 showSchoolClass :: SchoolClass -> String
 showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
-
-showIdeaSpaceUI :: IdeaSpace -> String
-showIdeaSpaceUI SchoolSpace    = "Schule"
-showIdeaSpaceUI (ClassSpace c) = showSchoolClassUI c
-
-showSchoolClassUI :: SchoolClass -> String
-showSchoolClassUI c = cs (c ^. className)
 
 showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
@@ -1288,14 +1289,14 @@ userVoteOnIdea user idea =
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
--- | German role name
-roleLabel :: IsString s => Role -> s
-roleLabel (Student _)    = "Schüler"
-roleLabel (ClassGuest _) = "Gast (Klasse)"
-roleLabel SchoolGuest    = "Gast (Schule)"
-roleLabel Moderator      = "Moderator"
-roleLabel Principal      = "Direktor"
-roleLabel Admin          = "Administrator"
+instance HasLabelS Role where
+    labelS = \case
+        (Student _)    -> "Schüler"
+        (ClassGuest _) -> "Gast (Klasse)"
+        SchoolGuest    -> "Gast (Schule)"
+        Moderator      -> "Moderator"
+        Principal      -> "Direktor"
+        Admin          -> "Administrator"
 
 aMapFromList :: HasMetaInfo a => [a] -> AMap a
 aMapFromList = fromList . map (\x -> (x ^. _Id, x))

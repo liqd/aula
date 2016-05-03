@@ -145,7 +145,7 @@ viewTopicHeaderDiv ctx topic tab = do
                                     "Vorherige Phase"
 
         h1_   [class_ "main-heading"] $ do
-            span_ [class_ "sub-heading"] . toHtml $ phaseName phase
+            span_ [class_ "sub-heading"] . toHtml $ labelST phase
             toHtml $ topic ^. topicTitle
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do

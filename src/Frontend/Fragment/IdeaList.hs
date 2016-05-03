@@ -110,6 +110,6 @@ ideaListHeader _ loc ideasQuery = do
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
                           hrf = href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)
-                          txt = labelSortIdeasBy by
+                          txt = labelS by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]

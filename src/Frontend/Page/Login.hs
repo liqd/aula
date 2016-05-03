@@ -101,7 +101,7 @@ instance ToHtml LoginDemoHints where
                     th_ "password"
                 (\u -> tr_ $ do
                     td_ . toHtml $ u ^. userLogin . unUserLogin
-                    td_ . toHtml $ (roleLabel $ u ^. userRole :: ST)
+                    td_ . toHtml $ u ^. userRole . labeledST
                     td_ $ case u ^. userRole of
                               Student     c -> toHtml $ showSchoolClass c
                               ClassGuest  c -> toHtml $ showSchoolClass c

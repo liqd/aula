@@ -143,13 +143,12 @@ instance CSV.ToRecord URLEventLogItem where
             ]
 
         f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase trigger) = CSV.toRecord
-            [ objDesc topic <> " geht von " <> p1 <> " nach " <> p2 <> showTrigger trigger
+            [ objDesc topic <> " geht von " <> labelS fromPhase
+                            <> " nach "     <> labelS toPhase
+                            <> showTrigger trigger
             , objLink topic
             ]
           where
-            p1 = phaseName fromPhase
-            p2 = phaseName toPhase
-
             showTrigger (PhaseTransitionTriggeredBy _)           = " (von Hand ausgelöst)"
             showTrigger PhaseTransitionTriggeredByTimeout        = " (Zeit ist abgelaufen)"
             showTrigger PhaseTransitionTriggeredByAllIdeasMarked = " (alle Ideen sind geprüft)"
