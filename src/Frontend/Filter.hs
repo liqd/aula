@@ -9,6 +9,8 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
 
@@ -204,12 +206,14 @@ instance SOP.Generic SearchUsers
 instance Filter SearchUsers where
     type Filtered SearchUsers = UserView
 
-    applyFilter (SearchUsers t) =
-        filter $
-            anyOf (activeUser . (userLogin . _UserLogin <>
-                                 like " " <>
-                                 userSchoolClass . _Just . to showSchoolClass . csi))
-                  (t `ST.isInfixOf`)
+    applyFilter (SearchUsers t) = filter $ anyOf (activeUser . searchee) (t `ST.isInfixOf`)
+      where
+        searchee :: (Monoid (f User), Functor f, Applicative f, Contravariant f)
+                 => (ST -> f ST) -> User -> f User
+        searchee = userLogin . _UserLogin <>
+                   like " " <>
+                   userSchoolClass . _Just . to showSchoolClass . csi
+
     renderFilter = renderQueryParam
 
 type instance FilterName SearchUsers = "search"
