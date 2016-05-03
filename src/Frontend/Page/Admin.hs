@@ -469,19 +469,21 @@ data RoleSelection
     | RoleSelModerator
     | RoleSelPrincipal
     | RoleSelAdmin
-  deriving (Eq, Generic, Show)
+  deriving (Eq, Generic, Enum, Bounded, Show)
 
 instance SOP.Generic RoleSelection
 
+instance HasUILabel RoleSelection where
+    uilabel = \case
+        RoleSelStudent     -> uilabel $ Student (SchoolClass 0 nil)
+        RoleSelClassGuest  -> uilabel $ ClassGuest (SchoolClass 0 nil)
+        RoleSelSchoolGuest -> uilabel SchoolGuest
+        RoleSelModerator   -> uilabel Moderator
+        RoleSelPrincipal   -> uilabel Principal
+        RoleSelAdmin       -> uilabel Admin
+
 roleSelectionChoices :: IsString s => [(RoleSelection, s)]
-roleSelectionChoices =
-             [ (RoleSelStudent,     "Schüler")
-             , (RoleSelClassGuest,  "Gast (Klasse)")
-             , (RoleSelSchoolGuest, "Gast (Schule)")
-             , (RoleSelModerator,   "Moderator")
-             , (RoleSelPrincipal,   "Direktor")
-             , (RoleSelAdmin,       "Admin")
-             ]
+roleSelectionChoices = (id &&& uilabel) <$> [minBound..]
 
 roleSelection :: Getter Role RoleSelection
 roleSelection = to $ \case
