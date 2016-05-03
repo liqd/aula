@@ -374,8 +374,14 @@ instance ToHtml AdminViewUsers where
                     th_ $ button_ [class_ "btn-cta", onclick_ $ U.Admin U.AdminCreateUser] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
-                            input_ [type_ "text", class_ "inline-search-input", value_ "Nutzersuche"] -- FIXME Placeholder not value
-                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
+                            -- The AllUsers here makes sure there is no 'search' query parameter
+                            -- initially. The input field is adding it afterward.
+                            let filters' = filters & usersQueryF .~ AllUsers
+                            formMethod_ "GET" [class_ "inline-search-button"]
+                                        (U.Admin . U.AdminViewUsers $ Just filters') $ do
+                                input_ [name_ "search", type_ "text", class_ "inline-search-input",
+                                        placeholder_ "Nutzersuche"]
+                                button_ [type_ "submit"] $ i_ [class_ "icon-search"] nil
 
                 let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserInfoRow user = do
@@ -570,8 +576,8 @@ instance ToHtml AdminEditClass where
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 
-adminViewUsers :: ActionPersist m => Maybe SortUsersBy -> m AdminViewUsers
-adminViewUsers qs = AdminViewUsers (mkUsersQuery qs) <$> query getUserViews
+adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m AdminViewUsers
+adminViewUsers qf qs = AdminViewUsers (mkUsersQuery qf qs) <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
                     ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser

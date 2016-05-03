@@ -1,12 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
@@ -16,7 +17,7 @@ module Frontend.Filter
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
     , toggleIdeasFilter
 
-    , UsersFilterApi, UsersFilterQuery(..), _AllUsers
+    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..), _AllUsers, _UsersWithText, searchUsers
     , UsersSortApi, SortUsersBy(..), labelSortUsersBy
     , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS, emptyUsersQuery
     )
@@ -27,6 +28,7 @@ import Servant.API (QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, t
 import Thentos.Prelude
 
 import qualified Data.Ord
+import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 
 import Data.UriPath
@@ -194,12 +196,30 @@ labelSortUsersBy = \case
     SortUsersByClass -> "Klasse"
     SortUsersByRole  -> "Rolle"
 
-data UsersFilterQuery = AllUsers
+newtype SearchUsers = SearchUsers ST
+  deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
+
+instance SOP.Generic SearchUsers
+
+instance Filter SearchUsers where
+    type Filtered SearchUsers = UserView
+
+    applyFilter (SearchUsers t) =
+        filter $
+            anyOf (activeUser . (userLogin . _UserLogin <>
+                                 like " " <>
+                                 userSchoolClass . _Just . to showSchoolClass . csi))
+                  (t `ST.isInfixOf`)
+    renderFilter = renderQueryParam
+
+type instance FilterName SearchUsers = "search"
+
+data UsersFilterQuery = AllUsers | UsersWithText { _searchUsers :: SearchUsers }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UsersFilterQuery
 
-type UsersFilterApi = FilterApi Category
+type UsersFilterApi = FilterApi SearchUsers
 
 makeLenses ''UsersFilterQuery
 makePrisms ''UsersFilterQuery
@@ -207,8 +227,8 @@ makePrisms ''UsersFilterQuery
 instance Filter UsersFilterQuery where
     type Filtered UsersFilterQuery = UserView
 
-    applyFilter  AllUsers = id
-    renderFilter AllUsers = id
+    applyFilter  f = applyFilter  $ f ^? searchUsers
+    renderFilter f = renderFilter $ f ^? searchUsers
 
 data UsersQuery = UsersQuery
     { _usersQueryF :: UsersFilterQuery
@@ -226,8 +246,8 @@ instance Filter UsersQuery where
     applyFilter  (UsersQuery f s) = applyFilter  s . applyFilter  f
     renderFilter (UsersQuery f s) = renderFilter s . renderFilter f
 
-mkUsersQuery :: Maybe SortUsersBy -> UsersQuery
-mkUsersQuery ms = UsersQuery AllUsers (fromMaybe minBound ms)
+mkUsersQuery :: Maybe SearchUsers -> Maybe SortUsersBy -> UsersQuery
+mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe minBound ms)
 
 emptyUsersQuery :: UsersQuery
 emptyUsersQuery = UsersQuery AllUsers minBound

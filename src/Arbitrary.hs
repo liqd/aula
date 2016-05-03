@@ -396,6 +396,9 @@ instance Arbitrary UserLastName where
 instance Arbitrary Role where
     arbitrary = garbitrary
 
+instance Arbitrary SearchUsers where
+    arbitrary = garbitrary
+
 instance Arbitrary UsersFilterQuery where
     arbitrary = garbitrary
 
