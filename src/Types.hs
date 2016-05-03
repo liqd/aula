@@ -775,12 +775,12 @@ instance ToHtml Document where
 
 -- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
 class HasUILabel a where
-    uilabel :: a -> IsString s => s
+    uilabel :: a -> (Monoid s, IsString s) => s
 
     uilabelST :: a -> ST
     uilabelST = uilabel
 
-    uilabeled :: IsString s => Getter a s
+    uilabeled :: (Monoid s, IsString s) => Getter a s
     uilabeled = to uilabel
 
     uilabeledST :: Getter a ST
@@ -1176,8 +1176,11 @@ instance HasUriPart SchoolClass where
 instance HasUILabel IdeaSpace where
     uilabel = \case
         SchoolSpace    -> "Schule"
-        (ClassSpace c) -> uilabel c
+        (ClassSpace c) -> "Klasse " <> uilabel c
 
+-- | for the first school year, we can ignore the year.  (after that, we have different options.
+-- one would be to only show the year if it is not the current one, or always show it, or either
+-- show "current" if applicable or the actual year if it lies in the past.)
 instance HasUILabel SchoolClass where
     uilabel = fromString . cs . view className
 

@@ -482,7 +482,7 @@ instance HasUILabel RoleSelection where
         RoleSelPrincipal   -> uilabel Principal
         RoleSelAdmin       -> uilabel Admin
 
-roleSelectionChoices :: IsString s => [(RoleSelection, s)]
+roleSelectionChoices :: (Monoid s, IsString s) => [(RoleSelection, s)]
 roleSelectionChoices = (id &&& uilabel) <$> [minBound..]
 
 roleSelection :: Getter Role RoleSelection

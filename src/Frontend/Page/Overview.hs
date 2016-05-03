@@ -81,14 +81,7 @@ instance ToHtml PageRoomsOverview where
             div_ [class_ ("item-room is-" <> showIdeaSpaceCategory ispace)] $ do
                 a_ [href_ $ U.listIdeas (IdeaLocationSpace ispace)] $ do
                     span_ [class_ "item-room-image"] nil
-                    h2_ [class_ "item-room-title"] $ h ispace
-
-
-        h SchoolSpace = "Schule"
-        h (ClassSpace c) = "Klasse " <> c ^. className . html
-            -- for the first school year, we can ignore the year.  (after that, we have different
-            -- options.  one would be to only show the year if it is not the current one, or always show
-            -- it, or either show "current" if applicable or the actual year if it lies in the past.)
+                    h2_ [class_ "item-room-title"] $ uilabel ispace
 
 instance Page PageRoomsOverview
 
@@ -165,7 +158,5 @@ instance ToHtml Tabs where
             a_ [href_ $ U.Space space U.ListTopics] $ do
                 "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
-        spaceDesc :: IdeaSpace -> ST
-        spaceDesc SchoolSpace    = "der Schule"
-        spaceDesc (ClassSpace c) = "der Klasse " <> c ^. className
-        loc = IdeaLocationSpace space
+        spaceDesc ispace = "der " <> uilabelST ispace
+        loc              = IdeaLocationSpace space
