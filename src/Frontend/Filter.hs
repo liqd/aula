@@ -8,6 +8,8 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
 
@@ -179,7 +181,7 @@ instance Filter   SortUsersBy where
         byTime  = by $ createdAt . to Data.Ord.Down
         byName  = by userLogin
         byClass = by userSchoolClass
-        byRole  = by $ userRole . uilabeled
+        byRole  = by $ userRole . uilabeledST
 
     renderFilter = renderQueryParam
 
