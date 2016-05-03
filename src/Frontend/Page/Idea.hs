@@ -409,7 +409,7 @@ instance FormPage CommentIdea where
 
     formPage v form p@(CommentIdea idea _mcomment) =
         semanticDiv p $ do
-            noteForm v form commentIdeaNote idea
+            noteForm commentIdeaNote v form idea
 
 judgeIdeaNote :: IdeaJuryResultType -> Note Idea
 judgeIdeaNote juryType = Note
@@ -441,7 +441,7 @@ instance FormPage JudgeIdea where
 
     formPage v form p@(JudgeIdea juryType idea _topic) =
         semanticDiv p $
-            noteForm v form (judgeIdeaNote juryType) idea
+            noteForm (judgeIdeaNote juryType) v form idea
 
 creatorStatementNote :: Note Idea
 creatorStatementNote = Note
@@ -461,7 +461,7 @@ instance FormPage CreatorStatement where
 
     formPage v form p@(CreatorStatement idea) =
         semanticDiv p $ do
-            noteForm v form creatorStatementNote idea
+            noteForm creatorStatementNote v form idea
 
 newtype ReportCommentContent = ReportCommentContent
     { unReportCommentContent :: Document }
@@ -486,7 +486,7 @@ instance FormPage ReportComment where
 
     formPage v form p =
         semanticDiv p $ do
-            noteForm v form reportCommentNote ()
+            noteForm reportCommentNote v form ()
 
 -- * handlers
 

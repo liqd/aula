@@ -23,12 +23,12 @@ data Note h = Note
 
 noteForm
     :: (Monad m)
-    => View (HtmlT m ())
+    => Note h
+    -> View (HtmlT m ())
     -> (HtmlT m () -> HtmlT m ())
-    -> Note h
     -> h
     -> HtmlT m ()
-noteForm v form note header = do
+noteForm note v form header = do
     div_ [class_ "container-note"] $ do
         h1_ [class_ "main-heading"] . toHtml $ noteHeaderText note header
         form $ do
