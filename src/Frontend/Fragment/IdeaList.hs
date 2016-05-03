@@ -107,7 +107,9 @@ ideaListHeader _ loc ideasQuery = do
             i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
             ul_ [class_ "pop-menu-list"] $ do
                 sequence_
-                    [ li_ [class_ "pop-menu-list-item"] $
+                    [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
+                                  | otherwise                       = nil
+                      in li_ [class_ $ "pop-menu-list-item" <> mactive] $
                         a_ [href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)]
                             (labelSortIdeasBy by)
                     | by <- [minBound..] ]
