@@ -12,10 +12,13 @@ function addPopEvents(el) {
         toggleMenu(el);
     }
 
-    el.onmouseleave = function() {
+    elList = getElementByClassName("pop-menu-list", el);
+    elList.onmouseleave = function() {
         toggleMenu(el, true);
     }
 }
+
+var timeout;
 
 function toggleMenu(el, out) {
     if(el.className.indexOf("m-open") > -1) {
