@@ -252,7 +252,7 @@ instance FormPage PageAdminSettingsDurations where
             name
             (DurationDays <$> inRange 1 366)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
-        pNam ph = cs . phaseName $ ph (error "PageAdminSettingsDurations: impossible")
+        pNam ph = uilabel $ ph (error "PageAdminSettingsDurations: impossible")
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
         label_ [class_ "input-append"] $ do
@@ -363,7 +363,7 @@ instance ToHtml AdminViewUsers where
                             [ li_ [class_ "pop-menu-list-item"] $
                                 a_ [href_ . U.Admin . U.AdminViewUsers . Just $
                                         filters & usersQueryS .~ by]
-                                    (labelSortUsersBy by)
+                                    (uilabel by)
                             | by <- [minBound..] ]
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -381,8 +381,8 @@ instance ToHtml AdminViewUsers where
                     renderUserInfoRow user = do
                         td_ $ user ^. userLogin . unUserLogin . html
                         td_ $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
-                        td_ $ roleLabel (user ^. userRole)
-                        td_ (toHtmlRaw nbsp)
+                        td_ $ user ^. userRole . uilabeled
+                        td_ $ toHtmlRaw nbsp
 
                 let renderUserRow :: forall m. (Monad m) => UserView -> HtmlT m ()
                     renderUserRow (DeletedUser user) = tr_ $ do
@@ -456,8 +456,8 @@ instance ToHtml AdminViewClasses where
                             input_ [type_ "text", class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
                             a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
-                    td_ . toHtml $ clss ^. className
-                    td_ (toHtmlRaw nbsp)
+                    td_ $ clss ^. className . html
+                    td_ $ toHtmlRaw nbsp
                     td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
@@ -469,19 +469,21 @@ data RoleSelection
     | RoleSelModerator
     | RoleSelPrincipal
     | RoleSelAdmin
-  deriving (Eq, Generic, Show)
+  deriving (Eq, Generic, Enum, Bounded, Show)
 
 instance SOP.Generic RoleSelection
 
-roleSelectionChoices :: IsString s => [(RoleSelection, s)]
-roleSelectionChoices =
-             [ (RoleSelStudent,     "Schüler")
-             , (RoleSelClassGuest,  "Gast (Klasse)")
-             , (RoleSelSchoolGuest, "Gast (Schule)")
-             , (RoleSelModerator,   "Moderator")
-             , (RoleSelPrincipal,   "Direktor")
-             , (RoleSelAdmin,       "Admin")
-             ]
+instance HasUILabel RoleSelection where
+    uilabel = \case
+        RoleSelStudent     -> uilabel $ Student (SchoolClass 0 nil)
+        RoleSelClassGuest  -> uilabel $ ClassGuest (SchoolClass 0 nil)
+        RoleSelSchoolGuest -> uilabel SchoolGuest
+        RoleSelModerator   -> uilabel Moderator
+        RoleSelPrincipal   -> uilabel Principal
+        RoleSelAdmin       -> uilabel Admin
+
+roleSelectionChoices :: (Monoid s, IsString s) => [(RoleSelection, s)]
+roleSelectionChoices = (id &&& uilabel) <$> [minBound..]
 
 roleSelection :: Getter Role RoleSelection
 roleSelection = to $ \case
@@ -556,7 +558,7 @@ instance ToHtml AdminEditClass where
     toHtml = toHtmlRaw
     toHtmlRaw p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
-            div_ . h1_ [class_ "admin-main-heading"] . toHtml $ schoolClss ^. className
+            div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
             div_ $ a_ [class_ "admin-buttons", href_ . U.Admin . U.AdminDlPass $ schoolClss]
                 "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
@@ -566,7 +568,7 @@ instance ToHtml AdminEditClass where
                     th_ nil
                 tbody_ . forM_ (activeUsers users) $ \user -> tr_ $ do
                     td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
-                    td_ . toHtml $ user ^. userLogin . unUserLogin
+                    td_ $ user ^. userLogin . unUserLogin . html
                     td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
 

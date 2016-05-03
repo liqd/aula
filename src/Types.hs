@@ -391,6 +391,7 @@ data CommentContext = CommentContext
 
 instance SOP.Generic CommentContext
 
+
 -- * idea space, topic, phase
 
 -- | "Ideenraum" is one of "Klasse", "Schule".
@@ -476,16 +477,17 @@ data Phase =
 
 instance SOP.Generic Phase
 
-phaseName :: Phase -> ST
-phaseName = \case
-    PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
-    PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: or is that unreachable code?
-    PhaseRefinement{} -> "Ausarbeitungsphase"
-    PhaseRefFrozen{}  -> "Ausarbeitungsphase"
-    PhaseJury         -> "Prüfungsphase"
-    PhaseVoting{}     -> "Abstimmungsphase"
-    PhaseVotFrozen{}  -> "Abstimmungsphase"
-    PhaseResult       -> "Ergebnisphase"
+instance HasUILabel Phase where
+    uilabel = \case
+        PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: unreachable as of the writing of this
+                                                  -- comment, but used for some tests
+        PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: dito
+        PhaseRefinement{} -> "Ausarbeitungsphase"
+        PhaseRefFrozen{}  -> "Ausarbeitungsphase"
+        PhaseJury         -> "Prüfungsphase"
+        PhaseVoting{}     -> "Abstimmungsphase"
+        PhaseVotFrozen{}  -> "Abstimmungsphase"
+        PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
 followsPhase PhaseJury       (PhaseRefinement _) = True
@@ -683,6 +685,7 @@ defaultSettings = Settings
     , _freeze    = NotFrozen
     }
 
+
 -- * aula-specific helper types
 
 -- | Aula Unique ID for reference in the database.  This is unique for one concrete phantom type
@@ -769,6 +772,19 @@ newtype Document = Markdown { unMarkdown :: ST }
 instance ToHtml Document where
     toHtmlRaw = div_ [class_ "markdown"] . toHtmlRaw . unMarkdown
     toHtml    = div_ [class_ "markdown"] . toHtml    . unMarkdown
+
+-- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
+class HasUILabel a where
+    uilabel :: a -> (Monoid s, IsString s) => s
+
+    uilabelST :: a -> ST
+    uilabelST = uilabel
+
+    uilabeled :: (Monoid s, IsString s) => Getter a s
+    uilabeled = to uilabel
+
+    uilabeledST :: Getter a ST
+    uilabeledST = to uilabel
 
 
 -- * general-purpose types
@@ -1157,19 +1173,23 @@ instance HasUriPart IdeaSpace where
 instance HasUriPart SchoolClass where
     uriPart = fromString . showSchoolClass
 
+instance HasUILabel IdeaSpace where
+    uilabel = \case
+        SchoolSpace    -> "Schule"
+        (ClassSpace c) -> "Klasse " <> uilabel c
+
+-- | for the first school year, we can ignore the year.  (after that, we have different options.
+-- one would be to only show the year if it is not the current one, or always show it, or either
+-- show "current" if applicable or the actual year if it lies in the past.)
+instance HasUILabel SchoolClass where
+    uilabel = fromString . cs . view className
+
 showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
 showIdeaSpace (ClassSpace c) = showSchoolClass c
 
 showSchoolClass :: SchoolClass -> String
 showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
-
-showIdeaSpaceUI :: IdeaSpace -> String
-showIdeaSpaceUI SchoolSpace    = "Schule"
-showIdeaSpaceUI (ClassSpace c) = showSchoolClassUI c
-
-showSchoolClassUI :: SchoolClass -> String
-showSchoolClassUI c = cs (c ^. className)
 
 showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
@@ -1273,14 +1293,14 @@ userVoteOnIdea user idea =
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
--- | German role name
-roleLabel :: IsString s => Role -> s
-roleLabel (Student _)    = "Schüler"
-roleLabel (ClassGuest _) = "Gast (Klasse)"
-roleLabel SchoolGuest    = "Gast (Schule)"
-roleLabel Moderator      = "Moderator"
-roleLabel Principal      = "Direktor"
-roleLabel Admin          = "Administrator"
+instance HasUILabel Role where
+    uilabel = \case
+        (Student _)    -> "Schüler"
+        (ClassGuest _) -> "Gast (Klasse)"
+        SchoolGuest    -> "Gast (Schule)"
+        Moderator      -> "Moderator"
+        Principal      -> "Direktor"
+        Admin          -> "Administrator"
 
 aMapFromList :: HasMetaInfo a => [a] -> AMap a
 aMapFromList = fromList . map (\x -> (x ^. _Id, x))
