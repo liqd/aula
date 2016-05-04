@@ -626,7 +626,8 @@ data ProtoDelegation = ProtoDelegation
 instance SOP.Generic ProtoDelegation
 
 data DelegationContext =
-    DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
+    DlgCtxGlobal
+  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
   | DlgCtxTopicId   { _delCtxTopicId   :: AUID Topic }
   | DlgCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)

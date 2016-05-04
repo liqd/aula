@@ -861,7 +861,7 @@ instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
         => Arbitrary (EventLogItemValue' u t i c) where
     arbitrary = garbitrary >>= repair
       where
-        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
+        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arb <*> pure u
         repair v = pure v
 
 {-# NOINLINE sampleEventLog #-}

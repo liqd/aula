@@ -48,7 +48,9 @@ data EventLogItemValue' user topic idea comment =
   | EventLogUserMarksIdeaFeasible idea IdeaJuryResultType
   | EventLogUserVotesOnIdea       idea IdeaVoteValue
   | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
-  | EventLogUserDelegates         ST user
+      -- FIXME: this should just be a comment key resp. comment, but following the type errors
+      -- reveals some things that are not trivial to refactor.
+  | EventLogUserDelegates         DelegationContext user
   | EventLogTopicNewPhase         topic Phase Phase
   | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea
@@ -152,8 +154,9 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
             what = objDesc (Right3 $ fromMaybe comment mcomment)
 
         f (EventLogUserDelegates ctxDesc toUser) = CSV.toRecord
-            [ "delegiert in " <> ctxDesc <> " an " <> toUser ^. userLogin . _UserLogin . csi
+            [ "delegiert in " <> show ctxDesc <> " an " <> toUser ^. userLogin . _UserLogin . csi
             , "(kein Link verfügbar)"
+            -- FIXME: there should be a link, and 'show ctxDesc' needs to be polished.
             ]
 
         f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase) = CSV.toRecord
