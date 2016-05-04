@@ -44,7 +44,7 @@ data EventLogItem (m :: * -> *) = EventLogItem IdeaSpace Timestamp (m User) (Eve
 
 data URLEventLogItem (m :: * -> *) = URLEventLogItem URL (EventLogItem m)
 
--- | The type parameter is either 'AUID' or 'Identity' (but could also do other things like
+-- | The type parameter is either 'KeyOf' or 'Identity' (but could also do other things like
 -- 'Action').  See class 'WarmUp'.
 data EventLogItemValue (m :: * -> *) =
     EventLogUserCreates           (Content m)
@@ -84,11 +84,11 @@ instance HasUILabel PhaseTransitionTriggeredBy where
 -- * flatten after de-serialization
 
 class WarmUp m a where
-    warmUp :: a AUID -> m (a Identity)
+    warmUp :: a KeyOf -> m (a Identity)
 
 -- | for internal use only.
 class WarmUp' m a where
-    warmUp' :: AUID a -> m (Identity a)
+    warmUp' :: KeyOf a -> m (Identity a)
 
 instance WarmUp Action EventLogItem where
     warmUp (EventLogItem ispace tstamp usr val) =
