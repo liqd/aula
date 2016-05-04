@@ -273,7 +273,7 @@ ideaApi loc
   :<|> Action.likeIdea
   :<|> Action.voteIdea
   :<|> Action.removeVote
-  :<|> (form . Page.commentIdea loc)
+  :<|> form . Page.commentIdea loc
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
   :<|> flip Action.markIdeaInResultPhase (Winning Nothing)

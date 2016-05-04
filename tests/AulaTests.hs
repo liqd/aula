@@ -45,6 +45,7 @@ testConfig = do
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
+        & logging . eventLogPath          .~ "/tmp/aula-test-events.json"
         & pure
 
 
