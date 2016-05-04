@@ -31,7 +31,7 @@ module Frontend.Path
     , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
-    , viewUser, adminViewUsers, viewIdeaOfComment
+    , viewUser, adminViewUsers, adminViewClasses, viewIdeaOfComment
     , anchor
     )
 where
@@ -223,6 +223,9 @@ listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (
 adminViewUsers :: AdminMode
 adminViewUsers = AdminViewUsers Nothing
 
+adminViewClasses :: AdminMode
+adminViewClasses = AdminViewClasses Nothing
+
 ideaMode :: IdeaMode -> UriPath -> UriPath
 ideaMode (ListIdeas mq)    root = renderFilter mq $ root </> "ideas"
 ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
@@ -307,7 +310,7 @@ data AdminMode =
   | AdminViewUsers (Maybe UsersQuery)
   | AdminCreateClass
   | AdminEditClass SchoolClass
-  | AdminViewClasses
+  | AdminViewClasses (Maybe ClassesFilterQuery)
   | AdminEvent
   | AdminDlPass SchoolClass
   | AdminDlEvents (Maybe IdeaSpace)
@@ -326,7 +329,7 @@ admin (AdminViewUsers mq)   path = renderFilter mq $ path </> "users"
 admin AdminCreateUser       path = path </> "user" </> "create"
 admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
-admin AdminViewClasses      path = path </> "classes"
+admin (AdminViewClasses mq) path = renderFilter mq $ path </> "classes"
 admin AdminCreateClass      path = path </> "class" </> "create"
 admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
 admin AdminEvent            path = path </> "event"

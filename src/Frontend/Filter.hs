@@ -22,6 +22,11 @@ module Frontend.Filter
     , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..), _AllUsers, _UsersWithText, searchUsers
     , UsersSortApi, SortUsersBy(..)
     , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
+
+    , ClassesFilterQuery(..)
+    , SearchClasses(..)
+    , ClassesFilterApi
+    , mkClassesQuery
     )
 where
 
@@ -251,3 +256,32 @@ instance Filter UsersQuery where
 mkUsersQuery :: Maybe SearchUsers -> Maybe SortUsersBy -> UsersQuery
 mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe minBound ms)
 
+
+-- * search school classes
+
+newtype SearchClasses = SearchClasses ST
+  deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
+
+type ClassesFilterApi = FilterApi SearchClasses
+
+data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: SearchClasses }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic SearchClasses
+instance SOP.Generic ClassesFilterQuery
+
+type instance FilterName SearchClasses = "search"
+
+instance Filter ClassesFilterQuery where
+    type Filtered ClassesFilterQuery = SchoolClass
+
+    applyFilter  AllClasses                            = id
+    applyFilter  (ClassesWithText (SearchClasses qry)) = filter ((qry `ST.isInfixOf`) . uilabel)
+
+    renderFilter AllClasses            = id
+    renderFilter (ClassesWithText qry) = renderQueryParam qry
+
+mkClassesQuery :: Maybe SearchClasses -> ClassesFilterQuery
+mkClassesQuery = maybe AllClasses ClassesWithText
+
+-- TODO: make renderQueryParam default implementation

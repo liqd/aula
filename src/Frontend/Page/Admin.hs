@@ -80,7 +80,7 @@ data AdminDeleteUser = AdminDeleteUser User
 
 instance Page AdminDeleteUser
 
-data AdminViewClasses = AdminViewClasses [SchoolClass]
+data AdminViewClasses = AdminViewClasses ClassesFilterQuery [SchoolClass]
   deriving (Eq, Show, Read)
 
 instance Page AdminViewClasses
@@ -230,7 +230,7 @@ menulink' targetMenuItem =
     MenuItemUsers
         -> MenuLink "tab-groups-perms-user"  U.adminViewUsers "Nutzer"
     MenuItemClasses
-        -> MenuLink "tab-groups-perms-class" U.AdminViewClasses "Klasse"
+        -> MenuLink "tab-groups-perms-class" U.adminViewClasses "Klasse"
     MenuItemClassesAndUsers
         -> MenuLink "tab-groups-perms"       U.adminViewUsers "Gruppen & Nutzer"
     MenuItemEventsProtocol
@@ -447,7 +447,7 @@ instance FormPage AdminCreateUser where
 
 instance ToHtml AdminViewClasses where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(AdminViewClasses classes) =
+    toHtmlRaw p@(AdminViewClasses filters (applyFilter filters -> classes)) =
         adminFrame p . semanticDiv p $ do
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -458,9 +458,13 @@ instance ToHtml AdminViewClasses where
                             ]
                             "Klasse anlegen"
                     th_ $ do
-                        div_ [class_ "inline-search-container"] $ do
-                            input_ [type_ "text", class_ "inline-search-input", value_ "Klassensuche"] -- FIXME Placeholder not value
-                            a_ [href_ U.Broken, class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil -- FIXME dummy
+                        div_ [class_ "inline-search-container"] $ do  -- see also: ToHtml instance of AdminViewUser
+                            formMethod_ "GET" [class_ "form"]
+                                        (U.Admin U.adminViewClasses) $ do
+                                input_ [name_ "search", type_ "text", class_ "inline-search-input",
+                                        placeholder_ "Klassensuche"]
+                                button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
+
                 tbody_ . forM_ classes $ \clss -> tr_ $ do
                     td_ $ clss ^. className . html
                     td_ $ toHtmlRaw nbsp
@@ -606,8 +610,8 @@ adminCreateUser = formPageHandlerCalcMsg
     createUserFullName u = unwords $ cs <$>
         [u ^. createUserFirstName . _UserFirstName, u ^. createUserLastName . _UserLastName]
 
-adminViewClasses :: ActionPersist m => m AdminViewClasses
-adminViewClasses = AdminViewClasses <$> query getSchoolClasses
+adminViewClasses :: ActionPersist m => Maybe SearchClasses -> m AdminViewClasses
+adminViewClasses qf = AdminViewClasses (mkClassesQuery qf) <$> query getSchoolClasses
 
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = formPageHandlerCalcMsg
@@ -695,7 +699,7 @@ instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
     formAction _   = U.Admin U.AdminCreateClass
-    redirectOf _ _ = U.Admin U.AdminViewClasses
+    redirectOf _ _ = U.Admin U.adminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
         <$> ("classname" .: classname (DF.string Nothing))

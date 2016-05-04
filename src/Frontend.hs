@@ -325,7 +325,7 @@ type AulaAdmin =
        -- groups and permissions
   :<|> "users" :> UsersFilterApi :> UsersSortApi :> GetH (Frame AdminViewUsers)
   :<|> "user" :> "create" :> FormHandler AdminCreateUser
-  :<|> "classes" :> GetH (Frame AdminViewClasses)
+  :<|> "classes" :> ClassesFilterApi :> GetH (Frame AdminViewClasses)
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
   :<|> User ::> "edit" :> FormHandler AdminEditUser
   :<|> SchoolClass ::> "edit" :> GetH (Frame AdminEditClass)
@@ -346,7 +346,7 @@ aulaAdmin =
   :<|> form Page.adminFreeze
   :<|> app2 makeFrame Page.adminViewUsers
   :<|> form Page.adminCreateUser
-  :<|> makeFrame Page.adminViewClasses
+  :<|> makeFrame . Page.adminViewClasses
   :<|> form Page.adminCreateClass
   :<|> form . Page.adminEditUser
   :<|> makeFrame . Page.adminEditClass
