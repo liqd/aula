@@ -1343,14 +1343,21 @@ userEmail :: Lens' User (Maybe EmailAddress)
 userEmail = userSettings . userSettingsEmail
 
 
+instance (Aeson.ToJSON a, Aeson.ToJSON b, Aeson.ToJSON c) => Aeson.ToJSON (Either3 a b c) where toJSON = Aeson.gtoJson
+instance (Aeson.FromJSON a, Aeson.FromJSON b, Aeson.FromJSON c) => Aeson.FromJSON (Either3 a b c) where parseJSON = Aeson.gparseJson
+
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
 instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON IdeaJuryResultType where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON IdeaLocation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON IdeaVoteValue where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Phase where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
@@ -1365,13 +1372,17 @@ instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
 
 instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON CommentKey where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DelegationContext where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
 instance Aeson.FromJSON id => Aeson.FromJSON (GMetaInfo a id) where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON IdeaJuryResultType where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON IdeaLocation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaSpace where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON IdeaVoteValue where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Phase where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Role where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON SchoolClass where parseJSON = Aeson.gparseJson

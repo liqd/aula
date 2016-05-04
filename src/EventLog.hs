@@ -22,8 +22,10 @@ import Data.String.Conversions
 import GHC.Generics (Generic)
 import Servant
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
 import qualified Data.Text as ST
+import qualified Generics.Generic.Aeson as Aeson
 import qualified Generics.SOP as SOP
 
 import Action
@@ -73,6 +75,14 @@ instance SOP.Generic EventLog
 instance SOP.Generic (EventLogItem' u t i c)
 instance SOP.Generic (EventLogItemValue' u t i c)
 instance SOP.Generic PhaseTransitionTriggeredBy
+
+instance Aeson.ToJSON EventLogItemCold           where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON EventLogItemValueCold      where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON PhaseTransitionTriggeredBy where toJSON = Aeson.gtoJson
+
+instance Aeson.FromJSON EventLogItemCold           where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON PhaseTransitionTriggeredBy where parseJSON = Aeson.gparseJson
 
 
 instance HasUILabel PhaseTransitionTriggeredBy where
