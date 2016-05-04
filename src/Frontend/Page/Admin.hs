@@ -699,7 +699,6 @@ adminEventLogCsv mspc = hdrs . filterEventLog mspc <$> readEventLog
     hdrs = csvHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
 
 
-
 -- * Classes Create
 
 data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
