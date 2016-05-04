@@ -189,7 +189,7 @@ instance Arbitrary AdminCreateUser where
     arbitrary = AdminCreateUser <$> arb
 
 instance Arbitrary AdminViewClasses where
-    arbitrary = AdminViewClasses <$> arb
+    arbitrary = AdminViewClasses <$> arb <*> arb
 
 instance Arbitrary AdminCreateClass where
     arbitrary = pure AdminCreateClass
@@ -510,6 +510,12 @@ instance Arbitrary P.UserMode where
     arbitrary = garbitrary
 
 instance Arbitrary P.AdminMode where
+    arbitrary = garbitrary
+
+instance Arbitrary ClassesFilterQuery where
+    arbitrary = garbitrary
+
+instance Arbitrary SearchClasses where
     arbitrary = garbitrary
 
 

@@ -19,9 +19,15 @@ module Frontend.Filter
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
     , toggleIdeasFilter
 
-    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..), _AllUsers, _UsersWithText, searchUsers
+    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..)
+    , _AllUsers, _UsersWithText, searchUsers, unSearchUsers
     , UsersSortApi, SortUsersBy(..)
-    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS, emptyUsersQuery
+    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
+
+    , ClassesFilterQuery(..)
+    , SearchClasses(..)
+    , ClassesFilterApi
+    , unSearchClasses, searchClasses, mkClassesQuery
     )
 where
 
@@ -196,8 +202,10 @@ instance HasUILabel SortUsersBy where
         SortUsersByClass -> "Klasse"
         SortUsersByRole  -> "Rolle"
 
-newtype SearchUsers = SearchUsers ST
+newtype SearchUsers = SearchUsers { _unSearchUsers :: ST }
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
+
+makeLenses ''SearchUsers
 
 instance SOP.Generic SearchUsers
 
@@ -251,5 +259,33 @@ instance Filter UsersQuery where
 mkUsersQuery :: Maybe SearchUsers -> Maybe SortUsersBy -> UsersQuery
 mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe minBound ms)
 
-emptyUsersQuery :: UsersQuery
-emptyUsersQuery = UsersQuery AllUsers minBound
+
+-- * search school classes
+
+newtype SearchClasses = SearchClasses { _unSearchClasses :: ST }
+  deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
+
+type ClassesFilterApi = FilterApi SearchClasses
+
+data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: SearchClasses }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic SearchClasses
+instance SOP.Generic ClassesFilterQuery
+
+makeLenses ''SearchClasses
+makeLenses ''ClassesFilterQuery
+
+type instance FilterName SearchClasses = "search"
+
+instance Filter ClassesFilterQuery where
+    type Filtered ClassesFilterQuery = SchoolClass
+
+    applyFilter  AllClasses                            = id
+    applyFilter  (ClassesWithText (SearchClasses qry)) = filter ((qry `ST.isInfixOf`) . uilabel)
+
+    renderFilter AllClasses            = id
+    renderFilter (ClassesWithText qry) = renderQueryParam qry
+
+mkClassesQuery :: Maybe SearchClasses -> ClassesFilterQuery
+mkClassesQuery = maybe AllClasses ClassesWithText
