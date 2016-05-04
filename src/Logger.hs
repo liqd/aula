@@ -10,6 +10,9 @@ import Data.String.Conversions (ST)
 import Data.Yaml
 import GHC.Generics
 
+import Logger.EventLog
+
+
 data LogLevel
     = DEBUG
     | INFO
@@ -23,10 +26,12 @@ data LogLevel
 -- also other constructors for things like `disk full`.  The logger can then have several targets
 -- (moderator event log, syslog, admin email, devops email, ...), and decide what to do with each
 -- event based on its type.
-data LogEntry = LogEntry LogLevel ST
+data LogEntry =
+    LogEntry LogLevel ST
+  | LogEntryForModerator EventLogItemCold
   deriving (Eq, Show)
 
 type SendLogMsg = LogEntry -> IO ()
 
 nullLog :: LogEntry -> IO ()
-nullLog LogEntry{} = pure ()
+nullLog _ = pure ()

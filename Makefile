@@ -78,7 +78,7 @@ tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/
 
 grepi.%:
-	git grep -Hni $*
+	git grep -Hni $* src tests exec
 
 grep.%:
-	git grep -Hn $*
+	git grep -Hn $* src tests exec

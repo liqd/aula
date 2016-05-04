@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
@@ -9,6 +10,8 @@
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 {-# OPTIONS_GHC -Werror -Wall       #-}
 
@@ -16,7 +19,7 @@
 module Action
     ( -- * constraint types
       ActionM
-    , ActionLog(log)
+    , ActionLog(log, readEventLog)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
     , ActionRandomPassword(mkRandomPassword)
@@ -86,6 +89,21 @@ module Action
 
     , module Action.Smtp
     , sendMailToRole
+
+    -- * moderator's event log
+    , eventLogUserCreatesTopic
+    , eventLogUserCreatesIdea
+    , eventLogUserCreatesComment
+    , eventLogUserEditsTopic
+    , eventLogUserEditsIdea
+    , eventLogUserEditsComment
+    , eventLogUserMarksIdeaFeasible
+    , eventLogUserVotesOnIdea
+    , eventLogUserVotesOnComment
+    , eventLogUserDelegates
+    , eventLogIdeaNewTopic
+    , eventLogIdeaReachesQuorum
+    , WarmUp, warmUp
     )
 where
 
@@ -116,6 +134,7 @@ import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
 import Logger
+import Logger.EventLog
 import Persistent
 import Persistent.Api
 import Types
@@ -190,6 +209,7 @@ type ActionM m =
 class Monad m => ActionLog m where
     -- | Log system event
     log :: LogEntry -> m ()
+    readEventLog :: m EventLog
 
 -- | A monad that can run acid-state.
 --
@@ -317,6 +337,7 @@ getSpacesForCurrentUser = do
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
 
+
 -- * Phase Transitions
 
 topicPhaseChange :: (ActionPhaseChange m) => Topic -> PhaseChange -> m ()
@@ -382,16 +403,21 @@ phaseAction topic phasact = do
 
 -- * Page Handling
 
-type Create  a = forall m. (ActionAddDb m) => Proto a -> m a
+type Create  a = forall m. (ActionM m) => Proto a -> m a
 type Create_ a = forall m. (ActionAddDb m) => Proto a -> m ()
 
 createIdea :: Create Idea
-createIdea = currentUserAddDb AddIdea
+createIdea proto = do
+    idea <- currentUserAddDb AddIdea proto
+    eventLogUserCreatesIdea idea
+    pure idea
 
 createTopic :: Create Topic
 createTopic proto = do
     now <- getCurrentTimestamp
-    currentUserAddDb (AddTopic now) proto
+    topic <- currentUserAddDb (AddTopic now) proto
+    eventLogUserCreatesTopic topic
+    pure topic
 
 
 -- * Vote Handling
@@ -413,6 +439,7 @@ voteIdeaCommentReply loc ideaId commentId =
 
 removeVote :: (ActionPersist m) => AUID Idea -> AUID User -> m ()
 removeVote = update <..> RemoveVoteFromIdea
+
 
 -- * Reporting and deleting comments
 
@@ -481,10 +508,11 @@ getIdeaTopicInJuryPhase iid = do
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     topic <- getIdeaTopicInJuryPhase iid
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
+    eventLogUserMarksIdeaFeasible iid (ideaJuryResultValueToType rv)
     checkCloseJuryPhase topic
 
 unmarkIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> m ()
@@ -521,10 +549,15 @@ setCreatorStatement = update <..> SetCreatorStatement
 revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
+
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
-topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
+topicInRefinementTimedOut :: (ActionLog m, ActionPhaseChange m) => AUID Topic -> m ()
+topicInRefinementTimedOut tid = do
+    topic  <- equery $ maybe404 =<< findTopic tid
+    topicTimeout RefinementPhaseTimeOut tid
+    topic' <- equery $ maybe404 =<< findTopic tid
+    eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
 
 topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
@@ -537,11 +570,12 @@ topicInVotingResetToJury tid = do
         PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
         _             -> pure ()
 
+
 -- * Admin activities
 
 -- | Make a topic timeout if the timeout is applicable.
 -- FIXME: Only admin can do that
-topicForceNextPhase :: ActionPhaseChange m => AUID Topic -> m ()
+topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
@@ -557,6 +591,7 @@ topicForceNextPhase tid = do
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
+
 
 -- * files
 
@@ -577,3 +612,165 @@ decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
+
+
+-- * moderator's event log
+
+eventLogUserCreatesTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
+eventLogUserCreatesTopic topic = do
+    eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+        EventLogUserCreates (Left3 $ topic ^. _Key)
+
+eventLogUserCreatesIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
+eventLogUserCreatesIdea idea = do
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
+        EventLogUserCreates (Middle3 $ idea ^. _Key)
+
+eventLogUserCreatesComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
+eventLogUserCreatesComment comment = do
+    eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
+        EventLogUserCreates (Right3 $ comment ^. _Key)
+
+-- FIXME: throw this in all applicable situations.
+eventLogUserEditsTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
+eventLogUserEditsTopic topic = do
+    eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+            -- FIXME: 'createdBy' should be 'lastChangedBy' or 'currentUser', but given the current
+            -- authorization policy this works as well.  See also: 'eventLogUserEditsIdea',
+            -- 'eventLogUserEditsComment'.
+        EventLogUserEdits (Left3 $ topic ^. _Key)
+
+-- FIXME: throw this in all applicable situations.
+eventLogUserEditsIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
+eventLogUserEditsIdea idea = do
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
+        EventLogUserEdits (Middle3 $ idea ^. _Key)
+
+-- FIXME: throw this in all applicable situations.
+eventLogUserEditsComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
+eventLogUserEditsComment comment = do
+    eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
+        EventLogUserEdits (Right3 $ comment ^. _Key)
+
+eventLogUserMarksIdeaFeasible ::
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => AUID Idea -> IdeaJuryResultType -> m ()
+eventLogUserMarksIdeaFeasible iid jrt = do
+    uid <- currentUserId
+    idea <- equery $ maybe404 =<< findIdea iid
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogUserMarksIdeaFeasible iid jrt
+
+-- FIXME: throw this in all applicable situations.
+eventLogUserVotesOnIdea ::
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> IdeaVoteValue -> m ()
+eventLogUserVotesOnIdea idea v = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogUserVotesOnIdea (idea ^. _Key) v
+
+-- FIXME: throw this in all applicable situations.
+eventLogUserVotesOnComment ::
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> Comment -> Maybe Comment -> UpDown -> m ()
+eventLogUserVotesOnComment idea comment mcomment v = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
+
+-- FIXME: throw this in all applicable situations.
+eventLogUserDelegates ::
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => DelegationContext -> User -> m ()
+eventLogUserDelegates ctx toUser = do
+    fromUser <- currentUser
+    ispace <- case ctx of
+        DlgCtxGlobal           -> pure . ClassSpace $ fromUser ^?! userRole . roleSchoolClass
+        DlgCtxIdeaSpace ispace -> pure ispace
+        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> equery (maybe404 =<< findTopic tid)
+        DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
+                                  <$> equery (maybe404 =<< findIdea iid)
+    eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
+
+-- FIXME: throw this in all applicable situations.
+eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
+eventLogTopicNewPhase topic fromPhase toPhase =
+    eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+            -- FIXME: the triggering user should not always be the creator of the topic.
+        EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
+
+-- FIXME: throw this in all applicable situations.
+eventLogIdeaNewTopic :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> Maybe Topic -> Maybe Topic -> m ()
+eventLogIdeaNewTopic idea mfrom mto = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogIdeaNewTopic (idea ^. _Key) (view _Key <$> mfrom) (view _Key <$> mto)
+
+-- FIXME: throw this in all applicable situations.
+eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
+eventLogIdeaReachesQuorum idea = do
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
+        EventLogIdeaReachesQuorum (idea ^. _Key)
+
+
+eventLog :: (ActionCurrentTimestamp m, ActionLog m)
+    => IdeaSpace -> AUID User -> EventLogItemValueCold -> m ()
+eventLog ispace uid value = do
+    now    <- getCurrentTimestamp
+    log . LogEntryForModerator $ EventLogItem' ispace now uid value
+
+
+class WarmUp m cold warm where
+    warmUp :: cold -> m warm
+
+instance ActionM m => WarmUp m EventLogItemCold EventLogItemWarm where
+    warmUp (EventLogItem' ispace tstamp usr val) =
+        EventLogItem' ispace tstamp <$> warmUp' usr <*> warmUp val
+
+instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
+    warmUp = \case
+        EventLogUserCreates c
+            -> EventLogUserCreates <$> warmUp c
+        EventLogUserEdits c
+            -> EventLogUserCreates <$> warmUp c
+        EventLogUserMarksIdeaFeasible i t
+            -> do i' <- warmUp' i; pure $ EventLogUserMarksIdeaFeasible i' t
+        EventLogUserVotesOnIdea i v
+            -> do i' <- warmUp' i; pure $ EventLogUserVotesOnIdea i' v
+        EventLogUserVotesOnComment i c mc ud
+            -> do i' <- warmUp' i; c' <- warmUp' c; mc' <- mapM warmUp' mc;
+                  pure $ EventLogUserVotesOnComment i' c' mc' ud
+        EventLogUserDelegates s u
+            -> EventLogUserDelegates s <$> warmUp' u
+        EventLogTopicNewPhase t p1 p2
+            -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2
+        EventLogIdeaNewTopic i mt1 mt2
+            -> do i' <- warmUp' i; mt1' <- mapM warmUp' mt1; mt2' <- mapM warmUp' mt2;
+                  pure $ EventLogIdeaNewTopic i' mt1' mt2'
+        EventLogIdeaReachesQuorum i
+            -> EventLogIdeaReachesQuorum <$> warmUp' i
+
+
+instance ActionM m => WarmUp m ContentCold ContentWarm where
+    warmUp = \case
+        Left3   t -> Left3   <$> warmUp' t
+        Middle3 t -> Middle3 <$> warmUp' t
+        Right3  t -> Right3  <$> warmUp' t
+
+-- | for internal use only.
+class WarmUp' m a where
+    warmUp' :: KeyOf a -> m a
+
+instance ActionM m => WarmUp' m User where
+    warmUp' k = equery (maybe404 =<< findUser k)
+
+instance ActionM m => WarmUp' m Topic where
+    warmUp' k = equery (maybe404 =<< findTopic k)
+
+instance ActionM m => WarmUp' m Idea where
+    warmUp' k = equery (maybe404 =<< findIdea k)
+
+instance ActionM m => WarmUp' m Comment where
+    warmUp' k = equery (maybe404 =<< findComment k)

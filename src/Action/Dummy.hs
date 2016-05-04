@@ -46,6 +46,7 @@ instance Monad m => ActionAvatar (DummyT ActionExcept m) where
 
 instance Monad m => ActionLog (DummyT ActionExcept m) where
     log _ = pure ()
+    readEventLog = notImplemented "ActionLog" "readEventLog"
 
 instance Monad m => ActionPersist (DummyT ActionExcept m) where
     queryDb = notImplemented "ActionPersist" "queryDb"

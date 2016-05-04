@@ -58,18 +58,17 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Graph as Graph
 import qualified Data.Tree as Tree
-import qualified Generics.Generic.Aeson as Aeson
 
 import Action
 import Action.Implementation
 import Config
-import EventLog
+import Logger.EventLog
 import Frontend.Core
 import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (.~), ppShow, review, view, join)
+import Frontend.Prelude (set, (^.), (.~), ppShow, view, join)
 import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
@@ -850,25 +849,6 @@ breakCycles ds = List.filter good ds
     good :: Delegation -> Bool
     good = (`Set.member` Set.fromList es') . mkEdge
 
-instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON EmailAddress where toJSON = String . review emailAddress
-instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""
-instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserProfile where toJSON = Aeson.gtoJson
-
 newtype D3DN = D3DN DelegationNetwork
 
 instance Aeson.ToJSON D3DN where
@@ -926,17 +906,20 @@ instance Arbitrary EventLog where
       where
         nonEmpty = (:) <$> garbitrary <*> garbitrary
 
-instance Arbitrary EventLogItem where
+instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
+         , Generic u, Generic t, Generic i, Generic c
+         )
+        => Arbitrary (EventLogItem' u t i c) where
     arbitrary = garbitrary
 
-instance Arbitrary EventLogItemValue where
+instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
+         , Generic u, Generic t, Generic i, Generic c
+         )
+        => Arbitrary (EventLogItemValue' u t i c) where
     arbitrary = garbitrary >>= repair
       where
-        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
+        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arb <*> pure u
         repair v = pure v
-
-instance Arbitrary PhaseTransitionTriggeredBy where
-    arbitrary = garbitrary
 
 {-# NOINLINE sampleEventLog #-}
 sampleEventLog :: Config -> EventLog

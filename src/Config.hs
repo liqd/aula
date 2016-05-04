@@ -7,7 +7,7 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Config
-    ( Config(Config), SmtpConfig(SmtpConfig)
+    ( Config(Config), SmtpConfig(SmtpConfig), LogConfig(..)
     , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
@@ -30,7 +30,9 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
     , snapshotIntervalMinutes
+    , logging
     , logLevel
+    , eventLogPath
     )
 where
 
@@ -89,13 +91,21 @@ data PersistConfig = PersistConfig
 
 makeLenses ''PersistConfig
 
+data LogConfig = LogConfig
+    { _logLevel     :: LogLevel
+    , _eventLogPath :: FilePath
+    }
+  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+
+makeLenses ''LogConfig
+
 data Config = Config
     { _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
     , _listenerInterface :: String
     , _listenerPort      :: Int
     , _htmlStatic        :: FilePath
     , _cfgCsrfSecret     :: CsrfSecret
-    , _logLevel          :: LogLevel
+    , _logging           :: LogConfig
     , _persistConfig     :: PersistConfig
     , _smtpConfig        :: SmtpConfig
     }
@@ -133,6 +143,12 @@ defaultPersistConfig = PersistConfig
     , _snapshotIntervalMinutes = TimespanMins 47
     }
 
+defaultLogConfig :: LogConfig
+defaultLogConfig = LogConfig
+    { _logLevel     = DEBUG
+    , _eventLogPath = "./aulaEventLog.json"
+    }
+
 defaultConfig :: Config
 defaultConfig = Config
     { _exposedUrl        = "http://localhost:8080"
@@ -141,7 +157,7 @@ defaultConfig = Config
     , _htmlStatic        = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
-    , _logLevel          = DEBUG
+    , _logging           = defaultLogConfig
     , _persistConfig     = defaultPersistConfig
     , _smtpConfig        = defaultSmtpConfig
     }
@@ -193,6 +209,7 @@ getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
   where
     var = "AULA_SAMPLES"
     msg = "please set $" <> var <> " to a path (will be created if n/a)"
+
 
 -- * release version
 

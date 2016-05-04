@@ -288,6 +288,9 @@ genInitialTestDb = do
         , _protoTopicRefPhaseEnd = constantSampleTimestamp
         })
 
+    -- (make sure topic id is what we expect in some test cases.)
+    case topic ^. _Id of (AUID 5) -> pure ()
+
     update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()

@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -21,6 +23,7 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Elocrypt (mkPassword)
+import Data.Maybe (fromMaybe)
 import Data.String.Conversions (cs)
 import Data.Time.Clock (getCurrentTime)
 import Prelude
@@ -30,12 +33,16 @@ import Test.QuickCheck  -- FIXME: remove
 import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
 
-import Types
 import Action
+import Config
+import Logger.EventLog
 import Persistent
 import Persistent.Api
+import Types
 
 
 -- * concrete monad type
@@ -63,6 +70,14 @@ instance HasSendMail ActionExcept ActionEnv Action where
 
 instance ActionLog Action where
     log msg = actionIO =<< views envLogger ($ msg)
+
+    readEventLog = do
+        cfg <- viewConfig
+        rows :: [EventLogItemCold]
+            <- fmap adecode . LBS.lines <$> actionIO (LBS.readFile (cfg ^. logging . eventLogPath))
+        EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
+      where
+        adecode = fromMaybe (error "readEventLog: inconsistent data on disk.") . Aeson.decode
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where

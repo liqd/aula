@@ -12,7 +12,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
-module EventLog
+module Logger.EventLog
 where
 
 import Control.Lens
@@ -22,8 +22,10 @@ import Data.String.Conversions
 import GHC.Generics (Generic)
 import Servant
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
 import qualified Data.Text as ST
+import qualified Generics.Generic.Aeson as Aeson
 import qualified Generics.SOP as SOP
 
 import Data.UriPath
@@ -31,70 +33,79 @@ import Frontend.Path as U
 import Types
 
 
--- * event logs
+-- * types
 
-data EventLog = EventLog URL [EventLogItem]
-  deriving (Eq, Ord, Show, Read, Generic)
+data EventLog = EventLog URL [EventLogItemWarm]
+  deriving (Generic)
 
-data EventLogItem = EventLogItem IdeaSpace Timestamp User EventLogItemValue
-  deriving (Eq, Ord, Show, Read, Generic)
+data EventLogItem' user topic idea comment =
+    EventLogItem' IdeaSpace Timestamp user (EventLogItemValue' user topic idea comment)
+  deriving (Eq, Show, Generic)
 
-data URLEventLogItem = URLEventLogItem URL EventLogItem
+data EventLogItemValue' user topic idea comment =
+    EventLogUserCreates           (Either3 topic idea comment)
+  | EventLogUserEdits             (Either3 topic idea comment)
+  | EventLogUserMarksIdeaFeasible idea IdeaJuryResultType
+  | EventLogUserVotesOnIdea       idea IdeaVoteValue
+  | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
+      -- FIXME: this should just be a comment key resp. comment, but following the type errors
+      -- reveals some things that are not trivial to refactor.
+  | EventLogUserDelegates         DelegationContext user
+  | EventLogTopicNewPhase         topic Phase Phase
+  | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)
+  | EventLogIdeaReachesQuorum     idea
+  deriving (Eq, Show, Generic)
 
-data EventLogItemValue =
-    EventLogUserCreates           (Either3 Topic Idea Comment)
-  | EventLogUserEdits             (Either3 Topic Idea Comment)
-  | EventLogUserMarksIdeaFeasible Idea IdeaJuryResultType
-  | EventLogUserVotesOnIdea       Idea IdeaVoteValue
-  | EventLogUserVotesOnComment    Idea Comment (Maybe Comment) UpDown
-  | EventLogUserDelegates         ST User
-  | EventLogTopicNewPhase         Topic Phase Phase PhaseTransitionTriggeredBy
-  | EventLogIdeaNewTopic          Idea (Maybe Topic) (Maybe Topic)
-  | EventLogIdeaReachesQuorum     Idea
-  deriving (Eq, Ord, Show, Read, Generic)
 
-data PhaseTransitionTriggeredBy =
-    PhaseTransitionTriggeredBy User
-  | PhaseTransitionTriggeredByTimeout
-  | PhaseTransitionTriggeredByAllIdeasMarked
-  deriving (Eq, Ord, Show, Read, Generic)
+type EventLogItemCold = EventLogItem' (AUID User) (AUID Topic) (AUID Idea) CommentKey
+type EventLogItemWarm = EventLogItem' User Topic Idea Comment
+
+type EventLogItemValueCold = EventLogItemValue' (AUID User) (AUID Topic) (AUID Idea) CommentKey
+type EventLogItemValueWarm = EventLogItemValue' User Topic Idea Comment
+
+type ContentCold = Either3 (AUID Topic) (AUID Idea) CommentKey
+type ContentWarm = Either3 Topic Idea Comment
+
 
 instance SOP.Generic EventLog
-instance SOP.Generic EventLogItem
-instance SOP.Generic EventLogItemValue
-instance SOP.Generic PhaseTransitionTriggeredBy
+instance SOP.Generic (EventLogItem' u t i c)
+instance SOP.Generic (EventLogItemValue' u t i c)
 
-instance HasUILabel PhaseTransitionTriggeredBy where
-    uilabel = \case
-        (PhaseTransitionTriggeredBy _)           -> "von Hand ausgelöst"
-        PhaseTransitionTriggeredByTimeout        -> "Zeit ist abgelaufen"
-        PhaseTransitionTriggeredByAllIdeasMarked -> "alle Ideen sind geprüft"
+instance Aeson.ToJSON EventLogItemCold           where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON EventLogItemValueCold      where toJSON = Aeson.gtoJson
+
+instance Aeson.FromJSON EventLogItemCold           where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gparseJson
+
+
+-- * delivering the event log
 
 filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
 filterEventLog mspc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
   where
-    f (EventLogItem spc' _ _ _) = maybe True (== spc') mspc
+    f (EventLogItem' spc' _ _ _) = maybe True (== spc') mspc
 
 
 eventLogItemCsvHeaders :: [String]
 eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
 
 
+data WithURL a = WithURL URL a
+
 instance MimeRender CSV EventLog where
     mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
     mimeRender Proxy (EventLog domainUrl rows) =
         cs (intercalate "," eventLogItemCsvHeaders <> "\n")
-        <> CSV.encode (URLEventLogItem domainUrl <$> rows)
+        <> CSV.encode (WithURL domainUrl <$> rows)
 
-
-instance CSV.ToRecord URLEventLogItem where
-    toRecord (URLEventLogItem domainUrl (EventLogItem ispace timestamp user ev)) = CSV.toRecord
+instance CSV.ToRecord (WithURL EventLogItemWarm) where
+    toRecord (WithURL domainUrl (EventLogItem' ispace timestamp user ev)) = CSV.toRecord
         [ showIdeaSpace ispace
         , showTimestamp timestamp
         , user ^. userLogin . unUserLogin . csi
         ] <> f ev
       where
-        objDesc :: Either3 Topic Idea Comment -> ST
+        objDesc :: ContentWarm -> ST
         objDesc (Left3   t) = "Thema " <> t ^. topicTitle . showed . csi
         objDesc (Middle3 i) = "Idee "  <> i ^. ideaTitle  . showed . csi
         objDesc (Right3  c) =
@@ -103,10 +114,10 @@ instance CSV.ToRecord URLEventLogItem where
         chop :: ST -> ST
         chop s = if ST.length s <= 60 then s else ST.take 57 s <> "..."
 
-        objLink :: Either3 Topic Idea Comment -> ST
+        objLink :: ContentWarm -> ST
         objLink = (domainUrl <>) . absoluteUriPath . relPath . objLink'
 
-        objLink' :: Either3 Topic Idea Comment -> U.Main
+        objLink' :: ContentWarm -> U.Main
         objLink' (Left3   t) = U.listTopicIdeas t
         objLink' (Middle3 i) = U.IdeaPath (i ^. ideaLocation) (U.ViewIdea (i ^. _Id) Nothing)
         objLink' (Right3  c) = U.IdeaPath iloc (U.ViewIdea iid (Just $ c ^. _Id))
@@ -143,14 +154,14 @@ instance CSV.ToRecord URLEventLogItem where
             what = objDesc (Right3 $ fromMaybe comment mcomment)
 
         f (EventLogUserDelegates ctxDesc toUser) = CSV.toRecord
-            [ "delegiert in " <> ctxDesc <> " an " <> toUser ^. userLogin . _UserLogin . csi
+            [ "delegiert in " <> show ctxDesc <> " an " <> toUser ^. userLogin . _UserLogin . csi
             , "(kein Link verfügbar)"
+            -- FIXME: there should be a link, and 'show ctxDesc' needs to be polished.
             ]
 
-        f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase trigger) = CSV.toRecord
+        f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase) = CSV.toRecord
             [ objDesc topic <> " geht von " <> uilabel fromPhase
                             <> " nach "     <> uilabel toPhase
-                            <> " ("         <> uilabel trigger <> ")"
             , objLink topic
             ]
 
@@ -159,6 +170,7 @@ instance CSV.ToRecord URLEventLogItem where
             , objLink idea
             ]
           where
+            show_ :: Maybe Topic -> ST
             show_ mt = maybe "wilde Ideen" (view topicTitle) mt ^. showed . csi
 
         f (EventLogIdeaReachesQuorum (Middle3 -> idea)) = CSV.toRecord

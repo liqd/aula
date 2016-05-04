@@ -19,11 +19,15 @@ import Control.Concurrent.STM
 import Control.Exception hiding (handle)
 import Control.Lens
 import Control.Monad (forever, join, when)
-import Data.String.Conversions (cs)
+import Data.String.Conversions (cs, (<>))
 import System.IO (hPutStrLn, stderr)
+
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as LBS
 
 import Logger
 import Types
+import Config
 
 
 type SystemLogger = LogEntry -> IO ()
@@ -107,11 +111,10 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
 -- * Log Daemon
 
 -- | Create a log deamon
-logDaemon :: LogLevel -> IO (MsgDaemon LogEntry)
-logDaemon minLevel =
+logDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
+logDaemon cfg =
     msgDaemon logMsg "logger" logMsg (const $ pure ())
   where
-    -- FIXME: Use event logging
-    logMsg (LogEntry NOLOG _) = pure ()
-    logMsg (LogEntry level msg) =
-        when (level >= minLevel) $ hPutStrLn stderr (cs msg)
+    logMsg (LogEntry NOLOG _)        = pure ()
+    logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ hPutStrLn stderr (cs msg)
+    logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
