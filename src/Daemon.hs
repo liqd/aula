@@ -11,6 +11,7 @@ module Daemon
     , msgDaemonSend
     , timeoutDaemon
     , logDaemon
+    , eventLogPath
     )
 where
 
@@ -119,6 +120,7 @@ logDaemon minLevel =
     logMsg (LogEntry level msg)      = when (level >= minLevel) $ hPutStrLn stderr (cs msg)
     logMsg (LogEntryForModerator ev) = LBS.appendFile eventLogPath $ Aeson.encode ev <> cs "\n"
 
-    -- TODO: instead of the level, the config file also needs to provide a file path for the event log.
-    eventLogPath :: FilePath
-    eventLogPath = "/tmp/aula-events.json"
+
+-- TODO: instead of the level, the config file also needs to provide a file path for the event log.
+eventLogPath :: FilePath
+eventLogPath = "/tmp/aula-events.json"

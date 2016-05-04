@@ -29,6 +29,8 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
 
 import Action
+import Action.Implementation
+import Logger.EventLog
 import Persistent.Api
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -691,6 +693,12 @@ instance FormPage PageAdminSettingsEventsProtocol where
 
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
 adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
+
+adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
+adminEventLogCsv mspc = hdrs . filterEventLog mspc <$> readEventLog
+  where
+    hdrs = csvHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
+
 
 
 -- * Classes Create

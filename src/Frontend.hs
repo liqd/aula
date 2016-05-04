@@ -39,7 +39,6 @@ import Thentos.Frontend.State (serveFAction)
 
 import Action (ActionM, UserState, ActionEnv(..), logout)
 import Action.Implementation (Action, mkRunAction)
-import Arbitrary (sampleEventLog)
 import Config
 import Data.UriPath
 import Daemon
@@ -333,7 +332,7 @@ type AulaAdmin =
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
   :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
-  :<|> "downloads" :> "events" :> QueryParam "space" ST :> Get '[CSV] (CsvHeaders EventLog)
+  :<|> "downloads" :> "events" :> QueryParam "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
   :<|> Topic ::> "next-phase" :> PostH
   :<|> Topic ::> "voting-prev-phase" :> PostH
   :<|> "change-phase" :> FormHandler AdminPhaseChange
@@ -357,23 +356,6 @@ aulaAdmin =
   :<|> Action.topicForceNextPhase
   :<|> Action.topicInVotingResetToJury
   :<|> form Page.adminPhaseChange
-
--- | FIXME: this should be in "Frontend.Page.Admin", but that would trigger a cyclical import
--- condition as long as we pull data from Arbitrary rather than from the actual events.
---
--- Morally, the query param arg should be parsed by servant, but servant doesn't support
--- distinguishing between missing param and parse error (please open an issue if you find that has
--- changed), so we'll just parse it ourselves here.
-adminEventLogCsv :: ActionM m => Maybe ST -> m (CsvHeaders EventLog)
-adminEventLogCsv mraw = case mraw of
-    Nothing -> resp Nothing
-    Just raw -> case parseUrlPiece raw of
-        Right mspc -> resp $ Just mspc
-        Left msg   -> throwError500 ("malformed idea space in uri query: " <> cs msg)
-                      -- FIXME: status shouldn't be 500
-  where
-    resp mspc = csvHeaders ("EventLog " <> maybe "alle Ideenräume" uilabel mspc) .
-                filterEventLog mspc <$> (viewConfig >>= pure . sampleEventLog)
 
 
 catch404 :: Middleware

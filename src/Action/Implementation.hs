@@ -1,9 +1,12 @@
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -12,8 +15,11 @@
 module Action.Implementation
     ( Action
     , mkRunAction
+    , readEventLog
     )
 where
+
+import System.IO.Unsafe
 
 import Codec.Picture
 import Control.Lens
@@ -22,6 +28,7 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Elocrypt (mkPassword)
+import Data.Maybe (fromMaybe)
 import Data.String.Conversions (cs)
 import Data.Time.Clock (getCurrentTime)
 import Prelude
@@ -31,13 +38,17 @@ import Test.QuickCheck  -- FIXME: remove
 import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
 
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
 
-import Types
 import Action
+import Config
+import Daemon (eventLogPath)
 import Logger.EventLog
 import Persistent
 import Persistent.Api
+import Types
 
 
 -- * concrete monad type
@@ -136,14 +147,27 @@ runActionExcept (ActionSendMailExcept e) = error500 # show e
 
 -- * moderator's event log
 
+{-# NOINLINE readEventLog #-}
+readEventLog :: ActionM m => m EventLog  -- TODO do not use 'unsafePerformIO' (introduce type
+                                         -- ActionEventLogM or something; move this entire section
+                                         -- back to Action, donno)
+readEventLog = do
+    cfg <- viewConfig
+    rows :: [EventLogItemCold]
+         <- fmap adecode . LBS.lines <$> (pure . unsafePerformIO $ LBS.readFile eventLogPath)
+    EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
+  where
+    adecode = fromMaybe (error $ "readEventLog: inconsistent data on disk.") . Aeson.decode
+
+
 class WarmUp m cold warm where
     warmUp :: cold -> m warm
 
-instance WarmUp Action EventLogItemCold EventLogItemWarm where
+instance ActionM m => WarmUp m EventLogItemCold EventLogItemWarm where
     warmUp (EventLogItem' ispace tstamp usr val) =
         EventLogItem' ispace tstamp <$> warmUp' usr <*> warmUp val
 
-instance WarmUp Action EventLogItemValueCold EventLogItemValueWarm where
+instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
     warmUp = \case
         EventLogUserCreates c
             -> EventLogUserCreates <$> warmUp c
@@ -167,7 +191,7 @@ instance WarmUp Action EventLogItemValueCold EventLogItemValueWarm where
             -> EventLogIdeaReachesQuorum <$> warmUp' i
 
 
-instance WarmUp Action ContentCold ContentWarm where
+instance ActionM m => WarmUp m ContentCold ContentWarm where
     warmUp = \case
         Left3   t -> Left3   <$> warmUp' t
         Middle3 t -> Middle3 <$> warmUp' t
@@ -177,14 +201,14 @@ instance WarmUp Action ContentCold ContentWarm where
 class WarmUp' m a where
     warmUp' :: KeyOf a -> m a
 
-instance WarmUp' Action User where
+instance ActionM m => WarmUp' m User where
     warmUp' k = equery (maybe404 =<< findUser k)
 
-instance WarmUp' Action Topic where
+instance ActionM m => WarmUp' m Topic where
     warmUp' k = equery (maybe404 =<< findTopic k)
 
-instance WarmUp' Action Idea where
+instance ActionM m => WarmUp' m Idea where
     warmUp' k = equery (maybe404 =<< findIdea k)
 
-instance WarmUp' Action Comment where
+instance ActionM m => WarmUp' m Comment where
     warmUp' k = equery (maybe404 =<< findComment k)
