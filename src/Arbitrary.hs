@@ -869,10 +869,16 @@ instance Arbitrary EventLog where
       where
         nonEmpty = (:) <$> garbitrary <*> garbitrary
 
-instance Arbitrary EventLogItem where
+instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
+         , Generic u, Generic t, Generic i, Generic c
+         )
+        => Arbitrary (EventLogItem' u t i c) where
     arbitrary = garbitrary
 
-instance Arbitrary EventLogItemValue where
+instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
+         , Generic u, Generic t, Generic i, Generic c
+         )
+        => Arbitrary (EventLogItemValue' u t i c) where
     arbitrary = garbitrary >>= repair
       where
         repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
