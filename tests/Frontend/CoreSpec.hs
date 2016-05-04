@@ -24,7 +24,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Action.Implementation
-import Arbitrary (arb, arbPhrase, schoolClasses)
+import Arbitrary (arb, arbPhrase, forAllShrinkDef, schoolClasses)
 import Config
 import Frontend.Core
 import Frontend.Fragment.Comment
@@ -217,19 +217,19 @@ instance PayloadToEnv Document  where
 -- * machine room
 
 data HtmlGen where
-    H :: (Show m, Typeable m, ToHtml m) => Gen m -> HtmlGen
+    H :: (Show m, Typeable m, ToHtml m, Arbitrary m) => Gen m -> HtmlGen
 
 -- | Checks if the markup rendering does not contains bottoms.
 renderMarkup :: HtmlGen -> Spec
 renderMarkup (H g) =
-    it (show $ typeOf g) . property . forAll g $ \pageSource ->
+    it (show $ typeOf g) . property . forAllShrinkDef g $ \pageSource ->
         LT.length (renderText (toHtml pageSource)) > 0
 
 data FormGen where
     F :: ( r ~ FormPagePayload m
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
-         , ArbFormPagePayload m
+         , ArbFormPagePayload m, Arbitrary m
          ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
@@ -239,7 +239,7 @@ testForm fg = renderForm fg >> postToForm fg
 -- the view has all the fields defined for GET form creation.
 renderForm :: FormGen -> Spec
 renderForm (F g) =
-    it (show (typeOf g) <> " (show empty form)") . property . forAll g $ \page -> monadicIO $ do
+    it (show (typeOf g) <> " (show empty form)") . property . forAllShrinkDef g $ \page -> monadicIO $ do
         len <- runFailOnError $ do
             v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
