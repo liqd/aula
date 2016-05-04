@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds             #-}
+{-# LANGUAGE DataKinds                   #-}
 {-# LANGUAGE DeriveGeneric               #-}
 {-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE FlexibleInstances           #-}
@@ -117,7 +118,7 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
         objLink :: ContentWarm -> ST
         objLink = (domainUrl <>) . absoluteUriPath . relPath . objLink'
 
-        objLink' :: ContentWarm -> U.Main
+        objLink' :: ContentWarm -> U.Main 'AllowGetPost
         objLink' (Left3   t) = U.listTopicIdeas t
         objLink' (Middle3 i) = U.IdeaPath (i ^. ideaLocation) (U.ViewIdea (i ^. _Id) Nothing)
         objLink' (Right3  c) = U.IdeaPath iloc (U.ViewIdea iid (Just $ c ^. _Id))

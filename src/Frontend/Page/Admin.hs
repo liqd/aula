@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -207,8 +208,9 @@ adminFrame t bdy = do
   where
     tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST U.AdminMode ST
-  deriving (Show)
+data MenuLink = MenuLink ST (forall r . U.AdminMode r) ST
+
+deriving instance Show MenuLink
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
 menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of

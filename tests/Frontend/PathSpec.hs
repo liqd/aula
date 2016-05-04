@@ -74,7 +74,7 @@ spec = do
                         200 -> wpasses
                         _   -> error (msg <> show (uri, s, b))
   where
-    mainGen :: Gen Main
+    mainGen :: Gen (Main r)
     mainGen = arbitrary
 
 
