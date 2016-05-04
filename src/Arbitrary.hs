@@ -61,7 +61,7 @@ import qualified Data.Tree as Tree
 import Action
 import Action.Implementation
 import Config
-import EventLog
+import Logger.EventLog
 import Frontend.Core
 import Frontend.Filter
 import Frontend.Fragment.Comment

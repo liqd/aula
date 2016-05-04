@@ -87,7 +87,6 @@ library
       Data.Avatar
       Data.UriPath
       DemoData
-      EventLog
       Frontend
       Frontend.Core
       Frontend.Filter
@@ -112,6 +111,7 @@ library
       Frontend.Validation
       LifeCycle
       Logger
+      Logger.EventLog
       Lucid.Missing
       Persistent
       Persistent.Api

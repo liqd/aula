@@ -11,7 +11,7 @@
 module Frontend.Page.AdminSpec
 where
 
-import EventLog
+import Logger.EventLog
 import AulaTests
 
 

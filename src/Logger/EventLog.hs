@@ -12,7 +12,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
-module EventLog
+module Logger.EventLog
 where
 
 import Control.Lens

@@ -43,7 +43,7 @@ import Arbitrary (sampleEventLog)
 import Config
 import Data.UriPath
 import Daemon
-import EventLog
+import Logger.EventLog
 import Frontend.Core
 import Frontend.Page as Page
 import Frontend.Prelude

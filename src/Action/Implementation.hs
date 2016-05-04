@@ -35,7 +35,7 @@ import qualified Data.ByteString.Lazy as LBS
 
 import Types
 import Action
-import EventLog
+import Logger.EventLog
 import Persistent
 import Persistent.Api
 
