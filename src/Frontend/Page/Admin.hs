@@ -401,7 +401,9 @@ instance ToHtml AdminViewUsers where
                         renderUserInfoRow user
                         td_ $ a_ [href_ . U.Admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
 
-                tbody_ $ renderUserRow `mapM_` applyFilter filters users
+                tbody_ $ case users of
+                    []  -> tr_ $ td_ [class_ "container-not-found"] "(Keine Einträge.)"
+                    _:_ -> renderUserRow `mapM_` applyFilter filters users
 
 instance FormPage AdminCreateUser where
     type FormPagePayload AdminCreateUser = CreateUserPayload
@@ -465,10 +467,12 @@ instance ToHtml AdminViewClasses where
                                         placeholder_ "Klassensuche"]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
 
-                tbody_ . forM_ classes $ \clss -> tr_ $ do
-                    td_ $ clss ^. className . html
-                    td_ $ toHtmlRaw nbsp
-                    td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
+                tbody_ $ case classes of
+                    []  -> tr_ $ td_ [class_ "container-not-found"] "(Keine Einträge.)"
+                    _:_ -> forM_ classes $ \clss -> tr_ $ do
+                        td_ $ clss ^. className . html
+                        td_ $ toHtmlRaw nbsp
+                        td_ $ a_ [href_ . U.Admin $ U.AdminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
 -- role, and the class field should be hidden / displayed as appropriate.  see issue #197.
