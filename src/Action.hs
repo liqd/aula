@@ -86,6 +86,20 @@ module Action
 
     , module Action.Smtp
     , sendMailToRole
+
+    -- * moderator's event log
+    , eventLogUserCreatesTopic
+    , eventLogUserCreatesIdea
+    , eventLogUserCreatesComment
+    , eventLogUserEditsTopic
+    , eventLogUserEditsIdea
+    , eventLogUserEditsComment
+    , eventLogUserMarksIdeaFeasible
+    , eventLogUserVotesOnIdea
+    , eventLogUserVotesOnComment
+    , eventLogUserDelegates
+    , eventLogIdeaNewTopic
+    , eventLogIdeaReachesQuorum
     )
 where
 
@@ -591,47 +605,93 @@ decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
 
 -- * moderator's event log
 
-{-
-eventLogUserCreates :: (ActionLog m) => m ()
-eventLogUserCreates = do
-    pure $ EventLogUserCreates --           (Either3 topic idea comment)
+eventLogUserCreatesTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
+eventLogUserCreatesTopic topic = do
+    eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+        EventLogUserCreates (Left3 $ topic ^. _Key)
 
-eventLogUserEdits :: (ActionLog m) => m ()
-eventLogUserEdits = do
-    pure $ EventLogUserEdits --             (Either3 topic idea comment)
+eventLogUserCreatesIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
+eventLogUserCreatesIdea idea = do
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
+        EventLogUserCreates (Middle3 $ idea ^. _Key)
 
-eventLogUserMarksIdeaFeasible :: (ActionLog m) => m ()
-eventLogUserMarksIdeaFeasible = do
-    pure $ EventLogUserMarksIdeaFeasible -- idea IdeaJuryResultType
+eventLogUserCreatesComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
+eventLogUserCreatesComment comment = do
+    eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
+        EventLogUserCreates (Right3 $ comment ^. _Key)
 
-eventLogUserVotesOnIdea :: (ActionLog m) => m ()
-eventLogUserVotesOnIdea = do
-    pure $ EventLogUserVotesOnIdea --       idea IdeaVoteValue
+eventLogUserEditsTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
+eventLogUserEditsTopic topic = do
+    eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+            -- FIXME: 'createdBy' should be 'lastChangedBy' or 'currentUser', but given the current
+            -- authorization policy this works as well.  See also: 'eventLogUserEditsIdea',
+            -- 'eventLogUserEditsComment'.
+        EventLogUserEdits (Left3 $ topic ^. _Key)
 
-eventLogUserVotesOnComment :: (ActionLog m) => m ()
-eventLogUserVotesOnComment = do
-    pure $ EventLogUserVotesOnComment --    idea comment (Maybe comment) UpDown
+eventLogUserEditsIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
+eventLogUserEditsIdea idea = do
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
+        EventLogUserEdits (Middle3 $ idea ^. _Key)
 
-eventLogUserDelegates :: (ActionLog m) => m ()
-eventLogUserDelegates = do
-    pure $ EventLogUserDelegates --         ST user
--}
+eventLogUserEditsComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
+eventLogUserEditsComment comment = do
+    eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
+        EventLogUserEdits (Right3 $ comment ^. _Key)
 
-eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionPersist m, ActionLog m)
-      => Topic -> Phase -> Phase -> m ()
+eventLogUserMarksIdeaFeasible ::
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> IdeaJuryResultType -> m ()
+eventLogUserMarksIdeaFeasible idea jrt = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogUserMarksIdeaFeasible (idea ^. _Key) jrt
+
+eventLogUserVotesOnIdea ::
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> IdeaVoteValue -> m ()
+eventLogUserVotesOnIdea idea v = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogUserVotesOnIdea (idea ^. _Key) v
+
+eventLogUserVotesOnComment ::
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> Comment -> (Maybe Comment) -> UpDown -> m ()
+eventLogUserVotesOnComment idea comment mcomment v = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
+
+eventLogUserDelegates ::
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => DelegationContext -> User -> m ()
+eventLogUserDelegates ctx toUser = do
+    fromUser <- currentUser
+    ispace <- case ctx of
+        DlgCtxGlobal           -> pure . ClassSpace $ fromUser ^?! userRole . roleSchoolClass
+        DlgCtxIdeaSpace ispace -> pure ispace
+        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> equery (maybe404 =<< findTopic tid)
+        DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
+                                  <$> equery (maybe404 =<< findIdea iid)
+    eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
+
+eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+            -- FIXME: the triggering user should not always be the creator of the topic.
         EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
 
-{-
-eventLogIdeaNewTopic :: (ActionLog m) => m ()
-eventLogIdeaNewTopic = do
-    pure $ EventLogIdeaNewTopic --          idea (Maybe topic) (Maybe topic)
+eventLogIdeaNewTopic :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+      => Idea -> Maybe Topic -> Maybe Topic -> m ()
+eventLogIdeaNewTopic idea mfrom mto = do
+    uid <- currentUserId
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
+        EventLogIdeaNewTopic (idea ^. _Key) (view _Key <$> mfrom) (view _Key <$> mto)
 
-eventLogIdeaReachesQuorum :: (ActionLog m) => m ()
-eventLogIdeaReachesQuorum = do
-    pure $ EventLogIdeaReachesQuorum --     idea
--}
+eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
+eventLogIdeaReachesQuorum idea = do
+    eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
+        EventLogIdeaReachesQuorum (idea ^. _Key)
 
 
 eventLog :: (ActionCurrentTimestamp m, ActionLog m)
