@@ -317,6 +317,7 @@ getSpacesForCurrentUser = do
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
 
+
 -- * Phase Transitions
 
 topicPhaseChange :: (ActionPhaseChange m) => Topic -> PhaseChange -> m ()
@@ -413,6 +414,7 @@ voteIdeaCommentReply loc ideaId commentId =
 
 removeVote :: (ActionPersist m) => AUID Idea -> AUID User -> m ()
 removeVote = update <..> RemoveVoteFromIdea
+
 
 -- * Reporting and deleting comments
 
@@ -521,6 +523,7 @@ setCreatorStatement = update <..> SetCreatorStatement
 revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
+
 -- * Topic handling
 
 topicInRefinementTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
@@ -536,6 +539,7 @@ topicInVotingResetToJury tid = do
     case topic ^. topicPhase of
         PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
         _             -> pure ()
+
 
 -- * Admin activities
 
@@ -557,6 +561,7 @@ topicForceNextPhase tid = do
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
+
 
 -- * files
 

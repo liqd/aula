@@ -194,6 +194,7 @@ getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
     var = "AULA_SAMPLES"
     msg = "please set $" <> var <> " to a path (will be created if n/a)"
 
+
 -- * release version
 
 releaseVersion :: String
