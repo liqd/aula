@@ -116,6 +116,7 @@ import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
 import Logger
+import Logger.EventLog
 import Persistent
 import Persistent.Api
 import Types
@@ -526,8 +527,12 @@ revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
-topicInRefinementTimedOut = topicTimeout RefinementPhaseTimeOut
+topicInRefinementTimedOut :: (ActionLog m, ActionPhaseChange m) => AUID Topic -> m ()
+topicInRefinementTimedOut tid = do
+    topic  <- equery $ maybe404 =<< findTopic tid
+    topicTimeout RefinementPhaseTimeOut tid
+    topic' <- equery $ maybe404 =<< findTopic tid
+    eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
 
 topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
@@ -545,7 +550,7 @@ topicInVotingResetToJury tid = do
 
 -- | Make a topic timeout if the timeout is applicable.
 -- FIXME: Only admin can do that
-topicForceNextPhase :: ActionPhaseChange m => AUID Topic -> m ()
+topicForceNextPhase :: (ActionLog m, ActionPhaseChange m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
@@ -582,3 +587,55 @@ decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
 decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
+
+
+-- * moderator's event log
+
+{-
+eventLogUserCreates :: (ActionLog m) => m ()
+eventLogUserCreates = do
+    pure $ EventLogUserCreates --           (Either3 topic idea comment)
+
+eventLogUserEdits :: (ActionLog m) => m ()
+eventLogUserEdits = do
+    pure $ EventLogUserEdits --             (Either3 topic idea comment)
+
+eventLogUserMarksIdeaFeasible :: (ActionLog m) => m ()
+eventLogUserMarksIdeaFeasible = do
+    pure $ EventLogUserMarksIdeaFeasible -- idea IdeaJuryResultType
+
+eventLogUserVotesOnIdea :: (ActionLog m) => m ()
+eventLogUserVotesOnIdea = do
+    pure $ EventLogUserVotesOnIdea --       idea IdeaVoteValue
+
+eventLogUserVotesOnComment :: (ActionLog m) => m ()
+eventLogUserVotesOnComment = do
+    pure $ EventLogUserVotesOnComment --    idea comment (Maybe comment) UpDown
+
+eventLogUserDelegates :: (ActionLog m) => m ()
+eventLogUserDelegates = do
+    pure $ EventLogUserDelegates --         ST user
+-}
+
+eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionPersist m, ActionLog m)
+      => Topic -> Phase -> Phase -> m ()
+eventLogTopicNewPhase topic fromPhase toPhase =
+    eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
+        EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
+
+{-
+eventLogIdeaNewTopic :: (ActionLog m) => m ()
+eventLogIdeaNewTopic = do
+    pure $ EventLogIdeaNewTopic --          idea (Maybe topic) (Maybe topic)
+
+eventLogIdeaReachesQuorum :: (ActionLog m) => m ()
+eventLogIdeaReachesQuorum = do
+    pure $ EventLogIdeaReachesQuorum --     idea
+-}
+
+
+eventLog :: (ActionCurrentTimestamp m, ActionLog m)
+    => IdeaSpace -> AUID User -> EventLogItemValueCold -> m ()
+eventLog ispace uid value = do
+    now    <- getCurrentTimestamp
+    log . LogEntryForModerator $ EventLogItem' ispace now uid value
