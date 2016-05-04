@@ -49,16 +49,10 @@ data EventLogItemValue' user topic idea comment =
   | EventLogUserVotesOnIdea       idea IdeaVoteValue
   | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
   | EventLogUserDelegates         ST user
-  | EventLogTopicNewPhase         topic Phase Phase PhaseTransitionTriggeredBy
+  | EventLogTopicNewPhase         topic Phase Phase
   | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea
   deriving (Eq, Show, Generic)
-
-data PhaseTransitionTriggeredBy =
-    PhaseTransitionTriggeredBy User
-  | PhaseTransitionTriggeredByTimeout
-  | PhaseTransitionTriggeredByAllIdeasMarked
-  deriving (Eq, Ord, Show, Read, Generic)
 
 
 type EventLogItemCold = EventLogItem' (AUID User) (AUID Topic) (AUID Idea) CommentKey
@@ -74,22 +68,12 @@ type ContentWarm = Either3 Topic Idea Comment
 instance SOP.Generic EventLog
 instance SOP.Generic (EventLogItem' u t i c)
 instance SOP.Generic (EventLogItemValue' u t i c)
-instance SOP.Generic PhaseTransitionTriggeredBy
 
 instance Aeson.ToJSON EventLogItemCold           where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EventLogItemValueCold      where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON PhaseTransitionTriggeredBy where toJSON = Aeson.gtoJson
 
 instance Aeson.FromJSON EventLogItemCold           where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON PhaseTransitionTriggeredBy where parseJSON = Aeson.gparseJson
-
-
-instance HasUILabel PhaseTransitionTriggeredBy where
-    uilabel = \case
-        (PhaseTransitionTriggeredBy _)           -> "von Hand ausgelöst"
-        PhaseTransitionTriggeredByTimeout        -> "Zeit ist abgelaufen"
-        PhaseTransitionTriggeredByAllIdeasMarked -> "alle Ideen sind geprüft"
 
 
 -- * delivering the event log
@@ -172,10 +156,9 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
             , "(kein Link verfügbar)"
             ]
 
-        f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase trigger) = CSV.toRecord
+        f (EventLogTopicNewPhase (Left3 -> topic) fromPhase toPhase) = CSV.toRecord
             [ objDesc topic <> " geht von " <> uilabel fromPhase
                             <> " nach "     <> uilabel toPhase
-                            <> " ("         <> uilabel trigger <> ")"
             , objLink topic
             ]
 

@@ -864,9 +864,6 @@ instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
         repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arbWord <*> pure u
         repair v = pure v
 
-instance Arbitrary PhaseTransitionTriggeredBy where
-    arbitrary = garbitrary
-
 {-# NOINLINE sampleEventLog #-}
 sampleEventLog :: Config -> EventLog
 sampleEventLog = unsafePerformIO . sampleEventLogIO

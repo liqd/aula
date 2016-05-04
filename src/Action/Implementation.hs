@@ -134,7 +134,7 @@ runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
 
 
--- * warm up moderator's event log
+-- * moderator's event log
 
 class WarmUp m cold warm where
     warmUp :: cold -> m warm
@@ -158,8 +158,8 @@ instance WarmUp Action EventLogItemValueCold EventLogItemValueWarm where
                   pure $ EventLogUserVotesOnComment i' c' mc' ud
         EventLogUserDelegates s u
             -> EventLogUserDelegates s <$> warmUp' u
-        EventLogTopicNewPhase t p1 p2 tb
-            -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2 tb
+        EventLogTopicNewPhase t p1 p2
+            -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2
         EventLogIdeaNewTopic i mt1 mt2
             -> do i' <- warmUp' i; mt1' <- mapM warmUp' mt1; mt2' <- mapM warmUp' mt2;
                   pure $ EventLogIdeaNewTopic i' mt1' mt2'
