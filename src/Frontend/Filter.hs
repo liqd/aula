@@ -21,7 +21,7 @@ module Frontend.Filter
 
     , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..), _AllUsers, _UsersWithText, searchUsers
     , UsersSortApi, SortUsersBy(..)
-    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS, emptyUsersQuery
+    , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
     )
 where
 
@@ -251,5 +251,3 @@ instance Filter UsersQuery where
 mkUsersQuery :: Maybe SearchUsers -> Maybe SortUsersBy -> UsersQuery
 mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe minBound ms)
 
-emptyUsersQuery :: UsersQuery
-emptyUsersQuery = UsersQuery AllUsers minBound
