@@ -7,7 +7,6 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
@@ -496,11 +495,11 @@ instance Arbitrary Document where
     shrink _ = [Markdown ""]
 
 arbMarkdown :: Gen Document
-arbMarkdown = Markdown <$> ((<>) <$> (title 1) <*> (mconcat <$> sections))
+arbMarkdown = Markdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
   where
     title i   = (<> "\n\n") . ((ST.replicate i "#" <> " ") <>) <$> arbPhrase
     sections  = (`vectorOf` section) =<< elements [3..5]
-    section   = (<>) <$> (title 2) <*> (mconcat <$> parts)
+    section   = (<>) <$> title 2 <*> (mconcat <$> parts)
     parts     = (`vectorOf` part) =<< elements [2..8]
     part      = oneof [ paragraph
                       , (<> "\n") <$> arbMarkdownList 3
