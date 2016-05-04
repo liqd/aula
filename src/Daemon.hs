@@ -11,7 +11,6 @@ module Daemon
     , msgDaemonSend
     , timeoutDaemon
     , logDaemon
-    , eventLogPath
     )
 where
 
@@ -28,6 +27,7 @@ import qualified Data.ByteString.Lazy as LBS
 
 import Logger
 import Types
+import Config
 
 
 type SystemLogger = LogEntry -> IO ()
@@ -111,16 +111,10 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
 -- * Log Daemon
 
 -- | Create a log deamon
-logDaemon :: LogLevel -> IO (MsgDaemon LogEntry)
-logDaemon minLevel =
+logDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
+logDaemon cfg =
     msgDaemon logMsg "logger" logMsg (const $ pure ())
   where
-    -- FIXME: Use event logging
     logMsg (LogEntry NOLOG _)        = pure ()
-    logMsg (LogEntry level msg)      = when (level >= minLevel) $ hPutStrLn stderr (cs msg)
-    logMsg (LogEntryForModerator ev) = LBS.appendFile eventLogPath $ Aeson.encode ev <> cs "\n"
-
-
--- TODO: instead of the level, the config file also needs to provide a file path for the event log.
-eventLogPath :: FilePath
-eventLogPath = "/tmp/aula-events.json"
+    logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ hPutStrLn stderr (cs msg)
+    logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"

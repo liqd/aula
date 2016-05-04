@@ -63,7 +63,7 @@ extendClearanceOnSessionToken _ = pure () -- FIXME
 -- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()
 runFrontend cfg = do
-    log <- logDaemon (cfg ^. logLevel)
+    log <- logDaemon (cfg ^. logging)
     void $ log ^. start
     let logMsg = log ^. msgDaemonSend
     withPersist logMsg cfg (runFrontend' cfg logMsg)

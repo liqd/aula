@@ -39,7 +39,6 @@ import qualified Data.ByteString.Lazy as LBS
 
 import Action
 import Config
-import Daemon (eventLogPath)
 import Logger.EventLog
 import Persistent
 import Persistent.Api
@@ -75,7 +74,7 @@ instance ActionLog Action where
     readEventLog = do
         cfg <- viewConfig
         rows :: [EventLogItemCold]
-             <- fmap adecode . LBS.lines <$> actionIO (LBS.readFile eventLogPath)
+            <- fmap adecode . LBS.lines <$> actionIO (LBS.readFile (cfg ^. logging . eventLogPath))
         EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
       where
         adecode = fromMaybe (error "readEventLog: inconsistent data on disk.") . Aeson.decode

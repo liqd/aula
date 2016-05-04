@@ -44,7 +44,7 @@ testConfig = do
               -- (in case somebody accidentally tests on a production system: change dbPath.)
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
-        & logLevel                        .~ NOLOG
+        & logging . logLevel              .~ NOLOG
         & pure
 
 
