@@ -533,10 +533,25 @@ arbMarkdownList' sze = do
         nlspc = "\n" <> spc
 
 arbMarkdownImage :: Gen ST
-arbMarkdownImage = pure nil  -- TODO
+arbMarkdownImage = render <$> elements samples
+  where
+    render s = "![" <> s <> "](/static/images/" <> s <> ")\n\n"
+    samples = [ "login_owl.png"
+              , "icon_ausstattung.png"
+              , "icon_bulb_grey.png"
+              , "icon_regeln.png"
+              , "icon_umgebung.png"
+              , "icon_unterricht.png"
+              , "icon_zeit.png"
+              , "theme_abs.png"
+              , "theme_aus.png"
+              , "theme_ergf.png"
+              , "theme_pruf.png"
+              ]
 
+-- | FIXME: implement this (also needs work on css side.)
 arbMarkdownTable :: Gen ST
-arbMarkdownTable = pure nil  -- TODO
+arbMarkdownTable = pure nil
 
 
 -- * path
