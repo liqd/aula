@@ -656,7 +656,7 @@ eventLogUserVotesOnIdea idea v = do
 
 eventLogUserVotesOnComment ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> Comment -> (Maybe Comment) -> UpDown -> m ()
+      => Idea -> Comment -> Maybe Comment -> UpDown -> m ()
 eventLogUserVotesOnComment idea comment mcomment v = do
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
@@ -699,3 +699,6 @@ eventLog :: (ActionCurrentTimestamp m, ActionLog m)
 eventLog ispace uid value = do
     now    <- getCurrentTimestamp
     log . LogEntryForModerator $ EventLogItem' ispace now uid value
+
+
+-- TODO: throw all events in all places.

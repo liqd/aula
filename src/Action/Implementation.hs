@@ -157,7 +157,7 @@ readEventLog = do
          <- fmap adecode . LBS.lines <$> (pure . unsafePerformIO $ LBS.readFile eventLogPath)
     EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
   where
-    adecode = fromMaybe (error $ "readEventLog: inconsistent data on disk.") . Aeson.decode
+    adecode = fromMaybe (error "readEventLog: inconsistent data on disk.") . Aeson.decode
 
 
 class WarmUp m cold warm where
