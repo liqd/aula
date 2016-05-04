@@ -29,7 +29,6 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
 
 import Action
-import Action.Implementation
 import Logger.EventLog
 import Persistent.Api
 import Frontend.Prelude

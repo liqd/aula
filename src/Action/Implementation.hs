@@ -6,7 +6,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -15,11 +14,8 @@
 module Action.Implementation
     ( Action
     , mkRunAction
-    , readEventLog
     )
 where
-
-import System.IO.Unsafe
 
 import Codec.Picture
 import Control.Lens
@@ -76,6 +72,14 @@ instance HasSendMail ActionExcept ActionEnv Action where
 
 instance ActionLog Action where
     log msg = actionIO =<< views envLogger ($ msg)
+
+    readEventLog = do
+        cfg <- viewConfig
+        rows :: [EventLogItemCold]
+             <- fmap adecode . LBS.lines <$> actionIO (LBS.readFile eventLogPath)
+        EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
+      where
+        adecode = fromMaybe (error "readEventLog: inconsistent data on disk.") . Aeson.decode
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
@@ -143,72 +147,3 @@ runActionExcept :: ActionExcept -> ServantErr
 runActionExcept (ActionExcept e) = e
 runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
-
-
--- * moderator's event log
-
-{-# NOINLINE readEventLog #-}
-readEventLog :: ActionM m => m EventLog  -- TODO do not use 'unsafePerformIO' (introduce type
-                                         -- ActionEventLogM or something; move this entire section
-                                         -- back to Action, donno)
-readEventLog = do
-    cfg <- viewConfig
-    rows :: [EventLogItemCold]
-         <- fmap adecode . LBS.lines <$> (pure . unsafePerformIO $ LBS.readFile eventLogPath)
-    EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
-  where
-    adecode = fromMaybe (error "readEventLog: inconsistent data on disk.") . Aeson.decode
-
-
-class WarmUp m cold warm where
-    warmUp :: cold -> m warm
-
-instance ActionM m => WarmUp m EventLogItemCold EventLogItemWarm where
-    warmUp (EventLogItem' ispace tstamp usr val) =
-        EventLogItem' ispace tstamp <$> warmUp' usr <*> warmUp val
-
-instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
-    warmUp = \case
-        EventLogUserCreates c
-            -> EventLogUserCreates <$> warmUp c
-        EventLogUserEdits c
-            -> EventLogUserCreates <$> warmUp c
-        EventLogUserMarksIdeaFeasible i t
-            -> do i' <- warmUp' i; pure $ EventLogUserMarksIdeaFeasible i' t
-        EventLogUserVotesOnIdea i v
-            -> do i' <- warmUp' i; pure $ EventLogUserVotesOnIdea i' v
-        EventLogUserVotesOnComment i c mc ud
-            -> do i' <- warmUp' i; c' <- warmUp' c; mc' <- mapM warmUp' mc;
-                  pure $ EventLogUserVotesOnComment i' c' mc' ud
-        EventLogUserDelegates s u
-            -> EventLogUserDelegates s <$> warmUp' u
-        EventLogTopicNewPhase t p1 p2
-            -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2
-        EventLogIdeaNewTopic i mt1 mt2
-            -> do i' <- warmUp' i; mt1' <- mapM warmUp' mt1; mt2' <- mapM warmUp' mt2;
-                  pure $ EventLogIdeaNewTopic i' mt1' mt2'
-        EventLogIdeaReachesQuorum i
-            -> EventLogIdeaReachesQuorum <$> warmUp' i
-
-
-instance ActionM m => WarmUp m ContentCold ContentWarm where
-    warmUp = \case
-        Left3   t -> Left3   <$> warmUp' t
-        Middle3 t -> Middle3 <$> warmUp' t
-        Right3  t -> Right3  <$> warmUp' t
-
--- | for internal use only.
-class WarmUp' m a where
-    warmUp' :: KeyOf a -> m a
-
-instance ActionM m => WarmUp' m User where
-    warmUp' k = equery (maybe404 =<< findUser k)
-
-instance ActionM m => WarmUp' m Topic where
-    warmUp' k = equery (maybe404 =<< findTopic k)
-
-instance ActionM m => WarmUp' m Idea where
-    warmUp' k = equery (maybe404 =<< findIdea k)
-
-instance ActionM m => WarmUp' m Comment where
-    warmUp' k = equery (maybe404 =<< findComment k)
