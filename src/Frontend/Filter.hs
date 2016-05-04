@@ -19,14 +19,15 @@ module Frontend.Filter
     , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
     , toggleIdeasFilter
 
-    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..), _AllUsers, _UsersWithText, searchUsers
+    , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..)
+    , _AllUsers, _UsersWithText, searchUsers, unSearchUsers
     , UsersSortApi, SortUsersBy(..)
     , UsersQuery(..), mkUsersQuery, usersQueryF, usersQueryS
 
     , ClassesFilterQuery(..)
     , SearchClasses(..)
     , ClassesFilterApi
-    , mkClassesQuery
+    , unSearchClasses, searchClasses, mkClassesQuery
     )
 where
 
@@ -201,8 +202,10 @@ instance HasUILabel SortUsersBy where
         SortUsersByClass -> "Klasse"
         SortUsersByRole  -> "Rolle"
 
-newtype SearchUsers = SearchUsers ST
+newtype SearchUsers = SearchUsers { _unSearchUsers :: ST }
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
+
+makeLenses ''SearchUsers
 
 instance SOP.Generic SearchUsers
 
@@ -259,7 +262,7 @@ mkUsersQuery mf ms = UsersQuery (maybe AllUsers UsersWithText mf) (fromMaybe min
 
 -- * search school classes
 
-newtype SearchClasses = SearchClasses ST
+newtype SearchClasses = SearchClasses { _unSearchClasses :: ST }
   deriving (Eq, Ord, Show, Read, Generic, FromHttpApiData, ToHttpApiData)
 
 type ClassesFilterApi = FilterApi SearchClasses
@@ -269,6 +272,9 @@ data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: Searc
 
 instance SOP.Generic SearchClasses
 instance SOP.Generic ClassesFilterQuery
+
+makeLenses ''SearchClasses
+makeLenses ''ClassesFilterQuery
 
 type instance FilterName SearchClasses = "search"
 

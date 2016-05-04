@@ -377,10 +377,11 @@ instance ToHtml AdminViewUsers where
                             -- The AllUsers here makes sure there is no 'search' query parameter
                             -- initially. The input field is adding it afterward.
                             let filters' = filters & usersQueryF .~ AllUsers
+                                placehld = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . unSearchUsers)
                             formMethod_ "GET" [class_ "form"]
                                         (U.Admin . U.AdminViewUsers $ Just filters') $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
-                                        placeholder_ "Nutzersuche"]
+                                        placeholder_ placehld]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
 
                 let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
@@ -464,7 +465,7 @@ instance ToHtml AdminViewClasses where
                             formMethod_ "GET" [class_ "form"]
                                         (U.Admin U.adminViewClasses) $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
-                                        placeholder_ "Klassensuche"]
+                                        placeholder_ (fromMaybe "Klassensuche" (filters ^? searchClasses . unSearchClasses))]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
 
                 tbody_ $ case classes of
