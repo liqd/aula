@@ -2,13 +2,13 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE ViewPatterns        #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Arbitrary
     ( topLevelDomains
@@ -19,6 +19,7 @@ module Arbitrary
     , arbWord
     , arbPhrase
     , arbPhraseOf
+    , someOf
     , arbName
     , schoolClasses
     , fishDelegationNetworkIO
@@ -48,7 +49,7 @@ import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
     ( Arbitrary(..), Gen
-    , elements, oneof, vectorOf, scale, generate, arbitrary, listOf, suchThat
+    , elements, oneof, vectorOf, frequency, scale, generate, arbitrary, listOf, suchThat
     )
 import Test.QuickCheck.Instances ()
 
@@ -363,8 +364,8 @@ arbTopicRefPhaseEnd = pure constantSampleTimestamp
 instance Arbitrary Topic where
     arbitrary =
         scaleDown garbitrary
-        <**> (set topicTitle           <$> arbPhrase)
-        <**> (set topicDesc . Markdown <$> arbPhrase)
+        <**> (set topicTitle <$> arbPhrase)
+        <**> (set topicDesc  <$> arb)
 
 instance Arbitrary Phase where
     arbitrary = garbitrary
@@ -472,6 +473,7 @@ instance Arbitrary CsvUserRecord where
 instance Arbitrary PhaseChangeDir where
     arbitrary = garbitrary
 
+
 -- * aula-specific helpers
 
 instance Arbitrary (AUID a) where
@@ -480,11 +482,75 @@ instance Arbitrary (AUID a) where
 instance (Generic id, Arbitrary id) => Arbitrary (GMetaInfo a id) where
     arbitrary = garbitrary
 
-instance Arbitrary Document where
-    arbitrary = Markdown . ST.unlines . fmap unParagraph <$> scale (`div` 5) arb
-
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
+
+
+-- * markdown
+
+instance Arbitrary Document where
+    arbitrary = arbMarkdown
+
+    shrink (Markdown "") = []
+    shrink _ = [Markdown ""]
+
+arbMarkdown :: Gen Document
+arbMarkdown = Markdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
+  where
+    title i   = (<> "\n\n") . ((ST.replicate i "#" <> " ") <>) <$> arbPhrase
+    sections  = (`vectorOf` section) =<< elements [3..5]
+    section   = (<>) <$> title 2 <*> (mconcat <$> parts)
+    parts     = (`vectorOf` part) =<< elements [2..8]
+    part      = oneof [ paragraph
+                      , (<> "\n") <$> arbMarkdownList 3
+                      , arbMarkdownImage
+                      , arbMarkdownTable
+                      ]
+    paragraph = (<> "\n\n") <$> arbPhraseOf 7 45
+
+arbMarkdownList :: Int -> Gen ST
+arbMarkdownList 3 =                arbMarkdownList' 3
+arbMarkdownList 2 = frequency [(1, arbMarkdownList' 2), ( 7, pure nil)]
+arbMarkdownList 1 = frequency [(1, arbMarkdownList' 1), (12, pure nil)]
+arbMarkdownList _ = pure nil
+
+arbMarkdownList' :: Int -> Gen ST
+arbMarkdownList' sze | sze < 1 = pure nil
+arbMarkdownList' sze = do
+    point :: ST <- (\case True -> "- "; False -> "1. ") <$> arb
+    len <- elements [1 .. 2^sze]
+    mconcat <$> replicateM len (do
+        phrase  <- arbPhraseOf 3 12
+        sublist <- indent 4 <$> arbMarkdownList (sze - 1)
+        pure $ point <> phrase <> "\n" <> sublist)
+  where
+    indent :: Int -> ST -> ST
+    indent _ "" = ""
+    indent i s  = (<> "\n") . (spc <>) . ST.intercalate nlspc . ST.lines $ s
+      where
+        spc = ST.replicate i " "
+        nlspc = "\n" <> spc
+
+arbMarkdownImage :: Gen ST
+arbMarkdownImage = render <$> elements samples
+  where
+    render s = "![" <> s <> "](/static/images/" <> s <> ")\n\n"
+    samples = [ "login_owl.png"
+              , "icon_ausstattung.png"
+              , "icon_bulb_grey.png"
+              , "icon_regeln.png"
+              , "icon_umgebung.png"
+              , "icon_unterricht.png"
+              , "icon_zeit.png"
+              , "theme_abs.png"
+              , "theme_aus.png"
+              , "theme_ergf.png"
+              , "theme_pruf.png"
+              ]
+
+-- | FIXME: implement this (also needs work on css side.)
+arbMarkdownTable :: Gen ST
+arbMarkdownTable = pure nil
 
 
 -- * path
@@ -662,22 +728,13 @@ arbWord :: Gen ST
 arbWord = ST.filter isAlpha <$> elements loremIpsumDict
 
 arbPhrase :: Gen ST
-arbPhrase = (+ 3) . (`mod` 5) <$> arbitrary >>= arbPhraseOf
+arbPhrase = arbPhraseOf 3 5
 
-arbPhraseOf :: Int -> Gen ST
-arbPhraseOf n = ST.intercalate " " <$> replicateM n arbWord
+arbPhraseOf :: Int -> Int -> Gen ST
+arbPhraseOf n m = ST.intercalate " " <$> someOf n m arbWord
 
-newtype Paragraph = Paragraph { unParagraph :: ST }
-
-instance Arbitrary Paragraph where
-    arbitrary = Paragraph <$> (arbitrary >>= create . (+ 13) . abs)
-      where
-        create :: Int -> Gen ST
-        create n = terminate <$> replicateM n (elements loremIpsumDict)
-
-        terminate :: [ST] -> ST
-        terminate (ST.unwords -> xs) = (if isAlpha $ ST.last xs then ST.init xs else xs) <> "."
-
+someOf :: Int -> Int -> Gen a -> Gen [a]
+someOf n m g = (`replicateM` g) =<< elements [n..m]
 
 topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]

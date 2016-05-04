@@ -93,7 +93,7 @@ genIdea :: [IdeaSpace] -> [Topic] -> Gen ProtoIdea
 genIdea ideaSpaces topics =
     arbitrary
     <**> (set protoIdeaLocation <$> genIdeaLocation ideaSpaces topics)
-    <**> (set protoIdeaDesc . Markdown <$> (arbPhraseOf =<< choose (100, 300)))
+    <**> (set protoIdeaDesc <$> arb)
 
 -- FIXME: Sometimes there are no related students.
 -- In that case, we generate noise test data.
@@ -120,8 +120,8 @@ genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     return $ addWithUser (AddLikeToIdea (idea ^. _Id)) student ()
 
-arbDocument :: Gen Document
-arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
+arbComment :: Gen Document
+arbComment = Markdown <$> arbPhraseOf 10 100
 
 data CommentInContext = CommentInContext
     { _cicIdea :: Idea
@@ -133,7 +133,7 @@ genComment ideas students = do
     (idea, student) <- ideaStudentPair ideas students
     let event = AddCommentToIdea (idea ^. ideaLocation) (idea ^. _Id)
         getResult = fmap (CommentInContext idea)
-    getResult . addWithUser event student . CommentContent <$> arbDocument
+    getResult . addWithUser event student . CommentContent <$> arbComment
 
 genReply :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)
 genReply comments_in_context students = do
@@ -141,7 +141,7 @@ genReply comments_in_context students = do
     (_, student) <- ideaStudentPair [idea] students
     let event = AddReply (comment ^. _Key)
         getResult = fmap (CommentInContext idea)
-    getResult . addWithUser event student . CommentContent <$> arbDocument
+    getResult . addWithUser event student . CommentContent <$> arbComment
 
 genCommentVote :: [CommentInContext] -> [User] -> forall m . ActionM m => Gen (m CommentVote)
 genCommentVote comments_in_context students = do
