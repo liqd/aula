@@ -289,5 +289,3 @@ instance Filter ClassesFilterQuery where
 
 mkClassesQuery :: Maybe SearchClasses -> ClassesFilterQuery
 mkClassesQuery = maybe AllClasses ClassesWithText
-
--- TODO: make renderQueryParam default implementation
