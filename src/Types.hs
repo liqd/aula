@@ -51,6 +51,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
 import qualified Data.Ord (Down(Down))
 import qualified Data.Text as ST
+import qualified Generics.Generic.Aeson as Aeson
 import qualified Generics.SOP as SOP
 import qualified Text.Email.Validate as Email
 
@@ -1340,3 +1341,46 @@ userPassword = userSettings . userSettingsPassword
 
 userEmail :: Lens' User (Maybe EmailAddress)
 userEmail = userSettings . userSettingsEmail
+
+
+instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
+instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Phase where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UpDown where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""  -- FIXME: where do we need this?  think of something else!
+instance Aeson.ToJSON UserProfile where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
+
+instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON DelegationContext where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
+instance Aeson.FromJSON id => Aeson.FromJSON (GMetaInfo a id) where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON IdeaSpace where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON Phase where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON Role where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON SchoolClass where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON Timestamp where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON UpDown where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON UserFirstName where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON UserLastName where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON UserLogin where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON UserPass where parseJSON _ = pure $ UserPassInitial ""  -- FIXME: where do we need this?  think of something else!
+instance Aeson.FromJSON UserProfile where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON UserSettings where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON User where parseJSON = Aeson.gparseJson
