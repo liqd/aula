@@ -40,7 +40,7 @@ data EventLog = EventLog URL [EventLogItemWarm]
 
 data EventLogItem' user topic idea comment =
     EventLogItem' IdeaSpace Timestamp user (EventLogItemValue' user topic idea comment)
-  deriving (Generic)
+  deriving (Eq, Show, Generic)
 
 data EventLogItemValue' user topic idea comment =
     EventLogUserCreates           (Either3 topic idea comment)
@@ -52,7 +52,7 @@ data EventLogItemValue' user topic idea comment =
   | EventLogTopicNewPhase         topic Phase Phase PhaseTransitionTriggeredBy
   | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea
-  deriving (Generic)
+  deriving (Eq, Show, Generic)
 
 data PhaseTransitionTriggeredBy =
     PhaseTransitionTriggeredBy User

@@ -19,8 +19,11 @@ import Control.Concurrent.STM
 import Control.Exception hiding (handle)
 import Control.Lens
 import Control.Monad (forever, join, when)
-import Data.String.Conversions (cs)
+import Data.String.Conversions (cs, (<>))
 import System.IO (hPutStrLn, stderr)
+
+import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as LBS
 
 import Logger
 import Types
@@ -112,6 +115,10 @@ logDaemon minLevel =
     msgDaemon logMsg "logger" logMsg (const $ pure ())
   where
     -- FIXME: Use event logging
-    logMsg (LogEntry NOLOG _) = pure ()
-    logMsg (LogEntry level msg) =
-        when (level >= minLevel) $ hPutStrLn stderr (cs msg)
+    logMsg (LogEntry NOLOG _)        = pure ()
+    logMsg (LogEntry level msg)      = when (level >= minLevel) $ hPutStrLn stderr (cs msg)
+    logMsg (LogEntryForModerator ev) = LBS.appendFile eventLogPath $ Aeson.encode ev <> cs "\n"
+
+    -- TODO: instead of the level, the config file also needs to provide a file path for the event log.
+    eventLogPath :: FilePath
+    eventLogPath = "/tmp/aula-events.json"
