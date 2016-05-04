@@ -353,7 +353,7 @@ adminFreeze =
 
 instance ToHtml AdminViewUsers where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(AdminViewUsers filters users) =
+    toHtmlRaw p@(AdminViewUsers filters (applyFilter filters -> users)) =
         adminFrame p . semanticDiv p $ do
             div_ [class_ "clearfix"] $ do
                 div_ [class_ "btn-settings pop-menu"] $ do
@@ -404,7 +404,7 @@ instance ToHtml AdminViewUsers where
 
                 tbody_ $ case users of
                     []  -> tr_ $ td_ [class_ "container-not-found"] "(Keine Einträge.)"
-                    _:_ -> renderUserRow `mapM_` applyFilter filters users
+                    _:_ -> renderUserRow `mapM_` users
 
 instance FormPage AdminCreateUser where
     type FormPagePayload AdminCreateUser = CreateUserPayload
