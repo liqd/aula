@@ -32,6 +32,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , markIdeaInJuryPhase
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
+              , eventLogUserCreatesComment
               )
 import LifeCycle
 import Frontend.Fragment.Category
@@ -518,7 +519,10 @@ commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m Comme
 commentIdea loc ideaId =
     formPageHandlerWithMsg
         (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
-        (currentUserAddDb $ AddCommentToIdea loc ideaId)
+        (\cc -> do
+            comment <- currentUserAddDb (AddCommentToIdea loc ideaId) cc
+            eventLogUserCreatesComment comment
+            return comment)
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
@@ -529,7 +533,10 @@ replyCommentIdea loc ideaId commentId =
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentIdea idea (Just comment))
-        (currentUserAddDb . AddReply $ CommentKey loc ideaId [] commentId)
+        (\cc -> do
+            comment <- currentUserAddDb (AddReply $ CommentKey loc ideaId [] commentId) cc
+            eventLogUserCreatesComment comment
+            return comment)
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 -- FIXME: Read the idea state from the db

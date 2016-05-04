@@ -403,16 +403,21 @@ phaseAction topic phasact = do
 
 -- * Page Handling
 
-type Create  a = forall m. (ActionAddDb m) => Proto a -> m a
+type Create  a = forall m. (ActionM m) => Proto a -> m a
 type Create_ a = forall m. (ActionAddDb m) => Proto a -> m ()
 
 createIdea :: Create Idea
-createIdea = currentUserAddDb AddIdea
+createIdea proto = do
+    idea <- currentUserAddDb AddIdea proto
+    eventLogUserCreatesIdea idea
+    pure idea
 
 createTopic :: Create Topic
 createTopic proto = do
     now <- getCurrentTimestamp
-    currentUserAddDb (AddTopic now) proto
+    topic <- currentUserAddDb (AddTopic now) proto
+    eventLogUserCreatesTopic topic
+    pure topic
 
 
 -- * Vote Handling
@@ -503,10 +508,11 @@ getIdeaTopicInJuryPhase iid = do
 -- It runs the phase change computations if happens.
 -- FIXME: Authorization
 -- FIXME: Compute value in one persistent computation
-markIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> IdeaJuryResultValue -> m ()
+markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     topic <- getIdeaTopicInJuryPhase iid
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
+    eventLogUserMarksIdeaFeasible iid (ideaJuryResultValueToType rv)
     checkCloseJuryPhase topic
 
 unmarkIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> m ()
@@ -569,7 +575,7 @@ topicInVotingResetToJury tid = do
 
 -- | Make a topic timeout if the timeout is applicable.
 -- FIXME: Only admin can do that
-topicForceNextPhase :: (ActionLog m, ActionPhaseChange m) => AUID Topic -> m ()
+topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
@@ -625,6 +631,7 @@ eventLogUserCreatesComment comment = do
     eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
         EventLogUserCreates (Right3 $ comment ^. _Key)
 
+-- FIXME: throw this in all applicable situations.
 eventLogUserEditsTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
 eventLogUserEditsTopic topic = do
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
@@ -633,24 +640,28 @@ eventLogUserEditsTopic topic = do
             -- 'eventLogUserEditsComment'.
         EventLogUserEdits (Left3 $ topic ^. _Key)
 
+-- FIXME: throw this in all applicable situations.
 eventLogUserEditsIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
 eventLogUserEditsIdea idea = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
         EventLogUserEdits (Middle3 $ idea ^. _Key)
 
+-- FIXME: throw this in all applicable situations.
 eventLogUserEditsComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
 eventLogUserEditsComment comment = do
     eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
         EventLogUserEdits (Right3 $ comment ^. _Key)
 
 eventLogUserMarksIdeaFeasible ::
-      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> IdeaJuryResultType -> m ()
-eventLogUserMarksIdeaFeasible idea jrt = do
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => AUID Idea -> IdeaJuryResultType -> m ()
+eventLogUserMarksIdeaFeasible iid jrt = do
     uid <- currentUserId
+    idea <- equery $ maybe404 =<< findIdea iid
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
-        EventLogUserMarksIdeaFeasible (idea ^. _Key) jrt
+        EventLogUserMarksIdeaFeasible iid jrt
 
+-- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnIdea ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
       => Idea -> IdeaVoteValue -> m ()
@@ -659,6 +670,7 @@ eventLogUserVotesOnIdea idea v = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnIdea (idea ^. _Key) v
 
+-- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnComment ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
       => Idea -> Comment -> Maybe Comment -> UpDown -> m ()
@@ -667,6 +679,7 @@ eventLogUserVotesOnComment idea comment mcomment v = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
 
+-- FIXME: throw this in all applicable situations.
 eventLogUserDelegates ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
       => DelegationContext -> User -> m ()
@@ -680,12 +693,14 @@ eventLogUserDelegates ctx toUser = do
                                   <$> equery (maybe404 =<< findIdea iid)
     eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
 
+-- FIXME: throw this in all applicable situations.
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
             -- FIXME: the triggering user should not always be the creator of the topic.
         EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
 
+-- FIXME: throw this in all applicable situations.
 eventLogIdeaNewTopic :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
       => Idea -> Maybe Topic -> Maybe Topic -> m ()
 eventLogIdeaNewTopic idea mfrom mto = do
@@ -693,6 +708,7 @@ eventLogIdeaNewTopic idea mfrom mto = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogIdeaNewTopic (idea ^. _Key) (view _Key <$> mfrom) (view _Key <$> mto)
 
+-- FIXME: throw this in all applicable situations.
 eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
 eventLogIdeaReachesQuorum idea = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
@@ -704,9 +720,6 @@ eventLog :: (ActionCurrentTimestamp m, ActionLog m)
 eventLog ispace uid value = do
     now    <- getCurrentTimestamp
     log . LogEntryForModerator $ EventLogItem' ispace now uid value
-
-
--- TODO: throw all events in all places.
 
 
 class WarmUp m cold warm where
