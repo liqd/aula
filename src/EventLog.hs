@@ -28,11 +28,8 @@ import qualified Data.Text as ST
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Generics.SOP as SOP
 
-import Action
-import Action.Implementation
 import Data.UriPath
 import Frontend.Path as U
-import Persistent
 import Types
 
 
@@ -70,6 +67,9 @@ type EventLogItemWarm = EventLogItem' User Topic Idea Comment
 type EventLogItemValueCold = EventLogItemValue' (AUID User) (AUID Topic) (AUID Idea) CommentKey
 type EventLogItemValueWarm = EventLogItemValue' User Topic Idea Comment
 
+type ContentCold = Either3 (AUID Topic) (AUID Idea) CommentKey
+type ContentWarm = Either3 Topic Idea Comment
+
 
 instance SOP.Generic EventLog
 instance SOP.Generic (EventLogItem' u t i c)
@@ -90,65 +90,6 @@ instance HasUILabel PhaseTransitionTriggeredBy where
         (PhaseTransitionTriggeredBy _)           -> "von Hand ausgelöst"
         PhaseTransitionTriggeredByTimeout        -> "Zeit ist abgelaufen"
         PhaseTransitionTriggeredByAllIdeasMarked -> "alle Ideen sind geprüft"
-
-
--- * flatten after de-serialization
-
-class WarmUp m cold warm where
-    warmUp :: cold -> m warm
-
-instance WarmUp Action EventLogItemCold EventLogItemWarm where
-    warmUp (EventLogItem' ispace tstamp usr val) =
-        EventLogItem' ispace tstamp <$> warmUp' usr <*> warmUp val
-
-instance WarmUp Action EventLogItemValueCold EventLogItemValueWarm where
-    warmUp = \case
-        EventLogUserCreates c
-            -> EventLogUserCreates <$> warmUp c
-        EventLogUserEdits c
-            -> EventLogUserCreates <$> warmUp c
-        EventLogUserMarksIdeaFeasible i t
-            -> do i' <- warmUp' i; pure $ EventLogUserMarksIdeaFeasible i' t
-        EventLogUserVotesOnIdea i v
-            -> do i' <- warmUp' i; pure $ EventLogUserVotesOnIdea i' v
-        EventLogUserVotesOnComment i c mc ud
-            -> do i' <- warmUp' i; c' <- warmUp' c; mc' <- mapM warmUp' mc;
-                  pure $ EventLogUserVotesOnComment i' c' mc' ud
-        EventLogUserDelegates s u
-            -> EventLogUserDelegates s <$> warmUp' u
-        EventLogTopicNewPhase t p1 p2 tb
-            -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2 tb
-        EventLogIdeaNewTopic i mt1 mt2
-            -> do i' <- warmUp' i; mt1' <- mapM warmUp' mt1; mt2' <- mapM warmUp' mt2;
-                  pure $ EventLogIdeaNewTopic i' mt1' mt2'
-        EventLogIdeaReachesQuorum i
-            -> EventLogIdeaReachesQuorum <$> warmUp' i
-
-
-type ContentCold = Either3 (AUID Topic) (AUID Idea) CommentKey
-type ContentWarm = Either3 Topic Idea Comment
-
-instance WarmUp Action ContentCold ContentWarm where
-    warmUp = \case
-        Left3   t -> Left3   <$> warmUp' t
-        Middle3 t -> Middle3 <$> warmUp' t
-        Right3  t -> Right3  <$> warmUp' t
-
--- | for internal use only.
-class WarmUp' m a where
-    warmUp' :: KeyOf a -> m a
-
-instance WarmUp' Action User where
-    warmUp' k = equery (maybe404 =<< findUser k)
-
-instance WarmUp' Action Topic where
-    warmUp' k = equery (maybe404 =<< findTopic k)
-
-instance WarmUp' Action Idea where
-    warmUp' k = equery (maybe404 =<< findIdea k)
-
-instance WarmUp' Action Comment where
-    warmUp' k = equery (maybe404 =<< findComment k)
 
 
 -- * delivering the event log

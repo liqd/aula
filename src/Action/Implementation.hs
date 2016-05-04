@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -34,6 +35,7 @@ import qualified Data.ByteString.Lazy as LBS
 
 import Types
 import Action
+import EventLog
 import Persistent
 import Persistent.Api
 
@@ -130,3 +132,59 @@ runActionExcept :: ActionExcept -> ServantErr
 runActionExcept (ActionExcept e) = e
 runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
+
+
+-- * warm up moderator's event log
+
+class WarmUp m cold warm where
+    warmUp :: cold -> m warm
+
+instance WarmUp Action EventLogItemCold EventLogItemWarm where
+    warmUp (EventLogItem' ispace tstamp usr val) =
+        EventLogItem' ispace tstamp <$> warmUp' usr <*> warmUp val
+
+instance WarmUp Action EventLogItemValueCold EventLogItemValueWarm where
+    warmUp = \case
+        EventLogUserCreates c
+            -> EventLogUserCreates <$> warmUp c
+        EventLogUserEdits c
+            -> EventLogUserCreates <$> warmUp c
+        EventLogUserMarksIdeaFeasible i t
+            -> do i' <- warmUp' i; pure $ EventLogUserMarksIdeaFeasible i' t
+        EventLogUserVotesOnIdea i v
+            -> do i' <- warmUp' i; pure $ EventLogUserVotesOnIdea i' v
+        EventLogUserVotesOnComment i c mc ud
+            -> do i' <- warmUp' i; c' <- warmUp' c; mc' <- mapM warmUp' mc;
+                  pure $ EventLogUserVotesOnComment i' c' mc' ud
+        EventLogUserDelegates s u
+            -> EventLogUserDelegates s <$> warmUp' u
+        EventLogTopicNewPhase t p1 p2 tb
+            -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2 tb
+        EventLogIdeaNewTopic i mt1 mt2
+            -> do i' <- warmUp' i; mt1' <- mapM warmUp' mt1; mt2' <- mapM warmUp' mt2;
+                  pure $ EventLogIdeaNewTopic i' mt1' mt2'
+        EventLogIdeaReachesQuorum i
+            -> EventLogIdeaReachesQuorum <$> warmUp' i
+
+
+instance WarmUp Action ContentCold ContentWarm where
+    warmUp = \case
+        Left3   t -> Left3   <$> warmUp' t
+        Middle3 t -> Middle3 <$> warmUp' t
+        Right3  t -> Right3  <$> warmUp' t
+
+-- | for internal use only.
+class WarmUp' m a where
+    warmUp' :: KeyOf a -> m a
+
+instance WarmUp' Action User where
+    warmUp' k = equery (maybe404 =<< findUser k)
+
+instance WarmUp' Action Topic where
+    warmUp' k = equery (maybe404 =<< findTopic k)
+
+instance WarmUp' Action Idea where
+    warmUp' k = equery (maybe404 =<< findIdea k)
+
+instance WarmUp' Action Comment where
+    warmUp' k = equery (maybe404 =<< findComment k)
