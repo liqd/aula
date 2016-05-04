@@ -93,7 +93,7 @@ genIdea :: [IdeaSpace] -> [Topic] -> Gen ProtoIdea
 genIdea ideaSpaces topics =
     arbitrary
     <**> (set protoIdeaLocation <$> genIdeaLocation ideaSpaces topics)
-    <**> (set protoIdeaDesc . Markdown <$> (arbPhraseOf =<< choose (100, 300)))
+    <**> (set protoIdeaDesc . Markdown <$> (arbPhraseOf 100 300))
 
 -- FIXME: Sometimes there are no related students.
 -- In that case, we generate noise test data.
@@ -121,7 +121,7 @@ genLike ideas students = do
     return $ addWithUser (AddLikeToIdea (idea ^. _Id)) student ()
 
 arbDocument :: Gen Document
-arbDocument = Markdown <$> (arbPhraseOf =<< choose (10, 100))
+arbDocument = Markdown <$> arbPhraseOf 10 100
 
 data CommentInContext = CommentInContext
     { _cicIdea :: Idea

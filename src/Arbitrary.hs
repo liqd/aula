@@ -8,7 +8,7 @@
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE ViewPatterns        #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans -Werror #-}
+{-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Arbitrary
     ( topLevelDomains
@@ -19,6 +19,7 @@ module Arbitrary
     , arbWord
     , arbPhrase
     , arbPhraseOf
+    , someOf
     , arbName
     , schoolClasses
     , fishDelegationNetworkIO
@@ -656,22 +657,13 @@ arbWord :: Gen ST
 arbWord = ST.filter isAlpha <$> elements loremIpsumDict
 
 arbPhrase :: Gen ST
-arbPhrase = (+ 3) . (`mod` 5) <$> arbitrary >>= arbPhraseOf
+arbPhrase = arbPhraseOf 3 5
 
-arbPhraseOf :: Int -> Gen ST
-arbPhraseOf n = ST.intercalate " " <$> replicateM n arbWord
+arbPhraseOf :: Int -> Int -> Gen ST
+arbPhraseOf n m = ST.intercalate " " <$> someOf n m arbWord
 
-newtype Paragraph = Paragraph { unParagraph :: ST }
-
-instance Arbitrary Paragraph where
-    arbitrary = Paragraph <$> (arbitrary >>= create . (+ 13) . abs)
-      where
-        create :: Int -> Gen ST
-        create n = terminate <$> replicateM n (elements loremIpsumDict)
-
-        terminate :: [ST] -> ST
-        terminate (ST.unwords -> xs) = (if isAlpha $ ST.last xs then ST.init xs else xs) <> "."
-
+someOf :: Int -> Int -> Gen a -> Gen [a]
+someOf n m g = (`replicateM` g) =<< elements [n..m]
 
 topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
