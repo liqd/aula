@@ -27,13 +27,14 @@
 -- Rule: always add (and expect) trailing slashes.
 module Frontend.Path
     ( Allow(..)
-    , Top(..)
+    , Top
     , Main(..)
     , Space(..)
     , UserMode(..)
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
+    , rooot, static
     , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listIdeasWithQuery
     , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
@@ -68,6 +69,13 @@ data Top (r :: Allow) =
 instance SOP.Generic (Top r)
 
 instance HasPath (Top r) where relPath = top
+
+-- TODO: Rename
+rooot :: Top 'AllowGetPost
+rooot = Top
+
+static :: UriPath -> Top 'AllowGetPost
+static = TopStatic
 
 top :: (Top r) -> UriPath
 top Top            = nil

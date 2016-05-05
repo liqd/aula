@@ -42,9 +42,9 @@ data PageDelegationNetwork = PageDelegationNetwork
 
 instance Page PageDelegationNetwork where
     extraPageHeaders _ = do
-        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
-        script_ [src_ $ U.TopStatic "d3-aula.js"]
-        link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
+        script_ [src_ $ U.static "third-party/d3/d3.js"]
+        script_ [src_ $ U.static "d3-aula.js"]
+        link_ [rel_ "stylesheet", href_ $ U.static "d3-aula.css"]
 
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml

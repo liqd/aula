@@ -475,7 +475,7 @@ pageFrame frame = do
         bodyClasses = extraBodyClasses p
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        link_ [rel_ "stylesheet", href_ $ P.static "css/all.css"]
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
@@ -489,7 +489,7 @@ pageFrame frame = do
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
     div_ [class_ "grid"] $ do
-        a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
+        a_ [class_ "site-logo", title_ "aula", href_ P.rooot] nil
         button_ [id_ "mobile-menu-button"] $ do
             i_ [class_ "icon-bars", title_ "Menu"] nil
         case mUser of
@@ -550,6 +550,6 @@ footerMarkup = do
                 replicateM_ 5 $ toHtmlRaw nbsp
                 a_ [Lucid.onclick_ "createPageSample()"]
                     "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
-    script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
-    script_ [src_ $ P.TopStatic "third-party/showdown/dist/showdown.min.js"]
-    script_ [src_ $ P.TopStatic "js/custom.js"]
+    script_ [src_ $ P.static "third-party/modernizr/modernizr-custom.js"]
+    script_ [src_ $ P.static "third-party/showdown/dist/showdown.min.js"]
+    script_ [src_ $ P.static "js/custom.js"]

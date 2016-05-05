@@ -724,7 +724,7 @@ instance FormPage AdminCreateClass where
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
-        a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
+        a_ [href_ $ U.static "templates/student_upload.csv"] "Vorlage herunterladen."
         form $ do
             div_ $ do
                 p_ "Klasse"
