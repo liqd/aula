@@ -75,7 +75,7 @@ instance FormPage PageHomeWithLoginPrompt where
     guardPage _ = do
         -- Redirect from login if the user is already logged in.
         li <- Action.isLoggedIn
-        pure $ if li then Just $ relPath U.ListSpaces else Nothing
+        pure $ if li then Just $ U.relPath U.ListSpaces else Nothing
 
 
 instance ToHtml LoginDemoHints where

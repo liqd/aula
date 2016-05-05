@@ -83,7 +83,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Config
-import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
+import Data.UriPath (UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -390,14 +390,14 @@ form formHandler = getH :<|> postH
     getH = makeFrame $ do
         page <- getPage
         guard page
-        let fa = absoluteUriPath . relPath $ formAction page
+        let fa = absoluteUriPath . P.relPath $ formAction page
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
     postH formData = makeFrame $ do
         page <- getPage
         guard page
-        let fa = absoluteUriPath . relPath $ formAction page
+        let fa = absoluteUriPath . P.relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
@@ -411,7 +411,7 @@ form formHandler = getH :<|> postH
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result =
-        ((absoluteUriPath . relPath . redirectOf page) &&& formMessage page result)
+        ((absoluteUriPath . P.relPath . redirectOf page) &&& formMessage page result)
         <$> processor result
 
 
@@ -428,7 +428,7 @@ makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, P
 makeFrame mp = do
   isli <- isLoggedIn
   let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
-  if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
+  if | not isli && isPrivate -> redirect . absoluteUriPath $ P.relPath P.Login
      | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> flushMessages
      | otherwise             -> PublicFrame <$> mp <*> flushMessages
 

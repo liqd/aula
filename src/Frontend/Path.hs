@@ -27,6 +27,7 @@
 -- Rule: always add (and expect) trailing slashes.
 module Frontend.Path
     ( Allow(..)
+    , HasPath(..)
     , Top
     , Main(..)
     , Space(..)
@@ -58,6 +59,9 @@ import Frontend.Filter
 
 data Allow = AllowGetPost | AllowPost
 
+class HasPath (p :: Allow -> *) where
+    relPath :: p r -> UriPath
+
 data Top (r :: Allow) =
     Top
   | TopMain (Main r)
@@ -68,7 +72,7 @@ data Top (r :: Allow) =
 
 instance SOP.Generic (Top r)
 
-instance HasPath (Top r) where relPath = top
+instance HasPath Top where relPath = top
 
 -- TODO: Rename
 rooot :: Top 'AllowGetPost
@@ -133,7 +137,7 @@ isBroken _      = False
 
 instance SOP.Generic (Main r)
 
-instance HasPath (Main r) where relPath p = main p nil
+instance HasPath Main where relPath p = main p nil
 
 main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
