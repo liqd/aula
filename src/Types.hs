@@ -30,7 +30,7 @@ import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
 import Data.Map as Map (Map, fromList)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
 import Data.String
@@ -1290,6 +1290,10 @@ isWild (IdeaLocationTopic _ _) = False
 userVoteOnIdea :: User -> Idea -> Maybe IdeaVoteValue
 userVoteOnIdea user idea =
     idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue
+
+userLikeOnIdea :: User -> Idea -> Bool
+userLikeOnIdea user idea =
+    isJust $ idea ^? ideaLikes . at (user ^. _Id) . _Just
 
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation

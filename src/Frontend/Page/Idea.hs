@@ -245,7 +245,6 @@ instance ToHtml ViewIdea where
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c ^. html
 
-
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars caps
@@ -257,15 +256,19 @@ instance ToHtml IdeaVoteLikeBars where
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
 
+            -- FIXME: how do you un-like an idea?
+            -- TODO: Translation
             likeButtons :: Html ()
             likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
-                        postButton_ [ class_ "btn"
+                        if userLikeOnIdea (ctx ^. renderContextUser) idea
+                            then span_ [class_ "btn"] "Du hast gelikegtet!"
+                            else postButton_
+                                    [ class_ "btn"
                                     , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
                                     ]
                                     (U.likeIdea idea)
-                            "dafür!"
-                        -- FIXME: how do you un-like an idea?
+                                    "dafür!"
                 else nil
 
             voteBar :: Html () -> Html ()
