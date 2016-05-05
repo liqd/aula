@@ -337,7 +337,7 @@ instance FormPage CreateIdea where
     makeForm (CreateIdea loc) =
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
-        <*> ("idea-text"     .: validateMarkdown "Idee" (Markdown <$> DF.text Nothing))
+        <*> ("idea-text"     .: validate "Idee" markdown (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
@@ -354,7 +354,7 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .:
-                validateMarkdown "Idee" ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
+                validate "Idee" markdown ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
@@ -392,7 +392,7 @@ createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
     { noteHeaderText        = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
-    , noteValidationMessage = "Verbesserungsvorschlag"
+    , noteValidationOnField = "Verbesserungsvorschlag"
     , noteLabelText         = "Was möchtest du sagen?"
     }
 
@@ -414,7 +414,7 @@ instance FormPage CommentIdea where
 judgeIdeaNote :: IdeaJuryResultType -> Note Idea
 judgeIdeaNote juryType = Note
     { noteHeaderText        = (headerText <>) . view ideaTitle
-    , noteValidationMessage = "Anmerkungen zur Durchführbarkeit"
+    , noteValidationOnField = "Anmerkungen zur Durchführbarkeit"
     , noteLabelText         = labelText
     }
   where
@@ -446,7 +446,7 @@ instance FormPage JudgeIdea where
 creatorStatementNote :: Note Idea
 creatorStatementNote = Note
     { noteHeaderText        = ("Ansage des Gewinners zur Idee " <>) . view ideaTitle
-    , noteValidationMessage = "Statement des Autors"
+    , noteValidationOnField = "Statement des Autors"
     , noteLabelText         = "Was möchtest du sagen?"
     }
 
@@ -470,7 +470,7 @@ newtype ReportCommentContent = ReportCommentContent
 reportCommentNote :: Note ()
 reportCommentNote = Note
     { noteHeaderText        = const "Verbesserungsvorschlag melden"
-    , noteValidationMessage = "Bemerkung"
+    , noteValidationOnField = "Bemerkung"
     , noteLabelText         = "Was möchtest du melden?"
     }
 

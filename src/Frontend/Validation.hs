@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -13,8 +14,9 @@ module Frontend.Validation
     , FieldParser
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
+    , fieldParser
     , nonEmpty
-    , optionalNonEmpty
+    , maxLength
     , DfForm
     , DfTextField
     , dfTextField
@@ -30,10 +32,15 @@ module Frontend.Validation
     , password
     , title
     , emailField
-    , validateMarkdown
-    , validateOptionalMarkdown
+    , markdown
     )
 where
+
+import Prelude hiding ((.))
+
+import Control.Arrow
+import Control.Category as Cat
+import Data.Text as Text (Text, length)
 
 import Text.Digestive as DF
 import Text.Email.Validate as Email
@@ -48,16 +55,36 @@ type FieldParser a = Parsec String () a
 
 -- * field validation
 
+newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result ST b }
+
+instance Functor (FieldValidator a) where
+    fmap g (FieldValidator f) = FieldValidator (fmap g . f)
+
+instance Cat.Category FieldValidator where
+    id    = FieldValidator DF.Success
+    g . f = FieldValidator (unFieldValidator g <=< unFieldValidator f)
+
+instance Arrow FieldValidator where
+    arr f   = FieldValidator (DF.Success . f)
+    first f = FieldValidator $ \(x,y) -> case unFieldValidator f x of
+                DF.Success z -> DF.Success (z,y)
+                DF.Error   e -> DF.Error e
+
+markFieldName :: FieldName -> FieldValidator a b -> FieldValidator a b
+markFieldName fieldName v = FieldValidator $ \x -> case unFieldValidator v x of
+    s@(DF.Success _) -> s
+    DF.Error e       -> DF.Error $ (cs fieldName) <> ": " <> e
+
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
-fieldValidation
+fieldParser
     :: (ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> s -> DF.Result (Html ()) a
-fieldValidation name parser value =
-    either (DF.Error . toHtml . errorString) DF.Success $ parse (parser <* eof) name (cs value)
+    => FieldParser a -> FieldValidator s a
+fieldParser parser =
+    FieldValidator (\value -> either (DF.Error . cs . errorString) DF.Success $ parse (parser <* eof) "" (cs value))
   where
-    errorString e = filter (/= '\n') $ unwords [sourceName $ errorPos e, ":", errorMsgs $ errorMessages e]
+    errorString = filter (/= '\n') . errorMsgs . errorMessages
     -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
     -- are displayed if a parse error happens. Also it gives control to the
     -- client code to make their translation of those connectors. The German
@@ -65,43 +92,44 @@ fieldValidation name parser value =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
+calcValidator :: (Monad m) => FieldName -> FieldValidator a b -> (a -> Result (HtmlT m ()) b)
+calcValidator n v = errorToHtml . (unFieldValidator (markFieldName n v))
+  where
+    errorToHtml (DF.Success x) = DF.Success x
+    errorToHtml (DF.Error x)   = DF.Error $ toHtml x
+
 validate
-    :: (Monad m, ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> Form (Html ()) m s -> Form (Html ()) m a
-validate n p = DF.validate (fieldValidation n p)
+    :: Monad m => FieldName -> FieldValidator s a -> Form (Html ()) m s -> Form (Html ()) m a
+validate = DF.validate <..> calcValidator
 
 validateOptional
-    :: (Monad m, ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
-validateOptional = DF.validateOptional <..> fieldValidation
+    :: Monad m
+    => FieldName -> FieldValidator s a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
+validateOptional = DF.validateOptional <..> calcValidator
 
-inRange :: Int -> Int -> FieldParser Int
-inRange mn mx =
-    satisfies isBetween (read <$> many1 digit)
-    <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."]
+inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
+inRange mn mx = fieldParser $
+    (satisfies isBetween (read <$> many1 digit)
+        <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."])
   where
     isBetween n = mn <= n && n <= mx
 
 
 -- * simple validators
 
-checkNonEmpty
-    :: (Eq m, IsString v, Monoid m)
-    => FieldName -> m -> DF.Result v m
-checkNonEmpty name xs
-   | xs == mempty = DF.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
-   | otherwise    = DF.Success xs
+nonEmpty :: (Eq m, Monoid m) => FieldValidator m m
+nonEmpty = FieldValidator $ \xs ->
+    if xs == mempty
+        then DF.Error . fromString $ "darf nicht leer sein"
+        else DF.Success xs
 
-nonEmpty
-    :: (Monad m, Monoid v, IsString v, Eq s, Monoid s, ConvertibleStrings s r)
-    => FieldName -> Form v m s -> Form v m r
-nonEmpty = DF.validate . fmap cs <..> checkNonEmpty
-
-optionalNonEmpty
-    :: (Monad m, Monoid v, IsString v)
-    => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
-optionalNonEmpty = DF.validateOptional . checkNonEmpty
-
+maxLength :: Int -> FieldValidator Text Text
+maxLength mx = FieldValidator $ \xs ->
+    let l = Text.length xs
+    in if Text.length xs > mx
+        then DF.Error . fromString $
+            unwords ["zu lang, Zahl der zusätzlichen Zeichen:", show (l - mx)]
+        else DF.Success xs
 
 type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
 type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
@@ -147,27 +175,20 @@ manyNM n m p = (<>) <$> replicateM n p <*> run m []
 
 -- * common validators
 
-type StringFieldParser = forall s . ConvertibleStrings String s => FieldParser s
+type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
+                                         => FieldValidator r s
 
-username :: StringFieldParser
-username = cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben"
+username :: StringFieldValidator
+username = fieldParser (cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
 
-password :: StringFieldParser
-password = cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)"
+password :: StringFieldValidator
+password = fieldParser (cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)")
 
-title :: StringFieldParser
-title = cs <$> many1 (alphaNum <|> space)
+title :: StringFieldValidator
+title = fieldParser (cs <$> many1 (alphaNum <|> space))
 
--- FIXME: Use LensLike
-validateMarkdown
-    :: (Monad m)
-    => FieldName -> Form (Html ()) m Document -> Form (Html ()) m Document
-validateMarkdown name = fmap Markdown . nonEmpty name . fmap unMarkdown
-
-validateOptionalMarkdown
-    :: Monad m
-    => FieldName -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe Document)
-validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
+markdown :: FieldValidator Document Document
+markdown = unMarkdown ^>> nonEmpty >>^ Markdown
 
 emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
 emailField name emailValue =

@@ -228,6 +228,12 @@ instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
 
 
+-- * topic
+
+instance Arbitrary Description where
+    arbitrary = Description <$> arbPhrase
+    shrink (Description x) = Description <$> shrink x
+
 -- * idea
 
 instance Arbitrary ProtoIdea where

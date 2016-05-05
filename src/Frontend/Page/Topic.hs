@@ -23,6 +23,9 @@ module Frontend.Page.Topic
     , editTopic )
 where
 
+import Prelude hiding ((.))
+import Control.Category ((.))
+
 import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
 import Frontend.Fragment.IdeaList
@@ -31,6 +34,7 @@ import Frontend.Validation hiding (space, tab)
 import LifeCycle (TopicCapability(..), topicCapabilities)
 
 import qualified Action (createTopic)
+import qualified Frontend.Constant as Constant
 import qualified Frontend.Path as U
 import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Text.Digestive.Form as DF
@@ -198,6 +202,12 @@ viewTopicHeaderDiv ctx topic tab = do
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" title
 
+validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m Description
+validateTopicDesc =
+    validate
+        "Thema"
+        (Description <$> (maxLength Constant.topicDescMaxLength . nonEmpty))
+
 instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
     type FormPageResult CreateTopic = Topic
@@ -211,7 +221,7 @@ instance FormPage CreateTopic where
                         , _createTopicRefPhaseEnd } =
         ProtoTopic
         <$> ("title" .: validateTopicTitle (DF.text nil))
-        <*> ("desc"  .: validateMarkdown "Thema" (Markdown <$> DF.text Nothing))
+        <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
         <*> makeFormIdeaSelection _createTopicIdeas
@@ -254,7 +264,7 @@ instance FormPage EditTopic where
     makeForm (EditTopic _space topic ideas) =
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
-        <*> ("desc"  .: validateMarkdown "Thema" ((topic ^. topicDesc) & _Markdown %%~ (DF.text . Just)))
+        <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
         <*> makeFormIdeaSelection ideas
 
     formPage v form p@(EditTopic _space _topic ideas) = do

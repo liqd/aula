@@ -281,7 +281,7 @@ genInitialTestDb = do
 
     topic <- update $ AddTopic constantSampleTimestamp (EnvWith user1 constantSampleTimestamp ProtoTopic
         { _protoTopicTitle       = "topic-title"
-        , _protoTopicDesc        = Markdown "topic-desc"
+        , _protoTopicDesc        = Description "topic-desc"
         , _protoTopicImage       = ""
         , _protoTopicIdeaSpace   = SchoolSpace
         , _protoTopicIdeas       = []

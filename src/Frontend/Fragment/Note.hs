@@ -17,7 +17,7 @@ import Frontend.Validation
 
 data Note h = Note
     { noteHeaderText        :: h -> ST
-    , noteValidationMessage :: ST
+    , noteValidationOnField :: ST
     , noteLabelText         :: ST
     }
 
@@ -40,10 +40,12 @@ noteForm note v form header = do
 
 noteFormInput :: (Monad m) => Note t -> Maybe Document -> DF.Form (Html ()) m Document
 noteFormInput note mdoc =
-    "note-text" .: validateMarkdown (cs $ noteValidationMessage note)
-                                    (Markdown <$> DF.text (unMarkdown <$> mdoc))
+    "note-text" .: validate (cs $ noteValidationOnField note)
+                            markdown
+                            (Markdown <$> DF.text (unMarkdown <$> mdoc))
 
 noteFormOptionalInput :: (Monad m) => Note t -> Maybe Document -> DF.Form (Html ()) m (Maybe Document)
 noteFormOptionalInput note mdoc =
-    "note-text" .: validateOptionalMarkdown (cs $ noteValidationMessage note)
-                                            (DF.optionalString (cs . unMarkdown <$> mdoc))
+    "note-text" .: validateOptional (cs $ noteValidationOnField note)
+                                    markdown
+                                    (Markdown . cs <$$> DF.optionalString (cs . unMarkdown <$> mdoc))
