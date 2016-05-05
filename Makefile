@@ -82,3 +82,7 @@ grepi.%:
 
 grep.%:
 	git grep -Hn $* src tests exec
+
+docker-hpc:
+	./.travis/docker-build.sh 1000
+	cp -R /liqd/aula/.stack-work/install/x86_64-linux/lts-3.20/7.10.2/hpc .
