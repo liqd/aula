@@ -402,7 +402,7 @@ instance FormPage CommentIdea where
 
     formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
 
-    redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
+    redirectOf (CommentIdea _idea _) = U.viewIdeaAtComment
 
     makeForm CommentIdea{} =
         CommentContent <$> noteFormInput commentIdeaNote Nothing
@@ -479,7 +479,7 @@ instance FormPage ReportComment where
 
     formAction (ReportComment comment) = U.reportComment comment
 
-    redirectOf (ReportComment comment) _ = U.viewIdeaOfComment comment
+    redirectOf (ReportComment comment) _ = U.viewIdeaAtComment comment
 
     makeForm _ =
         ReportCommentContent <$> noteFormInput reportCommentNote Nothing

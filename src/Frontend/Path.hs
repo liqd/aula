@@ -40,7 +40,7 @@ module Frontend.Path
     , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
-    , viewUser, adminViewUsers, adminViewClasses, viewIdeaOfComment
+    , viewUser, adminViewUsers, adminViewClasses
     , anchor
     )
 where
@@ -171,12 +171,11 @@ instance SOP.Generic (Space r)
 viewIdea :: Idea -> Main 'AllowGetPost
 viewIdea idea = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) Nothing)
 
-viewIdeaAtComment :: Idea -> AUID Comment -> Main 'AllowGetPost
-viewIdeaAtComment idea cid = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) (Just cid))
-
-viewIdeaOfComment :: Comment -> Main 'AllowGetPost
-viewIdeaOfComment comment = IdeaPath (ck ^. ckIdeaLocation) (ViewIdea (ck ^. ckIdeaId) Nothing)
-  where ck = comment ^. _Key
+viewIdeaAtComment :: Comment -> Main 'AllowGetPost
+viewIdeaAtComment c = IdeaPath iloc $ ViewIdea iid (Just $ c ^. _Id)
+  where
+    iloc = c ^. _Key . ckIdeaLocation
+    iid = c ^. _Key . ckIdeaId
 
 editIdea :: Idea -> Main 'AllowGetPost
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)

@@ -120,11 +120,8 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
 
         objLink' :: ContentWarm -> U.Main 'AllowGetPost
         objLink' (Left3   t) = U.listTopicIdeas t
-        objLink' (Middle3 i) = U.IdeaPath (i ^. ideaLocation) (U.ViewIdea (i ^. _Id) Nothing)
-        objLink' (Right3  c) = U.IdeaPath iloc (U.ViewIdea iid (Just $ c ^. _Id))
-          where
-            iloc = c ^. _Key . ckIdeaLocation
-            iid = c ^. _Key . ckIdeaId
+        objLink' (Middle3 i) = U.viewIdea i
+        objLink' (Right3  c) = U.viewIdeaAtComment c
 
         f (EventLogUserCreates obj) = CSV.toRecord
             [ "legt " <> objDesc obj <> " an.", objLink obj ]
