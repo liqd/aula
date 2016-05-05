@@ -124,7 +124,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx ideaInfo@(ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -176,6 +176,10 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
+
+            when (ideaReachedQuorum ideaInfo) $ do
+                -- FIXME: Design
+                div_ [class_ "TABLE"] $ p_ "This is a table."
 
             feasibilityVerdict True idea caps
 

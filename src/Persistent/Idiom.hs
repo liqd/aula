@@ -59,6 +59,12 @@ data ListInfoForIdea = ListInfoForIdea
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+ideaReachedQuorum :: ListInfoForIdea -> Bool
+ideaReachedQuorum i =
+    countIdeaVotes Yes (_ideaVotes $ _listInfoForIdeaIt i)
+    >=
+    _listInfoForIdeaQuorum i
+
 instance SOP.Generic ListInfoForIdea
 
 getListInfoForIdea :: Idea -> EQuery ListInfoForIdea
