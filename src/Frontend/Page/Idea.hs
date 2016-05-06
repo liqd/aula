@@ -148,10 +148,12 @@ instance ToHtml ViewIdea where
                                 when (ideaReachedQuorum ideaInfo) $ do
                                     let spc = idea ^. ideaLocation ^. ideaLocationSpace
                                     a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                        i_ [class_ "icon-sign-out"] nil
+                                        i_ [class_ "icon-pencil"] nil
+                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                         "Thema erstellen"
                                 when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
-                                    i_ [class_ "icon-sign-out"] nil
+                                    i_ [class_ "icon-pencil"] nil
+                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                     "Idee verschieben"
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
@@ -183,7 +185,7 @@ instance ToHtml ViewIdea where
                 toHtml $ IdeaVoteLikeBars caps p
 
             when (ideaReachedQuorum ideaInfo) $ do
-                -- FIXME: Design
+                -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
                 div_ [class_ "voting-buttons"] $ "Idee kann auf den Tisch."
 
             feasibilityVerdict True idea caps
