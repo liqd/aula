@@ -44,29 +44,27 @@ if(imageSelect) {
     var buttons = imageSelect.getElementsByClassName("icon-list-button");
     var hidden = document.querySelectorAll("input[type=hidden]")[0];
 
-    var handler = function(b1) {
-        for (b2 = 0; b2 < buttons.length; ++b2) {
-            removeClass(buttons[b2].parentNode, "m-active");
-            if (b2 == b1) {
-                if (hidden.value === "") {
-                    addClass(buttons[b2].parentNode, "m-active");
-                    hidden.value = b1;
-                } else {
-                    hidden.value = "";
+    var makeHandler = function(b1) {
+        return function() {
+            for (b2 = 0; b2 < buttons.length; ++b2) {
+                if(buttons[b2] && buttons[b2].className) {
+                    if (b2 == b1) {
+                        var toggledOn = toggleClass(buttons[b2].parentNode, "m-active");
+                        hidden.value = toggledOn ? b2 : "";
+                    } else {
+                        removeClass(buttons[b2].parentNode, "m-active");
+                    }
                 }
             }
         }
     };
 
     for (b = 0; b < buttons.length; ++b) {
-        var makeHandler = function(b1) { return function() { return handler(b1); } };
-        if(buttons[b] && buttons[b].className) {
-            buttons[b].addEventListener("click", makeHandler(b));
-        }
+        buttons[b].addEventListener("click", makeHandler(b));
     }
 
     if (hidden.value !== "") {
-        handler(hidden.value);
+        addClass(buttons[hidden.value].parentNode, "m-active");
     }
 }
 
@@ -103,6 +101,19 @@ function removeClass(el, cl) {
 
 function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
+}
+
+function toggleClass(el, cl) {
+    if(el) {
+        var old = el.className;
+        removeClass(el, cl);
+        if (el.className === old) {
+            addClass(el, cl);
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 function reloadOnClick(hash) {

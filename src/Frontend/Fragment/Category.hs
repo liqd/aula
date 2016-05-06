@@ -46,6 +46,8 @@ formPageSelectCategory v = do
         div_ [class_ "icon-list m-inline category-image-select"] $ do
             ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
 
+-- | only for selecting a category, not for filtering.  for the latter, see 'categoryFilterButtons'
+-- below.  (it's a newtype so deriving is easier.)
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
@@ -57,6 +59,7 @@ instance ToHtml CategoryLabel where
     toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
         -- FIXME: something without the `li_` elem?
 
+-- | The "m-active" class is managed in js.  See `static/js/custom.js`.
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
     toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
