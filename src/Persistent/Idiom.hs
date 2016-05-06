@@ -26,14 +26,6 @@ import Types
 import Persistent.Pure
 
 
--- | Number of likes / number of voters >= gobally configured quorum.
-ideaQuorumOk :: AUID Idea -> Query Bool
-ideaQuorumOk iid = do
-    Just idea <- findIdea iid -- FIXME: Not found
-    numVoters <- length <$> getVotersForIdea idea
-    let numVotes = Map.size (view ideaLikes idea)
-    ((numVotes * 100 `div` numVoters) >=) <$> quorum idea
-
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
 getVotersForIdea :: Idea -> Query [User]
 getVotersForIdea idea = filter hasAccess <$> getActiveUsers
