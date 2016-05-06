@@ -559,14 +559,14 @@ commentIdea loc ideaId =
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 editComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m EditComment
-editComment loc ideaId commentId =
+editComment loc iid cid =
     formPageHandlerWithMsg
         (equery $ do
-            idea <- maybe404 =<< findIdea ideaId
-            comment <- maybe404 $ idea ^. ideaComments . at commentId
+            idea <- maybe404 =<< findIdea iid
+            comment <- maybe404 =<< findComment (commentKey loc iid cid)
             pure $ EditComment idea comment)
         (\desc -> do
-            update $ SetCommentDesc (commentKey loc ideaId commentId) desc
+            update $ SetCommentDesc (commentKey loc iid cid) desc
             -- eventLogUserEditComment comment -- FIXME
             )
         "Der Verbesserungsvorschlag wurde gespeichert."
