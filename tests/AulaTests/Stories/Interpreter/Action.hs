@@ -145,8 +145,9 @@ runClient (Free (EditTopic ot nt d k)) = do
         pure topic
     step . lift $ do
         let editTopicPage = Page.editTopic (topic ^. _Id)
-        -- FIXME: Add idea handling
-        (editTopicPage ^. formProcessor) $ EditTopicData nt (PlainDocument d) []
+        -- FIXME: Add idea handling (currently we don't change whats in the topic and what is not)
+        previouslyInTopic :: [AUID Idea] <- query $ view _Id <$$> findIdeasByTopicId (topic ^. _Id)
+        (editTopicPage ^. formProcessor) $ EditTopicData nt (PlainDocument d) previouslyInTopic
     postcondition $ do
         Nothing <- findTopicByTitle ot
         Just _topic <- findTopicByTitle nt

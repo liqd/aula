@@ -140,8 +140,9 @@ import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
 import Data.Foldable (find, for_)
-import Data.List (nub)
 import Data.Functor
+import Data.Functor.Infix ((<$$>))
+import Data.List (nub)
 import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
@@ -478,9 +479,10 @@ setUserAvatar uid url = withUser uid . userAvatar ?= url
 
 editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
 editTopic topicId (EditTopicData title desc ideas) = do
-    topic <- maybe404 =<< liftAQuery (findTopic topicId)
-    let space = topic ^. topicIdeaSpace
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
+    previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
+    space <- view topicIdeaSpace <$> (maybe404 =<< liftAQuery (findTopic topicId))
+    moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
     moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 withTopic :: AUID Topic -> AulaTraversal Topic

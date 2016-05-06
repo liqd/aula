@@ -162,7 +162,7 @@ instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicRefPhaseEnd
 
 instance Arbitrary EditTopic where
-    arbitrary = EditTopic <$> arb <*> arb <*> arb
+    arbitrary = EditTopic <$> arb <*> arb <*> arb <*> arb
 
 instance Arbitrary EditTopicData where
     arbitrary = EditTopicData <$> arbPhrase <*> arb <*> arb

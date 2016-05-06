@@ -20,11 +20,13 @@ module Frontend.Page.Topic
     , IdeasFilterApi
     , viewTopic
     , createTopic
-    , editTopic )
+    , editTopic
+    )
 where
 
-import Prelude hiding ((.))
 import Control.Category ((.))
+import Data.List (sortBy)
+import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
@@ -77,7 +79,7 @@ data CreateTopic = CreateTopic
 instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
-data EditTopic = EditTopic IdeaSpace Topic [Idea]
+data EditTopic = EditTopic IdeaSpace Topic [Idea] [AUID Idea]
   deriving (Eq, Show, Read)
 
 instance Page EditTopic
@@ -224,7 +226,7 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
-        <*> makeFormIdeaSelection _createTopicIdeas
+        <*> makeFormIdeaSelection [] _createTopicIdeas
         <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
@@ -257,17 +259,17 @@ instance FormPage EditTopic where
     -- the ideas to be added to the topic.
     type FormPagePayload EditTopic = EditTopicData
 
-    formAction (EditTopic space topic _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    formAction (EditTopic space topic _ _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
 
-    redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
+    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas topic
 
-    makeForm (EditTopic _space topic ideas) =
+    makeForm (EditTopic _space topic ideas preselected) =
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
-        <*> makeFormIdeaSelection ideas
+        <*> makeFormIdeaSelection preselected ideas
 
-    formPage v form p@(EditTopic _space _topic ideas) = do
+    formPage v form p@(EditTopic _space _topic ideas _preselected) = do
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -275,24 +277,26 @@ instance FormPage EditTopic where
                     form $ createOrEditTopic v ideas
 
 ideaToFormField :: Idea -> ST
-ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
+ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 
--- FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+-- | FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+--
+-- This form is called both from CreateTopic and EditTopic.  The ideas listed here include all wild
+-- ones in the surrounding space, plus those already in the topic.  The ones already in the topic
+-- are pre-selected.
 formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
 formPageIdeaSelection v ideas =
-    ul_ . for_ ideas $ \idea ->
+    ul_ . for_ (sortBy (compare `on` view ideaTitle) ideas) $ \idea ->
         li_ $ do
             DF.inputCheckbox (ideaToFormField idea) v
             idea ^. ideaTitle . html
 
--- FIXME: this is called both from CreateTopic and EditTopic.  the ideas listed here should include
--- wild ones in the surrounding space, plus those already in the topic.  the ones already in the
--- topic should be pre-selected.
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
-                      => [Idea] -> DF.Form v m [AUID Idea]
-makeFormIdeaSelection ideas =
+                      => [AUID Idea] -> [Idea] -> DF.Form v m [AUID Idea]
+makeFormIdeaSelection preselected ideas =
     fmap catMaybes . sequenceA $
-        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
+        [ let checked = Just $ idea ^. _Id `elem` preselected
+          in justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool checked)
         | idea <- ideas ]
 
 
@@ -341,5 +345,6 @@ editTopic topicId =
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
-        ideas <- findWildIdeasBySpace space
-        pure $ EditTopic space topic ideas
+        wildIdeas <- findWildIdeasBySpace space
+        ideasInTopic <- findIdeasByTopicId topicId
+        pure $ EditTopic space topic (wildIdeas <> ideasInTopic) (view _Id <$> ideasInTopic)
