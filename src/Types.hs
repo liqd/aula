@@ -1291,8 +1291,8 @@ userVoteOnIdea :: User -> Idea -> Maybe IdeaVoteValue
 userVoteOnIdea user idea =
     idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue
 
-userLikeOnIdea :: User -> Idea -> Bool
-userLikeOnIdea user idea =
+userLikesIdea :: User -> Idea -> Bool
+userLikesIdea user idea =
     isJust $ idea ^? ideaLikes . at (user ^. _Id)
 
 -- | Construct an 'IdeaLocation' from a 'Topic'

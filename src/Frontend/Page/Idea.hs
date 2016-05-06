@@ -261,7 +261,7 @@ instance ToHtml IdeaVoteLikeBars where
             likeButtons :: Html ()
             likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
-                        if userLikeOnIdea (ctx ^. renderContextUser) idea
+                        if userLikesIdea (ctx ^. renderContextUser) idea
                             then span_ [class_ "btn"] "Du hast gelikegtet!"
                             else postButton_
                                     [ class_ "btn"
