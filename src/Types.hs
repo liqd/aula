@@ -1293,7 +1293,7 @@ userVoteOnIdea user idea =
 
 userLikeOnIdea :: User -> Idea -> Bool
 userLikeOnIdea user idea =
-    isJust $ idea ^? ideaLikes . at (user ^. _Id) . _Just
+    isJust $ idea ^? ideaLikes . at (user ^. _Id)
 
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation
