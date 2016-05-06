@@ -124,7 +124,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx (ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx ideaInfo@(ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -145,8 +145,15 @@ instance ToHtml ViewIdea where
                                 when (CanEdit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
+                                when (ideaReachedQuorum ideaInfo) $ do
+                                    let spc = idea ^. ideaLocation ^. ideaLocationSpace
+                                    a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                        i_ [class_ "icon-pencil"] nil
+                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                                        "Thema erstellen"
                                 when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
-                                    i_ [class_ "icon-sign-out"] nil
+                                    i_ [class_ "icon-pencil"] nil
+                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                     "Idee verschieben"
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
@@ -176,6 +183,10 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
+
+            when (ideaReachedQuorum ideaInfo) $ do
+                -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
+                div_ [class_ "voting-buttons"] "Idee kann auf den Tisch."
 
             feasibilityVerdict True idea caps
 
