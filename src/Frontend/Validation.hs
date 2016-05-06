@@ -73,7 +73,7 @@ instance Arrow FieldValidator where
 markFieldName :: FieldName -> FieldValidator a b -> FieldValidator a b
 markFieldName fieldName v = FieldValidator $ \x -> case unFieldValidator v x of
     s@(DF.Success _) -> s
-    DF.Error e       -> DF.Error $ (cs fieldName) <> ": " <> e
+    DF.Error e       -> DF.Error $ cs fieldName <> ": " <> e
 
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
@@ -82,7 +82,7 @@ fieldParser
     :: (ConvertibleStrings s String)
     => FieldParser a -> FieldValidator s a
 fieldParser parser =
-    FieldValidator (\value -> either (DF.Error . cs . errorString) DF.Success $ parse (parser <* eof) "" (cs value))
+    FieldValidator (either (DF.Error . cs . errorString) DF.Success . parse (parser <* eof) "" . cs)
   where
     errorString = filter (/= '\n') . errorMsgs . errorMessages
     -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
@@ -92,8 +92,8 @@ fieldParser parser =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
-calcValidator :: (Monad m) => FieldName -> FieldValidator a b -> (a -> Result (HtmlT m ()) b)
-calcValidator n v = errorToHtml . (unFieldValidator (markFieldName n v))
+calcValidator :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT m ()) b
+calcValidator n v = errorToHtml . unFieldValidator (markFieldName n v)
   where
     errorToHtml (DF.Success x) = DF.Success x
     errorToHtml (DF.Error x)   = DF.Error $ toHtml x
@@ -108,7 +108,7 @@ validateOptional
 validateOptional = DF.validateOptional <..> calcValidator
 
 inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
-inRange mn mx = fieldParser $
+inRange mn mx = fieldParser
     (satisfies isBetween (read <$> many1 digit)
         <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."])
   where
