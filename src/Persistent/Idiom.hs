@@ -60,10 +60,10 @@ data ListInfoForIdea = ListInfoForIdea
   deriving (Eq, Ord, Show, Read, Generic)
 
 ideaReachedQuorum :: ListInfoForIdea -> Bool
-ideaReachedQuorum i =
-    countIdeaVotes Yes (_ideaVotes $ _listInfoForIdeaIt i)
-    >=
-    _listInfoForIdeaQuorum i
+ideaReachedQuorum i = reached >= needed
+  where
+    reached = Map.size (_listInfoForIdeaIt i ^. ideaLikes)
+    needed  = _listInfoForIdeaQuorum i
 
 instance SOP.Generic ListInfoForIdea
 
