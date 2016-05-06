@@ -13,7 +13,6 @@ module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
     , categoryFilterButtons
     , categoryToUiText
-    , categoryUiTexts
     , formPageSelectCategory
     , makeFormSelectCategory
     )
@@ -73,9 +72,6 @@ categoryToUiText CatEquipment   = "Ausstattung"
 categoryToUiText CatTeaching    = "Unterricht"
 categoryToUiText CatTime        = "Zeit"
 categoryToUiText CatEnvironment = "Umgebung"
-
-categoryUiTexts :: IsString s => [(Category, s)]
-categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
 categoryFilterButtons :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
