@@ -465,7 +465,7 @@ reportCommentById ck doc = do
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
         { _msgISpace  = comment ^. _Key . ckIdeaLocation . ideaLocationSpace
-        , _msgSubject = "Thema in der Ergebnisphase"
+        , _msgSubject = "Problematischer Verbesserungsvorschlag."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""

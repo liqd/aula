@@ -635,14 +635,16 @@ reportComment
     :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment
     -> FormPageHandler m ReportComment
 reportComment loc iid cid =
-    formPageHandler
+    formPageHandlerWithMsg
         (ReportComment <$> mquery (findComment $ CommentKey loc iid [] cid))
         (Action.reportIdeaComment loc iid cid . unReportCommentContent)
+        "Die Meldung wurde abgeschickt."
 
 reportReply
     :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment
     -> FormPageHandler m ReportComment
 reportReply loc iid pcid cid =
-    formPageHandler
+    formPageHandlerWithMsg
         (ReportComment <$> mquery (findComment $ CommentKey loc iid [pcid] cid))
         (Action.reportIdeaCommentReply loc iid pcid cid . unReportCommentContent)
+        "Die Meldung wurde abgeschickt."
