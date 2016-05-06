@@ -81,7 +81,7 @@ lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
-toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
+toEnumMay i = if i >= 0 && i <= fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
