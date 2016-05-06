@@ -70,11 +70,6 @@ instance Arrow FieldValidator where
                 DF.Success z -> DF.Success (z,y)
                 DF.Error   e -> DF.Error e
 
-markFieldName :: FieldName -> FieldValidator a b -> FieldValidator a b
-markFieldName fieldName v = FieldValidator $ \x -> case unFieldValidator v x of
-    s@(DF.Success _) -> s
-    DF.Error e       -> DF.Error $ cs fieldName <> ": " <> e
-
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
@@ -92,20 +87,25 @@ fieldParser parser =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
-calcValidator :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT m ()) b
-calcValidator n v = errorToHtml . unFieldValidator (markFieldName n v)
+validate' :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT m ()) b
+validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
   where
     errorToHtml (DF.Success x) = DF.Success x
     errorToHtml (DF.Error x)   = DF.Error $ toHtml x
 
+    addFieldNameToError :: FieldName -> FieldValidator a b -> FieldValidator a b
+    addFieldNameToError fieldName v = FieldValidator $ \x -> case unFieldValidator v x of
+        s@(DF.Success _) -> s
+        DF.Error e       -> DF.Error $ cs fieldName <> ": " <> e
+
 validate
     :: Monad m => FieldName -> FieldValidator s a -> Form (Html ()) m s -> Form (Html ()) m a
-validate = DF.validate <..> calcValidator
+validate = DF.validate <..> validate'
 
 validateOptional
     :: Monad m
     => FieldName -> FieldValidator s a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
-validateOptional = DF.validateOptional <..> calcValidator
+validateOptional = DF.validateOptional <..> validate'
 
 inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
 inRange mn mx = fieldParser
