@@ -1287,8 +1287,8 @@ isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
 isWild (IdeaLocationTopic _ _) = False
 
-userVoteOnIdea :: User -> Idea -> Maybe IdeaVoteValue
-userVoteOnIdea user idea =
+userVotedOnIdea :: User -> Idea -> Maybe IdeaVoteValue
+userVotedOnIdea user idea =
     idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue
 
 userLikesIdea :: User -> Idea -> Bool
