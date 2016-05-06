@@ -257,12 +257,11 @@ instance ToHtml IdeaVoteLikeBars where
                 bs
 
             -- FIXME: how do you un-like an idea?
-            -- TODO: Translation
             likeButtons :: Html ()
             likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
                         if userLikesIdea (ctx ^. renderContextUser) idea
-                            then span_ [class_ "btn"] "Du hast gelikegtet!"
+                            then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                             else postButton_
                                     [ class_ "btn"
                                     , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
