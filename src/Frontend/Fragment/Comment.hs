@@ -10,7 +10,7 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
-module Frontend.Fragment.Comment (CommentWidget(..))
+module Frontend.Fragment.Comment (CommentWidget(..), cwComment)
 where
 
 import qualified Generics.SOP as SOP
@@ -49,7 +49,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
         if comment ^. commentDeleted
             then "[Inhalt gelöscht]"
             else comment ^. commentText . html
-    footer_ [class_ "comment-footer"] $ do
+    unless (comment ^. commentDeleted) . footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
                 button_ [class_ "btn comment-footer-button", onclick_ $ U.replyComment comment] $ do
@@ -58,6 +58,11 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
             a_ [class_ "btn comment-footer-button", href_ (U.reportComment comment)] $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
+            when (CanEditComment `elem` comCaps) $ do
+                let edit = commentNestingElim U.editComment U.editReply $ commentNesting comment
+                a_ [class_ "btn comment-footer-button", href_ (edit comment)] $ do
+                    i_ [class_ "icon-pencil"] nil
+                    "bearbeiten"
             when (CanDeleteComment `elem` comCaps) .
                 postButton_ [ class_ "btn comment-footer-button"
                             , onclickJs . jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
@@ -76,7 +81,7 @@ data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
     toHtml p@(CommentVotesWidget caps comment) = semanticDiv p $ do
-        div_ [class_ "comment-votes"] $ do
+        unless (comment ^. commentDeleted) . div_ [class_ "comment-votes"] $ do
             voteButton Up
             voteButton Down
       where

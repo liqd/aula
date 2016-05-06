@@ -193,6 +193,8 @@ aulaMain =
 type CommentApi
        -- reply on a comment
     = "reply" :> FormHandler CommentIdea
+       -- edit an existing comment
+  :<|> "edit" :> FormHandler EditComment
        -- vote on a comment
   :<|> UpDown ::> PostH
        -- vote on a reply of a comment
@@ -205,16 +207,19 @@ type CommentApi
   :<|> "report" :> FormHandler ReportComment
        -- report a comment reply
   :<|> Reply ::> "report" :> FormHandler ReportComment
+  :<|> Reply ::> "edit"   :> FormHandler EditComment
 
 commentApi :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
 commentApi loc iid cid
     =  form (Page.replyCommentIdea   loc iid cid)
+  :<|> form (Page.editComment        loc iid cid)
   :<|> Action.voteIdeaComment        loc iid cid
   :<|> Action.voteIdeaCommentReply   loc iid cid
   :<|> Action.deleteIdeaComment      loc iid cid
   :<|> Action.deleteIdeaCommentReply loc iid cid
   :<|> form (Page.reportComment      loc iid cid)
   :<|> form . Page.reportReply       loc iid cid
+  :<|> form . Page.editReply         loc iid cid
 
 type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)
