@@ -81,7 +81,7 @@ lowerFirst [] = []
 lowerFirst (x:xs) = toLower x : xs
 
 toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
-toEnumMay i = if i >= 0 && i < fromEnum (maxBound :: a)
+toEnumMay i = if i >= 0 && i <= fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
@@ -1304,7 +1304,7 @@ userVotedOnIdea user idea =
 
 userLikesIdea :: User -> Idea -> Bool
 userLikesIdea user idea =
-    isJust $ idea ^? ideaLikes . at (user ^. _Id)
+    isJust $ idea ^? ideaLikes . at (user ^. _Id) . _Just
 
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation

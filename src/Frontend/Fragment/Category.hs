@@ -13,7 +13,6 @@ module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
     , categoryFilterButtons
     , categoryToUiText
-    , categoryUiTexts
     , formPageSelectCategory
     , makeFormSelectCategory
     )
@@ -31,10 +30,10 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- subform src/Frontend/Page/Topic.hs`.)
 -- FIXME: Error and non selected category are inseparable cases.
 makeFormSelectCategory :: (Monad m) => Maybe Category -> DF.Form (Html ()) m (Maybe Category)
-makeFormSelectCategory mcat = toCategory <$> DF.text (cs . show . fromEnum <$> mcat)
-  where
-    toCategory :: ST -> Maybe Category
-    toCategory = (toEnumMay <=< readMay) . cs
+makeFormSelectCategory mcat = formSelectorToCategory <$> DF.text (cs . show . fromEnum <$> mcat)
+
+formSelectorToCategory :: ST -> Maybe Category
+formSelectorToCategory = (toEnumMay <=< readMay) . cs
 
 -- | see also: static/js/custom.js.
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()
@@ -46,6 +45,8 @@ formPageSelectCategory v = do
         div_ [class_ "icon-list m-inline category-image-select"] $ do
             ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
 
+-- | only for selecting a category, not for filtering.  for the latter, see 'categoryFilterButtons'
+-- below.  (it's a newtype so deriving is easier.)
 newtype CategoryButton = CategoryButton Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
@@ -57,6 +58,7 @@ instance ToHtml CategoryLabel where
     toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
         -- FIXME: something without the `li_` elem?
 
+-- | The "m-active" class is managed in js.  See `static/js/custom.js`.
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
     toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
@@ -70,9 +72,6 @@ categoryToUiText CatEquipment   = "Ausstattung"
 categoryToUiText CatTeaching    = "Unterricht"
 categoryToUiText CatTime        = "Zeit"
 categoryToUiText CatEnvironment = "Umgebung"
-
-categoryUiTexts :: IsString s => [(Category, s)]
-categoryUiTexts = (\c -> (c, categoryToUiText c)) <$> [minBound..]
 
 
 categoryFilterButtons :: Monad m => IdeaLocation -> IdeasQuery -> HtmlT m ()
