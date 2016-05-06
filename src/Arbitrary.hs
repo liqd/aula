@@ -34,6 +34,7 @@ module Arbitrary
 
 import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
+import Control.Lens (over)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Functor.Infix ((<$$>))
@@ -334,7 +335,7 @@ instance Arbitrary CommentCapability where
     arbitrary = garbitrary
 
 instance Arbitrary CommentWidget where
-    arbitrary = garbitrary
+    arbitrary = over (cwComment . _Key) pruneCommentKey <$> garbitrary
 
 
 -- * idea space, topic, phase
@@ -567,10 +568,14 @@ instance Arbitrary P.Main where
 instance Arbitrary P.IdeaMode where
     arbitrary = prune <$> garbitrary
       where
-        -- replies to sub-comments are turned into replies to the parent comment.
-        prune (P.OnComment (CommentKey loc idea (c:_) _) P.ReplyComment)
-             = P.OnComment (CommentKey loc idea []    c) P.ReplyComment
+        prune (P.OnComment ck P.ReplyComment) = P.OnComment (pruneCommentKey ck) P.ReplyComment
         prune m = m
+
+-- | replies to sub-comments are turned into replies to the parent comment.
+pruneCommentKey :: CommentKey -> CommentKey
+pruneCommentKey = \case
+    ck@(CommentKey _ _ [] _) -> ck
+    (CommentKey loc idea (c:_) c') -> CommentKey loc idea [c] c'
 
 instance Arbitrary P.CommentMode where
     arbitrary = garbitrary

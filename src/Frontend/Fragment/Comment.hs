@@ -10,7 +10,7 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
-module Frontend.Fragment.Comment (CommentWidget(..))
+module Frontend.Fragment.Comment (CommentWidget(..), cwComment)
 where
 
 import qualified Generics.SOP as SOP
