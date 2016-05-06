@@ -145,6 +145,11 @@ instance ToHtml ViewIdea where
                                 when (CanEdit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
+                                when (ideaReachedQuorum ideaInfo) $ do
+                                    let spc = idea ^. ideaLocation ^. ideaLocationSpace
+                                    a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                        i_ [class_ "icon-sign-out"] nil
+                                        "Thema erstellen"
                                 when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
                                     i_ [class_ "icon-sign-out"] nil
                                     "Idee verschieben"
