@@ -58,6 +58,11 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
             a_ [class_ "btn comment-footer-button", href_ (U.reportComment comment)] $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
+            when (CanEditComment `elem` comCaps) $ do
+                let edit = commentKindElim U.editComment U.editReply $ commentKind comment
+                a_ [class_ "btn comment-footer-button", href_ (edit comment)] $ do
+                    i_ [class_ "icon-pencil"] nil
+                    "bearbiten"
             when (CanDeleteComment `elem` comCaps) .
                 postButton_ [ class_ "btn comment-footer-button"
                             , onclickJs . jsReloadOnClickAnchor . U.anchor $ comment ^. _Id

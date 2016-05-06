@@ -11,6 +11,7 @@ module Frontend.Page.Idea
   , CreateIdea(..)
   , EditIdea(..)
   , CommentIdea(..)   -- FIXME: rename to 'CommentOnIdea'
+  , EditComment(..)
   , JudgeIdea(..)
   , CreatorStatement(..)
   , ReportComment(..)
@@ -20,6 +21,8 @@ module Frontend.Page.Idea
   , editIdea
   , commentIdea       -- FIXME: rename to 'commentOnIdea'
   , replyCommentIdea  -- FIXME: rename to 'commentOnComment'
+  , editComment
+  , editReply
   , judgeIdea
   , creatorStatement
   , reportComment
@@ -103,6 +106,13 @@ data ReportComment = ReportComment Comment
   deriving (Eq, Show, Read)
 
 instance Page ReportComment where
+
+data EditComment
+    = EditComment Idea Comment
+    | EditReply Idea Comment
+  deriving (Eq, Show, Read)
+
+instance Page EditComment where
 
 -- ** non-page types
 
@@ -413,6 +423,27 @@ instance FormPage CommentIdea where
         semanticDiv p $ do
             noteForm commentIdeaNote v form idea
 
+instance FormPage EditComment where
+    type FormPagePayload EditComment = Document
+
+    formAction (EditComment _idea comment) = U.editComment comment
+    formAction (EditReply   _idea comment) = U.editReply comment
+
+    redirectOf (EditComment idea comment) _ = U.viewIdeaAtComment idea (comment ^. _Id)
+    redirectOf (EditReply   idea comment) _ = U.viewIdeaAtComment idea (comment ^. _Id)
+
+    makeForm (EditComment _idea comment) =
+        noteFormInput commentIdeaNote (Just (comment ^. commentText))
+    makeForm (EditReply _idea comment) =
+        noteFormInput commentIdeaNote (Just (comment ^. commentText))
+
+    formPage v form p@(EditComment idea _comment) =
+        semanticDiv p $ do
+            noteForm commentIdeaNote v form idea
+    formPage v form p@(EditReply idea _comment) =
+        semanticDiv p $ do
+            noteForm commentIdeaNote v form idea
+
 judgeIdeaNote :: IdeaJuryResultType -> Note Idea
 judgeIdeaNote juryType = Note
     { noteHeaderText        = (headerText <>) . view ideaTitle
@@ -526,6 +557,33 @@ commentIdea loc ideaId =
             eventLogUserCreatesComment comment
             return comment)
         "Der Verbesserungsvorschlag wurde gespeichert."
+
+editComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m EditComment
+editComment loc ideaId commentId =
+    formPageHandlerWithMsg
+        (equery $ do
+            idea <- maybe404 =<< findIdea ideaId
+            comment <- maybe404 $ idea ^. ideaComments . at commentId
+            pure $ EditComment idea comment)
+        (\desc -> do
+            update $ SetCommentDesc (commentKey loc ideaId commentId) desc
+            -- eventLogUserEditComment comment -- TODO
+            )
+        "Der Verbesserungsvorschlag wurde gespeichert."
+
+editReply :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> FormPageHandler m EditComment
+editReply loc iid pcid cid =
+    formPageHandlerWithMsg
+        (equery $ do
+            idea <- maybe404 =<< findIdea iid
+            comment <- maybe404 =<< findComment (replyKey loc iid pcid cid)
+            pure $ EditReply idea comment)
+        (\desc -> do
+            update $ SetCommentDesc (replyKey loc iid pcid cid) desc
+            -- eventLogUserEditComment comment -- TODO
+            )
+        "Der Verbesserungsvorschlag wurde gespeichert."
+
 
 replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
 replyCommentIdea loc ideaId commentId =

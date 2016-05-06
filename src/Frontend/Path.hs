@@ -33,6 +33,7 @@ module Frontend.Path
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
     , viewUser, adminViewUsers, adminViewClasses, viewIdeaOfComment
     , anchor
+    , editComment, editReply
     )
 where
 
@@ -98,9 +99,7 @@ isPostOnly = \case
                 case cm of
                     VoteComment{} -> True
                     DeleteComment -> True
-                    ReportComment -> False
-                    ViewComment   -> False
-                    ReplyComment  -> False
+                    _             -> False
             _ -> False
     Admin m ->
       case m of
@@ -208,6 +207,12 @@ deleteComment comment = onComment comment DeleteComment
 viewComment :: Comment -> Main
 viewComment comment = onComment comment ViewComment
 
+editComment :: Comment -> Main
+editComment comment = onComment comment EditComment
+
+editReply :: Comment -> Main
+editReply comment = onComment comment EditReply
+
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
 
@@ -251,6 +256,8 @@ commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
 commentMode (CommentKey _loc i parents commentId) m root =
     case m of
         ReplyComment  -> base 1 </> "reply"
+        EditComment   -> base 1 </> "edit"
+        EditReply     -> base 2 </> "edit"
         DeleteComment -> base 2 </> "delete"
         ReportComment -> base 2 </> "report"
         VoteComment v -> base 2 </> "vote" </> uriPart v
@@ -346,6 +353,8 @@ data CommentMode
     | ReportComment
     | ViewComment
     | VoteComment UpDown
+    | EditComment
+    | EditReply
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CommentMode

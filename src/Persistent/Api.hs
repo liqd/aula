@@ -48,6 +48,7 @@ askDb = ask
 
 $(makeAcidic ''AulaData
     [ 'addCommentToIdea
+    , 'setCommentDesc
     , 'addCommentVote
     , 'addDelegation
     , 'addFirstUser

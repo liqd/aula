@@ -215,6 +215,7 @@ data CommentCapability
       -- To reply to a comment you need both this capability and the MakeComment capability
       -- for the corresponding idea.
     | CanDeleteComment
+    | CanEditComment
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CommentCapability
@@ -223,10 +224,12 @@ canDeleteComment :: AUID User -> Role -> Comment -> Bool
 canDeleteComment uid role comment = uid `isCreatorOf` comment || role == Moderator
 
 commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
-commentCapabilities uid role comment =
-    [CanDeleteComment | canDeleteComment uid role comment ] <>
-    [CanReplyComment  | not $ comment ^. commentDeleted   ]
-
+commentCapabilities uid role comment
+    | comment ^. commentDeleted = []
+    | otherwise =
+        [CanDeleteComment | canDeleteComment uid role comment] <>
+        [CanReplyComment  ] <>
+        [CanEditComment   | uid `isCreatorOf` comment]
 
 -- * Topic capabilities
 

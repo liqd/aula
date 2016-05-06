@@ -340,6 +340,16 @@ data Comment = Comment
 
 instance SOP.Generic Comment
 
+data CommentKind
+    = TopComment
+    | NestedComment
+  deriving (Eq, Show)
+
+commentKindElim :: t -> t -> CommentKind -> t
+commentKindElim top nested = \case
+    TopComment    -> top
+    NestedComment -> nested
+
 -- This is the complete information to recover a comment in AulaData
 -- * ckParents: Comment identifiers from the root to the leaf. If `y`, follows `x` in ckParents,
 --              then `y` is a reply to `x`. See also `traverseParents` for a use of that field.
@@ -350,6 +360,12 @@ data CommentKey = CommentKey
     , _ckCommentId     :: AUID Comment
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+commentKey :: IdeaLocation -> AUID Idea -> AUID Comment -> CommentKey
+commentKey loc iid cid = CommentKey loc iid [] cid
+
+replyKey :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> CommentKey
+replyKey loc iid pid cid = CommentKey loc iid [pid] cid
 
 instance SOP.Generic CommentKey
 
@@ -1339,6 +1355,12 @@ countIdeaVotes v = countEq v ideaVoteValue
 
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
+
+commentKind :: Comment -> CommentKind
+commentKind c = case c ^. _Key . ckParents . to length of
+    0 -> TopComment
+    1 -> NestedComment
+    n -> error $ "IMPOSSIBLE: Comment kind list length: " <> show n
 
 -- Given a list of parents and a collection (AMap) of comments
 -- returns the collection of comments after following the parenting list.

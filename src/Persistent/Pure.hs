@@ -69,6 +69,7 @@ module Persistent.Pure
     , addVoteToIdea
     , removeVoteFromIdea
     , addCommentToIdea
+    , setCommentDesc
     , addReply
     , addCommentVote
     , findUser
@@ -617,6 +618,11 @@ instance FromProto Comment where
 -- | FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addCommentToIdea :: IdeaLocation -> AUID Idea -> AddDb Comment
 addCommentToIdea loc iid = addDb' (nextCommentKey loc iid) (dbIdeaMap . at iid . _Just . ideaComments)
+
+setCommentDesc :: CommentKey -> Document -> AUpdate ()
+setCommentDesc ck desc =
+    dbComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
+    . commentText .= desc
 
 nextCommentKey :: IdeaLocation -> AUID Idea -> User -> AUpdate CommentKey
 nextCommentKey loc iid _ = CommentKey loc iid [] <$> nextId

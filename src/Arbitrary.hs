@@ -137,6 +137,9 @@ instance Arbitrary EditIdea where
 instance Arbitrary CommentIdea where
     arbitrary = CommentIdea <$> arb <*> arb
 
+instance Arbitrary EditComment where
+    arbitrary = EditComment <$> arb <*> arb
+
 instance Arbitrary JudgeIdea where
     arbitrary = JudgeIdea <$> arb <*> arb <*> arb
 
