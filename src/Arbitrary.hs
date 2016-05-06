@@ -558,10 +558,10 @@ arbMarkdownTable = pure nil
 
 -- * path
 
-instance Arbitrary P.Main where
+instance Arbitrary (P.Main r) where
     arbitrary = suchThat garbitrary (not . P.isBroken)
 
-instance Arbitrary P.IdeaMode where
+instance Arbitrary (P.IdeaMode r) where
     arbitrary = prune <$> garbitrary
       where
         -- replies to sub-comments are turned into replies to the parent comment.
@@ -569,16 +569,16 @@ instance Arbitrary P.IdeaMode where
              = P.OnComment (CommentKey loc idea []    c) P.ReplyComment
         prune m = m
 
-instance Arbitrary P.CommentMode where
+instance Arbitrary (P.CommentMode r) where
     arbitrary = garbitrary
 
-instance Arbitrary P.Space where
+instance Arbitrary (P.Space r) where
     arbitrary = garbitrary
 
-instance Arbitrary P.UserMode where
+instance Arbitrary (P.UserMode r) where
     arbitrary = garbitrary
 
-instance Arbitrary P.AdminMode where
+instance Arbitrary (P.AdminMode r) where
     arbitrary = garbitrary
 
 instance Arbitrary ClassesFilterQuery where

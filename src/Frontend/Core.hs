@@ -83,7 +83,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Config
-import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
+import Data.UriPath (UriPath, absoluteUriPath)
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -282,7 +282,7 @@ class Page p => FormPage p where
     type FormPageResult p = ()
 
     -- | The form action used in form generation
-    formAction :: p -> P.Main
+    formAction :: p -> P.Main 'P.AllowGetPost
     -- | Calculates a redirect address from the given page.
     --
     -- Currently, 'FormPage' forces you to redirect after a form has been processed successfully.
@@ -298,7 +298,7 @@ class Page p => FormPage p where
     -- making impossible to not redirect one day.
     --
     -- Context: github #398, #83.
-    redirectOf :: p -> FormPageResult p -> P.Main
+    redirectOf :: p -> FormPageResult p -> P.Main 'P.AllowGetPost
     -- | Generates a Html view from the given page
     makeForm :: ActionM m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
@@ -390,14 +390,14 @@ form formHandler = getH :<|> postH
     getH = makeFrame $ do
         page <- getPage
         guard page
-        let fa = absoluteUriPath . relPath $ formAction page
+        let fa = absoluteUriPath . P.relPath $ formAction page
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
     postH formData = makeFrame $ do
         page <- getPage
         guard page
-        let fa = absoluteUriPath . relPath $ formAction page
+        let fa = absoluteUriPath . P.relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
@@ -411,7 +411,7 @@ form formHandler = getH :<|> postH
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result =
-        ((absoluteUriPath . relPath . redirectOf page) &&& formMessage page result)
+        ((absoluteUriPath . P.relPath . redirectOf page) &&& formMessage page result)
         <$> processor result
 
 
@@ -428,7 +428,7 @@ makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, P
 makeFrame mp = do
   isli <- isLoggedIn
   let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
-  if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
+  if | not isli && isPrivate -> redirect . absoluteUriPath $ P.relPath P.login
      | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> flushMessages
      | otherwise             -> PublicFrame <$> mp <*> flushMessages
 
@@ -475,7 +475,7 @@ pageFrame frame = do
         bodyClasses = extraBodyClasses p
     head_ $ do
         title_ "AuLA"
-        link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        link_ [rel_ "stylesheet", href_ $ P.static "css/all.css"]
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
@@ -489,15 +489,15 @@ pageFrame frame = do
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
     div_ [class_ "grid"] $ do
-        a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
+        a_ [class_ "site-logo", title_ "aula", href_ P.rooot] nil
         button_ [id_ "mobile-menu-button"] $ do
             i_ [class_ "icon-bars", title_ "Menu"] nil
         case mUser of
             Nothing -> nil
             Just usr -> do
                 ul_ [class_ "main-header-menu"] $ do
-                    li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
-                    li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+                    li_ $ a_ [href_ P.listSpaces] "Ideenräume"
+                    li_ $ a_ [href_ P.delegationView] "Beauftragungsnetzwerk"
 
                 div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu"] $ do
@@ -507,20 +507,20 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                                . a_ [href_ $ P.viewUser usr] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.UserSettings] $ do
+                                . a_ [href_ P.userSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
                             when (usr ^. userRole == Admin) .
                                 li_ [class_ "pop-menu-list-item"]
-                                    . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                                    . a_ [href_ $ P.adminDuration] $ do
                                     i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                     "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.Logout] $ do
+                                . a_ [href_ P.logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
                                 "Logout"
 
@@ -541,8 +541,8 @@ footerMarkup = do
     footer_ [class_ "main-footer"] $ do
         div_ [class_ "grid"] $ do
             ul_ [class_ "main-footer-menu"] $ do
-                li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-                li_ $ a_ [href_ P.Imprint] "Impressum"
+                li_ $ a_ [href_ P.terms] "Nutzungsbedingungen"
+                li_ $ a_ [href_ P.imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
                 replicateM_ 5 $ toHtmlRaw nbsp
@@ -550,6 +550,6 @@ footerMarkup = do
                 replicateM_ 5 $ toHtmlRaw nbsp
                 a_ [Lucid.onclick_ "createPageSample()"]
                     "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
-    script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
-    script_ [src_ $ P.TopStatic "third-party/showdown/dist/showdown.min.js"]
-    script_ [src_ $ P.TopStatic "js/custom.js"]
+    script_ [src_ $ P.static "third-party/modernizr/modernizr-custom.js"]
+    script_ [src_ $ P.static "third-party/showdown/dist/showdown.min.js"]
+    script_ [src_ $ P.static "js/custom.js"]

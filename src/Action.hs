@@ -131,7 +131,7 @@ import qualified Data.Vector as V
 
 import Action.Smtp
 import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
-import Data.UriPath (absoluteUriPath, relPath)
+import Data.UriPath (absoluteUriPath)
 import LifeCycle
 import Logger
 import Logger.EventLog
@@ -371,7 +371,7 @@ phaseAction topic phasact = do
             , ""
             , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
             , "    " <> (cfg ^. exposedUrl . csi)
-                     <> (absoluteUriPath . relPath $ U.listTopicIdeas topic)
+                     <> (absoluteUriPath . U.relPath $ U.listTopicIdeas topic)
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
@@ -461,7 +461,7 @@ deleteIdeaCommentReply loc ideaId commentId =
 reportCommentById :: CommentKey -> Document -> (ActionPersist m, ActionSendMail m) => m ()
 reportCommentById ck doc = do
     comment <- mquery $ findComment ck
-    let uri = relPath $ U.viewComment comment
+    let uri = U.relPath $ U.viewComment comment
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
         { _msgISpace  = comment ^. _Key . ckIdeaLocation . ideaLocationSpace

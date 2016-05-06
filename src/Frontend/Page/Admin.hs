@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -208,8 +209,9 @@ adminFrame t bdy = do
   where
     tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST U.AdminMode ST
-  deriving (Show)
+data MenuLink = MenuLink ST (forall r . U.AdminMode r) ST
+
+deriving instance Show MenuLink
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
 menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of
@@ -566,7 +568,7 @@ instance FormPage AdminEditUser where
                                                  -- form logic, this is a pure UI task.)
                     span_ [class_ "label-text"] "Klasse"
                     inputSelect_ [class_ "m-stretch"]  "class" v
-                a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                a_ [href_ U.broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                 div_ [class_ "admin-buttons"] $ do
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
@@ -688,7 +690,7 @@ instance FormPage PageAdminSettingsEventsProtocol where
         div_ [class_ "download-box"] $ do
             header_ [class_ "download-box-header"] $ do
                 "Event-Protokoll"
-                button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
+                button_ [class_ "btn-cta download-box-button", onclick_ U.broken] "Download"
             p_ [class_ "download-box-body"] "Das Event-Protokoll enthält alle Aktivitäten der NutzerInnen auf Aula"
 
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
@@ -723,7 +725,7 @@ instance FormPage AdminCreateClass where
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
-        a_ [href_ $ U.TopStatic "templates/student_upload.csv"] "Vorlage herunterladen."
+        a_ [href_ $ U.static "templates/student_upload.csv"] "Vorlage herunterladen."
         form $ do
             div_ $ do
                 p_ "Klasse"
