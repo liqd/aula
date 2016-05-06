@@ -141,6 +141,7 @@ import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
 import Data.Foldable (find, for_)
 import Data.Functor
+import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
@@ -481,6 +482,8 @@ editTopic topicId (EditTopicData title desc ideas) = do
     topic <- maybe404 =<< liftAQuery (findTopic topicId)
     let space = topic ^. topicIdeaSpace
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
+    previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
+    moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
     moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 withTopic :: AUID Topic -> AulaTraversal Topic
