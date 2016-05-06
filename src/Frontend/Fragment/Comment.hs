@@ -49,7 +49,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
         if comment ^. commentDeleted
             then "[Inhalt gelöscht]"
             else comment ^. commentText . html
-    footer_ [class_ "comment-footer"] $ do
+    unless (comment ^. commentDeleted) . footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
                 button_ [class_ "btn comment-footer-button", onclick_ $ U.replyComment comment] $ do
@@ -76,7 +76,7 @@ data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
     toHtml p@(CommentVotesWidget caps comment) = semanticDiv p $ do
-        div_ [class_ "comment-votes"] $ do
+        unless (comment ^. commentDeleted) . div_ [class_ "comment-votes"] $ do
             voteButton Up
             voteButton Down
       where
