@@ -139,7 +139,7 @@ ideaCheckboxValue iids path =
         else "off"
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnvMapping _ (ProtoTopic title (Description desc) image _ iids _) path'
+    payloadToEnvMapping _ (ProtoTopic title (PlainDocument desc) image _ iids _) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title" = pure [TextInput title]
         | path == "desc"  = pure [TextInput desc]
@@ -148,7 +148,7 @@ instance PayloadToEnv ProtoTopic where
         path :: String = cs path'
 
 instance PayloadToEnv EditTopicData where
-    payloadToEnvMapping _ (EditTopicData title (Description desc) iids) path'
+    payloadToEnvMapping _ (EditTopicData title (PlainDocument desc) iids) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title"           = pure [TextInput title]
         | path == "desc"            = pure [TextInput desc]

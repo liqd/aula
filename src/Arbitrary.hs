@@ -230,9 +230,9 @@ instance Arbitrary LoginFormData where
 
 -- * topic
 
-instance Arbitrary Description where
-    arbitrary = Description <$> arbPhrase
-    shrink (Description x) = Description <$> shrink x
+instance Arbitrary PlainDocument where
+    arbitrary = PlainDocument <$> arbPhrase
+    shrink (PlainDocument x) = PlainDocument <$> shrink x
 
 
 -- * idea

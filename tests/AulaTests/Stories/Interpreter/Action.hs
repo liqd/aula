@@ -134,7 +134,7 @@ runClient (Free (CreateTopic it tt td k)) = do
     step . lift $ do
         end <- getCurrentTimestamp >>= \now -> query $ phaseEndRefinement now
         (Page.createTopic ideaSpace ^. formProcessor) $
-            ProtoTopic tt (Description td) "http://url.com" ideaSpace [idea ^. _Id] end
+            ProtoTopic tt (PlainDocument td) "http://url.com" ideaSpace [idea ^. _Id] end
     postcondition $ return ()
     runClient k
 
@@ -146,7 +146,7 @@ runClient (Free (EditTopic ot nt d k)) = do
     step . lift $ do
         let editTopicPage = Page.editTopic (topic ^. _Id)
         -- FIXME: Add idea handling
-        (editTopicPage ^. formProcessor) $ EditTopicData nt (Description d) []
+        (editTopicPage ^. formProcessor) $ EditTopicData nt (PlainDocument d) []
     postcondition $ do
         Nothing <- findTopicByTitle ot
         Just _topic <- findTopicByTitle nt

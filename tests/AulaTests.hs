@@ -172,5 +172,5 @@ nonEmptyST = (cs :: String -> ST) . getNonEmpty <$> arb
 nonEmptyMarkdown :: Gen Document
 nonEmptyMarkdown = Markdown <$> nonEmptyST
 
-validTopicDescription :: Gen Description
-validTopicDescription = Description . Text.take Constant.topicDescMaxLength <$> nonEmptyST
+validTopicDescription :: Gen PlainDocument
+validTopicDescription = PlainDocument . Text.take Constant.topicDescMaxLength <$> nonEmptyST

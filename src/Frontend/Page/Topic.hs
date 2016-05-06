@@ -202,11 +202,11 @@ viewTopicHeaderDiv ctx topic tab = do
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" title
 
-validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m Description
+validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m PlainDocument
 validateTopicDesc =
     validate
         "Thema"
-        (Description <$> (maxLength Constant.topicDescMaxLength . nonEmpty))
+        (PlainDocument <$> (maxLength Constant.topicDescMaxLength . nonEmpty))
 
 instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
