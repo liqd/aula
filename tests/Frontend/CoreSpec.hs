@@ -349,7 +349,7 @@ instance ArbFormPagePayload CreateTopic where
         <**> (set protoTopicDesc<$> validTopicDescription)
 
 instance ArbFormPagePayload Frontend.Page.EditTopic where
-    arbFormPagePayload (Frontend.Page.EditTopic _space _topicid ideas) =
+    arbFormPagePayload (Frontend.Page.EditTopic _space _topic ideas _preselected) =
         EditTopicData
         <$> arbPhrase
         <*> arbitrary

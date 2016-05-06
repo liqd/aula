@@ -78,7 +78,7 @@ data CreateTopic = CreateTopic
 instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
-data EditTopic = EditTopic IdeaSpace Topic [Idea]
+data EditTopic = EditTopic IdeaSpace Topic [Idea] [AUID Idea]
   deriving (Eq, Show, Read)
 
 instance Page EditTopic
@@ -225,7 +225,7 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
-        <*> makeFormIdeaSelection _createTopicIdeas
+        <*> makeFormIdeaSelection [] _createTopicIdeas
         <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
@@ -258,17 +258,17 @@ instance FormPage EditTopic where
     -- the ideas to be added to the topic.
     type FormPagePayload EditTopic = EditTopicData
 
-    formAction (EditTopic space topic _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    formAction (EditTopic space topic _ _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
 
-    redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
+    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas topic
 
-    makeForm (EditTopic _space topic ideas) =
+    makeForm (EditTopic _space topic ideas preselected) =
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
-        <*> makeFormIdeaSelection ideas
+        <*> makeFormIdeaSelection preselected ideas
 
-    formPage v form p@(EditTopic _space _topic ideas) = do
+    formPage v form p@(EditTopic _space _topic ideas _preselected) = do
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -291,10 +291,11 @@ formPageIdeaSelection v ideas =
             idea ^. ideaTitle . html
 
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
-                      => [Idea] -> DF.Form v m [AUID Idea]
-makeFormIdeaSelection ideas =
+                      => [AUID Idea] -> [Idea] -> DF.Form v m [AUID Idea]
+makeFormIdeaSelection preselected ideas =
     fmap catMaybes . sequenceA $
-        [ justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool Nothing)
+        [ let checked = Just $ idea ^. _Id `elem` preselected
+          in justIf (idea ^. _Id) <$> (ideaToFormField idea .: DF.bool checked)
         | idea <- ideas ]
 
 
@@ -344,4 +345,5 @@ editTopic topicId =
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
         ideas <- findWildIdeasBySpace space
-        pure $ EditTopic space topic ideas
+        preselected <- view _Id <$$> findIdeasByTopicId topicId
+        pure $ EditTopic space topic ideas preselected
