@@ -228,13 +228,6 @@ instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
 
 
--- * topic
-
-instance Arbitrary PlainDocument where
-    arbitrary = PlainDocument <$> arbPhrase
-    shrink (PlainDocument x) = PlainDocument <$> shrink x
-
-
 -- * idea
 
 instance Arbitrary ProtoIdea where
@@ -491,8 +484,12 @@ instance (Generic id, Arbitrary id) => Arbitrary (GMetaInfo a id) where
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
 
+instance Arbitrary PlainDocument where
+    arbitrary = PlainDocument <$> arbPhrase
+    shrink (PlainDocument x) = PlainDocument <$> shrink x
 
--- * markdown
+
+-- ** markdown
 
 instance Arbitrary Document where
     arbitrary = arbMarkdown
