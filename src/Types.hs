@@ -340,13 +340,13 @@ data Comment = Comment
 
 instance SOP.Generic Comment
 
-data CommentKind
+data CommentNesting
     = TopComment
     | NestedComment
   deriving (Eq, Show)
 
-commentKindElim :: t -> t -> CommentKind -> t
-commentKindElim top nested = \case
+commentNestingElim :: t -> t -> CommentNesting -> t
+commentNestingElim top nested = \case
     TopComment    -> top
     NestedComment -> nested
 
@@ -1356,8 +1356,8 @@ countIdeaVotes v = countEq v ideaVoteValue
 countCommentVotes :: UpDown -> CommentVotes -> Int
 countCommentVotes v = countEq v commentVoteValue
 
-commentKind :: Comment -> CommentKind
-commentKind c = case c ^. _Key . ckParents . to length of
+commentNesting :: Comment -> CommentNesting
+commentNesting c = case c ^. _Key . ckParents . to length of
     0 -> TopComment
     1 -> NestedComment
     n -> error $ "IMPOSSIBLE: Comment kind list length: " <> show n

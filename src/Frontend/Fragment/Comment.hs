@@ -59,7 +59,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                 i_ [class_ "icon-flag"] nil
                 "melden"
             when (CanEditComment `elem` comCaps) $ do
-                let edit = commentKindElim U.editComment U.editReply $ commentKind comment
+                let edit = commentNestingElim U.editComment U.editReply $ commentNesting comment
                 a_ [class_ "btn comment-footer-button", href_ (edit comment)] $ do
                     i_ [class_ "icon-pencil"] nil
                     "bearbeiten"
