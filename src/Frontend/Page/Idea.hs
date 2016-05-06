@@ -186,7 +186,7 @@ instance ToHtml ViewIdea where
 
             when (ideaReachedQuorum ideaInfo) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
-                div_ [class_ "voting-buttons"] $ "Idee kann auf den Tisch."
+                div_ [class_ "voting-buttons"] "Idee kann auf den Tisch."
 
             feasibilityVerdict True idea caps
 
