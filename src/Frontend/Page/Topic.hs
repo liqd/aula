@@ -20,7 +20,8 @@ module Frontend.Page.Topic
     , IdeasFilterApi
     , viewTopic
     , createTopic
-    , editTopic )
+    , editTopic
+    )
 where
 
 import Prelude hiding ((.))
@@ -275,9 +276,13 @@ instance FormPage EditTopic where
                     form $ createOrEditTopic v ideas
 
 ideaToFormField :: Idea -> ST
-ideaToFormField idea = "idea-" <> cs (show $ idea ^. _Id)
+ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 
--- FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+-- | FIXME: formPageIdeaSelection and makeFormIdeaSelection should be defined as a subform.
+--
+-- This form is called both from CreateTopic and EditTopic.  The ideas listed here include all wild
+-- ones in the surrounding space, plus those already in the topic.  The ones already in the topic
+-- are pre-selected.
 formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
 formPageIdeaSelection v ideas =
     ul_ . for_ ideas $ \idea ->
@@ -285,9 +290,6 @@ formPageIdeaSelection v ideas =
             DF.inputCheckbox (ideaToFormField idea) v
             idea ^. ideaTitle . html
 
--- FIXME: this is called both from CreateTopic and EditTopic.  the ideas listed here should include
--- wild ones in the surrounding space, plus those already in the topic.  the ones already in the
--- topic should be pre-selected.
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
                       => [Idea] -> DF.Form v m [AUID Idea]
 makeFormIdeaSelection ideas =
