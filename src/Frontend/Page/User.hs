@@ -84,12 +84,12 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
-    formAction _ = U.UserSettings
+    formAction _ = U.userSettings
 
     -- Redirect to ourselves, so the user can review the changes.  FUTUREWORK: It would be nice to
     -- have a messaging device that prints a line "your changes have been saved" at the top of the
     -- form; without that, UX is still a bit confusing.
-    redirectOf _ _ = U.UserSettings
+    redirectOf _ _ = U.userSettings
 
     makeForm (PageUserSettings user) =
           DF.validateM checkUserPassword
@@ -170,11 +170,11 @@ userHeaderDiv ctx (ActiveUser user) =
 
         div_ [class_ "heroic-btn-group"] $ if isOwnProfile
             then do
-                btn U.UserProfile "+ Profil bearbeiten"
+                btn U.userProfile "+ Profil bearbeiten"
             else do
-                btn U.Broken "Klassenweit beauftragen"
-                btn U.Broken "Schulweit beauftragen"
-                btn U.Broken "melden"
+                btn U.broken "Klassenweit beauftragen"
+                btn U.broken "Schulweit beauftragen"
+                btn U.broken "melden"
 
 
 -- ** User Profile: Created Ideas
@@ -191,7 +191,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserDelegations)]
+                a_ [class_ "heroic-tab-item", href_ $ U.userDelegations user]
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
@@ -221,7 +221,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx u
             div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserIdeas)]
+                a_ [class_ "heroic-tab-item", href_ $ U.viewUser user]
                     "Erstellte Ideen"
                 span_ [class_ "heroic-tab-item  m-active"]
                     "Erhaltene Stimmen"
@@ -253,9 +253,9 @@ renderDelegations _ = do
                 p_ $ do
                     "5 Stimmen von "
                     strong_ $ do
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName"
+                        a_ [href_ U.broken] "UserName, "
+                        a_ [href_ U.broken] "UserName, "
+                        a_ [href_ U.broken] "UserName"
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
@@ -271,7 +271,7 @@ delegatedVotes userId = do
 instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
 
-    formAction EditUserProfile{} = U.UserProfile
+    formAction EditUserProfile{} = U.userProfile
 
     redirectOf (EditUserProfile u) _ = U.viewUser u
 

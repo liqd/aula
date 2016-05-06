@@ -29,18 +29,24 @@ module Frontend.Path
     ( Allow(..)
     , HasPath(..)
     , Top
-    , Main(..)
+    , Main(Admin, Space)
     , Space(..)
     , UserMode(..)
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
     , rooot, static
+    , login, listSpaces, delegationView, userSettings, logout, terms
+    , imprint, broken, userProfile
+    , adminDuration
     , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listIdeasWithQuery
     , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
+    , listTopics, moveIdeasToTopic, topicNextPhase, topicVotingPrevPhase
+    , createTopicDelegation, createIdeaInTopic, createTopic
+    , userDelegations
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
-    , viewUser, adminViewUsers, adminViewClasses
+    , viewUser, viewUserById, adminViewUsers, adminViewClasses
     , anchor
     )
 where
@@ -53,7 +59,9 @@ import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
              , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey))
+             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey)
+             , (<..>)
+             )
 
 import Frontend.Filter
 
@@ -138,6 +146,19 @@ isBroken _      = False
 instance SOP.Generic (Main r)
 
 instance HasPath Main where relPath p = main p nil
+
+login, listSpaces, delegationView, userProfile :: Main 'AllowGetPost
+userSettings, logout, terms, imprint, broken   :: Main 'AllowGetPost
+
+login          = Login
+listSpaces     = ListSpaces
+delegationView = DelegationView
+userProfile    = UserProfile
+userSettings   = UserSettings
+logout         = Logout
+terms          = Terms
+imprint        = Imprint
+broken         = Broken
 
 main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
@@ -246,6 +267,30 @@ adminViewUsers = AdminViewUsers Nothing
 adminViewClasses :: AdminMode r
 adminViewClasses = AdminViewClasses Nothing
 
+listTopics :: IdeaSpace -> Main 'AllowGetPost
+listTopics s = Space s ListTopics
+
+moveIdeasToTopic :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+moveIdeasToTopic s tid = Space s $ MoveIdeasToTopic tid
+
+topicNextPhase :: AUID Topic -> Main 'AllowPost
+topicNextPhase = Admin . AdminTopicNextPhase
+
+topicVotingPrevPhase :: AUID Topic -> Main 'AllowPost
+topicVotingPrevPhase = Admin . AdminTopicVotingPrevPhase
+
+createTopicDelegation :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+createTopicDelegation s = Space s . CreateTopicDelegation
+
+createIdeaInTopic :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+createIdeaInTopic = createIdea <..> IdeaLocationTopic
+
+createTopic :: IdeaSpace -> Main 'AllowGetPost
+createTopic s = Space s CreateTopic
+
+userDelegations :: User -> Main 'AllowGetPost
+userDelegations u = User (u ^. _Id) UserDelegations
+
 ideaMode :: IdeaMode r -> UriPath -> UriPath
 ideaMode (ListIdeas mq)    root = renderFilter mq $ root </> "ideas"
 ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
@@ -318,7 +363,10 @@ user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
 
 viewUser :: User -> Main 'AllowGetPost
-viewUser u = User (u ^. _Id) UserIdeas
+viewUser u = viewUserById (u ^. _Id)
+
+viewUserById :: AUID User -> Main 'AllowGetPost
+viewUserById u = User u UserIdeas
 
 data AdminMode (r :: Allow) =
     AdminDuration
@@ -340,6 +388,9 @@ data AdminMode (r :: Allow) =
   deriving (Generic, Show)
 
 instance SOP.Generic (AdminMode r)
+
+adminDuration :: Main 'AllowGetPost
+adminDuration = Admin AdminDuration
 
 admin :: AdminMode r -> UriPath -> UriPath
 admin AdminDuration         path = path </> "duration"

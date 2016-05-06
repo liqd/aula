@@ -52,8 +52,8 @@ checkLogin (LoginFormData uLogin _pass) = do
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
 
-    formAction _   = U.Login
-    redirectOf _ _ = U.ListSpaces
+    formAction _   = U.login
+    redirectOf _ _ = U.listSpaces
 
     makeForm _ = validateM checkLogin $
         LoginFormData
@@ -75,7 +75,7 @@ instance FormPage PageHomeWithLoginPrompt where
     guardPage _ = do
         -- Redirect from login if the user is already logged in.
         li <- Action.isLoggedIn
-        pure $ if li then Just $ U.relPath U.ListSpaces else Nothing
+        pure $ if li then Just $ U.relPath U.listSpaces else Nothing
 
 
 instance ToHtml LoginDemoHints where

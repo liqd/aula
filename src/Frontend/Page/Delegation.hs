@@ -31,8 +31,8 @@ instance Page PageDelegateVote
 
 instance FormPage PageDelegateVote where  -- FIXME
     type FormPagePayload PageDelegateVote = ()
-    formAction _   = U.Broken
-    redirectOf _ _ = U.Broken
+    formAction _   = U.broken
+    redirectOf _ _ = U.broken
     makeForm _     = pure ()
     formPage _ _ _ = pure ()
 

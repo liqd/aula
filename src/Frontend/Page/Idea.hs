@@ -145,14 +145,14 @@ instance ToHtml ViewIdea where
                                 when (CanEdit `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
-                                when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.Broken] $ do
+                                when (CanMoveBetweenTopics `elem` caps) . a_ [href_ U.broken] $ do
                                     i_ [class_ "icon-sign-out"] nil
                                     "Idee verschieben"
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
-                a_ [ href_ $ U.User (idea ^. createdBy) U.UserIdeas
+                a_ [ href_ $ U.viewUserById (idea ^. createdBy)
                    ] $ idea ^. createdByLogin . unUserLogin . html
                 " / "
                 let l = do

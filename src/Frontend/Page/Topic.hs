@@ -120,11 +120,11 @@ viewTopicHeaderDiv ctx topic tab = do
     let caps = topicCapabilities (ctx ^. renderContextUser . userRole) phase
     div_ [class_ $ "topic-header phase-" <> cs (show (topic ^. topicPhase))] $ do
         header_ [class_ "detail-header"] $ do
-            a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
+            a_ [class_ "btn m-back detail-header-back", href_ $ U.listTopics space] "Zu Allen Themen"
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 ul_ [class_ "pop-menu-list"] $ do
                     li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
+                        a_ [id_ "edit-topic",  href_ $ U.moveIdeasToTopic space topicId] $ do
                             i_ [class_ "icon-pencil"] nil
                             "Thema bearbeiten"
                     when (CanPhaseForwardTopic `elem` caps) .
@@ -133,7 +133,7 @@ viewTopicHeaderDiv ctx topic tab = do
                                 i_ [class_ "icon-step-forward"] nil
                                 postLink_
                                     [class_ "btn-plain", onclickJs jsReloadOnClick]
-                                    (U.Admin $ U.AdminTopicNextPhase topicId)
+                                    (U.topicNextPhase topicId)
                                     "Nächste Phase"
                     when (CanPhaseBackwardTopic `elem` caps) .
                         li_ [class_ "pop-menu-list-item m-form"] .
@@ -141,7 +141,7 @@ viewTopicHeaderDiv ctx topic tab = do
                                 i_ [class_ "icon-step-forward"] nil
                                 postLink_
                                     [class_ "btn-plain", onclickJs jsReloadOnClick]
-                                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
+                                    (U.topicVotingPrevPhase topicId)
                                     "Vorherige Phase"
 
         h1_   [class_ "main-heading"] $ do
@@ -151,12 +151,12 @@ viewTopicHeaderDiv ctx topic tab = do
         div_ [class_ "heroic-btn-group"] $ do
             let createIdeaButton = do
                     a_ [ class_ "btn-cta heroic-cta"
-                       , href_ . U.createIdea $ IdeaLocationTopic space topicId
+                       , href_ $ U.createIdeaInTopic space topicId
                        ]
                      "+ Neue Idee"
                 delegateVoteButton = do
                     a_  [ class_ "btn-cta heroic-cta"
-                        , href_ . U.Space space $ U.CreateTopicDelegation topicId
+                        , href_ $ U.createTopicDelegation space topicId
                         ] $ do
                       i_ [class_ "icon-bullhorn"] nil
                       "Stimme Beauftragen"
@@ -202,7 +202,7 @@ instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
     type FormPageResult CreateTopic = Topic
 
-    formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
+    formAction (CreateTopic space _ _) = U.createTopic space
 
     redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
 
@@ -247,7 +247,7 @@ instance FormPage EditTopic where
     -- the ideas to be added to the topic.
     type FormPagePayload EditTopic = EditTopicData
 
-    formAction (EditTopic space topic _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    formAction (EditTopic space topic _) = U.moveIdeasToTopic space (topic ^. _Id)
 
     redirectOf (EditTopic _ topic _) _ = U.listTopicIdeas topic
 
