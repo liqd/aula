@@ -362,10 +362,10 @@ data CommentKey = CommentKey
   deriving (Eq, Ord, Show, Read, Generic)
 
 commentKey :: IdeaLocation -> AUID Idea -> AUID Comment -> CommentKey
-commentKey loc iid cid = CommentKey loc iid [] cid
+commentKey loc iid = CommentKey loc iid []
 
 replyKey :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> CommentKey
-replyKey loc iid pid cid = CommentKey loc iid [pid] cid
+replyKey loc iid pid = CommentKey loc iid [pid]
 
 instance SOP.Generic CommentKey
 
