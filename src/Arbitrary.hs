@@ -19,6 +19,7 @@ module Arbitrary
     , arbWord
     , arbPhrase
     , arbPhraseOf
+    , arbMarkdown
     , someOf
     , arbName
     , schoolClasses
@@ -492,7 +493,9 @@ instance Arbitrary PlainDocument where
 -- ** markdown
 
 instance Arbitrary Document where
-    arbitrary = arbMarkdown
+    arbitrary = Markdown . mconcat <$> someOf 1 3 arbParagraph
+            -- FIXME: use 'arbMarkdown'
+            -- (but make sure the layout and random content look better first!)
 
     shrink (Markdown "") = []
     shrink _ = [Markdown ""]
@@ -504,12 +507,14 @@ arbMarkdown = Markdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
     sections  = (`vectorOf` section) =<< elements [3..5]
     section   = (<>) <$> title 2 <*> (mconcat <$> parts)
     parts     = (`vectorOf` part) =<< elements [2..8]
-    part      = oneof [ paragraph
+    part      = oneof [ arbParagraph
                       , (<> "\n") <$> arbMarkdownList 3
                       , arbMarkdownImage
                       , arbMarkdownTable
                       ]
-    paragraph = (<> "\n\n") <$> arbPhraseOf 7 45
+
+arbParagraph :: Gen ST
+arbParagraph = (<> "\n\n") <$> arbPhraseOf 7 45
 
 arbMarkdownList :: Int -> Gen ST
 arbMarkdownList 3 =                arbMarkdownList' 3
