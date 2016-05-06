@@ -15,24 +15,25 @@ module Frontend.Validation
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
     , fieldParser
+
+      -- * common validators
+    , inRange
     , nonEmpty
     , maxLength
     , DfForm
     , DfTextField
     , dfTextField
-
-      -- * missing parser combinators
-    , (<??>)
-    , inRange
-    , manyNM
-    , satisfies
-
-      -- * common validators
+    , StringFieldValidator
     , username
     , password
     , title
-    , emailField
     , markdown
+    , emailField
+
+      -- * missing parser combinators
+    , (<??>)
+    , satisfies
+    , manyNM
     )
 where
 
@@ -107,15 +108,15 @@ validateOptional
     => FieldName -> FieldValidator s a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
 validateOptional = DF.validateOptional <..> validate'
 
+
+-- * simple validators
+
 inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
 inRange mn mx = fieldParser
     (satisfies isBetween (read <$> many1 digit)
         <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."])
   where
     isBetween n = mn <= n && n <= mx
-
-
--- * simple validators
 
 nonEmpty :: (Eq m, Monoid m) => FieldValidator m m
 nonEmpty = FieldValidator $ \xs ->
@@ -143,37 +144,6 @@ type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
 --    field = dfTextField someData
 dfTextField :: s -> DfTextField s
 dfTextField s l p = s ^. l & p %%~ DF.text . Just
-
-
--- * missing things from parsec
-
-infix 0 <??>
-
--- | Set the given message if the parser fails as an error message, pretend
--- no input is consumed.
-(<??>) :: ParsecT s u m a -> String -> ParsecT s u m a
-p <??> msg = TP.try p <?> msg
-
-satisfies :: (a -> Bool) -> ParsecT s u m a -> ParsecT s u m a
-satisfies predicate parser = do
-    x <- parser
-    unless (predicate x) $ fail ""
-    return x
-
--- | Try to apply the given parser minimum 'n' and maximum 'n+m' times.
-manyNM
-    :: forall s u m a t . (Stream s m t)
-    => Int -> Int -> ParsecT s u m a -> ParsecT s u m [a]
-manyNM n m p = (<>) <$> replicateM n p <*> run m []
-  where
-    run :: Int -> [a] -> ParsecT s u m [a]
-    run 0 xs = pure (reverse xs)
-    run l xs = optionMaybe (TP.try p) >>= \case
-                    Just x -> (run (l-1) (x:xs))
-                    Nothing -> run 0 xs
-
-
--- * common validators
 
 type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
                                          => FieldValidator r s
@@ -213,3 +183,31 @@ emailField name emailValue =
     checkEmail value = case Email.emailAddress (cs value) of
         Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
         Just e  -> DF.Success $ InternalEmailAddress e
+
+
+-- * missing things from parsec
+
+infix 0 <??>
+
+-- | Set the given message if the parser fails as an error message, pretend
+-- no input is consumed.
+(<??>) :: ParsecT s u m a -> String -> ParsecT s u m a
+p <??> msg = TP.try p <?> msg
+
+satisfies :: (a -> Bool) -> ParsecT s u m a -> ParsecT s u m a
+satisfies predicate parser = do
+    x <- parser
+    unless (predicate x) $ fail ""
+    return x
+
+-- | Try to apply the given parser minimum 'n' and maximum 'n+m' times.
+manyNM
+    :: forall s u m a t . (Stream s m t)
+    => Int -> Int -> ParsecT s u m a -> ParsecT s u m [a]
+manyNM n m p = (<>) <$> replicateM n p <*> run m []
+  where
+    run :: Int -> [a] -> ParsecT s u m [a]
+    run 0 xs = pure (reverse xs)
+    run l xs = optionMaybe (TP.try p) >>= \case
+                    Just x -> (run (l-1) (x:xs))
+                    Nothing -> run 0 xs
