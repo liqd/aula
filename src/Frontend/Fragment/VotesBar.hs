@@ -6,18 +6,19 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
-module Frontend.Fragment.QuorumBar
+module Frontend.Fragment.VotesBar
 where
 
 import Frontend.Prelude
 
 
-data QuorumBar = QuorumBar Int
+data VotesBar = VotesBar Int
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance ToHtml QuorumBar where
+instance ToHtml VotesBar where
     toHtmlRaw = toHtml
-    toHtml (QuorumBar i) = do
+    toHtml (VotesBar i) = do
+        -- FIXME: Styling, green and red.
         span_ [class_ "progress-bar"] $ do
             span_ [ class_ "progress-bar-progress"
                   , style_ ("width: " <> cs (show i) <> "%")

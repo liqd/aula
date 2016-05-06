@@ -13,6 +13,7 @@ import Frontend.Prelude
 import Frontend.Fragment.Category
 import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
+import Frontend.Fragment.VotesBar
 import LifeCycle
 
 import qualified Frontend.Path as U
@@ -48,7 +49,7 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea phase quo _voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea phase quo voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
@@ -69,6 +70,7 @@ instance ToHtml ListItemIdea where
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = IdeaInViewTopic /= whatListPage
+                    let showVotes = phase > PhaseJury
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-comment-o"] nil
@@ -78,7 +80,12 @@ instance ToHtml ListItemIdea where
                         when showLikesAndQuorum . li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
                             toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
+                        when showVotes . li_ [class_ "meta-list-item"] $ do
+                            i_ [class_ "meta-list-icon icon-voting"] nil
+                            -- FIXME: Plural / singular
+                            toHtml (show (numVotes idea Yes) <> " Stimmen")
                     when showLikesAndQuorum . toHtml $ QuorumBar (percentLikes idea quo)
+                    when showVotes . toHtml $ VotesBar (percentVotes idea voters Yes)
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
