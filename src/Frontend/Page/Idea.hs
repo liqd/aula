@@ -567,7 +567,7 @@ editComment loc ideaId commentId =
             pure $ EditComment idea comment)
         (\desc -> do
             update $ SetCommentDesc (commentKey loc ideaId commentId) desc
-            -- eventLogUserEditComment comment -- TODO
+            -- eventLogUserEditComment comment -- FIXME
             )
         "Der Verbesserungsvorschlag wurde gespeichert."
 
@@ -580,7 +580,7 @@ editReply loc iid pcid cid =
             pure $ EditReply idea comment)
         (\desc -> do
             update $ SetCommentDesc (replyKey loc iid pcid cid) desc
-            -- eventLogUserEditComment comment -- TODO
+            -- eventLogUserEditComment comment -- FIXME
             )
         "Der Verbesserungsvorschlag wurde gespeichert."
 
