@@ -245,7 +245,6 @@ instance ToHtml ViewIdea where
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c ^. html
 
-
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars caps
@@ -257,15 +256,18 @@ instance ToHtml IdeaVoteLikeBars where
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
 
+            -- FIXME: how do you un-like an idea?
             likeButtons :: Html ()
             likeButtons = if CanLike `elem` caps
                 then div_ [class_ "voting-buttons"] $
-                        postButton_ [ class_ "btn"
+                        if userLikesIdea (ctx ^. renderContextUser) idea
+                            then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
+                            else postButton_
+                                    [ class_ "btn"
                                     , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
                                     ]
                                     (U.likeIdea idea)
-                            "dafür!"
-                        -- FIXME: how do you un-like an idea?
+                                    "dafür!"
                 else nil
 
             voteBar :: Html () -> Html ()
@@ -298,7 +300,7 @@ instance ToHtml IdeaVoteLikeBars where
                     voteButton vote No  "dagegen"
                 else nil
               where
-                vote = userVoteOnIdea user idea
+                vote = userVotedOnIdea user idea
 
             -- FIXME: The button for the selected vote value is white.
             -- Should it be in other color?
