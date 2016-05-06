@@ -30,10 +30,10 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- subform src/Frontend/Page/Topic.hs`.)
 -- FIXME: Error and non selected category are inseparable cases.
 makeFormSelectCategory :: (Monad m) => Maybe Category -> DF.Form (Html ()) m (Maybe Category)
-makeFormSelectCategory mcat = toCategory <$> DF.text (cs . show . fromEnum <$> mcat)
-  where
-    toCategory :: ST -> Maybe Category
-    toCategory = (toEnumMay <=< readMay) . cs
+makeFormSelectCategory mcat = formSelectorToCategory <$> DF.text (cs . show . fromEnum <$> mcat)
+
+formSelectorToCategory :: ST -> Maybe Category
+formSelectorToCategory = (toEnumMay <=< readMay) . cs
 
 -- | see also: static/js/custom.js.
 formPageSelectCategory :: Monad m => View (HtmlT m ()) -> HtmlT m ()

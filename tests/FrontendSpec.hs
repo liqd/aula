@@ -37,3 +37,10 @@ spec = do
                     [ codeShouldBe 404
                     , bodyShouldBe . cs . renderText . toHtml $ PublicFrame Page404 []
                     ]
+
+    describe "formSelectorToCategory" $ do
+        it "works" $ do
+            fromEnum <$> ([minBound..] :: [Category])
+                `shouldBe` [0..4]
+            (toEnumMay <$> ([0..5] :: [Int]) :: [Maybe Category])
+                `shouldBe` (Just <$> [minBound..]) <> [Nothing]
