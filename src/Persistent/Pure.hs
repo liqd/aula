@@ -479,10 +479,9 @@ setUserAvatar uid url = withUser uid . userAvatar ?= url
 
 editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
 editTopic topicId (EditTopicData title desc ideas) = do
-    topic <- maybe404 =<< liftAQuery (findTopic topicId)
-    let space = topic ^. topicIdeaSpace
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
     previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
+    space <- view topicIdeaSpace <$> (maybe404 =<< liftAQuery (findTopic topicId))
     moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
     moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
