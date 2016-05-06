@@ -95,7 +95,7 @@ validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
     errorToHtml (DF.Error x)   = DF.Error $ toHtml x
 
     addFieldNameToError :: FieldName -> FieldValidator a b -> FieldValidator a b
-    addFieldNameToError fieldName v = FieldValidator $ \x -> case unFieldValidator v x of
+    addFieldNameToError fieldName (FieldValidator w) = FieldValidator $ \x -> case w x of
         s@(DF.Success _) -> s
         DF.Error e       -> DF.Error $ cs fieldName <> ": " <> e
 
