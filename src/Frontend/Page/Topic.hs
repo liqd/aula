@@ -24,8 +24,9 @@ module Frontend.Page.Topic
     )
 where
 
-import Prelude hiding ((.))
 import Control.Category ((.))
+import Data.List (sortBy)
+import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
 import Control.Exception (assert)
@@ -285,7 +286,7 @@ ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 -- are pre-selected.
 formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
 formPageIdeaSelection v ideas =
-    ul_ . for_ ideas $ \idea ->
+    ul_ . for_ (sortBy (compare `on` view ideaTitle) ideas) $ \idea ->
         li_ $ do
             DF.inputCheckbox (ideaToFormField idea) v
             idea ^. ideaTitle . html
