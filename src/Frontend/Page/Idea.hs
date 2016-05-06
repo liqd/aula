@@ -179,7 +179,7 @@ instance ToHtml ViewIdea where
 
             when (ideaReachedQuorum ideaInfo) $ do
                 -- FIXME: Design
-                div_ [class_ "TABLE"] $ p_ "This is a table."
+                div_ [class_ "voting-buttons"] $ "Idee kann auf den Tisch."
 
             feasibilityVerdict True idea caps
 
