@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -13,27 +14,34 @@ module Frontend.Validation
     , FieldParser
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
+    , fieldParser
+
+      -- * common validators
+    , inRange
     , nonEmpty
-    , optionalNonEmpty
+    , maxLength
     , DfForm
     , DfTextField
     , dfTextField
-
-      -- * missing parser combinators
-    , (<??>)
-    , inRange
-    , manyNM
-    , satisfies
-
-      -- * common validators
+    , StringFieldValidator
     , username
     , password
     , title
+    , markdown
     , emailField
-    , validateMarkdown
-    , validateOptionalMarkdown
+
+      -- * missing parser combinators
+    , (<??>)
+    , satisfies
+    , manyNM
     )
 where
+
+import Prelude hiding ((.))
+
+import Control.Arrow
+import Control.Category as Cat
+import Data.Text as Text (Text, length)
 
 import Text.Digestive as DF
 import Text.Email.Validate as Email
@@ -48,16 +56,31 @@ type FieldParser a = Parsec String () a
 
 -- * field validation
 
+newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result ST b }
+
+instance Functor (FieldValidator a) where
+    fmap g (FieldValidator f) = FieldValidator (fmap g . f)
+
+instance Cat.Category FieldValidator where
+    id    = FieldValidator DF.Success
+    g . f = FieldValidator (unFieldValidator g <=< unFieldValidator f)
+
+instance Arrow FieldValidator where
+    arr f   = FieldValidator (DF.Success . f)
+    first f = FieldValidator $ \(x,y) -> case unFieldValidator f x of
+                DF.Success z -> DF.Success (z,y)
+                DF.Error   e -> DF.Error e
+
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
 -- FIXME: Use red color for error message when displaying them on the form.
-fieldValidation
+fieldParser
     :: (ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> s -> DF.Result (Html ()) a
-fieldValidation name parser value =
-    either (DF.Error . toHtml . errorString) DF.Success $ parse (parser <* eof) name (cs value)
+    => FieldParser a -> FieldValidator s a
+fieldParser parser =
+    FieldValidator (either (DF.Error . cs . errorString) DF.Success . parse (parser <* eof) "" . cs)
   where
-    errorString e = filter (/= '\n') $ unwords [sourceName $ errorPos e, ":", errorMsgs $ errorMessages e]
+    errorString = filter (/= '\n') . errorMsgs . errorMessages
     -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
     -- are displayed if a parse error happens. Also it gives control to the
     -- client code to make their translation of those connectors. The German
@@ -65,43 +88,49 @@ fieldValidation name parser value =
     -- all situations.
     errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
 
+validate' :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT m ()) b
+validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
+  where
+    errorToHtml (DF.Success x) = DF.Success x
+    errorToHtml (DF.Error x)   = DF.Error $ toHtml x
+
+    addFieldNameToError :: FieldName -> FieldValidator a b -> FieldValidator a b
+    addFieldNameToError fieldName (FieldValidator w) = FieldValidator $ \x -> case w x of
+        s@(DF.Success _) -> s
+        DF.Error e       -> DF.Error $ cs fieldName <> ": " <> e
+
 validate
-    :: (Monad m, ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> Form (Html ()) m s -> Form (Html ()) m a
-validate n p = DF.validate (fieldValidation n p)
+    :: Monad m => FieldName -> FieldValidator s a -> Form (Html ()) m s -> Form (Html ()) m a
+validate = DF.validate <..> validate'
 
 validateOptional
-    :: (Monad m, ConvertibleStrings s String)
-    => FieldName -> FieldParser a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
-validateOptional = DF.validateOptional <..> fieldValidation
-
-inRange :: Int -> Int -> FieldParser Int
-inRange mn mx =
-    satisfies isBetween (read <$> many1 digit)
-    <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."]
-  where
-    isBetween n = mn <= n && n <= mx
+    :: Monad m
+    => FieldName -> FieldValidator s a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
+validateOptional = DF.validateOptional <..> validate'
 
 
 -- * simple validators
 
-checkNonEmpty
-    :: (Eq m, IsString v, Monoid m)
-    => FieldName -> m -> DF.Result v m
-checkNonEmpty name xs
-   | xs == mempty = DF.Error . fromString $ unwords [name, ":", "darf nicht leer sein"]
-   | otherwise    = DF.Success xs
+inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
+inRange mn mx = fieldParser
+    (satisfies isBetween (read <$> many1 digit)
+        <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."])
+  where
+    isBetween n = mn <= n && n <= mx
 
-nonEmpty
-    :: (Monad m, Monoid v, IsString v, Eq s, Monoid s, ConvertibleStrings s r)
-    => FieldName -> Form v m s -> Form v m r
-nonEmpty = DF.validate . fmap cs <..> checkNonEmpty
+nonEmpty :: (Eq m, Monoid m) => FieldValidator m m
+nonEmpty = FieldValidator $ \xs ->
+    if xs == mempty
+        then DF.Error . fromString $ "darf nicht leer sein"
+        else DF.Success xs
 
-optionalNonEmpty
-    :: (Monad m, Monoid v, IsString v)
-    => FieldName -> Form v m (Maybe String) -> Form v m (Maybe String)
-optionalNonEmpty = DF.validateOptional . checkNonEmpty
-
+maxLength :: Int -> FieldValidator Text Text
+maxLength mx = FieldValidator $ \xs ->
+    let l = Text.length xs
+    in if Text.length xs > mx
+        then DF.Error . fromString $
+            unwords ["zu lang, Zahl der zusätzlichen Zeichen:", show (l - mx)]
+        else DF.Success xs
 
 type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
 type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
@@ -115,6 +144,45 @@ type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
 --    field = dfTextField someData
 dfTextField :: s -> DfTextField s
 dfTextField s l p = s ^. l & p %%~ DF.text . Just
+
+type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
+                                         => FieldValidator r s
+
+username :: StringFieldValidator
+username = fieldParser (cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
+
+password :: StringFieldValidator
+password = fieldParser (cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)")
+
+title :: StringFieldValidator
+title = fieldParser (cs <$> many1 (alphaNum <|> space))
+
+markdown :: FieldValidator Document Document
+markdown = unMarkdown ^>> nonEmpty >>^ Markdown
+
+emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
+emailField name emailValue =
+    {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
+        from texts to @EmailAddress@. Here we want to traverse the text of an email address
+        thus one needs to reverse this prism. While Prisms cannot be reversed in full
+        generality, we could expect a weaker form which also traversals. This would look
+        like that:
+
+        email & rev emailAddress %%~ DF.optionalText
+
+        Instead, we have the code below which extracts the text of the email address if
+        there is such an email address.  'optionalText' gets a @Maybe ST@, finally the
+        result of 'optionalText' is processed with a pure function from @Maybe ST@ to
+        @Maybe EmailAddress@ where only a valid text representation of an email gets
+        mapped to @Just@  of an @EmailAddress@.
+    -}
+    DF.validateOptional
+        checkEmail
+        (DF.optionalText (emailValue ^? _Just . re Frontend.emailAddress))
+  where
+    checkEmail value = case Email.emailAddress (cs value) of
+        Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
+        Just e  -> DF.Success $ InternalEmailAddress e
 
 
 -- * missing things from parsec
@@ -143,52 +211,3 @@ manyNM n m p = (<>) <$> replicateM n p <*> run m []
     run l xs = optionMaybe (TP.try p) >>= \case
                     Just x -> (run (l-1) (x:xs))
                     Nothing -> run 0 xs
-
-
--- * common validators
-
-type StringFieldParser = forall s . ConvertibleStrings String s => FieldParser s
-
-username :: StringFieldParser
-username = cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben"
-
-password :: StringFieldParser
-password = cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)"
-
-title :: StringFieldParser
-title = cs <$> many1 (alphaNum <|> space)
-
--- FIXME: Use LensLike
-validateMarkdown
-    :: (Monad m)
-    => FieldName -> Form (Html ()) m Document -> Form (Html ()) m Document
-validateMarkdown name = fmap Markdown . nonEmpty name . fmap unMarkdown
-
-validateOptionalMarkdown
-    :: Monad m
-    => FieldName -> Form (Html ()) m (Maybe String) -> Form (Html ()) m (Maybe Document)
-validateOptionalMarkdown name = ((Markdown . cs) <$$>) . optionalNonEmpty name
-
-emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
-emailField name emailValue =
-    {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
-        from texts to @EmailAddress@. Here we want to traverse the text of an email address
-        thus one needs to reverse this prism. While Prisms cannot be reversed in full
-        generality, we could expect a weaker form which also traversals. This would look
-        like that:
-
-        email & rev emailAddress %%~ DF.optionalText
-
-        Instead, we have the code below which extracts the text of the email address if
-        there is such an email address.  'optionalText' gets a @Maybe ST@, finally the
-        result of 'optionalText' is processed with a pure function from @Maybe ST@ to
-        @Maybe EmailAddress@ where only a valid text representation of an email gets
-        mapped to @Just@  of an @EmailAddress@.
-    -}
-    DF.validateOptional
-        checkEmail
-        (DF.optionalText (emailValue ^? _Just . re Frontend.emailAddress))
-  where
-    checkEmail value = case Email.emailAddress (cs value) of
-        Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
-        Just e  -> DF.Success $ InternalEmailAddress e

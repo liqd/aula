@@ -34,6 +34,7 @@ import Persistent.Api
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
 
+import qualified Frontend.Constant as Constant
 import qualified Frontend.Path as U
 
 
@@ -251,7 +252,7 @@ instance FormPage PageAdminSettingsDurations where
       where
         period name getter = validate
             name
-            (DurationDays <$> inRange 1 366)
+            (DurationDays <$> inRange Constant.minElabPeriod Constant.maxElabPeriod)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
         pNam ph = uilabel $ ph (error "PageAdminSettingsDurations: impossible")
 
@@ -423,8 +424,8 @@ instance FormPage AdminCreateUser where
             <*> roleForm Nothing Nothing classes
         where
             -- FIXME: Users with more than one name?
-            firstName = validate "Vorname"  (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben")
-            lastName  = validate "Nachname" (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben")
+            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben"))
+            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben"))
             loginName = validateOptional "Login" (UserLogin <$> username)
 
     formPage v form p =
@@ -718,7 +719,7 @@ instance FormPage AdminCreateClass where
       where
         classname = validate
             "Name der Klasse"
-            (cs <$> many1 anyChar <??> "nicht leer")
+            (fieldParser (cs <$> many1 anyChar <??> "nicht leer"))
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
@@ -824,7 +825,7 @@ instance FormPage AdminPhaseChange where
       where
         choices = map (id &&& toHtml) [Forward, Backward]
         topicId = validate "ID des Themas"
-            (AUID . read . cs <$> many1 digit <??> "Ziffern von 0-9")
+            (fieldParser (AUID . read . cs <$> many1 digit <??> "Ziffern von 0-9"))
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"
@@ -868,10 +869,10 @@ instance Csv.FromRecord CsvUserRecord where
         <*> pure Nothing
       where
         parseName :: (Monad m) => Int -> Int -> m ST
-        parseName maxLength i
+        parseName mxLength i
             | length v < i + 1
                 = fail $ "user record too short: " <> show v
-            | ST.length (v !! i) > maxLength
+            | ST.length (v !! i) > mxLength
                 = fail $ "user record with overly long column " <> show i <> ": " <> show v
             | otherwise
                 = pure $ v !! i

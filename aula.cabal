@@ -88,6 +88,7 @@ library
       Data.UriPath
       DemoData
       Frontend
+      Frontend.Constant
       Frontend.Core
       Frontend.Filter
       Frontend.Fragment.Category

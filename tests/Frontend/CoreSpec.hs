@@ -139,7 +139,7 @@ ideaCheckboxValue iids path =
         else "off"
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnvMapping _ (ProtoTopic title (Markdown desc) image _ iids _) path'
+    payloadToEnvMapping _ (ProtoTopic title (PlainDocument desc) image _ iids _) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title" = pure [TextInput title]
         | path == "desc"  = pure [TextInput desc]
@@ -148,7 +148,7 @@ instance PayloadToEnv ProtoTopic where
         path :: String = cs path'
 
 instance PayloadToEnv EditTopicData where
-    payloadToEnvMapping _ (EditTopicData title (Markdown desc) iids) path'
+    payloadToEnvMapping _ (EditTopicData title (PlainDocument desc) iids) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title"           = pure [TextInput title]
         | path == "desc"            = pure [TextInput desc]
@@ -346,7 +346,7 @@ instance ArbFormPagePayload CreateTopic where
             set protoTopicIdeaSpace space
           . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
-        <**> (set protoTopicDesc <$> nonEmptyMarkdown)
+        <**> (set protoTopicDesc<$> validTopicDescription)
 
 instance ArbFormPagePayload Frontend.Page.EditTopic where
     arbFormPagePayload (Frontend.Page.EditTopic _space _topicid ideas) =
@@ -357,7 +357,7 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
         <*> pure (view _Id <$> ideas)
-        <**> (set editTopicDesc <$> nonEmptyMarkdown)
+        <**> (set editTopicDesc <$> validTopicDescription)
 
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary

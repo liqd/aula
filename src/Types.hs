@@ -428,7 +428,7 @@ schoolClass = SchoolClass
 data Topic = Topic
     { _topicMeta      :: MetaInfo Topic
     , _topicTitle     :: ST
-    , _topicDesc      :: Document
+    , _topicDesc      :: PlainDocument
     , _topicImage     :: URL
     , _topicIdeaSpace :: IdeaSpace
     , _topicPhase     :: Phase
@@ -439,7 +439,7 @@ instance SOP.Generic Topic
 
 data ProtoTopic = ProtoTopic
     { _protoTopicTitle       :: ST
-    , _protoTopicDesc        :: Document
+    , _protoTopicDesc        :: PlainDocument
     , _protoTopicImage       :: URL
     , _protoTopicIdeaSpace   :: IdeaSpace
     , _protoTopicIdeas       :: [AUID Idea]
@@ -454,7 +454,7 @@ type instance Proto Topic = ProtoTopic
 -- Edit topic description and add ideas to topic.
 data EditTopicData = EditTopicData
     { _editTopicTitle    :: ST
-    , _editTopicDesc     :: Document
+    , _editTopicDesc     :: PlainDocument
     , _editTopicAddIdeas :: [AUID Idea]
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -767,6 +767,13 @@ instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
 
 type MetaInfo a = GMetaInfo a (KeyOf a)
 
+newtype PlainDocument = PlainDocument { unDescription :: ST }
+  deriving (Eq, Ord, Show, Read, Generic, Monoid)
+
+instance ToHtml PlainDocument where
+    toHtmlRaw = div_ . toHtmlRaw . unDescription
+    toHtml    = div_ . toHtml    . unDescription
+
 -- | Markdown content.
 newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -909,6 +916,7 @@ instance Binary CommentKey
 instance Binary CommentVote
 instance Binary CommentVoteKey
 instance Binary CommentContent
+instance Binary PlainDocument
 instance Binary Delegation
 instance Binary DelegationContext
 instance Binary Document
@@ -945,6 +953,7 @@ instance Binary Settings
 
 makePrisms ''AUID
 makePrisms ''Category
+makePrisms ''PlainDocument
 makePrisms ''DelegationContext
 makePrisms ''Document
 makePrisms ''EmailAddress
@@ -968,6 +977,7 @@ makeLenses ''CommentContext
 makeLenses ''CommentKey
 makeLenses ''CommentVote
 makeLenses ''CommentVoteKey
+makeLenses ''PlainDocument
 makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
@@ -1012,6 +1022,7 @@ deriveSafeCopy 0 'base ''CommentContent
 deriveSafeCopy 0 'base ''CommentKey
 deriveSafeCopy 0 'base ''CommentVote
 deriveSafeCopy 0 'base ''CommentVoteKey
+deriveSafeCopy 0 'base ''PlainDocument
 deriveSafeCopy 0 'base ''Delegation
 deriveSafeCopy 0 'base ''DelegationContext
 deriveSafeCopy 0 'base ''DelegationNetwork
