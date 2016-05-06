@@ -252,7 +252,7 @@ instance FormPage PageAdminSettingsDurations where
       where
         period name getter = validate
             name
-            (DurationDays <$>  inRange Constant.minElabPeriod Constant.maxElabPeriod)
+            (DurationDays <$> inRange Constant.minElabPeriod Constant.maxElabPeriod)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
         pNam ph = uilabel $ ph (error "PageAdminSettingsDurations: impossible")
 
