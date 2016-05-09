@@ -116,6 +116,7 @@ data IdeaCapability
     | CanAddCreatorStatement
     | CanEdit
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
+                            -- the idea can be moved to a topic
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaCapability
@@ -124,13 +125,9 @@ ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
 ideaCapabilities u r i p =
        phaseCap u r i p
     <> editCap u r i
-    <> moveBetweenTopicsCap r
 
 editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
 editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
-
-moveBetweenTopicsCap :: Role -> [IdeaCapability]
-moveBetweenTopicsCap r = [CanMoveBetweenTopics | r ==  Moderator]
 
 phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
 phaseCap u r i p = case p of
@@ -145,10 +142,10 @@ phaseCap u r i p = case p of
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
 wildIdeaCap _i = \case
-    Student    _clss -> [CanLike, CanComment, CanVoteComment]
+    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> []
+    Moderator        -> [CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
@@ -163,10 +160,10 @@ wildFrozenCap _i = \case
 
 phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
 phaseRefinementCap _i = \case
-    Student    _clss -> [CanComment, CanVoteComment]
+    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> []
+    Moderator        -> [CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
@@ -258,8 +255,7 @@ commentCapabilities uid role comment
 data TopicCapability
     = CanPhaseForwardTopic
     | CanPhaseBackwardTopic
-    | CanEditTopic
-    | CanMoveIdeasToTopic
+    | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
   deriving (Eq, Show)
 
 topicCapabilities :: Phase -> Role -> [TopicCapability]
@@ -274,10 +270,10 @@ topicCapabilities PhaseResult         = topicResultCaps
 
 topicWildIdeaCaps :: Role -> [TopicCapability]
 topicWildIdeaCaps = \case
-    Student    _clss -> [CanMoveIdeasToTopic]
+    Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditTopic, CanMoveIdeasToTopic]
+    Moderator        -> []
     Principal        -> []
     Admin            -> []
 
@@ -292,10 +288,10 @@ topicWildFrozenCaps = \case
 
 topicRefinementCaps :: Role -> [TopicCapability]
 topicRefinementCaps = \case
-    Student    _clss -> [CanMoveIdeasToTopic]
+    Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditTopic, CanMoveIdeasToTopic]
+    Moderator        -> [CanEditTopic]
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic]
 
