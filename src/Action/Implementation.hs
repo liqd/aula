@@ -83,11 +83,13 @@ instance ActionLog Action where
             Right rows -> EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
       where
         rd :: Config -> IO [EventLogItemCold]
-        rd cfg = (LBS.lines <$> LBS.readFile (cfg ^. logging . eventLogPath)) >>= mapM adecode
+        rd cfg = (LBS.lines <$> LBS.readFile (cfg ^. logging . eventLogPath))
+             >>= mapM (uncurry adecode) . zip [1..]
 
-        adecode :: LBS -> IO EventLogItemCold
-        adecode = maybe (throwIO $ ErrorCall "readEventLog: inconsistent data on disk.") pure
-                . Aeson.decode
+        adecode :: Int -> LBS -> IO EventLogItemCold
+        adecode i = either (throwIO . ErrorCall . msg) pure . Aeson.eitherDecode
+          where
+            msg aesonSays = "readEventLog:" <> show i <> ": " <> aesonSays
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
