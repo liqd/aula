@@ -58,7 +58,11 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              )
 
 actionIO :: IO a -> Action a
-actionIO = MkAction . liftIO
+actionIO action = do
+    eval <- MkAction . liftIO $ try action
+    case eval of
+        Left msg  -> throwError $ ActionIOExcept msg
+        Right val -> pure val
 
 instance GenArbitrary Action where  -- FIXME: remove
     genGen = actionIO . generate
@@ -152,3 +156,4 @@ runActionExcept (ActionExcept e) = e
 runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
 runActionExcept (ActionEventLogExcept e) = error500 # show e
+runActionExcept (ActionIOExcept e) = error500 # show e

@@ -182,6 +182,7 @@ data ActionExcept
     | ActionPersistExcept PersistExcept
     | ActionSendMailExcept SendMailError
     | ActionEventLogExcept SomeException
+    | ActionIOExcept SomeException
     deriving (Show)
 
 makePrisms ''ActionExcept
