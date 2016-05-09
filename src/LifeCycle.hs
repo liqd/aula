@@ -11,6 +11,8 @@ module LifeCycle
     , phaseTrans
 
       -- * capabilities
+    , UserCapability(..)
+    , userCapabilities
     , IdeaCapability(..)
     , ideaCapabilities
     , CommentCapability(..)
@@ -79,6 +81,24 @@ phaseTrans PhaseResult PhaseFreeze{} = Just (PhaseResult, [])
 phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
+
+
+-- * User capabilities
+
+-- FIXME: Extend the list
+data UserCapability
+    = CanCreateTopic
+  deriving (Eq, Show)
+
+-- TODO: Use the idea space parameter.
+userCapabilities :: IdeaSpace -> Role -> [UserCapability]
+userCapabilities _s = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> [CanCreateTopic]
+    Principal        -> []
+    Admin            -> []
 
 
 -- * Idea Capabilities
@@ -231,17 +251,95 @@ commentCapabilities uid role comment
         [CanReplyComment  ] <>
         [CanEditComment   | uid `isCreatorOf` comment]
 
+
 -- * Topic capabilities
 
 -- FIXME: Extend the list
 data TopicCapability
     = CanPhaseForwardTopic
     | CanPhaseBackwardTopic
+    | CanEditTopic
+    | CanMoveIdeasToTopic
   deriving (Eq, Show)
 
-topicCapabilities :: Role -> Phase -> [TopicCapability]
-topicCapabilities Admin (PhaseRefinement _) = [CanPhaseForwardTopic]
-topicCapabilities Admin PhaseJury           = [CanPhaseForwardTopic]
-topicCapabilities Admin (PhaseVoting _)     = [CanPhaseForwardTopic, CanPhaseBackwardTopic]
-topicCapabilities Admin PhaseResult         = []
-topicCapabilities _     _                   = []
+topicCapabilities :: Phase -> Role -> [TopicCapability]
+topicCapabilities PhaseWildIdea       = topicWildIdeaCaps
+topicCapabilities PhaseWildFrozen     = topicWildFrozenCaps
+topicCapabilities (PhaseRefinement _) = topicRefinementCaps
+topicCapabilities (PhaseRefFrozen  _) = topicRefinementFrozenCaps
+topicCapabilities PhaseJury           = topicJuryCaps
+topicCapabilities (PhaseVoting     _) = topicVotingCaps
+topicCapabilities (PhaseVotFrozen  _) = topicVotingFrozenCaps
+topicCapabilities PhaseResult         = topicResultCaps
+
+topicWildIdeaCaps :: Role -> [TopicCapability]
+topicWildIdeaCaps = \case
+    Student    _clss -> [CanMoveIdeasToTopic]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> [CanEditTopic, CanMoveIdeasToTopic]
+    Principal        -> []
+    Admin            -> []
+
+topicWildFrozenCaps :: Role -> [TopicCapability]
+topicWildFrozenCaps = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+topicRefinementCaps :: Role -> [TopicCapability]
+topicRefinementCaps = \case
+    Student    _clss -> [CanMoveIdeasToTopic]
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> [CanEditTopic, CanMoveIdeasToTopic]
+    Principal        -> []
+    Admin            -> [CanPhaseForwardTopic]
+
+topicRefinementFrozenCaps :: Role -> [TopicCapability]
+topicRefinementFrozenCaps = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+topicJuryCaps :: Role -> [TopicCapability]
+topicJuryCaps = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> [CanPhaseForwardTopic]
+
+topicVotingCaps :: Role -> [TopicCapability]
+topicVotingCaps = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
+
+topicVotingFrozenCaps :: Role -> [TopicCapability]
+topicVotingFrozenCaps = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []
+
+topicResultCaps :: Role -> [TopicCapability]
+topicResultCaps = \case
+    Student    _clss -> []
+    ClassGuest _clss -> []
+    SchoolGuest      -> []
+    Moderator        -> []
+    Principal        -> []
+    Admin            -> []

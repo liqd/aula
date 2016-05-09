@@ -142,8 +142,8 @@ instance Arbitrary PageIdeasOverview where
     shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageIdeasInDiscussion where
-    arbitrary = PageIdeasInDiscussion <$> arb <*> arb
-    shrink (PageIdeasInDiscussion x y) = PageIdeasInDiscussion <$> shr x <*> shr y
+    arbitrary = PageIdeasInDiscussion <$> arb <*> arb <*> arb
+    shrink (PageIdeasInDiscussion x y z) = PageIdeasInDiscussion <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary ViewTopicTab where
     arbitrary = elements viewTopicTabList
