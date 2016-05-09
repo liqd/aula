@@ -474,8 +474,8 @@ arbTopicRefPhaseEnd = pure constantSampleTimestamp
 instance Arbitrary Topic where
     arbitrary =
         scaleDown garbitrary
-        <**> (set topicTitle                <$> arbPhrase)
-        <**> (set topicDesc . PlainDocument <$> arbPhrase)
+        <**> (set topicTitle <$> arbPhrase)
+        <**> (set topicDesc  <$> arb)
     shrink    = gshrink
 
 instance Arbitrary Phase where
@@ -788,10 +788,11 @@ instance Arbitrary Timespan where
 
 -- | Removes the elements before 'x' also removes 'x' from the list
 dropWhileX :: forall t . Eq t => t -> [t] -> [t]
-dropWhileX x = safeTail . List.dropWhile (/=x)
+dropWhileX x = safeTail . List.dropWhile (/= x)
   where
     safeTail []     = []
     safeTail (_:xs) = xs
+
 
 -- * arbitrary readable text
 

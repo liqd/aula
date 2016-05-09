@@ -57,7 +57,7 @@ spec = do
 
     describe "Paths and handlers" $ do
         beforeAll mockAulaMain $ do
-            it "Every path has a handler" $ \app -> property . forAllShrink mainGen shrink $ \path ->
+            it "Every path has a handler" $ \app -> property . forAllShrinkDef mainGen $ \path ->
                 flip Wai.property app $ do
                     let uri = cs . ST.takeWhile (/= '#') . absoluteUriPath $ relPath path
                     resp :: SResponse <- if isPostOnly path then post uri ""
