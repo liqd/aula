@@ -1095,14 +1095,14 @@ instance Arbitrary EventLog where
 instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
          , Generic u, Generic t, Generic i, Generic c
          )
-        => Arbitrary (EventLogItem' u t i c) where
+        => Arbitrary (EventLogItem u t i c) where
     arbitrary = garbitrary
     shrink    = gshrink
 
 instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
          , Generic u, Generic t, Generic i, Generic c
          )
-        => Arbitrary (EventLogItemValue' u t i c) where
+        => Arbitrary (EventLogItemValue u t i c) where
     arbitrary = garbitrary >>= repair
       where
         repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arb <*> pure u

@@ -17,14 +17,14 @@ module Action.Implementation
 where
 
 import Codec.Picture
+import Control.Exception (throwIO, try, ErrorCall(ErrorCall))
 import Control.Lens
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Elocrypt (mkPassword)
-import Data.Maybe (fromMaybe)
-import Data.String.Conversions (cs)
+import Data.String.Conversions (LBS, cs)
 import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
@@ -58,7 +58,11 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
              )
 
 actionIO :: IO a -> Action a
-actionIO = MkAction . liftIO
+actionIO action = do
+    eval <- MkAction . liftIO $ try action
+    case eval of
+        Left msg  -> throwError $ ActionIOExcept msg
+        Right val -> pure val
 
 instance GenArbitrary Action where  -- FIXME: remove
     genGen = actionIO . generate
@@ -73,11 +77,19 @@ instance ActionLog Action where
 
     readEventLog = do
         cfg <- viewConfig
-        rows :: [EventLogItemCold]
-            <- fmap adecode . LBS.lines <$> actionIO (LBS.readFile (cfg ^. logging . eventLogPath))
-        EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
+        erows <- actionIO . try $ rd cfg
+        case erows of
+            Left err   -> throwError $ ActionEventLogExcept err
+            Right rows -> EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
       where
-        adecode = fromMaybe (error "readEventLog: inconsistent data on disk.") . Aeson.decode
+        rd :: Config -> IO [EventLogItemCold]
+        rd cfg = (LBS.lines <$> LBS.readFile (cfg ^. logging . eventLogPath))
+             >>= zipWithM adecode [1..]
+
+        adecode :: Int -> LBS -> IO EventLogItemCold
+        adecode i = either (throwIO . ErrorCall . msg) pure . Aeson.eitherDecode
+          where
+            msg aesonSays = "readEventLog:" <> show i <> ": " <> aesonSays
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
@@ -145,3 +157,5 @@ runActionExcept :: ActionExcept -> ServantErr
 runActionExcept (ActionExcept e) = e
 runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
+runActionExcept (ActionEventLogExcept e) = error500 # show e
+runActionExcept (ActionIOExcept e) = error500 # show e
