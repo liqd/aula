@@ -101,13 +101,15 @@ garbitrary' scaling = to <$> (hsequence =<< elements subs)
 garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
 garbitrary = garbitrary' (max 0 . subtract 10)
 
+-- | Nullary constructors are discarded to avoid loops in quickcheck.  One constructor is never
+-- shrunk into another constructor.  If one of the product fields shrinks to @[]@, the entire
+-- product field will do so, too.
 gshrink :: forall a . (Generic a, All2 Arbitrary (Code a)) => a -> [a]
 gshrink = List.map to . shrinkSOP . from
   where
     shrinkSOP :: All2 Arbitrary xss => SOP I xss -> [SOP I xss]
     shrinkSOP (SOP nsp) = SOP <$> shrinkNS nsp
 
-    -- Nullary constructors should be discarded to avoid loops in quickcheck.
     shrinkNS :: All2 Arbitrary xss => NS (NP I) xss -> [NS (NP I) xss]
     shrinkNS (Z Nil) = []
     shrinkNS (Z np)  = Z <$> (hsequence . hap (hcpure proxyArb (mkFn shrink))) np
