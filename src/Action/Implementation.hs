@@ -84,7 +84,7 @@ instance ActionLog Action where
       where
         rd :: Config -> IO [EventLogItemCold]
         rd cfg = (LBS.lines <$> LBS.readFile (cfg ^. logging . eventLogPath))
-             >>= mapM (uncurry adecode) . zip [1..]
+             >>= zipWithM adecode [1..]
 
         adecode :: Int -> LBS -> IO EventLogItemCold
         adecode i = either (throwIO . ErrorCall . msg) pure . Aeson.eitherDecode
