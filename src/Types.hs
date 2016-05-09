@@ -100,6 +100,13 @@ csi = iso cs cs
 showed :: Show a => Getter a String
 showed = to show
 
+_utctDay :: Lens' UTCTime Day
+_utctDay f t = (\d -> t { utctDay = d }) <$> f (utctDay t)
+
+-- As in the lens-datetime package
+julianDay :: Iso' Day Integer
+julianDay = iso toModifiedJulianDay ModifiedJulianDay
+
 newtype DurationDays = DurationDays { unDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -980,6 +987,7 @@ makePrisms ''IdeaVoteResultValue
 makePrisms ''IdeaVoteValue
 makePrisms ''Phase
 makePrisms ''Role
+makePrisms ''Timestamp
 makePrisms ''UpDown
 makePrisms ''UserFirstName
 makePrisms ''UserLastName
