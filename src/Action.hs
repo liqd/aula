@@ -722,15 +722,15 @@ eventLog :: (ActionCurrentTimestamp m, ActionLog m)
     => IdeaSpace -> AUID User -> EventLogItemValueCold -> m ()
 eventLog ispace uid value = do
     now    <- getCurrentTimestamp
-    log . LogEntryForModerator $ EventLogItem' ispace now uid value
+    log . LogEntryForModerator $ EventLogItem ispace now uid value
 
 
 class WarmUp m cold warm where
     warmUp :: cold -> m warm
 
 instance ActionM m => WarmUp m EventLogItemCold EventLogItemWarm where
-    warmUp (EventLogItem' ispace tstamp usr val) =
-        EventLogItem' ispace tstamp <$> warmUp' usr <*> warmUp val
+    warmUp (EventLogItem ispace tstamp usr val) =
+        EventLogItem ispace tstamp <$> warmUp' usr <*> warmUp val
 
 instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
     warmUp = \case

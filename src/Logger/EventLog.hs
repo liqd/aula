@@ -38,11 +38,11 @@ import Types
 data EventLog = EventLog URL [EventLogItemWarm]
   deriving (Generic)
 
-data EventLogItem' user topic idea comment =
-    EventLogItem' IdeaSpace Timestamp user (EventLogItemValue' user topic idea comment)
+data EventLogItem user topic idea comment =
+    EventLogItem IdeaSpace Timestamp user (EventLogItemValue user topic idea comment)
   deriving (Eq, Show, Generic)
 
-data EventLogItemValue' user topic idea comment =
+data EventLogItemValue user topic idea comment =
     EventLogUserCreates           (Either3 topic idea comment)
   | EventLogUserEdits             (Either3 topic idea comment)
   | EventLogUserMarksIdeaFeasible idea IdeaJuryResultType
@@ -57,19 +57,19 @@ data EventLogItemValue' user topic idea comment =
   deriving (Eq, Show, Generic)
 
 
-type EventLogItemCold = EventLogItem' (AUID User) (AUID Topic) (AUID Idea) CommentKey
-type EventLogItemWarm = EventLogItem' User Topic Idea Comment
+type EventLogItemCold = EventLogItem (AUID User) (AUID Topic) (AUID Idea) CommentKey
+type EventLogItemWarm = EventLogItem User Topic Idea Comment
 
-type EventLogItemValueCold = EventLogItemValue' (AUID User) (AUID Topic) (AUID Idea) CommentKey
-type EventLogItemValueWarm = EventLogItemValue' User Topic Idea Comment
+type EventLogItemValueCold = EventLogItemValue (AUID User) (AUID Topic) (AUID Idea) CommentKey
+type EventLogItemValueWarm = EventLogItemValue User Topic Idea Comment
 
 type ContentCold = Either3 (AUID Topic) (AUID Idea) CommentKey
 type ContentWarm = Either3 Topic Idea Comment
 
 
 instance SOP.Generic EventLog
-instance SOP.Generic (EventLogItem' u t i c)
-instance SOP.Generic (EventLogItemValue' u t i c)
+instance SOP.Generic (EventLogItem u t i c)
+instance SOP.Generic (EventLogItemValue u t i c)
 
 instance Aeson.ToJSON EventLogItemCold           where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EventLogItemValueCold      where toJSON = Aeson.gtoJson
@@ -83,7 +83,7 @@ instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gpars
 filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
 filterEventLog mspc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
   where
-    f (EventLogItem' spc' _ _ _) = maybe True (== spc') mspc
+    f (EventLogItem spc' _ _ _) = maybe True (== spc') mspc
 
 
 eventLogItemCsvHeaders :: [String]
@@ -99,7 +99,7 @@ instance MimeRender CSV EventLog where
         <> CSV.encode (WithURL domainUrl <$> rows)
 
 instance CSV.ToRecord (WithURL EventLogItemWarm) where
-    toRecord (WithURL domainUrl (EventLogItem' ispace timestamp user ev)) = CSV.toRecord
+    toRecord (WithURL domainUrl (EventLogItem ispace timestamp user ev)) = CSV.toRecord
         [ showIdeaSpace ispace
         , showTimestamp timestamp
         , user ^. userLogin . unUserLogin . csi
