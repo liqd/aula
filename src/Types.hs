@@ -489,13 +489,13 @@ instance SOP.Generic EditTopicData
 data Phase =
     PhaseWildIdea
   | PhaseWildFrozen
-  | PhaseRefinement { _refPhaseEnd :: Timestamp }
+  | PhaseRefinement { _phaseEnd :: Timestamp }
                                -- ^ 2. "Ausarbeitungsphase"
-  | PhaseRefFrozen  { _refPhaseLeftover :: Timespan }
+  | PhaseRefFrozen  { _phaseLeftover :: Timespan }
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
-  | PhaseVoting     { _votPhaseEnd :: Timestamp }
+  | PhaseVoting     { _phaseEnd :: Timestamp }
                                -- ^ 4. "Abstimmungsphase"
-  | PhaseVotFrozen  { _votPhaseLeftover :: Timespan }
+  | PhaseVotFrozen  { _phaseLeftover :: Timespan }
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
