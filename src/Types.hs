@@ -29,7 +29,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
-import Data.Map as Map (Map, fromList)
+import Data.Map as Map (Map, fromList, size)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
@@ -1317,6 +1317,9 @@ isWild (IdeaLocationTopic _ _) = False
 userVotedOnIdea :: User -> Idea -> Maybe IdeaVoteValue
 userVotedOnIdea user idea =
     idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue
+
+noOfLikes :: Idea -> Int
+noOfLikes = view (ideaLikes . to Map.size)
 
 userLikesIdea :: User -> Idea -> Bool
 userLikesIdea user idea =

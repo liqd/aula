@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns        #-}
@@ -18,7 +19,6 @@ import Data.Time
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
-import qualified Data.Map as Map (size)
 import qualified Generics.SOP as SOP
 
 import LifeCycle
@@ -28,9 +28,13 @@ import Persistent.Pure
 
 -- | Users can like an idea / vote on it iff they are students with access to the idea's space.
 getVotersForIdea :: Idea -> Query [User]
-getVotersForIdea idea = filter hasAccess <$> getActiveUsers
+getVotersForIdea = getVotersForSpace . view (ideaLocation . ideaLocationSpace)
+
+-- | Users can like an idea / vote on it iff they are students with access to the idea's space.
+getVotersForSpace :: IdeaSpace -> Query [User]
+getVotersForSpace space = filter hasAccess <$> getActiveUsers
   where
-    hasAccess u = case idea ^. ideaLocation . ideaLocationSpace of
+    hasAccess u = case space of
         SchoolSpace   -> isStudent u
         ClassSpace cl -> u `isStudentInClass` cl
 
@@ -54,16 +58,24 @@ data ListInfoForIdea = ListInfoForIdea
 ideaReachedQuorum :: ListInfoForIdea -> Bool
 ideaReachedQuorum i = reached >= needed
   where
-    reached = Map.size (_listInfoForIdeaIt i ^. ideaLikes)
+    reached = noOfLikes $ _listInfoForIdeaIt i
     needed  = _listInfoForIdeaQuorum i
+
+wildIdeasReachedQuorumBySpace :: IdeaSpace -> Query [Idea]
+wildIdeasReachedQuorumBySpace space = do
+    voters    <- length <$> getVotersForSpace space
+    quPercent <- quorumForSpace space
+    let quVotesRequired = voters * quPercent `div` 100
+        reached idea = noOfLikes idea >= quVotesRequired
+    filter reached <$> findWildIdeasBySpace space
 
 instance SOP.Generic ListInfoForIdea
 
 getListInfoForIdea :: Idea -> EQuery ListInfoForIdea
 getListInfoForIdea idea = do
-    vs <- getVotersForIdea idea
+    voters <- length <$> getVotersForIdea idea
     quPercent <- quorum idea
-    let quVotesRequired = length vs * quPercent `div` 100
+    let quVotesRequired = voters * quPercent `div` 100
     phase :: Phase
         <- maybe404 =<< case idea ^. ideaMaybeTopicId of
             Nothing -> do
@@ -72,14 +84,16 @@ getListInfoForIdea idea = do
                                 then PhaseWildFrozen
                                 else PhaseWildIdea
             Just tid -> view topicPhase <$$> findTopic tid
-    voters <- length <$> getVotersForIdea idea
     pure $ ListInfoForIdea idea phase quVotesRequired voters
+
+quorumForSpace :: IdeaSpace -> Query Percent
+quorumForSpace = \case
+    SchoolSpace  -> view dbSchoolQuorum
+    ClassSpace _ -> view dbClassQuorum
 
 -- | Calculate the quorum for a given idea.
 quorum :: Idea -> Query Percent
-quorum idea = case idea ^. ideaLocation . ideaLocationSpace of
-    SchoolSpace  -> view dbSchoolQuorum
-    ClassSpace _ -> view dbClassQuorum
+quorum = quorumForSpace . view (ideaLocation . ideaLocationSpace)
 
 -- | Return the current system time with the day set to the date on which phases opened
 -- today end.  When running the phase change trigger at midnight, find all dates that lie in the
