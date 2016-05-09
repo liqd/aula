@@ -108,6 +108,7 @@ module Action
 where
 
 import Codec.Picture (DynamicImage)
+import Control.Exception (SomeException)
 import Control.Lens
 import Control.Monad ((>=>), void, when)
 import Control.Monad.Reader (runReader, runReaderT)
@@ -180,7 +181,8 @@ data ActionExcept
     = ActionExcept { unActionExcept :: ServantErr }
     | ActionPersistExcept PersistExcept
     | ActionSendMailExcept SendMailError
-    deriving (Eq, Show)
+    | ActionEventLogExcept SomeException
+    deriving (Show)
 
 makePrisms ''ActionExcept
 

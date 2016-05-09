@@ -17,14 +17,14 @@ module Action.Implementation
 where
 
 import Codec.Picture
+import Control.Exception (throwIO, try, ErrorCall(ErrorCall))
 import Control.Lens
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import Data.Elocrypt (mkPassword)
-import Data.Maybe (fromMaybe)
-import Data.String.Conversions (cs)
+import Data.String.Conversions (LBS, cs)
 import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
@@ -73,11 +73,16 @@ instance ActionLog Action where
 
     readEventLog = do
         cfg <- viewConfig
-        rows :: [EventLogItemCold]
-            <- fmap adecode . LBS.lines <$> actionIO (LBS.readFile (cfg ^. logging . eventLogPath))
-        EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
+        erows <- actionIO . try $ rd cfg
+        case erows of
+            Left err   -> throwError $ ActionEventLogExcept err
+            Right rows -> EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
       where
-        adecode = fromMaybe (throwIO $ ErrorCall "readEventLog: inconsistent data on disk.")
+        rd :: Config -> IO [EventLogItemCold]
+        rd cfg = (LBS.lines <$> LBS.readFile (cfg ^. logging . eventLogPath)) >>= mapM adecode
+
+        adecode :: LBS -> IO EventLogItemCold
+        adecode = maybe (throwIO $ ErrorCall "readEventLog: inconsistent data on disk.") pure
                 . Aeson.decode
 
 -- | FIXME: test this (particularly strictness and exceptions)
@@ -146,3 +151,4 @@ runActionExcept :: ActionExcept -> ServantErr
 runActionExcept (ActionExcept e) = e
 runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
+runActionExcept (ActionEventLogExcept e) = error500 # show e
