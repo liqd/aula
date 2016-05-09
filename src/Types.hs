@@ -882,10 +882,10 @@ timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
 timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
 
 instance Aeson.FromJSON Timespan where
-    parseJSON = Aeson.withText "Timestamp value" $ \raw -> do
+    parseJSON = Aeson.withText "Timespan value" $ \raw -> do
         let (digits, units) = ST.break (`notElem` ("-0123456789" :: String)) raw
 
-            bad = fail $ "bad Timestamp value: " <> cs (show raw)
+            bad = fail $ "bad Timespan value: " <> cs (show raw)
 
             construct :: Monad m => ST -> (Integer -> Timespan) -> m Timespan
             construct i cns = pure . cns . read . cs $ i
