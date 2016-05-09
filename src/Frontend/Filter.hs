@@ -214,8 +214,7 @@ instance Filter SearchUsers where
 
     applyFilter (SearchUsers t) = filter $ anyOf (activeUser . searchee) (t `ST.isInfixOf`)
       where
-        searchee :: (Monoid (f User), Functor f, Applicative f, Contravariant f)
-                 => (ST -> f ST) -> User -> f User
+        searchee :: Monoid r => Getting r User ST
         searchee = userLogin . _UserLogin <>
                    like " " <>
                    userSchoolClass . _Just . to showSchoolClass . csi
