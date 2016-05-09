@@ -22,7 +22,7 @@ import Servant.Missing hiding (redirect)
 import Servant.Mock (HasMock(..), mock)
 import Test.Hspec (Spec, beforeAll, describe, it)
 import Test.Hspec.Wai (get, post)
-import Test.QuickCheck (Arbitrary, Gen, forAll, property)
+import Test.QuickCheck
 import Text.Digestive.View (getForm)
 
 import qualified Data.Text as ST
@@ -41,9 +41,9 @@ import Types
 spec :: Spec
 spec = do
     describe "HasPath" $ do
-        it "absoluteUriPath is not empty and well defined" . property . forAll mainGen $ \path ->
+        it "absoluteUriPath is not empty and well defined" . property . forAllShrinkDef mainGen $ \path ->
             ST.length (absoluteUriPath $ relPath path) >= 1
-        it "relativeUriPath is not empty and well defined" . property . forAll mainGen $ \path ->
+        it "relativeUriPath is not empty and well defined" . property . forAllShrinkDef mainGen $ \path ->
             ST.length (relativeUriPath $ relPath path) >= 0
 
     describe "FromHttpApiData <-> UriPath" $ do
@@ -57,7 +57,7 @@ spec = do
 
     describe "Paths and handlers" $ do
         beforeAll mockAulaMain $ do
-            it "Every path has a handler" $ \app -> property . forAll mainGen $ \path ->
+            it "Every path has a handler" $ \app -> property . forAllShrinkDef mainGen $ \path ->
                 flip Wai.property app $ do
                     let uri = cs . ST.takeWhile (/= '#') . absoluteUriPath $ relPath path
                     resp :: SResponse <- if isPostOnly path then post uri ""
@@ -76,7 +76,6 @@ spec = do
   where
     mainGen :: Gen Main
     mainGen = arbitrary
-
 
 -- * Each path has a handler
 
@@ -99,10 +98,10 @@ instance (Show a, FormPage a, Page a, Arbitrary a)
 -- * UriPath and FromHttpApiData correspondence
 
 data UriPartGen where
-    U :: (Show d, Typeable d, FromHttpApiData d, HasUriPart d, Eq d) =>
+    U :: (Show d, Typeable d, FromHttpApiData d, HasUriPart d, Eq d, Arbitrary d) =>
         Gen d -> UriPartGen
 
 uriPartAndHttpApiDataAreInverses :: UriPartGen -> Spec
 uriPartAndHttpApiDataAreInverses (U g) =
-    it (show $ typeOf g) . property . forAll g $ \uriPartData ->
+    it (show $ typeOf g) . property . forAllShrinkDef g $ \uriPartData ->
         (Right uriPartData ==) . parseUrlPiece . cs $ uriPart uriPartData

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE ImpredicativeTypes  #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -13,9 +14,11 @@
 module Arbitrary
     ( topLevelDomains
     , loremIpsum
+    , forAllShrinkDef
     , generate
     , arbitrary
     , arb
+    , shr
     , arbWord
     , arbPhrase
     , arbPhraseOf
@@ -42,6 +45,7 @@ import Data.Functor.Infix ((<$$>))
 import Data.Aeson as Aeson
 import Data.Char
 import Data.List as List
+import Data.Maybe (catMaybes)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
 import Generics.SOP
@@ -50,10 +54,12 @@ import System.FilePath (takeBaseName)
 import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
-    ( Arbitrary(..), Gen
+    ( Arbitrary(..), Gen, Property, Testable
     , elements, oneof, vectorOf, frequency, scale, generate, arbitrary, listOf, suchThat
+    , forAllShrink
     )
 import Test.QuickCheck.Instances ()
+import Text.Email.Validate as Email (localPart, domainPart, emailAddress, toByteString, unsafeEmailAddress)
 
 import qualified Data.Vector as V
 import qualified Data.Map as Map
@@ -79,46 +85,77 @@ import Types
 import qualified Frontend.Path as P
 
 
+-- * generics
+
+proxyArb :: Proxy Arbitrary
+proxyArb = Proxy
+
 -- | FIXME: push this upstream to basic-sop.
 -- See also: https://github.com/well-typed/basic-sop/pull/1
 garbitrary' :: forall a. (Int -> Int) -> (Generic a, All2 Arbitrary (Code a)) => Gen a
 garbitrary' scaling = to <$> (hsequence =<< elements subs)
   where
     subs :: [SOP Gen (Code a)]
-    subs = apInjs_POP (hcpure p (scale scaling arbitrary))
-
-    p :: Proxy Arbitrary
-    p = Proxy
+    subs = apInjs_POP (hcpure proxyArb (scale scaling arbitrary))
 
 garbitrary :: forall a. (Generic a, All2 Arbitrary (Code a)) => Gen a
 garbitrary = garbitrary' (max 0 . subtract 10)
 
+-- | Nullary constructors are discarded to avoid loops in quickcheck.  One constructor is never
+-- shrunk into another constructor.  If one of the product fields shrinks to @[]@, the entire
+-- product field will do so, too.
+gshrink :: forall a . (Generic a, All2 Arbitrary (Code a)) => a -> [a]
+gshrink = List.map to . shrinkSOP . from
+  where
+    shrinkSOP :: All2 Arbitrary xss => SOP I xss -> [SOP I xss]
+    shrinkSOP (SOP nsp) = SOP <$> shrinkNS nsp
+
+    shrinkNS :: All2 Arbitrary xss => NS (NP I) xss -> [NS (NP I) xss]
+    shrinkNS (Z Nil) = []
+    shrinkNS (Z np)  = Z <$> (hsequence . hap (hcpure proxyArb (mkFn shrink))) np
+    shrinkNS (S ns)  = S <$> shrinkNS ns
+
+    mkFn f = Fn (f . unI)
+
+
+-- * arbitrary instances
+
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
+    shrink    = gshrink
 
 instance ( Generic a, Generic b, Generic c
          , Arbitrary a, Arbitrary b, Arbitrary c
          ) => Arbitrary (Either3 a b c) where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 
 -- * pages
 
 instance Arbitrary PageRoomsOverview where
     arbitrary = PageRoomsOverview <$> arb
+    shrink (PageRoomsOverview x) = PageRoomsOverview <$> shr x
 
 instance Arbitrary PageIdeasOverview where
     arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
+    shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageIdeasInDiscussion where
     arbitrary = PageIdeasInDiscussion <$> arb <*> arb
+    shrink (PageIdeasInDiscussion x y) = PageIdeasInDiscussion <$> shr x <*> shr y
 
 instance Arbitrary ViewTopicTab where
-    arbitrary = elements [ TabAllIdeas emptyIdeasQuery
-                         , TabVotingIdeas emptyIdeasQuery
-                         , TabWinningIdeas emptyIdeasQuery
-                         , TabDelegation
-                         ]
+    arbitrary = elements viewTopicTabList
+    shrink x  = dropWhileX x viewTopicTabList
+
+viewTopicTabList :: [ViewTopicTab]
+viewTopicTabList =
+    [ TabAllIdeas emptyIdeasQuery
+    , TabVotingIdeas emptyIdeasQuery
+    , TabWinningIdeas emptyIdeasQuery
+    , TabDelegation
+    ]
 
 instance Arbitrary ViewTopic where
     arbitrary = do
@@ -126,75 +163,103 @@ instance Arbitrary ViewTopic where
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb
             _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
+    shrink (ViewTopicDelegations x y z) =
+        ViewTopicDelegations <$> shr x <*> shr y <*> shr z
+    shrink (ViewTopicIdeas x y z w) =
+        ViewTopicIdeas <$> shr x <*> shr y <*> shr z <*> shr w
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
+    shrink (ViewIdea ctx ideaList) = ViewIdea <$> shr ctx <*> shr ideaList
 
 instance Arbitrary CreateIdea where
     arbitrary = CreateIdea <$> arb
+    shrink (CreateIdea x) = CreateIdea <$> shr x
 
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
+    shrink (EditIdea x) = EditIdea <$> shr x
 
 instance Arbitrary CommentIdea where
     arbitrary = CommentIdea <$> arb <*> arb
+    shrink (CommentIdea x y) = CommentIdea <$> shr x <*> shr y
 
 instance Arbitrary EditComment where
     arbitrary = EditComment <$> arb <*> arb
 
 instance Arbitrary JudgeIdea where
     arbitrary = JudgeIdea <$> arb <*> arb <*> arb
+    shrink (JudgeIdea x y z) = JudgeIdea <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary CreatorStatement where
     arbitrary = CreatorStatement <$> arb
+    shrink (CreatorStatement x) = CreatorStatement <$> shr x
 
 instance Arbitrary ReportComment where
     arbitrary = ReportComment <$> arb
+    shrink (ReportComment x) = ReportComment <$> shr x
 
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
+    shrink (PageUserProfileCreatedIdeas x y z) =
+        PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
+    shrink (PageUserProfileDelegatedVotes x y z) =
+        PageUserProfileDelegatedVotes <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
+    shrink (PageUserSettings x) = PageUserSettings <$> shr x
 
 instance Arbitrary EditUserProfile where
     arbitrary = EditUserProfile <$> arb
+    shrink (EditUserProfile x) = EditUserProfile <$> shr x
 
 instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicRefPhaseEnd
+    shrink (CreateTopic x y z) = CreateTopic <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary EditTopic where
     arbitrary = EditTopic <$> arb <*> arb <*> arb <*> arb
+    shrink (EditTopic x y z w) = EditTopic <$> shr x <*> shr y <*> shr z <*> shr w
 
 instance Arbitrary EditTopicData where
     arbitrary = EditTopicData <$> arbPhrase <*> arb <*> arb
+    shrink (EditTopicData x y z) = EditTopicData <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageAdminSettingsDurations where
     arbitrary = PageAdminSettingsDurations <$> arb
+    shrink (PageAdminSettingsDurations x) = PageAdminSettingsDurations <$> shr x
 
 instance Arbitrary PageAdminSettingsQuorum where
     arbitrary = PageAdminSettingsQuorum <$> arb
+    shrink (PageAdminSettingsQuorum x) = PageAdminSettingsQuorum <$> shr x
 
 instance Arbitrary PageAdminSettingsFreeze where
     arbitrary = PageAdminSettingsFreeze <$> arb
+    shrink (PageAdminSettingsFreeze x) = PageAdminSettingsFreeze <$> shr x
 
 instance Arbitrary AdminViewUsers where
     arbitrary = AdminViewUsers <$> arb <*> arb
+    shrink (AdminViewUsers x y) = AdminViewUsers <$> shr x <*> shr y
 
 instance Arbitrary AdminEditUser where
     arbitrary = AdminEditUser <$> arb <*> arb
+    shrink (AdminEditUser x y) = AdminEditUser <$> shr x <*> shr y
 
 instance Arbitrary AdminDeleteUser where
     arbitrary = AdminDeleteUser <$> arb
+    shrink (AdminDeleteUser x) = AdminDeleteUser <$> shr x
 
 instance Arbitrary AdminCreateUser where
     arbitrary = AdminCreateUser <$> arb
+    shrink (AdminCreateUser x) = AdminCreateUser <$> shr x
 
 instance Arbitrary AdminViewClasses where
     arbitrary = AdminViewClasses <$> arb <*> arb
+    shrink (AdminViewClasses x y) = AdminViewClasses <$> shr x <*> shr y
 
 instance Arbitrary AdminCreateClass where
     arbitrary = pure AdminCreateClass
@@ -204,12 +269,17 @@ instance Arbitrary AdminEditClass where
         clss <- arb
         AdminEditClass clss
             <$> (makeUserView <$$> listOf (userForClass clss))
+    shrink (AdminEditClass x y) = AdminEditClass <$> shr x <*> shr y
 
 instance Arbitrary PageAdminSettingsEventsProtocol where
     arbitrary = PageAdminSettingsEventsProtocol <$> arb
+    shrink (PageAdminSettingsEventsProtocol x) =
+        PageAdminSettingsEventsProtocol <$> shr x
 
 instance Arbitrary AdminPhaseChangeForTopicData where
     arbitrary = AdminPhaseChangeForTopicData <$> arb <*> arb
+    shrink (AdminPhaseChangeForTopicData x y) =
+        AdminPhaseChangeForTopicData <$> shr x <*> shr y
 
 instance Arbitrary AdminPhaseChange where
     arbitrary = pure AdminPhaseChange
@@ -227,10 +297,13 @@ instance Arbitrary PageStaticTermsOfUse where
     arbitrary = pure PageStaticTermsOfUse
 
 instance Arbitrary PageHomeWithLoginPrompt where
-    arbitrary = PageHomeWithLoginPrompt <$> (LoginDemoHints <$> arb)
+    arbitrary = PageHomeWithLoginPrompt . LoginDemoHints <$> arb
+    shrink (PageHomeWithLoginPrompt (LoginDemoHints x)) =
+        PageHomeWithLoginPrompt . LoginDemoHints <$> shr x
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
+    shrink (LoginFormData x y) = LoginFormData <$> shr x <*> shr y
 
 
 -- * idea
@@ -239,113 +312,147 @@ instance Arbitrary ProtoIdea where
     arbitrary =
         garbitrary
         <**> (set protoIdeaTitle <$> arbPhrase)
+    shrink    = gshrink
 
 instance Arbitrary Idea where
     arbitrary =
         scaleDown garbitrary
         <**> (set ideaTitle <$> arbPhrase)
+    shrink    = gshrink
 
 instance Arbitrary Category where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaLike where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaVoteLikeKey where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaVote where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaVoteValue where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaJuryResult where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaVoteResult where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaJuryResultValue where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaVoteResultValue where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaJuryResultType where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary DelegationContext where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ReportCommentContent where
     arbitrary = ReportCommentContent <$> arbitrary
+    shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
 
 instance Arbitrary Delegation where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary WhatListPage where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ListItemIdea where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ListItemIdeas where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeasQuery where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ListInfoForIdea where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaCapability where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary SortIdeasBy where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 
 -- * comment
 
 instance Arbitrary Comment where
     arbitrary = garbitrary' (`div` 3)
+    shrink    = gshrink
 
 instance Arbitrary CommentKey where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentVote where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentVoteKey where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentContent where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary UpDown where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentContext where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentCapability where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentWidget where
     arbitrary = over (cwComment . _Key) pruneCommentKey <$> garbitrary
+    shrink    = gshrink
 
 
 -- * idea space, topic, phase
 
 instance Arbitrary IdeaSpace where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary SchoolClass where
     arbitrary = elements schoolClasses
+    shrink  x = dropWhileX x schoolClasses
 
 schoolClasses :: [SchoolClass]
 schoolClasses = schoolClass <$> years <*> names
@@ -360,6 +467,7 @@ instance Arbitrary ProtoTopic where
         <**> (set protoTopicIdeaSpace   <$> pure SchoolSpace)
         <**> (set protoTopicIdeas       <$> pure [])
         <**> (set protoTopicRefPhaseEnd <$> arbTopicRefPhaseEnd)
+    shrink    = gshrink
 
 -- FIXME: for now this needs to be kept deterministic, or tests fail.
 arbTopicRefPhaseEnd :: Gen Timestamp
@@ -370,54 +478,71 @@ instance Arbitrary Topic where
         scaleDown garbitrary
         <**> (set topicTitle <$> arbPhrase)
         <**> (set topicDesc  <$> arb)
+    shrink    = gshrink
 
 instance Arbitrary Phase where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary IdeaLocation where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 
 -- * user
 
 instance Arbitrary User where
     arbitrary = garbitrary <**> (set userRole <$> garbitrary)
+    shrink    = gshrink
 
 instance Arbitrary UserView where
     arbitrary = makeUserView <$> arbitrary
+    shrink (ActiveUser u)  = ActiveUser  <$> shr u
+    shrink (DeletedUser u) = DeletedUser <$> shr u
 
 instance Arbitrary UserProfile where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary UserSettings where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ProtoUser where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary UserLogin where
     arbitrary = UserLogin <$> arbWord
+    shrink (UserLogin x) = UserLogin <$> shr x
 
 instance Arbitrary UserFirstName where
     arbitrary = UserFirstName <$> arbWord
+    shrink (UserFirstName x) = UserFirstName <$> shr x
 
 instance Arbitrary UserLastName where
     arbitrary = UserLastName <$> arbWord
+    shrink (UserLastName x) = UserLastName <$> shr x
 
 instance Arbitrary Role where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary SearchUsers where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary UsersFilterQuery where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary SortUsersBy where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary UsersQuery where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 guestOrStudent :: SchoolClass -> Gen Role
 guestOrStudent clss = elements
@@ -427,13 +552,19 @@ guestOrStudent clss = elements
 
 instance Arbitrary UserPass where
     arbitrary = UserPassInitial <$> arbWord
+    shrink    = gshrink
 
 instance Arbitrary EmailAddress where
     arbitrary = do
         localName  <- arbWord
         domainName <- arbWord
         tld        <- elements topLevelDomains
-        pure . unsafeEmailAddress localName $ mconcat [domainName, ".", tld]
+        pure . Types.unsafeEmailAddress localName $ mconcat [domainName, ".", tld]
+
+    shrink (InternalEmailAddress email) = fmap InternalEmailAddress . catMaybes $ do
+        local  <- shr (localPart email)
+        domain <- shr (domainPart email)
+        pure . Email.emailAddress . toByteString $ Email.unsafeEmailAddress local domain
 
 instance Arbitrary UserSettingData where
     arbitrary = UserSettingData
@@ -441,9 +572,12 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
         <*> arbMaybe arbPhrase
+    shrink (UserSettingData x y z w)
+        = UserSettingData <$> shr x <*> shr y <*> shr z <*> shr w
 
 instance Arbitrary RenderContext where
     arbitrary = RenderContext <$> arbitrary
+    shrink (RenderContext x) = RenderContext <$> shr x
 
 
 -- * admin
@@ -454,21 +588,27 @@ userForClass clss =
 
 instance Arbitrary Durations where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Quorums where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Freeze where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary RoleSelection where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary InitialPasswordsCsv where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CsvUserRecord where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 -- FIXME: instance Arbitrary Delegation
 
@@ -476,18 +616,22 @@ instance Arbitrary CsvUserRecord where
 
 instance Arbitrary PhaseChangeDir where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 
 -- * aula-specific helpers
 
 instance Arbitrary (AUID a) where
     arbitrary = AUID . abs <$> arb
+    shrink (AUID x) = AUID . abs <$> shr x
 
 instance (Generic id, Arbitrary id) => Arbitrary (GMetaInfo a id) where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance (Arbitrary a) => Arbitrary (PageShow a) where
     arbitrary = PageShow <$> arb
+    shrink (PageShow x) = PageShow <$> shr x
 
 instance Arbitrary PlainDocument where
     arbitrary = PlainDocument <$> arbPhrase
@@ -502,7 +646,7 @@ instance Arbitrary Document where
             -- (but make sure the layout and random content look better first!)
 
     shrink (Markdown "") = []
-    shrink _ = [Markdown ""]
+    shrink _ = [Markdown "", Markdown "x"]
 
 arbMarkdown :: Gen Document
 arbMarkdown = Markdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
@@ -569,12 +713,14 @@ arbMarkdownTable = pure nil
 
 instance Arbitrary P.Main where
     arbitrary = suchThat garbitrary (not . P.isBroken)
+    shrink    = gshrink
 
 instance Arbitrary P.IdeaMode where
     arbitrary = prune <$> garbitrary
       where
         prune (P.OnComment ck P.ReplyComment) = P.OnComment (pruneCommentKey ck) P.ReplyComment
         prune m = m
+    shrink    = gshrink
 
 -- | replies to sub-comments are turned into replies to the parent comment.
 pruneCommentKey :: CommentKey -> CommentKey
@@ -584,15 +730,19 @@ pruneCommentKey = \case
 
 instance Arbitrary P.CommentMode where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary P.Space where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary P.UserMode where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary P.AdminMode where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ClassesFilterQuery where
     arbitrary = garbitrary
@@ -605,9 +755,12 @@ instance Arbitrary SearchClasses where
 
 instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb <*> arb, PublicFrame <$> arb <*> arb ]
+    shrink (Frame x y z) = Frame <$> shr x <*> shr y <*> shr z
+    shrink (PublicFrame x y) = PublicFrame <$> shr x <*> shr y
 
 instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
     arbitrary = Beside <$> arb <*> arb
+    shrink (Beside x y) = Beside <$> shr x <*> shr y
 
 
 -- * general-purpose helpers
@@ -618,14 +771,29 @@ scaleDown = scale (`div` 3)
 arb :: Arbitrary a => Gen a
 arb = arbitrary
 
+shr :: Arbitrary a => a -> [a]
+shr = shrink
+
 arbMaybe :: Gen a -> Gen (Maybe a)
 arbMaybe g = oneof [pure Nothing, Just <$> g]
 
+forAllShrinkDef :: (Arbitrary a, Show a, Testable prop) => Gen a -> (a -> prop) -> Property
+forAllShrinkDef gen = forAllShrink gen shrink
+
 instance Arbitrary Timestamp where
     arbitrary = Timestamp <$> arb
+    shrink (Timestamp x) = Timestamp <$> shr x
 
 instance Arbitrary Timespan where
     arbitrary = garbitrary
+    shrink    = gshrink
+
+-- | Removes the elements before 'x' also removes 'x' from the list
+dropWhileX :: forall t . Eq t => t -> [t] -> [t]
+dropWhileX x = safeTail . List.dropWhile (/= x)
+  where
+    safeTail []     = []
+    safeTail (_:xs) = xs
 
 
 -- * arbitrary readable text
@@ -922,12 +1090,14 @@ instance Arbitrary EventLog where
     arbitrary = EventLog <$> arbWord <*> nonEmpty
       where
         nonEmpty = (:) <$> garbitrary <*> garbitrary
+    shrink (EventLog x y) = EventLog <$> shr x <*> shr y
 
 instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
          , Generic u, Generic t, Generic i, Generic c
          )
         => Arbitrary (EventLogItem' u t i c) where
     arbitrary = garbitrary
+    shrink    = gshrink
 
 instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
          , Generic u, Generic t, Generic i, Generic c
@@ -937,6 +1107,7 @@ instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
       where
         repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arb <*> pure u
         repair v = pure v
+    shrink    = gshrink
 
 {-# NOINLINE sampleEventLog #-}
 sampleEventLog :: Config -> EventLog
