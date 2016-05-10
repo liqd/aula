@@ -688,12 +688,6 @@ data Freeze = NotFrozen | Frozen
 
 instance SOP.Generic Freeze
 
--- | Generic eliminator for 'Freeze'.
-freezeElim :: t -> t -> Freeze -> t
-freezeElim notFrozen frozen = \case
-    NotFrozen -> notFrozen
-    Frozen    -> frozen
-
 data Settings = Settings
     { _durations :: Durations
     , _quorums   :: Quorums
