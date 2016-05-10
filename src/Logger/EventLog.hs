@@ -80,10 +80,10 @@ instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gpars
 
 -- * delivering the event log
 
-filterEventLog :: Maybe IdeaSpace -> EventLog -> EventLog
-filterEventLog mspc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
+filterEventLog :: IdeaSpace -> EventLog -> EventLog
+filterEventLog spc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
   where
-    f (EventLogItem spc' _ _ _) = maybe True (== spc') mspc
+    f (EventLogItem spc' _ _ _) = spc' == spc
 
 
 eventLogItemCsvHeaders :: [String]

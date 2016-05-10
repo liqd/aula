@@ -695,7 +695,7 @@ adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsP
 adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
 adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
-adminEventLogCsv mspc = hdrs . filterEventLog mspc <$> readEventLog
+adminEventLogCsv mspc = hdrs . maybe id filterEventLog mspc <$> readEventLog
   where
     hdrs = csvHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
 
