@@ -116,7 +116,6 @@ data IdeaCapability
     | CanAddCreatorStatement
     | CanEdit
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
-                            -- the idea can be moved to a topic
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaCapability
