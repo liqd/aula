@@ -137,10 +137,11 @@ editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
 editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
 
 allowedDuringFreeze :: [IdeaCapability]
-allowedDuringFreeze = [CanComment
-                      ,CanMarkFeasiblity
-                      ,CanAddCreatorStatement
-                      ,CanMarkWinner]
+allowedDuringFreeze = [ CanComment
+                      , CanMarkFeasiblity
+                      , CanAddCreatorStatement
+                      , CanMarkWinner
+                      ]
 
 filterIfFrozen :: Phase -> [IdeaCapability] -> [IdeaCapability]
 filterIfFrozen p | isPhaseFrozen p = filter (`elem` allowedDuringFreeze)
