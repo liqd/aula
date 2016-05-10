@@ -79,6 +79,7 @@ data CreateTopic = CreateTopic
 instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
+-- FIXME: Edit topic page is used for editing a topic and move ideas to the topic.
 data EditTopic = EditTopic IdeaSpace Topic [Idea] [AUID Idea]
   deriving (Eq, Show, Read)
 
@@ -123,32 +124,39 @@ instance ToHtml ViewTopic where
 
 viewTopicHeaderDiv :: Monad m => RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv ctx topic tab = do
-    let caps = topicCapabilities (ctx ^. renderContextUser . userRole) phase
+    let caps = topicCapabilities phase (ctx ^. renderContextUser . userRole)
     div_ [class_ $ "topic-header phase-" <> cs (show (topic ^. topicPhase))] $ do
         header_ [class_ "detail-header"] $ do
             a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
-            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                ul_ [class_ "pop-menu-list"] $ do
-                    li_ [class_ "pop-menu-list-item"] $ do
-                        a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
-                            i_ [class_ "icon-pencil"] nil
-                            "Thema bearbeiten"
-                    when (CanPhaseForwardTopic `elem` caps) .
-                        li_ [class_ "pop-menu-list-item m-form"] .
-                            div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
-                                i_ [class_ "icon-step-forward"] nil
-                                postLink_
-                                    [class_ "btn-plain", onclickJs jsReloadOnClick]
-                                    (U.Admin $ U.AdminTopicNextPhase topicId)
-                                    "Nächste Phase"
-                    when (CanPhaseBackwardTopic `elem` caps) .
-                        li_ [class_ "pop-menu-list-item m-form"] .
-                            div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
-                                i_ [class_ "icon-step-forward"] nil
-                                postLink_
-                                    [class_ "btn-plain", onclickJs jsReloadOnClick]
-                                    (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
-                                    "Vorherige Phase"
+            let canEditTopic          = CanEditTopic          `elem` caps
+                canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
+                canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
+
+            when (canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic) .
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        -- FIXME: There is no EditTopic path defined.
+                        when canEditTopic .
+                            li_ [class_ "pop-menu-list-item"] $ do
+                                a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
+                                    i_ [class_ "icon-pencil"] nil
+                                    "Thema bearbeiten" -- <- Edit
+                        when canPhaseForwardTopic .
+                            li_ [class_ "pop-menu-list-item m-form"] .
+                                div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                    i_ [class_ "icon-step-forward"] nil
+                                    postLink_
+                                        [class_ "btn-plain", onclickJs jsReloadOnClick]
+                                        (U.Admin $ U.AdminTopicNextPhase topicId)
+                                        "Nächste Phase"
+                        when canPhaseBackwardTopic .
+                            li_ [class_ "pop-menu-list-item m-form"] .
+                                div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                    i_ [class_ "icon-step-backward"] nil
+                                    postLink_
+                                        [class_ "btn-plain", onclickJs jsReloadOnClick]
+                                        (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
+                                        "Vorherige Phase"
 
         h1_   [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] $ phase ^. uilabeledST . html

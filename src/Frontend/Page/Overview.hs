@@ -17,6 +17,7 @@ module Frontend.Page.Overview
 where
 
 import Action
+import LifeCycle
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.QuorumBar ()
 import Frontend.Prelude
@@ -36,7 +37,7 @@ data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageIdeasInDiscussion = PageIdeasInDiscussion IdeaSpace [Topic]
+data PageIdeasInDiscussion = PageIdeasInDiscussion RenderContext IdeaSpace [Topic]
   deriving (Eq, Show, Read)
 
 data Tabs = Tabs ActiveTab IdeaSpace
@@ -60,8 +61,8 @@ viewIdeas space ideasQuery = do
         ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery
             <$> getListInfoForIdea `mapM` is)
 
-viewTopics :: ActionPersist m => IdeaSpace -> m PageIdeasInDiscussion
-viewTopics space = PageIdeasInDiscussion space <$> query (findTopicsBySpace space)
+viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageIdeasInDiscussion
+viewTopics space = PageIdeasInDiscussion <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
 
 
 -- * templates
@@ -105,7 +106,7 @@ instance Page PageIdeasOverview where
 
 instance ToHtml PageIdeasInDiscussion where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasInDiscussion space topics) = semanticDiv p $ do
+    toHtml p@(PageIdeasInDiscussion ctx space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
         div_ [class_ "theme-grid"] $ do
@@ -113,8 +114,9 @@ instance ToHtml PageIdeasInDiscussion where
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
-                -- FIXME: This button should de displayed only for Teachers.
-                button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
+                let userCaps = userCapabilities space (ctx ^. renderContextUser . userRole)
+                when (CanCreateTopic `elem` userCaps) $
+                    button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
 
             forM_ topics $ \topic -> do
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
