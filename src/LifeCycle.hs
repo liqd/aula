@@ -229,6 +229,7 @@ onIdea p i cs = if p i then cs else []
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
 
+
 -- * Comment Capabilities
 
 -- These capabilities are specific to a particular comment. Using IdeaCapability would
