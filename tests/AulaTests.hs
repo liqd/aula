@@ -17,6 +17,7 @@ import Control.Exception (bracket)
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
+import System.Process (system)
 import Test.Hspec.Wai (WaiExpectation)
 import Test.QuickCheck (Gen, frequency, choose, getNonEmpty)
 
@@ -48,7 +49,7 @@ testConfig = do
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
-        & logging . eventLogPath          .~ "/tmp/aula-test-events.json"
+        & logging . eventLogPath          .~ "/dev/null"
         & pure
 
 
@@ -87,9 +88,16 @@ doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
 withServer :: (WreqQuery -> IO a) -> IO a
-withServer action = do
-    cfg <- testConfig
+withServer action = (`withServer'` action) =<< testConfig
 
+withServerWithEventLog :: (WreqQuery -> IO a) -> IO a
+withServerWithEventLog action = do
+    let elpath = "/tmp/aula-test-events.json"
+    system $ "rm -f " <> show elpath
+    (`withServer'` action) . (logging . eventLogPath .~ elpath) =<< testConfig
+
+withServer' :: Config -> (WreqQuery -> IO a) -> IO a
+withServer' cfg action = do
     let opts = defaults & checkStatus ?~ doNotThrowExceptionsOnErrorCodes
                         & redirects   .~ 0
         wreqQuery sess = WreqQuery (Sess.postWith opts sess . mkServerUri cfg)
