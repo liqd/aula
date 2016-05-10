@@ -19,8 +19,6 @@ module LifeCycle
     , commentCapabilities
     , TopicCapability(..)
     , topicCapabilities
-      -- * capabilities api
-    , anyCapOf
     )
 where
 
@@ -84,11 +82,6 @@ phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
 
-
--- * Capabilities api
-
-anyCapOf :: (Eq a) => [a] -> [a] -> Bool
-anyCapOf required caps = any (`elem` caps) required
 
 -- * User capabilities
 
