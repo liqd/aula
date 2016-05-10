@@ -291,10 +291,10 @@ topicApi space
     =  makeFrame (Page.viewTopics space)
   :<|> ideaApi . IdeaLocationTopic space
 
-  :<|> viewTopicTab TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> viewTopicTab TabAllIdeas
-  :<|> viewTopicTab TabVotingIdeas
-  :<|> viewTopicTab TabWinningIdeas
+  :<|> viewTopicTab (TabIdeas Ideas) -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> viewTopicTab (TabIdeas Ideas)
+  :<|> viewTopicTab (TabIdeas VotingIdeas)
+  :<|> viewTopicTab (TabIdeas WinningIdeas)
   :<|> makeFrame . Page.viewTopic TabDelegation
 
   :<|> form (Page.createTopic space)

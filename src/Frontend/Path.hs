@@ -45,7 +45,8 @@ import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
              , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey))
+             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey)
+             , IdeasFilter(..))
 
 import Frontend.Filter
 
@@ -136,8 +137,6 @@ main Broken           root = root </> "bröken"
 
 data Space =
     ListTopics
-  | ViewTopicIdeasVoting (AUID Topic)
-  | ViewTopicIdeasWinning (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
   | CreateTopic
   | CreateTopicDelegation (AUID Topic)
@@ -217,13 +216,15 @@ createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
 
 listIdeas :: IdeaLocation -> Main
-listIdeas loc = IdeaPath loc $ ListIdeas Nothing
+listIdeas loc = IdeaPath loc $ ListIdeas Ideas Nothing
 
-listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> Main
-listIdeasWithQuery loc = IdeaPath loc . ListIdeas . Just
+listIdeasWithQuery :: IdeasFilter -> IdeaLocation -> IdeasQuery -> Main
+listIdeasWithQuery ideas loc = IdeaPath loc . ListIdeas ideas . Just
 
-listTopicIdeas :: Topic -> Main
-listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
+listTopicIdeas :: IdeasFilter ->Topic -> Main
+listTopicIdeas ideas topic =
+    IdeaPath (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id))
+             (ListIdeas ideas Nothing)
 
 adminViewUsers :: AdminMode
 adminViewUsers = AdminViewUsers Nothing
@@ -232,7 +233,9 @@ adminViewClasses :: AdminMode
 adminViewClasses = AdminViewClasses Nothing
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode (ListIdeas mq)    root = renderFilter mq $ root </> "ideas"
+ideaMode (ListIdeas Ideas mq)  root = renderFilter mq $ root </> "ideas"
+ideaMode (ListIdeas VotingIdeas mq) root = renderFilter mq $ root </> "ideas" </> "voting"
+ideaMode (ListIdeas WinningIdeas mq) root = renderFilter mq $ root </> "ideas" </> "winning"
 ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
                                   root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
@@ -285,8 +288,8 @@ ideaPath loc mode root =
 -- factored out.
 space :: Space -> UriPath -> UriPath
 space ListTopics                  root = root </> "topic"
-space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
-space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
+--space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
+--space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 -- FIXME: "ListTopicIdeas..." for the 3 lines above?
 space CreateTopic                 root = root </> "topic" </> "create"
@@ -360,7 +363,7 @@ data CommentMode
 instance SOP.Generic CommentMode
 
 data IdeaMode =
-      ListIdeas (Maybe IdeasQuery)
+      ListIdeas IdeasFilter (Maybe IdeasQuery)
     | CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)

@@ -30,7 +30,7 @@ import Data.List (sortBy)
 import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
-import Frontend.Fragment.IdeaList
+import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 import Frontend.Validation hiding (space, tab)
 import LifeCycle (TopicCapability(..), topicCapabilities)
@@ -46,9 +46,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * types
 
 data ViewTopicTab
-  = TabAllIdeas     { _viewTopicTabQuery :: IdeasQuery }
-  | TabVotingIdeas  { _viewTopicTabQuery :: IdeasQuery }
-  | TabWinningIdeas { _viewTopicTabQuery :: IdeasQuery }
+  = TabIdeas { _topicTab :: IdeasFilter, _viewTopicTabQuery :: IdeasQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -91,10 +89,10 @@ instance Page EditTopic
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabAllIdeas     _ -> go "tab-ideas"       U.listTopicIdeas        "Alle Ideen"
-    TabVotingIdeas  _ -> g' "tab-voting"      U.ViewTopicIdeasVoting  "Ideen in der Abstimmung"
-    TabWinningIdeas _ -> g' "tab-winning"     U.ViewTopicIdeasWinning "Gewinner"
-    TabDelegation     -> g' "tab-delegations" U.ViewTopicDelegations  "Beauftragen Stimmen"
+    TabIdeas Ideas        _ -> go "tab-ideas"       (U.listTopicIdeas Ideas)        "Alle Ideen"
+    TabIdeas VotingIdeas  _ -> go "tab-voting"      (U.listTopicIdeas VotingIdeas)  "Ideen in der Abstimmung"
+    TabIdeas WinningIdeas _ -> go "tab-winning"     (U.listTopicIdeas WinningIdeas) "Gewinner"
+    TabDelegation           -> g' "tab-delegations" U.ViewTopicDelegations          "Beauftragen Stimmen"
   where
     space = topic ^. topicIdeaSpace
     go ident uri =
@@ -190,9 +188,9 @@ viewTopicHeaderDiv now ctx topic tab = do
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
-                t2 = tabLink topic tab (TabVotingIdeas emptyIdeasQuery)
-                t3 = tabLink topic tab (TabWinningIdeas emptyIdeasQuery)
+            let t1 = tabLink topic tab (TabIdeas Ideas        emptyIdeasQuery)
+                t2 = tabLink topic tab (TabIdeas VotingIdeas  emptyIdeasQuery)
+                t3 = tabLink topic tab (TabIdeas WinningIdeas emptyIdeasQuery)
                 t4 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.
@@ -204,7 +202,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                 PhaseRefinement{} -> t1
                 PhaseJury         -> t1
                 PhaseVoting{}     -> t1 >> t2
-                PhaseResult       -> t1 >> t2 >> t3 >> t4
+                PhaseResult       -> t1 >> t3 >> t4
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
@@ -230,7 +228,7 @@ instance FormPage CreateTopic where
 
     formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
 
-    redirectOf (CreateTopic _ _ _) = U.listTopicIdeas
+    redirectOf (CreateTopic _ _ _) = U.listTopicIdeas Ideas
 
     makeForm CreateTopic{ _createTopicIdeaSpace
                         , _createTopicIdeas
@@ -277,7 +275,7 @@ instance FormPage EditTopic where
 
     formAction (EditTopic space topic _ _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
 
-    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas topic
+    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas Ideas topic
 
     makeForm (EditTopic _space topic ideas preselected) =
         EditTopicData
@@ -318,6 +316,12 @@ makeFormIdeaSelection preselected ideas =
 
 -- * handlers
 
+ideaFilterForTab :: ViewTopicTab -> [Idea] -> [Idea]
+ideaFilterForTab = \case
+    TabIdeas WinningIdeas _ -> filter winningIdea
+    TabIdeas VotingIdeas  _ -> filter feasibleIdea
+    _                       -> id
+
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
 viewTopic tab topicId = do
@@ -334,9 +338,13 @@ viewTopic tab topicId = do
                 let loc = topicIdeaLocation topic
                     ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
                                $ tab ^? viewTopicTabQuery
-                ideas <- applyFilter ideasQuery <$> findIdeasByTopic topic
-                ideasAndNumVoters <- ListItemIdeas ctx IdeaInViewTopic loc ideasQuery <$>
-                                            (getListInfoForIdea `mapM` ideas)
+                ideas <- applyFilter ideasQuery . ideaFilterForTab tab
+                         <$> findIdeasByTopic topic
+                let topicTabKind = fromMaybe (error "viewTopic: impossible (2).")
+                                 $ tab ^? topicTab
+                ideasAndNumVoters <-
+                    ListItemIdeas ctx (IdeaInViewTopic topicTabKind) loc ideasQuery
+                    <$> getListInfoForIdea `mapM` ideas
 
                 pure $ ViewTopicIdeas now ctx tab topic ideasAndNumVoters)
 

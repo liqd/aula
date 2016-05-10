@@ -151,9 +151,9 @@ instance Arbitrary ViewTopicTab where
 
 viewTopicTabList :: [ViewTopicTab]
 viewTopicTabList =
-    [ TabAllIdeas emptyIdeasQuery
-    , TabVotingIdeas emptyIdeasQuery
-    , TabWinningIdeas emptyIdeasQuery
+    [ TabIdeas Ideas        emptyIdeasQuery
+    , TabIdeas VotingIdeas  emptyIdeasQuery
+    , TabIdeas WinningIdeas emptyIdeasQuery
     , TabDelegation
     ]
 
@@ -369,6 +369,10 @@ instance Arbitrary ReportCommentContent where
     shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
 
 instance Arbitrary Delegation where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary IdeasFilter where
     arbitrary = garbitrary
     shrink    = gshrink
 
