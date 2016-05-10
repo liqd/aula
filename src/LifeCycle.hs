@@ -204,7 +204,7 @@ phaseVotFrozenCap _i = \case
 
 phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
-    Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i]
+    Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i, isWinning i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> onFeasibleIdea i [CanMarkWinner]
