@@ -480,7 +480,7 @@ instance FormPage JudgeIdea where
     makeForm (JudgeIdea IdeaFeasible _ _) =
         Feasible <$> noteFormOptionalInput (judgeIdeaNote IdeaFeasible) Nothing
     makeForm (JudgeIdea IdeaNotFeasible _ _) =
-        NotFeasible <$> noteFormInput (judgeIdeaNote IdeaFeasible) Nothing
+        NotFeasible <$> noteFormInput (judgeIdeaNote IdeaNotFeasible) Nothing
 
     formPage v form p@(JudgeIdea juryType idea _topic) =
         semanticDiv p $
