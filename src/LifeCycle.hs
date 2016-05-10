@@ -193,7 +193,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> onIdea isFeasibleIdea i [CanVote]
+    Student    _clss -> [CanVote | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -211,20 +211,17 @@ phaseVotFrozenCap _i = \case
 
 phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
-    Student    _clss -> onIdea (u `isCreatorOf`) i [CanAddCreatorStatement]
+    Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> onIdea isFeasibleIdea i
-                               ([CanMarkWinner] <>
-                                [CanEditCreatorStatement | ideaHasCreatorStatement i])
+    Moderator        -> mconcat $ [ [CanMarkWinner] <>
+                                    [CanEditCreatorStatement | ideaHasCreatorStatement i]
+                                    | isFeasibleIdea i ]
     Principal        -> []
     Admin            -> []
 
 
 -- ** Helpers
-
-onIdea :: (Idea -> Bool) -> Idea -> [IdeaCapability] -> [IdeaCapability]
-onIdea p i cs = if p i then cs else []
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
