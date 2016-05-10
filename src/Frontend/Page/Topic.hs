@@ -124,7 +124,11 @@ instance ToHtml ViewTopic where
 
 viewTopicHeaderDiv :: Monad m => Timestamp -> RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv now ctx topic tab = do
-    let caps = topicCapabilities phase (ctx ^. renderContextUser . userRole)
+    let caps    = topicCapabilities phase (ctx ^. renderContextUser . userRole)
+        phase   = topic ^. topicPhase
+        topicId = topic ^. _Id
+        space   = topic ^. topicIdeaSpace
+
     div_ [class_ $ "topic-header phase-" <> cs (show phase)] $ do
         header_ [class_ "detail-header"] $ do
             a_ [class_ "btn m-back detail-header-back", href_ $ U.Space space U.ListTopics] "Zu Allen Themen"
@@ -201,10 +205,6 @@ viewTopicHeaderDiv now ctx topic tab = do
                 PhaseJury         -> t1
                 PhaseVoting{}     -> t1 >> t2
                 PhaseResult       -> t1 >> t2 >> t3 >> t4
-  where
-    phase   = topic ^. topicPhase
-    topicId = topic ^. _Id
-    space   = topic ^. topicIdeaSpace
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
