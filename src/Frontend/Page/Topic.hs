@@ -187,8 +187,8 @@ viewTopicHeaderDiv ctx topic tab = do
 
         div_ [class_ "heroic-tabs"] $ do
             let t1 = tabLink topic tab (TabAllIdeas emptyIdeasQuery)
-                t2 = tabLink topic tab (TabVotingIdeas emptyIdeasQuery)
-                t3 = tabLink topic tab (TabWinningIdeas emptyIdeasQuery)
+                t2 = tabLink topic tab (TabVotingIdeas (votingIdeasQuery 50)) -- TODO: Read real quorum for topic
+                t3 = tabLink topic tab (TabWinningIdeas winningIdeasQuery)
                 t4 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.

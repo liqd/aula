@@ -9,14 +9,16 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-{-# OPTIONS_GHC -Wall -Werror #-}
+-- TODO: Enable again
+-- {-# OPTIONS_GHC -Wall -Werror #-}
 
 module Frontend.Filter
     ( Filter(Filtered, applyFilter, renderFilter)
 
     , IdeasFilterApi, IdeasFilterQuery(..), _AllIdeas, _IdeasWithCat, catFilter
-    , IdeasSortApi, SortIdeasBy(..)
-    , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS, emptyIdeasQuery
+    , IdeasSortApi, SortIdeasBy(..), IdeasWithProperty(..)
+    , IdeasQuery(..), mkIdeasQuery, ideasQueryF, ideasQueryS
+    , emptyIdeasQuery, votingIdeasQuery, winningIdeasQuery
     , toggleIdeasFilter
 
     , UsersFilterApi, SearchUsers(..), UsersFilterQuery(..)
@@ -65,6 +67,7 @@ instance Filter a => Filter (Maybe a) where
 
 -- * filter and sort ideas
 
+-- TODO: Rename to ideas with category
 data IdeasFilterQuery = AllIdeas | IdeasWithCat { _catFilter :: Category }
   deriving (Eq, Ord, Show, Read, Generic)
 type IdeasFilterApi = FilterApi Category
@@ -90,6 +93,30 @@ instance Filter     IdeasFilterQuery where
     type Filtered   IdeasFilterQuery = Idea
     applyFilter  f = applyFilter  $ f ^? catFilter
     renderFilter f = renderFilter $ f ^? catFilter
+
+data IdeasWithProperty = NoProp | WinningIdeas | VotingIdeas Int
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic IdeasWithProperty
+
+type instance FilterName IdeasWithProperty = "property"
+
+instance Filter IdeasWithProperty where
+    type Filtered IdeasWithProperty = Idea
+    applyFilter WinningIdeas    = filter winningIdea
+    applyFilter (VotingIdeas q) = filter ((q <) . noOfVotes)
+    renderFilter = renderQueryParam
+
+instance FromHttpApiData IdeasWithProperty where
+    parseUrlPiece = \case
+        "winning" -> Right WinningIdeas
+        "voting"  -> Right $ VotingIdeas 50 -- TODO
+        _         -> Left "no parse"
+
+instance ToHttpApiData IdeasWithProperty where
+    toUrlPiece = \case
+        WinningIdeas  -> "winning"
+        VotingIdeas _ -> "voting" -- TODO
 
 data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
@@ -131,6 +158,7 @@ type instance FilterName SortIdeasBy = "sortby"
 data IdeasQuery = IdeasQuery
     { _ideasQueryF :: IdeasFilterQuery
     , _ideasQueryS :: SortIdeasBy
+    , _ideasQueryP :: IdeasWithProperty
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -138,17 +166,24 @@ instance SOP.Generic IdeasQuery
 
 makeLenses ''IdeasQuery
 
+-- TODO: Change Nothing at the end.
 mkIdeasQuery :: Maybe Category -> Maybe SortIdeasBy -> IdeasQuery
-mkIdeasQuery mc ms = IdeasQuery (maybe AllIdeas IdeasWithCat mc) (fromMaybe minBound ms)
+mkIdeasQuery mc ms = IdeasQuery (maybe AllIdeas IdeasWithCat mc) (fromMaybe minBound ms) NoProp
 
 emptyIdeasQuery :: IdeasQuery
-emptyIdeasQuery = IdeasQuery AllIdeas minBound
+emptyIdeasQuery = IdeasQuery AllIdeas minBound NoProp
+
+votingIdeasQuery :: Int -> IdeasQuery
+votingIdeasQuery quorum = IdeasQuery AllIdeas minBound (VotingIdeas quorum)
+
+winningIdeasQuery :: IdeasQuery
+winningIdeasQuery = IdeasQuery AllIdeas minBound WinningIdeas
 
 instance Filter IdeasQuery where
     type Filtered IdeasQuery = Idea
 
-    applyFilter  (IdeasQuery f s) = applyFilter  s . applyFilter  f
-    renderFilter (IdeasQuery f s) = renderFilter s . renderFilter f
+    applyFilter  (IdeasQuery f s p) = applyFilter  s . applyFilter  f . applyFilter  p
+    renderFilter (IdeasQuery f s p) = renderFilter s . renderFilter f . renderFilter p
 
 
 -- * users sorting

@@ -404,6 +404,9 @@ instance Arbitrary SortIdeasBy where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary IdeasWithProperty where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * comment
 

@@ -1328,6 +1328,9 @@ userLikesIdea :: User -> Idea -> Bool
 userLikesIdea user idea =
     isJust $ idea ^? ideaLikes . at (user ^. _Id) . _Just
 
+noOfVotes :: Idea -> Int
+noOfVotes = view (ideaVotes . to Map.size)
+
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
