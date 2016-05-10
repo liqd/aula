@@ -246,26 +246,16 @@ data TopicCapability
   deriving (Eq, Show)
 
 topicCapabilities :: Phase -> Role -> [TopicCapability]
-topicCapabilities PhaseWildIdea       = topicWildIdeaCaps
-topicCapabilities PhaseWildFrozen     = topicWildFrozenCaps
-topicCapabilities (PhaseRefinement _) = topicRefinementCaps
-topicCapabilities (PhaseRefFrozen  _) = topicRefinementFrozenCaps
-topicCapabilities PhaseJury           = topicJuryCaps
-topicCapabilities (PhaseVoting     _) = topicVotingCaps
-topicCapabilities (PhaseVotFrozen  _) = topicVotingFrozenCaps
-topicCapabilities PhaseResult         = topicResultCaps
+topicCapabilities = \case
+    p | isPhaseFrozen p -> const []
+    PhaseWildIdea{}     -> topicWildIdeaCaps
+    PhaseRefinement{}   -> topicRefinementCaps
+    PhaseJury           -> topicJuryCaps
+    PhaseVoting{}       -> topicVotingCaps
+    PhaseResult         -> topicResultCaps
 
 topicWildIdeaCaps :: Role -> [TopicCapability]
 topicWildIdeaCaps = \case
-    Student    _clss -> []
-    ClassGuest _clss -> []
-    SchoolGuest      -> []
-    Moderator        -> []
-    Principal        -> []
-    Admin            -> []
-
-topicWildFrozenCaps :: Role -> [TopicCapability]
-topicWildFrozenCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
@@ -281,15 +271,6 @@ topicRefinementCaps = \case
     Moderator        -> [CanEditTopic]
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic]
-
-topicRefinementFrozenCaps :: Role -> [TopicCapability]
-topicRefinementFrozenCaps = \case
-    Student    _clss -> []
-    ClassGuest _clss -> []
-    SchoolGuest      -> []
-    Moderator        -> []
-    Principal        -> []
-    Admin            -> []
 
 topicJuryCaps :: Role -> [TopicCapability]
 topicJuryCaps = \case
@@ -308,15 +289,6 @@ topicVotingCaps = \case
     Moderator        -> []
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
-
-topicVotingFrozenCaps :: Role -> [TopicCapability]
-topicVotingFrozenCaps = \case
-    Student    _clss -> []
-    ClassGuest _clss -> []
-    SchoolGuest      -> []
-    Moderator        -> []
-    Principal        -> []
-    Admin            -> []
 
 topicResultCaps :: Role -> [TopicCapability]
 topicResultCaps = \case
