@@ -355,6 +355,6 @@ editTopic topicId =
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
-        wildIdeas <- wildIdeasReachedQuorumBySpace space
+        wildIdeas <- findWildIdeasBySpace space
         ideasInTopic <- findIdeasByTopicId topicId
         pure $ EditTopic space topic (wildIdeas <> ideasInTopic) (view _Id <$> ideasInTopic)
