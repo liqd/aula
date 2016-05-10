@@ -162,7 +162,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                                         (U.Admin $ U.AdminTopicVotingPrevPhase topicId)
                                         "Vorherige Phase"
 
-        h1_   [class_ "main-heading"] $ do
+        h1_ [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] $ do
                 phase ^. uilabeledST . html
                 " "
@@ -209,7 +209,10 @@ viewTopicHeaderDiv now ctx topic tab = do
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
   where
-    displayTimespan  t = "(ends in " <> showTimespan t <> ")"
+    displayTimespan t = case timespanDays t of
+        1 -> "(Endet heute)"
+        2 -> "(Endet morgen)"
+        n -> "(Endet in " <> show n <> " Tagen)"
 
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" title

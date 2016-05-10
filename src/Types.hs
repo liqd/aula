@@ -886,6 +886,14 @@ timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
 timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
 timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
 
+timespanDays :: Timespan -> Int
+timespanDays (TimespanUs    i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
+timespanDays (TimespanMs    i) = fromIntegral $ i `div` (1000 * 3600 * 24)
+timespanDays (TimespanSecs  i) = fromIntegral $ i `div` (3600 * 24)
+timespanDays (TimespanMins  i) = fromIntegral $ i `div` (60 * 24)
+timespanDays (TimespanHours i) = fromIntegral $ i `div` 24
+timespanDays (TimespanDays  i) = fromIntegral   i
+
 instance Aeson.FromJSON Timespan where
     parseJSON = Aeson.withText "Timespan value" $ \raw -> do
         let (digits, units) = ST.break (`notElem` ("-0123456789" :: String)) raw
