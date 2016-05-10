@@ -255,7 +255,9 @@ createOrEditTopic v ideas = do
         inputTextArea_ [placeholder_ "Was haben die Ideen dieses Themas gemeinsam?"]
             Nothing Nothing "desc" v
     label_ $ do
-        span_ [class_ "label-text"] "Fügen Sie weitere wilde dem neuen Thema hinzu"
+        span_ [class_ "label-text"] $ if null ideas
+            then "Noch keine wilden Ideen haben das Quorum erreicht"
+            else "Fügen Sie weitere wilde dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
         -- topic as selected by default.  (see also: FIXME at makeFormIdeaSelection.)
@@ -338,7 +340,7 @@ createTopic space =
         (do
             now <- getCurrentTimestamp
             query $ CreateTopic space
-                <$> findWildIdeasBySpace space
+                <$> wildIdeasReachedQuorumBySpace space
                 <*> phaseEndRefinement now)
         Action.createTopic
         (\_ _ topic -> unwords ["Das Thema", topic ^. topicTitle . showed, "wurde angelegt."])

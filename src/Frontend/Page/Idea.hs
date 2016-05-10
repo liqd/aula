@@ -151,16 +151,17 @@ instance ToHtml ViewIdea where
                    ] $ backLink (idea ^. ideaLocation)
 
                 let canEdit              = CanEdit              `elem` caps
+                    canCreateTopic       = ideaReachedQuorum ideaInfo && CanCreateTopic `elem` userCaps
                     canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
-                when (canEdit || canMoveBetweenTopics) $ do
+                when (canEdit || canCreateTopic || canMoveBetweenTopics) $ do
                     nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"] $ do
                                 when canEdit . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
-                                when (ideaReachedQuorum ideaInfo && CanCreateTopic `elem` userCaps) $ do
+                                when canCreateTopic .
                                     a_ [href_ $ U.Space spc U.CreateTopic] $ do
                                         i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
