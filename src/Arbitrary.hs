@@ -480,6 +480,9 @@ instance Arbitrary Topic where
         <**> (set topicDesc  <$> arb)
     shrink    = gshrink
 
+instance Arbitrary PhaseStatus where
+    arbitrary = garbitrary
+
 instance Arbitrary Phase where
     arbitrary = garbitrary
     shrink    = gshrink

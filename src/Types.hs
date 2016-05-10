@@ -489,18 +489,22 @@ data EditTopicData = EditTopicData
 
 instance SOP.Generic EditTopicData
 
+data PhaseStatus
+  = ActivePhase { _phaseEnd :: Timestamp }
+  | FrozenPhase { _phaseLeftover :: Timespan }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic PhaseStatus
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseWildIdea
-  | PhaseWildFrozen
-  | PhaseRefinement { _phaseEnd :: Timestamp }
+    PhaseWildIdea   { _phaseWildFrozen :: Freeze }
+  | PhaseRefinement { _phaseStatus :: PhaseStatus }
                                -- ^ 2. "Ausarbeitungsphase"
-  | PhaseRefFrozen  { _phaseLeftover :: Timespan }
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
-  | PhaseVoting     { _phaseEnd :: Timestamp }
+  | PhaseVoting     { _phaseStatus :: PhaseStatus }
                                -- ^ 4. "Abstimmungsphase"
-  | PhaseVotFrozen  { _phaseLeftover :: Timespan }
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -508,14 +512,11 @@ instance SOP.Generic Phase
 
 instance HasUILabel Phase where
     uilabel = \case
-        PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: unreachable as of the writing of this
+        PhaseWildIdea{}   -> "Wilde-Ideen-Phase"  -- FIXME: unreachable as of the writing of this
                                                   -- comment, but used for some tests
-        PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: dito
         PhaseRefinement{} -> "Ausarbeitungsphase"
-        PhaseRefFrozen{}  -> "Ausarbeitungsphase"
         PhaseJury         -> "Prüfungsphase"
         PhaseVoting{}     -> "Abstimmungsphase"
-        PhaseVotFrozen{}  -> "Abstimmungsphase"
         PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
@@ -957,6 +958,7 @@ instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
+instance Binary PhaseStatus
 instance Binary SchoolClass
 instance Binary Timespan
 instance Binary Topic
@@ -984,6 +986,8 @@ makePrisms ''IdeaLocation
 makePrisms ''IdeaSpace
 makePrisms ''IdeaVoteResultValue
 makePrisms ''IdeaVoteValue
+makePrisms ''Freeze
+makePrisms ''PhaseStatus
 makePrisms ''Phase
 makePrisms ''Role
 makePrisms ''Timestamp
@@ -1019,6 +1023,7 @@ makeLenses ''IdeaVote
 makeLenses ''IdeaVoteLikeKey
 makeLenses ''IdeaVoteResult
 makeLenses ''Phase
+makeLenses ''PhaseStatus
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
@@ -1067,6 +1072,7 @@ deriveSafeCopy 0 'base ''IdeaVoteResult
 deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
 deriveSafeCopy 0 'base ''Phase
+deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoTopic
@@ -1388,12 +1394,14 @@ instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
+instance Aeson.ToJSON Freeze where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaJuryResultType where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaLocation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaVoteValue where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Phase where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON PhaseStatus where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
@@ -1413,12 +1421,14 @@ instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
+instance Aeson.FromJSON Freeze where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON id => Aeson.FromJSON (GMetaInfo a id) where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaJuryResultType where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaLocation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaSpace where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaVoteValue where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Phase where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON PhaseStatus where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Role where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON SchoolClass where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Timestamp where parseJSON = Aeson.gparseJson

@@ -77,11 +77,7 @@ getListInfoForIdea idea = do
     let quVotesRequired = voters * quPercent `div` 100
     phase :: Phase
         <- maybe404 =<< case idea ^. ideaMaybeTopicId of
-            Nothing -> do
-                dbFrozen <- view dbFreeze
-                return . Just $ if dbFrozen == Frozen
-                                then PhaseWildFrozen
-                                else PhaseWildIdea
+            Nothing -> views dbFreeze (Just . PhaseWildIdea)
             Just tid -> view topicPhase <$$> findTopic tid
     pure $ ListInfoForIdea idea phase quVotesRequired voters
 

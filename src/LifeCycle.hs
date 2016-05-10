@@ -9,6 +9,8 @@ module LifeCycle
     ( PhaseChange(..)
     , PhaseAction(..)
     , phaseTrans
+    , freezePhase
+    , thawPhase
 
       -- * capabilities
     , UserCapability(..)
@@ -49,17 +51,32 @@ data PhaseAction
     -- FIXME: Add more action here.
   deriving (Eq, Show)
 
+freezePhase :: Timestamp -> Phase -> Phase
+freezePhase now = (phaseStatus     %~ freezeStatus)
+                . (phaseWildFrozen .~ Frozen)
+  where
+    freezeStatus = \case
+        ActivePhase{_phaseEnd} -> FrozenPhase{_phaseLeftover = _phaseEnd `diffTimestamps` now}
+        s                      -> s
+
+thawPhase :: Timestamp -> Phase -> Phase
+thawPhase now = (phaseStatus     %~ thawStatus)
+              . (phaseWildFrozen .~ NotFrozen)
+  where
+    thawStatus = \case
+        FrozenPhase{_phaseLeftover} -> ActivePhase{_phaseEnd = _phaseLeftover `addTimespan` now}
+        s                           -> s
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans PhaseRefinement{} RefinementPhaseTimeOut
+phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeOut
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseRefinement{} RefinementPhaseMarkedByModerator
+phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseMarkedByModerator
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
 phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
-    = Just (PhaseVoting _phaseChangeVotPhaseEnd, [])
-phaseTrans PhaseVoting{} VotingPhaseTimeOut
+    = Just (PhaseVoting (ActivePhase _phaseChangeVotPhaseEnd), [])
+phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
+phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseSetbackToJuryPhase
     = Just (PhaseJury, [UnmarkAllIdeas])
 -- Freezing and thawing.
 --
@@ -67,18 +84,10 @@ phaseTrans PhaseVoting{} VotingPhaseSetbackToJuryPhase
 -- Freezing or thawing those phases has no effect.  (We do not throw
 -- an exception for these because that would require to handle this
 -- case in other places where it is less convenient, I think.)
-phaseTrans PhaseRefinement{_phaseEnd} (PhaseFreeze now)
-    = Just (PhaseRefFrozen {_phaseLeftover = _phaseEnd `diffTimestamps` now}, [])
-phaseTrans PhaseRefFrozen{_phaseLeftover} (PhaseThaw now)
-    = Just (PhaseRefinement {_phaseEnd = _phaseLeftover `addTimespan` now}, [])
-phaseTrans PhaseJury PhaseFreeze{} = Just (PhaseJury, [])
-phaseTrans PhaseJury PhaseThaw{} = Just (PhaseJury, [])
-phaseTrans PhaseVoting{_phaseEnd} (PhaseFreeze now)
-    = Just (PhaseVotFrozen {_phaseLeftover = _phaseEnd `diffTimestamps` now}, [])
-phaseTrans PhaseVotFrozen{_phaseLeftover} (PhaseThaw now)
-    = Just (PhaseVoting {_phaseEnd = _phaseLeftover `addTimespan` now}, [])
-phaseTrans PhaseResult PhaseFreeze{} = Just (PhaseResult, [])
-phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
+phaseTrans phase (PhaseFreeze now)
+    = Just (freezePhase now phase, [])
+phaseTrans phase (PhaseThaw now)
+    = Just (thawPhase now phase, [])
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
 
@@ -127,15 +136,22 @@ ideaCapabilities u r i p =
 editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
 editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
 
+allowedDuringFreeze :: [IdeaCapability]
+allowedDuringFreeze = [CanComment
+                      ,CanMarkFeasiblity
+                      ,CanAddCreatorStatement
+                      ,CanMarkWinner]
+
+filterIfFrozen :: Phase -> [IdeaCapability] -> [IdeaCapability]
+filterIfFrozen p | isPhaseFrozen p = filter (`elem` allowedDuringFreeze)
+                 | otherwise       = id
+
 phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
-phaseCap u r i p = case p of
-    PhaseWildIdea     -> wildIdeaCap i r
-    PhaseWildFrozen   -> wildFrozenCap i r
+phaseCap u r i p = filterIfFrozen p $ case p of
+    PhaseWildIdea{}   -> wildIdeaCap i r
     PhaseRefinement{} -> phaseRefinementCap i r
-    PhaseRefFrozen{}  -> phaseRefFrozenCap i r
     PhaseJury         -> phaseJuryCap i r
     PhaseVoting{}     -> phaseVotingCap i r
-    PhaseVotFrozen{}  -> phaseVotFrozenCap i r
     PhaseResult       -> phaseResultCap u i r
 
 wildIdeaCap :: Idea -> Role -> [IdeaCapability]
@@ -147,30 +163,12 @@ wildIdeaCap _i = \case
     Principal        -> []
     Admin            -> []
 
-wildFrozenCap :: Idea -> Role -> [IdeaCapability]
-wildFrozenCap _i = \case
-    Student    _clss -> [CanComment]
-    ClassGuest _clss -> []
-    SchoolGuest      -> []
-    Moderator        -> []
-    Principal        -> []
-    Admin            -> []
-
 phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
 phaseRefinementCap _i = \case
     Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanMoveBetweenTopics]
-    Principal        -> []
-    Admin            -> []
-
-phaseRefFrozenCap :: Idea -> Role -> [IdeaCapability]
-phaseRefFrozenCap _i = \case
-    Student    _clss -> [CanComment]
-    ClassGuest _clss -> []
-    SchoolGuest      -> []
-    Moderator        -> []
     Principal        -> []
     Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
@@ -186,15 +184,6 @@ phaseJuryCap _i = \case
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
     Student    _clss -> onFeasibleIdea i [CanVote]
-    ClassGuest _clss -> []
-    SchoolGuest      -> []
-    Moderator        -> []
-    Principal        -> []
-    Admin            -> []
-
-phaseVotFrozenCap :: Idea -> Role -> [IdeaCapability]
-phaseVotFrozenCap _i = \case
-    Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
