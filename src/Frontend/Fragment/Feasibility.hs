@@ -20,21 +20,22 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
             p_ "Begründung:"
             p_ $ toHtml text
 
+    when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
+        div_ [class_ "admin-buttons"] $ do
+            button_ [ class_ "btn-cta m-valid"
+                    , onclick_ $ U.judgeIdea idea IdeaFeasible
+                    ] $ do
+                i_ [class_ "icon-check"] nil
+                "durchführbar"
+            button_ [ class_ "btn-cta m-invalid"
+                    , onclick_ $ U.judgeIdea idea IdeaNotFeasible
+                    ] $ do
+                i_ [class_ "icon-times"] nil
+                "nicht durchführbar"
+
     case _ideaJuryResult idea of
         -- Render the mark buttons only for princical
-        -- FIXME: support principals changing their mind.
-        Nothing -> when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
-            div_ [class_ "admin-buttons"] $ do
-                button_ [ class_ "btn-cta m-valid"
-                        , onclick_ $ U.judgeIdea idea IdeaFeasible
-                        ] $ do
-                    i_ [class_ "icon-check"] nil
-                    "durchführbar"
-                button_ [ class_ "btn-cta m-invalid"
-                        , onclick_ $ U.judgeIdea idea IdeaNotFeasible
-                        ] $ do
-                        i_ [class_ "icon-times"] nil
-                        "nicht durchführbar"
+        Nothing -> nil
         -- Render result to everyone
         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
             div_ [class_ "info-text m-realised"] $ do
