@@ -496,6 +496,11 @@ data PhaseStatus
 
 instance SOP.Generic PhaseStatus
 
+phaseLeftoverFrom :: Timestamp -> Lens' PhaseStatus Timespan
+phaseLeftoverFrom now f = \case
+    ActivePhase end      -> ActivePhase <$> fromNow now f end
+    FrozenPhase leftover -> FrozenPhase <$> f leftover
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
@@ -920,6 +925,8 @@ addTimespan :: Timespan -> Timestamp -> Timestamp
 addTimespan tdiff (Timestamp tfrom) = Timestamp $
     fromIntegral (timespanMs tdiff `div` 1000) `addUTCTime` tfrom
 
+fromNow :: Timestamp -> Iso' Timestamp Timespan
+fromNow now = iso (`diffTimestamps` now) (`addTimespan` now)
 
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where
