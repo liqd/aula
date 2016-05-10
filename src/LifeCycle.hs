@@ -90,7 +90,6 @@ data UserCapability
     = CanCreateTopic
   deriving (Eq, Show)
 
--- TODO: Use the idea space parameter.
 userCapabilities :: IdeaSpace -> Role -> [UserCapability]
 userCapabilities _s = \case
     Student    _clss -> []
