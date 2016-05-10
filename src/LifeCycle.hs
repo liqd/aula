@@ -19,6 +19,8 @@ module LifeCycle
     , commentCapabilities
     , TopicCapability(..)
     , topicCapabilities
+      -- * capabilities api
+    , anyCapOf
     )
 where
 
@@ -83,6 +85,11 @@ phaseTrans PhaseResult PhaseThaw{} = Just (PhaseResult, [])
 phaseTrans _ _ = Nothing
 
 
+-- * Capabilities api
+
+anyCapOf :: (Eq a) => [a] -> [a] -> Bool
+anyCapOf required caps = any (`elem` caps) required
+
 -- * User capabilities
 
 -- FIXME: Extend the list
@@ -113,6 +120,7 @@ data IdeaCapability
     | CanMarkFeasiblity -- also can add jury statement
     | CanMarkWinner
     | CanAddCreatorStatement
+    | CanEditCreatorStatement
     | CanEdit
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
   deriving (Enum, Eq, Ord, Show, Read, Generic)
@@ -185,7 +193,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> onFeasibleIdea i [CanVote]
+    Student    _clss -> onIdea isFeasibleIdea i [CanVote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -203,22 +211,23 @@ phaseVotFrozenCap _i = \case
 
 phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
-    Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i]
+    Student    _clss -> onIdea (u `isCreatorOf`) i [CanAddCreatorStatement]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> onFeasibleIdea i [CanMarkWinner]
+    Moderator        -> onIdea isFeasibleIdea i
+                               ([CanMarkWinner] <>
+                                [CanEditCreatorStatement | ideaHasCreatorStatement i])
     Principal        -> []
     Admin            -> []
 
 
 -- ** Helpers
 
-onFeasibleIdea :: Idea -> [IdeaCapability] -> [IdeaCapability]
-onFeasibleIdea i cs = if isFeasibleIdea i then cs else []
+onIdea :: (Idea -> Bool) -> Idea -> [IdeaCapability] -> [IdeaCapability]
+onIdea p i cs = if p i then cs else []
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
-
 
 -- * Comment Capabilities
 

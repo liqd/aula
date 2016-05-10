@@ -1196,6 +1196,9 @@ notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasi
 winningIdea :: Idea -> Bool
 winningIdea = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
 
+ideaHasCreatorStatement :: Idea -> Bool
+ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
+
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace
 
