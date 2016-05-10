@@ -17,7 +17,7 @@ import AulaTests
 
 spec :: Spec
 spec = do
-    describe "EventLog" . around withServer $ do
+    describe "EventLog" . around withServerWithEventLog $ do
         let shouldHaveHeaders = bodyShouldContain $
               intercalate ("," :: String) eventLogItemCsvHeaders
             trigger wreq = post wreq "/admin/topic/5/next-phase" ([] :: [Part])

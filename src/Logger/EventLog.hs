@@ -38,6 +38,8 @@ import Types
 data EventLog = EventLog URL [EventLogItemWarm]
   deriving (Generic)
 
+-- | This type is migration-critial: we may need to support parting old values if we change it in
+-- production.  See 'CSV.ToRecord' instance(s) below.
 data EventLogItem user topic idea comment =
     EventLogItem IdeaSpace Timestamp user (EventLogItemValue user topic idea comment)
   deriving (Eq, Show, Generic)

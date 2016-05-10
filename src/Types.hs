@@ -1218,6 +1218,9 @@ makeUserView u =
 activeUsers :: [UserView] -> [User]
 activeUsers = mapMaybe (^? activeUser)
 
+ideaHasCreatorStatement :: Idea -> Bool
+ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
+
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace
 

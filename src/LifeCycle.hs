@@ -122,6 +122,7 @@ data IdeaCapability
     | CanMarkFeasiblity -- also can add jury statement
     | CanMarkWinner
     | CanAddCreatorStatement
+    | CanEditCreatorStatement
     | CanEdit
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
   deriving (Enum, Eq, Ord, Show, Read, Generic)
@@ -184,7 +185,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> onFeasibleIdea i [CanVote]
+    Student    _clss -> [CanVote | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -196,15 +197,14 @@ phaseResultCap u i = \case
     Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i, isWinning i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> onFeasibleIdea i [CanMarkWinner]
+    Moderator        -> mconcat [ [CanMarkWinner] <>
+                                  [CanEditCreatorStatement | ideaHasCreatorStatement i]
+                                  | isFeasibleIdea i ]
     Principal        -> []
     Admin            -> []
 
 
 -- ** Helpers
-
-onFeasibleIdea :: Idea -> [IdeaCapability] -> [IdeaCapability]
-onFeasibleIdea i cs = if isFeasibleIdea i then cs else []
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
