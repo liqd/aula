@@ -161,8 +161,8 @@ instance Arbitrary ViewTopic where
     arbitrary = do
         tab <- arb
         case tab of
-            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb
-            _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
+            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb <*> arb
+            _ -> ViewTopicIdeas <$> arb <*> arb <*> pure tab <*> arb <*> arb
     shrink (ViewTopicDelegations x y z) =
         ViewTopicDelegations <$> shr x <*> shr y <*> shr z
     shrink (ViewTopicIdeas x y z w) =

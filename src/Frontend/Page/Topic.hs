@@ -28,7 +28,7 @@ import Control.Category ((.))
 import Data.List (sortBy)
 import Prelude hiding ((.))
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, getCurrentTimestamp)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
 import Control.Exception (assert)
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
@@ -62,8 +62,8 @@ makePrisms ''ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas RenderContext ViewTopicTab Topic ListItemIdeas
-  | ViewTopicDelegations RenderContext Topic [Delegation]
+  = ViewTopicIdeas Timestamp RenderContext ViewTopicTab Topic ListItemIdeas
+  | ViewTopicDelegations Timestamp RenderContext Topic [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page ViewTopic where
@@ -110,20 +110,20 @@ tabLink topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
-    toHtml p@(ViewTopicDelegations ctx topic delegations) = semanticDiv p $ do
-        viewTopicHeaderDiv ctx topic TabDelegation
+    toHtml p@(ViewTopicDelegations now ctx topic delegations) = semanticDiv p $ do
+        viewTopicHeaderDiv now ctx topic TabDelegation
         -- related: Frontend.Page.User.renderDelegations
         -- FIXME: implement!
         pre_ $ topic ^. showed . html
         pre_ $ delegations ^. showed . html
 
-    toHtml p@(ViewTopicIdeas ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
-        assert (tab /= TabDelegation) $ viewTopicHeaderDiv ctx topic tab
+    toHtml p@(ViewTopicIdeas now ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
+        assert (tab /= TabDelegation) $ viewTopicHeaderDiv now ctx topic tab
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
-viewTopicHeaderDiv :: Monad m => RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
-viewTopicHeaderDiv ctx topic tab = do
+viewTopicHeaderDiv :: Monad m => Timestamp -> RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
+viewTopicHeaderDiv now ctx topic tab = do
     let caps = topicCapabilities phase (ctx ^. renderContextUser . userRole)
     div_ [class_ $ "topic-header phase-" <> cs (show phase)] $ do
         header_ [class_ "detail-header"] $ do
@@ -159,7 +159,10 @@ viewTopicHeaderDiv ctx topic tab = do
                                         "Vorherige Phase"
 
         h1_   [class_ "main-heading"] $ do
-            span_ [class_ "sub-heading"] $ phase ^. uilabeledST . html
+            span_ [class_ "sub-heading"] $ do
+                phase ^. uilabeledST . html
+                " "
+                phase ^. displayPhaseTime now . html
             topic ^. topicTitle . html
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
@@ -202,6 +205,11 @@ viewTopicHeaderDiv ctx topic tab = do
     phase   = topic ^. topicPhase
     topicId = topic ^. _Id
     space   = topic ^. topicIdeaSpace
+
+displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
+displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
+  where
+    displayTimespan  t = "(ends in " <> showTimespan t <> ")"
 
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" title
@@ -306,15 +314,16 @@ makeFormIdeaSelection preselected ideas =
 
 -- * handlers
 
-viewTopic :: (ActionPersist m, ActionUserHandler m)
+viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
 viewTopic tab topicId = do
     ctx <- renderContext
+    now <- getCurrentTimestamp
     equery (do
         topic <- maybe404 =<< findTopic topicId
         case tab of
             TabDelegation ->
-                ViewTopicDelegations ctx topic
+                ViewTopicDelegations now ctx topic
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
             _ ->
               do
@@ -325,7 +334,7 @@ viewTopic tab topicId = do
                 ideasAndNumVoters <- ListItemIdeas ctx IdeaInViewTopic loc ideasQuery <$>
                                             (getListInfoForIdea `mapM` ideas)
 
-                pure $ ViewTopicIdeas ctx tab topic ideasAndNumVoters)
+                pure $ ViewTopicIdeas now ctx tab topic ideasAndNumVoters)
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
