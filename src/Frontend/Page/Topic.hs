@@ -256,7 +256,7 @@ createOrEditTopic v ideas = do
             Nothing Nothing "desc" v
     label_ $ do
         span_ [class_ "label-text"] $ if null ideas
-            then "No wild ideas have reached the quorum yet" -- TODO: Translate
+            then "Noch keine wilden Ideen haben das Quorum erreicht"
             else "Fügen Sie weitere wilde dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
