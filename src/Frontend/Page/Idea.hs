@@ -206,7 +206,7 @@ instance ToHtml ViewIdea where
             feasibilityVerdict True idea caps
 
             -- creator statement
-            when (CanAddCreatorStatement `elem` caps) $ do
+            when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
                 div_ [class_ "creator-statement-button"] $ do
                     button_ [ class_ "btn-cta m-valid"
                             , onclick_ $ U.creatorStatement idea
