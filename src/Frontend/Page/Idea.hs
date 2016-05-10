@@ -477,10 +477,15 @@ instance FormPage JudgeIdea where
         -- FIXME: we would like to say `U.listTopicIdeas topic </#> U.anchor (idea ^. _Id)` here,
         -- but that requires some refactoring around 'redirectOf'.
 
-    makeForm (JudgeIdea IdeaFeasible _ _) =
-        Feasible <$> noteFormOptionalInput (judgeIdeaNote IdeaFeasible) Nothing
-    makeForm (JudgeIdea IdeaNotFeasible _ _) =
-        NotFeasible <$> noteFormInput (judgeIdeaNote IdeaNotFeasible) Nothing
+    makeForm (JudgeIdea IdeaFeasible idea _) =
+        Feasible <$> noteFormOptionalInput (judgeIdeaNote IdeaFeasible) mFeasible
+      where
+        mFeasible :: Maybe Document = idea ^? ideaJuryResult . _Just . ideaJuryResultValue . _Feasible . _Just
+
+    makeForm (JudgeIdea IdeaNotFeasible idea _) =
+        NotFeasible <$> noteFormInput (judgeIdeaNote IdeaNotFeasible) mNotFeasible
+      where
+        mNotFeasible = idea ^? ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
 
     formPage v form p@(JudgeIdea juryType idea _topic) =
         semanticDiv p $
