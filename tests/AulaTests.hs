@@ -93,7 +93,7 @@ withServer action = (`withServer'` action) =<< testConfig
 withServerWithEventLog :: (WreqQuery -> IO a) -> IO a
 withServerWithEventLog action = do
     let elpath = "/tmp/aula-test-events.json"
-    system $ "rm -f " <> show elpath
+    _ <- system $ "rm -f " <> show elpath
     (`withServer'` action) . (logging . eventLogPath .~ elpath) =<< testConfig
 
 withServer' :: Config -> (WreqQuery -> IO a) -> IO a
