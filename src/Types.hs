@@ -298,6 +298,11 @@ data IdeaJuryResultValue
 
 type instance Proto IdeaJuryResult = IdeaJuryResultValue
 
+ideaResultReason :: Traversal' IdeaJuryResultValue Document
+ideaResultReason f = \case
+    NotFeasible d -> NotFeasible <$> f d
+    Feasible md   -> Feasible <$> traverse f md
+
 ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
 ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
 ideaJuryResultValueToType Feasible{}    = IdeaFeasible
@@ -1192,12 +1197,6 @@ makeUserView u =
 activeUsers :: [UserView] -> [User]
 activeUsers = mapMaybe (^? activeUser)
 
-notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
-
-winningIdea :: Idea -> Bool
-winningIdea = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
-
 instance HasUriPart IdeaSpace where
     uriPart = fromString . showIdeaSpace
 
@@ -1296,21 +1295,14 @@ ideaLocationMaybeTopicId f = \case
 ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
 ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
 
--- | An alternative implementation with lenses instead of view patterns:
---
--- >>> isFeasibleIdea :: Idea -> Bool
--- >>> isFeasibleIdea idea = case idea ^? ideaResult . _Just . ideaResultValue of
--- >>>     Just (Feasible _) -> True
--- >>>     _ -> False
+isPhaseFrozen :: Phase -> Bool
+isPhaseFrozen = has (phaseWildFrozen . _Frozen <> phaseStatus . _FrozenPhase . like ())
+
 isFeasibleIdea :: Idea -> Bool
-isFeasibleIdea (view ideaJuryResult -> (Just (view ideaJuryResultValue -> Feasible _)))
-    = True
-isFeasibleIdea _
-    = False
+isFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _Feasible
 
 isWinning :: Idea -> Bool
-isWinning (view ideaVoteResult -> (Just (view ideaVoteResultValue -> Winning _))) = True
-isWinning _ = False
+isWinning = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
 
 isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True

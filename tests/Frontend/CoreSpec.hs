@@ -200,10 +200,8 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
         dirs = (id &&& cs . phaseChangeDirText) <$> [Forward, Backward]
 
 instance PayloadToEnv IdeaJuryResultValue where
-    payloadToEnvMapping _ (Feasible mdoc) = \case
-        "note-text" -> pure [TextInput $ maybe nil unMarkdown mdoc]
-    payloadToEnvMapping _ (NotFeasible doc) = \case
-        "note-text" -> pure [TextInput $ unMarkdown doc]
+    payloadToEnvMapping _ r = \case
+        "note-text" -> pure [TextInput $ r ^. ideaResultReason . _Markdown]
 
 instance PayloadToEnv ReportCommentContent  where
     payloadToEnvMapping _ (ReportCommentContent (Markdown m)) = \case

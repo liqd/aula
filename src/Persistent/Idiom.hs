@@ -136,10 +136,7 @@ checkInPhase isPhase idea topic =
 checkAllIdeasMarked :: Topic -> Query Bool
 checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
   where
-    isMarkedIdea i = case i ^? ideaJuryResult . _Just . ideaJuryResultValue of
-        Just (NotFeasible _) -> True
-        Just (Feasible _)    -> True
-        _                    -> False
+    isMarkedIdea = has $ ideaJuryResult . _Just
 
 deactivateUser :: AUID User -> AUpdate ()
 deactivateUser uid = withUser uid . userSettings . userSettingsPassword .= UserPassDeactivated
