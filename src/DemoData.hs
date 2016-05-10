@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 
-{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-incomplete-patterns #-}
 
 -- | FIXME: this should be moved away from production code into `./tests/`
 module DemoData
@@ -78,10 +78,11 @@ genUser genRole =
 genAvatar :: Gen URL
 genAvatar = elements fishAvatars
 
-genTopic :: [IdeaSpace] -> Gen ProtoTopic
-genTopic ideaSpaces =
+genTopic :: Timestamp -> [IdeaSpace] -> Gen ProtoTopic
+genTopic now ideaSpaces =
     arbitrary
     <**> (set protoTopicIdeaSpace <$> elements ideaSpaces)
+    <**> (set protoTopicRefPhaseEnd <$> pure (TimespanDays 14 `addTimespan` now))
 
 genIdeaLocation :: [IdeaSpace] -> [Topic] -> Gen IdeaLocation
 genIdeaLocation ideaSpaces topics = oneof
@@ -158,8 +159,9 @@ addUserWithEmailFromConfig =
     setEmailFromConfig >=> currentUserAddDb AddUser
 
 addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
-addFirstUserWithEmailFromConfig =
-    setEmailFromConfig >=> update . AddFirstUser constantSampleTimestamp
+addFirstUserWithEmailFromConfig pu = do
+    now <- getCurrentTimestamp
+    setEmailFromConfig pu >>= update . AddFirstUser now
 
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
 setEmailFromConfig puser = do
@@ -179,6 +181,7 @@ mkUniverse = do
 -- for transaction granularity here that speeds things up considerably.)
 universe :: QCGen -> forall m . ActionM m => m ()
 universe rnd = do
+    now <- getCurrentTimestamp
     admin <- addFirstUserWithEmailFromConfig =<< gen rnd genFirstUser
     loginByUser admin
 
@@ -195,8 +198,8 @@ universe rnd = do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics <- mapM (currentUserAddDb (AddTopic constantSampleTimestamp ))
-                =<< generate numberOfTopics rnd (genTopic ideaSpaces)
+    topics <- mapM (currentUserAddDb (AddTopic now))
+                =<< generate numberOfTopics rnd (genTopic now ideaSpaces)
 
     ideas <- mapM (currentUserAddDb AddIdea)
                 =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
@@ -238,14 +241,16 @@ userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocation
 -- plus one extra user for logging test.
 --
 -- Note that no user is getting logged in by this code.
-genInitialTestDb :: (ActionPersist m) => m ()
+genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
+    now <- getCurrentTimestamp
+
     update $ AddIdeaSpaceIfNotExists SchoolSpace
     update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7a")
     update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "7b")
     update . AddIdeaSpaceIfNotExists $ ClassSpace (SchoolClass 2016 "8a")
 
-    user1 <- update $ AddFirstUser constantSampleTimestamp ProtoUser
+    user1 <- update $ AddFirstUser now ProtoUser
         { _protoUserLogin     = Just "admin"
         , _protoUserFirstName = "A."
         , _protoUserLastName  = "Admin"
@@ -255,7 +260,7 @@ genInitialTestDb = do
         , _protoUserDesc      = Markdown nil
         }
 
-    user2 <- update $ AddUser (EnvWith user1 constantSampleTimestamp ProtoUser
+    user2 <- update $ AddUser (EnvWith user1 now ProtoUser
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
@@ -265,27 +270,27 @@ genInitialTestDb = do
         , _protoUserDesc      = Markdown nil
         })
 
-    _wildIdea <- update $ AddIdea (EnvWith user1 constantSampleTimestamp ProtoIdea
+    _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
             , _protoIdeaDesc     = Markdown "wild-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topicIdea <- update $ AddIdea (EnvWith user2 constantSampleTimestamp ProtoIdea
+    topicIdea <- update $ AddIdea (EnvWith user2 now ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
             , _protoIdeaDesc     = Markdown "topic-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topic <- update $ AddTopic constantSampleTimestamp (EnvWith user1 constantSampleTimestamp ProtoTopic
+    topic <- update $ AddTopic now (EnvWith user1 now ProtoTopic
         { _protoTopicTitle       = "topic-title"
         , _protoTopicDesc        = PlainDocument "topic-desc"
         , _protoTopicImage       = ""
         , _protoTopicIdeaSpace   = SchoolSpace
         , _protoTopicIdeas       = []
-        , _protoTopicRefPhaseEnd = constantSampleTimestamp
+        , _protoTopicRefPhaseEnd = TimespanDays 14 `addTimespan` now
         })
 
     -- (make sure topic id is what we expect in some test cases.)
