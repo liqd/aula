@@ -688,14 +688,14 @@ instance FormPage PageAdminSettingsEventsProtocol where
         div_ [class_ "download-box"] $ do
             header_ [class_ "download-box-header"] $ do
                 "Event-Protokoll"
-                button_ [class_ "btn-cta download-box-button", onclick_ U.Broken] "Download"
+                button_ [type_ "submit", class_ "btn-cta download-box-button"] "Download"
             p_ [class_ "download-box-body"] "Das Event-Protokoll enthält alle Aktivitäten der NutzerInnen auf Aula"
 
 adminEventsProtocol :: (ActionM m) => FormPageHandler m PageAdminSettingsEventsProtocol
 adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query getSpaces) pure
 
 adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
-adminEventLogCsv mspc = hdrs . filterEventLog mspc <$> readEventLog
+adminEventLogCsv mspc = hdrs . maybe id filterEventLog mspc <$> readEventLog
   where
     hdrs = csvHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
 

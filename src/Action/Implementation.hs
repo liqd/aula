@@ -17,9 +17,9 @@ module Action.Implementation
 where
 
 import Codec.Picture
-import Control.Exception (throwIO, try, ErrorCall(ErrorCall))
+import Control.Exception (throwIO, try, ErrorCall(ErrorCall), SomeException(SomeException))
 import Control.Lens
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (MonadError, throwError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
@@ -80,7 +80,8 @@ instance ActionLog Action where
         erows <- actionIO . try $ rd cfg
         case erows of
             Left err   -> throwError $ ActionEventLogExcept err
-            Right rows -> EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows)
+            Right rows -> (EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows))
+                `catchError` (throwError . ActionEventLogExcept . otherErr)
       where
         rd :: Config -> IO [EventLogItemCold]
         rd cfg = (LBS.lines <$> LBS.readFile (cfg ^. logging . eventLogPath))
@@ -90,6 +91,11 @@ instance ActionLog Action where
         adecode i = either (throwIO . ErrorCall . msg) pure . Aeson.eitherDecode
           where
             msg aesonSays = "readEventLog:" <> show i <> ": " <> aesonSays
+
+        otherErr :: Show msg => msg -> SomeException
+        otherErr = SomeException . ErrorCall . (<> ourMsg) . show
+          where
+            ourMsg = "\nthis could be caused by a stale event log file with dangling references."
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
