@@ -47,11 +47,14 @@ data EventLogItem user topic idea comment =
 data EventLogItemValue user topic idea comment =
     EventLogUserCreates           (Either3 topic idea comment)
   | EventLogUserEdits             (Either3 topic idea comment)
-  | EventLogUserMarksIdeaFeasible idea IdeaJuryResultType
-  | EventLogUserVotesOnIdea       idea IdeaVoteValue
+  | EventLogUserMarksIdeaFeasible idea (Maybe IdeaJuryResultType)
+  | EventLogUserVotesOnIdea       idea (Maybe IdeaVoteValue)
   | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
       -- FIXME: this should just be a comment key resp. comment, but following the type errors
-      -- reveals some things that are not trivial to refactor.
+      -- reveals some things that are not trivial to refactor.  the current situation is not very
+      -- nice: the first comment is either the target (if a top-level comment) or the parent of the
+      -- target; the second is either absent (for top-level comments) or the target.  this could be
+      -- easier.
   | EventLogUserDelegates         DelegationContext user
   | EventLogTopicNewPhase         topic Phase Phase
   | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)
@@ -133,14 +136,16 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
         f (EventLogUserEdits obj) = CSV.toRecord
             [ "bearbeitet " <> objDesc obj <> ".", objLink obj ]
 
-        f (EventLogUserMarksIdeaFeasible (Middle3 -> idea) isFeasible) = CSV.toRecord
-            [ "bewertet Idee als " <> what, objLink idea ]
-          where
-            what = case isFeasible of
-                     IdeaFeasible    -> "durchführbar."
-                     IdeaNotFeasible -> "nicht durchführbar."
+        f (EventLogUserMarksIdeaFeasible (Middle3 -> idea) mIsFeasible) = case mIsFeasible of
+            Nothing           -> CSV.toRecord [ "löscht Durchführbarkeitsbewertung", objLink idea ]
+            (Just isFeasible) -> let what = case isFeasible of
+                                              IdeaFeasible    -> "durchführbar."
+                                              IdeaNotFeasible -> "nicht durchführbar."
+                                 in CSV.toRecord [ "bewertet Idee als " <> what, objLink idea ]
 
-        f (EventLogUserVotesOnIdea (Middle3 -> idea) voteValue) = CSV.toRecord
+        f (EventLogUserVotesOnIdea (Middle3 -> idea) Nothing) = CSV.toRecord
+            [ "zieht seine Stimme für oder gegen " <> objDesc idea <> " zurück.", objLink idea ]
+        f (EventLogUserVotesOnIdea (Middle3 -> idea) (Just voteValue)) = CSV.toRecord
             [ "stimmt " <> how <> " " <> objDesc idea <> ".", objLink idea ]
           where
             how = case voteValue of

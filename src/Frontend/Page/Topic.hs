@@ -31,14 +31,25 @@ import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
 import Frontend.Fragment.IdeaList
-import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
+import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import LifeCycle (TopicCapability(..), topicCapabilities)
+import Persistent
+    ( findDelegationsByContext
+    , findIdeasByTopic
+    , findIdeasByTopicId
+    , findTopic
+    , findTopic
+    , findWildIdeasBySpace
+    , getListInfoForIdea
+    , maybe404
+    , phaseEndRefinement
+    , wildIdeasReachedQuorumBySpace
+    )
 
-import qualified Action (createTopic)
+import qualified Action (createTopic, editTopic)
 import qualified Frontend.Constant as Constant
 import qualified Frontend.Path as U
-import qualified Persistent.Api as Persistent (EditTopic(EditTopic))
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -356,7 +367,7 @@ editTopic :: ActionM m => AUID Topic -> FormPageHandler m EditTopic
 editTopic topicId =
     formPageHandlerWithMsg
         getPage
-        (update . Persistent.EditTopic topicId)
+        (Action.editTopic topicId)
         "Das Thema wurde gespeichert."
   where
     getPage = equery $ do

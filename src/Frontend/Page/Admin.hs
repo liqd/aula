@@ -31,6 +31,17 @@ import qualified Text.Digestive.Types as DF
 import Action
 import Logger.EventLog
 import Persistent.Api
+    ( SaveDurations(SaveDurations)
+    , SaveQuorums(SaveQuorums)
+    , SaveAndEnactFreeze(SaveAndEnactFreeze)
+    , AddIdeaSpaceIfNotExists(AddIdeaSpaceIfNotExists)
+    , AddUser(AddUser)
+    , SetUserLoginAndRole(SetUserLoginAndRole)
+    )
+import Persistent
+    ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
+    , findActiveUser, getUsersInClass, findActiveUser, getSpaces, findTopic, getUsersInClass
+    )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
 

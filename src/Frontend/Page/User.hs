@@ -10,13 +10,20 @@
 module Frontend.Page.User
 where
 
+import System.FilePath
+
 import Action
 import Data.Avatar
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding ((</>), (<.>))
 import Frontend.Validation
 import Persistent.Api
-import System.FilePath
+    ( SetUserEmail(SetUserEmail)
+    , SetUserPass(SetUserPass)
+    , SetUserProfileDesc(SetUserProfileDesc)
+    , SetUserProfile(SetUserProfile)
+    )
+import Persistent (findUser, findIdeasByUserId, getListInfoForIdea)
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
