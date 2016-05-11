@@ -92,7 +92,7 @@ module Action
     , module Action.Smtp
     , sendMailToRole
 
-    -- * moderator's event log
+    -- * moderator's event log (FIXME: this section should all be local to this module)
     , eventLogUserCreatesTopic
     , eventLogUserCreatesIdea
     , eventLogUserCreatesComment
@@ -435,8 +435,12 @@ editIdea ideaId idea = do
 
 -- * Vote Handling
 
-likeIdea :: ActionAddDb m => AUID Idea -> m ()
-likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
+likeIdea :: ActionM m => AUID Idea -> m ()
+likeIdea ideaId = do
+    currentUserAddDb_ (AddLikeToIdea ideaId) ()
+    do idea <- equery $ maybe404 =<< findIdea ideaId
+       info <- equery $ getListInfoForIdea idea
+       when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea ideaId vote = do
