@@ -657,7 +657,6 @@ eventLogUserCreatesComment comment = do
     eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
         EventLogUserCreates (Right3 $ comment ^. _Key)
 
--- FIXME: throw this in all applicable situations.
 eventLogUserEditsTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
 eventLogUserEditsTopic topic = do
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
@@ -666,13 +665,11 @@ eventLogUserEditsTopic topic = do
             -- 'eventLogUserEditsComment'.
         EventLogUserEdits (Left3 $ topic ^. _Key)
 
--- FIXME: throw this in all applicable situations.
 eventLogUserEditsIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
 eventLogUserEditsIdea idea = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
         EventLogUserEdits (Middle3 $ idea ^. _Key)
 
--- FIXME: throw this in all applicable situations.
 eventLogUserEditsComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
 eventLogUserEditsComment comment = do
     eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
@@ -687,7 +684,6 @@ eventLogUserMarksIdeaFeasible iid jrt = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserMarksIdeaFeasible iid jrt
 
--- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnIdea ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
       => Idea -> Maybe IdeaVoteValue -> m ()
@@ -696,7 +692,6 @@ eventLogUserVotesOnIdea idea v = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnIdea (idea ^. _Key) v
 
--- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnComment ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionPersist m, ActionLog m)
       => KeyOf Comment -> UpDown -> m ()
