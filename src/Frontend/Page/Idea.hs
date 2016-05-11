@@ -196,7 +196,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars caps p
 
-            when (ideaReachedQuorum ideaInfo) $ do
+            when (has _PhaseWildIdea phase && ideaReachedQuorum ideaInfo) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
                 div_ [class_ "voting-buttons"] "Idee kann auf den Tisch."
 
