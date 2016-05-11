@@ -435,8 +435,10 @@ editIdea ideaId idea = do
 likeIdea :: ActionM m => AUID Idea -> m ()
 likeIdea ideaId = do
     currentUserAddDb_ (AddLikeToIdea ideaId) ()
-    do idea <- mquery $ findIdea ideaId
-       info <- equery $ getListInfoForIdea idea
+    do (idea, info) <- equery $ do
+          ide <- maybe404 =<< findIdea ideaId
+          inf <- getListInfoForIdea ide
+          pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
