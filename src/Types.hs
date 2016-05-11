@@ -878,6 +878,14 @@ showTimespan (TimespanMins  i) = show i <> "m"
 showTimespan (TimespanHours i) = show i <> "h"
 showTimespan (TimespanDays  i) = show i <> "d"
 
+timespanUs :: Timespan -> Int
+timespanUs (TimespanUs    i) = fromIntegral   i
+timespanUs (TimespanMs    i) = fromIntegral $ i * 1000
+timespanUs (TimespanSecs  i) = fromIntegral $ i * (1000 * 1000)
+timespanUs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
+timespanUs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
+timespanUs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
+
 timespanMs :: Timespan -> Int
 timespanMs (TimespanUs    i) = fromIntegral   i
 timespanMs (TimespanMs    i) = fromIntegral $ i * 1000
