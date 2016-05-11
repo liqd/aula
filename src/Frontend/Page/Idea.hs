@@ -596,20 +596,6 @@ editComment loc iid cid =
             eventLogUserEditsComment =<< equery (maybe404 =<< findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
-editReply :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> FormPageHandler m EditComment
-editReply loc iid pcid cid =
-    formPageHandlerWithMsg
-        (equery $ do
-            idea <- maybe404 =<< findIdea iid
-            comment <- maybe404 =<< findComment (replyKey loc iid pcid cid)
-            pure $ EditReply idea comment)
-        (\desc -> do
-            update $ SetCommentDesc (replyKey loc iid pcid cid) desc
-            -- eventLogUserEditComment comment -- FIXME
-            )
-        "Der Verbesserungsvorschlag wurde gespeichert."
-
-
 replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
 replyCommentIdea loc ideaId commentId =
     formPageHandlerWithMsg
@@ -622,6 +608,19 @@ replyCommentIdea loc ideaId commentId =
             comment <- currentUserAddDb (AddReply $ CommentKey loc ideaId [] commentId) cc
             eventLogUserCreatesComment comment
             return comment)
+        "Der Verbesserungsvorschlag wurde gespeichert."
+
+editReply :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> FormPageHandler m EditComment
+editReply loc iid pcid cid =
+    formPageHandlerWithMsg
+        (equery $ do
+            idea <- maybe404 =<< findIdea iid
+            comment <- maybe404 =<< findComment (replyKey loc iid pcid cid)
+            pure $ EditReply idea comment)
+        (\desc -> do
+            update $ SetCommentDesc (replyKey loc iid pcid cid) desc
+            -- eventLogUserEditComment comment -- FIXME
+            )
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 -- FIXME: Read the idea state from the db
