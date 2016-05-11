@@ -15,7 +15,6 @@ import Control.Exception (assert)
 import Control.Lens
 import Control.Monad (unless)
 import Data.Functor.Infix ((<$$>))
-import Data.Time
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
@@ -78,11 +77,7 @@ getListInfoForIdea idea = do
     let quVotesRequired = voters * quPercent `div` 100
     phase :: Phase
         <- maybe404 =<< case idea ^. ideaMaybeTopicId of
-            Nothing -> do
-                dbFrozen <- view dbFreeze
-                return . Just $ if dbFrozen == Frozen
-                                then PhaseWildFrozen
-                                else PhaseWildIdea
+            Nothing -> views dbFreeze (Just . PhaseWildIdea)
             Just tid -> view topicPhase <$$> findTopic tid
     pure $ ListInfoForIdea idea phase quVotesRequired voters
 
@@ -98,16 +93,15 @@ quorum = quorumForSpace . view (ideaLocation . ideaLocationSpace)
 -- | Return the current system time with the day set to the date on which phases opened
 -- today end.  When running the phase change trigger at midnight, find all dates that lie in the
 -- past.
-phaseEnd :: Timestamp -> DurationDays -> Query Timestamp
-phaseEnd (Timestamp now) (DurationDays days) = do
-    let day' :: Integer = toModifiedJulianDay (utctDay now) + fromIntegral days
-    return . Timestamp $ now { utctDay = ModifiedJulianDay day' }
+phaseEndDurationDays :: Timestamp -> DurationDays -> Timestamp
+phaseEndDurationDays now (DurationDays days) =
+    now & _Timestamp . _utctDay . julianDay +~ fromIntegral days
 
 phaseEndRefinement :: Timestamp -> Query Timestamp
-phaseEndRefinement now = view dbElaborationDuration >>= phaseEnd now
+phaseEndRefinement = views dbElaborationDuration . phaseEndDurationDays
 
 phaseEndVote :: Timestamp -> Query Timestamp
-phaseEndVote now = view dbVoteDuration >>= phaseEnd now
+phaseEndVote = views dbVoteDuration . phaseEndDurationDays
 
 
 -- | Returns the Just topic of an idea if the idea is assocaited with a topic, Nothing
@@ -138,10 +132,7 @@ checkInPhase isPhase idea topic =
 checkAllIdeasMarked :: Topic -> Query Bool
 checkAllIdeasMarked topic = all isMarkedIdea <$> findIdeasByTopic topic
   where
-    isMarkedIdea i = case i ^? ideaJuryResult . _Just . ideaJuryResultValue of
-        Just (NotFeasible _) -> True
-        Just (Feasible _)    -> True
-        _                    -> False
+    isMarkedIdea = has $ ideaJuryResult . _Just
 
 deactivateUser :: AUID User -> AUpdate ()
 deactivateUser uid = withUser uid . userSettings . userSettingsPassword .= UserPassDeactivated

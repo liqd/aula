@@ -6,7 +6,7 @@ module TypesSpec where
 import Data.Binary (encode, decode)
 import Data.Maybe (isJust, isNothing)
 import Data.Monoid ((<>))
-import Test.Hspec (Spec, describe, it, shouldNotBe)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
 import Test.QuickCheck (property)
 
 import qualified Data.ByteString.Lazy as LBS
@@ -42,6 +42,14 @@ spec = do
                   -- test.
                   let x' = Aeson.object ["value" Aeson..= x]
                   in Aeson.decode (Aeson.encode x') == Just x'
+
+    describe "diffTimestamps, addTimespan" $ do
+        it "work(1)" . property $
+            \(x :: Timestamp) (y :: Timespan) ->
+                timespanUs ((y `addTimespan` x) `diffTimestamps` x) `shouldBe` timespanUs y
+        it "work(2)" . property $
+            \(x :: Timestamp) (y :: Timestamp) ->
+                timespanUs (y `diffTimestamps` ((y `diffTimestamps` x) `addTimespan` x)) `shouldBe` 0
 
     when beThorough $ do
         describe "DelegationNetwork" $ do

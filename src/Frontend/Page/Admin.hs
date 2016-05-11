@@ -346,9 +346,10 @@ adminFreeze =
         (\payload -> do
              now <- getCurrentTimestamp
              update $ SaveAndEnactFreeze now payload)
-        (let msgFrozen   :: ST = "Das System wurde re-aktiviert (Normalbetrieb)."
-             msgUnfrozen :: ST = "Das System wurde eingefroren (Ferienbetrieb)."
-         in const $ const . freezeElim msgFrozen msgUnfrozen)
+        (\_ f _ ->
+            case f of
+                Frozen    -> "Das System wurde re-aktiviert (Normalbetrieb)." :: ST
+                NotFrozen -> "Das System wurde eingefroren (Ferienbetrieb).")
 
 
 -- ** roles and permisisons

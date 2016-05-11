@@ -125,13 +125,10 @@ instance ToHtml PageIdeasInDiscussion where
                            , href_ . U.listIdeas $ IdeaLocationTopic space (topic ^. _Id)
                            ] $ do
                             img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
-                                      PhaseWildIdea     -> "theme_aus.png"  -- FIXME
-                                      PhaseWildFrozen   -> "theme_aus.png"  -- FIXME
+                                      PhaseWildIdea{}   -> "theme_aus.png"  -- FIXME
                                       PhaseRefinement{} -> "theme_aus.png"
-                                      PhaseRefFrozen{}  -> "theme_aus.png"
                                       PhaseJury         -> "theme_pruf.png"
                                       PhaseVoting{}     -> "theme_abs.png"
-                                      PhaseVotFrozen{}  -> "theme_abs.png"
                                       PhaseResult       -> "theme_ergf.png"
                                  , class_ "theme-grid-item-image"
                                  ]

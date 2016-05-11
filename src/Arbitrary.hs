@@ -161,12 +161,12 @@ instance Arbitrary ViewTopic where
     arbitrary = do
         tab <- arb
         case tab of
-            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb
-            _ -> ViewTopicIdeas <$> arb <*> pure tab <*> arb <*> arb
-    shrink (ViewTopicDelegations x y z) =
-        ViewTopicDelegations <$> shr x <*> shr y <*> shr z
-    shrink (ViewTopicIdeas x y z w) =
-        ViewTopicIdeas <$> shr x <*> shr y <*> shr z <*> shr w
+            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb <*> arb
+            _ -> ViewTopicIdeas <$> arb <*> arb <*> pure tab <*> arb <*> arb
+    shrink (ViewTopicDelegations x y z t) =
+        ViewTopicDelegations <$> shr x <*> shr y <*> shr z <*> shr t
+    shrink (ViewTopicIdeas x y z w t) =
+        ViewTopicIdeas <$> shr x <*> shr y <*> shr z <*> shr w <*> shr t
 
 instance Arbitrary ViewIdea where
     arbitrary = ViewIdea <$> arb <*> arb
@@ -479,6 +479,9 @@ instance Arbitrary Topic where
         <**> (set topicTitle <$> arbPhrase)
         <**> (set topicDesc  <$> arb)
     shrink    = gshrink
+
+instance Arbitrary PhaseStatus where
+    arbitrary = garbitrary
 
 instance Arbitrary Phase where
     arbitrary = garbitrary

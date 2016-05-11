@@ -100,6 +100,13 @@ csi = iso cs cs
 showed :: Show a => Getter a String
 showed = to show
 
+_utctDay :: Lens' UTCTime Day
+_utctDay f t = (\d -> t { utctDay = d }) <$> f (utctDay t)
+
+-- As in the lens-datetime package
+julianDay :: Iso' Day Integer
+julianDay = iso toModifiedJulianDay ModifiedJulianDay
+
 newtype DurationDays = DurationDays { unDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
 
@@ -291,6 +298,11 @@ data IdeaJuryResultValue
 
 type instance Proto IdeaJuryResult = IdeaJuryResultValue
 
+ideaResultReason :: Traversal' IdeaJuryResultValue Document
+ideaResultReason f = \case
+    NotFeasible d -> NotFeasible <$> f d
+    Feasible md   -> Feasible <$> traverse f md
+
 ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
 ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
 ideaJuryResultValueToType Feasible{}    = IdeaFeasible
@@ -477,18 +489,27 @@ data EditTopicData = EditTopicData
 
 instance SOP.Generic EditTopicData
 
+data PhaseStatus
+  = ActivePhase { _phaseEnd :: Timestamp }
+  | FrozenPhase { _phaseLeftover :: Timespan }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic PhaseStatus
+
+phaseLeftoverFrom :: Timestamp -> Lens' PhaseStatus Timespan
+phaseLeftoverFrom now f = \case
+    ActivePhase end      -> ActivePhase <$> fromNow now f end
+    FrozenPhase leftover -> FrozenPhase <$> f leftover
+
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseWildIdea
-  | PhaseWildFrozen
-  | PhaseRefinement { _refPhaseEnd :: Timestamp }
+    PhaseWildIdea   { _phaseWildFrozen :: Freeze }
+  | PhaseRefinement { _phaseStatus :: PhaseStatus }
                                -- ^ 2. "Ausarbeitungsphase"
-  | PhaseRefFrozen  { _refPhaseLeftover :: Timespan }
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
-  | PhaseVoting     { _votPhaseEnd :: Timestamp }
+  | PhaseVoting     { _phaseStatus :: PhaseStatus }
                                -- ^ 4. "Abstimmungsphase"
-  | PhaseVotFrozen  { _votPhaseLeftover :: Timespan }
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -496,14 +517,11 @@ instance SOP.Generic Phase
 
 instance HasUILabel Phase where
     uilabel = \case
-        PhaseWildIdea     -> "Wilde-Ideen-Phase"  -- FIXME: unreachable as of the writing of this
+        PhaseWildIdea{}   -> "Wilde-Ideen-Phase"  -- FIXME: unreachable as of the writing of this
                                                   -- comment, but used for some tests
-        PhaseWildFrozen   -> "Wilde-Ideen-Phase"  -- FIXME: dito
         PhaseRefinement{} -> "Ausarbeitungsphase"
-        PhaseRefFrozen{}  -> "Ausarbeitungsphase"
         PhaseJury         -> "Prüfungsphase"
         PhaseVoting{}     -> "Abstimmungsphase"
-        PhaseVotFrozen{}  -> "Abstimmungsphase"
         PhaseResult       -> "Ergebnisphase"
 
 followsPhase :: Phase -> Phase -> Bool
@@ -680,12 +698,6 @@ data Freeze = NotFrozen | Frozen
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance SOP.Generic Freeze
-
--- | Generic eliminator for 'Freeze'.
-freezeElim :: t -> t -> Freeze -> t
-freezeElim notFrozen frozen = \case
-    NotFrozen -> notFrozen
-    Frozen    -> frozen
 
 data Settings = Settings
     { _durations :: Durations
@@ -866,19 +878,35 @@ showTimespan (TimespanMins  i) = show i <> "m"
 showTimespan (TimespanHours i) = show i <> "h"
 showTimespan (TimespanDays  i) = show i <> "d"
 
+timespanUs :: Timespan -> Int
+timespanUs (TimespanUs    i) = fromIntegral   i
+timespanUs (TimespanMs    i) = fromIntegral $ i * 1000
+timespanUs (TimespanSecs  i) = fromIntegral $ i * (1000 * 1000)
+timespanUs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
+timespanUs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
+timespanUs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
+
 timespanMs :: Timespan -> Int
-timespanMs (TimespanUs    i) = fromIntegral   i
-timespanMs (TimespanMs    i) = fromIntegral $ i * 1000
-timespanMs (TimespanSecs  i) = fromIntegral $ i * (1000 * 1000)
-timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
-timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
-timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
+timespanMs (TimespanUs    i) = fromIntegral $ i `div` 1000
+timespanMs (TimespanMs    i) = fromIntegral   i
+timespanMs (TimespanSecs  i) = fromIntegral $ i * 1000
+timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 60)
+timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 3600)
+timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 3600 * 24)
+
+timespanDays :: Timespan -> Int
+timespanDays (TimespanUs    i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
+timespanDays (TimespanMs    i) = fromIntegral $ i `div` (1000 * 3600 * 24)
+timespanDays (TimespanSecs  i) = fromIntegral $ i `div` (3600 * 24)
+timespanDays (TimespanMins  i) = fromIntegral $ i `div` (60 * 24)
+timespanDays (TimespanHours i) = fromIntegral $ i `div` 24
+timespanDays (TimespanDays  i) = fromIntegral   i
 
 instance Aeson.FromJSON Timespan where
-    parseJSON = Aeson.withText "Timestamp value" $ \raw -> do
+    parseJSON = Aeson.withText "Timespan value" $ \raw -> do
         let (digits, units) = ST.break (`notElem` ("-0123456789" :: String)) raw
 
-            bad = fail $ "bad Timestamp value: " <> cs (show raw)
+            bad = fail $ "bad Timespan value: " <> cs (show raw)
 
             construct :: Monad m => ST -> (Integer -> Timespan) -> m Timespan
             construct i cns = pure . cns . read . cs $ i
@@ -906,13 +934,15 @@ instance Aeson.ToJSON Timespan where
         render i unit = Aeson.String . cs $ show i <> unit
 
 diffTimestamps :: Timestamp -> Timestamp -> Timespan
-diffTimestamps (Timestamp tfrom) (Timestamp ttill) = TimespanSecs .
-    round $ tfrom `diffUTCTime` ttill
+diffTimestamps (Timestamp tfrom) (Timestamp ttill) = TimespanUs .
+    round $ (tfrom `diffUTCTime` ttill) * (1000 * 1000)
 
 addTimespan :: Timespan -> Timestamp -> Timestamp
 addTimespan tdiff (Timestamp tfrom) = Timestamp $
-    fromIntegral (timespanMs tdiff `div` 1000) `addUTCTime` tfrom
+    fromRational (fromIntegral (timespanUs tdiff) / (1000 * 1000) :: Rational) `addUTCTime` tfrom
 
+fromNow :: Timestamp -> Iso' Timestamp Timespan
+fromNow now = iso (`diffTimestamps` now) (`addTimespan` now)
 
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where
@@ -951,6 +981,7 @@ instance Binary IdeaVoteLikeKey
 instance Binary IdeaVoteValue
 instance Binary id => Binary (GMetaInfo a id)
 instance Binary Phase
+instance Binary PhaseStatus
 instance Binary SchoolClass
 instance Binary Timespan
 instance Binary Topic
@@ -978,8 +1009,11 @@ makePrisms ''IdeaLocation
 makePrisms ''IdeaSpace
 makePrisms ''IdeaVoteResultValue
 makePrisms ''IdeaVoteValue
+makePrisms ''Freeze
+makePrisms ''PhaseStatus
 makePrisms ''Phase
 makePrisms ''Role
+makePrisms ''Timestamp
 makePrisms ''UpDown
 makePrisms ''UserFirstName
 makePrisms ''UserLastName
@@ -1012,6 +1046,7 @@ makeLenses ''IdeaVote
 makeLenses ''IdeaVoteLikeKey
 makeLenses ''IdeaVoteResult
 makeLenses ''Phase
+makeLenses ''PhaseStatus
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoTopic
@@ -1060,6 +1095,7 @@ deriveSafeCopy 0 'base ''IdeaVoteResult
 deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
 deriveSafeCopy 0 'base ''Phase
+deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoTopic
@@ -1190,12 +1226,6 @@ makeUserView u =
 activeUsers :: [UserView] -> [User]
 activeUsers = mapMaybe (^? activeUser)
 
-notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
-
-winningIdea :: Idea -> Bool
-winningIdea = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
-
 ideaHasCreatorStatement :: Idea -> Bool
 ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
 
@@ -1297,21 +1327,14 @@ ideaLocationMaybeTopicId f = \case
 ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
 ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
 
--- | An alternative implementation with lenses instead of view patterns:
---
--- >>> isFeasibleIdea :: Idea -> Bool
--- >>> isFeasibleIdea idea = case idea ^? ideaResult . _Just . ideaResultValue of
--- >>>     Just (Feasible _) -> True
--- >>>     _ -> False
+isPhaseFrozen :: Phase -> Bool
+isPhaseFrozen = has (phaseWildFrozen . _Frozen <> phaseStatus . _FrozenPhase . like ())
+
 isFeasibleIdea :: Idea -> Bool
-isFeasibleIdea (view ideaJuryResult -> (Just (view ideaJuryResultValue -> Feasible _)))
-    = True
-isFeasibleIdea _
-    = False
+isFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _Feasible
 
 isWinning :: Idea -> Bool
-isWinning (view ideaVoteResult -> (Just (view ideaVoteResultValue -> Winning _))) = True
-isWinning _ = False
+isWinning = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
 
 isWild :: IdeaLocation -> Bool
 isWild (IdeaLocationSpace _)   = True
@@ -1397,12 +1420,14 @@ instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
+instance Aeson.ToJSON Freeze where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaJuryResultType where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaLocation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON IdeaVoteValue where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Phase where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON PhaseStatus where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Timestamp where toJSON = Aeson.gtoJson
@@ -1422,12 +1447,14 @@ instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
+instance Aeson.FromJSON Freeze where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON id => Aeson.FromJSON (GMetaInfo a id) where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaJuryResultType where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaLocation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaSpace where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON IdeaVoteValue where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Phase where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON PhaseStatus where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Role where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON SchoolClass where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Timestamp where parseJSON = Aeson.gparseJson
