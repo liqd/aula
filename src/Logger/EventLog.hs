@@ -51,7 +51,10 @@ data EventLogItemValue user topic idea comment =
   | EventLogUserVotesOnIdea       idea IdeaVoteValue
   | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
       -- FIXME: this should just be a comment key resp. comment, but following the type errors
-      -- reveals some things that are not trivial to refactor.
+      -- reveals some things that are not trivial to refactor.  the current situation is not very
+      -- nice: the first comment is either the target (if a top-level comment) or the parent of the
+      -- target; the second is either absent (for top-level comments) or the target.  this could be
+      -- easier.
   | EventLogUserDelegates         DelegationContext user
   | EventLogTopicNewPhase         topic Phase Phase
   | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)

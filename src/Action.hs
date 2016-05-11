@@ -110,7 +110,7 @@ module Action
 where
 
 import Codec.Picture (DynamicImage)
-import Control.Exception (SomeException)
+import Control.Exception (SomeException, assert)
 import Control.Lens
 import Control.Monad ((>=>), void, when)
 import Control.Monad.Reader (runReader, runReaderT)
@@ -407,7 +407,7 @@ phaseAction topic phasact = do
 -- * Page Handling
 
 type Create  a = forall m. (ActionM m) => Proto a -> m a
-type Create_ a = forall m. (ActionAddDb m) => Proto a -> m ()
+type Create_ a = forall m. (ActionM m) => Proto a -> m ()
 
 createTopic :: Create Topic
 createTopic proto = do
@@ -439,11 +439,18 @@ likeIdea :: ActionAddDb m => AUID Idea -> m ()
 likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
-voteIdea = currentUserAddDb_ . AddVoteToIdea
+voteIdea ideaId vote = do
+    currentUserAddDb_ (AddVoteToIdea ideaId) vote
+    (`eventLogUserVotesOnIdea` vote) =<< equery (maybe404 =<< findIdea ideaId)
+
+-- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
-voteIdeaComment loc ideaId = currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId []
+voteIdeaComment loc ideaId commentId vote = do
+    let ck = CommentKey loc ideaId [] commentId
+    currentUserAddDb_ (AddCommentVote ck) vote
+    eventLogUserVotesOnComment ck vote
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
@@ -684,10 +691,19 @@ eventLogUserVotesOnIdea idea v = do
 
 -- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnComment ::
-      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> Comment -> Maybe Comment -> UpDown -> m ()
-eventLogUserVotesOnComment idea comment mcomment v = do
-    uid <- currentUserId
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionPersist m, ActionLog m)
+      => KeyOf Comment -> UpDown -> m ()
+eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
+    uid      <- currentUserId
+    idea     <- equery $ maybe404 =<< findIdea ideaId
+    (comment, mcomment) <- do
+        child :: Comment <- equery $ maybe404 =<< findComment ck
+        case parentIds of
+            []    -> pure (child, Nothing)
+            [pid] -> do
+                parent <- equery $ maybe404 =<< findComment' ideaId [] pid
+                pure (parent, Just child)
+            _     -> assert False $ error "eventLogUserVotesOnComment: too many parents."
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
 
