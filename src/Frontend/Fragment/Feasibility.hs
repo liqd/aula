@@ -34,14 +34,11 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
                 "nicht durchführbar"
 
     case _ideaJuryResult idea of
-        -- Render the mark buttons only for princical
         Nothing -> nil
-        -- Render result to everyone
         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
             div_ [class_ "info-text m-realised"] $ do
                 h3_ [class_ "info-text-header"] "durchführbar"
                 maybeExpl ^. _Just . to explToHtml
-        -- Render result to everyone
         Just (IdeaJuryResult _ (NotFeasible expl)) -> do
             div_ [class_ "info-text m-unrealised"] $ do
                 h3_ [class_ "info-text-header"] "nicht durchführbar"
