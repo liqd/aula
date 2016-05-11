@@ -47,7 +47,7 @@ import Persistent
     , wildIdeasReachedQuorumBySpace
     )
 
-import qualified Action (createTopic)
+import qualified Action (createTopic, editTopic)
 import qualified Frontend.Constant as Constant
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -367,7 +367,7 @@ editTopic :: ActionM m => AUID Topic -> FormPageHandler m EditTopic
 editTopic topicId =
     formPageHandlerWithMsg
         getPage
-        (update . Persistent.EditTopic topicId)
+        (Action.editTopic topicId)
         "Das Thema wurde gespeichert."
   where
     getPage = equery $ do

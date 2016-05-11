@@ -73,7 +73,9 @@ module Action
 
       -- * page handling
     , createTopic
+    , Action.editTopic
     , createIdea
+    , Action.editIdea
 
       -- * admin activity
     , topicForceNextPhase
@@ -409,18 +411,28 @@ phaseAction topic phasact = do
 type Create  a = forall m. (ActionM m) => Proto a -> m a
 type Create_ a = forall m. (ActionAddDb m) => Proto a -> m ()
 
-createIdea :: Create Idea
-createIdea proto = do
-    idea <- currentUserAddDb AddIdea proto
-    eventLogUserCreatesIdea idea
-    pure idea
-
 createTopic :: Create Topic
 createTopic proto = do
     now <- getCurrentTimestamp
     topic <- currentUserAddDb (AddTopic now) proto
     eventLogUserCreatesTopic topic
     pure topic
+
+editTopic :: ActionM m => AUID Topic -> EditTopicData -> m ()
+editTopic topicId topic = do
+    update $ EditTopic topicId topic
+    eventLogUserEditsTopic =<< equery (maybe404 =<< findTopic topicId)
+
+createIdea :: Create Idea
+createIdea proto = do
+    idea <- currentUserAddDb AddIdea proto
+    eventLogUserCreatesIdea idea
+    pure idea
+
+editIdea :: ActionM m => AUID Idea -> ProtoIdea -> m ()
+editIdea ideaId idea = do
+    update $ EditIdea ideaId idea
+    eventLogUserEditsIdea =<< equery (maybe404 =<< findIdea ideaId)
 
 
 -- * Vote Handling

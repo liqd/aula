@@ -35,7 +35,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , markIdeaInJuryPhase
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
-              , eventLogUserCreatesComment
+              , eventLogUserCreatesComment, eventLogUserEditsComment
               )
 import LifeCycle
 import Frontend.Fragment.Category
@@ -62,10 +62,9 @@ import Persistent
     , maybe404
     )
 
-import qualified Action (createIdea)
+import qualified Action (createIdea, editIdea)
 import qualified Data.Map as Map
 import qualified Frontend.Path as U
-import qualified Persistent.Api as Persistent
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -570,9 +569,10 @@ editIdea :: ActionM m => AUID Idea -> FormPageHandler m EditIdea
 editIdea ideaId =
     formPageHandlerWithMsg
         (EditIdea <$> mquery (findIdea ideaId))
-        (update . Persistent.EditIdea ideaId)
+        (Action.editIdea ideaId)
         "Die Änderungen wurden gespeichert."
 
+-- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
 commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentIdea
 commentIdea loc ideaId =
     formPageHandlerWithMsg
@@ -591,9 +591,9 @@ editComment loc iid cid =
             comment <- maybe404 =<< findComment (commentKey loc iid cid)
             pure $ EditComment idea comment)
         (\desc -> do
-            update $ SetCommentDesc (commentKey loc iid cid) desc
-            -- eventLogUserEditComment comment -- FIXME
-            )
+            let ck = commentKey loc iid cid
+            update $ SetCommentDesc ck desc
+            eventLogUserEditsComment =<< equery (maybe404 =<< findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 editReply :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> FormPageHandler m EditComment
