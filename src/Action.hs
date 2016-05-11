@@ -445,7 +445,7 @@ likeIdea ideaId = do
 voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea ideaId vote = do
     currentUserAddDb_ (AddVoteToIdea ideaId) vote
-    (`eventLogUserVotesOnIdea` (Just vote)) =<< equery (maybe404 =<< findIdea ideaId)
+    (`eventLogUserVotesOnIdea` Just vote) =<< equery (maybe404 =<< findIdea ideaId)
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
