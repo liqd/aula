@@ -7,7 +7,6 @@ import Lucid.Missing              as X
 import Servant                    as X
 import Servant.HTML.Lucid         as X
 import Servant.Missing            as X hiding (redirect)
-import Persistent                 as X
 import Text.Digestive.Form        as X ((.:))
 import Text.Digestive.View        as X (View)
 import Test.QuickCheck            as X (generate, arbitrary)

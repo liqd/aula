@@ -26,7 +26,6 @@ module Action
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
     , ActionAddDb
-    , ActionPhaseChange
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), envRunPersist, envConfig, envLogger
@@ -73,7 +72,9 @@ module Action
 
       -- * page handling
     , createTopic
+    , Action.editTopic
     , createIdea
+    , Action.editIdea
 
       -- * admin activity
     , topicForceNextPhase
@@ -90,7 +91,7 @@ module Action
     , module Action.Smtp
     , sendMailToRole
 
-    -- * moderator's event log
+    -- * moderator's event log (FIXME: this section should all be local to this module)
     , eventLogUserCreatesTopic
     , eventLogUserCreatesIdea
     , eventLogUserCreatesComment
@@ -108,7 +109,7 @@ module Action
 where
 
 import Codec.Picture (DynamicImage)
-import Control.Exception (SomeException)
+import Control.Exception (SomeException, assert)
 import Control.Lens
 import Control.Monad ((>=>), void, when)
 import Control.Monad.Reader (runReader, runReaderT)
@@ -131,7 +132,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
+import Config (Config, GetConfig(..), exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
 import Logger
@@ -193,8 +194,6 @@ instance ThrowSendMailError ActionExcept where
 type ActionSendMail = HasSendMail ActionExcept ActionEnv
 
 type ActionAddDb m = (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m)
-
-type ActionPhaseChange m = (ActionAddDb m, ActionSendMail m)
 
 type ActionM m =
       ( ActionLog m
@@ -343,7 +342,7 @@ deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionPhaseChange m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionM m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -351,7 +350,7 @@ topicPhaseChange topic change = do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPhaseChange m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -362,9 +361,7 @@ sendMailToRole role msg = do
     forM_ users $ \user ->
         sendMailToUser [IgnoreMissingEmails] user msg
 
-phaseAction
-    :: (MonadReaderConfig r m, ActionPhaseChange m)
-    => Topic -> PhaseAction -> m ()
+phaseAction :: (ActionM m) => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
     cfg <- viewConfig
     let topicTemplate addr phase = ST.unlines
@@ -407,13 +404,7 @@ phaseAction topic phasact = do
 -- * Page Handling
 
 type Create  a = forall m. (ActionM m) => Proto a -> m a
-type Create_ a = forall m. (ActionAddDb m) => Proto a -> m ()
-
-createIdea :: Create Idea
-createIdea proto = do
-    idea <- currentUserAddDb AddIdea proto
-    eventLogUserCreatesIdea idea
-    pure idea
+type Create_ a = forall m. (ActionM m) => Proto a -> m ()
 
 createTopic :: Create Topic
 createTopic proto = do
@@ -422,26 +413,58 @@ createTopic proto = do
     eventLogUserCreatesTopic topic
     pure topic
 
+editTopic :: ActionM m => AUID Topic -> EditTopicData -> m ()
+editTopic topicId topic = do
+    update $ EditTopic topicId topic
+    eventLogUserEditsTopic =<< mquery (findTopic topicId)
+
+createIdea :: Create Idea
+createIdea proto = do
+    idea <- currentUserAddDb AddIdea proto
+    eventLogUserCreatesIdea idea
+    pure idea
+
+editIdea :: ActionM m => AUID Idea -> ProtoIdea -> m ()
+editIdea ideaId idea = do
+    update $ EditIdea ideaId idea
+    eventLogUserEditsIdea =<< mquery (findIdea ideaId)
+
 
 -- * Vote Handling
 
-likeIdea :: ActionAddDb m => AUID Idea -> m ()
-likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
+likeIdea :: ActionM m => AUID Idea -> m ()
+likeIdea ideaId = do
+    currentUserAddDb_ (AddLikeToIdea ideaId) ()
+    do (idea, info) <- equery $ do
+          ide <- maybe404 =<< findIdea ideaId
+          inf <- getListInfoForIdea ide
+          pure (ide, inf)
+       when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
-voteIdea = currentUserAddDb_ . AddVoteToIdea
+voteIdea ideaId vote = do
+    currentUserAddDb_ (AddVoteToIdea ideaId) vote
+    (`eventLogUserVotesOnIdea` Just vote) =<< mquery (findIdea ideaId)
+
+-- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
-voteIdeaComment loc ideaId = currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId []
+voteIdeaComment loc ideaId commentId vote = do
+    let ck = CommentKey loc ideaId [] commentId
+    currentUserAddDb_ (AddCommentVote ck) vote
+    eventLogUserVotesOnComment ck vote
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
 voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
-removeVote :: (ActionPersist m) => AUID Idea -> AUID User -> m ()
-removeVote = update <..> RemoveVoteFromIdea
+-- | FIXME: don't pass user as an explicit argument here.  do it like voteIdea.
+removeVote :: (ActionM m) => AUID Idea -> AUID User -> m ()
+removeVote ideaId user = do
+    update $ RemoveVoteFromIdea ideaId user
+    (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
 
 
 -- * Reporting and deleting comments
@@ -499,7 +522,7 @@ reportIdeaCommentReply
 reportIdeaCommentReply loc ideaId parentCommentId commentId
     = reportCommentById (CommentKey loc ideaId [parentCommentId] commentId)
 
-getIdeaTopicInJuryPhase :: ActionPhaseChange m => AUID Idea -> m Topic
+getIdeaTopicInJuryPhase :: ActionM m => AUID Idea -> m Topic
 getIdeaTopicInJuryPhase iid = do
     -- FIXME: should this be one transaction?
     idea  <- mquery $ findIdea iid
@@ -515,15 +538,16 @@ markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     topic <- getIdeaTopicInJuryPhase iid
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
-    eventLogUserMarksIdeaFeasible iid (ideaJuryResultValueToType rv)
+    eventLogUserMarksIdeaFeasible iid . Just $ ideaJuryResultValueToType rv
     checkCloseJuryPhase topic
 
-unmarkIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> m ()
+unmarkIdeaInJuryPhase :: ActionM m => AUID Idea -> m ()
 unmarkIdeaInJuryPhase iid = do
     void $ getIdeaTopicInJuryPhase iid
+    eventLogUserMarksIdeaFeasible iid Nothing
     update $ RemoveIdeaJuryResult iid
 
-checkCloseJuryPhase :: ActionPhaseChange m => Topic -> m ()
+checkCloseJuryPhase :: ActionM m => Topic -> m ()
 checkCloseJuryPhase topic = do
     -- FIXME: should this be one transaction?  [~~mf] -- I think so, and the same above. I think an
     -- alternative is to check (in the operations above that modify the DB, internally, necessarily
@@ -555,18 +579,17 @@ revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionLog m, ActionPhaseChange m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInRefinementTimedOut tid = do
-    topic  <- equery $ maybe404 =<< findTopic tid
+    topic  <- mquery $ findTopic tid
     topicTimeout RefinementPhaseTimeOut tid
-    topic' <- equery $ maybe404 =<< findTopic tid
+    topic' <- mquery $ findTopic tid
     eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
 
-topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
-topicInVotingResetToJury
-    :: (ActionPhaseChange m) => AUID Topic -> m ()
+topicInVotingResetToJury :: (ActionM m) => AUID Topic -> m ()
 topicInVotingResetToJury tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
@@ -633,7 +656,6 @@ eventLogUserCreatesComment comment = do
     eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
         EventLogUserCreates (Right3 $ comment ^. _Key)
 
--- FIXME: throw this in all applicable situations.
 eventLogUserEditsTopic :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> m ()
 eventLogUserEditsTopic topic = do
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
@@ -642,13 +664,11 @@ eventLogUserEditsTopic topic = do
             -- 'eventLogUserEditsComment'.
         EventLogUserEdits (Left3 $ topic ^. _Key)
 
--- FIXME: throw this in all applicable situations.
 eventLogUserEditsIdea :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
 eventLogUserEditsIdea idea = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
         EventLogUserEdits (Middle3 $ idea ^. _Key)
 
--- FIXME: throw this in all applicable situations.
 eventLogUserEditsComment :: (ActionCurrentTimestamp m, ActionLog m) => Comment -> m ()
 eventLogUserEditsComment comment = do
     eventLog (comment ^. _Key . ckIdeaLocation . ideaLocationSpace) (comment ^. createdBy) $
@@ -656,28 +676,35 @@ eventLogUserEditsComment comment = do
 
 eventLogUserMarksIdeaFeasible ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
-      => AUID Idea -> IdeaJuryResultType -> m ()
+      => AUID Idea -> Maybe IdeaJuryResultType -> m ()
 eventLogUserMarksIdeaFeasible iid jrt = do
     uid <- currentUserId
-    idea <- equery $ maybe404 =<< findIdea iid
+    idea <- mquery $ findIdea iid
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserMarksIdeaFeasible iid jrt
 
--- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnIdea ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> IdeaVoteValue -> m ()
+      => Idea -> Maybe IdeaVoteValue -> m ()
 eventLogUserVotesOnIdea idea v = do
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnIdea (idea ^. _Key) v
 
--- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnComment ::
-      (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> Comment -> Maybe Comment -> UpDown -> m ()
-eventLogUserVotesOnComment idea comment mcomment v = do
+      (ActionUserHandler m, ActionCurrentTimestamp m, ActionPersist m, ActionLog m)
+      => KeyOf Comment -> UpDown -> m ()
+eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
     uid <- currentUserId
+    idea <- mquery $ findIdea ideaId
+    (comment, mcomment) <- do
+        child :: Comment <- mquery $ findComment ck
+        case parentIds of
+            []    -> pure (child, Nothing)
+            [pid] -> do
+                parent <- mquery $ findComment' ideaId [] pid
+                pure (parent, Just child)
+            _     -> assert False $ error "eventLogUserVotesOnComment: too many parents."
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
 
@@ -690,9 +717,9 @@ eventLogUserDelegates ctx toUser = do
     ispace <- case ctx of
         DlgCtxGlobal           -> pure . ClassSpace $ fromUser ^?! userRole . roleSchoolClass
         DlgCtxIdeaSpace ispace -> pure ispace
-        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> equery (maybe404 =<< findTopic tid)
+        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
-                                  <$> equery (maybe404 =<< findIdea iid)
+                                  <$> mquery (findIdea iid)
     eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
 
 -- FIXME: throw this in all applicable situations.
@@ -766,13 +793,13 @@ class WarmUp' m a where
     warmUp' :: KeyOf a -> m a
 
 instance ActionM m => WarmUp' m User where
-    warmUp' k = equery (maybe404 =<< findUser k)
+    warmUp' k = mquery (findUser k)
 
 instance ActionM m => WarmUp' m Topic where
-    warmUp' k = equery (maybe404 =<< findTopic k)
+    warmUp' k = mquery (findTopic k)
 
 instance ActionM m => WarmUp' m Idea where
-    warmUp' k = equery (maybe404 =<< findIdea k)
+    warmUp' k = mquery (findIdea k)
 
 instance ActionM m => WarmUp' m Comment where
-    warmUp' k = equery (maybe404 =<< findComment k)
+    warmUp' k = mquery (findComment k)

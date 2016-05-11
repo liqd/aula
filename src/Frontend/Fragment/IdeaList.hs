@@ -18,6 +18,7 @@ import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
+import Persistent (ListInfoForIdea(ListInfoForIdea))
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
