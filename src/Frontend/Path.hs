@@ -221,7 +221,7 @@ listIdeas loc = IdeaPath loc $ ListIdeas Ideas Nothing
 listIdeasWithQuery :: IdeasFilter -> IdeaLocation -> IdeasQuery -> Main
 listIdeasWithQuery ideas loc = IdeaPath loc . ListIdeas ideas . Just
 
-listTopicIdeas :: IdeasFilter ->Topic -> Main
+listTopicIdeas :: IdeasFilter -> Topic -> Main
 listTopicIdeas ideas topic =
     IdeaPath (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id))
              (ListIdeas ideas Nothing)
@@ -233,24 +233,24 @@ adminViewClasses :: AdminMode
 adminViewClasses = AdminViewClasses Nothing
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode (ListIdeas Ideas mq)  root = renderFilter mq $ root </> "ideas"
-ideaMode (ListIdeas VotingIdeas mq) root = renderFilter mq $ root </> "ideas" </> "voting"
+ideaMode (ListIdeas Ideas mq)        root = renderFilter mq $ root </> "ideas"
+ideaMode (ListIdeas VotingIdeas mq)  root = renderFilter mq $ root </> "ideas" </> "voting"
 ideaMode (ListIdeas WinningIdeas mq) root = renderFilter mq $ root </> "ideas" </> "winning"
-ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
-                                  root </> "idea" </> uriPart i </> "view"
-ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
-ideaMode (LikeIdea i)      root = root </> "idea" </> uriPart i </> "like"
-ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
-                                       </> uriPart v
-ideaMode (RemoveVote i u)  root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
-ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
-                                       </> uriPart v
-ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment ck m)  root = commentMode ck m root
-ideaMode CreateIdea        root = root </> "idea" </> "create"
-ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
-ideaMode (MarkWinnerIdea i)   root = root </> "idea" </> uriPart i </> "markwinner"
-ideaMode (RevokeWinnerIdea i) root = root </> "idea" </> uriPart i </> "revokewinner"
+ideaMode (ViewIdea i mc)             root = maybe id (flip (</#>) . anchor) mc $
+                                            root </> "idea" </> uriPart i </> "view"
+ideaMode (EditIdea i)                root = root </> "idea" </> uriPart i </> "edit"
+ideaMode (LikeIdea i)                root = root </> "idea" </> uriPart i </> "like"
+ideaMode (VoteIdea i v)              root = root </> "idea" </> uriPart i </> "vote"
+                                                 </> uriPart v
+ideaMode (RemoveVote i u)            root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
+ideaMode (JudgeIdea i v)             root = root </> "idea" </> uriPart i </> "jury"
+                                                 </> uriPart v
+ideaMode (CommentIdea i)             root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (OnComment ck m)            root = commentMode ck m root
+ideaMode CreateIdea                  root = root </> "idea" </> "create"
+ideaMode (CreatorStatement i)        root = root </> "idea" </> uriPart i </> "statement"
+ideaMode (MarkWinnerIdea i)          root = root </> "idea" </> uriPart i </> "markwinner"
+ideaMode (RevokeWinnerIdea i)        root = root </> "idea" </> uriPart i </> "revokewinner"
 
 anchor :: IsString s => AUID a -> s
 anchor (AUID c) = fromString $ "auid-" <> show c
