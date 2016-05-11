@@ -530,11 +530,6 @@ followsPhase (PhaseVoting _) PhaseJury           = True
 followsPhase PhaseResult     (PhaseVoting _)     = True
 followsPhase _               _                   = False
 
-wildPhase :: Phase -> Bool
-wildPhase = \case
-    PhaseWildIdea     -> True
-    PhaseWildFrozen   -> True
-    _                 -> False
 
 -- * user
 
