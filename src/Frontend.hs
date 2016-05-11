@@ -48,7 +48,8 @@ import Frontend.Page as Page
 import Frontend.Prelude
 import Frontend.Testing
 import Logger
-import Persistent.Api
+import Persistent.Api (RunPersist)
+import Persistent (withPersist, getActiveUsers)
 
 import qualified Action
 import qualified Backend

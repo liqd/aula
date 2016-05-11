@@ -43,9 +43,24 @@ import Frontend.Fragment.Comment
 import Frontend.Fragment.Feasibility
 import Frontend.Fragment.Note
 import Frontend.Fragment.QuorumBar
-import Frontend.Prelude hiding ((<|>), editIdea)
+import Frontend.Prelude hiding ((<|>))
 import Frontend.Validation
-import Persistent.Api hiding (EditIdea)
+import Persistent.Api
+    ( AddCommentToIdea(AddCommentToIdea)
+    , AddReply(AddReply)
+    , SetCommentDesc(SetCommentDesc)
+    )
+import Persistent.Idiom
+    ( ListInfoForIdea(ListInfoForIdea)
+    )
+import Persistent
+    ( findComment
+    , findIdea
+    , getListInfoForIdea
+    , ideaReachedQuorum
+    , ideaTopic
+    , maybe404
+    )
 
 import qualified Action (createIdea)
 import qualified Data.Map as Map

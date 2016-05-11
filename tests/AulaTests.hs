@@ -36,6 +36,7 @@ import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
 import Arbitrary (arb, constantSampleTimestamp)
 import Logger (LogLevel(..), nullLog)
+import Persistent (mkMetaInfo)
 
 import Frontend.Constant as Constant
 

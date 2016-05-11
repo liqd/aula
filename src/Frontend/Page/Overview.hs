@@ -21,6 +21,7 @@ import LifeCycle
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.QuorumBar ()
 import Frontend.Prelude
+import Persistent (findWildIdeasBySpace, getListInfoForIdea, findTopicsBySpace)
 
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
