@@ -1,6 +1,6 @@
 .markdown {
     ul, ol {
-        @include rem(margin-left, 1rem);
+        @include rem(margin, 0 0 1rem 1rem);
 
         ul {
             list-style-type: circle;
@@ -9,6 +9,10 @@
         ol {
             list-style-type: lower-roman;
         }
+    }
+
+    blockquote {
+        @include rem(margin-left, 2rem);
     }
 
     ul {
@@ -44,6 +48,6 @@
     }
 
     p {
-        @include rem(margin-bottom, 10px);
+        @include rem(margin-bottom, 1rem);
     }
 }
