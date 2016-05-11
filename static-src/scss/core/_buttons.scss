@@ -20,6 +20,11 @@
     [class^="icon-"] {
         @include rem(margin-right, 5px);
     }
+
+    &.m-large {
+        @include rem(font-size, 20px);
+        line-height: $button-height + 10px;
+    }
 }
 
 .btn, .btn-plain {
