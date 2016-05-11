@@ -133,7 +133,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), MonadReaderConfig, exposedUrl)
+import Config (Config, GetConfig(..), exposedUrl)
 import Data.UriPath (absoluteUriPath, relPath)
 import LifeCycle
 import Logger
@@ -345,7 +345,7 @@ deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionPhaseChange m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionM m) => Topic -> PhaseChange -> m ()
 topicPhaseChange topic change = do
     case phaseTrans (topic ^. topicPhase) change of
         Nothing -> throwError500 "Invalid phase transition"
@@ -353,7 +353,7 @@ topicPhaseChange topic change = do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
 
-topicTimeout :: (ActionPhaseChange m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m ()
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -364,9 +364,7 @@ sendMailToRole role msg = do
     forM_ users $ \user ->
         sendMailToUser [IgnoreMissingEmails] user msg
 
-phaseAction
-    :: (MonadReaderConfig r m, ActionPhaseChange m)
-    => Topic -> PhaseAction -> m ()
+phaseAction :: (ActionM m) => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
     cfg <- viewConfig
     let topicTemplate addr phase = ST.unlines
@@ -527,15 +525,16 @@ markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     topic <- getIdeaTopicInJuryPhase iid
     currentUserAddDb_ (AddIdeaJuryResult iid) rv
-    eventLogUserMarksIdeaFeasible iid (ideaJuryResultValueToType rv)
+    eventLogUserMarksIdeaFeasible iid . Just $ ideaJuryResultValueToType rv
     checkCloseJuryPhase topic
 
-unmarkIdeaInJuryPhase :: ActionPhaseChange m => AUID Idea -> m ()
+unmarkIdeaInJuryPhase :: ActionM m => AUID Idea -> m ()
 unmarkIdeaInJuryPhase iid = do
     void $ getIdeaTopicInJuryPhase iid
+    eventLogUserMarksIdeaFeasible iid Nothing
     update $ RemoveIdeaJuryResult iid
 
-checkCloseJuryPhase :: ActionPhaseChange m => Topic -> m ()
+checkCloseJuryPhase :: ActionM m => Topic -> m ()
 checkCloseJuryPhase topic = do
     -- FIXME: should this be one transaction?  [~~mf] -- I think so, and the same above. I think an
     -- alternative is to check (in the operations above that modify the DB, internally, necessarily
@@ -567,18 +566,17 @@ revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 -- * Topic handling
 
-topicInRefinementTimedOut :: (ActionLog m, ActionPhaseChange m) => AUID Topic -> m ()
+topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInRefinementTimedOut tid = do
     topic  <- equery $ maybe404 =<< findTopic tid
     topicTimeout RefinementPhaseTimeOut tid
     topic' <- equery $ maybe404 =<< findTopic tid
     eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
 
-topicInVotingTimedOut :: (ActionPhaseChange m) => AUID Topic -> m ()
+topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
-topicInVotingResetToJury
-    :: (ActionPhaseChange m) => AUID Topic -> m ()
+topicInVotingResetToJury :: (ActionM m) => AUID Topic -> m ()
 topicInVotingResetToJury tid = do
     topic <- mquery $ findTopic tid
     case topic ^. topicPhase of
@@ -668,7 +666,7 @@ eventLogUserEditsComment comment = do
 
 eventLogUserMarksIdeaFeasible ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
-      => AUID Idea -> IdeaJuryResultType -> m ()
+      => AUID Idea -> Maybe IdeaJuryResultType -> m ()
 eventLogUserMarksIdeaFeasible iid jrt = do
     uid <- currentUserId
     idea <- equery $ maybe404 =<< findIdea iid

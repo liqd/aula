@@ -47,7 +47,7 @@ data EventLogItem user topic idea comment =
 data EventLogItemValue user topic idea comment =
     EventLogUserCreates           (Either3 topic idea comment)
   | EventLogUserEdits             (Either3 topic idea comment)
-  | EventLogUserMarksIdeaFeasible idea IdeaJuryResultType
+  | EventLogUserMarksIdeaFeasible idea (Maybe IdeaJuryResultType)
   | EventLogUserVotesOnIdea       idea IdeaVoteValue
   | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
       -- FIXME: this should just be a comment key resp. comment, but following the type errors
@@ -133,12 +133,12 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
         f (EventLogUserEdits obj) = CSV.toRecord
             [ "bearbeitet " <> objDesc obj <> ".", objLink obj ]
 
-        f (EventLogUserMarksIdeaFeasible (Middle3 -> idea) isFeasible) = CSV.toRecord
-            [ "bewertet Idee als " <> what, objLink idea ]
-          where
-            what = case isFeasible of
-                     IdeaFeasible    -> "durchführbar."
-                     IdeaNotFeasible -> "nicht durchführbar."
+        f (EventLogUserMarksIdeaFeasible (Middle3 -> idea) mIsFeasible) = case mIsFeasible of
+            Nothing           -> CSV.toRecord [ "löscht Durchführbarkeitsbewertung", objLink idea ]
+            (Just isFeasible) -> let what = case isFeasible of
+                                              IdeaFeasible    -> "durchführbar."
+                                              IdeaNotFeasible -> "nicht durchführbar."
+                                 in CSV.toRecord [ "bewertet Idee als " <> what, objLink idea ]
 
         f (EventLogUserVotesOnIdea (Middle3 -> idea) voteValue) = CSV.toRecord
             [ "stimmt " <> how <> " " <> objDesc idea <> ".", objLink idea ]
