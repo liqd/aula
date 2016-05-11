@@ -593,7 +593,7 @@ editComment loc iid cid =
         (\desc -> do
             let ck = commentKey loc iid cid
             update $ SetCommentDesc ck desc
-            eventLogUserEditsComment =<< equery (maybe404 =<< findComment ck))
+            eventLogUserEditsComment =<< mquery (findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
@@ -620,7 +620,7 @@ editReply loc iid pcid cid =
         (\desc -> do
             let ck = replyKey loc iid pcid cid
             update $ SetCommentDesc ck desc
-            eventLogUserEditsComment =<< equery (maybe404 =<< findComment ck))
+            eventLogUserEditsComment =<< mquery (findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 -- FIXME: Read the idea state from the db

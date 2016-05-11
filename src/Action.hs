@@ -26,7 +26,6 @@ module Action
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
     , ActionAddDb
-    , ActionPhaseChange
     , ActionError
     , ActionExcept(..)
     , ActionEnv(..), envRunPersist, envConfig, envLogger
@@ -195,8 +194,6 @@ instance ThrowSendMailError ActionExcept where
 type ActionSendMail = HasSendMail ActionExcept ActionEnv
 
 type ActionAddDb m = (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m)
-
-type ActionPhaseChange m = (ActionAddDb m, ActionSendMail m)
 
 type ActionM m =
       ( ActionLog m
@@ -419,7 +416,7 @@ createTopic proto = do
 editTopic :: ActionM m => AUID Topic -> EditTopicData -> m ()
 editTopic topicId topic = do
     update $ EditTopic topicId topic
-    eventLogUserEditsTopic =<< equery (maybe404 =<< findTopic topicId)
+    eventLogUserEditsTopic =<< mquery (findTopic topicId)
 
 createIdea :: Create Idea
 createIdea proto = do
@@ -430,7 +427,7 @@ createIdea proto = do
 editIdea :: ActionM m => AUID Idea -> ProtoIdea -> m ()
 editIdea ideaId idea = do
     update $ EditIdea ideaId idea
-    eventLogUserEditsIdea =<< equery (maybe404 =<< findIdea ideaId)
+    eventLogUserEditsIdea =<< mquery (findIdea ideaId)
 
 
 -- * Vote Handling
@@ -438,14 +435,14 @@ editIdea ideaId idea = do
 likeIdea :: ActionM m => AUID Idea -> m ()
 likeIdea ideaId = do
     currentUserAddDb_ (AddLikeToIdea ideaId) ()
-    do idea <- equery $ maybe404 =<< findIdea ideaId
+    do idea <- mquery $ findIdea ideaId
        info <- equery $ getListInfoForIdea idea
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
 voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea ideaId vote = do
     currentUserAddDb_ (AddVoteToIdea ideaId) vote
-    (`eventLogUserVotesOnIdea` Just vote) =<< equery (maybe404 =<< findIdea ideaId)
+    (`eventLogUserVotesOnIdea` Just vote) =<< mquery (findIdea ideaId)
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
@@ -465,7 +462,7 @@ voteIdeaCommentReply loc ideaId commentId =
 removeVote :: (ActionM m) => AUID Idea -> AUID User -> m ()
 removeVote ideaId user = do
     update $ RemoveVoteFromIdea ideaId user
-    (`eventLogUserVotesOnIdea` Nothing) =<< equery (maybe404 =<< findIdea ideaId)
+    (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
 
 
 -- * Reporting and deleting comments
@@ -523,7 +520,7 @@ reportIdeaCommentReply
 reportIdeaCommentReply loc ideaId parentCommentId commentId
     = reportCommentById (CommentKey loc ideaId [parentCommentId] commentId)
 
-getIdeaTopicInJuryPhase :: ActionPhaseChange m => AUID Idea -> m Topic
+getIdeaTopicInJuryPhase :: ActionM m => AUID Idea -> m Topic
 getIdeaTopicInJuryPhase iid = do
     -- FIXME: should this be one transaction?
     idea  <- mquery $ findIdea iid
@@ -582,9 +579,9 @@ revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInRefinementTimedOut tid = do
-    topic  <- equery $ maybe404 =<< findTopic tid
+    topic  <- mquery $ findTopic tid
     topicTimeout RefinementPhaseTimeOut tid
-    topic' <- equery $ maybe404 =<< findTopic tid
+    topic' <- mquery $ findTopic tid
     eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
 
 topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
@@ -680,7 +677,7 @@ eventLogUserMarksIdeaFeasible ::
       => AUID Idea -> Maybe IdeaJuryResultType -> m ()
 eventLogUserMarksIdeaFeasible iid jrt = do
     uid <- currentUserId
-    idea <- equery $ maybe404 =<< findIdea iid
+    idea <- mquery $ findIdea iid
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserMarksIdeaFeasible iid jrt
 
@@ -696,14 +693,14 @@ eventLogUserVotesOnComment ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionPersist m, ActionLog m)
       => KeyOf Comment -> UpDown -> m ()
 eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
-    uid      <- currentUserId
-    idea     <- equery $ maybe404 =<< findIdea ideaId
+    uid <- currentUserId
+    idea <- mquery $ findIdea ideaId
     (comment, mcomment) <- do
-        child :: Comment <- equery $ maybe404 =<< findComment ck
+        child :: Comment <- mquery $ findComment ck
         case parentIds of
             []    -> pure (child, Nothing)
             [pid] -> do
-                parent <- equery $ maybe404 =<< findComment' ideaId [] pid
+                parent <- mquery $ findComment' ideaId [] pid
                 pure (parent, Just child)
             _     -> assert False $ error "eventLogUserVotesOnComment: too many parents."
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
@@ -718,9 +715,9 @@ eventLogUserDelegates ctx toUser = do
     ispace <- case ctx of
         DlgCtxGlobal           -> pure . ClassSpace $ fromUser ^?! userRole . roleSchoolClass
         DlgCtxIdeaSpace ispace -> pure ispace
-        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> equery (maybe404 =<< findTopic tid)
+        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
-                                  <$> equery (maybe404 =<< findIdea iid)
+                                  <$> mquery (findIdea iid)
     eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
 
 -- FIXME: throw this in all applicable situations.
@@ -794,13 +791,13 @@ class WarmUp' m a where
     warmUp' :: KeyOf a -> m a
 
 instance ActionM m => WarmUp' m User where
-    warmUp' k = equery (maybe404 =<< findUser k)
+    warmUp' k = mquery (findUser k)
 
 instance ActionM m => WarmUp' m Topic where
-    warmUp' k = equery (maybe404 =<< findTopic k)
+    warmUp' k = mquery (findTopic k)
 
 instance ActionM m => WarmUp' m Idea where
-    warmUp' k = equery (maybe404 =<< findIdea k)
+    warmUp' k = mquery (findIdea k)
 
 instance ActionM m => WarmUp' m Comment where
-    warmUp' k = equery (maybe404 =<< findComment k)
+    warmUp' k = mquery (findComment k)
