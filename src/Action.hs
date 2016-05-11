@@ -441,7 +441,7 @@ likeIdea ideaId = currentUserAddDb_ (AddLikeToIdea ideaId) ()
 voteIdea :: AUID Idea -> Create_ IdeaVote
 voteIdea ideaId vote = do
     currentUserAddDb_ (AddVoteToIdea ideaId) vote
-    (`eventLogUserVotesOnIdea` vote) =<< equery (maybe404 =<< findIdea ideaId)
+    (`eventLogUserVotesOnIdea` (Just vote)) =<< equery (maybe404 =<< findIdea ideaId)
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
@@ -457,8 +457,11 @@ voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Commen
 voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
-removeVote :: (ActionPersist m) => AUID Idea -> AUID User -> m ()
-removeVote = update <..> RemoveVoteFromIdea
+-- | FIXME: don't pass user as an explicit argument here.  do it like voteIdea.
+removeVote :: (ActionM m) => AUID Idea -> AUID User -> m ()
+removeVote ideaId user = do
+    update $ RemoveVoteFromIdea ideaId user
+    (`eventLogUserVotesOnIdea` Nothing) =<< equery (maybe404 =<< findIdea ideaId)
 
 
 -- * Reporting and deleting comments
@@ -683,7 +686,7 @@ eventLogUserMarksIdeaFeasible iid jrt = do
 -- FIXME: throw this in all applicable situations.
 eventLogUserVotesOnIdea ::
       (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> IdeaVoteValue -> m ()
+      => Idea -> Maybe IdeaVoteValue -> m ()
 eventLogUserVotesOnIdea idea v = do
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $

@@ -48,7 +48,7 @@ data EventLogItemValue user topic idea comment =
     EventLogUserCreates           (Either3 topic idea comment)
   | EventLogUserEdits             (Either3 topic idea comment)
   | EventLogUserMarksIdeaFeasible idea (Maybe IdeaJuryResultType)
-  | EventLogUserVotesOnIdea       idea IdeaVoteValue
+  | EventLogUserVotesOnIdea       idea (Maybe IdeaVoteValue)
   | EventLogUserVotesOnComment    idea comment (Maybe comment) UpDown
       -- FIXME: this should just be a comment key resp. comment, but following the type errors
       -- reveals some things that are not trivial to refactor.  the current situation is not very
@@ -143,7 +143,9 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
                                               IdeaNotFeasible -> "nicht durchführbar."
                                  in CSV.toRecord [ "bewertet Idee als " <> what, objLink idea ]
 
-        f (EventLogUserVotesOnIdea (Middle3 -> idea) voteValue) = CSV.toRecord
+        f (EventLogUserVotesOnIdea (Middle3 -> idea) Nothing) = CSV.toRecord
+            [ "zieht seine Stimme für oder gegen " <> objDesc idea <> " zurück.", objLink idea ]
+        f (EventLogUserVotesOnIdea (Middle3 -> idea) (Just voteValue)) = CSV.toRecord
             [ "stimmt " <> how <> " " <> objDesc idea <> ".", objLink idea ]
           where
             how = case voteValue of
