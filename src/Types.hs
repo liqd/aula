@@ -887,12 +887,12 @@ timespanUs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
 timespanUs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
 
 timespanMs :: Timespan -> Int
-timespanMs (TimespanUs    i) = fromIntegral   i
-timespanMs (TimespanMs    i) = fromIntegral $ i * 1000
-timespanMs (TimespanSecs  i) = fromIntegral $ i * (1000 * 1000)
-timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
-timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
-timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
+timespanMs (TimespanUs    i) = fromIntegral $ i `div` 1000
+timespanMs (TimespanMs    i) = fromIntegral   i
+timespanMs (TimespanSecs  i) = fromIntegral $ i * 1000
+timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 60)
+timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 3600)
+timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 3600 * 24)
 
 timespanDays :: Timespan -> Int
 timespanDays (TimespanUs    i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
@@ -934,12 +934,12 @@ instance Aeson.ToJSON Timespan where
         render i unit = Aeson.String . cs $ show i <> unit
 
 diffTimestamps :: Timestamp -> Timestamp -> Timespan
-diffTimestamps (Timestamp tfrom) (Timestamp ttill) = TimespanSecs .
-    round $ tfrom `diffUTCTime` ttill
+diffTimestamps (Timestamp tfrom) (Timestamp ttill) = TimespanUs .
+    round $ (tfrom `diffUTCTime` ttill) * (1000 * 1000)
 
 addTimespan :: Timespan -> Timestamp -> Timestamp
 addTimespan tdiff (Timestamp tfrom) = Timestamp $
-    fromIntegral (timespanMs tdiff `div` 1000) `addUTCTime` tfrom
+    fromRational (fromIntegral (timespanUs tdiff) / (1000 * 1000) :: Rational) `addUTCTime` tfrom
 
 fromNow :: Timestamp -> Iso' Timestamp Timespan
 fromNow now = iso (`diffTimestamps` now) (`addTimespan` now)
