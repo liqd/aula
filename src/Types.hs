@@ -1234,12 +1234,6 @@ activeUsers = mapMaybe (^? activeUser)
 notFeasibleIdea :: Idea -> Bool
 notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
 
-feasibleIdea :: Idea -> Bool
-feasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _Feasible
-
-winningIdea :: Idea -> Bool
-winningIdea = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
-
 ideaHasCreatorStatement :: Idea -> Bool
 ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
 

@@ -318,8 +318,8 @@ makeFormIdeaSelection preselected ideas =
 
 ideaFilterForTab :: ViewTopicTab -> [Idea] -> [Idea]
 ideaFilterForTab = \case
-    TabIdeas WinningIdeas _ -> filter winningIdea
-    TabIdeas VotingIdeas  _ -> filter feasibleIdea
+    TabIdeas WinningIdeas _ -> filter isWinning
+    TabIdeas VotingIdeas  _ -> filter isFeasibleIdea
     _                       -> id
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
