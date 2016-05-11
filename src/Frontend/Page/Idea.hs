@@ -618,9 +618,9 @@ editReply loc iid pcid cid =
             comment <- maybe404 =<< findComment (replyKey loc iid pcid cid)
             pure $ EditReply idea comment)
         (\desc -> do
-            update $ SetCommentDesc (replyKey loc iid pcid cid) desc
-            -- eventLogUserEditComment comment -- FIXME
-            )
+            let ck = replyKey loc iid pcid cid
+            update $ SetCommentDesc ck desc
+            eventLogUserEditsComment =<< equery (maybe404 =<< findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
 -- FIXME: Read the idea state from the db
