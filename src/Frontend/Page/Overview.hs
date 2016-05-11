@@ -117,7 +117,7 @@ instance ToHtml PageIdeasInDiscussion where
                 -- user experience reasons.
                 let userCaps = userCapabilities space (ctx ^. renderContextUser . userRole)
                 when (CanCreateTopic `elem` userCaps) $
-                    button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta"] "+ Neues Thema"
+                    button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta m-large"] "+ Neues Thema"
 
             forM_ topics $ \topic -> do
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
