@@ -80,3 +80,12 @@ body.m-shadow {
     clear: left;
     text-align: center;
 }
+
+.container-info {
+    @extend .markdown;
+    @include rem(font-size, $font-size-smaller);
+    @include rem(margin-bottom, 20px);
+    @include rem(padding, 10px 15px);
+    background: $color-grey-lighter;
+    border-radius: 10px;
+}
