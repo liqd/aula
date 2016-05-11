@@ -25,11 +25,11 @@ module Frontend.Page.Topic
 where
 
 import Control.Category ((.))
+import Control.Exception (assert)
 import Data.List (sortBy)
 import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
-import Control.Exception (assert)
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude hiding (moveIdeasToLocation, editTopic)
 import Frontend.Validation hiding (space, tab)
@@ -210,8 +210,9 @@ displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
   where
     displayTimespan t = case timespanDays t of
-        1 -> "(Endet heute)"
-        2 -> "(Endet morgen)"
+        -- n | n < 0 -> assert False $ error "displayPhaseTime"  (this breaks the test suite)
+        0 -> "(Endet heute)"
+        1 -> "(Endet morgen)"
         n -> "(Endet in " <> show n <> " Tagen)"
 
 validateTopicTitle :: FormCS m r s
