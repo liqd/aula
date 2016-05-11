@@ -125,8 +125,9 @@ $author-image-size: 37px;
         float: right;
     }
 
-    .comment-footer-button {
+    .comment-footer-button, form {
         @include rem(margin-right, 15px);
+        display: inline-block;
 
         &:last-child {
             margin-right: 0;
