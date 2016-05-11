@@ -120,7 +120,7 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
         objLink = (domainUrl <>) . absoluteUriPath . relPath . objLink'
 
         objLink' :: ContentWarm -> U.Main
-        objLink' (Left3   t) = U.listTopicIdeas Ideas t
+        objLink' (Left3   t) = U.listTopicIdeas ListIdeasInTopicTabAll t
         objLink' (Middle3 i) = U.IdeaPath (i ^. ideaLocation) (U.ViewIdea (i ^. _Id) Nothing)
         objLink' (Right3  c) = U.IdeaPath iloc (U.ViewIdea iid (Just $ c ^. _Id))
           where

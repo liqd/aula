@@ -213,10 +213,13 @@ instance SOP.Generic ProtoIdea
 
 type instance Proto Idea = ProtoIdea
 
-data IdeasFilter = Ideas | VotingIdeas | WinningIdeas
+data ListIdeasInTopicTab =
+    ListIdeasInTopicTabAll
+  | ListIdeasInTopicTabVoting
+  | ListIdeasInTopicTabWinning
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic IdeasFilter
+instance SOP.Generic ListIdeasInTopicTab
 
 -- | "Kategorie"
 data Category =

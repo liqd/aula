@@ -24,7 +24,7 @@ import qualified Generics.SOP as SOP
 
 data WhatListPage
     = IdeaInIdeasOverview
-    | IdeaInViewTopic { _ideasFilter :: IdeasFilter }
+    | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
 
@@ -117,8 +117,8 @@ instance ToHtml ListItemIdeas where
 ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 ideaListHeader IdeaInUserProfile _ _ = nil
 ideaListHeader whatListPage loc ideasQuery = do
-    let ideasFilter' = fromMaybe Ideas $ whatListPage ^? ideasFilter
-    categoryFilterButtons ideasFilter' loc ideasQuery
+    let tab' = fromMaybe ListIdeasInTopicTabAll $ whatListPage ^? whatListPageTopicTab
+    categoryFilterButtons tab' loc ideasQuery
 
     div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
@@ -127,7 +127,7 @@ ideaListHeader whatListPage loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listIdeasWithQuery ideasFilter' loc (ideasQuery & ideasQueryS .~ by)
+                          hrf = href_ $ U.listIdeasWithQuery tab' loc (ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]
