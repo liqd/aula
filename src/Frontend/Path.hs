@@ -227,7 +227,8 @@ listIdeas :: IdeaLocation -> Main
 listIdeas loc = listIdeas' loc Nothing Nothing
 
 listIdeasInTopic :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
-listIdeasInTopic topic = listIdeas' (IdeaLocationSpace $ topic ^. topicIdeaSpace) . Just
+listIdeasInTopic topic =
+    listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) . Just
 
 listIdeas' :: IdeaLocation -> Maybe ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
 listIdeas' (IdeaLocationSpace _) (Just _) _ =
