@@ -107,7 +107,7 @@ tabLink topic curTab targetTab =
     TabIdeas ListIdeasInTopicTabWinning _
         -> go "tab-winning"     (U.listTopicIdeas ListIdeasInTopicTabWinning) "Gewinner"
     TabDelegation
-        -> g' "tab-delegations" U.ViewTopicDelegations          "Beauftragen Stimmen"
+        -> g' "tab-delegations" U.ViewTopicDelegations                        "Beauftrage Stimmen"
   where
     space = topic ^. topicIdeaSpace
     go ident uri =
