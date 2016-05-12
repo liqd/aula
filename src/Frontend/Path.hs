@@ -28,7 +28,7 @@ module Frontend.Path
     , IdeaMode(..)
     , CommentMode(..)
     , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea
-    , listIdeas, listIdeasInTopic, listIdeasInTopic'
+    , listIdeas, listIdeasInTopic, listIdeas'
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
@@ -38,14 +38,17 @@ module Frontend.Path
     )
 where
 
-import Thentos.Prelude
+import Control.Exception (assert)
 import Data.UriPath
 import Servant.API (toUrlPiece)
+import Thentos.Prelude
 
 import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
-             , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
+             , SchoolClass, _Id, _Key, ideaLocation, ideaLocationSpace, ideaLocationTopicId
+             , topicIdeaSpace
+             , IdeaVoteValue, UpDown, Comment
              , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey)
              , ListIdeasInTopicTab(..))
 
@@ -221,16 +224,20 @@ createIdea loc = IdeaPath loc CreateIdea
 -- | List ideas in any location (space or topic).  The query defaults to Nothing;
 -- in topics, tab defaults to `all`.
 listIdeas :: IdeaLocation -> Main
-listIdeas (IdeaLocationSpace spc) = Space spc $
-    ListIdeasInSpace Nothing
-listIdeas (IdeaLocationTopic spc tid) = Space spc $
-    ListIdeasInTopic tid ListIdeasInTopicTabAll Nothing
+listIdeas loc = listIdeas' loc Nothing Nothing
 
 listIdeasInTopic :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
-listIdeasInTopic topic = listIdeasInTopic' (topic ^. topicIdeaSpace) (topic ^. _Id)
+listIdeasInTopic topic = listIdeas' (IdeaLocationSpace $ topic ^. topicIdeaSpace) . Just
 
-listIdeasInTopic' :: IdeaSpace -> AUID Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
-listIdeasInTopic' spc tid tab mquery = Space spc $ ListIdeasInTopic tid tab mquery
+listIdeas' :: IdeaLocation -> Maybe ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeas' (IdeaLocationSpace _) (Just _) _ =
+    assert False $ error "listIdeas': must not be called with non-topic location and topic tab!"
+listIdeas' (IdeaLocationTopic spc tid) (Just tab) mquery =
+    Space spc $ ListIdeasInTopic tid tab mquery
+listIdeas' loc Nothing mquery =
+    Space (loc ^. ideaLocationSpace) $ case loc ^? ideaLocationTopicId of
+        Nothing  -> ListIdeasInSpace mquery
+        Just tid -> ListIdeasInTopic tid ListIdeasInTopicTabAll mquery
 
 adminViewUsers :: AdminMode
 adminViewUsers = AdminViewUsers Nothing

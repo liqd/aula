@@ -74,13 +74,11 @@ categoryToUiText CatTime        = "Zeit"
 categoryToUiText CatEnvironment = "Umgebung"
 
 
-categoryFilterButtons :: Monad m => ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
-categoryFilterButtons tab loc q = div_ [class_ "icon-list"] $ do
+categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
+categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
             ] $
-            a_ [href_ $ U.listIdeasInTopic'
-                            (loc ^. ideaLocationSpace) (loc ^?! ideaLocationTopicId)
-                            tab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)]
+            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)]
                 (categoryToUiText cat)

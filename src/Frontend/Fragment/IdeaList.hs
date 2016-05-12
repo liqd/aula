@@ -118,8 +118,8 @@ instance ToHtml ListItemIdeas where
 ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 ideaListHeader IdeaInUserProfile _ _ = nil
 ideaListHeader whatListPage loc ideasQuery = do
-    let tab' = fromMaybe ListIdeasInTopicTabAll $ whatListPage ^? whatListPageTopicTab
-    categoryFilterButtons tab' loc ideasQuery
+    let mtab' = whatListPage ^? whatListPageTopicTab
+    categoryFilterButtons mtab' loc ideasQuery
 
     div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
@@ -128,9 +128,7 @@ ideaListHeader whatListPage loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listIdeasInTopic'
-                                  (loc ^. ideaLocationSpace) (loc ^?! ideaLocationTopicId)
-                                  tab' (Just $ ideasQuery & ideasQueryS .~ by)
+                          hrf = href_ $ U.listIdeas' loc mtab' (Just $ ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]
