@@ -137,6 +137,8 @@ main Broken           root = root </> "bröken"
 
 data Space =
     ListTopics
+  | ListIdeasInSpace (Maybe IdeasQuery)
+  | ListIdeasInTopic (AUID Topic) ListIdeasInTopicTab (Maybe IdeasQuery)
   | CreateTopic
   | EditTopic (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
@@ -233,9 +235,6 @@ adminViewClasses :: AdminMode
 adminViewClasses = AdminViewClasses Nothing
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode (ListIdeas ListIdeasInTopicTabAll mq)     root = renderFilter mq $ root </> "ideas"
-ideaMode (ListIdeas ListIdeasInTopicTabVoting mq)  root = renderFilter mq $ root </> "ideas" </> "voting"
-ideaMode (ListIdeas ListIdeasInTopicTabWinning mq) root = renderFilter mq $ root </> "ideas" </> "winning"
 ideaMode (ViewIdea i mc)             root = maybe id (flip (</#>) . anchor) mc $
                                             root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)                root = root </> "idea" </> uriPart i </> "edit"
@@ -286,10 +285,19 @@ ideaPath loc mode root =
 
 space :: Space -> UriPath -> UriPath
 space ListTopics                  root = root </> "topic"
+space (ListIdeasInSpace mq)       root = renderFilter mq $ root </> "ideas"
+space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
+                                       $ root </> "topic" </> uriPart t </> "ideas"
 space CreateTopic                 root = root </> "topic" </> "create"
 space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
+
+topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
+topicTab = \case
+    ListIdeasInTopicTabAll     -> id
+    ListIdeasInTopicTabVoting  -> (</> "voting")
+    ListIdeasInTopicTabWinning -> (</> "winning")
 
 data UserMode =
     UserIdeas
@@ -358,8 +366,7 @@ data CommentMode
 instance SOP.Generic CommentMode
 
 data IdeaMode =
-      ListIdeas ListIdeasInTopicTab (Maybe IdeasQuery)
-    | CreateIdea
+      CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
