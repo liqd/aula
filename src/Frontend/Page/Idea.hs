@@ -136,7 +136,7 @@ data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
 
 -- * templates
 
-backLink :: Monad m => IdeaLocation -> HtmlT m ()
+backLink :: Monad m => IdeaLocation -> HtmlT m ()  -- FIXME: move this next to caller.
 backLink IdeaLocationSpace{} = "Zum Ideenraum"
 backLink IdeaLocationTopic{} = "Zum Thema"
 

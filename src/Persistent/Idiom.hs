@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -46,13 +47,15 @@ getVotersForSpace space = filter hasAccess <$> getActiveUsers
 
 -- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
 -- reached.
-data ListInfoForIdea = ListInfoForIdea
+data ListInfoForIdea = ListInfoForIdea  -- TODO: fix name!
     { _listInfoForIdeaIt         :: Idea
     , _listInfoForIdeaPhase      :: Phase
     , _listInfoForIdeaQuorum     :: Int
     , _listInfoForIdeaNoOfVoters :: Int
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+makeLenses ''ListInfoForIdea
 
 ideaReachedQuorum :: ListInfoForIdea -> Bool
 ideaReachedQuorum i = reached >= needed

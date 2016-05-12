@@ -38,7 +38,6 @@ module Arbitrary
 
 import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
-import Control.Lens (over)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Functor.Infix ((<$$>))
@@ -76,7 +75,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (.~), ppShow, view, join)
+import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
 import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
@@ -138,7 +137,11 @@ instance Arbitrary PageRoomsOverview where
     shrink (PageRoomsOverview x) = PageRoomsOverview <$> shr x
 
 instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
+    arbitrary = do
+        ctx   <- arb
+        space <- arb
+        ideas <- mkListItemIdeasInLocation (IdeaLocationSpace space)
+        pure $ PageIdeasOverview ctx space ideas
     shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageIdeasInDiscussion where
@@ -162,7 +165,13 @@ instance Arbitrary ViewTopic where
         tab <- arb
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb <*> arb
-            _ -> ViewTopicIdeas <$> arb <*> arb <*> pure tab <*> arb <*> arb
+            _ -> do
+                timestamp     <- arb
+                ctx           <- arb
+                topic         <- arb
+                listItemIdeas <- mkListItemIdeasInLocation (topicIdeaLocation topic)
+                pure $ ViewTopicIdeas timestamp ctx tab topic listItemIdeas
+
     shrink (ViewTopicDelegations x y z t) =
         ViewTopicDelegations <$> shr x <*> shr y <*> shr z <*> shr t
     shrink (ViewTopicIdeas x y z w t) =
@@ -200,7 +209,7 @@ instance Arbitrary ReportComment where
     shrink (ReportComment x) = ReportComment <$> shr x
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> mkListItemIdeas
     shrink (PageUserProfileCreatedIdeas x y z) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
@@ -385,8 +394,19 @@ instance Arbitrary ListItemIdea where
     shrink    = gshrink
 
 instance Arbitrary ListItemIdeas where
-    arbitrary = garbitrary
+    arbitrary = error "Please use `mkListItemIdeas` or `mkListItemIdeasInLocation`, not `arbitary`."
     shrink    = gshrink
+
+mkListItemIdeas :: Gen ListItemIdeas
+mkListItemIdeas = garbitrary
+
+mkListItemIdeasInLocation :: IdeaLocation -> Gen ListItemIdeas
+mkListItemIdeasInLocation loc = repair <$> mkListItemIdeas
+  where
+    repair :: ListItemIdeas -> ListItemIdeas
+    repair lst = lst
+        & (listItemIdeasLocation .~ loc)
+        . (listItemIdeasData %~ fmap (listInfoForIdeaIt . ideaLocation .~ loc))
 
 instance Arbitrary IdeasQuery where
     arbitrary = garbitrary

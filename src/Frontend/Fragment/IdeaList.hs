@@ -24,7 +24,7 @@ import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 
 data WhatListPage
-    = IdeaInIdeasOverview
+    = IdeaInIdeasOverview  -- TODO: rename these!  (at least it should be plural?)  see also #72
     | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
@@ -36,6 +36,8 @@ isIdeaInViewTopic :: WhatListPage -> Bool
 isIdeaInViewTopic (IdeaInViewTopic _) = True
 isIdeaInViewTopic _                   = False
 
+  -- TODO: align selector names in ListItemIdea, ListItemIdeas.  do we really need both?!  or are
+  -- they two entirely different things and shouldn't be named so alike?
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
       , _listItemIdeaWhatPage   :: WhatListPage
@@ -52,6 +54,7 @@ data ListItemIdeas = ListItemIdeas
       }
   deriving (Eq, Show, Read, Generic)
 
+makeLenses ''ListItemIdeas
 
 instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
