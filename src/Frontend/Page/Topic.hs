@@ -117,9 +117,6 @@ tabLink topic curTab targetTab =
            ]
     g' ident uri = go ident (U.Space space . uri . view _Id)
 
--- FIXME: how do we display a topic in the finished phase?
--- Is this the same the result phase?
--- Maybe some buttons to hide?
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
