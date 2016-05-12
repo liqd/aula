@@ -28,7 +28,7 @@ module Frontend.Path
     , IdeaMode(..)
     , CommentMode(..)
     , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea
-    , listIdeas, listTopicIdeas, listTopicIdeas'
+    , listIdeas, listIdeasInTopic, listIdeasInTopic'
     , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
@@ -226,11 +226,11 @@ listIdeas (IdeaLocationSpace spc) = Space spc $
 listIdeas (IdeaLocationTopic spc tid) = Space spc $
     ListIdeasInTopic tid ListIdeasInTopicTabAll Nothing
 
-listTopicIdeas :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
-listTopicIdeas topic = listTopicIdeas' (topic ^. topicIdeaSpace) (topic ^. _Id)
+listIdeasInTopic :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeasInTopic topic = listIdeasInTopic' (topic ^. topicIdeaSpace) (topic ^. _Id)
 
-listTopicIdeas' :: IdeaSpace -> AUID Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
-listTopicIdeas' spc tid tab mquery = Space spc $ ListIdeasInTopic tid tab mquery
+listIdeasInTopic' :: IdeaSpace -> AUID Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeasInTopic' spc tid tab mquery = Space spc $ ListIdeasInTopic tid tab mquery
 
 adminViewUsers :: AdminMode
 adminViewUsers = AdminViewUsers Nothing

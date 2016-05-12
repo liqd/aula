@@ -105,7 +105,7 @@ tabLink topic curTab targetTab =
     TabIdeas ListIdeasInTopicTabWinning _ -> ideaLnk  "tab-winning"     "Gewinner"
     TabDelegation                         -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
-    ideaLnk  = lnk (U.listTopicIdeas topic (targetTab ^?! topicTab) Nothing)
+    ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
     delegLnk = lnk (U.Space (topic ^. topicIdeaSpace) . U.ViewTopicDelegations $ (topic ^. _Id))
 
     lnk url ident =
@@ -237,7 +237,7 @@ instance FormPage CreateTopic where
 
     formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
 
-    redirectOf (CreateTopic _ _ _) topic = U.listTopicIdeas topic ListIdeasInTopicTabAll Nothing
+    redirectOf (CreateTopic _ _ _) topic = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
 
     makeForm CreateTopic{ _createTopicIdeaSpace
                         , _createTopicIdeas
@@ -284,7 +284,7 @@ instance FormPage EditTopic where
 
     formAction (EditTopic space topic _ _) = U.Space space $ U.EditTopic (topic ^. _Id)
 
-    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas topic ListIdeasInTopicTabAll Nothing
+    redirectOf (EditTopic _ topic _ _) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
 
     makeForm (EditTopic _space topic ideas preselected) =
         EditTopicData

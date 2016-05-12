@@ -80,7 +80,7 @@ categoryFilterButtons tab loc q = div_ [class_ "icon-list"] $ do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
             ] $
-            a_ [href_ $ U.listTopicIdeas'
+            a_ [href_ $ U.listIdeasInTopic'
                             (loc ^. ideaLocationSpace) (loc ^?! ideaLocationTopicId)
                             tab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)]
                 (categoryToUiText cat)

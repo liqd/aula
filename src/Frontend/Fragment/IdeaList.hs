@@ -128,7 +128,7 @@ ideaListHeader whatListPage loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listTopicIdeas'
+                          hrf = href_ $ U.listIdeasInTopic'
                                   (loc ^. ideaLocationSpace) (loc ^?! ideaLocationTopicId)
                                   tab' (Just $ ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
