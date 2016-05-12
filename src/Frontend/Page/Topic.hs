@@ -110,7 +110,7 @@ tabLink topic curTab targetTab =
 
     lnk url ident =
         a_ [ id_ ident
-           , href_ $ url
+           , href_ url
            , class_ $ tabSelected curTab targetTab  -- TODO: this is probably close to the second issue mentioned in the PR comment.
            ]
 
