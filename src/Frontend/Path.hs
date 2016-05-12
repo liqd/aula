@@ -284,14 +284,8 @@ ideaPath loc mode root =
   where
     rootSpace isp = root </> "space" </> uriPart isp
 
--- | FIXME: there are structural similarities of wild ideas and ideas in topic that should be
--- factored out.
 space :: Space -> UriPath -> UriPath
 space ListTopics                  root = root </> "topic"
--- TODO:
---space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
---space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
--- FIXME: "ListTopicIdeas..." for the 3 lines above?
 space CreateTopic                 root = root </> "topic" </> "create"
 space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
