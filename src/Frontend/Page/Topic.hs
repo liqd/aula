@@ -100,22 +100,19 @@ instance Page EditTopic
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabIdeas ListIdeasInTopicTabAll _
-        -> go "tab-ideas"       (U.listTopicIdeas ListIdeasInTopicTabAll)     "Alle Ideen"
-    TabIdeas ListIdeasInTopicTabVoting _
-        -> go "tab-voting"      (U.listTopicIdeas ListIdeasInTopicTabVoting)  "Ideen in der Abstimmung"
-    TabIdeas ListIdeasInTopicTabWinning _
-        -> go "tab-winning"     (U.listTopicIdeas ListIdeasInTopicTabWinning) "Gewinner"
-    TabDelegation
-        -> g' "tab-delegations" U.ViewTopicDelegations                        "Beauftrage Stimmen"
+    TabIdeas ListIdeasInTopicTabAll     _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
+    TabIdeas ListIdeasInTopicTabVoting  _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
+    TabIdeas ListIdeasInTopicTabWinning _ -> ideaLnk  "tab-winning"     "Gewinner"
+    TabDelegation                         -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
-    space = topic ^. topicIdeaSpace
-    go ident uri =
+    ideaLnk  = lnk (U.listTopicIdeas topic (targetTab ^?! topicTab) Nothing)
+    delegLnk = lnk (U.Space (topic ^. topicIdeaSpace) . U.ViewTopicDelegations $ (topic ^. _Id))
+
+    lnk url ident =
         a_ [ id_ ident
-           , href_ $ uri topic
-           , class_ $ tabSelected curTab targetTab
+           , href_ $ url
+           , class_ $ tabSelected curTab targetTab  -- TODO: this is probably close to the second issue mentioned in the PR comment.
            ]
-    g' ident uri = go ident (U.Space space . uri . view _Id)
 
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
@@ -240,7 +237,7 @@ instance FormPage CreateTopic where
 
     formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
 
-    redirectOf (CreateTopic _ _ _) = U.listTopicIdeas ListIdeasInTopicTabAll
+    redirectOf (CreateTopic _ _ _) topic = U.listTopicIdeas topic ListIdeasInTopicTabAll Nothing
 
     makeForm CreateTopic{ _createTopicIdeaSpace
                         , _createTopicIdeas
@@ -287,7 +284,7 @@ instance FormPage EditTopic where
 
     formAction (EditTopic space topic _ _) = U.Space space $ U.EditTopic (topic ^. _Id)
 
-    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas ListIdeasInTopicTabAll topic
+    redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas topic ListIdeasInTopicTabAll Nothing
 
     makeForm (EditTopic _space topic ideas preselected) =
         EditTopicData

@@ -123,7 +123,7 @@ instance ToHtml PageIdeasInDiscussion where
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
                         a_ [ class_ "theme-grid-item-link"
-                           , href_ . U.listIdeas $ IdeaLocationTopic space (topic ^. _Id)
+                           , href_ $ U.listTopicIdeas topic ListIdeasInTopicTabAll Nothing
                            ] $ do
                             img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
                                       PhaseWildIdea{}   -> "theme_aus.png"  -- FIXME

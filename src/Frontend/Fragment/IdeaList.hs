@@ -128,7 +128,9 @@ ideaListHeader whatListPage loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listIdeasWithQuery tab' loc (ideasQuery & ideasQueryS .~ by)
+                          hrf = href_ $ U.listTopicIdeas'
+                                  (loc ^. ideaLocationSpace) (loc ^?! ideaLocationTopicId)
+                                  tab' (Just $ ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]

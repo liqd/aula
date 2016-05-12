@@ -487,7 +487,7 @@ instance FormPage JudgeIdea where
 
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 
-    redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas ListIdeasInTopicTabAll topic
+    redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic ListIdeasInTopicTabAll Nothing
         -- FIXME: we would like to say `U.listTopicIdeas topic </#> U.anchor (idea ^. _Id)` here,
         -- but that requires some refactoring around 'redirectOf'.
 

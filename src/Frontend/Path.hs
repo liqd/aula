@@ -27,8 +27,9 @@ module Frontend.Path
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
-    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listIdeasWithQuery
-    , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
+    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea
+    , listIdeas, listTopicIdeas, listTopicIdeas'
+    , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
     , viewUser, adminViewUsers, adminViewClasses, viewIdeaOfComment
@@ -217,16 +218,19 @@ editReply comment = onComment comment EditReply
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
 
+-- | List ideas in any location (space or topic).  The query defaults to Nothing;
+-- in topics, tab defaults to `all`.
 listIdeas :: IdeaLocation -> Main
-listIdeas loc = IdeaPath loc $ ListIdeas ListIdeasInTopicTabAll Nothing
+listIdeas (IdeaLocationSpace spc) = Space spc $
+    ListIdeasInSpace Nothing
+listIdeas (IdeaLocationTopic spc tid) = Space spc $
+    ListIdeasInTopic tid ListIdeasInTopicTabAll Nothing
 
-listIdeasWithQuery :: ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> Main
-listIdeasWithQuery tab loc = IdeaPath loc . ListIdeas tab . Just
+listTopicIdeas :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listTopicIdeas topic = listTopicIdeas' (topic ^. topicIdeaSpace) (topic ^. _Id)
 
-listTopicIdeas :: ListIdeasInTopicTab -> Topic -> Main
-listTopicIdeas tab topic =
-    IdeaPath (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id))
-             (ListIdeas tab Nothing)
+listTopicIdeas' :: IdeaSpace -> AUID Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listTopicIdeas' spc tid tab mquery = Space spc $ ListIdeasInTopic tid tab mquery
 
 adminViewUsers :: AdminMode
 adminViewUsers = AdminViewUsers Nothing
