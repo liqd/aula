@@ -301,7 +301,7 @@ instance ToHtml IdeaVoteLikeBars where
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                             else postButton_
                                     [ class_ "btn"
-                                    , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
+                                    , onclickJs jsReloadOnClick
                                     ]
                                     (U.likeIdea idea)
                                     "dafür!"
