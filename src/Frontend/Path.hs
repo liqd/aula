@@ -137,10 +137,10 @@ main Broken           root = root </> "bröken"
 
 data Space =
     ListTopics
-  | ViewTopicDelegations (AUID Topic)
   | CreateTopic
+  | EditTopic (AUID Topic)
+  | ViewTopicDelegations (AUID Topic)
   | CreateTopicDelegation (AUID Topic)
-  | MoveIdeasToTopic (AUID Topic)
   deriving (Generic, Show)
 
 instance SOP.Generic Space
@@ -291,10 +291,10 @@ space ListTopics                  root = root </> "topic"
 -- TODO:
 --space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
 --space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
-space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 -- FIXME: "ListTopicIdeas..." for the 3 lines above?
 space CreateTopic                 root = root </> "topic" </> "create"
-space (MoveIdeasToTopic tid)      root = root </> "topic" </> uriPart tid </> "idea" </> "move"
+space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
+space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
 
 data UserMode =

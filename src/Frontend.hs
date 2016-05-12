@@ -278,7 +278,7 @@ type TopicApi =
 
        -- create new topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
-  :<|> Topic  ::> "idea"       :> "move"   :> FormHandler Page.EditTopic
+  :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
   :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m

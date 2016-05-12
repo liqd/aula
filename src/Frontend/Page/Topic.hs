@@ -152,9 +152,9 @@ viewTopicHeaderDiv now ctx topic tab = do
                         -- FIXME: There is no EditTopic path defined.
                         when canEditTopic .
                             li_ [class_ "pop-menu-list-item"] $ do
-                                a_ [id_ "edit-topic",  href_ . U.Space space $ U.MoveIdeasToTopic topicId] $ do
+                                a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
                                     i_ [class_ "icon-pencil"] nil
-                                    "Thema bearbeiten" -- <- Edit
+                                    "Thema bearbeiten"
                         when canPhaseForwardTopic .
                             li_ [class_ "pop-menu-list-item m-form"] .
                                 div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
@@ -285,7 +285,7 @@ instance FormPage EditTopic where
     -- the ideas to be added to the topic.
     type FormPagePayload EditTopic = EditTopicData
 
-    formAction (EditTopic space topic _ _) = U.Space space $ U.MoveIdeasToTopic (topic ^. _Id)
+    formAction (EditTopic space topic _ _) = U.Space space $ U.EditTopic (topic ^. _Id)
 
     redirectOf (EditTopic _ topic _ _) _ = U.listTopicIdeas ListIdeasInTopicTabAll topic
 
