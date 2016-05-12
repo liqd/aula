@@ -45,11 +45,11 @@ spec = do
 
     context "ToHtml" $ mapM_ renderMarkup [
           H (arb :: Gen PageRoomsOverview)
---        , H (arb :: Gen PageIdeasOverview)
+        , H (arb :: Gen PageIdeasOverview)
         , H (arb :: Gen PageIdeasInDiscussion)
         , H (arb :: Gen ViewTopic)
         , H (arb :: Gen ViewIdea)
---        , H (arb :: Gen PageUserProfileCreatedIdeas)
+        , H (arb :: Gen PageUserProfileCreatedIdeas)
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen AdminViewUsers)
         , H (arb :: Gen AdminViewClasses)
@@ -222,6 +222,7 @@ data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m, Arbitrary m) => Gen m -> HtmlGen
 
 -- | Checks if the markup rendering does contain bottoms.
+-- TODO: rename to 'simpleTestToHtml'
 renderMarkup :: HtmlGen -> Spec
 renderMarkup (H g) =
     it (show $ typeOf g) . property . forAllShrinkDef g $ \pageSource ->
