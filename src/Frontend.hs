@@ -248,6 +248,21 @@ type IdeaApi
        -- create wild idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
+ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
+ideaApi loc
+    =  makeFrame . Page.viewIdea
+  :<|> form . Page.editIdea
+  :<|> Action.likeIdea
+  :<|> Action.voteIdea
+  :<|> Action.removeVote
+  :<|> form . Page.commentIdea loc
+  :<|> commentApi loc
+  :<|> app2 form Page.judgeIdea
+  :<|> flip Action.markIdeaInResultPhase (Winning Nothing)
+  :<|> Action.revokeWinnerStatusOfIdea
+  :<|> form . Page.creatorStatement
+  :<|> form (Page.createIdea loc)
+
 type TopicApi =
        -- browse topics in an idea space
        "topic" :> GetH (Frame PageIdeasInDiscussion)
@@ -266,27 +281,6 @@ type TopicApi =
   :<|> Topic  ::> "idea"       :> "move"   :> FormHandler Page.EditTopic
   :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
 
-type AulaSpace
-    =  IdeaApi
-       -- browse wild ideas in an idea space
-  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
-  :<|> TopicApi
-
-ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
-ideaApi loc
-    =  makeFrame . Page.viewIdea
-  :<|> form . Page.editIdea
-  :<|> Action.likeIdea
-  :<|> Action.voteIdea
-  :<|> Action.removeVote
-  :<|> form . Page.commentIdea loc
-  :<|> commentApi loc
-  :<|> app2 form Page.judgeIdea
-  :<|> flip Action.markIdeaInResultPhase (Winning Nothing)
-  :<|> Action.revokeWinnerStatusOfIdea
-  :<|> form . Page.creatorStatement
-  :<|> form (Page.createIdea loc)
-
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
     =  makeFrame (Page.viewTopics space)
@@ -304,6 +298,12 @@ topicApi space
   :<|> error "api not implemented: topic/:topic/delegation/create"
   where
     viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
+
+type AulaSpace
+    =  IdeaApi
+       -- browse wild ideas in an idea space
+  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
+  :<|> TopicApi
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
