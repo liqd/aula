@@ -23,7 +23,7 @@ import qualified Frontend.Path as U
 data PageDelegateVote = PageDelegateVote
   deriving (Eq, Show, Read)
 
-instance ToHtml PageDelegateVote where
+instance ToHtml PageDelegateVote where  -- FIXME: remove bogus instance.
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageDelegateVote"
 
@@ -49,6 +49,8 @@ instance Page PageDelegationNetwork where
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
     toHtml p@PageDelegationNetwork = semanticDiv p $ do
+        img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
+{-
         let bigHr = do
               hr_ []
               br_ []
@@ -103,6 +105,7 @@ instance ToHtml PageDelegationNetwork where
                     td_ $ span_ [id_ "d3"] nil
 
         bigHr
+-}
 
 viewDelegationNetwork :: Applicative m => m PageDelegationNetwork
 viewDelegationNetwork = pure PageDelegationNetwork
