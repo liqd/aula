@@ -217,7 +217,7 @@ instance PayloadToEnv Document  where
 data HtmlGen where
     H :: (Show m, Typeable m, ToHtml m, Arbitrary m) => Gen m -> HtmlGen
 
--- | Checks if the markup rendering does not contains bottoms.
+-- | Checks if the markup rendering does contain bottoms.
 renderMarkup :: HtmlGen -> Spec
 renderMarkup (H g) =
     it (show $ typeOf g) . property . forAllShrinkDef g $ \pageSource ->
