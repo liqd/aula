@@ -245,7 +245,7 @@ type IdeaApi
   :<|> Idea ::> "revokewinner" :> PostH
        -- add creator statement
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
-       -- create wild idea
+       -- create idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
