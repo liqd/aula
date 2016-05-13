@@ -8,6 +8,14 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.IdeaList
+    ( WhatListPage(..)
+    , ListItemIdeas(..)
+    , listItemIdeasCtx
+    , listItemIdeasWhatPage
+    , listItemIdeasLocation
+    , listItemIdeasFilter
+    , listItemIdeasData
+    )
 where
 
 import Control.Lens
@@ -36,8 +44,7 @@ isIdeaInViewTopic :: WhatListPage -> Bool
 isIdeaInViewTopic (IdeaInViewTopic _) = True
 isIdeaInViewTopic _                   = False
 
-  -- TODO: align selector names in ListItemIdea, ListItemIdeas.  do we really need both?!  or are
-  -- they two entirely different things and shouldn't be named so alike?
+-- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
       , _listItemIdeaWhatPage   :: WhatListPage
@@ -45,6 +52,8 @@ data ListItemIdea = ListItemIdea
       }
   deriving (Eq, Show, Read, Generic)
 
+-- | An idea list.  Contains the information for constructing 'ListItemIdea' values, plus the
+-- search/filter header of the list.
 data ListItemIdeas = ListItemIdeas
       { _listItemIdeasCtx      :: RenderContext
       , _listItemIdeasWhatPage :: WhatListPage

@@ -392,10 +392,6 @@ instance Arbitrary WhatListPage where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary ListItemIdea where
-    arbitrary = garbitrary
-    shrink    = gshrink
-
 instance Arbitrary ListItemIdeas where
     arbitrary = error "Please use `mkListItemIdeas` or `mkListItemIdeasInLocation`, not `arbitary`."
     shrink    = gshrink
