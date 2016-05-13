@@ -136,10 +136,6 @@ data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
 
 -- * templates
 
-backLink :: Monad m => IdeaLocation -> HtmlT m ()  -- FIXME: move this next to caller.
-backLink IdeaLocationSpace{} = "Zum Ideenraum"
-backLink IdeaLocationTopic{} = "Zum Thema"
-
 numberWithUnit :: Monad m => Int -> ST -> ST -> HtmlT m ()
 numberWithUnit i singular_ plural_ =
     toHtml (show i) <>
@@ -162,7 +158,9 @@ instance ToHtml ViewIdea where
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
                    , href_ . U.listIdeas $ idea ^. ideaLocation
-                   ] $ backLink (idea ^. ideaLocation)
+                   ] $ case idea ^. ideaLocation of
+                         IdeaLocationSpace{} -> "Zum Ideenraum"
+                         IdeaLocationTopic{} -> "Zum Thema"
 
                 let canEdit              = CanEdit              `elem` caps
                     canCreateTopic       = ideaReachedQuorum ideaInfo && CanCreateTopic `elem` userCaps
