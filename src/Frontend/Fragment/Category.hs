@@ -18,6 +18,8 @@ module Frontend.Fragment.Category
     )
 where
 
+import Debug.Trace
+
 import Frontend.Prelude
 
 import qualified Frontend.Path as U
@@ -77,8 +79,28 @@ categoryToUiText CatEnvironment = "Umgebung"
 categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
+        traceShow ("...>>" :: String) $ pure ()
+        traceShow ("...>>" <> show (("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ])) $ pure ()
+-- "...>>[\"icon-rules\"]"
+        traceShow ("...>>l" <> show loc) $ pure ()
+-- "...>>lIdeaLocationSpace {_ideaLocationSpace = ClassSpace {_ideaSpaceSchoolClass = SchoolClass {_classSchoolYear = 2016, _className = \"5c\"}}}"
+        traceShow ("...>>m" <> show mtab) $ pure ()
+-- "...>>mJust ListIdeasInTopicTabAll"
+        traceShow ("...>>t" <> show (q ^. ideasQueryF)) $ pure ()
+-- "...>>tIdeasWithCat {_catFilter = CatEquipment}"
+        traceShow ("...>>t" <> show q) $ pure ()
+-- "...>>tIdeasQuery {_ideasQueryF = AllIdeas, _ideasQueryS = SortIdeasByTime}"
+        traceShow ("...>>q" <> show (q & ideasQueryF %~ toggleIdeasFilter cat)) $ pure ()
+-- "...>>qIdeasQuery {_ideasQueryF = IdeasWithCat {_catFilter = CatRules}, _ideasQueryS = SortIdeasByTime}"
+        traceShow ("...>>u" <> show (U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat))) $ pure ()
+-- <interactive>: out of memory (requested 2097152 bytes)
+
+
+        traceShow ("...>>" <> categoryToUiText cat :: String) $ pure ()
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
-            ] $
+            ] $ do
+            traceShow ("...>>" :: String) $ pure ()
             a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)]
                 (categoryToUiText cat)
+        traceShow ("...<<" :: String) $ pure ()

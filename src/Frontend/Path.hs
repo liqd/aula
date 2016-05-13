@@ -38,7 +38,8 @@ module Frontend.Path
     )
 where
 
-import Control.Exception (assert)
+import Debug.Trace
+
 import Data.UriPath
 import Servant.API (toUrlPiece)
 import Thentos.Prelude
@@ -232,9 +233,14 @@ listIdeasInTopic topic =
 
 listIdeas' :: IdeaLocation -> Maybe ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
 listIdeas' (IdeaLocationSpace _) (Just _) _ =
-    assert False $ error "listIdeas': must not be called with non-topic location and topic tab!"
+    traceShow ("!!!0" :: String) $
+    error "listIdeas': must not be called with non-topic location and topic tab!"
 listIdeas' (IdeaLocationTopic spc tid) (Just tab) mquery =
-    Space spc $ ListIdeasInTopic tid tab mquery
+    let x = Space spc $ ListIdeasInTopic tid tab mquery in
+    traceShow ("!!!1" :: String) $
+    traceShow ("!!!2" <> show x :: String) $
+    traceShow ("!!!3" :: String) $
+    x
 listIdeas' loc Nothing mquery =
     Space (loc ^. ideaLocationSpace) $ case loc ^? ideaLocationTopicId of
         Nothing  -> ListIdeasInSpace mquery

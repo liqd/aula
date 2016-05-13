@@ -10,6 +10,8 @@
 module Frontend.Page.User
 where
 
+import Debug.Trace
+
 import System.FilePath
 
 import Action
@@ -202,6 +204,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
+          traceShow ideas $
             div_ [class_ "grid"] $ toHtml ideas
 
 -- | List all the created ideas for the given user.
