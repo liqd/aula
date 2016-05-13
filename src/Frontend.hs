@@ -265,7 +265,7 @@ ideaApi loc
 
 type TopicApi =
        -- browse topics in an idea space
-       "topic" :> GetH (Frame PageIdeasInDiscussion)
+       "topic" :> GetH (Frame PageOverviewOfTopics)
   :<|> Topic ::> IdeaApi
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 

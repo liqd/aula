@@ -145,9 +145,9 @@ instance Arbitrary PageIdeasOverview where
         pure $ PageIdeasOverview ctx space ideas
     shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
 
-instance Arbitrary PageIdeasInDiscussion where
-    arbitrary = PageIdeasInDiscussion <$> arb <*> arb <*> arb
-    shrink (PageIdeasInDiscussion x y z) = PageIdeasInDiscussion <$> shr x <*> shr y <*> shr z
+instance Arbitrary PageOverviewOfTopics where
+    arbitrary = PageOverviewOfTopics <$> arb <*> arb <*> arb
+    shrink (PageOverviewOfTopics x y z) = PageOverviewOfTopics <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary ViewTopicTab where
     arbitrary = elements viewTopicTabList

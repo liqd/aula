@@ -61,7 +61,7 @@ pagesPlain f =
     , f (Proxy :: Proxy AdminViewUsers)
     , f (Proxy :: Proxy PageDelegateVote)
     , f (Proxy :: Proxy PageDelegationNetwork)
-    , f (Proxy :: Proxy PageIdeasInDiscussion)
+    , f (Proxy :: Proxy PageOverviewOfTopics)
     , f (Proxy :: Proxy PageIdeasOverview)
     , f (Proxy :: Proxy PageRoomsOverview)
     , f (Proxy :: Proxy PageStaticImprint)

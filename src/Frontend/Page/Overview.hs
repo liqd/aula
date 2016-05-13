@@ -8,7 +8,7 @@
 module Frontend.Page.Overview
     ( PageRoomsOverview(..)
     , PageIdeasOverview(..)
-    , PageIdeasInDiscussion(..)
+    , PageOverviewOfTopics(..)
     , WhatListPage(..)
     , viewRooms
     , viewIdeas
@@ -38,7 +38,7 @@ data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageIdeasInDiscussion = PageIdeasInDiscussion RenderContext IdeaSpace [Topic]
+data PageOverviewOfTopics = PageOverviewOfTopics RenderContext IdeaSpace [Topic]
   deriving (Eq, Show, Read)
 
 data Tabs = Tabs ActiveTab IdeaSpace
@@ -62,8 +62,8 @@ viewIdeas space ideasQuery = do
         ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery
             <$> getListInfoForIdea `mapM` is)
 
-viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageIdeasInDiscussion
-viewTopics space = PageIdeasInDiscussion <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
+viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
+viewTopics space = PageOverviewOfTopics <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
 
 
 -- * templates
@@ -105,9 +105,9 @@ instance ToHtml PageIdeasOverview where
 instance Page PageIdeasOverview where
     extraBodyClasses _ = ["m-shadow"]
 
-instance ToHtml PageIdeasInDiscussion where
+instance ToHtml PageOverviewOfTopics where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasInDiscussion ctx space topics) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfTopics ctx space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
         div_ [class_ "theme-grid"] $ do
@@ -144,7 +144,7 @@ instance ToHtml PageIdeasInDiscussion where
                                 span_ [class_ "theme-grid-item-link"]
                                     "view topic"
 
-instance Page PageIdeasInDiscussion
+instance Page PageOverviewOfTopics
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml
