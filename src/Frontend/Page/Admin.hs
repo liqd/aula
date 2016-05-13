@@ -40,7 +40,7 @@ import Persistent.Api
     )
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
-    , findActiveUser, getUsersInClass, findActiveUser, getSpaces, findTopic, getUsersInClass
+    , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -360,8 +360,8 @@ adminFreeze =
              update $ SaveAndEnactFreeze now payload)
         (\_ f _ ->
             case f of
-                Frozen    -> "Das System wurde re-aktiviert (Normalbetrieb)." :: ST
-                NotFrozen -> "Das System wurde eingefroren (Ferienbetrieb).")
+                Frozen    -> "Das System wurde eingefroren (Ferienbetrieb)." :: ST
+                NotFrozen -> "Das System wurde re-aktiviert (Normalbetrieb).")
 
 
 -- ** roles and permisisons
@@ -786,20 +786,12 @@ adminPhaseChange
     :: forall m . (ActionM m)
     => FormPageHandler m AdminPhaseChange
 adminPhaseChange =
-    formPageHandlerCalcMsgM
+    formPageHandler
         (pure AdminPhaseChange)
-        (\(AdminPhaseChangeForTopicData tid dir) -> do
+        (\(AdminPhaseChangeForTopicData tid dir) -> void $ do
             case dir of
                 Forward -> Action.topicForceNextPhase tid
-                Backward -> Action.topicInVotingResetToJury tid
-        )
-        (\_ (AdminPhaseChangeForTopicData tid _) _ -> do
-            topic <- Action.mquery $ findTopic tid
-            return $ unwords
-                [ "Das Thema wurde in Phase"
-                , topic ^. topicPhase . to show
-                , "verschoben."
-                ]
+                Backward -> Action.topicForcePreviousPhase tid
         )
 
 
@@ -808,22 +800,17 @@ data PhaseChangeDir = Forward | Backward
 
 instance SOP.Generic PhaseChangeDir
 
-phaseChangeDirText :: PhaseChangeDir -> ST
-phaseChangeDirText Forward  = "vorwärts"
-phaseChangeDirText Backward = "zurück"
+instance HasUILabel PhaseChangeDir where
+    uilabel Forward  = "vorwärts"
+    uilabel Backward = "zurück"
 
 instance ToHtml PhaseChangeDir where
     toHtmlRaw = toHtml
-    toHtml    = toHtml . phaseChangeDirText
+    toHtml    = toHtml . uilabelST
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
   deriving (Eq, Show)
 
--- FIXME: if we keep this, there needs to be some sort of feedback to the admin what happened with
--- the phase change.  we could redirect to a page showing a message of the form "topic with title
--- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
--- session state that gets flushed and appended to the digestive functors errors implicitly whenever
--- we show a form.
 instance FormPage AdminPhaseChange where
     type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
 
@@ -843,6 +830,13 @@ instance FormPage AdminPhaseChange where
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"
         form $ do
+            div_ [class_ "container-info"] $ do
+                p_ "ACHTUNG!  GEFAHR!"
+                ul_ $ do
+                    li_ "Diese Seite erlaubt es, Themen in beide Richtungen (Zukunft und Vergangenheit) zu verschieben."
+                    li_ "Dies ist ein experimentelles Feature, und kann zu unerwartetem Verhalten führen.  Bitte nur mit"
+                    li_ "gutem Grund und nur nach Rücksprache mit den zuständigen Moderatoren durchführen!"
+
             div_ $ do
                 p_ "ID-Nummer der Themas aus der URL"
                 DF.inputText "topic-id" v

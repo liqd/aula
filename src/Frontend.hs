@@ -359,7 +359,7 @@ aulaAdmin =
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv
   :<|> Action.topicForceNextPhase
-  :<|> Action.topicInVotingResetToJury
+  :<|> Action.topicForcePreviousPhase
   :<|> form Page.adminPhaseChange
 
 

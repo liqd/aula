@@ -66,10 +66,6 @@ module Action
     , reportIdeaComment
     , reportIdeaCommentReply
 
-      -- * topic handling
-    , topicInRefinementTimedOut
-    , topicInVotingTimedOut
-
       -- * page handling
     , createTopic
     , Action.editTopic
@@ -78,7 +74,7 @@ module Action
 
       -- * admin activity
     , topicForceNextPhase
-    , topicInVotingResetToJury
+    , topicForcePreviousPhase
 
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
@@ -119,6 +115,7 @@ import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.Monoid
 import Data.String.Conversions (ST, LBS, cs)
+import Data.String (fromString)
 import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
@@ -342,15 +339,18 @@ deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionM m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionM m) => Topic -> PhaseChange -> m Phase
 topicPhaseChange topic change = do
-    case phaseTrans (topic ^. topicPhase) change of
+    let phase = topic ^. topicPhase
+    case phaseTrans phase change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
+            eventLogTopicNewPhase topic phase phase'
+            return phase'
 
-topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m Phase
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -555,7 +555,7 @@ checkCloseJuryPhase topic = do
     -- within a single transaction with the update) that the current values are as expected, and if
     -- not abort with an error like "the ideal is not in the expected phase".  [~~mk]
     allMarked <- query $ checkAllIdeasMarked topic
-    when allMarked $ do
+    when allMarked . void $ do
         days <- getCurrentTimestamp >>= \now -> query $ phaseEndVote now
         topicPhaseChange topic (AllIdeasAreMarked days)
 
@@ -578,45 +578,80 @@ revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 
--- * Topic handling
-
-topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
-topicInRefinementTimedOut tid = do
-    topic  <- mquery $ findTopic tid
-    topicTimeout RefinementPhaseTimeOut tid
-    topic' <- mquery $ findTopic tid
-    eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
-
-topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
-topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
-
-topicInVotingResetToJury :: (ActionM m) => AUID Topic -> m ()
-topicInVotingResetToJury tid = do
-    topic <- mquery $ findTopic tid
-    case topic ^. topicPhase of
-        PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
-        _             -> pure ()
-
-
 -- * Admin activities
 
--- | Make a topic timeout if the timeout is applicable.
 -- FIXME: Only admin can do that
+-- FIXME: resolve code duplication between this and 'topicForcePreviousPhase'.
 topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
-    when (topic ^. topicPhase . to isPhaseFrozen) $
-        throwError500 "Cannot transition from a frozen phase"
-    case topic ^. topicPhase of
-        PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
-        PhaseRefinement{} -> topicInRefinementTimedOut tid
-        PhaseJury         -> makeEverythingFeasible topic
-        PhaseVoting{}     -> topicInVotingTimedOut tid
-        PhaseResult       -> throwError500 "No phase after result phase!"
+    let phase = topic ^. topicPhase
+    result <- case phase of
+        _ | isPhaseFrozen phase
+                          -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
+        PhaseWildIdea{}   -> throwError500 "internal: topicForceNextPhase from wild idea phase"
+        PhaseRefinement{} -> PhaseShiftResultOk tid phase
+                             <$> topicTimeout RefinementPhaseTimeOut tid
+        PhaseJury         -> PhaseShiftResultOk tid phase
+                             <$> makeEverythingFeasible topic
+        PhaseVoting{}     -> PhaseShiftResultOk tid phase
+                             <$> topicTimeout VotingPhaseTimeOut tid
+        PhaseResult       -> pure $ PhaseShiftResultNoForwardFromResult tid
+    addMessage $ uilabel result
+    pure ()
   where
+    -- this implicitly triggers the change to voting phase.
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
+        topic' <- mquery $ findTopic (topic ^. _Id)
+        return (topic' ^. topicPhase)
+
+topicForcePreviousPhase :: (ActionM m) => AUID Topic -> m ()
+topicForcePreviousPhase tid = do
+    now <- getCurrentTimestamp
+    phaseEndR <- query $ phaseEndRefinement now
+    phaseEndV <- query $ phaseEndVote now
+    topic <- mquery $ findTopic tid
+    let phase = topic ^. topicPhase
+    result <- case topic ^. topicPhase of
+        _ | isPhaseFrozen phase
+                          -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
+        PhaseWildIdea{}   -> throwError500 "internal: topicForcePreviousPhase from wild idea phase"
+        PhaseRefinement{} -> pure $ PhaseShiftResultNoBackwardsFromRefinement tid
+        PhaseJury         -> PhaseShiftResultOk tid phase
+                             <$> topicPhaseChange topic (RevertJuryPhaseToRefinement phaseEndR)
+        PhaseVoting{}     -> PhaseShiftResultOk tid phase
+                             <$> topicPhaseChange topic RevertVotingPhaseToJury
+        PhaseResult       -> PhaseShiftResultOk tid phase
+                             <$> topicPhaseChange topic (RevertResultPhaseToVoting phaseEndV)
+    addMessage $ uilabel result
+    pure ()
+
+
+data PhaseShiftResult =
+    PhaseShiftResultOk (AUID Topic) Phase Phase
+  | PhaseShiftResultNoBackwardsFromRefinement (AUID Topic)
+  | PhaseShiftResultNoForwardFromResult (AUID Topic)
+  | PhaseShiftResultNoShiftingWhenFrozen (AUID Topic)
+  deriving (Eq, Ord, Show, Read)
+
+instance HasUILabel PhaseShiftResult where
+    uilabel = \case
+        (PhaseShiftResultOk tid f t) ->
+            nameTopic tid <> " wurde von " <>
+            uilabel f <> " nach " <> uilabel t <> " verschoben."
+        (PhaseShiftResultNoBackwardsFromRefinement tid) ->
+            nameTopic tid <> " konnte nicht zurückgesetzt werden: " <>
+            "steht schon auf 'Ausarbeitung'."
+        (PhaseShiftResultNoForwardFromResult tid) ->
+            nameTopic tid <> " konnte nicht weitergesetzt werden: " <>
+            "steht schon auf 'Ergebnis'."
+        (PhaseShiftResultNoShiftingWhenFrozen tid) ->
+            nameTopic tid <> " konnte nicht verschoben werden: " <>
+            "System ist im Ferienmodus."
+      where
+        nameTopic (AUID tid) = "Thema #" <> fromString (show tid)
 
 
 -- * files
