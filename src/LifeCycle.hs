@@ -285,7 +285,7 @@ topicJuryCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> [CanPhaseForwardTopic]
+    Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
 topicVotingCaps :: Role -> [TopicCapability]
 topicVotingCaps = \case
@@ -303,4 +303,4 @@ topicResultCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> []
+    Admin            -> [CanPhaseBackwardTopic]
