@@ -219,21 +219,21 @@ data IdeaMode =
 instance SOP.Generic IdeaMode
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode (ViewIdea i mc)      root = maybe id (flip (</#>) . anchor) mc $
-                                     root </> "idea" </> uriPart i </> "view"
-ideaMode (EditIdea i)         root = root </> "idea" </> uriPart i </> "edit"
-ideaMode (LikeIdea i)         root = root </> "idea" </> uriPart i </> "like"
-ideaMode (VoteOnIdea i v)     root = root </> "idea" </> uriPart i </> "vote"
-                                          </> uriPart v
-ideaMode (UnvoteOnIdea i u)   root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
-ideaMode (JudgeIdea i v)      root = root </> "idea" </> uriPart i </> "jury"
-                                          </> uriPart v
-ideaMode (CommentOnIdea i)    root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment ck m)     root = commentMode ck m root
-ideaMode CreateIdea           root = root </> "idea" </> "create"
-ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
-ideaMode (MarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "markwinner"
-ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"  -- TODO: re-align
+ideaMode (ViewIdea i mc)        root = maybe id (flip (</#>) . anchor) mc $
+                                       root </> "idea" </> uriPart i </> "view"
+ideaMode (EditIdea i)           root = root </> "idea" </> uriPart i </> "edit"
+ideaMode (LikeIdea i)           root = root </> "idea" </> uriPart i </> "like"
+ideaMode (VoteOnIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
+                                            </> uriPart v
+ideaMode (UnvoteOnIdea i u)     root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
+ideaMode (JudgeIdea i v)        root = root </> "idea" </> uriPart i </> "jury"
+                                            </> uriPart v
+ideaMode (CommentOnIdea i)      root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (OnComment ck m)       root = commentMode ck m root
+ideaMode CreateIdea             root = root </> "idea" </> "create"
+ideaMode (CreatorStatement i)   root = root </> "idea" </> uriPart i </> "statement"
+ideaMode (MarkIdeaAsWinner i)   root = root </> "idea" </> uriPart i </> "markwinner"
+ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"
 
 
 -- ** CommentMode
@@ -254,12 +254,12 @@ commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
 commentMode (CommentKey _loc i parents commentId) m root =
     case m of
         ReplyToComment  -> base 1 </> "reply"
-        EditComment   -> base 1 </> "edit"
-        EditReply     -> base 2 </> "edit"
-        DeleteComment -> base 2 </> "delete"
-        ReportComment -> base 2 </> "report"
-        VoteOnComment v -> base 2 </> "vote" </> uriPart v  -- TODO: re-align
-        ViewComment   -> root  </> "idea" </> uriPart i </> "view" </#> anchor commentId
+        EditComment     -> base 1 </> "edit"
+        EditReply       -> base 2 </> "edit"
+        DeleteComment   -> base 2 </> "delete"
+        ReportComment   -> base 2 </> "report"
+        VoteOnComment v -> base 2 </> "vote" </> uriPart v
+        ViewComment     -> root  </> "idea" </> uriPart i </> "view" </#> anchor commentId
   where
     -- NOTE: Deep replies are not supported yet.
     -- Meanwhile urls are automatically shortened to fit the current API.
@@ -453,11 +453,11 @@ isPostOnly :: Main -> Bool
 isPostOnly = \case
     IdeaPath _ m ->
         case m of
-            LikeIdea{}         -> True
-            VoteOnIdea{}       -> True
-            UnvoteOnIdea{}     -> True
-            MarkIdeaAsWinner{} -> True
-            UnmarkIdeaAsWinner{} -> True  -- TODO: re-align
+            LikeIdea{}           -> True
+            VoteOnIdea{}         -> True
+            UnvoteOnIdea{}       -> True
+            MarkIdeaAsWinner{}   -> True
+            UnmarkIdeaAsWinner{} -> True
             OnComment _ cm ->
                 case cm of
                     VoteOnComment{} -> True
