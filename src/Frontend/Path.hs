@@ -41,7 +41,7 @@ module Frontend.Path
     , voteOnIdea
     , unvoteOnIdea
     , markIdeaAsWinner
-    , revokeWinnerIdea
+    , unmarkIdeaAsWinner
     , creatorStatement
 
     -- * paths to idea lists
@@ -209,7 +209,7 @@ data IdeaMode =
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentOnIdea (AUID Idea)
     | MarkIdeaAsWinner (AUID Idea)
-    | RevokeWinnerIdea (AUID Idea)
+    | UnmarkIdeaAsWinner (AUID Idea)
 
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
     -- CommentKey
@@ -234,7 +234,7 @@ ideaMode (OnComment ck m)     root = commentMode ck m root
 ideaMode CreateIdea           root = root </> "idea" </> "create"
 ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
 ideaMode (MarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "markwinner"
-ideaMode (RevokeWinnerIdea i) root = root </> "idea" </> uriPart i </> "revokewinner"
+ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"  -- TODO: re-align
 
 
 -- ** CommentMode
@@ -379,9 +379,8 @@ unvoteOnIdea idea u = IdeaPath (idea ^. ideaLocation) $ UnvoteOnIdea (idea ^. _I
 markIdeaAsWinner :: Idea -> Main
 markIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ MarkIdeaAsWinner (idea ^. _Id)
 
--- TODO: rename to 'unmarkIdeaWinning' (also constructor)
-revokeWinnerIdea :: Idea -> Main
-revokeWinnerIdea idea = IdeaPath (idea ^. ideaLocation) $ RevokeWinnerIdea (idea ^. _Id)
+unmarkIdeaAsWinner :: Idea -> Main
+unmarkIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ UnmarkIdeaAsWinner (idea ^. _Id)
 
 -- TODO: rename to 'makeCreateStatement' (also constructor)
 creatorStatement :: Idea -> Main
@@ -468,7 +467,7 @@ isPostOnly = \case
             VoteOnIdea{}       -> True
             UnvoteOnIdea{}     -> True
             MarkIdeaAsWinner{} -> True
-            RevokeWinnerIdea{} -> True
+            UnmarkIdeaAsWinner{} -> True  -- TODO: re-align
             OnComment _ cm ->
                 case cm of
                     VoteOnComment{} -> True
