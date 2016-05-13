@@ -45,7 +45,7 @@ spec = do
 
     context "ToHtml" $ mapM_ renderMarkup [
           H (arb :: Gen PageOverviewOfSpaces)
-        , H (arb :: Gen PageIdeasOverview)
+        , H (arb :: Gen PageOverviewOfWildIdeas)
         , H (arb :: Gen PageOverviewOfTopics)
         , H (arb :: Gen ViewTopic)
         , H (arb :: Gen ViewIdea)

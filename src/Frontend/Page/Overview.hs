@@ -7,7 +7,7 @@
 
 module Frontend.Page.Overview
     ( PageOverviewOfSpaces(..)
-    , PageIdeasOverview(..)
+    , PageOverviewOfWildIdeas(..)
     , PageOverviewOfTopics(..)
     , WhatListPage(..)
     , viewRooms
@@ -34,7 +34,7 @@ data PageOverviewOfSpaces = PageOverviewOfSpaces [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace ListItemIdeas
+data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas RenderContext IdeaSpace ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
@@ -54,10 +54,10 @@ viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageOverviewOfSpaces
 viewRooms = PageOverviewOfSpaces <$> getSpacesForCurrentUser
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
-    => IdeaSpace -> IdeasQuery -> m PageIdeasOverview
+    => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
     ctx <- renderContext
-    PageIdeasOverview ctx space <$> equery (do
+    PageOverviewOfWildIdeas ctx space <$> equery (do
         is  <- applyFilter ideasQuery <$> findWildIdeasBySpace space
         ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery
             <$> getListInfoForIdea `mapM` is)
@@ -87,9 +87,9 @@ instance ToHtml PageOverviewOfSpaces where
 
 instance Page PageOverviewOfSpaces
 
-instance ToHtml PageIdeasOverview where
+instance ToHtml PageOverviewOfWildIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview _ctx space ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfWildIdeas _ctx space ideasAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -102,7 +102,7 @@ instance ToHtml PageIdeasOverview where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
-instance Page PageIdeasOverview where
+instance Page PageOverviewOfWildIdeas where
     extraBodyClasses _ = ["m-shadow"]
 
 instance ToHtml PageOverviewOfTopics where

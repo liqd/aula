@@ -136,14 +136,14 @@ instance Arbitrary PageOverviewOfSpaces where
     arbitrary = PageOverviewOfSpaces <$> arb
     shrink (PageOverviewOfSpaces x) = PageOverviewOfSpaces <$> shr x
 
-instance Arbitrary PageIdeasOverview where
+instance Arbitrary PageOverviewOfWildIdeas where
     arbitrary = do
         ctx   <- arb
         space <- arb
         ideas <- (listItemIdeasWhatPage .~ IdeaInIdeasOverview) <$>
                  mkListItemIdeasInLocation (IdeaLocationSpace space)
-        pure $ PageIdeasOverview ctx space ideas
-    shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
+        pure $ PageOverviewOfWildIdeas ctx space ideas
+    shrink (PageOverviewOfWildIdeas x y z) = PageOverviewOfWildIdeas <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageOverviewOfTopics where
     arbitrary = PageOverviewOfTopics <$> arb <*> arb <*> arb

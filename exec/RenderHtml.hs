@@ -62,7 +62,7 @@ pagesPlain f =
     , f (Proxy :: Proxy PageDelegateVote)
     , f (Proxy :: Proxy PageDelegationNetwork)
     , f (Proxy :: Proxy PageOverviewOfTopics)
-    , f (Proxy :: Proxy PageIdeasOverview)
+    , f (Proxy :: Proxy PageOverviewOfWildIdeas)
     , f (Proxy :: Proxy PageOverviewOfSpaces)
     , f (Proxy :: Proxy PageStaticImprint)
     , f (Proxy :: Proxy PageStaticTermsOfUse)

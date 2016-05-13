@@ -302,7 +302,7 @@ topicApi space
 type AulaSpace
     =  IdeaApi
        -- browse wild ideas in an idea space
-  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
+  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageOverviewOfWildIdeas)
   :<|> TopicApi
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
