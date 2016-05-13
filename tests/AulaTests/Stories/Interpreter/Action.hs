@@ -173,9 +173,9 @@ runClient (Free (MarkIdea t v k)) = do
             Right v' -> (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue) `shouldBe` Just v'
     runClient k
 
-runClient (Free (VoteIdea t v k)) = do
+runClient (Free (VoteOnIdea t v k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    step . lift $ Action.voteIdea (idea ^. _Id) v
+    step . lift $ Action.voteOnIdea (idea ^. _Id) v
     postcondition $ do
         Just idea' <- findIdeaByTitle t
         let noOfVotes  = Map.size $ idea  ^. ideaVotes
@@ -188,9 +188,9 @@ runClient (Free (MoveIdea _i _ot _nt k)) = do
     -- FIXME: Implement move topic.
     runClient k
 
-runClient (Free (CommentIdea t c k)) = do
+runClient (Free (CommentOnIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    step . lift $ (Page.commentIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor)
+    step . lift $ (Page.commentOnIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor)
                                     (CommentContent $ Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
@@ -206,10 +206,10 @@ runClient (Free (RevokeWinner t k)) = do
         (idea' ^. ideaVoteResult) `shouldBe` Nothing
     runClient k
 
-runClient (Free (ReplyComment t cp c k)) = do
+runClient (Free (ReplyToComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     step . lift $
-        (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor)
+        (Page.replyToComment (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor)
                                (CommentContent $ Markdown c)
     postcondition $ checkIdeaComment t c
     runClient k

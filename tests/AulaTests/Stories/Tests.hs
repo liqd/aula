@@ -32,8 +32,8 @@ topicTimeoutStory = do
     setFreeze Frozen
     likeIdea idea1  -- succeeds, prevented by hiding UI elements
     setFreeze NotFrozen
-    commentIdea idea1 comment1
-    replyComment idea1 comment1 comment2
+    commentOnIdea idea1 comment1
+    replyToComment idea1 comment1 comment2
     voteOnComment idea1 comment1 Up
     voteOnCommentReply idea1 comment1 comment2 Up
     createTopic idea1 topic1a "desc"
@@ -41,7 +41,7 @@ topicTimeoutStory = do
     timeoutTopic topic1
     markIdea idea1 (Left $ Feasible Nothing)
     setFreeze Frozen
-    voteIdea idea1 Yes  -- succeeds, because capabilities only affect UI
+    voteOnIdea idea1 Yes  -- succeeds, because capabilities only affect UI
     -- FIXME: how to catch the expected error below?
       -- timeoutTopic topic1  -- fails, phase change illegal;
     setFreeze NotFrozen
@@ -57,8 +57,8 @@ someUserBehavior = do
     login "admin"
     selectIdeaSpace "school"
     createIdea idea1 "desc" CatRules
-    commentIdea idea1 comment1
-    replyComment idea1 comment1 comment2
+    commentOnIdea idea1 comment1
+    replyToComment idea1 comment1 comment2
     reportComment idea1 comment1 "Report this"
     reportCommentReply idea1 comment1 comment2 "Report that"
     deleteComment idea1 comment1

@@ -142,7 +142,7 @@ aulaActions =
 
 type AulaMain =
        -- view all spaces
-       "space" :> GetH (Frame PageRoomsOverview)
+       "space" :> GetH (Frame PageOverviewOfSpaces)
 
        -- enter one space
   :<|> IdeaSpace ::> AulaSpace
@@ -152,7 +152,6 @@ type AulaMain =
 
        -- enter user profile
   :<|> User ::> AulaUser
-  :<|> "user" :> "profile"  :> FormHandler EditUserProfile
   :<|> "user" :> "settings" :> FormHandler PageUserSettings
 
        -- enter admin api
@@ -178,7 +177,6 @@ aulaMain =
 
   :<|> makeFrame (PageShow <$> Action.query getActiveUsers)
   :<|> aulaUser
-  :<|> form Page.editUserProfile
   :<|> form Page.userSettings
   :<|> aulaAdmin
 
@@ -193,7 +191,7 @@ aulaMain =
 
 type CommentApi
        -- reply on a comment
-    = "reply" :> FormHandler CommentIdea
+    = "reply" :> FormHandler CommentOnIdea
        -- edit an existing comment
   :<|> "edit" :> FormHandler EditComment
        -- vote on a comment
@@ -212,7 +210,7 @@ type CommentApi
 
 commentApi :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
 commentApi loc iid cid
-    =  form (Page.replyCommentIdea   loc iid cid)
+    =  form (Page.replyToComment     loc iid cid)
   :<|> form (Page.editComment        loc iid cid)
   :<|> Action.voteIdeaComment        loc iid cid
   :<|> Action.voteIdeaCommentReply   loc iid cid
@@ -234,7 +232,7 @@ type IdeaApi
        -- remove vote from idea
   :<|> Idea ::> User ::> "remove" :> PostH
        -- comment on an idea
-  :<|> Idea ::> "comment" :> FormHandler CommentIdea
+  :<|> Idea ::> "comment" :> FormHandler CommentOnIdea
        -- API specific to one comment
   :<|> Idea ::> Comment ::> CommentApi
        -- jury an idea
@@ -253,9 +251,9 @@ ideaApi loc
     =  makeFrame . Page.viewIdea
   :<|> form . Page.editIdea
   :<|> Action.likeIdea
-  :<|> Action.voteIdea
-  :<|> Action.removeVote
-  :<|> form . Page.commentIdea loc
+  :<|> Action.voteOnIdea
+  :<|> Action.unvoteOnIdea
+  :<|> form . Page.commentOnIdea loc
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
   :<|> flip Action.markIdeaInResultPhase (Winning Nothing)
@@ -265,7 +263,7 @@ ideaApi loc
 
 type TopicApi =
        -- browse topics in an idea space
-       "topic" :> GetH (Frame PageIdeasInDiscussion)
+       "topic" :> GetH (Frame PageOverviewOfTopics)
   :<|> Topic ::> IdeaApi
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 
@@ -302,7 +300,7 @@ topicApi space
 type AulaSpace
     =  IdeaApi
        -- browse wild ideas in an idea space
-  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
+  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageOverviewOfWildIdeas)
   :<|> TopicApi
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m

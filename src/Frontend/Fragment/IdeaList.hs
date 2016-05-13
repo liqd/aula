@@ -8,6 +8,14 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.IdeaList
+    ( WhatListPage(..)
+    , ListItemIdeas(..)
+    , listItemIdeasCtx
+    , listItemIdeasWhatPage
+    , listItemIdeasLocation
+    , listItemIdeasFilter
+    , listItemIdeasData
+    )
 where
 
 import Control.Lens
@@ -18,13 +26,13 @@ import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
-import Persistent (ListInfoForIdea(ListInfoForIdea))
+import Persistent (IdeaStats(IdeaStats))
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 
 data WhatListPage
-    = IdeaInIdeasOverview  -- TODO: rename these!  (at least it should be plural?)  see also #72
+    = IdeaInIdeasOverview
     | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
@@ -36,21 +44,22 @@ isIdeaInViewTopic :: WhatListPage -> Bool
 isIdeaInViewTopic (IdeaInViewTopic _) = True
 isIdeaInViewTopic _                   = False
 
-  -- TODO: align selector names in ListItemIdea, ListItemIdeas.  do we really need both?!  or are
-  -- they two entirely different things and shouldn't be named so alike?
+-- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
       , _listItemIdeaWhatPage   :: WhatListPage
-      , _listItemIdeaInfo       :: ListInfoForIdea
+      , _listItemIdeaInfo       :: IdeaStats
       }
   deriving (Eq, Show, Read, Generic)
 
+-- | An idea list.  Contains the information for constructing 'ListItemIdea' values, plus the
+-- search/filter header of the list.
 data ListItemIdeas = ListItemIdeas
       { _listItemIdeasCtx      :: RenderContext
       , _listItemIdeasWhatPage :: WhatListPage
       , _listItemIdeasLocation :: IdeaLocation
       , _listItemIdeasFilter   :: IdeasQuery
-      , _listItemIdeasData     :: [ListInfoForIdea]
+      , _listItemIdeasData     :: [IdeaStats]
       }
   deriving (Eq, Show, Read, Generic)
 
@@ -63,7 +72,7 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea phase quo voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage (IdeaStats idea phase quo voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)

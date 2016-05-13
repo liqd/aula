@@ -177,7 +177,7 @@ userHeaderDiv ctx (ActiveUser user) =
 
         div_ [class_ "heroic-btn-group"] $ if isOwnProfile
             then do
-                btn U.UserProfile "+ Profil bearbeiten"
+                btn (U.viewUserProfile user) "+ Profil bearbeiten"
             else do
                 btn U.Broken "Klassenweit beauftragen"
                 btn U.Broken "Schulweit beauftragen"
@@ -198,7 +198,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserDelegations)]
+                a_ [class_ "heroic-tab-item", href_ (U.UserProf (user ^. _Id) U.UserDelegations)]
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
@@ -228,7 +228,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx u
             div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (U.User (user ^. _Id) U.UserIdeas)]
+                a_ [class_ "heroic-tab-item", href_ (U.viewUserProfile user)]
                     "Erstellte Ideen"
                 span_ [class_ "heroic-tab-item  m-active"]
                     "Erhaltene Stimmen"
@@ -278,9 +278,9 @@ delegatedVotes userId = do
 instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
 
-    formAction EditUserProfile{} = U.UserProfile
+    formAction (EditUserProfile u) = U.viewUserProfile u
 
-    redirectOf (EditUserProfile u) _ = U.viewUser u
+    redirectOf (EditUserProfile u) _ = U.viewUserProfile u
 
     makeForm (EditUserProfile user) =
         UserProfile

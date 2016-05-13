@@ -42,11 +42,11 @@ data Step a where
     CreateTopic         :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     EditTopic           :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea            :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
-    VoteIdea            :: IdeaTitle -> IdeaVoteValue -> a -> Step a
+    VoteOnIdea          :: IdeaTitle -> IdeaVoteValue -> a -> Step a
     MoveIdea            :: IdeaTitle -> TopicTitle -> TopicTitle -> a -> Step a
-    CommentIdea         :: IdeaTitle -> CommentText -> a -> Step a
+    CommentOnIdea       :: IdeaTitle -> CommentText -> a -> Step a
     RevokeWinner        :: IdeaTitle -> a -> Step a
-    ReplyComment        :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    ReplyToComment      :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     VoteOnComment       :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
     VoteOnCommentReply  :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
     ReportComment       :: IdeaTitle -> CommentText -> ReportText -> a -> Step a
@@ -97,20 +97,20 @@ timeoutTopic title = liftF $ TimeoutTopic title ()
 markIdea :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> Behavior ()
 markIdea title value = liftF $ MarkIdea title value ()
 
-voteIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
-voteIdea title vote = liftF $ VoteIdea title vote ()
+voteOnIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
+voteOnIdea title vote = liftF $ VoteOnIdea title vote ()
 
 moveIdea :: IdeaTitle -> TopicTitle -> TopicTitle -> Behavior ()
 moveIdea idea oldTopic newTopic = liftF $ MoveIdea idea oldTopic newTopic ()
 
-commentIdea :: IdeaTitle -> CommentText -> Behavior ()
-commentIdea title text = liftF $ CommentIdea title text ()
+commentOnIdea :: IdeaTitle -> CommentText -> Behavior ()
+commentOnIdea title text = liftF $ CommentOnIdea title text ()
 
 revokeWinner :: IdeaTitle -> Behavior ()
 revokeWinner title = liftF $ RevokeWinner title ()
 
-replyComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
-replyComment title comment text = liftF $ ReplyComment title comment text ()
+replyToComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
+replyToComment title comment text = liftF $ ReplyToComment title comment text ()
 
 voteOnComment :: IdeaTitle -> CommentText -> UpDown -> Behavior ()
 voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()
