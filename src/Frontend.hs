@@ -142,7 +142,7 @@ aulaActions =
 
 type AulaMain =
        -- view all spaces
-       "space" :> GetH (Frame PageRoomsOverview)
+       "space" :> GetH (Frame PageOverviewOfSpaces)
 
        -- enter one space
   :<|> IdeaSpace ::> AulaSpace

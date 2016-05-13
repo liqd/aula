@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Overview
-    ( PageRoomsOverview(..)
+    ( PageOverviewOfSpaces(..)
     , PageIdeasOverview(..)
     , PageOverviewOfTopics(..)
     , WhatListPage(..)
@@ -30,7 +30,7 @@ import qualified Frontend.Path as U
 -- * pages
 
 -- | 1. Rooms overview
-data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
+data PageOverviewOfSpaces = PageOverviewOfSpaces [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
@@ -50,8 +50,8 @@ data ActiveTab = WildIdeas | Topics
 
 -- * actions
 
-viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageRoomsOverview
-viewRooms = PageRoomsOverview <$> getSpacesForCurrentUser
+viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageOverviewOfSpaces
+viewRooms = PageOverviewOfSpaces <$> getSpacesForCurrentUser
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageIdeasOverview
@@ -68,9 +68,9 @@ viewTopics space = PageOverviewOfTopics <$> renderContext <*> pure space <*> que
 
 -- * templates
 
-instance ToHtml PageRoomsOverview where
+instance ToHtml PageOverviewOfSpaces where
     toHtmlRaw = toHtml
-    toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfSpaces spaces) = semanticDiv p $ do
         div_ [class_ "container-main"] $ do
             f spaces
       where
@@ -85,7 +85,7 @@ instance ToHtml PageRoomsOverview where
                     span_ [class_ "item-room-image"] nil
                     h2_ [class_ "item-room-title"] $ uilabel ispace
 
-instance Page PageRoomsOverview
+instance Page PageOverviewOfSpaces
 
 instance ToHtml PageIdeasOverview where
     toHtmlRaw = toHtml

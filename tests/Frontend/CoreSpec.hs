@@ -44,7 +44,7 @@ spec = do
     -- lists are complete.
 
     context "ToHtml" $ mapM_ renderMarkup [
-          H (arb :: Gen PageRoomsOverview)
+          H (arb :: Gen PageOverviewOfSpaces)
         , H (arb :: Gen PageIdeasOverview)
         , H (arb :: Gen PageOverviewOfTopics)
         , H (arb :: Gen ViewTopic)

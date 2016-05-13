@@ -132,9 +132,9 @@ instance ( Generic a, Generic b, Generic c
 
 -- * pages
 
-instance Arbitrary PageRoomsOverview where
-    arbitrary = PageRoomsOverview <$> arb
-    shrink (PageRoomsOverview x) = PageRoomsOverview <$> shr x
+instance Arbitrary PageOverviewOfSpaces where
+    arbitrary = PageOverviewOfSpaces <$> arb
+    shrink (PageOverviewOfSpaces x) = PageOverviewOfSpaces <$> shr x
 
 instance Arbitrary PageIdeasOverview where
     arbitrary = do
