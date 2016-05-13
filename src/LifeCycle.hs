@@ -38,7 +38,9 @@ data PhaseChange
     = RefinementPhaseTimeOut
     | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
     | VotingPhaseTimeOut
-    | VotingPhaseSetbackToJuryPhase
+    | RevertJuryPhaseToRefinement
+    | RevertVotingPhaseToJury
+    | RevertResultPhaseToVoting
     | PhaseFreeze { _phaseChangeFreezeNow :: Timestamp }
     | PhaseThaw { _phaseChangeThawNow :: Timestamp }
   deriving (Eq, Show)
@@ -73,8 +75,13 @@ phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
     = Just (PhaseVoting (ActivePhase _phaseChangeVotPhaseEnd), [])
 phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseSetbackToJuryPhase
+phaseTrans (PhaseVoting ActivePhase{}) RevertJuryPhaseToRefinement
+    = Just (PhaseJury, [])  -- TODO: actions?
+phaseTrans (PhaseVoting ActivePhase{}) RevertVotingPhaseToJury
     = Just (PhaseJury, [UnmarkAllIdeas])
+phaseTrans (PhaseVoting ActivePhase{}) RevertResultPhaseToVoting
+    = Just (PhaseJury, [])  -- TODO: actions?
+
 -- Freezing and thawing.
 --
 -- There are no frozen variants of @PhaseJury@ and @PhaseResult@.
@@ -85,6 +92,7 @@ phaseTrans phase (PhaseFreeze now)
     = Just (freezePhase now phase, [])
 phaseTrans phase (PhaseThaw now)
     = Just (thawPhase now phase, [])
+
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
 

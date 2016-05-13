@@ -791,7 +791,7 @@ adminPhaseChange =
         (\(AdminPhaseChangeForTopicData tid dir) -> do
             case dir of
                 Forward -> Action.topicForceNextPhase tid
-                Backward -> Action.topicInVotingResetToJury tid
+                Backward -> Action.topicForcePreviousPhase tid
         )
         (\AdminPhaseChange (AdminPhaseChangeForTopicData tid _dir) () -> do
             topic <- Action.mquery $ findTopic tid

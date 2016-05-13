@@ -78,7 +78,7 @@ module Action
 
       -- * admin activity
     , topicForceNextPhase
-    , topicInVotingResetToJury
+    , topicForcePreviousPhase
 
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
@@ -590,13 +590,6 @@ topicInRefinementTimedOut tid = do
 topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
 topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
 
-topicInVotingResetToJury :: (ActionM m) => AUID Topic -> m ()
-topicInVotingResetToJury tid = do
-    topic <- mquery $ findTopic tid
-    case topic ^. topicPhase of
-        PhaseVoting _ -> topicPhaseChange topic VotingPhaseSetbackToJuryPhase
-        _             -> pure ()
-
 
 -- * Admin activities
 
@@ -605,7 +598,7 @@ topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     when (topic ^. topicPhase . to isPhaseFrozen) $
-        throwError500 "Cannot transition from a frozen phase"
+        throwError500 "Cannot phase shift when system is frozen."
     case topic ^. topicPhase of
         PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
         PhaseRefinement{} -> topicInRefinementTimedOut tid
@@ -613,9 +606,25 @@ topicForceNextPhase tid = do
         PhaseVoting{}     -> topicInVotingTimedOut tid
         PhaseResult       -> throwError500 "No phase after result phase!"
   where
+    -- this implicitly triggers the change to voting phase.
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
+
+topicForcePreviousPhase :: (ActionM m) => AUID Topic -> m ()
+topicForcePreviousPhase tid = do
+    topic <- mquery $ findTopic tid
+    when (topic ^. topicPhase . to isPhaseFrozen) $
+        throwError500 "Cannot phase shift when system is frozen."
+    case topic ^. topicPhase of
+        PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
+        PhaseRefinement{} -> throwError500 "No phase before refinement phase!"
+        PhaseJury         -> topicPhaseChange topic RevertJuryPhaseToRefinement
+        PhaseVoting{}     -> topicPhaseChange topic RevertVotingPhaseToJury
+        PhaseResult       -> topicPhaseChange topic RevertResultPhaseToVoting
+
+-- TODO: make user errors more interesting action exceptions and report them on the UI.
+-- TODO: explain what shifting phases does in the UI.  steal documentation from freeze page.  WARN!!
 
 
 -- * files
