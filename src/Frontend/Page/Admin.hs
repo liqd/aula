@@ -360,8 +360,8 @@ adminFreeze =
              update $ SaveAndEnactFreeze now payload)
         (\_ f _ ->
             case f of
-                Frozen    -> "Das System wurde re-aktiviert (Normalbetrieb)." :: ST
-                NotFrozen -> "Das System wurde eingefroren (Ferienbetrieb).")
+                Frozen    -> "Das System wurde eingefroren (Ferienbetrieb)." :: ST
+                NotFrozen -> "Das System wurde re-aktiviert (Normalbetrieb).")
 
 
 -- ** roles and permisisons
