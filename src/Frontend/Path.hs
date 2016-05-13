@@ -31,6 +31,7 @@ module Frontend.Path
     -- * paths to ideas
     , viewIdea
     , viewIdeaAtComment
+    , viewIdeaAtComment'
     , viewIdeaOfComment
     , createIdea
     , editIdea
@@ -85,7 +86,7 @@ import Types
     , IdeaLocation(..), IdeaSpace, SchoolClass
     , ideaLocation, ideaLocationSpace, ideaLocationTopicId
     , Topic, User, Idea, topicIdeaSpace
-    , Comment, CommentKey(CommentKey), ckIdeaLocation, ckIdeaId
+    , Comment, CommentKey(CommentKey), ckIdeaLocation, ckIdeaId, ckCommentId
     , IdeaVoteValue, UpDown
     , IdeaJuryResultType(..)
     , ListIdeasInTopicTab(..)
@@ -342,7 +343,13 @@ viewIdea idea = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) Nothing)
 
 -- | view idea with anchor pointing to comment
 viewIdeaAtComment :: Idea -> AUID Comment -> Main
-viewIdeaAtComment idea cid = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) (Just cid))
+viewIdeaAtComment idea =
+    viewIdeaAtComment' . CommentKey (idea ^. ideaLocation) (idea ^. _Id) []
+
+-- | Like 'viewIdeaAtComment', for places where we don't have the entire idea available.
+viewIdeaAtComment' :: CommentKey -> Main
+viewIdeaAtComment' c =
+    IdeaPath (c ^. ckIdeaLocation) (ViewIdea (c ^. ckIdeaId) (Just (c ^. ckCommentId)))
 
 -- | view an idea that a comment refers to
 viewIdeaOfComment :: Comment -> Main
