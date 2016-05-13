@@ -66,10 +66,6 @@ module Action
     , reportIdeaComment
     , reportIdeaCommentReply
 
-      -- * topic handling
-    , topicInRefinementTimedOut
-    , topicInVotingTimedOut
-
       -- * page handling
     , createTopic
     , Action.editTopic
@@ -342,15 +338,18 @@ deleteUser = update . DeactivateUser
 
 -- * Phase Transitions
 
-topicPhaseChange :: (ActionM m) => Topic -> PhaseChange -> m ()
+topicPhaseChange :: (ActionM m) => Topic -> PhaseChange -> m Phase
 topicPhaseChange topic change = do
-    case phaseTrans (topic ^. topicPhase) change of
+    let phase = topic ^. topicPhase
+    case phaseTrans phase change of
         Nothing -> throwError500 "Invalid phase transition"
         Just (phase', actions) -> do
             update $ SetTopicPhase (topic ^. _Id) phase'
             mapM_ (phaseAction topic) actions
+            eventLogTopicNewPhase topic phase phase'
+            return phase'
 
-topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m ()
+topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m Phase
 topicTimeout phaseChange tid = do
     topic <- mquery $ findTopic tid
     topicPhaseChange topic phaseChange
@@ -555,7 +554,7 @@ checkCloseJuryPhase topic = do
     -- within a single transaction with the update) that the current values are as expected, and if
     -- not abort with an error like "the ideal is not in the expected phase".  [~~mk]
     allMarked <- query $ checkAllIdeasMarked topic
-    when allMarked $ do
+    when allMarked . void $ do
         days <- getCurrentTimestamp >>= \now -> query $ phaseEndVote now
         topicPhaseChange topic (AllIdeasAreMarked days)
 
@@ -578,50 +577,46 @@ revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
 
--- * Topic handling
-
-topicInRefinementTimedOut :: (ActionM m) => AUID Topic -> m ()
-topicInRefinementTimedOut tid = do
-    topic  <- mquery $ findTopic tid
-    topicTimeout RefinementPhaseTimeOut tid
-    topic' <- mquery $ findTopic tid
-    eventLogTopicNewPhase topic (topic ^. topicPhase) (topic' ^. topicPhase)
-
-topicInVotingTimedOut :: (ActionM m) => AUID Topic -> m ()
-topicInVotingTimedOut = topicTimeout VotingPhaseTimeOut
-
-
 -- * Admin activities
 
 -- FIXME: Only admin can do that
+-- FIXME: resolve code duplication between this and 'topicForcePreviousPhase'.
 topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
-    when (topic ^. topicPhase . to isPhaseFrozen) $
+    let phase = topic ^. topicPhase
+    when (isPhaseFrozen phase) $
         throwError500 "Cannot phase shift when system is frozen."
-    case topic ^. topicPhase of
+    _phase' <- case phase of
         PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
-        PhaseRefinement{} -> topicInRefinementTimedOut tid
+        PhaseRefinement{} -> topicTimeout RefinementPhaseTimeOut tid
         PhaseJury         -> makeEverythingFeasible topic
-        PhaseVoting{}     -> topicInVotingTimedOut tid
+        PhaseVoting{}     -> topicTimeout VotingPhaseTimeOut tid
         PhaseResult       -> throwError500 "No phase after result phase!"
+    -- TODO: sendmsg $ PhaseShiftResultOk tid phase phase'
+    pure ()
   where
     -- this implicitly triggers the change to voting phase.
     makeEverythingFeasible topic = do
         ideas :: [Idea] <- query $ findIdeasByTopic topic
         (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
+        topic' <- mquery $ findTopic (topic ^. _Id)
+        return (topic' ^. topicPhase)
 
 topicForcePreviousPhase :: (ActionM m) => AUID Topic -> m ()
 topicForcePreviousPhase tid = do
     topic <- mquery $ findTopic tid
-    when (topic ^. topicPhase . to isPhaseFrozen) $
+    let phase = topic ^. topicPhase
+    when (isPhaseFrozen phase) $
         throwError500 "Cannot phase shift when system is frozen."
-    case topic ^. topicPhase of
+    _phase' <- case topic ^. topicPhase of
         PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
         PhaseRefinement{} -> throwError500 "No phase before refinement phase!"
         PhaseJury         -> topicPhaseChange topic RevertJuryPhaseToRefinement
         PhaseVoting{}     -> topicPhaseChange topic RevertVotingPhaseToJury
         PhaseResult       -> topicPhaseChange topic RevertResultPhaseToVoting
+    -- TODO: sendmsg $ PhaseShiftResultOk tid phase phase'
+    pure ()
 
 -- TODO: make user errors more interesting action exceptions and report them on the UI.
 
