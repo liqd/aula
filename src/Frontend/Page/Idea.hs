@@ -241,7 +241,7 @@ instance ToHtml ViewIdea where
                                     ]
 
                         when (isNothing (idea ^. ideaVoteResult)) $
-                            winnerButton (U.markWinnerIdea idea) "Idee hat gewonnen"
+                            winnerButton (U.markIdeaAsWinner idea) "Idee hat gewonnen"
                         when (isWinning idea) $
                             winnerButton (U.revokeWinnerIdea idea) "\"gewonnen\" zurücknehmen"
 

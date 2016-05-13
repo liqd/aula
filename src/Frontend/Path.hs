@@ -40,7 +40,7 @@ module Frontend.Path
     , judgeIdea
     , voteOnIdea
     , unvoteOnIdea
-    , markWinnerIdea
+    , markIdeaAsWinner
     , revokeWinnerIdea
     , creatorStatement
 
@@ -208,7 +208,7 @@ data IdeaMode =
     | UnvoteOnIdea (AUID Idea) (AUID User)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentOnIdea (AUID Idea)
-    | MarkWinnerIdea (AUID Idea)
+    | MarkIdeaAsWinner (AUID Idea)
     | RevokeWinnerIdea (AUID Idea)
 
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
@@ -233,7 +233,7 @@ ideaMode (CommentOnIdea i)    root = root </> "idea" </> uriPart i </> "comment"
 ideaMode (OnComment ck m)     root = commentMode ck m root
 ideaMode CreateIdea           root = root </> "idea" </> "create"
 ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
-ideaMode (MarkWinnerIdea i)   root = root </> "idea" </> uriPart i </> "markwinner"
+ideaMode (MarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "markwinner"
 ideaMode (RevokeWinnerIdea i) root = root </> "idea" </> uriPart i </> "revokewinner"
 
 
@@ -376,9 +376,8 @@ voteOnIdea idea = IdeaPath (idea ^. ideaLocation) . VoteOnIdea (idea ^. _Id)
 unvoteOnIdea :: Idea -> User -> Main
 unvoteOnIdea idea u = IdeaPath (idea ^. ideaLocation) $ UnvoteOnIdea (idea ^. _Id) (u ^. _Id)
 
--- TODO: rename to 'markIdeaWinning' (also constructor)
-markWinnerIdea :: Idea -> Main
-markWinnerIdea idea = IdeaPath (idea ^. ideaLocation) $ MarkWinnerIdea (idea ^. _Id)
+markIdeaAsWinner :: Idea -> Main
+markIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ MarkIdeaAsWinner (idea ^. _Id)
 
 -- TODO: rename to 'unmarkIdeaWinning' (also constructor)
 revokeWinnerIdea :: Idea -> Main
@@ -468,7 +467,7 @@ isPostOnly = \case
             LikeIdea{}         -> True
             VoteOnIdea{}       -> True
             UnvoteOnIdea{}     -> True
-            MarkWinnerIdea{}   -> True
+            MarkIdeaAsWinner{} -> True
             RevokeWinnerIdea{} -> True
             OnComment _ cm ->
                 case cm of
