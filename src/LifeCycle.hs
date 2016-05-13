@@ -76,11 +76,11 @@ phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
 phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
 phaseTrans (PhaseVoting ActivePhase{}) RevertJuryPhaseToRefinement
-    = Just (PhaseJury, [])  -- TODO: actions?
+    = Just (PhaseJury, [])
 phaseTrans (PhaseVoting ActivePhase{}) RevertVotingPhaseToJury
-    = Just (PhaseJury, [UnmarkAllIdeas])
+    = Just (PhaseJury, [])
 phaseTrans (PhaseVoting ActivePhase{}) RevertResultPhaseToVoting
-    = Just (PhaseJury, [])  -- TODO: actions?
+    = Just (PhaseJury, [])
 
 -- Freezing and thawing.
 --
