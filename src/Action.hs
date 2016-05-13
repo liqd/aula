@@ -56,7 +56,7 @@ module Action
     , voteIdeaCommentReply
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
-    , removeVote
+    , unvoteOnIdea
     , Action.setCreatorStatement
     , revokeWinnerStatusOfIdea
 
@@ -462,8 +462,8 @@ voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
 -- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
-removeVote :: (ActionM m) => AUID Idea -> AUID User -> m ()
-removeVote ideaId user = do
+unvoteOnIdea :: (ActionM m) => AUID Idea -> AUID User -> m ()
+unvoteOnIdea ideaId user = do
     update $ RemoveVoteFromIdea ideaId user
     (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
 

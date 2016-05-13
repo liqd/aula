@@ -252,7 +252,7 @@ ideaApi loc
   :<|> form . Page.editIdea
   :<|> Action.likeIdea
   :<|> Action.voteOnIdea
-  :<|> Action.removeVote
+  :<|> Action.unvoteOnIdea
   :<|> form . Page.commentOnIdea loc
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea

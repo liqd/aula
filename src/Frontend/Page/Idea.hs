@@ -343,7 +343,7 @@ instance ToHtml IdeaVoteLikeBars where
                 postButton_ [class_ "btn voting-button"
                             , onclickJs jsReloadOnClick
                             ]
-                            (U.removeVote idea user)
+                            (U.unvoteOnIdea idea user)
             voteButton _        v =
                 postButton_ [class_ "btn-cta voting-button"
                             , onclickJs jsReloadOnClick
