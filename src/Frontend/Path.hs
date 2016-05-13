@@ -62,7 +62,8 @@ module Frontend.Path
     -- * paths to admin pages, user profile, user setting
     , adminViewUsers
     , adminViewClasses
-    , viewUser
+    , viewUserProfile
+    , viewUserIdProfile
 
     -- * aux predicates
     , isPostOnly
@@ -448,8 +449,11 @@ adminViewUsers = AdminViewUsers Nothing
 adminViewClasses :: AdminMode
 adminViewClasses = AdminViewClasses Nothing
 
-viewUser :: User -> Main
-viewUser u = User (u ^. _Id) UserIdeas
+viewUserProfile :: User -> Main
+viewUserProfile = viewUserIdProfile . view _Id
+
+viewUserIdProfile :: AUID User -> Main
+viewUserIdProfile uid = User uid UserIdeas
 
 
 -- * aux predicates

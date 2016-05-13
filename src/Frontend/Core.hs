@@ -507,7 +507,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                                . a_ [href_ $ P.viewUserProfile usr] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"]

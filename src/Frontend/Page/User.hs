@@ -280,7 +280,7 @@ instance FormPage EditUserProfile where
 
     formAction EditUserProfile{} = U.UserProfile
 
-    redirectOf (EditUserProfile u) _ = U.viewUser u
+    redirectOf (EditUserProfile u) _ = U.viewUserProfile u
 
     makeForm (EditUserProfile user) =
         UserProfile
