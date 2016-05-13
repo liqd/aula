@@ -40,7 +40,7 @@ import Persistent.Api
     )
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
-    , findActiveUser, getUsersInClass, findActiveUser, getSpaces, findTopic, getUsersInClass
+    , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -786,20 +786,12 @@ adminPhaseChange
     :: forall m . (ActionM m)
     => FormPageHandler m AdminPhaseChange
 adminPhaseChange =
-    formPageHandlerCalcMsgM
+    formPageHandler
         (pure AdminPhaseChange)
-        (\(AdminPhaseChangeForTopicData tid dir) -> do
+        (\(AdminPhaseChangeForTopicData tid dir) -> void $ do
             case dir of
                 Forward -> Action.topicForceNextPhase tid
                 Backward -> Action.topicForcePreviousPhase tid
-        )
-        (\AdminPhaseChange (AdminPhaseChangeForTopicData tid _dir) () -> do
-            topic <- Action.mquery $ findTopic tid
-            return $ unwords
-                [ "Das Thema wurde in Phase"
-                , topic ^. topicPhase . uilabeled
-                , "verschoben."
-                ]
         )
 
 
@@ -819,11 +811,6 @@ instance ToHtml PhaseChangeDir where
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
   deriving (Eq, Show)
 
--- TODO: if we keep this, there needs to be some sort of feedback to the admin what happened with
--- the phase change.  we could redirect to a page showing a message of the form "topic with title
--- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
--- session state that gets flushed and appended to the digestive functors errors implicitly whenever
--- we show a form.
 instance FormPage AdminPhaseChange where
     type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
 

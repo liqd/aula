@@ -115,6 +115,7 @@ import Data.Char (ord)
 import Data.Maybe (isJust)
 import Data.Monoid
 import Data.String.Conversions (ST, LBS, cs)
+import Data.String (fromString)
 import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
@@ -587,13 +588,13 @@ topicForceNextPhase tid = do
     let phase = topic ^. topicPhase
     when (isPhaseFrozen phase) $
         throwError500 "Cannot phase shift when system is frozen."
-    _phase' <- case phase of
+    phase' <- case phase of
         PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
         PhaseRefinement{} -> topicTimeout RefinementPhaseTimeOut tid
         PhaseJury         -> makeEverythingFeasible topic
         PhaseVoting{}     -> topicTimeout VotingPhaseTimeOut tid
         PhaseResult       -> throwError500 "No phase after result phase!"
-    -- TODO: sendmsg $ PhaseShiftResultOk tid phase phase'
+    addMessage . uilabel $ PhaseShiftResultOk tid phase phase'
     pure ()
   where
     -- this implicitly triggers the change to voting phase.
@@ -609,16 +610,39 @@ topicForcePreviousPhase tid = do
     let phase = topic ^. topicPhase
     when (isPhaseFrozen phase) $
         throwError500 "Cannot phase shift when system is frozen."
-    _phase' <- case topic ^. topicPhase of
+    phase' <- case topic ^. topicPhase of
         PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
         PhaseRefinement{} -> throwError500 "No phase before refinement phase!"
         PhaseJury         -> topicPhaseChange topic RevertJuryPhaseToRefinement
         PhaseVoting{}     -> topicPhaseChange topic RevertVotingPhaseToJury
         PhaseResult       -> topicPhaseChange topic RevertResultPhaseToVoting
-    -- TODO: sendmsg $ PhaseShiftResultOk tid phase phase'
+    addMessage . uilabel $ PhaseShiftResultOk tid phase phase'
     pure ()
 
--- TODO: make user errors more interesting action exceptions and report them on the UI.
+
+data PhaseShiftResult =
+    PhaseShiftResultOk (AUID Topic) Phase Phase
+  | PhaseShiftResultNoBackwardsFromRefinement (AUID Topic)
+  | PhaseShiftResultNoForwardFromResult (AUID Topic)
+  | PhaseShiftResultNoShiftingWhenFrozen (AUID Topic)
+  deriving (Eq, Ord, Show, Read)
+
+instance HasUILabel PhaseShiftResult where
+    uilabel = \case
+        (PhaseShiftResultOk tid f t) ->
+            nameTopic tid <> " wurde von " <>
+            uilabel f <> " nach " <> uilabel t <> " verschoben."
+        (PhaseShiftResultNoBackwardsFromRefinement tid) ->
+            nameTopic tid <> " konnte nicht zurückgesetzt werden: " <>
+            "steht schon auf 'Ausarbeitung'."
+        (PhaseShiftResultNoForwardFromResult tid) ->
+            nameTopic tid <> " konnte nicht weitergesetzt werden: " <>
+            "steht schon auf 'Ergebnis'."
+        (PhaseShiftResultNoShiftingWhenFrozen tid) ->
+            nameTopic tid <> " konnte nicht verschoben werden: " <>
+            "System ist im Ferienmodus."
+      where
+        nameTopic tid = "Thema #" <> fromString (show tid)
 
 
 -- * files
