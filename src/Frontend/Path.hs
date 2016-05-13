@@ -35,7 +35,7 @@ module Frontend.Path
     , viewIdeaOfComment
     , createIdea
     , editIdea
-    , commentIdea
+    , commentOnIdea
     , likeIdea
     , judgeIdea
     , voteIdea
@@ -207,7 +207,7 @@ data IdeaMode =
     | VoteIdea (AUID Idea) IdeaVoteValue
     | RemoveVote (AUID Idea) (AUID User)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
-    | CommentIdea (AUID Idea)
+    | CommentOnIdea (AUID Idea)
     | MarkWinnerIdea (AUID Idea)
     | RevokeWinnerIdea (AUID Idea)
 
@@ -229,7 +229,7 @@ ideaMode (VoteIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
 ideaMode (RemoveVote i u)     root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
 ideaMode (JudgeIdea i v)      root = root </> "idea" </> uriPart i </> "jury"
                                           </> uriPart v
-ideaMode (CommentIdea i)      root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (CommentOnIdea i)    root = root </> "idea" </> uriPart i </> "comment"
 ideaMode (OnComment ck m)     root = commentMode ck m root
 ideaMode CreateIdea           root = root </> "idea" </> "create"
 ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
@@ -361,9 +361,8 @@ createIdea loc = IdeaPath loc CreateIdea
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
 
--- TODO: rename to 'commentOnIdea' (also constructor)
-commentIdea :: Idea -> Main
-commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
+commentOnIdea :: Idea -> Main
+commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _Id)
 
 likeIdea :: Idea -> Main
 likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
@@ -425,7 +424,7 @@ replyComment comment = onComment comment ReplyComment
 -- TODO: rename to ..?
 commentOrReplyIdea :: Idea -> Maybe Comment -> Main
 commentOrReplyIdea idea = \case
-    Nothing      -> commentIdea idea
+    Nothing      -> commentOnIdea idea
     Just comment -> replyComment comment
 
 voteOnComment :: Comment -> UpDown -> Main

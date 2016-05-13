@@ -191,7 +191,7 @@ aulaMain =
 
 type CommentApi
        -- reply on a comment
-    = "reply" :> FormHandler CommentIdea
+    = "reply" :> FormHandler CommentOnIdea
        -- edit an existing comment
   :<|> "edit" :> FormHandler EditComment
        -- vote on a comment
@@ -232,7 +232,7 @@ type IdeaApi
        -- remove vote from idea
   :<|> Idea ::> User ::> "remove" :> PostH
        -- comment on an idea
-  :<|> Idea ::> "comment" :> FormHandler CommentIdea
+  :<|> Idea ::> "comment" :> FormHandler CommentOnIdea
        -- API specific to one comment
   :<|> Idea ::> Comment ::> CommentApi
        -- jury an idea
@@ -253,7 +253,7 @@ ideaApi loc
   :<|> Action.likeIdea
   :<|> Action.voteIdea
   :<|> Action.removeVote
-  :<|> form . Page.commentIdea loc
+  :<|> form . Page.commentOnIdea loc
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
   :<|> flip Action.markIdeaInResultPhase (Winning Nothing)

@@ -76,7 +76,7 @@ pagesForm :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, FormPage a, Page a) => Proxy a -> b)
     -> [b]
 pagesForm f =
-    [ f (Proxy :: Proxy CommentIdea)
+    [ f (Proxy :: Proxy CommentOnIdea)
     , f (Proxy :: Proxy CreateIdea)
     , f (Proxy :: Proxy CreateTopic)
     , f (Proxy :: Proxy EditIdea)

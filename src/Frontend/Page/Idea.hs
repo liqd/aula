@@ -10,7 +10,7 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
-  , CommentIdea(..)   -- TODO: rename to 'CommentOnIdea'
+  , CommentOnIdea(..)
   , EditComment(..)
   , JudgeIdea(..)
   , CreatorStatement(..)
@@ -19,7 +19,7 @@ module Frontend.Page.Idea
   , viewIdea
   , createIdea
   , editIdea
-  , commentIdea       -- TODO: rename to 'commentOnIdea'
+  , commentOnIdea
   , replyCommentIdea  -- TODO: rename to 'commentOnComment'
   , editComment
   , editReply
@@ -99,10 +99,10 @@ data EditIdea = EditIdea Idea
 instance Page EditIdea where
 
 -- | X. Comment idea
-data CommentIdea = CommentIdea Idea (Maybe Comment)
+data CommentOnIdea = CommentOnIdea Idea (Maybe Comment)
   deriving (Eq, Show, Read)
 
-instance Page CommentIdea where
+instance Page CommentOnIdea where
 
 -- | X. Deem idea feasible / not feasible
 -- Assumption: The idea is located in the topic (via 'IdeaLocation').
@@ -273,7 +273,7 @@ instance ToHtml ViewIdea where
                         when (CanComment `elem` caps) $
                             button_ [ value_ "create_comment"
                                     , class_ "btn-cta comments-header-button"
-                                    , onclick_ (U.commentIdea idea)]
+                                    , onclick_ (U.commentOnIdea idea)]
                                 "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -430,18 +430,18 @@ commentIdeaNote = Note
     , noteLabelText         = "Was möchtest du sagen?"
     }
 
-instance FormPage CommentIdea where
-    type FormPagePayload CommentIdea = CommentContent
-    type FormPageResult CommentIdea = Comment
+instance FormPage CommentOnIdea where
+    type FormPagePayload CommentOnIdea = CommentContent
+    type FormPageResult CommentOnIdea = Comment
 
-    formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
+    formAction (CommentOnIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
 
-    redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
+    redirectOf (CommentOnIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
-    makeForm CommentIdea{} =
+    makeForm CommentOnIdea{} =
         CommentContent <$> noteFormInput commentIdeaNote Nothing
 
-    formPage v form p@(CommentIdea idea _mcomment) =
+    formPage v form p@(CommentOnIdea idea _mcomment) =
         semanticDiv p $ do
             noteForm commentIdeaNote v form idea
 
@@ -576,10 +576,10 @@ editIdea ideaId =
         "Die Änderungen wurden gespeichert."
 
 -- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
-commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentIdea
-commentIdea loc ideaId =
+commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea
+commentOnIdea loc ideaId =
     formPageHandlerWithMsg
-        (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
+        (CommentOnIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (\cc -> do
             comment <- currentUserAddDb (AddCommentToIdea loc ideaId) cc
             eventLogUserCreatesComment comment
@@ -599,14 +599,14 @@ editComment loc iid cid =
             eventLogUserEditsComment =<< mquery (findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
-replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
+replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentOnIdea
 replyCommentIdea loc ideaId commentId =
     formPageHandlerWithMsg
         (mquery $ do
             midea <- findIdea ideaId
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId
-                      pure $ CommentIdea idea (Just comment))
+                      pure $ CommentOnIdea idea (Just comment))
         (\cc -> do
             comment <- currentUserAddDb (AddReply $ CommentKey loc ideaId [] commentId) cc
             eventLogUserCreatesComment comment

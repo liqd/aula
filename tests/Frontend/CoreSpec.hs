@@ -63,7 +63,7 @@ spec = do
     context "PageFormView" $ mapM_ testForm [
 --          F (arb :: Gen CreateIdea)  -- FIXME: Category selection gets the default Nothing in parsing the protoIdea
 --          F (arb :: Gen Frontend.Page.EditIdea)  -- FIXME:  Category selection gets the default Nothing in parsing the protoIdea
-          F (arb :: Gen CommentIdea)
+          F (arb :: Gen CommentOnIdea)
 --      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
         , F (arb :: Gen CreateTopic)
 --        , F (arb :: Gen PageUserSettings) -- FIXME cannot fetch the password back from the payload
@@ -316,7 +316,7 @@ instance ArbFormPagePayload Frontend.Page.EditIdea where
     arbFormPagePayload (Frontend.Page.EditIdea idea) =
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
-instance ArbFormPagePayload CommentIdea where
+instance ArbFormPagePayload CommentOnIdea where
     arbFormPagePayload _ = CommentContent <$> nonEmptyMarkdown
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where

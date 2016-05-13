@@ -190,9 +190,9 @@ instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
     shrink (EditIdea x) = EditIdea <$> shr x
 
-instance Arbitrary CommentIdea where
-    arbitrary = CommentIdea <$> arb <*> arb
-    shrink (CommentIdea x y) = CommentIdea <$> shr x <*> shr y
+instance Arbitrary CommentOnIdea where
+    arbitrary = CommentOnIdea <$> arb <*> arb
+    shrink (CommentOnIdea x y) = CommentOnIdea <$> shr x <*> shr y
 
 instance Arbitrary EditComment where
     arbitrary = EditComment <$> arb <*> arb
