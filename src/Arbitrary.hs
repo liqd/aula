@@ -209,7 +209,9 @@ instance Arbitrary ReportComment where
     shrink (ReportComment x) = ReportComment <$> shr x
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> mkListItemIdeas
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas)
+      where
+        repair = listItemIdeasWhatPage .~ IdeaInUserProfile
     shrink (PageUserProfileCreatedIdeas x y z) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
