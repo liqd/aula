@@ -600,7 +600,6 @@ topicInVotingResetToJury tid = do
 
 -- * Admin activities
 
--- | Make a topic timeout if the timeout is applicable.
 -- FIXME: Only admin can do that
 topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
