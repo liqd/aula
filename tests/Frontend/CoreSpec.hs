@@ -309,14 +309,14 @@ class FormPage p => ArbFormPagePayload p where
 instance ArbFormPagePayload CreateIdea where
     arbFormPagePayload (CreateIdea location) =
         (set protoIdeaLocation location <$> arbitrary)
-        <**> (set protoIdeaDesc <$> nonEmptyMarkdown)
+        <**> (set protoIdeaDesc <$> arb)
 
 instance ArbFormPagePayload Frontend.Page.EditIdea where
     arbFormPagePayload (Frontend.Page.EditIdea idea) =
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPagePayload CommentOnIdea where
-    arbFormPagePayload _ = CommentContent <$> nonEmptyMarkdown
+    arbFormPagePayload _ = CommentContent <$> arb
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = Quorums <$> boundary 1 100
@@ -348,7 +348,7 @@ instance ArbFormPagePayload CreateTopic where
             set protoTopicIdeaSpace space
           . set protoTopicIdeas (map (^. _Id) ideas)
         <$> arbitrary
-        <**> (set protoTopicDesc<$> validTopicDescription)
+        <**> (set protoTopicDesc<$> arb)
 
 instance ArbFormPagePayload Frontend.Page.EditTopic where
     arbFormPagePayload (Frontend.Page.EditTopic _space _topic ideas _preselected) =
@@ -359,7 +359,7 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
         <*> pure (view _Id <$> ideas)
-        <**> (set editTopicDesc <$> validTopicDescription)
+        <**> (set editTopicDesc <$> arb)
 
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload _ = arbitrary
@@ -368,14 +368,14 @@ instance ArbFormPagePayload AdminPhaseChange where
     arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload CreatorStatement where
-    arbFormPagePayload _ = nonEmptyMarkdown
+    arbFormPagePayload _ = arb
     arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
 
 instance ArbFormPagePayload JudgeIdea where
     arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
-        = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> nonEmptyMarkdown)]
+        = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> arb)]
     arbFormPagePayload (JudgeIdea IdeaNotFeasible _ _)
-        = NotFeasible <$> nonEmptyMarkdown
+        = NotFeasible <$> arb
 
     arbFormPageInvalidPayload (JudgeIdea IdeaFeasible _ _)
         = pure Nothing
@@ -383,6 +383,6 @@ instance ArbFormPagePayload JudgeIdea where
         = pure . Just . NotFeasible $ Markdown ""
 
 instance ArbFormPagePayload ReportComment where
-    arbFormPagePayload _ = ReportCommentContent <$> nonEmptyMarkdown
+    arbFormPagePayload _ = ReportCommentContent <$> arb
 
     arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""

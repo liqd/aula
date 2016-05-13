@@ -11,6 +11,36 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
+{- | Generate test values with *some consistency properties*.  Noise level will be reduced on demand
+whenever we run into problems with testing on inconsistently generated data.
+
+DISCUSSION: On the one hand, removing noise from the arbitrary instances to accomodate application
+logic is problematic because it introduces assumptions that are hard to look up.  worse, if
+different parts of the application logic have overlapping domains, we will be tempted to generate
+the intersection, punching holes in our data that are hard to track.
+
+However:
+
+1. we already do if (accomodate app logic) in `src/Arbitrary.hs`, and it's confusing to sometimes do
+   sometimes have the nice-noise generators there and sometimes in other places like this one
+2. white noise is mostly useless, so there is *often* no harm in eliminating it.
+
+In the long run, it would be nice to have more sophisticated testing.
+
+Pseudo-code copied from andorp:
+
+>>> data Contract a b = Contract {
+>>>       gen :: Gen a
+>>>     , box :: a -> b
+>>>     , post :: b -> Prop
+>>>     }
+>>>
+>>> test :: Contract a b -> Spec
+>>> test = ...
+
+This construction may form a category with products.
+
+-}
 module Arbitrary
     ( topLevelDomains
     , loremIpsum
@@ -81,6 +111,7 @@ import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
 
+import qualified Frontend.Constant
 import qualified Frontend.Path as P
 
 
@@ -660,7 +691,10 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
     shrink (PageShow x) = PageShow <$> shr x
 
 instance Arbitrary PlainDocument where
-    arbitrary = PlainDocument <$> arbPhrase
+    arbitrary = PlainDocument
+              . ST.take Frontend.Constant.topicDescMaxLength
+              . mconcat
+            <$> someOf 1 3 arbParagraph
     shrink (PlainDocument x) = PlainDocument <$> shrink x
 
 
