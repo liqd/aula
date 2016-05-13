@@ -819,7 +819,7 @@ instance ToHtml PhaseChangeDir where
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
   deriving (Eq, Show)
 
--- FIXME: if we keep this, there needs to be some sort of feedback to the admin what happened with
+-- TODO: if we keep this, there needs to be some sort of feedback to the admin what happened with
 -- the phase change.  we could redirect to a page showing a message of the form "topic with title
 -- ... and id ... changed from phase ... to phase ...".  or we could add a message queue to the
 -- session state that gets flushed and appended to the digestive functors errors implicitly whenever
@@ -843,6 +843,13 @@ instance FormPage AdminPhaseChange where
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"
         form $ do
+            div_ [class_ "container-info"] $ do
+                p_ "ACHTUNG!  GEFAHR!"
+                ul_ $ do
+                    li_ "Diese Seite erlaubt es, Themen in beide Richtungen (Zukunft und Vergangenheit) zu verschieben."
+                    li_ "Dies ist ein experimentelles Feature, und kann zu unerwartetem Verhalten führen.  Bitte nur mit"
+                    li_ "gutem Grund und nur nach Rücksprache mit den zuständigen Moderatoren durchführen!"
+
             div_ $ do
                 p_ "ID-Nummer der Themas aus der URL"
                 DF.inputText "topic-id" v

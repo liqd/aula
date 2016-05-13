@@ -624,7 +624,6 @@ topicForcePreviousPhase tid = do
         PhaseResult       -> topicPhaseChange topic RevertResultPhaseToVoting
 
 -- TODO: make user errors more interesting action exceptions and report them on the UI.
--- TODO: explain what shifting phases does in the UI.  steal documentation from freeze page.  WARN!!
 
 
 -- * files
