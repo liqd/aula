@@ -382,7 +382,6 @@ markIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ MarkIdeaAsWinner (idea
 unmarkIdeaAsWinner :: Idea -> Main
 unmarkIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ UnmarkIdeaAsWinner (idea ^. _Id)
 
--- TODO: rename to 'makeCreateStatement' (also constructor)
 creatorStatement :: Idea -> Main
 creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea ^. _Id)
 

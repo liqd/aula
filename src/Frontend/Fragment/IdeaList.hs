@@ -24,7 +24,7 @@ import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 
 data WhatListPage
-    = IdeaInIdeasOverview  -- TODO: rename these!  (at least it should be plural?)  see also #72
+    = IdeaInIdeasOverview
     | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
