@@ -125,8 +125,7 @@ data Main =
   | Space IdeaSpace Space
   | IdeaPath IdeaLocation IdeaMode
   | ListUsers
-  | User (AUID User) UserMode
-  | UserProfile
+  | UserProf (AUID User) UserMode
   | UserSettings
   | Admin AdminMode
   | DelegationEdit
@@ -147,8 +146,7 @@ main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
 main (IdeaPath l m)   root = ideaPath l m root
 main ListUsers        root = root </> "user"
-main (User uid p)     root = user  p (root </> "user" </> uriPart uid)
-main UserProfile      root = root </> "user" </> "profile"
+main (UserProf uid p) root = user  p (root </> "user" </> uriPart uid)
 main UserSettings     root = root </> "user" </> "settings"
 main (Admin p)        root = admin p (root </> "admin")
 main DelegationEdit   root = root </> "delegation" </> "edit"
@@ -453,7 +451,7 @@ viewUserProfile :: User -> Main
 viewUserProfile = viewUserIdProfile . view _Id
 
 viewUserIdProfile :: AUID User -> Main
-viewUserIdProfile uid = User uid UserIdeas
+viewUserIdProfile uid = UserProf uid UserIdeas
 
 
 -- * aux predicates

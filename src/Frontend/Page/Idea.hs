@@ -186,7 +186,7 @@ instance ToHtml ViewIdea where
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
-                a_ [ href_ $ U.User (idea ^. createdBy) U.UserIdeas
+                a_ [ href_ $ U.UserProf (idea ^. createdBy) U.UserIdeas
                    ] $ idea ^. createdByLogin . unUserLogin . html
                 " / "
                 let l = do
