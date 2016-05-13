@@ -586,15 +586,18 @@ topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
 topicForceNextPhase tid = do
     topic <- mquery $ findTopic tid
     let phase = topic ^. topicPhase
-    when (isPhaseFrozen phase) $
-        throwError500 "Cannot phase shift when system is frozen."
-    phase' <- case phase of
-        PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
-        PhaseRefinement{} -> topicTimeout RefinementPhaseTimeOut tid
-        PhaseJury         -> makeEverythingFeasible topic
-        PhaseVoting{}     -> topicTimeout VotingPhaseTimeOut tid
-        PhaseResult       -> throwError500 "No phase after result phase!"
-    addMessage . uilabel $ PhaseShiftResultOk tid phase phase'
+    result <- case phase of
+        _ | isPhaseFrozen phase
+                          -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
+        PhaseWildIdea{}   -> throwError500 "internal: topicForceNextPhase from wild idea phase"
+        PhaseRefinement{} -> PhaseShiftResultOk tid phase
+                             <$> topicTimeout RefinementPhaseTimeOut tid
+        PhaseJury         -> PhaseShiftResultOk tid phase
+                             <$> makeEverythingFeasible topic
+        PhaseVoting{}     -> PhaseShiftResultOk tid phase
+                             <$> topicTimeout VotingPhaseTimeOut tid
+        PhaseResult       -> pure $ PhaseShiftResultNoForwardFromResult tid
+    addMessage $ uilabel result
     pure ()
   where
     -- this implicitly triggers the change to voting phase.
@@ -608,15 +611,18 @@ topicForcePreviousPhase :: (ActionM m) => AUID Topic -> m ()
 topicForcePreviousPhase tid = do
     topic <- mquery $ findTopic tid
     let phase = topic ^. topicPhase
-    when (isPhaseFrozen phase) $
-        throwError500 "Cannot phase shift when system is frozen."
-    phase' <- case topic ^. topicPhase of
-        PhaseWildIdea{}   -> throwError500 "Cannot force-transition from the wild idea phase"
-        PhaseRefinement{} -> throwError500 "No phase before refinement phase!"
-        PhaseJury         -> topicPhaseChange topic RevertJuryPhaseToRefinement
-        PhaseVoting{}     -> topicPhaseChange topic RevertVotingPhaseToJury
-        PhaseResult       -> topicPhaseChange topic RevertResultPhaseToVoting
-    addMessage . uilabel $ PhaseShiftResultOk tid phase phase'
+    result <- case topic ^. topicPhase of
+        _ | isPhaseFrozen phase
+                          -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
+        PhaseWildIdea{}   -> throwError500 "internal: topicForcePreviousPhase from wild idea phase"
+        PhaseRefinement{} -> pure $ PhaseShiftResultNoBackwardsFromRefinement tid
+        PhaseJury         -> PhaseShiftResultOk tid phase
+                             <$> topicPhaseChange topic RevertJuryPhaseToRefinement
+        PhaseVoting{}     -> PhaseShiftResultOk tid phase
+                             <$> topicPhaseChange topic RevertVotingPhaseToJury
+        PhaseResult       -> PhaseShiftResultOk tid phase
+                             <$> topicPhaseChange topic RevertResultPhaseToVoting
+    addMessage $ uilabel result
     pure ()
 
 
@@ -642,7 +648,7 @@ instance HasUILabel PhaseShiftResult where
             nameTopic tid <> " konnte nicht verschoben werden: " <>
             "System ist im Ferienmodus."
       where
-        nameTopic tid = "Thema #" <> fromString (show tid)
+        nameTopic (AUID tid) = "Thema #" <> fromString (show tid)
 
 
 -- * files
