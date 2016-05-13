@@ -94,7 +94,7 @@ instance ToHtml CommentVotesWidget where
                                          , onclickJs . jsReloadOnClickAnchor . U.anchor
                                                $ comment ^. _Id
                                          ]
-                                     (U.voteComment comment v)
+                                     (U.voteOnComment comment v)
                         else div_ [class_ "btn"]
                 likeButton $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil

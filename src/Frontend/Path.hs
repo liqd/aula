@@ -52,7 +52,7 @@ module Frontend.Path
     -- * paths to comments
     , replyComment
     , commentOrReplyIdea
-    , voteComment
+    , voteOnComment
     , reportComment
     , deleteComment
     , viewComment
@@ -244,7 +244,7 @@ data CommentMode
     | DeleteComment
     | ReportComment
     | ViewComment
-    | VoteComment UpDown
+    | VoteOnComment UpDown
     | EditComment
     | EditReply
   deriving (Eq, Ord, Show, Read, Generic)
@@ -259,7 +259,7 @@ commentMode (CommentKey _loc i parents commentId) m root =
         EditReply     -> base 2 </> "edit"
         DeleteComment -> base 2 </> "delete"
         ReportComment -> base 2 </> "report"
-        VoteComment v -> base 2 </> "vote" </> uriPart v
+        VoteOnComment v -> base 2 </> "vote" </> uriPart v  -- TODO: re-align
         ViewComment   -> root  </> "idea" </> uriPart i </> "view" </#> anchor commentId
   where
     -- NOTE: Deep replies are not supported yet.
@@ -428,9 +428,8 @@ commentOrReplyIdea idea = \case
     Nothing      -> commentIdea idea
     Just comment -> replyComment comment
 
--- TODO: rename 'voteOnComment'
-voteComment :: Comment -> UpDown -> Main
-voteComment comment = onComment comment . VoteComment
+voteOnComment :: Comment -> UpDown -> Main
+voteOnComment comment = onComment comment . VoteOnComment
 
 reportComment :: Comment -> Main
 reportComment comment = onComment comment ReportComment
@@ -476,9 +475,9 @@ isPostOnly = \case
             RevokeWinnerIdea{} -> True
             OnComment _ cm ->
                 case cm of
-                    VoteComment{} -> True
-                    DeleteComment -> True
-                    _             -> False
+                    VoteOnComment{} -> True
+                    DeleteComment   -> True
+                    _               -> False
             _ -> False
     Admin m ->
       case m of
