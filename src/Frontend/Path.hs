@@ -51,7 +51,6 @@ module Frontend.Path
 
     -- * paths to comments
     , replyToComment
-    , commentOrReplyIdea
     , voteOnComment
     , reportComment
     , deleteComment
@@ -413,13 +412,6 @@ listIdeas' loc Nothing mquery =
 -- | Reply to a comment (works on all levels).
 replyToComment :: Comment -> Main
 replyToComment comment = onComment comment ReplyToComment
-
--- TODO: explain.
--- TODO: rename to ..?
-commentOrReplyIdea :: Idea -> Maybe Comment -> Main
-commentOrReplyIdea idea = \case
-    Nothing      -> commentOnIdea idea
-    Just comment -> replyToComment comment
 
 voteOnComment :: Comment -> UpDown -> Main
 voteOnComment comment = onComment comment . VoteOnComment

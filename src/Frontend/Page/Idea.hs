@@ -434,7 +434,9 @@ instance FormPage CommentOnIdea where
     type FormPagePayload CommentOnIdea = CommentContent
     type FormPageResult CommentOnIdea = Comment
 
-    formAction (CommentOnIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
+    formAction = \case
+        (CommentOnIdea idea Nothing)     -> U.commentOnIdea idea
+        (CommentOnIdea _ (Just comment)) -> U.replyToComment comment
 
     redirectOf (CommentOnIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
