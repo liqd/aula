@@ -361,6 +361,7 @@ createIdea loc = IdeaPath loc CreateIdea
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
 
+-- TODO: rename to 'commentOnIdea' (also constructor)
 commentIdea :: Idea -> Main
 commentIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentIdea (idea ^. _Id)
 
@@ -370,18 +371,23 @@ likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 judgeIdea :: Idea -> IdeaJuryResultType -> Main
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 
+-- TODO: rename to 'voteOnIdea' (also constructor)
 voteIdea :: Idea -> IdeaVoteValue -> Main
 voteIdea idea = IdeaPath (idea ^. ideaLocation) . VoteIdea (idea ^. _Id)
 
+-- TODO: rename to 'unvoteOnIdea' (also constructor)
 removeVote :: Idea -> User -> Main
 removeVote idea u = IdeaPath (idea ^. ideaLocation) $ RemoveVote (idea ^. _Id) (u ^. _Id)
 
+-- TODO: rename to 'markIdeaWinning' (also constructor)
 markWinnerIdea :: Idea -> Main
 markWinnerIdea idea = IdeaPath (idea ^. ideaLocation) $ MarkWinnerIdea (idea ^. _Id)
 
+-- TODO: rename to 'unmarkIdeaWinning' (also constructor)
 revokeWinnerIdea :: Idea -> Main
 revokeWinnerIdea idea = IdeaPath (idea ^. ideaLocation) $ RevokeWinnerIdea (idea ^. _Id)
 
+-- TODO: rename to 'makeCreateStatement' (also constructor)
 creatorStatement :: Idea -> Main
 creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea ^. _Id)
 
@@ -410,16 +416,19 @@ listIdeas' loc Nothing mquery =
 
 -- * paths to comments
 
--- | TODO: explain.
+-- TODO: explain.
+-- TODO: rename to 'replyOnComment' (also constructor)
 replyComment :: Comment -> Main
 replyComment comment = onComment comment ReplyComment
 
--- | TODO: explain.
+-- TODO: explain.
+-- TODO: rename to ..?
 commentOrReplyIdea :: Idea -> Maybe Comment -> Main
 commentOrReplyIdea idea = \case
     Nothing      -> commentIdea idea
     Just comment -> replyComment comment
 
+-- TODO: rename 'voteOnComment'
 voteComment :: Comment -> UpDown -> Main
 voteComment comment = onComment comment . VoteComment
 

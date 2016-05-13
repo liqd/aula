@@ -10,7 +10,7 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
-  , CommentIdea(..)   -- FIXME: rename to 'CommentOnIdea'
+  , CommentIdea(..)   -- TODO: rename to 'CommentOnIdea'
   , EditComment(..)
   , JudgeIdea(..)
   , CreatorStatement(..)
@@ -19,8 +19,8 @@ module Frontend.Page.Idea
   , viewIdea
   , createIdea
   , editIdea
-  , commentIdea       -- FIXME: rename to 'commentOnIdea'
-  , replyCommentIdea  -- FIXME: rename to 'commentOnComment'
+  , commentIdea       -- TODO: rename to 'commentOnIdea'
+  , replyCommentIdea  -- TODO: rename to 'commentOnComment'
   , editComment
   , editReply
   , judgeIdea
