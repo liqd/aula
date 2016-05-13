@@ -36,7 +36,6 @@ import Types
 
 data PhaseChange
     = RefinementPhaseTimeOut
-    | RefinementPhaseMarkedByModerator
     | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
     | VotingPhaseTimeOut
     | VotingPhaseSetbackToJuryPhase
@@ -69,8 +68,6 @@ thawPhase now = (phaseStatus     %~ thawStatus)
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
 phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeOut
-    = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseMarkedByModerator
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
 phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
     = Just (PhaseVoting (ActivePhase _phaseChangeVotPhaseEnd), [])
