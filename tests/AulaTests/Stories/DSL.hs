@@ -42,7 +42,7 @@ data Step a where
     CreateTopic         :: IdeaTitle -> TopicTitle -> TopicDescription -> a -> Step a
     EditTopic           :: TopicTitle -> TopicTitle -> TopicDescription -> a -> Step a
     MarkIdea            :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> a -> Step a
-    VoteIdea            :: IdeaTitle -> IdeaVoteValue -> a -> Step a
+    VoteOnIdea          :: IdeaTitle -> IdeaVoteValue -> a -> Step a
     MoveIdea            :: IdeaTitle -> TopicTitle -> TopicTitle -> a -> Step a
     CommentOnIdea       :: IdeaTitle -> CommentText -> a -> Step a
     RevokeWinner        :: IdeaTitle -> a -> Step a
@@ -97,8 +97,8 @@ timeoutTopic title = liftF $ TimeoutTopic title ()
 markIdea :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> Behavior ()
 markIdea title value = liftF $ MarkIdea title value ()
 
-voteIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
-voteIdea title vote = liftF $ VoteIdea title vote ()
+voteOnIdea :: IdeaTitle -> IdeaVoteValue -> Behavior ()
+voteOnIdea title vote = liftF $ VoteOnIdea title vote ()
 
 moveIdea :: IdeaTitle -> TopicTitle -> TopicTitle -> Behavior ()
 moveIdea idea oldTopic newTopic = liftF $ MoveIdea idea oldTopic newTopic ()

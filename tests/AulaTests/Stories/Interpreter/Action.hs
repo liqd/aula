@@ -173,9 +173,9 @@ runClient (Free (MarkIdea t v k)) = do
             Right v' -> (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue) `shouldBe` Just v'
     runClient k
 
-runClient (Free (VoteIdea t v k)) = do
+runClient (Free (VoteOnIdea t v k)) = do
     Just idea <- precondition $ findIdeaByTitle t
-    step . lift $ Action.voteIdea (idea ^. _Id) v
+    step . lift $ Action.voteOnIdea (idea ^. _Id) v
     postcondition $ do
         Just idea' <- findIdeaByTitle t
         let noOfVotes  = Map.size $ idea  ^. ideaVotes

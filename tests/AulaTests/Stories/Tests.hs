@@ -41,7 +41,7 @@ topicTimeoutStory = do
     timeoutTopic topic1
     markIdea idea1 (Left $ Feasible Nothing)
     setFreeze Frozen
-    voteIdea idea1 Yes  -- succeeds, because capabilities only affect UI
+    voteOnIdea idea1 Yes  -- succeeds, because capabilities only affect UI
     -- FIXME: how to catch the expected error below?
       -- timeoutTopic topic1  -- fails, phase change illegal;
     setFreeze NotFrozen

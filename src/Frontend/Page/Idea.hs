@@ -348,7 +348,7 @@ instance ToHtml IdeaVoteLikeBars where
                 postButton_ [class_ "btn-cta voting-button"
                             , onclickJs jsReloadOnClick
                             ]
-                            (U.voteIdea idea v)
+                            (U.voteOnIdea idea v)
 
         case phase of
             PhaseWildIdea{}   -> toHtml $ likeBar likeButtons

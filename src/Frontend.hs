@@ -251,7 +251,7 @@ ideaApi loc
     =  makeFrame . Page.viewIdea
   :<|> form . Page.editIdea
   :<|> Action.likeIdea
-  :<|> Action.voteIdea
+  :<|> Action.voteOnIdea
   :<|> Action.removeVote
   :<|> form . Page.commentOnIdea loc
   :<|> commentApi loc

@@ -51,7 +51,7 @@ module Action
 
       -- * vote handling
     , likeIdea
-    , voteIdea
+    , voteOnIdea
     , voteIdeaComment
     , voteIdeaCommentReply
     , markIdeaInJuryPhase
@@ -442,8 +442,8 @@ likeIdea ideaId = do
           pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
-voteIdea :: AUID Idea -> Create_ IdeaVote
-voteIdea ideaId vote = do
+voteOnIdea :: AUID Idea -> Create_ IdeaVote
+voteOnIdea ideaId vote = do
     currentUserAddDb_ (AddVoteToIdea ideaId) vote
     (`eventLogUserVotesOnIdea` Just vote) =<< mquery (findIdea ideaId)
 
@@ -461,7 +461,7 @@ voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Commen
 voteIdeaCommentReply loc ideaId commentId =
     currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
--- | FIXME: don't pass user as an explicit argument here.  do it like voteIdea.
+-- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
 removeVote :: (ActionM m) => AUID Idea -> AUID User -> m ()
 removeVote ideaId user = do
     update $ RemoveVoteFromIdea ideaId user

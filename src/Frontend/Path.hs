@@ -38,7 +38,7 @@ module Frontend.Path
     , commentOnIdea
     , likeIdea
     , judgeIdea
-    , voteIdea
+    , voteOnIdea
     , removeVote
     , markWinnerIdea
     , revokeWinnerIdea
@@ -204,7 +204,7 @@ data IdeaMode =
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
-    | VoteIdea (AUID Idea) IdeaVoteValue
+    | VoteOnIdea (AUID Idea) IdeaVoteValue
     | RemoveVote (AUID Idea) (AUID User)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentOnIdea (AUID Idea)
@@ -224,7 +224,7 @@ ideaMode (ViewIdea i mc)      root = maybe id (flip (</#>) . anchor) mc $
                                      root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)         root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (LikeIdea i)         root = root </> "idea" </> uriPart i </> "like"
-ideaMode (VoteIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
+ideaMode (VoteOnIdea i v)     root = root </> "idea" </> uriPart i </> "vote"
                                           </> uriPart v
 ideaMode (RemoveVote i u)     root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
 ideaMode (JudgeIdea i v)      root = root </> "idea" </> uriPart i </> "jury"
@@ -370,9 +370,8 @@ likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 judgeIdea :: Idea -> IdeaJuryResultType -> Main
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 
--- TODO: rename to 'voteOnIdea' (also constructor)
-voteIdea :: Idea -> IdeaVoteValue -> Main
-voteIdea idea = IdeaPath (idea ^. ideaLocation) . VoteIdea (idea ^. _Id)
+voteOnIdea :: Idea -> IdeaVoteValue -> Main
+voteOnIdea idea = IdeaPath (idea ^. ideaLocation) . VoteOnIdea (idea ^. _Id)
 
 -- TODO: rename to 'unvoteOnIdea' (also constructor)
 removeVote :: Idea -> User -> Main
@@ -468,7 +467,7 @@ isPostOnly = \case
     IdeaPath _ m ->
         case m of
             LikeIdea{}         -> True
-            VoteIdea{}         -> True
+            VoteOnIdea{}       -> True
             RemoveVote{}       -> True
             MarkWinnerIdea{}   -> True
             RevokeWinnerIdea{} -> True
