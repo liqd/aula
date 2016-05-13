@@ -18,7 +18,7 @@ import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
-import Persistent (ListInfoForIdea(ListInfoForIdea))
+import Persistent (IdeaStats(IdeaStats))
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
@@ -41,7 +41,7 @@ isIdeaInViewTopic _                   = False
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
       , _listItemIdeaWhatPage   :: WhatListPage
-      , _listItemIdeaInfo       :: ListInfoForIdea
+      , _listItemIdeaInfo       :: IdeaStats
       }
   deriving (Eq, Show, Read, Generic)
 
@@ -50,7 +50,7 @@ data ListItemIdeas = ListItemIdeas
       , _listItemIdeasWhatPage :: WhatListPage
       , _listItemIdeasLocation :: IdeaLocation
       , _listItemIdeasFilter   :: IdeasQuery
-      , _listItemIdeasData     :: [ListInfoForIdea]
+      , _listItemIdeasData     :: [IdeaStats]
       }
   deriving (Eq, Show, Read, Generic)
 
@@ -63,7 +63,7 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea phase quo voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage (IdeaStats idea phase quo voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)

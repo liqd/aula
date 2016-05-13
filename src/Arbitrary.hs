@@ -415,7 +415,7 @@ instance Arbitrary IdeasQuery where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary ListInfoForIdea where
+instance Arbitrary IdeaStats where
     arbitrary = garbitrary
     shrink    = gshrink
 

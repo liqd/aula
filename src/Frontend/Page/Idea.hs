@@ -51,7 +51,7 @@ import Persistent.Api
     , SetCommentDesc(SetCommentDesc)
     )
 import Persistent.Idiom
-    ( ListInfoForIdea(ListInfoForIdea)
+    ( IdeaStats(IdeaStats)
     )
 import Persistent
     ( findComment
@@ -81,7 +81,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea RenderContext ListInfoForIdea
+data ViewIdea = ViewIdea RenderContext IdeaStats
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
@@ -144,7 +144,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx ideaInfo@(ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx ideaInfo@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -283,7 +283,7 @@ instance ToHtml ViewIdea where
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars caps
-                (ViewIdea ctx (ListInfoForIdea idea phase quo voters))) = semanticDiv p $ do
+                (ViewIdea ctx (IdeaStats idea phase quo voters))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 toHtml (QuorumBar $ percentLikes idea quo)
