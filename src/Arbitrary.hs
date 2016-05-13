@@ -140,7 +140,8 @@ instance Arbitrary PageIdeasOverview where
     arbitrary = do
         ctx   <- arb
         space <- arb
-        ideas <- mkListItemIdeasInLocation (IdeaLocationSpace space)
+        ideas <- (listItemIdeasWhatPage .~ IdeaInIdeasOverview) <$>
+                 mkListItemIdeasInLocation (IdeaLocationSpace space)
         pure $ PageIdeasOverview ctx space ideas
     shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
 
