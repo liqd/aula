@@ -797,7 +797,7 @@ adminPhaseChange =
             topic <- Action.mquery $ findTopic tid
             return $ unwords
                 [ "Das Thema wurde in Phase"
-                , topic ^. topicPhase . to show
+                , topic ^. topicPhase . uilabeled
                 , "verschoben."
                 ]
         )
