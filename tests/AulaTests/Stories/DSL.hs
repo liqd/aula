@@ -46,7 +46,7 @@ data Step a where
     MoveIdea            :: IdeaTitle -> TopicTitle -> TopicTitle -> a -> Step a
     CommentOnIdea       :: IdeaTitle -> CommentText -> a -> Step a
     RevokeWinner        :: IdeaTitle -> a -> Step a
-    ReplyComment        :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
+    ReplyToComment      :: IdeaTitle -> CommentText -> CommentText -> a -> Step a
     VoteOnComment       :: IdeaTitle -> CommentText -> UpDown -> a -> Step a
     VoteOnCommentReply  :: IdeaTitle -> CommentText -> CommentText -> UpDown -> a -> Step a
     ReportComment       :: IdeaTitle -> CommentText -> ReportText -> a -> Step a
@@ -109,8 +109,8 @@ commentOnIdea title text = liftF $ CommentOnIdea title text ()
 revokeWinner :: IdeaTitle -> Behavior ()
 revokeWinner title = liftF $ RevokeWinner title ()
 
-replyComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
-replyComment title comment text = liftF $ ReplyComment title comment text ()
+replyToComment :: IdeaTitle -> CommentText -> CommentText -> Behavior ()
+replyToComment title comment text = liftF $ ReplyToComment title comment text ()
 
 voteOnComment :: IdeaTitle -> CommentText -> UpDown -> Behavior ()
 voteOnComment idea comment vote = liftF $ VoteOnComment idea comment vote ()

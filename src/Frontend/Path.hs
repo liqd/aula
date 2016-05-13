@@ -50,7 +50,7 @@ module Frontend.Path
     , listIdeas'
 
     -- * paths to comments
-    , replyComment
+    , replyToComment
     , commentOrReplyIdea
     , voteOnComment
     , reportComment
@@ -240,7 +240,7 @@ ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revoke
 -- ** CommentMode
 
 data CommentMode
-    = ReplyComment
+    = ReplyToComment
     | DeleteComment
     | ReportComment
     | ViewComment
@@ -254,7 +254,7 @@ instance SOP.Generic CommentMode
 commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
 commentMode (CommentKey _loc i parents commentId) m root =
     case m of
-        ReplyComment  -> base 1 </> "reply"
+        ReplyToComment  -> base 1 </> "reply"
         EditComment   -> base 1 </> "edit"
         EditReply     -> base 2 </> "edit"
         DeleteComment -> base 2 </> "delete"
@@ -272,7 +272,7 @@ commentMode (CommentKey _loc i parents commentId) m root =
             [p, c] -> root </> "idea" </> uriPart i </> "comment" </> uriPart p </> "reply" </> uriPart c
             _      -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
 
--- | TODO: explain.
+-- | Do something to a comment (works on all levels).
 onComment :: Comment -> CommentMode -> Main
 onComment comment = IdeaPath (ck ^. ckIdeaLocation) . OnComment ck
   where ck = comment ^. _Key
@@ -410,17 +410,16 @@ listIdeas' loc Nothing mquery =
 
 -- * paths to comments
 
--- TODO: explain.
--- TODO: rename to 'replyOnComment' (also constructor)
-replyComment :: Comment -> Main
-replyComment comment = onComment comment ReplyComment
+-- | Reply to a comment (works on all levels).
+replyToComment :: Comment -> Main
+replyToComment comment = onComment comment ReplyToComment
 
 -- TODO: explain.
 -- TODO: rename to ..?
 commentOrReplyIdea :: Idea -> Maybe Comment -> Main
 commentOrReplyIdea idea = \case
     Nothing      -> commentOnIdea idea
-    Just comment -> replyComment comment
+    Just comment -> replyToComment comment
 
 voteOnComment :: Comment -> UpDown -> Main
 voteOnComment comment = onComment comment . VoteOnComment

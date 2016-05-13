@@ -52,7 +52,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     unless (comment ^. commentDeleted) . footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
-                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyComment comment] $ do
+                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyToComment comment] $ do
                     i_ [class_ "icon-reply"] nil
                     "antworten"
             a_ [class_ "btn comment-footer-button", href_ (U.reportComment comment)] $ do

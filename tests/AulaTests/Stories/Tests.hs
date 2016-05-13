@@ -33,7 +33,7 @@ topicTimeoutStory = do
     likeIdea idea1  -- succeeds, prevented by hiding UI elements
     setFreeze NotFrozen
     commentOnIdea idea1 comment1
-    replyComment idea1 comment1 comment2
+    replyToComment idea1 comment1 comment2
     voteOnComment idea1 comment1 Up
     voteOnCommentReply idea1 comment1 comment2 Up
     createTopic idea1 topic1a "desc"
@@ -58,7 +58,7 @@ someUserBehavior = do
     selectIdeaSpace "school"
     createIdea idea1 "desc" CatRules
     commentOnIdea idea1 comment1
-    replyComment idea1 comment1 comment2
+    replyToComment idea1 comment1 comment2
     reportComment idea1 comment1 "Report this"
     reportCommentReply idea1 comment1 comment2 "Report that"
     deleteComment idea1 comment1

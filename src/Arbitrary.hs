@@ -748,7 +748,7 @@ instance Arbitrary P.Main where
 instance Arbitrary P.IdeaMode where
     arbitrary = prune <$> garbitrary
       where
-        prune (P.OnComment ck P.ReplyComment) = P.OnComment (pruneCommentKey ck) P.ReplyComment
+        prune (P.OnComment ck P.ReplyToComment) = P.OnComment (pruneCommentKey ck) P.ReplyToComment
         prune m = m
     shrink    = gshrink
 

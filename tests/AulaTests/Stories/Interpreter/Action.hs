@@ -206,7 +206,7 @@ runClient (Free (RevokeWinner t k)) = do
         (idea' ^. ideaVoteResult) `shouldBe` Nothing
     runClient k
 
-runClient (Free (ReplyComment t cp c k)) = do
+runClient (Free (ReplyToComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     step . lift $
         (Page.replyCommentIdea (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor)
