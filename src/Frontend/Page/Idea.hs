@@ -136,7 +136,7 @@ data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
 
 -- * templates
 
-backLink :: Monad m => IdeaLocation -> HtmlT m ()
+backLink :: Monad m => IdeaLocation -> HtmlT m ()  -- FIXME: move this next to caller.
 backLink IdeaLocationSpace{} = "Zum Ideenraum"
 backLink IdeaLocationTopic{} = "Zum Thema"
 
@@ -301,7 +301,7 @@ instance ToHtml IdeaVoteLikeBars where
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                             else postButton_
                                     [ class_ "btn"
-                                    , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
+                                    , onclickJs jsReloadOnClick
                                     ]
                                     (U.likeIdea idea)
                                     "dafür!"
@@ -377,7 +377,7 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage v form p@(CreateIdea iloc) = createOrEditPage False iloc v form p
+    formPage v form p@(CreateIdea iloc) = createOrEditIdea False iloc v form p
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -394,12 +394,12 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    formPage v form p@(EditIdea idea) = createOrEditPage True (idea ^. ideaLocation) v form p
+    formPage v form p@(EditIdea idea) = createOrEditIdea True (idea ^. ideaLocation) v form p
 
-createOrEditPage :: (Monad m, Typeable page, Page page) =>
+createOrEditIdea :: (Monad m, Typeable page, Page page) =>
     Bool -> IdeaLocation ->
     View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
+createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
     div_ [class_ "container-main popup-page"] $ do
         div_ [class_ "container-narrow"] $ do
             h1_ [class_ "main-heading"] "Deine Idee"
@@ -487,8 +487,8 @@ instance FormPage JudgeIdea where
 
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 
-    redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic
-        -- FIXME: we would like to say `U.listTopicIdeas topic </#> U.anchor (idea ^. _Id)` here,
+    redirectOf (JudgeIdea _ _idea topic) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
+        -- FIXME: we would like to say `U.listIdeasInTopic topic </#> U.anchor (idea ^. _Id)` here,
         -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible idea _) =

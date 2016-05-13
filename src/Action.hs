@@ -371,7 +371,8 @@ phaseAction topic phasact = do
             , ""
             , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
             , "    " <> (cfg ^. exposedUrl . csi)
-                     <> (absoluteUriPath . relPath $ U.listTopicIdeas topic)
+                     <> (absoluteUriPath . relPath $
+                           U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing)
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."

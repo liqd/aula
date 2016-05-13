@@ -2,12 +2,15 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.IdeaList
 where
+
+import Control.Lens
 
 import Frontend.Prelude
 import Frontend.Fragment.Category
@@ -20,13 +23,21 @@ import Persistent (ListInfoForIdea(ListInfoForIdea))
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 
-
 data WhatListPage
-    = IdeaInIdeasOverview
-    | IdeaInViewTopic
+    = IdeaInIdeasOverview  -- TODO: rename these!  (at least it should be plural?)  see also #72
+    | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
 
+makeLenses ''WhatListPage
+makePrisms ''WhatListPage
+
+isIdeaInViewTopic :: WhatListPage -> Bool
+isIdeaInViewTopic (IdeaInViewTopic _) = True
+isIdeaInViewTopic _                   = False
+
+  -- TODO: align selector names in ListItemIdea, ListItemIdeas.  do we really need both?!  or are
+  -- they two entirely different things and shouldn't be named so alike?
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
       , _listItemIdeaWhatPage   :: WhatListPage
@@ -43,6 +54,8 @@ data ListItemIdeas = ListItemIdeas
       }
   deriving (Eq, Show, Read, Generic)
 
+makeLenses ''ListItemIdeas
+
 instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
 instance SOP.Generic ListItemIdeas
@@ -58,7 +71,7 @@ instance ToHtml ListItemIdea where
                         idea
                         phase
 
-            when (IdeaInViewTopic == whatListPage) $ do
+            when (isIdeaInViewTopic whatListPage) $ do
                 feasibilityVerdict False idea caps
 
             a_ [href_ $ U.viewIdea idea] $ do
@@ -70,7 +83,7 @@ instance ToHtml ListItemIdea where
                             span_ [class_ "ideas-list-author"] $ do
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
-                    let showLikesAndQuorum = IdeaInViewTopic /= whatListPage
+                    let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
                     let showVotes = phase > PhaseJury
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
@@ -107,8 +120,9 @@ instance ToHtml ListItemIdeas where
 -- the idea location that is currently used to calculate the urls for the filter and sort links.
 ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 ideaListHeader IdeaInUserProfile _ _ = nil
-ideaListHeader _ loc ideasQuery = do
-    categoryFilterButtons loc ideasQuery
+ideaListHeader whatListPage loc ideasQuery = do
+    let mtab' = whatListPage ^? whatListPageTopicTab
+    categoryFilterButtons mtab' loc ideasQuery
 
     div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
@@ -117,7 +131,7 @@ ideaListHeader _ loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)
+                          hrf = href_ $ U.listIdeas' loc mtab' (Just $ ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]

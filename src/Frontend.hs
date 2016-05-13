@@ -245,32 +245,8 @@ type IdeaApi
   :<|> Idea ::> "revokewinner" :> PostH
        -- add creator statement
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
-       -- create wild idea
+       -- create idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
-
-type TopicApi =
-       -- browse topics in an idea space
-       "topic" :> GetH (Frame PageIdeasInDiscussion)
-  :<|> Topic ::> IdeaApi
-       -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
-
-       -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
-
-       -- create new topic
-  :<|> "topic" :> "create"     :> FormHandler CreateTopic
-  :<|> Topic  ::> "idea"       :> "move"   :> FormHandler Page.EditTopic
-  :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
-
-type AulaSpace
-    =  IdeaApi
-       -- browse wild ideas in an idea space
-  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
-  :<|> TopicApi
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
@@ -287,15 +263,34 @@ ideaApi loc
   :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
 
+type TopicApi =
+       -- browse topics in an idea space
+       "topic" :> GetH (Frame PageIdeasInDiscussion)
+  :<|> Topic ::> IdeaApi
+       -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
+
+       -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
+  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
+
+       -- create new topic
+  :<|> "topic" :> "create"     :> FormHandler CreateTopic
+  :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
+  :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
+
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
     =  makeFrame (Page.viewTopics space)
   :<|> ideaApi . IdeaLocationTopic space
 
-  :<|> viewTopicTab TabAllIdeas  -- FIXME: if two paths have the same handler, one of them should be a redirect!
-  :<|> viewTopicTab TabAllIdeas
-  :<|> viewTopicTab TabVotingIdeas
-  :<|> viewTopicTab TabWinningIdeas
+  :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabAll)
+  :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabAll)
+           -- FIXME: if two paths have the same handler, one of them should be a redirect!
+  :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabVoting)
+  :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabWinning)
   :<|> makeFrame . Page.viewTopic TabDelegation
 
   :<|> form (Page.createTopic space)
@@ -303,6 +298,12 @@ topicApi space
   :<|> error "api not implemented: topic/:topic/delegation/create"
   where
     viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
+
+type AulaSpace
+    =  IdeaApi
+       -- browse wild ideas in an idea space
+  :<|> "ideas" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageIdeasOverview)
+  :<|> TopicApi
 
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space

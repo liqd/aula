@@ -27,8 +27,9 @@ module Frontend.Path
     , AdminMode(..)
     , IdeaMode(..)
     , CommentMode(..)
-    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea, listIdeas, listIdeasWithQuery
-    , listTopicIdeas, likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
+    , viewIdea, viewIdeaAtComment, editIdea, commentIdea, createIdea
+    , listIdeas, listIdeasInTopic, listIdeas'
+    , likeIdea, voteIdea, judgeIdea, voteComment, deleteComment, reportComment
     , viewComment, replyComment, commentOrReplyIdea, isPostOnly, isBroken
     , removeVote, creatorStatement, markWinnerIdea, revokeWinnerIdea
     , viewUser, adminViewUsers, adminViewClasses, viewIdeaOfComment
@@ -37,15 +38,19 @@ module Frontend.Path
     )
 where
 
-import Thentos.Prelude
+import Control.Exception (assert)
 import Data.UriPath
 import Servant.API (toUrlPiece)
+import Thentos.Prelude
 
 import qualified Generics.SOP as SOP
 
 import Types ( AUID(AUID), Idea, IdeaSpace, IdeaLocation(..), User, Topic, nil
-             , SchoolClass, _Id, _Key, ideaLocation, topicIdeaSpace, IdeaVoteValue, UpDown, Comment
-             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey))
+             , SchoolClass, _Id, _Key, ideaLocation, ideaLocationSpace, ideaLocationTopicId
+             , topicIdeaSpace
+             , IdeaVoteValue, UpDown, Comment
+             , IdeaJuryResultType(..), ckIdeaLocation, ckIdeaId, CommentKey(CommentKey)
+             , ListIdeasInTopicTab(..))
 
 import Frontend.Filter
 
@@ -136,12 +141,12 @@ main Broken           root = root </> "bröken"
 
 data Space =
     ListTopics
-  | ViewTopicIdeasVoting (AUID Topic)
-  | ViewTopicIdeasWinning (AUID Topic)
-  | ViewTopicDelegations (AUID Topic)
+  | ListIdeasInSpace (Maybe IdeasQuery)
+  | ListIdeasInTopic (AUID Topic) ListIdeasInTopicTab (Maybe IdeasQuery)
   | CreateTopic
+  | EditTopic (AUID Topic)
+  | ViewTopicDelegations (AUID Topic)
   | CreateTopicDelegation (AUID Topic)
-  | MoveIdeasToTopic (AUID Topic)
   deriving (Generic, Show)
 
 instance SOP.Generic Space
@@ -216,14 +221,24 @@ editReply comment = onComment comment EditReply
 createIdea :: IdeaLocation -> Main
 createIdea loc = IdeaPath loc CreateIdea
 
+-- | List ideas in any location (space or topic).  The query defaults to Nothing;
+-- in topics, tab defaults to `all`.
 listIdeas :: IdeaLocation -> Main
-listIdeas loc = IdeaPath loc $ ListIdeas Nothing
+listIdeas loc = listIdeas' loc Nothing Nothing
 
-listIdeasWithQuery :: IdeaLocation -> IdeasQuery -> Main
-listIdeasWithQuery loc = IdeaPath loc . ListIdeas . Just
+listIdeasInTopic :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeasInTopic topic =
+    listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) . Just
 
-listTopicIdeas :: Topic -> Main
-listTopicIdeas topic = listIdeas $ IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)
+listIdeas' :: IdeaLocation -> Maybe ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeas' (IdeaLocationSpace _) (Just _) _ =
+    assert False $ error "listIdeas': must not be called with non-topic location and topic tab!"
+listIdeas' (IdeaLocationTopic spc tid) (Just tab) mquery =
+    Space spc $ ListIdeasInTopic tid tab mquery
+listIdeas' loc Nothing mquery =
+    Space (loc ^. ideaLocationSpace) $ case loc ^? ideaLocationTopicId of
+        Nothing  -> ListIdeasInSpace mquery
+        Just tid -> ListIdeasInTopic tid ListIdeasInTopicTabAll mquery
 
 adminViewUsers :: AdminMode
 adminViewUsers = AdminViewUsers Nothing
@@ -232,22 +247,21 @@ adminViewClasses :: AdminMode
 adminViewClasses = AdminViewClasses Nothing
 
 ideaMode :: IdeaMode -> UriPath -> UriPath
-ideaMode (ListIdeas mq)    root = renderFilter mq $ root </> "ideas"
-ideaMode (ViewIdea i mc)   root = maybe id (flip (</#>) . anchor) mc $
-                                  root </> "idea" </> uriPart i </> "view"
-ideaMode (EditIdea i)      root = root </> "idea" </> uriPart i </> "edit"
-ideaMode (LikeIdea i)      root = root </> "idea" </> uriPart i </> "like"
-ideaMode (VoteIdea i v)    root = root </> "idea" </> uriPart i </> "vote"
-                                       </> uriPart v
-ideaMode (RemoveVote i u)  root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
-ideaMode (JudgeIdea i v)   root = root </> "idea" </> uriPart i </> "jury"
-                                       </> uriPart v
-ideaMode (CommentIdea i)   root = root </> "idea" </> uriPart i </> "comment"
-ideaMode (OnComment ck m)  root = commentMode ck m root
-ideaMode CreateIdea        root = root </> "idea" </> "create"
-ideaMode (CreatorStatement i) root = root </> "idea" </> uriPart i </> "statement"
-ideaMode (MarkWinnerIdea i)   root = root </> "idea" </> uriPart i </> "markwinner"
-ideaMode (RevokeWinnerIdea i) root = root </> "idea" </> uriPart i </> "revokewinner"
+ideaMode (ViewIdea i mc)             root = maybe id (flip (</#>) . anchor) mc $
+                                            root </> "idea" </> uriPart i </> "view"
+ideaMode (EditIdea i)                root = root </> "idea" </> uriPart i </> "edit"
+ideaMode (LikeIdea i)                root = root </> "idea" </> uriPart i </> "like"
+ideaMode (VoteIdea i v)              root = root </> "idea" </> uriPart i </> "vote"
+                                                 </> uriPart v
+ideaMode (RemoveVote i u)            root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
+ideaMode (JudgeIdea i v)             root = root </> "idea" </> uriPart i </> "jury"
+                                                 </> uriPart v
+ideaMode (CommentIdea i)             root = root </> "idea" </> uriPart i </> "comment"
+ideaMode (OnComment ck m)            root = commentMode ck m root
+ideaMode CreateIdea                  root = root </> "idea" </> "create"
+ideaMode (CreatorStatement i)        root = root </> "idea" </> uriPart i </> "statement"
+ideaMode (MarkWinnerIdea i)          root = root </> "idea" </> uriPart i </> "markwinner"
+ideaMode (RevokeWinnerIdea i)        root = root </> "idea" </> uriPart i </> "revokewinner"
 
 anchor :: IsString s => AUID a -> s
 anchor (AUID c) = fromString $ "auid-" <> show c
@@ -281,17 +295,21 @@ ideaPath loc mode root =
   where
     rootSpace isp = root </> "space" </> uriPart isp
 
--- | FIXME: there are structural similarities of wild ideas and ideas in topic that should be
--- factored out.
 space :: Space -> UriPath -> UriPath
 space ListTopics                  root = root </> "topic"
-space (ViewTopicIdeasVoting tid)  root = root </> "topic" </> uriPart tid </> "ideas" </> "voting"
-space (ViewTopicIdeasWinning tid) root = root </> "topic" </> uriPart tid </> "ideas" </> "winning"
-space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
--- FIXME: "ListTopicIdeas..." for the 3 lines above?
+space (ListIdeasInSpace mq)       root = renderFilter mq $ root </> "ideas"
+space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
+                                       $ root </> "topic" </> uriPart t </> "ideas"
 space CreateTopic                 root = root </> "topic" </> "create"
-space (MoveIdeasToTopic tid)      root = root </> "topic" </> uriPart tid </> "idea" </> "move"
+space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
+space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
+
+topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
+topicTab = \case
+    ListIdeasInTopicTabAll     -> id
+    ListIdeasInTopicTabVoting  -> (</> "voting")
+    ListIdeasInTopicTabWinning -> (</> "winning")
 
 data UserMode =
     UserIdeas
@@ -360,8 +378,7 @@ data CommentMode
 instance SOP.Generic CommentMode
 
 data IdeaMode =
-      ListIdeas (Maybe IdeasQuery)
-    | CreateIdea
+      CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
     | LikeIdea (AUID Idea)
