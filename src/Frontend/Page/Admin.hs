@@ -808,13 +808,13 @@ data PhaseChangeDir = Forward | Backward
 
 instance SOP.Generic PhaseChangeDir
 
-phaseChangeDirText :: PhaseChangeDir -> ST
-phaseChangeDirText Forward  = "vorwärts"
-phaseChangeDirText Backward = "zurück"
+instance HasUILabel PhaseChangeDir where
+    uilabel Forward  = "vorwärts"
+    uilabel Backward = "zurück"
 
 instance ToHtml PhaseChangeDir where
     toHtmlRaw = toHtml
-    toHtml    = toHtml . phaseChangeDirText
+    toHtml    = toHtml . uilabelST
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
   deriving (Eq, Show)

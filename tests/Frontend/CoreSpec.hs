@@ -201,7 +201,7 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
         "topic-id" -> pure [TextInput $ cs (show tid)]
         "dir"      -> pure [TextInput $ selectValue "dir" v dirs dir]
       where
-        dirs = (id &&& cs . phaseChangeDirText) <$> [Forward, Backward]
+        dirs = (id &&& uilabel) <$> [Forward, Backward]
 
 instance PayloadToEnv IdeaJuryResultValue where
     payloadToEnvMapping _ r = \case
