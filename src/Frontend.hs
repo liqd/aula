@@ -210,7 +210,7 @@ type CommentApi
 
 commentApi :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
 commentApi loc iid cid
-    =  form (Page.replyCommentIdea   loc iid cid)
+    =  form (Page.replyToComment     loc iid cid)
   :<|> form (Page.editComment        loc iid cid)
   :<|> Action.voteIdeaComment        loc iid cid
   :<|> Action.voteIdeaCommentReply   loc iid cid

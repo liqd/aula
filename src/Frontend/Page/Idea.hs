@@ -20,7 +20,7 @@ module Frontend.Page.Idea
   , createIdea
   , editIdea
   , commentOnIdea
-  , replyCommentIdea  -- TODO: rename to 'commentOnComment'
+  , replyToComment
   , editComment
   , editReply
   , judgeIdea
@@ -601,8 +601,8 @@ editComment loc iid cid =
             eventLogUserEditsComment =<< mquery (findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
-replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentOnIdea
-replyCommentIdea loc ideaId commentId =
+replyToComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentOnIdea
+replyToComment loc ideaId commentId =
     formPageHandlerWithMsg
         (mquery $ do
             midea <- findIdea ideaId
