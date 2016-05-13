@@ -10,8 +10,6 @@
 module Frontend.Fragment.IdeaList
 where
 
-import Debug.Trace
-
 import Control.Lens
 
 import Frontend.Prelude
@@ -106,7 +104,6 @@ instance ToHtml ListItemIdea where
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
     toHtml p@(ListItemIdeas _ctx whatPage loc ideasQuery []) = semanticDiv p $ do
-        traceShow ("crashing.>>>0" :: String) $ pure ()
         ideaListHeader whatPage loc ideasQuery
         div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
       where
@@ -115,12 +112,8 @@ instance ToHtml ListItemIdeas where
                  . to (" in der Kategorie " <>)
 
     toHtml p@(ListItemIdeas ctx whatPage loc ideasQuery ideasAndNumVoters) = semanticDiv p $ do
-        traceShow ("crashing.>>>" <> show (length ideasAndNumVoters)) $ pure ()
         ideaListHeader whatPage loc ideasQuery
-        traceShow ("not crashed.<<<" :: String) $ pure ()
         for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
-        True <- traceShow ("crashing.<" :: String) $ pure True
-        return ()
 
 
 -- | FUTUREWORK: there are no queries for IdeaInUserProfile.  to implement that, we need to refactor
@@ -128,12 +121,8 @@ instance ToHtml ListItemIdeas where
 ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 ideaListHeader IdeaInUserProfile _ _ = nil
 ideaListHeader whatListPage loc ideasQuery = do
-    traceShow ("crashing.>>>" <> show (whatListPage, loc, ideasQuery)) $ pure ()
-    traceShow (":::" <> show (length [(minBound :: SortIdeasBy)..])) $ pure ()
-
     let mtab' = whatListPage ^? whatListPageTopicTab
     categoryFilterButtons mtab' loc ideasQuery
-    traceShow (":::" <> show (length [(minBound :: SortIdeasBy)..])) $ pure ()
 
     div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
