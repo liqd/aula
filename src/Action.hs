@@ -609,6 +609,9 @@ topicForceNextPhase tid = do
 
 topicForcePreviousPhase :: (ActionM m) => AUID Topic -> m ()
 topicForcePreviousPhase tid = do
+    now <- getCurrentTimestamp
+    phaseEndR <- query $ phaseEndRefinement now
+    phaseEndV <- query $ phaseEndVote now
     topic <- mquery $ findTopic tid
     let phase = topic ^. topicPhase
     result <- case topic ^. topicPhase of
@@ -617,11 +620,11 @@ topicForcePreviousPhase tid = do
         PhaseWildIdea{}   -> throwError500 "internal: topicForcePreviousPhase from wild idea phase"
         PhaseRefinement{} -> pure $ PhaseShiftResultNoBackwardsFromRefinement tid
         PhaseJury         -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic RevertJuryPhaseToRefinement
+                             <$> topicPhaseChange topic (RevertJuryPhaseToRefinement phaseEndR)
         PhaseVoting{}     -> PhaseShiftResultOk tid phase
                              <$> topicPhaseChange topic RevertVotingPhaseToJury
         PhaseResult       -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic RevertResultPhaseToVoting
+                             <$> topicPhaseChange topic (RevertResultPhaseToVoting phaseEndV)
     addMessage $ uilabel result
     pure ()
 

@@ -36,11 +36,11 @@ import Types
 
 data PhaseChange
     = RefinementPhaseTimeOut
-    | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
-    | VotingPhaseTimeOut
-    | RevertJuryPhaseToRefinement
+    | AllIdeasAreMarked { _phaseChangeTimeout :: Timestamp }
+    | VotingPhaseTimeOut  -- TODO: s/[tT]imeOut/[tT]imeout/g;
+    | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
     | RevertVotingPhaseToJury
-    | RevertResultPhaseToVoting
+    | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
     | PhaseFreeze { _phaseChangeFreezeNow :: Timestamp }
     | PhaseThaw { _phaseChangeThawNow :: Timestamp }
   deriving (Eq, Show)
@@ -71,16 +71,16 @@ thawPhase now = (phaseStatus     %~ thawStatus)
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
 phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeOut
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
-    = Just (PhaseVoting (ActivePhase _phaseChangeVotPhaseEnd), [])
+phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeTimeout})
+    = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
 phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeOut
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans (PhaseVoting ActivePhase{}) RevertJuryPhaseToRefinement
-    = Just (PhaseJury, [])
+phaseTrans (PhaseJury) (RevertJuryPhaseToRefinement {_phaseChangeTimeout})
+    = Just (PhaseRefinement (ActivePhase _phaseChangeTimeout), [])
 phaseTrans (PhaseVoting ActivePhase{}) RevertVotingPhaseToJury
     = Just (PhaseJury, [])
-phaseTrans (PhaseVoting ActivePhase{}) RevertResultPhaseToVoting
-    = Just (PhaseJury, [])
+phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
+    = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
 
 -- Freezing and thawing.
 --
