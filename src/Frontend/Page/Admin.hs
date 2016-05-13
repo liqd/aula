@@ -793,7 +793,7 @@ adminPhaseChange =
                 Forward -> Action.topicForceNextPhase tid
                 Backward -> Action.topicInVotingResetToJury tid
         )
-        (\_ (AdminPhaseChangeForTopicData tid _) _ -> do
+        (\AdminPhaseChange (AdminPhaseChangeForTopicData tid _dir) () -> do
             topic <- Action.mquery $ findTopic tid
             return $ unwords
                 [ "Das Thema wurde in Phase"
