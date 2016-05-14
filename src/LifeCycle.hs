@@ -274,7 +274,7 @@ topicRefinementCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditTopic]
+    Moderator        -> [CanEditTopic, CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic]
 
@@ -292,7 +292,7 @@ topicVotingCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> []
+    Moderator        -> [CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
