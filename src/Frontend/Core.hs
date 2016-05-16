@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -26,7 +27,7 @@ module Frontend.Core
     , html
     , FormCS
     , Beside(..)
-    , tabSelected
+    , tabSelected, HasTabSelected(tabSelectedEq)
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
     , numLikes, percentLikes, numVotes, percentVotes
@@ -167,10 +168,19 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
     toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
 
-tabSelected :: Eq tab => tab -> tab -> ST
-tabSelected curTab targetTab
-    | curTab == targetTab = "tab-selected"
-    | otherwise           = "tab-not-selected"
+tabSelected :: HasTabSelected a => a -> a -> ST
+tabSelected cur target
+    | cur `tabSelectedEq` target = "tab-selected"
+    | otherwise                  = "tab-not-selected"
+
+class HasTabSelected a where
+    tabSelectedEq :: a -> a -> Bool
+
+    default tabSelectedEq :: (Eq a) => a -> a -> Bool
+    tabSelectedEq = (==)
+
+instance HasTabSelected ListIdeasInTopicTab
+instance (Eq a, HasTabSelected a) => HasTabSelected (Maybe a)
 
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a

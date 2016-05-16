@@ -147,6 +147,8 @@ data MenuItem
     | MenuItemPhaseChange
   deriving (Eq, Show)
 
+instance HasTabSelected MenuItem
+
 class ToMenuItem t where
     toMenuItem :: proxy t -> MenuItem
 
