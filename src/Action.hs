@@ -591,11 +591,11 @@ topicForceNextPhase tid = do
                           -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
         PhaseWildIdea{}   -> throwError500 "internal: topicForceNextPhase from wild idea phase"
         PhaseRefinement{} -> PhaseShiftResultOk tid phase
-                             <$> topicTimeout RefinementPhaseTimeOut tid
+                             <$> topicTimeout RefinementPhaseTimeout tid
         PhaseJury         -> PhaseShiftResultOk tid phase
                              <$> makeEverythingFeasible topic
         PhaseVoting{}     -> PhaseShiftResultOk tid phase
-                             <$> topicTimeout VotingPhaseTimeOut tid
+                             <$> topicTimeout VotingPhaseTimeout tid
         PhaseResult       -> pure $ PhaseShiftResultNoForwardFromResult tid
     addMessage $ uilabel result
     pure ()

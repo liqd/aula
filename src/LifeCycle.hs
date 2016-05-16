@@ -35,9 +35,9 @@ import Types
 -- * Phase transition matrix
 
 data PhaseChange
-    = RefinementPhaseTimeOut
+    = RefinementPhaseTimeout
     | AllIdeasAreMarked { _phaseChangeTimeout :: Timestamp }
-    | VotingPhaseTimeOut  -- TODO: s/[tT]imeOut/[tT]imeout/g;
+    | VotingPhaseTimeout
     | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
     | RevertVotingPhaseToJury
     | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
@@ -69,11 +69,11 @@ thawPhase now = (phaseStatus     %~ thawStatus)
         s                           -> s
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeOut
+phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeout
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
 phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeTimeout})
     = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
-phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeOut
+phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeout
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
 phaseTrans (PhaseJury) (RevertJuryPhaseToRefinement {_phaseChangeTimeout})
     = Just (PhaseRefinement (ActivePhase _phaseChangeTimeout), [])
