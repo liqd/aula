@@ -53,7 +53,7 @@ mkRunPersistOnDisk logger cfg =
   where
     opn aulaData = do
         st <- explainException $ openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
-        let delay = cfg ^. persistConfig . snapshotIntervalMinutes
+        let delay = cfg ^. persistConfig . snapshotInterval
 
         let checkpoint = do
                 logger $ LogEntry INFO "[create acid-state checkpoint, archive]"

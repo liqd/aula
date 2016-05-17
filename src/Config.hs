@@ -29,7 +29,7 @@ module Config
     , sendmailPath
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
-    , snapshotIntervalMinutes
+    , snapshotInterval
     , logging
     , logLevel
     , eventLogPath
@@ -83,9 +83,9 @@ data SmtpConfig = SmtpConfig
 makeLenses ''SmtpConfig
 
 data PersistConfig = PersistConfig
-    { _dbPath                  :: String
-    , _persistenceImpl         :: PersistenceImpl
-    , _snapshotIntervalMinutes :: Timespan
+    { _dbPath           :: String
+    , _persistenceImpl  :: PersistenceImpl
+    , _snapshotInterval :: Timespan
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
@@ -138,9 +138,9 @@ defaultSmtpConfig = SmtpConfig
 
 defaultPersistConfig :: PersistConfig
 defaultPersistConfig = PersistConfig
-    { _dbPath                  = "./state/AulaData"
-    , _persistenceImpl         = AcidStateInMem
-    , _snapshotIntervalMinutes = TimespanMins 47
+    { _dbPath           = "./state/AulaData"
+    , _persistenceImpl  = AcidStateInMem
+    , _snapshotInterval = TimespanMins 47
     }
 
 defaultLogConfig :: LogConfig
