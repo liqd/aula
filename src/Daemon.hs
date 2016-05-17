@@ -105,7 +105,7 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
 
     forkIO . forever $ do
         run `catch` handle
-        threadDelay (timespanMs delay)
+        threadDelay (timespanUs delay)
 
 
 -- * Log Daemon
