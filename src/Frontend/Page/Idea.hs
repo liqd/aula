@@ -455,7 +455,6 @@ instance FormPage MoveIdea where
                 DF.inputSelect "topic-to-move" v
                 DF.inputSubmit "save"
                 a_ [class_ "btn", href_ $ U.listIdeas (idea ^. ideaLocation)] $ do
-                    -- FIXME: "are you sure?" dialog.
                     "cancel"
 
 commentIdeaNote :: Note Idea

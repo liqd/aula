@@ -67,7 +67,7 @@ spec = do
                     msg = "this test needs arbitrary paths to point to existing data: "
                       -- FIXME: as long as src/Arbitrary.hs is around and not replaced by
                       -- src/DemoData.hs or AulaTests/Stories.hs, this text will keep causing
-                    -- trouble, so we just make failing test cases pending.
+                      -- trouble, so we just make failing test cases pending.
 
                 case s of
                     204 -> wpasses
