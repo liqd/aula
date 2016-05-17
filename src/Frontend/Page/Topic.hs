@@ -191,7 +191,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                         , href_ . U.Space space $ U.CreateTopicDelegation topicId
                         ] $ do
                       i_ [class_ "icon-bullhorn"] nil
-                      "Stimme Beauftragen"
+                      "Stimme beauftragen"
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
