@@ -350,11 +350,6 @@ topicPhaseChange topic change = do
             eventLogTopicNewPhase topic phase phase'
             return phase'
 
-topicTimeout :: (ActionM m) => PhaseChange -> AUID Topic -> m Phase
-topicTimeout phaseChange tid = do
-    topic <- mquery $ findTopic tid
-    topicPhaseChange topic phaseChange
-
 sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage -> m ()
 sendMailToRole role msg = do
     users <- query $ findUsersByRole role
@@ -591,11 +586,11 @@ topicForceNextPhase tid = do
                           -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
         PhaseWildIdea{}   -> throwError500 "internal: topicForceNextPhase from wild idea phase"
         PhaseRefinement{} -> PhaseShiftResultOk tid phase
-                             <$> topicTimeout RefinementPhaseTimeout tid
+                             <$> topicPhaseChange topic RefinementPhaseTimeout
         PhaseJury         -> PhaseShiftResultOk tid phase
                              <$> makeEverythingFeasible topic
         PhaseVoting{}     -> PhaseShiftResultOk tid phase
-                             <$> topicTimeout VotingPhaseTimeout tid
+                             <$> topicPhaseChange topic VotingPhaseTimeout
         PhaseResult       -> pure $ PhaseShiftResultNoForwardFromResult tid
     addMessage $ uilabel result
     pure ()
