@@ -154,10 +154,10 @@ findActiveUser uid = (((^? activeUser) . makeUserView) =<<) <$> findUser uid
 -- two admins concurrently freeze and thaw, with different speeds.
 saveAndEnactFreeze :: Timestamp -> Freeze -> AUpdate ()
 saveAndEnactFreeze now shouldBeFrozenOrNot = do
-    dbFreeze .= shouldBeFrozenOrNot
-    let change = case shouldBeFrozenOrNot of
-            NotFrozen -> thawPhase
-            Frozen    -> freezePhase
-        freezeOrNot topic = setTopicPhase (topic ^. _Id) . change now $ topic ^. topicPhase
-    topics <- liftAQuery getTopics
-    mapM_ freezeOrNot topics
+  dbFreeze .= shouldBeFrozenOrNot
+  let change = case shouldBeFrozenOrNot of
+          NotFrozen -> thawPhase
+          Frozen    -> freezePhase
+      freezeOrNot topic = setTopicPhase (topic ^. _Id) . change now $ topic ^. topicPhase
+  topics <- liftAQuery getTopics
+  mapM_ freezeOrNot topics
