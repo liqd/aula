@@ -178,14 +178,14 @@ viewTopicHeaderDiv now ctx topic tab = do
         p_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
             let createIdeaButton
-                  | not (CanCreateIdea `elem` caps) = nil
+                  | CanCreateIdea `notElem` caps = nil
                   | otherwise = do
                     a_ [ class_ "btn-cta heroic-cta"
                        , href_ . U.createIdea $ IdeaLocationTopic space topicId
                        ]
                      "+ Neue Idee"
                 delegateVoteButton
-                  | not (CanVoteTopic `elem` caps) = nil
+                  | CanVoteTopic `notElem` caps = nil
                   | otherwise = do
                     a_  [ class_ "btn-cta heroic-cta"
                         , href_ . U.Space space $ U.CreateTopicDelegation topicId
