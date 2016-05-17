@@ -25,6 +25,7 @@ data CommentWidget = CommentWidget
     { _cwRenderContext :: RenderContext
     , _cwIdeaCaps      :: [IdeaCapability]
     , _cwComment       :: Comment
+    , _cwPhase         :: Phase
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -73,7 +74,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
   where
     comment = w ^. cwComment
     user = w ^. cwRenderContext . renderContextUser
-    comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment
+    comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment (w ^. cwPhase)
 
 
 data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
