@@ -10,6 +10,7 @@ module Daemon
     , msgDaemon
     , msgDaemonSend
     , timeoutDaemon
+    , timeoutDaemon'
     , logDaemon
     )
 where
@@ -106,6 +107,20 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
     forkIO . forever $ do
         run `catch` handle
         threadDelay (timespanUs delay)
+
+-- | Same as timeoutDaemon' but sends error to the logger.
+timeoutDaemon'
+    :: SystemLogger
+    -> String
+    -> Timespan
+    -> IO ()
+    -> TimeoutDeamon
+timeoutDaemon' logger name delay computation =
+    timeoutDaemon logger name delay computation handleException
+  where
+    handleException (SomeException e) =
+        logger . LogEntry ERROR . cs $
+            "error when running `" <> name <> "`: " <> show e
 
 
 -- * Log Daemon
