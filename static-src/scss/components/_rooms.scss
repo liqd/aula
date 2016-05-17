@@ -8,6 +8,11 @@
         background-repeat: no-repeat;
         background-position: center center;
         display: block;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            @include rem(height, 80px);
+            background-size: contain;
+        }
     }
 
     .item-room-title {
@@ -15,6 +20,11 @@
         @include rem(font-size, $font-size-xlarge);
         background: #fff;
         color: $color-text;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            @include rem(padding, 12px);
+            @include rem(font-size, $font-size-normal);
+        }
     }
 
     &.is-school .item-room-image {
