@@ -26,6 +26,7 @@ module Frontend.Core
     , html
     , FormCS
     , Beside(..)
+    , IsTab
     , tabSelected
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
@@ -167,11 +168,16 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
     toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
 
-tabSelected :: Eq tab => tab -> tab -> ST
-tabSelected curTab targetTab
-    | curTab == targetTab = "tab-selected"
-    | otherwise           = "tab-not-selected"
+-- This IsTab constraint is here to prevent non-intented
+-- calls to tabSelected.
+tabSelected :: (IsTab a, Eq a) => a -> a -> ST
+tabSelected cur target
+    | cur == target = "tab-selected"
+    | otherwise     = "tab-not-selected"
 
+class IsTab a
+instance IsTab ListIdeasInTopicTab
+instance IsTab a => IsTab (Maybe a)
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $
