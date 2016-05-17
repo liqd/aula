@@ -19,9 +19,8 @@ import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (system)
 import Test.Hspec.Wai (WaiExpectation)
-import Test.QuickCheck (Gen, frequency, choose, getNonEmpty)
+import Test.QuickCheck (Gen, frequency, choose)
 
-import qualified Data.Text as Text (take)
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
 
@@ -34,11 +33,9 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
-import Arbitrary (arb, constantSampleTimestamp)
+import Arbitrary (constantSampleTimestamp)
 import Logger (LogLevel(..), nullLog)
 import Persistent (mkMetaInfo)
-
-import Frontend.Constant as Constant
 
 
 testConfig :: IO Config
@@ -174,12 +171,3 @@ boundary mn mx = frequency
     , (1, pure mx)
     , (98, choose (mn, mx))
     ]
-
-nonEmptyST :: Gen ST
-nonEmptyST = (cs :: String -> ST) . getNonEmpty <$> arb
-
-nonEmptyMarkdown :: Gen Document
-nonEmptyMarkdown = Markdown <$> nonEmptyST
-
-validTopicDescription :: Gen PlainDocument
-validTopicDescription = PlainDocument . Text.take Constant.topicDescMaxLength <$> nonEmptyST

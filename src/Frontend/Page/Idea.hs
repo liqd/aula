@@ -10,7 +10,7 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
-  , CommentIdea(..)   -- FIXME: rename to 'CommentOnIdea'
+  , CommentOnIdea(..)
   , EditComment(..)
   , JudgeIdea(..)
   , CreatorStatement(..)
@@ -19,8 +19,8 @@ module Frontend.Page.Idea
   , viewIdea
   , createIdea
   , editIdea
-  , commentIdea       -- FIXME: rename to 'commentOnIdea'
-  , replyCommentIdea  -- FIXME: rename to 'commentOnComment'
+  , commentOnIdea
+  , replyToComment
   , editComment
   , editReply
   , judgeIdea
@@ -51,7 +51,7 @@ import Persistent.Api
     , SetCommentDesc(SetCommentDesc)
     )
 import Persistent.Idiom
-    ( ListInfoForIdea(ListInfoForIdea)
+    ( IdeaStats(IdeaStats)
     )
 import Persistent
     ( findComment
@@ -81,7 +81,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea RenderContext ListInfoForIdea
+data ViewIdea = ViewIdea RenderContext IdeaStats
   deriving (Eq, Show, Read)
 
 instance Page ViewIdea where
@@ -99,10 +99,10 @@ data EditIdea = EditIdea Idea
 instance Page EditIdea where
 
 -- | X. Comment idea
-data CommentIdea = CommentIdea Idea (Maybe Comment)
+data CommentOnIdea = CommentOnIdea Idea (Maybe Comment)
   deriving (Eq, Show, Read)
 
-instance Page CommentIdea where
+instance Page CommentOnIdea where
 
 -- | X. Deem idea feasible / not feasible
 -- Assumption: The idea is located in the topic (via 'IdeaLocation').
@@ -136,10 +136,6 @@ data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
 
 -- * templates
 
-backLink :: Monad m => IdeaLocation -> HtmlT m ()
-backLink IdeaLocationSpace{} = "Zum Ideenraum"
-backLink IdeaLocationTopic{} = "Zum Thema"
-
 numberWithUnit :: Monad m => Int -> ST -> ST -> HtmlT m ()
 numberWithUnit i singular_ plural_ =
     toHtml (show i) <>
@@ -148,7 +144,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx ideaInfo@(ListInfoForIdea idea phase _quo _voters)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx ideaInfo@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -162,7 +158,9 @@ instance ToHtml ViewIdea where
             header_ [class_ "detail-header"] $ do
                 a_ [ class_ "btn m-back detail-header-back"
                    , href_ . U.listIdeas $ idea ^. ideaLocation
-                   ] $ backLink (idea ^. ideaLocation)
+                   ] $ case idea ^. ideaLocation of
+                         IdeaLocationSpace{} -> "Zum Ideenraum"
+                         IdeaLocationTopic{} -> "Zum Thema"
 
                 let canEdit              = CanEdit              `elem` caps
                     canCreateTopic       = ideaReachedQuorum ideaInfo && CanCreateTopic `elem` userCaps
@@ -188,7 +186,7 @@ instance ToHtml ViewIdea where
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
-                a_ [ href_ $ U.User (idea ^. createdBy) U.UserIdeas
+                a_ [ href_ $ U.UserProf (idea ^. createdBy) U.UserIdeas
                    ] $ idea ^. createdByLogin . unUserLogin . html
                 " / "
                 let l = do
@@ -243,9 +241,9 @@ instance ToHtml ViewIdea where
                                     ]
 
                         when (isNothing (idea ^. ideaVoteResult)) $
-                            winnerButton (U.markWinnerIdea idea) "Idee hat gewonnen"
+                            winnerButton (U.markIdeaAsWinner idea) "Idee hat gewonnen"
                         when (isWinning idea) $
-                            winnerButton (U.revokeWinnerIdea idea) "\"gewonnen\" zurücknehmen"
+                            winnerButton (U.unmarkIdeaAsWinner idea) "\"gewonnen\" zurücknehmen"
 
                     when (isWinning idea) $
                         div_ [class_ "btn-cta"] "gewonnen"
@@ -275,7 +273,7 @@ instance ToHtml ViewIdea where
                         when (CanComment `elem` caps) $
                             button_ [ value_ "create_comment"
                                     , class_ "btn-cta comments-header-button"
-                                    , onclick_ (U.commentIdea idea)]
+                                    , onclick_ (U.commentOnIdea idea)]
                                 "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -285,7 +283,7 @@ instance ToHtml ViewIdea where
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars caps
-                (ViewIdea ctx (ListInfoForIdea idea phase quo voters))) = semanticDiv p $ do
+                (ViewIdea ctx (IdeaStats idea phase quo voters))) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 toHtml (QuorumBar $ percentLikes idea quo)
@@ -301,7 +299,7 @@ instance ToHtml IdeaVoteLikeBars where
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                             else postButton_
                                     [ class_ "btn"
-                                    , onclickJs . jsReloadOnClickAnchor $ U.anchor (idea ^. _Id)
+                                    , onclickJs jsReloadOnClick
                                     ]
                                     (U.likeIdea idea)
                                     "dafür!"
@@ -345,12 +343,12 @@ instance ToHtml IdeaVoteLikeBars where
                 postButton_ [class_ "btn voting-button"
                             , onclickJs jsReloadOnClick
                             ]
-                            (U.removeVote idea user)
+                            (U.unvoteOnIdea idea user)
             voteButton _        v =
                 postButton_ [class_ "btn-cta voting-button"
                             , onclickJs jsReloadOnClick
                             ]
-                            (U.voteIdea idea v)
+                            (U.voteOnIdea idea v)
 
         case phase of
             PhaseWildIdea{}   -> toHtml $ likeBar likeButtons
@@ -377,7 +375,7 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage v form p@(CreateIdea iloc) = createOrEditPage False iloc v form p
+    formPage v form p@(CreateIdea iloc) = createOrEditIdea False iloc v form p
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -394,12 +392,12 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    formPage v form p@(EditIdea idea) = createOrEditPage True (idea ^. ideaLocation) v form p
+    formPage v form p@(EditIdea idea) = createOrEditIdea True (idea ^. ideaLocation) v form p
 
-createOrEditPage :: (Monad m, Typeable page, Page page) =>
+createOrEditIdea :: (Monad m, Typeable page, Page page) =>
     Bool -> IdeaLocation ->
     View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditPage showDeleteButton cancelUrl v form p = semanticDiv p $ do
+createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
     div_ [class_ "container-main popup-page"] $ do
         div_ [class_ "container-narrow"] $ do
             h1_ [class_ "main-heading"] "Deine Idee"
@@ -432,18 +430,20 @@ commentIdeaNote = Note
     , noteLabelText         = "Was möchtest du sagen?"
     }
 
-instance FormPage CommentIdea where
-    type FormPagePayload CommentIdea = CommentContent
-    type FormPageResult CommentIdea = Comment
+instance FormPage CommentOnIdea where
+    type FormPagePayload CommentOnIdea = CommentContent
+    type FormPageResult CommentOnIdea = Comment
 
-    formAction (CommentIdea idea mcomment) = U.commentOrReplyIdea idea mcomment
+    formAction = \case
+        (CommentOnIdea idea Nothing)     -> U.commentOnIdea idea
+        (CommentOnIdea _ (Just comment)) -> U.replyToComment comment
 
-    redirectOf (CommentIdea idea _) = U.viewIdeaAtComment idea . view _Id
+    redirectOf (CommentOnIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
-    makeForm CommentIdea{} =
+    makeForm CommentOnIdea{} =
         CommentContent <$> noteFormInput commentIdeaNote Nothing
 
-    formPage v form p@(CommentIdea idea _mcomment) =
+    formPage v form p@(CommentOnIdea idea _mcomment) =
         semanticDiv p $ do
             noteForm commentIdeaNote v form idea
 
@@ -487,8 +487,8 @@ instance FormPage JudgeIdea where
 
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
 
-    redirectOf (JudgeIdea _ _idea topic) _ = U.listTopicIdeas topic
-        -- FIXME: we would like to say `U.listTopicIdeas topic </#> U.anchor (idea ^. _Id)` here,
+    redirectOf (JudgeIdea _ _idea topic) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
+        -- FIXME: we would like to say `U.listIdeasInTopic topic </#> U.anchor (idea ^. _Id)` here,
         -- but that requires some refactoring around 'redirectOf'.
 
     makeForm (JudgeIdea IdeaFeasible idea _) =
@@ -578,10 +578,10 @@ editIdea ideaId =
         "Die Änderungen wurden gespeichert."
 
 -- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
-commentIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentIdea
-commentIdea loc ideaId =
+commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea
+commentOnIdea loc ideaId =
     formPageHandlerWithMsg
-        (CommentIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
+        (CommentOnIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (\cc -> do
             comment <- currentUserAddDb (AddCommentToIdea loc ideaId) cc
             eventLogUserCreatesComment comment
@@ -601,14 +601,14 @@ editComment loc iid cid =
             eventLogUserEditsComment =<< mquery (findComment ck))
         "Der Verbesserungsvorschlag wurde gespeichert."
 
-replyCommentIdea :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentIdea
-replyCommentIdea loc ideaId commentId =
+replyToComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentOnIdea
+replyToComment loc ideaId commentId =
     formPageHandlerWithMsg
         (mquery $ do
             midea <- findIdea ideaId
             pure $ do idea <- midea
                       comment <- idea ^. ideaComments . at commentId
-                      pure $ CommentIdea idea (Just comment))
+                      pure $ CommentOnIdea idea (Just comment))
         (\cc -> do
             comment <- currentUserAddDb (AddReply $ CommentKey loc ideaId [] commentId) cc
             eventLogUserCreatesComment comment

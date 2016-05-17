@@ -26,6 +26,7 @@ module Frontend.Core
     , html
     , FormCS
     , Beside(..)
+    , IsTab
     , tabSelected
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
@@ -167,11 +168,16 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
     toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
 
-tabSelected :: Eq tab => tab -> tab -> ST
-tabSelected curTab targetTab
-    | curTab == targetTab = "tab-selected"
-    | otherwise           = "tab-not-selected"
+-- This IsTab constraint is here to prevent non-intented
+-- calls to tabSelected.
+tabSelected :: (IsTab a, Eq a) => a -> a -> ST
+tabSelected cur target
+    | cur == target = "tab-selected"
+    | otherwise     = "tab-not-selected"
 
+class IsTab a
+instance IsTab ListIdeasInTopicTab
+instance IsTab a => IsTab (Maybe a)
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $
@@ -507,7 +513,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ $ P.User (usr ^. _Id) P.UserIdeas] $ do
+                                . a_ [href_ $ P.viewUserProfile usr] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"]

@@ -11,6 +11,36 @@
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
+{- | Generate test values with *some consistency properties*.  Noise level will be reduced on demand
+whenever we run into problems with testing on inconsistently generated data.
+
+DISCUSSION: On the one hand, removing noise from the arbitrary instances to accomodate application
+logic is problematic because it introduces assumptions that are hard to look up.  worse, if
+different parts of the application logic have overlapping domains, we will be tempted to generate
+the intersection, punching holes in our data that are hard to track.
+
+However:
+
+1. we already do if (accomodate app logic) in `src/Arbitrary.hs`, and it's confusing to sometimes do
+   sometimes have the nice-noise generators there and sometimes in other places like this one
+2. white noise is mostly useless, so there is *often* no harm in eliminating it.
+
+In the long run, it would be nice to have more sophisticated testing.
+
+Pseudo-code copied from andorp:
+
+>>> data Contract a b = Contract {
+>>>       gen :: Gen a
+>>>     , box :: a -> b
+>>>     , post :: b -> Prop
+>>>     }
+>>>
+>>> test :: Contract a b -> Spec
+>>> test = ...
+
+This construction may form a category with products.
+
+-}
 module Arbitrary
     ( topLevelDomains
     , loremIpsum
@@ -38,7 +68,6 @@ module Arbitrary
 
 import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
-import Control.Lens (over)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Functor.Infix ((<$$>))
@@ -76,12 +105,13 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (.~), ppShow, view, join)
+import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
 import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
 
+import qualified Frontend.Constant
 import qualified Frontend.Path as P
 
 
@@ -133,17 +163,22 @@ instance ( Generic a, Generic b, Generic c
 
 -- * pages
 
-instance Arbitrary PageRoomsOverview where
-    arbitrary = PageRoomsOverview <$> arb
-    shrink (PageRoomsOverview x) = PageRoomsOverview <$> shr x
+instance Arbitrary PageOverviewOfSpaces where
+    arbitrary = PageOverviewOfSpaces <$> arb
+    shrink (PageOverviewOfSpaces x) = PageOverviewOfSpaces <$> shr x
 
-instance Arbitrary PageIdeasOverview where
-    arbitrary = PageIdeasOverview <$> arb <*> arb <*> arb
-    shrink (PageIdeasOverview x y z) = PageIdeasOverview <$> shr x <*> shr y <*> shr z
+instance Arbitrary PageOverviewOfWildIdeas where
+    arbitrary = do
+        ctx   <- arb
+        space <- arb
+        ideas <- (listItemIdeasWhatPage .~ IdeaInIdeasOverview) <$>
+                 mkListItemIdeasInLocation (IdeaLocationSpace space)
+        pure $ PageOverviewOfWildIdeas ctx space ideas
+    shrink (PageOverviewOfWildIdeas x y z) = PageOverviewOfWildIdeas <$> shr x <*> shr y <*> shr z
 
-instance Arbitrary PageIdeasInDiscussion where
-    arbitrary = PageIdeasInDiscussion <$> arb <*> arb <*> arb
-    shrink (PageIdeasInDiscussion x y z) = PageIdeasInDiscussion <$> shr x <*> shr y <*> shr z
+instance Arbitrary PageOverviewOfTopics where
+    arbitrary = PageOverviewOfTopics <$> arb <*> arb <*> arb
+    shrink (PageOverviewOfTopics x y z) = PageOverviewOfTopics <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary ViewTopicTab where
     arbitrary = elements viewTopicTabList
@@ -151,9 +186,9 @@ instance Arbitrary ViewTopicTab where
 
 viewTopicTabList :: [ViewTopicTab]
 viewTopicTabList =
-    [ TabAllIdeas emptyIdeasQuery
-    , TabVotingIdeas emptyIdeasQuery
-    , TabWinningIdeas emptyIdeasQuery
+    [ TabIdeas ListIdeasInTopicTabAll     emptyIdeasQuery
+    , TabIdeas ListIdeasInTopicTabVoting  emptyIdeasQuery
+    , TabIdeas ListIdeasInTopicTabWinning emptyIdeasQuery
     , TabDelegation
     ]
 
@@ -162,7 +197,13 @@ instance Arbitrary ViewTopic where
         tab <- arb
         case tab of
             TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb <*> arb
-            _ -> ViewTopicIdeas <$> arb <*> arb <*> pure tab <*> arb <*> arb
+            _ -> do
+                timestamp     <- arb
+                ctx           <- arb
+                topic         <- arb
+                listItemIdeas <- mkListItemIdeasInLocation (topicIdeaLocation topic)
+                pure $ ViewTopicIdeas timestamp ctx tab topic listItemIdeas
+
     shrink (ViewTopicDelegations x y z t) =
         ViewTopicDelegations <$> shr x <*> shr y <*> shr z <*> shr t
     shrink (ViewTopicIdeas x y z w t) =
@@ -180,9 +221,9 @@ instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
     shrink (EditIdea x) = EditIdea <$> shr x
 
-instance Arbitrary CommentIdea where
-    arbitrary = CommentIdea <$> arb <*> arb
-    shrink (CommentIdea x y) = CommentIdea <$> shr x <*> shr y
+instance Arbitrary CommentOnIdea where
+    arbitrary = CommentOnIdea <$> arb <*> arb
+    shrink (CommentOnIdea x y) = CommentOnIdea <$> shr x <*> shr y
 
 instance Arbitrary EditComment where
     arbitrary = EditComment <$> arb <*> arb
@@ -200,7 +241,9 @@ instance Arbitrary ReportComment where
     shrink (ReportComment x) = ReportComment <$> shr x
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> arb
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas)
+      where
+        repair = listItemIdeasWhatPage .~ IdeaInUserProfile
     shrink (PageUserProfileCreatedIdeas x y z) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
@@ -372,23 +415,34 @@ instance Arbitrary Delegation where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary ListIdeasInTopicTab where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary WhatListPage where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary ListItemIdea where
-    arbitrary = garbitrary
+instance Arbitrary ListItemIdeas where
+    arbitrary = error "Please use `mkListItemIdeas` or `mkListItemIdeasInLocation`, not `arbitary`."
     shrink    = gshrink
 
-instance Arbitrary ListItemIdeas where
-    arbitrary = garbitrary
-    shrink    = gshrink
+mkListItemIdeas :: Gen ListItemIdeas
+mkListItemIdeas = garbitrary
+
+mkListItemIdeasInLocation :: IdeaLocation -> Gen ListItemIdeas
+mkListItemIdeasInLocation loc = repair <$> mkListItemIdeas
+  where
+    repair :: ListItemIdeas -> ListItemIdeas
+    repair lst = lst
+        & (listItemIdeasLocation .~ loc)
+        . (listItemIdeasData %~ fmap (listInfoForIdeaIt . ideaLocation .~ loc))
 
 instance Arbitrary IdeasQuery where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary ListInfoForIdea where
+instance Arbitrary IdeaStats where
     arbitrary = garbitrary
     shrink    = gshrink
 
@@ -637,7 +691,10 @@ instance (Arbitrary a) => Arbitrary (PageShow a) where
     shrink (PageShow x) = PageShow <$> shr x
 
 instance Arbitrary PlainDocument where
-    arbitrary = PlainDocument <$> arbPhrase
+    arbitrary = PlainDocument
+              . ST.take Frontend.Constant.topicDescMaxLength
+              . mconcat
+            <$> someOf 1 3 arbParagraph
     shrink (PlainDocument x) = PlainDocument <$> shrink x
 
 
@@ -721,7 +778,7 @@ instance Arbitrary P.Main where
 instance Arbitrary P.IdeaMode where
     arbitrary = prune <$> garbitrary
       where
-        prune (P.OnComment ck P.ReplyComment) = P.OnComment (pruneCommentKey ck) P.ReplyComment
+        prune (P.OnComment ck P.ReplyToComment) = P.OnComment (pruneCommentKey ck) P.ReplyToComment
         prune m = m
     shrink    = gshrink
 

@@ -6,9 +6,9 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Overview
-    ( PageRoomsOverview(..)
-    , PageIdeasOverview(..)
-    , PageIdeasInDiscussion(..)
+    ( PageOverviewOfSpaces(..)
+    , PageOverviewOfWildIdeas(..)
+    , PageOverviewOfTopics(..)
     , WhatListPage(..)
     , viewRooms
     , viewIdeas
@@ -30,15 +30,15 @@ import qualified Frontend.Path as U
 -- * pages
 
 -- | 1. Rooms overview
-data PageRoomsOverview = PageRoomsOverview [IdeaSpace]
+data PageOverviewOfSpaces = PageOverviewOfSpaces [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageIdeasOverview = PageIdeasOverview RenderContext IdeaSpace ListItemIdeas
+data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas RenderContext IdeaSpace ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageIdeasInDiscussion = PageIdeasInDiscussion RenderContext IdeaSpace [Topic]
+data PageOverviewOfTopics = PageOverviewOfTopics RenderContext IdeaSpace [Topic]
   deriving (Eq, Show, Read)
 
 data Tabs = Tabs ActiveTab IdeaSpace
@@ -50,27 +50,27 @@ data ActiveTab = WildIdeas | Topics
 
 -- * actions
 
-viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageRoomsOverview
-viewRooms = PageRoomsOverview <$> getSpacesForCurrentUser
+viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageOverviewOfSpaces
+viewRooms = PageOverviewOfSpaces <$> getSpacesForCurrentUser
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
-    => IdeaSpace -> IdeasQuery -> m PageIdeasOverview
+    => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
     ctx <- renderContext
-    PageIdeasOverview ctx space <$> equery (do
+    PageOverviewOfWildIdeas ctx space <$> equery (do
         is  <- applyFilter ideasQuery <$> findWildIdeasBySpace space
         ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery
             <$> getListInfoForIdea `mapM` is)
 
-viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageIdeasInDiscussion
-viewTopics space = PageIdeasInDiscussion <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
+viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
+viewTopics space = PageOverviewOfTopics <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
 
 
 -- * templates
 
-instance ToHtml PageRoomsOverview where
+instance ToHtml PageOverviewOfSpaces where
     toHtmlRaw = toHtml
-    toHtml p@(PageRoomsOverview spaces) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfSpaces spaces) = semanticDiv p $ do
         div_ [class_ "container-main"] $ do
             f spaces
       where
@@ -85,11 +85,11 @@ instance ToHtml PageRoomsOverview where
                     span_ [class_ "item-room-image"] nil
                     h2_ [class_ "item-room-title"] $ uilabel ispace
 
-instance Page PageRoomsOverview
+instance Page PageOverviewOfSpaces
 
-instance ToHtml PageIdeasOverview where
+instance ToHtml PageOverviewOfWildIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasOverview _ctx space ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfWildIdeas _ctx space ideasAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -102,12 +102,12 @@ instance ToHtml PageIdeasOverview where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
-instance Page PageIdeasOverview where
+instance Page PageOverviewOfWildIdeas where
     extraBodyClasses _ = ["m-shadow"]
 
-instance ToHtml PageIdeasInDiscussion where
+instance ToHtml PageOverviewOfTopics where
     toHtmlRaw = toHtml
-    toHtml p@(PageIdeasInDiscussion ctx space topics) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfTopics ctx space topics) = semanticDiv p $ do
         toHtml $ Tabs Topics space
 
         div_ [class_ "theme-grid"] $ do
@@ -123,7 +123,7 @@ instance ToHtml PageIdeasInDiscussion where
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
                         a_ [ class_ "theme-grid-item-link"
-                           , href_ . U.listIdeas $ IdeaLocationTopic space (topic ^. _Id)
+                           , href_ $ U.listIdeas (IdeaLocationTopic space (topic ^. _Id))
                            ] $ do
                             img_ [ src_ . U.TopStatic $ "images" </> case topic ^. topicPhase of
                                       PhaseWildIdea{}   -> "theme_aus.png"  -- FIXME
@@ -144,7 +144,7 @@ instance ToHtml PageIdeasInDiscussion where
                                 span_ [class_ "theme-grid-item-link"]
                                     "view topic"
 
-instance Page PageIdeasInDiscussion
+instance Page PageOverviewOfTopics
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml

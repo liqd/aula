@@ -35,11 +35,12 @@ import Types
 -- * Phase transition matrix
 
 data PhaseChange
-    = RefinementPhaseTimeOut
-    | RefinementPhaseMarkedByModerator
-    | AllIdeasAreMarked { _phaseChangeVotPhaseEnd :: Timestamp }
-    | VotingPhaseTimeOut
-    | VotingPhaseSetbackToJuryPhase
+    = RefinementPhaseTimeout
+    | AllIdeasAreMarked { _phaseChangeTimeout :: Timestamp }
+    | VotingPhaseTimeout
+    | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
+    | RevertVotingPhaseToJury
+    | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
     | PhaseFreeze { _phaseChangeFreezeNow :: Timestamp }
     | PhaseThaw { _phaseChangeThawNow :: Timestamp }
   deriving (Eq, Show)
@@ -68,16 +69,19 @@ thawPhase now = (phaseStatus     %~ thawStatus)
         s                           -> s
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeOut
+phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeout
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseMarkedByModerator
-    = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeVotPhaseEnd})
-    = Just (PhaseVoting (ActivePhase _phaseChangeVotPhaseEnd), [])
-phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeOut
+phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeTimeout})
+    = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
+phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeout
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseSetbackToJuryPhase
-    = Just (PhaseJury, [UnmarkAllIdeas])
+phaseTrans (PhaseJury) (RevertJuryPhaseToRefinement {_phaseChangeTimeout})
+    = Just (PhaseRefinement (ActivePhase _phaseChangeTimeout), [])
+phaseTrans (PhaseVoting ActivePhase{}) RevertVotingPhaseToJury
+    = Just (PhaseJury, [])
+phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
+    = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
+
 -- Freezing and thawing.
 --
 -- There are no frozen variants of @PhaseJury@ and @PhaseResult@.
@@ -88,6 +92,7 @@ phaseTrans phase (PhaseFreeze now)
     = Just (freezePhase now phase, [])
 phaseTrans phase (PhaseThaw now)
     = Just (thawPhase now phase, [])
+
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
 
@@ -269,7 +274,7 @@ topicRefinementCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditTopic]
+    Moderator        -> [CanEditTopic, CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic]
 
@@ -280,14 +285,14 @@ topicJuryCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> [CanPhaseForwardTopic]
+    Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
 topicVotingCaps :: Role -> [TopicCapability]
 topicVotingCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> []
+    Moderator        -> [CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
@@ -298,4 +303,4 @@ topicResultCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> []
+    Admin            -> [CanPhaseBackwardTopic]

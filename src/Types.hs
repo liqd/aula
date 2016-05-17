@@ -213,6 +213,14 @@ instance SOP.Generic ProtoIdea
 
 type instance Proto Idea = ProtoIdea
 
+data ListIdeasInTopicTab =
+    ListIdeasInTopicTabAll
+  | ListIdeasInTopicTabVoting
+  | ListIdeasInTopicTabWinning
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ListIdeasInTopicTab
+
 -- | "Kategorie"
 data Category =
     CatRules        -- ^ "Regel"
@@ -1225,6 +1233,9 @@ makeUserView u =
 
 activeUsers :: [UserView] -> [User]
 activeUsers = mapMaybe (^? activeUser)
+
+notFeasibleIdea :: Idea -> Bool
+notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
 
 ideaHasCreatorStatement :: Idea -> Bool
 ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just

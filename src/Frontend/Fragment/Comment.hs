@@ -52,7 +52,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     unless (comment ^. commentDeleted) . footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
             when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
-                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyComment comment] $ do
+                button_ [class_ "btn comment-footer-button", onclick_ $ U.replyToComment comment] $ do
                     i_ [class_ "icon-reply"] nil
                     "antworten"
             a_ [class_ "btn comment-footer-button", href_ (U.reportComment comment)] $ do
@@ -94,7 +94,7 @@ instance ToHtml CommentVotesWidget where
                                          , onclickJs . jsReloadOnClickAnchor . U.anchor
                                                $ comment ^. _Id
                                          ]
-                                     (U.voteComment comment v)
+                                     (U.voteOnComment comment v)
                         else div_ [class_ "btn"]
                 likeButton $
                     i_ [class_ $ "icon-thumbs-o-" <> vs] nil
@@ -109,6 +109,6 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtmlRaw = toHtml
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         div_ [class_ "author"] .
-            a_ [href_ $ U.User (mi ^. metaCreatedBy) U.UserIdeas] $ do
+            a_ [href_ $ U.viewUserIdProfile (mi ^. metaCreatedBy)] $ do
                 span_ [class_ "author-image"] $ avatarImgFromMeta mi
                 span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . unUserLogin . html

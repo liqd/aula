@@ -61,9 +61,9 @@ pagesPlain f =
     , f (Proxy :: Proxy AdminViewUsers)
     , f (Proxy :: Proxy PageDelegateVote)
     , f (Proxy :: Proxy PageDelegationNetwork)
-    , f (Proxy :: Proxy PageIdeasInDiscussion)
-    , f (Proxy :: Proxy PageIdeasOverview)
-    , f (Proxy :: Proxy PageRoomsOverview)
+    , f (Proxy :: Proxy PageOverviewOfTopics)
+    , f (Proxy :: Proxy PageOverviewOfWildIdeas)
+    , f (Proxy :: Proxy PageOverviewOfSpaces)
     , f (Proxy :: Proxy PageStaticImprint)
     , f (Proxy :: Proxy PageStaticTermsOfUse)
     , f (Proxy :: Proxy PageUserProfileCreatedIdeas)
@@ -76,7 +76,7 @@ pagesForm :: forall b.
     (forall a. (Typeable a, Arbitrary a, Show a, Read a, FormPage a, Page a) => Proxy a -> b)
     -> [b]
 pagesForm f =
-    [ f (Proxy :: Proxy CommentIdea)
+    [ f (Proxy :: Proxy CommentOnIdea)
     , f (Proxy :: Proxy CreateIdea)
     , f (Proxy :: Proxy CreateTopic)
     , f (Proxy :: Proxy EditIdea)

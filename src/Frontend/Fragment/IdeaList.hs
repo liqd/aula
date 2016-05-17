@@ -2,12 +2,23 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.IdeaList
+    ( WhatListPage(..)
+    , ListItemIdeas(..)
+    , listItemIdeasCtx
+    , listItemIdeasWhatPage
+    , listItemIdeasLocation
+    , listItemIdeasFilter
+    , listItemIdeasData
+    )
 where
+
+import Control.Lens
 
 import Frontend.Prelude
 import Frontend.Fragment.Category
@@ -15,33 +26,44 @@ import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
-import Persistent (ListInfoForIdea(ListInfoForIdea))
+import Persistent (IdeaStats(IdeaStats))
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 
-
 data WhatListPage
     = IdeaInIdeasOverview
-    | IdeaInViewTopic
+    | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
 
+makeLenses ''WhatListPage
+makePrisms ''WhatListPage
+
+isIdeaInViewTopic :: WhatListPage -> Bool
+isIdeaInViewTopic (IdeaInViewTopic _) = True
+isIdeaInViewTopic _                   = False
+
+-- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
       { _listItemRenderContext  :: RenderContext
       , _listItemIdeaWhatPage   :: WhatListPage
-      , _listItemIdeaInfo       :: ListInfoForIdea
+      , _listItemIdeaInfo       :: IdeaStats
       }
   deriving (Eq, Show, Read, Generic)
 
+-- | An idea list.  Contains the information for constructing 'ListItemIdea' values, plus the
+-- search/filter header of the list.
 data ListItemIdeas = ListItemIdeas
       { _listItemIdeasCtx      :: RenderContext
       , _listItemIdeasWhatPage :: WhatListPage
       , _listItemIdeasLocation :: IdeaLocation
       , _listItemIdeasFilter   :: IdeasQuery
-      , _listItemIdeasData     :: [ListInfoForIdea]
+      , _listItemIdeasData     :: [IdeaStats]
       }
   deriving (Eq, Show, Read, Generic)
+
+makeLenses ''ListItemIdeas
 
 instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
@@ -50,7 +72,7 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (ListInfoForIdea idea phase quo voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage (IdeaStats idea phase quo voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
@@ -58,7 +80,7 @@ instance ToHtml ListItemIdea where
                         idea
                         phase
 
-            when (IdeaInViewTopic == whatListPage) $ do
+            when (isIdeaInViewTopic whatListPage) $ do
                 feasibilityVerdict False idea caps
 
             a_ [href_ $ U.viewIdea idea] $ do
@@ -70,7 +92,7 @@ instance ToHtml ListItemIdea where
                             span_ [class_ "ideas-list-author"] $ do
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
-                    let showLikesAndQuorum = IdeaInViewTopic /= whatListPage
+                    let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
                     let showVotes = phase > PhaseJury
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
@@ -107,8 +129,9 @@ instance ToHtml ListItemIdeas where
 -- the idea location that is currently used to calculate the urls for the filter and sort links.
 ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 ideaListHeader IdeaInUserProfile _ _ = nil
-ideaListHeader _ loc ideasQuery = do
-    categoryFilterButtons loc ideasQuery
+ideaListHeader whatListPage loc ideasQuery = do
+    let mtab' = whatListPage ^? whatListPageTopicTab
+    categoryFilterButtons mtab' loc ideasQuery
 
     div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
@@ -117,7 +140,7 @@ ideaListHeader _ loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listIdeasWithQuery loc (ideasQuery & ideasQueryS .~ by)
+                          hrf = href_ $ U.listIdeas' loc mtab' (Just $ ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]

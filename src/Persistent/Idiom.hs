@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -46,7 +47,7 @@ getVotersForSpace space = filter hasAccess <$> getActiveUsers
 
 -- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
 -- reached.
-data ListInfoForIdea = ListInfoForIdea
+data IdeaStats = IdeaStats
     { _listInfoForIdeaIt         :: Idea
     , _listInfoForIdeaPhase      :: Phase
     , _listInfoForIdeaQuorum     :: Int
@@ -54,7 +55,9 @@ data ListInfoForIdea = ListInfoForIdea
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
-ideaReachedQuorum :: ListInfoForIdea -> Bool
+makeLenses ''IdeaStats
+
+ideaReachedQuorum :: IdeaStats -> Bool
 ideaReachedQuorum i = reached >= needed
   where
     reached = noOfLikes $ _listInfoForIdeaIt i
@@ -68,9 +71,9 @@ wildIdeasReachedQuorumBySpace space = do
         reached idea = noOfLikes idea >= quVotesRequired
     filter reached <$> findWildIdeasBySpace space
 
-instance SOP.Generic ListInfoForIdea
+instance SOP.Generic IdeaStats
 
-getListInfoForIdea :: Idea -> EQuery ListInfoForIdea
+getListInfoForIdea :: Idea -> EQuery IdeaStats
 getListInfoForIdea idea = do
     voters <- length <$> getVotersForIdea idea
     quPercent <- quorum idea
@@ -79,7 +82,7 @@ getListInfoForIdea idea = do
         <- maybe404 =<< case idea ^. ideaMaybeTopicId of
             Nothing -> views dbFreeze (Just . PhaseWildIdea)
             Just tid -> view topicPhase <$$> findTopic tid
-    pure $ ListInfoForIdea idea phase quVotesRequired voters
+    pure $ IdeaStats idea phase quVotesRequired voters
 
 quorumForSpace :: IdeaSpace -> Query Percent
 quorumForSpace = \case
