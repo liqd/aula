@@ -67,6 +67,7 @@ module Action
     , reportIdeaCommentReply
 
       -- * phase transitions
+    , phaseTimeout
     , topicForcePhaseChange
 
       -- * page handling
@@ -348,6 +349,18 @@ topicPhaseChange topic change = do
             mapM_ (phaseAction topic) actions
             eventLogTopicNewPhase topic phase phase'
             return phase'
+
+-- Call topicPhaseChange on all topics for which the timeout has passed.
+-- This action is idempotent and can be called as we like.
+-- It should be called at least once a day to ensure the proper transition of topics.
+phaseTimeout :: ActionM m => m ()
+phaseTimeout = do
+    topics <- query getTopics
+    now <- getCurrentTimestamp
+    forM_ topics $ \topic ->
+        case topic ^? topicPhase . phaseStatus . _ActivePhase of
+            Just end | end <= now -> void $ topicPhaseChange topic PhaseTimeout
+            _ -> pure ()
 
 sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage -> m ()
 sendMailToRole role msg = do
