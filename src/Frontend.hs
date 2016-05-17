@@ -358,8 +358,8 @@ aulaAdmin =
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv
-  :<|> Action.topicForceNextPhase
-  :<|> Action.topicForcePreviousPhase
+  :<|> Action.topicForcePhaseChange Forward
+  :<|> Action.topicForcePhaseChange Backward
   :<|> form Page.adminPhaseChange
 
 

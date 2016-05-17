@@ -153,7 +153,7 @@ runClient (Free (EditTopic ot nt d k)) = do
 
 runClient (Free (TimeoutTopic t k)) = do
     Just topic <- precondition $ findTopicByTitle t
-    step . lift $ Action.topicForceNextPhase (topic ^. _Id)
+    step . lift $ Action.topicForcePhaseChange Forward (topic ^. _Id)
     postcondition $ do
         Just topic' <- findTopicByTitle t
         let phase1 = topic ^. topicPhase

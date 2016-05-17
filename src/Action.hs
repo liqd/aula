@@ -66,15 +66,14 @@ module Action
     , reportIdeaComment
     , reportIdeaCommentReply
 
+      -- * phase transitions
+    , topicForcePhaseChange
+
       -- * page handling
     , createTopic
     , Action.editTopic
     , createIdea
     , Action.editIdea
-
-      -- * admin activity
-    , topicForceNextPhase
-    , topicForcePreviousPhase
 
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
@@ -395,6 +394,40 @@ phaseAction topic phasact = do
           ideas :: [Idea] <- query $ findIdeasByTopic topic
           (\idea -> unmarkIdeaInJuryPhase (idea ^. _Id)) `mapM_` ideas
 
+-- FIXME: Only admin can do that
+topicForcePhaseChange :: (ActionM m) => PhaseChangeDir -> AUID Topic -> m ()
+topicForcePhaseChange dir tid = do
+    now <- getCurrentTimestamp
+    topic <- mquery $ findTopic tid
+    let phase = topic ^. topicPhase
+    addMessage . uilabel =<< case (phase, dir) of
+        _ | isPhaseFrozen phase
+                             -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
+        (PhaseWildIdea{}, _) -> throwError500 "internal: topicForcePhaseChange from wild idea phase"
+
+        (PhaseRefinement{}, Forward) -> PhaseShiftResultOk tid phase
+                                        <$> topicPhaseChange topic PhaseTimeout
+        (PhaseJury,         Forward) -> PhaseShiftResultOk tid phase
+                                        <$> makeEverythingFeasible topic
+        (PhaseVoting{},     Forward) -> PhaseShiftResultOk tid phase
+                                        <$> topicPhaseChange topic PhaseTimeout
+        (PhaseResult,       Forward) -> pure $ PhaseShiftResultNoForwardFromResult tid
+
+        (PhaseRefinement{}, Backward) -> pure $ PhaseShiftResultNoBackwardsFromRefinement tid
+        (PhaseJury,         Backward) -> fmap (PhaseShiftResultOk tid phase)
+                                         . topicPhaseChange topic . RevertJuryPhaseToRefinement
+                                         =<< query (phaseEndRefinement now)
+        (PhaseVoting{},     Backward) -> PhaseShiftResultOk tid phase
+                                         <$> topicPhaseChange topic RevertVotingPhaseToJury
+        (PhaseResult,       Backward) -> fmap (PhaseShiftResultOk tid phase)
+                                       . topicPhaseChange topic
+                                       . RevertResultPhaseToVoting =<< query (phaseEndVote now)
+  where
+    -- this implicitly triggers the change to voting phase.
+    makeEverythingFeasible topic = do
+        ideas <- query $ findIdeasByTopic topic
+        forM_ ideas $ \idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)
+        view topicPhase <$> mquery (findTopic (topic ^. _Id))
 
 
 -- * Page Handling
@@ -571,57 +604,6 @@ setCreatorStatement = update <..> SetCreatorStatement
 
 revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
-
-
--- * Admin activities
-
--- FIXME: Only admin can do that
--- FIXME: resolve code duplication between this and 'topicForcePreviousPhase'.
-topicForceNextPhase :: (ActionM m) => AUID Topic -> m ()
-topicForceNextPhase tid = do
-    topic <- mquery $ findTopic tid
-    let phase = topic ^. topicPhase
-    result <- case phase of
-        _ | isPhaseFrozen phase
-                          -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
-        PhaseWildIdea{}   -> throwError500 "internal: topicForceNextPhase from wild idea phase"
-        PhaseRefinement{} -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic PhaseTimeout
-        PhaseJury         -> PhaseShiftResultOk tid phase
-                             <$> makeEverythingFeasible topic
-        PhaseVoting{}     -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic PhaseTimeout
-        PhaseResult       -> pure $ PhaseShiftResultNoForwardFromResult tid
-    addMessage $ uilabel result
-    pure ()
-  where
-    -- this implicitly triggers the change to voting phase.
-    makeEverythingFeasible topic = do
-        ideas :: [Idea] <- query $ findIdeasByTopic topic
-        (\idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)) `mapM_` ideas
-        topic' <- mquery $ findTopic (topic ^. _Id)
-        return (topic' ^. topicPhase)
-
-topicForcePreviousPhase :: (ActionM m) => AUID Topic -> m ()
-topicForcePreviousPhase tid = do
-    now <- getCurrentTimestamp
-    phaseEndR <- query $ phaseEndRefinement now
-    phaseEndV <- query $ phaseEndVote now
-    topic <- mquery $ findTopic tid
-    let phase = topic ^. topicPhase
-    result <- case topic ^. topicPhase of
-        _ | isPhaseFrozen phase
-                          -> pure $ PhaseShiftResultNoShiftingWhenFrozen tid
-        PhaseWildIdea{}   -> throwError500 "internal: topicForcePreviousPhase from wild idea phase"
-        PhaseRefinement{} -> pure $ PhaseShiftResultNoBackwardsFromRefinement tid
-        PhaseJury         -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic (RevertJuryPhaseToRefinement phaseEndR)
-        PhaseVoting{}     -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic RevertVotingPhaseToJury
-        PhaseResult       -> PhaseShiftResultOk tid phase
-                             <$> topicPhaseChange topic (RevertResultPhaseToVoting phaseEndV)
-    addMessage $ uilabel result
-    pure ()
 
 
 data PhaseShiftResult =

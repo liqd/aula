@@ -788,11 +788,7 @@ adminPhaseChange
 adminPhaseChange =
     formPageHandler
         (pure AdminPhaseChange)
-        (\(AdminPhaseChangeForTopicData tid dir) -> void $ do
-            case dir of
-                Forward -> Action.topicForceNextPhase tid
-                Backward -> Action.topicForcePreviousPhase tid
-        )
+        (\(AdminPhaseChangeForTopicData tid dir) -> Action.topicForcePhaseChange dir tid)
 
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
