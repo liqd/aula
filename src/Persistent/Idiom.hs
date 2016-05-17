@@ -12,6 +12,7 @@
 module Persistent.Idiom
 where
 
+import Control.Exception (assert)
 import Control.Lens
 import Control.Monad (unless)
 import Data.Functor.Infix ((<$$>))
@@ -156,8 +157,13 @@ saveAndEnactFreeze :: Timestamp -> Freeze -> AUpdate ()
 saveAndEnactFreeze now shouldBeFrozenOrNot = do
   dbFreeze .= shouldBeFrozenOrNot
   let change = case shouldBeFrozenOrNot of
-          NotFrozen -> thawPhase
-          Frozen    -> freezePhase
-      freezeOrNot topic = setTopicPhase (topic ^. _Id) . change now $ topic ^. topicPhase
+          NotFrozen -> PhaseThaw   now
+          Frozen    -> PhaseFreeze now
+      freezeOrNot topic = do
+          case phaseTrans (topic ^. topicPhase) change of
+            Nothing -> return ()  -- ignored, probably repeated freeze or thaw
+            Just (phase', actions) -> do
+                let !_A = assert (null actions) ()  -- wrong monad to execute'em
+                setTopicPhase (topic ^. _Id) phase'
   topics <- liftAQuery getTopics
   mapM_ freezeOrNot topics
