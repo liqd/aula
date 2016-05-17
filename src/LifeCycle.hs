@@ -166,7 +166,7 @@ wildIdeaCap _i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanMoveBetweenTopics]
+    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
@@ -175,7 +175,7 @@ phaseRefinementCap _i = \case
     Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanMoveBetweenTopics]
+    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
@@ -219,27 +219,32 @@ isCreatorOf u = (u ==) . view createdBy
 
 -- These capabilities are specific to a particular comment. Using IdeaCapability would
 -- be too coarse and would not allow distinguish that authors can delete only their own
--- comments.
+-- comments (we need the individual 'Comment' as a function argument for that).
 data CommentCapability
     = CanReplyComment
-      -- To reply to a comment you need both this capability and the MakeComment capability
+      -- To reply to a comment you need both this capability and the 'CanComment' capability
       -- for the corresponding idea.
+      -- FIXME: we shouldn't make a difference between the right to make a comment and the
+      -- right to make a sub-comment.
     | CanDeleteComment
     | CanEditComment
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CommentCapability
 
-canDeleteComment :: AUID User -> Role -> Comment -> Bool
-canDeleteComment uid role comment = uid `isCreatorOf` comment || role == Moderator
-
-commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
-commentCapabilities uid role comment
+commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [CommentCapability]
+commentCapabilities uid role comment phase
     | comment ^. commentDeleted = []
-    | otherwise =
-        [CanDeleteComment | canDeleteComment uid role comment] <>
-        [CanReplyComment  ] <>
-        [CanEditComment   | uid `isCreatorOf` comment]
+    | ongoingDebate phase = mconcat $
+        [[CanReplyComment]] <>
+        [[CanDeleteComment, CanEditComment] | uid `isCreatorOf` comment || role == Moderator]
+    | otherwise = mconcat
+        [[CanDeleteComment, CanEditComment] | role == Moderator]
+  where
+    ongoingDebate = \case
+        PhaseWildIdea{}   -> True
+        PhaseRefinement{} -> True
+        _                 -> False
 
 
 -- * Topic capabilities
