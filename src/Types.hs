@@ -952,6 +952,19 @@ addTimespan tdiff (Timestamp tfrom) = Timestamp $
 fromNow :: Timestamp -> Iso' Timestamp Timespan
 fromNow now = iso (`diffTimestamps` now) (`addTimespan` now)
 
+data PhaseChangeDir = Backward | Forward
+  deriving (Eq, Ord, Read, Show, Enum, Bounded, Generic)
+
+instance SOP.Generic PhaseChangeDir
+
+instance HasUILabel PhaseChangeDir where
+    uilabel Forward  = "vorwärts"
+    uilabel Backward = "zurück"
+
+instance ToHtml PhaseChangeDir where
+    toHtmlRaw = toHtml
+    toHtml    = toHtml . uilabelST
+
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where
     genGen :: Gen a -> m a

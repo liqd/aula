@@ -795,19 +795,6 @@ adminPhaseChange =
         )
 
 
-data PhaseChangeDir = Forward | Backward
-  deriving (Eq, Show, Generic)
-
-instance SOP.Generic PhaseChangeDir
-
-instance HasUILabel PhaseChangeDir where
-    uilabel Forward  = "vorwärts"
-    uilabel Backward = "zurück"
-
-instance ToHtml PhaseChangeDir where
-    toHtmlRaw = toHtml
-    toHtml    = toHtml . uilabelST
-
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
   deriving (Eq, Show)
 
