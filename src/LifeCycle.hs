@@ -121,7 +121,7 @@ userCapabilities _s = \case
 -- The view of an idea is default and controlled by access control.
 data IdeaCapability
     = CanLike
-    | CanVote
+    | CanVoteIdea
     | CanComment
     | CanVoteComment
     | CanMarkFeasiblity -- also can add jury statement
@@ -190,7 +190,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> [CanVote | isFeasibleIdea i]
+    Student    _clss -> [CanVoteIdea | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -254,6 +254,8 @@ data TopicCapability
     = CanPhaseForwardTopic
     | CanPhaseBackwardTopic
     | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
+    | CanCreateIdea
+    | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
   deriving (Eq, Show)
 
 topicCapabilities :: Phase -> Role -> [TopicCapability]
@@ -267,7 +269,7 @@ topicCapabilities = \case
 
 topicWildIdeaCaps :: Role -> [TopicCapability]
 topicWildIdeaCaps = \case
-    Student    _clss -> []
+    Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -276,7 +278,7 @@ topicWildIdeaCaps = \case
 
 topicRefinementCaps :: Role -> [TopicCapability]
 topicRefinementCaps = \case
-    Student    _clss -> []
+    Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanEditTopic, CanPhaseForwardTopic]
@@ -294,7 +296,7 @@ topicJuryCaps = \case
 
 topicVotingCaps :: Role -> [TopicCapability]
 topicVotingCaps = \case
-    Student    _clss -> []
+    Student    _clss -> [CanVoteTopic]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanPhaseForwardTopic]

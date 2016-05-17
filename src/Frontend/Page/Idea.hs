@@ -329,7 +329,7 @@ instance ToHtml IdeaVoteLikeBars where
             user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
-            voteButtons = if CanVote `elem` caps
+            voteButtons = if CanVoteIdea `elem` caps
                 then div_ [class_ "voting-buttons"] $ do
                     voteButton vote Yes "dafür"
                     voteButton vote No  "dagegen"
