@@ -233,13 +233,11 @@ instance SOP.Generic CommentCapability
 commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [CommentCapability]
 commentCapabilities uid role comment phase
     | comment ^. commentDeleted = []
-    | ongoingDebate phase =
-        [CanDeleteComment | uid `isCreatorOf` comment || role == Moderator] <>
-        [CanReplyComment  ] <>
-        [CanEditComment   | uid `isCreatorOf` comment || role == Moderator]
-    | otherwise =
-        [CanDeleteComment | role == Moderator] <>
-        [CanEditComment   | role == Moderator]
+    | ongoingDebate phase = mconcat $
+        [[CanReplyComment]] <>
+        [[CanDeleteComment, CanEditComment] | uid `isCreatorOf` comment || role == Moderator]
+    | otherwise = mconcat
+        [[CanDeleteComment, CanEditComment] | role == Moderator]
   where
     ongoingDebate = \case
         PhaseWildIdea{}   -> True
