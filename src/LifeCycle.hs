@@ -166,7 +166,7 @@ wildIdeaCap _i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
@@ -175,7 +175,7 @@ phaseRefinementCap _i = \case
     Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
@@ -222,8 +222,10 @@ isCreatorOf u = (u ==) . view createdBy
 -- comments (we need the individual 'Comment' as a function argument for that).
 data CommentCapability
     = CanReplyComment
-      -- To reply to a comment you need both this capability and the MakeComment capability
+      -- To reply to a comment you need both this capability and the 'CanComment' capability
       -- for the corresponding idea.
+      -- FIXME: we shouldn't make a difference between the right to make a comment and the
+      -- right to make a sub-comment.
     | CanDeleteComment
     | CanEditComment
   deriving (Enum, Eq, Ord, Show, Read, Generic)
