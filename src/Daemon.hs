@@ -108,7 +108,8 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
         threadDelay (timespanUs delay)
         run
 
--- | Same as timeoutDaemon' but sends error to the logger.
+-- | Same as timeoutDaemon but without any extra exception handling.
+-- Errors are still sent to the logger.
 timeoutDaemon'
     :: SystemLogger
     -> String
@@ -116,11 +117,7 @@ timeoutDaemon'
     -> IO ()
     -> TimeoutDeamon
 timeoutDaemon' logger name delay computation =
-    timeoutDaemon logger name delay computation handleException
-  where
-    handleException (SomeException e) =
-        logger . LogEntry ERROR . cs $
-            "error when running `" <> name <> "`: " <> show e
+    timeoutDaemon logger name delay computation (const $ pure ())
 
 
 -- * Log Daemon
