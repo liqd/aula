@@ -790,25 +790,8 @@ adminPhaseChange
 adminPhaseChange =
     formPageHandler
         (pure AdminPhaseChange)
-        (\(AdminPhaseChangeForTopicData tid dir) -> void $ do
-            case dir of
-                Forward -> Action.topicForceNextPhase tid
-                Backward -> Action.topicForcePreviousPhase tid
-        )
+        (\(AdminPhaseChangeForTopicData tid dir) -> Action.topicForcePhaseChange dir tid)
 
-
-data PhaseChangeDir = Forward | Backward
-  deriving (Eq, Show, Generic)
-
-instance SOP.Generic PhaseChangeDir
-
-instance HasUILabel PhaseChangeDir where
-    uilabel Forward  = "vorwärts"
-    uilabel Backward = "zurück"
-
-instance ToHtml PhaseChangeDir where
-    toHtmlRaw = toHtml
-    toHtml    = toHtml . uilabelST
 
 data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
   deriving (Eq, Show)
