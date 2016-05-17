@@ -211,7 +211,7 @@ instance ToHtml ViewIdea where
             when (has _PhaseWildIdea phase && ideaReachedQuorum ideaInfo) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
                 div_ [class_ "voting-buttons"] $
-                    if role == Moderator
+                    if CanCreateTopic `elem` userCaps
                         then button_ [ class_ "btn-cta m-valid"
                                      , onclick_ $ U.Space spc U.CreateTopic
                                      ] $ do
