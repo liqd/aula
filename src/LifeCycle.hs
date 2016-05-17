@@ -230,14 +230,11 @@ data CommentCapability
 
 instance SOP.Generic CommentCapability
 
-canDeleteComment :: AUID User -> Role -> Comment -> Bool
-canDeleteComment uid role comment = uid `isCreatorOf` comment || role == Moderator
-
 commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
 commentCapabilities uid role comment
     | comment ^. commentDeleted = []
     | otherwise =
-        [CanDeleteComment | canDeleteComment uid role comment] <>
+        [CanDeleteComment | uid `isCreatorOf` comment || role == Moderator] <>
         [CanReplyComment  ] <>
         [CanEditComment   | uid `isCreatorOf` comment]
 
