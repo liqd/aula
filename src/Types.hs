@@ -338,6 +338,14 @@ instance SOP.Generic IdeaVoteResultValue
 
 type instance Proto IdeaVoteResult = IdeaVoteResultValue
 
+data MoveIdea
+    = MoveIdeaToWild
+    | MoveIdeaToTopic (AUID Topic)
+
+moveIdeaElim :: forall t . t -> (AUID Topic -> t) -> MoveIdea -> t
+moveIdeaElim wild topic = \case
+    MoveIdeaToWild    -> wild
+    MoveIdeaToTopic t -> topic t
 
 -- * comment
 
@@ -1102,6 +1110,7 @@ deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaVoteResult
 deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
+deriveSafeCopy 0 'base ''MoveIdea
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation

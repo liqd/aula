@@ -225,6 +225,8 @@ type IdeaApi
     =  Idea ::> "view" :> GetH (Frame ViewIdea)
        -- edit idea (applies to both wild ideas and ideas in topics)
   :<|> Idea ::> "edit" :> FormHandler Page.EditIdea
+       -- move idea between topics (applies to both wild ideas and ideas in topics)
+  :<|> Idea ::> "move" :> FormHandler Page.MoveIdea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH
        -- vote on an idea
@@ -250,6 +252,7 @@ ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
     =  makeFrame . Page.viewIdea
   :<|> form . Page.editIdea
+  :<|> form . Page.moveIdea
   :<|> Action.likeIdea
   :<|> Action.voteOnIdea
   :<|> Action.unvoteOnIdea

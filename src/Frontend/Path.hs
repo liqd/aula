@@ -35,6 +35,7 @@ module Frontend.Path
     , viewIdeaOfComment
     , createIdea
     , editIdea
+    , moveIdea
     , commentOnIdea
     , likeIdea
     , judgeIdea
@@ -202,6 +203,7 @@ data IdeaMode =
       CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
+    | MoveIdea (AUID Idea)
     | LikeIdea (AUID Idea)
     | VoteOnIdea (AUID Idea) IdeaVoteValue
     | UnvoteOnIdea (AUID Idea) (AUID User)
@@ -222,6 +224,7 @@ ideaMode :: IdeaMode -> UriPath -> UriPath
 ideaMode (ViewIdea i mc)        root = maybe id (flip (</#>) . anchor) mc $
                                        root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)           root = root </> "idea" </> uriPart i </> "edit"
+ideaMode (MoveIdea i)           root = root </> "idea" </> uriPart i </> "move"
 ideaMode (LikeIdea i)           root = root </> "idea" </> uriPart i </> "like"
 ideaMode (VoteOnIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
                                             </> uriPart v
@@ -359,6 +362,9 @@ createIdea loc = IdeaPath loc CreateIdea
 
 editIdea :: Idea -> Main
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
+
+moveIdea :: Idea -> Main
+moveIdea idea = IdeaPath (idea ^. ideaLocation) $ MoveIdea (idea ^. _Id)
 
 commentOnIdea :: Idea -> Main
 commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _Id)

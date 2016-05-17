@@ -117,6 +117,7 @@ module Persistent.Pure
     , addIdeaVoteResult
     , revokeWinnerStatus
     , editIdea
+    , moveIdeaToTopic
     , deleteComment
     , saveDurations
     , saveQuorums
@@ -522,6 +523,13 @@ moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
 moveIdeasToLocation ideaIds location =
     for_ ideaIds $ \ideaId ->
         withIdea ideaId . ideaLocation .= location
+
+moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
+moveIdeaToTopic ideaId mTopicId =
+    withIdea ideaId . ideaLocation %= changeTopic mTopicId
+  where
+    changeTopic MoveIdeaToWild      s = IdeaLocationSpace (s ^. ideaLocationSpace)
+    changeTopic (MoveIdeaToTopic t) s = IdeaLocationTopic (s ^. ideaLocationSpace) t
 
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase

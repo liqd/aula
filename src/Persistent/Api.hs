@@ -71,6 +71,7 @@ $(makeAcidic ''AulaData
     , 'editIdea
     , 'editTopic
     , 'moveIdeasToLocation
+    , 'moveIdeaToTopic
     , 'saveAndEnactFreeze
     , 'saveDurations
     , 'saveQuorums
