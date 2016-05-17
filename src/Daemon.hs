@@ -85,7 +85,8 @@ msgDaemon logger name computation handleException = do
 
     return $ MsgDaemon loop sendMsg
 
--- | Run an action in constant intervals.  Example uses are phase timeout and acid-state snapshot.
+-- | Run an action in constant intervals (the first time *after* the first interval).
+-- Example uses are phase timeout and acid-state snapshot.
 timeoutDaemon
     :: SystemLogger
     -> String
