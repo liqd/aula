@@ -173,11 +173,10 @@ instance ToHtml ViewIdea where
                                 when canEdit . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
-                                when canCreateTopic .
-                                    a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                        i_ [class_ "icon-pencil"] nil
+                                when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                    i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                        "Thema erstellen"
+                                    "Thema erstellen"
                                 when canMoveBetweenTopics . a_ [href_ U.Broken] $ do
                                     i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
