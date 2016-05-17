@@ -97,7 +97,7 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
     let run = do
             logger . LogEntry INFO . cs $
                 concat ["daemon [", name, "] timed out after ", showTimespan delay, "."]
-            computation
+            computation `catch` handle
 
         handle e@(SomeException e') = do
             logger . LogEntry ERROR . cs $
@@ -106,7 +106,7 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
 
     forkIO . forever $ do
         threadDelay (timespanUs delay)
-        run `catch` handle
+        run
 
 -- | Same as timeoutDaemon' but sends error to the logger.
 timeoutDaemon'
