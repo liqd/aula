@@ -5,7 +5,7 @@
 module Daemon
     ( SystemLogger
     , MsgDaemon
-    , TimeoutDeamon
+    , TimeoutDaemon
     , Daemon(..)
     , msgDaemon
     , msgDaemonSend
@@ -43,11 +43,11 @@ data MsgDaemon a = MsgDaemon
     , _msgDaemonSend  :: a -> IO ()
     }
 
-data TimeoutDeamon = TimeoutDeamon
+data TimeoutDaemon = TimeoutDaemon
     { _timeoutDaemonStart :: IO ThreadId }
 
 makeLenses ''MsgDaemon
-makeLenses ''TimeoutDeamon
+makeLenses ''TimeoutDaemon
 
 class Daemon d where
     start :: Getter d (IO ThreadId)
@@ -55,7 +55,7 @@ class Daemon d where
 instance Daemon (MsgDaemon a) where
     start = msgDaemonStart
 
-instance Daemon TimeoutDeamon where
+instance Daemon TimeoutDaemon where
     start = timeoutDaemonStart
 
 -- | Message deamons receive typed messages over a 'Chan'.  Two example applications are logger
@@ -93,8 +93,8 @@ timeoutDaemon
     -> Timespan
     -> IO ()
     -> (SomeException -> IO ())
-    -> TimeoutDeamon
-timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
+    -> TimeoutDaemon
+timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
     let run = do
             logger . LogEntry INFO . cs $
                 concat ["daemon [", name, "] timed out after ", showTimespan delay, "."]
@@ -118,7 +118,7 @@ timeoutDaemon'
     -> String
     -> Timespan
     -> IO ()
-    -> TimeoutDeamon
+    -> TimeoutDaemon
 timeoutDaemon' logger name delay computation =
     timeoutDaemon logger name delay computation (const $ pure ())
 
