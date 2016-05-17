@@ -9,8 +9,9 @@
 
 module Frontend.CoreSpec where
 
+import Prelude hiding ((.))
 import Control.Arrow((&&&))
-import Control.Monad.Trans.Except
+import Control.Category ((.))
 import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
@@ -250,8 +251,8 @@ renderForm (F g) =
 runFailOnError :: Action a -> PropertyM IO a
 runFailOnError action = run $ do
     cfg <- readConfig nullLog DontWarnMissing
-    let env :: ActionEnv = ActionEnv (error "Dummy RunPersist") cfg nullLog
-    fmap (either (error . show) id) . runExceptT . unNat (mkRunAction env) $ action
+    let env = ActionEnv (error "Dummy RunPersist") cfg nullLog
+    unNat (exceptToFail . mkRunAction env) action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
 --

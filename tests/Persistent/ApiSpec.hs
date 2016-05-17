@@ -9,11 +9,12 @@
 
 module Persistent.ApiSpec where
 
+import Prelude hiding ((.))
+import Control.Category ((.))
 import Control.Exception (assert)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Control.Monad.Trans.Except (runExceptT)
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
@@ -54,8 +55,7 @@ mkState setup impl k = do
         k rp
 
 runA :: Config -> RunPersist -> Action.Action a -> IO a
-runA cfg rp = fmap (either (error . show) id)
-            . runExceptT . unNat (Action.mkRunAction (Action.ActionEnv rp cfg nullLog))
+runA cfg rp = unNat (exceptToFail . Action.mkRunAction (Action.ActionEnv rp cfg nullLog))
 
 runQ :: (MonadIO m) => RunPersist -> Query a -> m a
 runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery

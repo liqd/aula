@@ -12,10 +12,10 @@ module AulaTests.StoriesSpec where
 import Prelude hiding ((.), id)
 import Control.Category
 import Control.Monad (join)
-import Control.Monad.Trans.Except
 import Servant
 import Test.Hspec
 
+import Types (exceptToFail)
 import Action.Implementation
 import DemoData (genInitialTestDb)
 import Logger (nullLog)
@@ -45,16 +45,12 @@ story name program expected = it name $ do
         Persistent.withPersist nullLog cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO
-                runAction = exceptToFail
-                        . mkRunAction (Action.ActionEnv persist cfg nullLog)
+                runAction = exceptToFail . mkRunAction (Action.ActionEnv persist cfg nullLog)
 
             a <- unNat runAction $ do
                   genInitialTestDb
                   AulaTests.Stories.Interpreter.Action.run program
             return $ a `shouldBe` expected
-  where
-    exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
-    exceptToFail = Nat (fmap (either (error . show) id) . runExceptT)
 
 story_ :: String -> Behavior () -> Spec
 story_ msg program = story msg program ()

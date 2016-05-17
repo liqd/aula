@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
+{-# LANGUAGE TypeOperators               #-}
 {-# LANGUAGE TypeSynonymInstances        #-}
 {-# LANGUAGE ViewPatterns                #-}
 
@@ -25,6 +26,7 @@ where
 
 import Control.Lens
 import Control.Monad
+import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.Binary
 import Data.Char
 import Data.Function (on)
@@ -41,6 +43,7 @@ import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 import Network.HTTP.Media ((//))
 import Network.Mail.Mime (Address(Address))
+import Servant ((:~>)(Nat))
 import Servant.API
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece)
     , Accept, MimeRender, Headers(..), Header, contentType, mimeRender, addHeader
@@ -106,6 +109,10 @@ _utctDay f t = (\d -> t { utctDay = d }) <$> f (utctDay t)
 -- As in the lens-datetime package
 julianDay :: Iso' Day Integer
 julianDay = iso toModifiedJulianDay ModifiedJulianDay
+
+exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
+exceptToFail = Nat ((either (fail . show) pure =<<) . runExceptT)
+
 
 newtype DurationDays = DurationDays { unDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
