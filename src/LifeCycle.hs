@@ -87,6 +87,9 @@ phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
 -- Freezing or thawing those phases has no effect.  (We do not throw
 -- an exception for these because that would require to handle this
 -- case in other places where it is less convenient, I think.)
+--
+-- Persistent.Idiom.saveAndEnactFreeze relies on the fact that these
+-- transitions yield no PhaseAction.
 phaseTrans phase (PhaseFreeze now)
     = Just (freezePhase now phase, [])
 phaseTrans phase (PhaseThaw now)
