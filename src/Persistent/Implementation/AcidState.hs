@@ -54,16 +54,8 @@ mkRunPersistOnDisk logger cfg =
     opn aulaData = do
         st <- explainException $ openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
         let delay = cfg ^. persistConfig . snapshotInterval
-
-        let checkpoint = do
-                logger $ LogEntry INFO "[create acid-state checkpoint, archive]"
-                createCheckpoint st
-                createArchive st
-        let logException (SomeException e) = do
-                logger . LogEntry ERROR $
-                    "error creating checkpoint or archiving changelog: " <> cs (show e)
-
-        let daemon = timeoutDaemon logger "checkpoint" delay checkpoint logException
+            checkpoint = createCheckpoint st >> createArchive st
+            daemon = timeoutDaemon' logger "create acid-state checkpoint, archive" delay checkpoint
         tid <- daemon ^. start
         pure (st, tid)
 
