@@ -901,14 +901,6 @@ timespanUs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
 timespanUs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
 timespanUs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
 
-timespanMs :: Timespan -> Int
-timespanMs (TimespanUs    i) = fromIntegral $ i `div` 1000
-timespanMs (TimespanMs    i) = fromIntegral   i
-timespanMs (TimespanSecs  i) = fromIntegral $ i * 1000
-timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 60)
-timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 3600)
-timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 3600 * 24)
-
 timespanDays :: Timespan -> Int
 timespanDays (TimespanUs    i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
 timespanDays (TimespanMs    i) = fromIntegral $ i `div` (1000 * 3600 * 24)
