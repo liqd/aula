@@ -101,14 +101,14 @@ data LogConfig = LogConfig
 makeLenses ''LogConfig
 
 data Config = Config
-    { _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
-    , _listenerInterface :: String
-    , _listenerPort      :: Int
-    , _htmlStatic        :: FilePath
-    , _cfgCsrfSecret     :: CsrfSecret
-    , _logging           :: LogConfig
-    , _persistConfig     :: PersistConfig
-    , _smtpConfig        :: SmtpConfig  -- TODO: align
+    { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
+    , _listenerInterface    :: String
+    , _listenerPort         :: Int
+    , _htmlStatic           :: FilePath
+    , _cfgCsrfSecret        :: CsrfSecret
+    , _logging              :: LogConfig
+    , _persistConfig        :: PersistConfig
+    , _smtpConfig           :: SmtpConfig
     , _timeoutCheckInterval :: Timespan
     -- ^ Topics which needs to change phase due to a timeout will
     -- be checked at this interval.
@@ -158,15 +158,15 @@ defaultLogConfig = LogConfig
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _exposedUrl        = "http://localhost:8080"
-    , _listenerInterface = "0.0.0.0"
-    , _listenerPort      = 8080
-    , _htmlStatic        = "./static"
+    { _exposedUrl           = "http://localhost:8080"
+    , _listenerInterface    = "0.0.0.0"
+    , _listenerPort         = 8080
+    , _htmlStatic           = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
-    , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
-    , _logging           = defaultLogConfig
-    , _persistConfig     = defaultPersistConfig
-    , _smtpConfig        = defaultSmtpConfig  -- TODO: align
+    , _cfgCsrfSecret        = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _logging              = defaultLogConfig
+    , _persistConfig        = defaultPersistConfig
+    , _smtpConfig           = defaultSmtpConfig
     , _timeoutCheckInterval = TimespanHours 6
     }
 
