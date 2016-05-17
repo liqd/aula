@@ -105,8 +105,8 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
             handleException e
 
     forkIO . forever $ do
-        run `catch` handle
         threadDelay (timespanUs delay)
+        run `catch` handle
 
 -- | Same as timeoutDaemon' but sends error to the logger.
 timeoutDaemon'
