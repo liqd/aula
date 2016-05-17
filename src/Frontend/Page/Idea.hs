@@ -337,18 +337,18 @@ instance ToHtml IdeaVoteLikeBars where
               where
                 vote = userVotedOnIdea user idea
 
-            -- FIXME: The button for the selected vote value is white.
-            -- Should it be in other color?
-            voteButton (Just w) v | w == v =
-                postButton_ [class_ "btn voting-button"
-                            , onclickJs jsReloadOnClick
-                            ]
-                            (U.unvoteOnIdea idea user)
-            voteButton _        v =
-                postButton_ [class_ "btn-cta voting-button"
-                            , onclickJs jsReloadOnClick
-                            ]
-                            (U.voteOnIdea idea v)
+                -- FIXME: The button for the selected vote value is white.
+                -- Should it be in other color?
+                voteButton (Just w) v | w == v =
+                    postButton_ [ class_ "btn voting-button"
+                                , onclickJs jsReloadOnClick
+                                ]
+                                (U.unvoteOnIdea idea user)
+                voteButton _        v =
+                    postButton_ [ class_ "btn-cta voting-button"
+                                , onclickJs jsReloadOnClick
+                                ]
+                                (U.voteOnIdea idea v)
 
         case phase of
             PhaseWildIdea{}   -> toHtml $ likeBar likeButtons
