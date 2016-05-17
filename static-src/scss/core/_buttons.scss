@@ -6,6 +6,8 @@
     line-height: $button-height;
     text-transform: uppercase;
     vertical-align: middle;
+    -webkit-appearance: none;
+    -webkit-border-radius: 0px;
 
     &:hover, &:focus {
         text-decoration: none;
