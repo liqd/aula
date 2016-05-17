@@ -80,7 +80,7 @@ runFrontend' cfg log rp = do
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
-    void $ timeoutDaemon' log "background phase transition" (cfg ^. timeoutInterval)
+    void $ timeoutDaemon' log "background phase transition" (cfg ^. timeoutCheckInterval)
                           (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken

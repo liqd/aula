@@ -30,7 +30,7 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
     , snapshotInterval
-    , timeoutInterval
+    , timeoutCheckInterval
     , logging
     , logLevel
     , eventLogPath
@@ -108,8 +108,8 @@ data Config = Config
     , _cfgCsrfSecret     :: CsrfSecret
     , _logging           :: LogConfig
     , _persistConfig     :: PersistConfig
-    , _smtpConfig        :: SmtpConfig
-    , _timeoutInterval   :: Timespan
+    , _smtpConfig        :: SmtpConfig  -- TODO: align
+    , _timeoutCheckInterval :: Timespan
     -- ^ Topics which needs to change phase due to a timeout will
     -- be checked at this interval.
     -- * once per day would be the minmum
@@ -166,8 +166,8 @@ defaultConfig = Config
     , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logging           = defaultLogConfig
     , _persistConfig     = defaultPersistConfig
-    , _smtpConfig        = defaultSmtpConfig
-    , _timeoutInterval   = TimespanHours 6
+    , _smtpConfig        = defaultSmtpConfig  -- TODO: align
+    , _timeoutCheckInterval = TimespanHours 6
     }
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
