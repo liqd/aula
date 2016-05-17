@@ -30,6 +30,7 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
     , snapshotInterval
+    , timeoutInterval
     , logging
     , logLevel
     , eventLogPath
@@ -108,6 +109,12 @@ data Config = Config
     , _logging           :: LogConfig
     , _persistConfig     :: PersistConfig
     , _smtpConfig        :: SmtpConfig
+    , _timeoutInterval   :: Timespan
+    -- ^ Topics which needs to change phase due to a timeout will
+    -- be checked at this interval.
+    -- * once per day would be the minmum
+    -- * 4 times a day (every 6 hours) would ensures that
+    --   all the topics are ready at least at 6am.
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
@@ -160,6 +167,7 @@ defaultConfig = Config
     , _logging           = defaultLogConfig
     , _persistConfig     = defaultPersistConfig
     , _smtpConfig        = defaultSmtpConfig
+    , _timeoutInterval   = TimespanHours 6
     }
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
