@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -27,7 +26,8 @@ module Frontend.Core
     , html
     , FormCS
     , Beside(..)
-    , tabSelected, HasTabSelected(tabSelectedEq)
+    , IsTab
+    , tabSelected
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
     , numLikes, percentLikes, numVotes, percentVotes
@@ -168,20 +168,16 @@ instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
     toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
 
 
-tabSelected :: HasTabSelected a => a -> a -> ST
+-- This IsTab constraint is here to prevent non-intented
+-- calls to tabSelected.
+tabSelected :: (IsTab a, Eq a) => a -> a -> ST
 tabSelected cur target
-    | cur `tabSelectedEq` target = "tab-selected"
-    | otherwise                  = "tab-not-selected"
+    | cur == target = "tab-selected"
+    | otherwise     = "tab-not-selected"
 
-class HasTabSelected a where
-    tabSelectedEq :: a -> a -> Bool
-
-    default tabSelectedEq :: (Eq a) => a -> a -> Bool
-    tabSelectedEq = (==)
-
-instance HasTabSelected ListIdeasInTopicTab
-instance (Eq a, HasTabSelected a) => HasTabSelected (Maybe a)
-
+class IsTab a
+instance IsTab ListIdeasInTopicTab
+instance IsTab a => IsTab (Maybe a)
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect uri = throwServantErr $
