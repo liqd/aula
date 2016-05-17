@@ -108,6 +108,9 @@ timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
     forkIO . forever $ do
         threadDelay (timespanUs delay)
         run `catch` (\(e@(SomeException _)) -> do
+            -- (alternatively, we could change the 'SystemLogger' type to a newtype, make it
+            -- abstract, and make sure that every system logger we ever encounter in the wild will
+            -- have a handler wrapped around it.)
             hPutStrLn stderr $ "*** timeoutDaemon: exception in except handler: " <> show e
             hPutStrLn stderr "*** timeoutDaemon: this is not good.  trying to keep running.")
 
