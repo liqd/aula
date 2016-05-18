@@ -435,7 +435,6 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
                             i_ [class_ "icon-trash-o"] nil
                             "Idee löschen"
 
--- TODO: Translation
 instance FormPage MoveIdea where
     type FormPagePayload MoveIdea = Types.MoveIdea
 
@@ -447,15 +446,14 @@ instance FormPage MoveIdea where
         maybe MoveIdeaToWild MoveIdeaToTopic
         <$> ("topic-to-move" .: DF.choice topicList (Just activeTopic))
       where
-        topicList = (Nothing, "Wild ideas"):map (Just . view _Id &&& view (topicTitle . html)) topics
+        topicList = (Nothing, "Nach 'wilde Ideen'"):map (Just . view _Id &&& view (topicTitle . html)) topics
 
     formPage v form p@(MoveIdea idea _topics _activeTopic) =
         semanticDiv p .
             form $ do
                 DF.inputSelect "topic-to-move" v
-                DF.inputSubmit "save"
-                a_ [class_ "btn", href_ $ U.listIdeas (idea ^. ideaLocation)] $ do
-                    "cancel"
+                DF.inputSubmit "Verschieben"
+                a_ [class_ "btn", href_ $ U.listIdeas (idea ^. ideaLocation)] "Zurück"
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
@@ -611,7 +609,6 @@ editIdea ideaId =
         (Action.editIdea ideaId)
         "Die Änderungen wurden gespeichert."
 
--- TODO: Translation
 moveIdea :: ActionM m => AUID Idea -> FormPageHandler m MoveIdea
 moveIdea ideaId =
     formPageHandlerWithMsg
@@ -622,7 +619,7 @@ moveIdea ideaId =
             topics <- findTopicsBySpace (loc ^. ideaLocationSpace)
             pure $ MoveIdea idea topics activeTopic)
         (Action.moveIdeaToTopic ideaId)
-        "The idea has moved to..."
+        "The Idee ist verschoben."
 
 -- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
 commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea

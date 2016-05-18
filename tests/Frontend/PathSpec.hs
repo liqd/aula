@@ -81,7 +81,7 @@ spec = do
             it "Every path has a handler." $
                 checkPathHandler mainGen
 
-        describe "Valid formAction " $ do
+        describe "Valid formAction" $ do
             forM_ formActionGens $ \(t, g) ->
                 it (t <> " has a formAction.") $
                     checkPathHandler g
