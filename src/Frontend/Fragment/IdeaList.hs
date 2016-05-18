@@ -84,7 +84,7 @@ instance ToHtml ListItemIdea where
                 feasibilityVerdict False idea caps
 
             a_ [href_ $ U.viewIdea idea] $ do
-                div_ [class_ "col-8-12"] $ do
+                div_ [class_ "col-7-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
                     div_ [class_ "ideas-list-text-container"] $ do
                         h2_ [class_ "ideas-list-title"] $ do
@@ -109,6 +109,12 @@ instance ToHtml ListItemIdea where
                             toHtml (show (numVotes idea Yes) <> " Stimmen")
                     when showLikesAndQuorum . toHtml $ QuorumBar (percentLikes idea quo)
                     when showVotes . toHtml $ VotesBar (percentVotes idea voters Yes)
+                div_ [class_ "col-1-12 ideas-list-category-container"] $ do
+                    -- FIXME: make another class to replace icon-list-button such that
+                    -- these icons are not turned into buttons.
+                    -- Also the icons should be smaller.
+                    div_ [class_ "icon-list-button"] $ do
+                        ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml

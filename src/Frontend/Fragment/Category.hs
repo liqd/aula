@@ -11,6 +11,7 @@
 
 module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
+    , CategoryMiniLabel(CategoryMiniLabel)
     , categoryFilterButtons
     , formPageSelectCategory
     , makeFormSelectCategory
@@ -56,6 +57,14 @@ instance ToHtml CategoryLabel where
     toHtmlRaw = toHtml
     toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
         -- FIXME: something without the `li_` elem?
+
+newtype CategoryMiniLabel = CategoryMiniLabel Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance ToHtml CategoryMiniLabel where
+    toHtmlRaw = toHtml
+    toHtml (CategoryMiniLabel cat) =
+        span_ [class_ $ "icon-" <> toUrlPiece cat] $ uilabel cat
 
 -- | The "m-active" class is managed in js.  See `static/js/custom.js`.
 instance ToHtml CategoryButton where
