@@ -19,6 +19,7 @@ import Frontend.Prelude
 import LifeCycle
 
 import qualified Frontend.Path as U
+import qualified Lucid
 
 
 data CommentWidget = CommentWidget
@@ -66,7 +67,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                     "bearbeiten"
             when (CanDeleteComment `elem` comCaps) .
                 postButton_ [ class_ "btn comment-footer-button"
-                            , onclickJs . jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
+                            , Lucid.onclick_ ("if(areYourSure()) reloadOnClick(\"" <> (U.anchor $ comment ^. _Id) <> "\")" :: ST)
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil

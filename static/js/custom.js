@@ -26,6 +26,11 @@ function toggleMenu(el, out) {
     }
 }
 
+// Confirm delete
+function areYourSure() {
+    return confirm('Are you sure?');
+}
+
 // Mobile menu
 
 document.getElementById("mobile-menu-button").onclick = function() {
