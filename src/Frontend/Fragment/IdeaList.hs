@@ -91,6 +91,7 @@ instance ToHtml ListItemIdea where
                             idea ^. ideaTitle . html
                             span_ [class_ "ideas-list-author"] $ do
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
+
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
                     let showVotes = phase > PhaseJury
@@ -100,13 +101,25 @@ instance ToHtml ListItemIdea where
                             let s = idea ^. ideaComments . commentsCount
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
+
                         when showLikesAndQuorum . li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-voting"] nil
                             toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
+
                         when showVotes . li_ [class_ "meta-list-item"] $ do
+                            let nyes   = numVotes idea Yes
+                                nno    = numVotes idea No
+                                ntotal = nyes + nno
                             i_ [class_ "meta-list-icon icon-voting"] nil
-                            -- FIXME: Plural / singular
-                            toHtml (show (numVotes idea Yes) <> " Stimmen")
+                            toHtml $ show ntotal <> if ntotal == 1 then " Stimme" else " Stimmen"
+                            when (ntotal > 0) $ do
+                                (" (" :: ST) ^. html
+                                let button val nam =
+                                      val ^. showed . html >>
+                                      i_ [class_ $ "icon-thumbs-o-" <> nam] nil
+                                button nyes "up" >> "/" >> button nno "down"
+                                (")" :: ST) ^. html
+
                     when showLikesAndQuorum . toHtml $ QuorumBar (percentLikes idea quo)
                     when showVotes . toHtml $ VotesBar (percentVotes idea voters Yes)
 
