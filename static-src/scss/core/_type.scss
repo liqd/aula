@@ -21,6 +21,11 @@ a {
     @include rem(margin-bottom, 45px);
     font-size: $font-size-jumbo;
     font-weight: normal;
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        @include rem(margin-bottom, 20px);
+        font-size: $font-size-xlarge;
+    }
 }
 
 .main-heading, .sub-heading {

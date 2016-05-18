@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables         #-}
 {-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
+{-# LANGUAGE TypeOperators               #-}
 {-# LANGUAGE TypeSynonymInstances        #-}
 {-# LANGUAGE ViewPatterns                #-}
 
@@ -25,6 +26,7 @@ where
 
 import Control.Lens
 import Control.Monad
+import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.Binary
 import Data.Char
 import Data.Function (on)
@@ -41,6 +43,7 @@ import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 import Network.HTTP.Media ((//))
 import Network.Mail.Mime (Address(Address))
+import Servant ((:~>)(Nat))
 import Servant.API
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece)
     , Accept, MimeRender, Headers(..), Header, contentType, mimeRender, addHeader
@@ -106,6 +109,10 @@ _utctDay f t = (\d -> t { utctDay = d }) <$> f (utctDay t)
 -- As in the lens-datetime package
 julianDay :: Iso' Day Integer
 julianDay = iso toModifiedJulianDay ModifiedJulianDay
+
+exceptToFail :: (Monad m, Show e) => ExceptT e m :~> m
+exceptToFail = Nat ((either (fail . show) pure =<<) . runExceptT)
+
 
 newtype DurationDays = DurationDays { unDurationDays :: Int }
   deriving (Eq, Ord, Show, Read, Num, Enum, Real, Integral, Generic)
@@ -906,21 +913,8 @@ timespanUs (TimespanMins  i) = fromIntegral $ i * (1000 * 1000 * 60)
 timespanUs (TimespanHours i) = fromIntegral $ i * (1000 * 1000 * 3600)
 timespanUs (TimespanDays  i) = fromIntegral $ i * (1000 * 1000 * 3600 * 24)
 
-timespanMs :: Timespan -> Int
-timespanMs (TimespanUs    i) = fromIntegral $ i `div` 1000
-timespanMs (TimespanMs    i) = fromIntegral   i
-timespanMs (TimespanSecs  i) = fromIntegral $ i * 1000
-timespanMs (TimespanMins  i) = fromIntegral $ i * (1000 * 60)
-timespanMs (TimespanHours i) = fromIntegral $ i * (1000 * 3600)
-timespanMs (TimespanDays  i) = fromIntegral $ i * (1000 * 3600 * 24)
-
 timespanDays :: Timespan -> Int
-timespanDays (TimespanUs    i) = fromIntegral $ i `div` (1000 * 1000 * 3600 * 24)
-timespanDays (TimespanMs    i) = fromIntegral $ i `div` (1000 * 3600 * 24)
-timespanDays (TimespanSecs  i) = fromIntegral $ i `div` (3600 * 24)
-timespanDays (TimespanMins  i) = fromIntegral $ i `div` (60 * 24)
-timespanDays (TimespanHours i) = fromIntegral $ i `div` 24
-timespanDays (TimespanDays  i) = fromIntegral   i
+timespanDays = (`div` (1000 * 1000 * 3600 * 24)) . timespanUs
 
 instance Aeson.FromJSON Timespan where
     parseJSON = Aeson.withText "Timespan value" $ \raw -> do
@@ -963,6 +957,19 @@ addTimespan tdiff (Timestamp tfrom) = Timestamp $
 
 fromNow :: Timestamp -> Iso' Timestamp Timespan
 fromNow now = iso (`diffTimestamps` now) (`addTimespan` now)
+
+data PhaseChangeDir = Backward | Forward
+  deriving (Eq, Ord, Read, Show, Enum, Bounded, Generic)
+
+instance SOP.Generic PhaseChangeDir
+
+instance HasUILabel PhaseChangeDir where
+    uilabel Forward  = "vorwärts"
+    uilabel Backward = "zurück"
+
+instance ToHtml PhaseChangeDir where
+    toHtmlRaw = toHtml
+    toHtml    = toHtml . uilabelST
 
 -- | FIXME: should either go to the test suite or go away completely.
 class Monad m => GenArbitrary m where

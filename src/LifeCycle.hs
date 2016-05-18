@@ -35,9 +35,8 @@ import Types
 -- * Phase transition matrix
 
 data PhaseChange
-    = RefinementPhaseTimeout
+    = PhaseTimeout
     | AllIdeasAreMarked { _phaseChangeTimeout :: Timestamp }
-    | VotingPhaseTimeout
     | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
     | RevertVotingPhaseToJury
     | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
@@ -69,11 +68,11 @@ thawPhase now = (phaseStatus     %~ thawStatus)
         s                           -> s
 
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
-phaseTrans (PhaseRefinement ActivePhase{}) RefinementPhaseTimeout
+phaseTrans (PhaseRefinement ActivePhase{}) PhaseTimeout
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
 phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeTimeout})
     = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
-phaseTrans (PhaseVoting ActivePhase{}) VotingPhaseTimeout
+phaseTrans (PhaseVoting ActivePhase{}) PhaseTimeout
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
 phaseTrans (PhaseJury) (RevertJuryPhaseToRefinement {_phaseChangeTimeout})
     = Just (PhaseRefinement (ActivePhase _phaseChangeTimeout), [])
@@ -121,7 +120,7 @@ userCapabilities _s = \case
 -- The view of an idea is default and controlled by access control.
 data IdeaCapability
     = CanLike
-    | CanVote
+    | CanVoteIdea
     | CanComment
     | CanVoteComment
     | CanMarkFeasiblity -- also can add jury statement
@@ -166,7 +165,7 @@ wildIdeaCap _i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanMoveBetweenTopics]
+    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
@@ -175,7 +174,7 @@ phaseRefinementCap _i = \case
     Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanMoveBetweenTopics]
+    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
@@ -190,7 +189,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
-    Student    _clss -> [CanVote | isFeasibleIdea i]
+    Student    _clss -> [CanVoteIdea | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -219,27 +218,32 @@ isCreatorOf u = (u ==) . view createdBy
 
 -- These capabilities are specific to a particular comment. Using IdeaCapability would
 -- be too coarse and would not allow distinguish that authors can delete only their own
--- comments.
+-- comments (we need the individual 'Comment' as a function argument for that).
 data CommentCapability
     = CanReplyComment
-      -- To reply to a comment you need both this capability and the MakeComment capability
+      -- To reply to a comment you need both this capability and the 'CanComment' capability
       -- for the corresponding idea.
+      -- FIXME: we shouldn't make a difference between the right to make a comment and the
+      -- right to make a sub-comment.
     | CanDeleteComment
     | CanEditComment
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CommentCapability
 
-canDeleteComment :: AUID User -> Role -> Comment -> Bool
-canDeleteComment uid role comment = uid `isCreatorOf` comment || role == Moderator
-
-commentCapabilities :: AUID User -> Role -> Comment -> [CommentCapability]
-commentCapabilities uid role comment
+commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [CommentCapability]
+commentCapabilities uid role comment phase
     | comment ^. commentDeleted = []
-    | otherwise =
-        [CanDeleteComment | canDeleteComment uid role comment] <>
-        [CanReplyComment  ] <>
-        [CanEditComment   | uid `isCreatorOf` comment]
+    | ongoingDebate phase = mconcat $
+        [[CanReplyComment]] <>
+        [[CanDeleteComment, CanEditComment] | uid `isCreatorOf` comment || role == Moderator]
+    | otherwise = mconcat
+        [[CanDeleteComment, CanEditComment] | role == Moderator]
+  where
+    ongoingDebate = \case
+        PhaseWildIdea{}   -> True
+        PhaseRefinement{} -> True
+        _                 -> False
 
 
 -- * Topic capabilities
@@ -249,6 +253,8 @@ data TopicCapability
     = CanPhaseForwardTopic
     | CanPhaseBackwardTopic
     | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
+    | CanCreateIdea
+    | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
   deriving (Eq, Show)
 
 topicCapabilities :: Phase -> Role -> [TopicCapability]
@@ -262,7 +268,7 @@ topicCapabilities = \case
 
 topicWildIdeaCaps :: Role -> [TopicCapability]
 topicWildIdeaCaps = \case
-    Student    _clss -> []
+    Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -271,7 +277,7 @@ topicWildIdeaCaps = \case
 
 topicRefinementCaps :: Role -> [TopicCapability]
 topicRefinementCaps = \case
-    Student    _clss -> []
+    Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanEditTopic, CanPhaseForwardTopic]
@@ -289,7 +295,7 @@ topicJuryCaps = \case
 
 topicVotingCaps :: Role -> [TopicCapability]
 topicVotingCaps = \case
-    Student    _clss -> []
+    Student    _clss -> [CanVoteTopic]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanPhaseForwardTopic]

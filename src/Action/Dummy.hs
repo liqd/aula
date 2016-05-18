@@ -28,7 +28,7 @@ runDummy :: Dummy e a -> Either e a
 runDummy = runIdentity . runDummyT
 
 runDummyIO :: Show e => DummyT e IO a -> IO a
-runDummyIO m = either (fail . show) pure =<< runDummyT m
+runDummyIO m = unNat exceptToFail (unDummyT m)
 
 notImplemented :: (Monad m, ThrowError500 e) => String -> String -> DummyT e m a
 notImplemented meth cl = throwError500 $ unlines

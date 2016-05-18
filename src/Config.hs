@@ -29,7 +29,8 @@ module Config
     , sendmailPath
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
-    , snapshotIntervalMinutes
+    , snapshotInterval
+    , timeoutCheckInterval
     , logging
     , logLevel
     , eventLogPath
@@ -83,9 +84,9 @@ data SmtpConfig = SmtpConfig
 makeLenses ''SmtpConfig
 
 data PersistConfig = PersistConfig
-    { _dbPath                  :: String
-    , _persistenceImpl         :: PersistenceImpl
-    , _snapshotIntervalMinutes :: Timespan
+    { _dbPath           :: String
+    , _persistenceImpl  :: PersistenceImpl
+    , _snapshotInterval :: Timespan
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
@@ -100,14 +101,20 @@ data LogConfig = LogConfig
 makeLenses ''LogConfig
 
 data Config = Config
-    { _exposedUrl        :: String  -- e.g. https://aula-stage.liqd.net
-    , _listenerInterface :: String
-    , _listenerPort      :: Int
-    , _htmlStatic        :: FilePath
-    , _cfgCsrfSecret     :: CsrfSecret
-    , _logging           :: LogConfig
-    , _persistConfig     :: PersistConfig
-    , _smtpConfig        :: SmtpConfig
+    { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
+    , _listenerInterface    :: String
+    , _listenerPort         :: Int
+    , _htmlStatic           :: FilePath
+    , _cfgCsrfSecret        :: CsrfSecret
+    , _logging              :: LogConfig
+    , _persistConfig        :: PersistConfig
+    , _smtpConfig           :: SmtpConfig
+    , _timeoutCheckInterval :: Timespan
+    -- ^ Topics which needs to change phase due to a timeout will
+    -- be checked at this interval.
+    -- * once per day would be the minmum
+    -- * 4 times a day (every 6 hours) would ensures that
+    --   all the topics are ready at least at 6am.
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
@@ -138,9 +145,9 @@ defaultSmtpConfig = SmtpConfig
 
 defaultPersistConfig :: PersistConfig
 defaultPersistConfig = PersistConfig
-    { _dbPath                  = "./state/AulaData"
-    , _persistenceImpl         = AcidStateInMem
-    , _snapshotIntervalMinutes = TimespanMins 47
+    { _dbPath           = "./state/AulaData"
+    , _persistenceImpl  = AcidStateInMem
+    , _snapshotInterval = TimespanMins 47
     }
 
 defaultLogConfig :: LogConfig
@@ -151,15 +158,16 @@ defaultLogConfig = LogConfig
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _exposedUrl        = "http://localhost:8080"
-    , _listenerInterface = "0.0.0.0"
-    , _listenerPort      = 8080
-    , _htmlStatic        = "./static"
+    { _exposedUrl           = "http://localhost:8080"
+    , _listenerInterface    = "0.0.0.0"
+    , _listenerPort         = 8080
+    , _htmlStatic           = "./static"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
-    , _cfgCsrfSecret     = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
-    , _logging           = defaultLogConfig
-    , _persistConfig     = defaultPersistConfig
-    , _smtpConfig        = defaultSmtpConfig
+    , _cfgCsrfSecret        = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _logging              = defaultLogConfig
+    , _persistConfig        = defaultPersistConfig
+    , _smtpConfig           = defaultSmtpConfig
+    , _timeoutCheckInterval = TimespanHours 6
     }
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing

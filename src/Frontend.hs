@@ -12,8 +12,9 @@
 module Frontend
 where
 
-import Prelude hiding (log)
+import Prelude hiding (log, (.))
 
+import Control.Category ((.))
 import Control.Exception (assert)
 import Control.Monad.Trans.Except
 import Data.List (partition)
@@ -37,7 +38,7 @@ import Thentos.Prelude hiding (logger, DEBUG)
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
-import Action (ActionM, UserState, ActionEnv(..), logout)
+import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction)
 import Config
 import Data.UriPath
@@ -78,6 +79,9 @@ runFrontend' cfg log rp = do
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
+
+    void $ timeoutDaemon' log "background phase transition" (cfg ^. timeoutCheckInterval)
+                          (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
              runAction aulaActions
@@ -361,8 +365,8 @@ aulaAdmin =
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
   :<|> adminEventLogCsv
-  :<|> Action.topicForceNextPhase
-  :<|> Action.topicForcePreviousPhase
+  :<|> Action.topicForcePhaseChange Forward
+  :<|> Action.topicForcePhaseChange Backward
   :<|> form Page.adminPhaseChange
 
 

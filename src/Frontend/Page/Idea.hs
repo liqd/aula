@@ -185,11 +185,10 @@ instance ToHtml ViewIdea where
                                 when canEdit . a_ [href_ $ U.editIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "bearbeiten"
-                                when canCreateTopic .
-                                    a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                        i_ [class_ "icon-pencil"] nil
+                                when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                    i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                        "Thema erstellen"
+                                    "Thema erstellen"
                                 when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
@@ -222,7 +221,14 @@ instance ToHtml ViewIdea where
 
             when (has _PhaseWildIdea phase && ideaReachedQuorum ideaInfo) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
-                div_ [class_ "voting-buttons"] "Idee kann auf den Tisch."
+                div_ [class_ "voting-buttons"] $
+                    if CanCreateTopic `elem` userCaps
+                        then button_ [ class_ "btn-cta m-valid"
+                                     , onclick_ $ U.Space spc U.CreateTopic
+                                     ] $ do
+                                 i_ [class_ "icon-check"] nil
+                                 "Idee auf den Tisch bringen (Thema anlegen)."
+                        else "Idee kann auf den Tisch."
 
             feasibilityVerdict True idea caps
 
@@ -290,7 +296,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget ctx caps c ^. html
+                        CommentWidget ctx caps c phase ^. html
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
@@ -341,7 +347,7 @@ instance ToHtml IdeaVoteLikeBars where
             user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
-            voteButtons = if CanVote `elem` caps
+            voteButtons = if CanVoteIdea `elem` caps
                 then div_ [class_ "voting-buttons"] $ do
                     voteButton vote Yes "dafür"
                     voteButton vote No  "dagegen"
@@ -349,18 +355,18 @@ instance ToHtml IdeaVoteLikeBars where
               where
                 vote = userVotedOnIdea user idea
 
-            -- FIXME: The button for the selected vote value is white.
-            -- Should it be in other color?
-            voteButton (Just w) v | w == v =
-                postButton_ [class_ "btn voting-button"
-                            , onclickJs jsReloadOnClick
-                            ]
-                            (U.unvoteOnIdea idea user)
-            voteButton _        v =
-                postButton_ [class_ "btn-cta voting-button"
-                            , onclickJs jsReloadOnClick
-                            ]
-                            (U.voteOnIdea idea v)
+                -- FIXME: The button for the selected vote value is white.
+                -- Should it be in other color?
+                voteButton (Just w) v | w == v =
+                    postButton_ [ class_ "btn voting-button"
+                                , onclickJs jsReloadOnClick
+                                ]
+                                (U.unvoteOnIdea idea user)
+                voteButton _        v =
+                    postButton_ [ class_ "btn-cta voting-button"
+                                , onclickJs jsReloadOnClick
+                                ]
+                                (U.voteOnIdea idea v)
 
         case phase of
             PhaseWildIdea{}   -> toHtml $ likeBar likeButtons

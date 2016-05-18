@@ -5,11 +5,12 @@
 module Daemon
     ( SystemLogger
     , MsgDaemon
-    , TimeoutDeamon
+    , TimeoutDaemon
     , Daemon(..)
     , msgDaemon
     , msgDaemonSend
     , timeoutDaemon
+    , timeoutDaemon'
     , logDaemon
     )
 where
@@ -42,11 +43,11 @@ data MsgDaemon a = MsgDaemon
     , _msgDaemonSend  :: a -> IO ()
     }
 
-data TimeoutDeamon = TimeoutDeamon
+data TimeoutDaemon = TimeoutDaemon
     { _timeoutDaemonStart :: IO ThreadId }
 
 makeLenses ''MsgDaemon
-makeLenses ''TimeoutDeamon
+makeLenses ''TimeoutDaemon
 
 class Daemon d where
     start :: Getter d (IO ThreadId)
@@ -54,7 +55,7 @@ class Daemon d where
 instance Daemon (MsgDaemon a) where
     start = msgDaemonStart
 
-instance Daemon TimeoutDeamon where
+instance Daemon TimeoutDaemon where
     start = timeoutDaemonStart
 
 -- | Message deamons receive typed messages over a 'Chan'.  Two example applications are logger
@@ -84,19 +85,20 @@ msgDaemon logger name computation handleException = do
 
     return $ MsgDaemon loop sendMsg
 
--- | Run an action in constant intervals.  Example uses are phase timeout and acid-state snapshot.
+-- | Run an action in constant intervals (the first time *after* the first interval).
+-- Example uses are phase timeout and acid-state snapshot.
 timeoutDaemon
     :: SystemLogger
     -> String
     -> Timespan
     -> IO ()
     -> (SomeException -> IO ())
-    -> TimeoutDeamon
-timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
+    -> TimeoutDaemon
+timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
     let run = do
             logger . LogEntry INFO . cs $
                 concat ["daemon [", name, "] timed out after ", showTimespan delay, "."]
-            computation
+            computation `catch` handle
 
         handle e@(SomeException e') = do
             logger . LogEntry ERROR . cs $
@@ -104,8 +106,24 @@ timeoutDaemon logger name delay computation handleException = TimeoutDeamon $ do
             handleException e
 
     forkIO . forever $ do
-        run `catch` handle
-        threadDelay (timespanMs delay)
+        threadDelay (timespanUs delay)
+        run `catch` (\(e@(SomeException _)) -> do
+            -- (alternatively, we could change the 'SystemLogger' type to a newtype, make it
+            -- abstract, and make sure that every system logger we ever encounter in the wild will
+            -- have a handler wrapped around it.)
+            hPutStrLn stderr $ "*** timeoutDaemon: exception in except handler: " <> show e
+            hPutStrLn stderr "*** timeoutDaemon: this is not good.  trying to keep running.")
+
+-- | Same as timeoutDaemon but without any extra exception handling.
+-- Errors are still sent to the logger.
+timeoutDaemon'
+    :: SystemLogger
+    -> String
+    -> Timespan
+    -> IO ()
+    -> TimeoutDaemon
+timeoutDaemon' logger name delay computation =
+    timeoutDaemon logger name delay computation (const $ pure ())
 
 
 -- * Log Daemon
