@@ -63,14 +63,6 @@ ideaReachedQuorum i = reached >= needed
     reached = noOfLikes $ _listInfoForIdeaIt i
     needed  = _listInfoForIdeaQuorum i
 
-wildIdeasReachedQuorumBySpace :: IdeaSpace -> Query [Idea]
-wildIdeasReachedQuorumBySpace space = do
-    voters    <- length <$> getVotersForSpace space
-    quPercent <- quorumForSpace space
-    let quVotesRequired = voters * quPercent `div` 100
-        reached idea = noOfLikes idea >= quVotesRequired
-    filter reached <$> findWildIdeasBySpace space
-
 instance SOP.Generic IdeaStats
 
 getListInfoForIdea :: Idea -> EQuery IdeaStats
