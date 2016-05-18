@@ -76,6 +76,8 @@ instance ToHtml CategoryButton where
 
 categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
+    p_ $ b_ "Filtere nach Kategorie"
+    br_ []
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
