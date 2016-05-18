@@ -190,7 +190,7 @@ instance ToHtml ViewIdea where
                                         i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                         "Thema erstellen"
-                                when canMoveBetweenTopics . a_ [href_ U.Broken] $ do
+                                when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                     "Idee verschieben"
