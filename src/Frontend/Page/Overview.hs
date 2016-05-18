@@ -16,6 +16,9 @@ module Frontend.Page.Overview
     )
 where
 
+import Data.Char (isDigit)
+import Data.List (sortBy)
+
 import Action
 import LifeCycle
 import Frontend.Fragment.IdeaList
@@ -25,7 +28,6 @@ import Persistent (findWildIdeasBySpace, getListInfoForIdea, findTopicsBySpace)
 
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
-
 
 -- * pages
 
@@ -51,7 +53,26 @@ data ActiveTab = WildIdeas | Topics
 -- * actions
 
 viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageOverviewOfSpaces
-viewRooms = PageOverviewOfSpaces <$> getSpacesForCurrentUser
+viewRooms = PageOverviewOfSpaces . sortIdeaSpaces <$> getSpacesForCurrentUser
+
+-- TODO: Apply it, where it is needed.
+-- Eg: ["Klasse 10a", "Klasse 7b", "Klasse 7a"] -> ["Klasse 7a", "Klasse 7b", "Klasse 10a"]
+sortIdeaSpaces :: [IdeaSpace] -> [IdeaSpace]
+sortIdeaSpaces = sortBy (compare `on` ideaSpaceName)
+  where
+    ideaSpaceName x = x ^? ideaSpaceSchoolClass . className . to (classname . cs)
+
+    classname :: String -> [Either String Int]
+    classname = nonDigits
+      where
+        digits xs = case span isDigit xs of
+                        ([],[]) -> []
+                        ([],zs) -> nonDigits zs
+                        (ys,zs) -> (Right (read ys)):nonDigits zs
+        nonDigits xs = case span (not . isDigit) xs of
+                        ([],[]) -> []
+                        ([],zs) -> digits zs
+                        (ys,zs) -> (Left ys):digits zs
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
