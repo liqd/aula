@@ -207,6 +207,10 @@ data IdeaLocation =
 
 instance SOP.Generic IdeaLocation
 
+instance HasUILabel IdeaLocation where
+    uilabel (IdeaLocationSpace s) = uilabel s
+    uilabel (IdeaLocationTopic s (AUID t)) = "Thema #" <> fromString (show t) <> " in " <> uilabel s
+
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
@@ -345,6 +349,14 @@ instance SOP.Generic IdeaVoteResultValue
 
 type instance Proto IdeaVoteResult = IdeaVoteResultValue
 
+data MoveIdea
+    = MoveIdeaToWild
+    | MoveIdeaToTopic (AUID Topic)
+
+moveIdeaElim :: forall t . t -> (AUID Topic -> t) -> MoveIdea -> t
+moveIdeaElim wild topic = \case
+    MoveIdeaToWild    -> wild
+    MoveIdeaToTopic t -> topic t
 
 -- * comment
 
@@ -1109,6 +1121,7 @@ deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaVoteResult
 deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
+deriveSafeCopy 0 'base ''MoveIdea
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation

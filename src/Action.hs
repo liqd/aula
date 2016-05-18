@@ -75,6 +75,7 @@ module Action
     , Action.editTopic
     , createIdea
     , Action.editIdea
+    , Action.moveIdeaToTopic
 
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
@@ -135,7 +136,7 @@ import LifeCycle
 import Logger
 import Logger.EventLog
 import Persistent
-import Persistent.Api
+import Persistent.Api as Persist
 import Types
 import qualified Frontend.Path as U
 
@@ -471,6 +472,15 @@ editIdea ideaId idea = do
     update $ EditIdea ideaId idea
     eventLogUserEditsIdea =<< mquery (findIdea ideaId)
 
+moveIdeaToTopic :: ActionM m => AUID Idea -> MoveIdea -> m ()
+moveIdeaToTopic ideaId moveIdea = do
+    idea <- mquery $ findIdea ideaId
+    update $ Persist.MoveIdeaToTopic ideaId moveIdea
+    eventLogIdeaNewTopic
+        idea
+        (idea ^? ideaLocation . ideaLocationTopicId)
+        (moveIdeaElim Nothing Just moveIdea)
+
 
 -- * Vote Handling
 
@@ -756,12 +766,13 @@ eventLogTopicNewPhase topic fromPhase toPhase =
         EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
 
 -- FIXME: throw this in all applicable situations.
-eventLogIdeaNewTopic :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-      => Idea -> Maybe Topic -> Maybe Topic -> m ()
+eventLogIdeaNewTopic
+    :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
+    => Idea -> Maybe (AUID Topic) -> Maybe (AUID Topic) -> m ()
 eventLogIdeaNewTopic idea mfrom mto = do
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
-        EventLogIdeaNewTopic (idea ^. _Key) (view _Key <$> mfrom) (view _Key <$> mto)
+        EventLogIdeaNewTopic (idea ^. _Key) mfrom mto
 
 -- FIXME: throw this in all applicable situations.
 eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()

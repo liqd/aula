@@ -10,6 +10,7 @@ module Frontend.Page.Idea
   ( ViewIdea(..)
   , CreateIdea(..)
   , EditIdea(..)
+  , MoveIdea(..)
   , CommentOnIdea(..)
   , EditComment(..)
   , JudgeIdea(..)
@@ -19,6 +20,7 @@ module Frontend.Page.Idea
   , viewIdea
   , createIdea
   , editIdea
+  , moveIdea
   , commentOnIdea
   , replyToComment
   , editComment
@@ -37,13 +39,14 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , reportIdeaComment, reportIdeaCommentReply
               , eventLogUserCreatesComment, eventLogUserEditsComment
               )
+import Control.Arrow ((&&&))
 import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Feasibility
 import Frontend.Fragment.Note
 import Frontend.Fragment.QuorumBar
-import Frontend.Prelude hiding ((<|>))
+import Frontend.Prelude hiding ((<|>), MoveIdea)
 import Frontend.Validation
 import Persistent.Api
     ( AddCommentToIdea(AddCommentToIdea)
@@ -56,17 +59,19 @@ import Persistent.Idiom
 import Persistent
     ( findComment
     , findIdea
+    , findTopicsBySpace
     , getListInfoForIdea
     , ideaReachedQuorum
     , ideaTopic
     , maybe404
     )
 
-import qualified Action (createIdea, editIdea)
+import qualified Action (createIdea, editIdea, moveIdeaToTopic)
 import qualified Data.Map as Map
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
+import qualified Types (MoveIdea)
 
 
 -- * types
@@ -97,6 +102,13 @@ data EditIdea = EditIdea Idea
   deriving (Eq, Show, Read)
 
 instance Page EditIdea where
+
+-- | X. Move idea
+-- Move idea to a topic.
+data MoveIdea = MoveIdea Idea [Topic]
+  deriving (Eq, Show, Read)
+
+instance Page MoveIdea where
 
 -- | X. Comment idea
 data CommentOnIdea = CommentOnIdea Idea (Maybe Comment)
@@ -177,7 +189,7 @@ instance ToHtml ViewIdea where
                                     i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                     "Thema erstellen"
-                                when canMoveBetweenTopics . a_ [href_ U.Broken] $ do
+                                when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
                                     i_ [class_ "icon-pencil"] nil
                                             -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                     "Idee verschieben"
@@ -429,6 +441,33 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
                             i_ [class_ "icon-trash-o"] nil
                             "Idee löschen"
 
+instance FormPage MoveIdea where
+    type FormPagePayload MoveIdea = Types.MoveIdea
+
+    formAction (MoveIdea idea _topics) = U.moveIdea idea
+
+    redirectOf (MoveIdea idea _topics) _ = U.viewIdea idea
+
+    makeForm (MoveIdea idea topics) =
+        maybe MoveIdeaToWild MoveIdeaToTopic
+        <$> ("topic-to-move" .: DF.choice topicList (Just currentTopic))
+      where
+        topicList = (Nothing, "Nach 'wilde Ideen'")
+                  : map (Just . view _Id &&& view (topicTitle . html)) topics
+        currentTopic = idea ^. ideaLocation ^? ideaLocationTopicId
+
+    formPage v form p@(MoveIdea idea _topics) =
+        semanticDiv p .
+            form $ do
+                h2_ [class_ "sub-header"] "Idee verschieben"
+                div_ [class_ "container-info"] . p_ $ do
+                    "Soll die Idee '" >> idea ^. ideaTitle . html >> "'"
+                    " aus '" >> idea ^. ideaLocation . uilabeledST . html >> "'"
+                    " verschoben werden?"
+                DF.inputSelect "topic-to-move" v
+                DF.inputSubmit "Verschieben"
+                a_ [class_ "btn", href_ $ U.listIdeas (idea ^. ideaLocation)] "Zurück"
+
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
     { noteHeaderText        = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
@@ -582,6 +621,16 @@ editIdea ideaId =
         (EditIdea <$> mquery (findIdea ideaId))
         (Action.editIdea ideaId)
         "Die Änderungen wurden gespeichert."
+
+moveIdea :: ActionM m => AUID Idea -> FormPageHandler m MoveIdea
+moveIdea ideaId =
+    formPageHandlerWithMsg
+        (equery $ do
+            idea <- maybe404 =<< findIdea ideaId
+            topics <- findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
+            pure $ MoveIdea idea topics)
+        (Action.moveIdeaToTopic ideaId)
+        "The Idee ist verschoben."
 
 -- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
 commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea

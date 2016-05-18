@@ -110,7 +110,7 @@ import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
 import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
-import Types
+import Types hiding (MoveIdea)
 
 import qualified Frontend.Constant
 import qualified Frontend.Path as P
@@ -221,6 +221,10 @@ instance Arbitrary CreateIdea where
 instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
     shrink (EditIdea x) = EditIdea <$> shr x
+
+instance Arbitrary MoveIdea where
+    arbitrary = MoveIdea <$> arb <*> arb
+    shrink (MoveIdea x y) = MoveIdea <$> shr x <*> shr y
 
 instance Arbitrary CommentOnIdea where
     arbitrary = CommentOnIdea <$> arb <*> arb
