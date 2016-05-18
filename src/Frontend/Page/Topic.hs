@@ -180,8 +180,8 @@ viewTopicHeaderDiv now ctx topic tab = do
             let createIdeaButton = when (CanCreateIdea `elem` caps) .
                     a_ [ class_ "btn-cta heroic-cta"
                        , href_ . U.createIdea $ IdeaLocationTopic space topicId
-                       ]
-                        "+ Neue Idee"
+                       ] $
+                      "+ Neue Idee"
                 delegateVoteButton = when (CanVoteTopic `elem` caps) .
                     a_  [ class_ "btn-cta heroic-cta"
                         , href_ . U.Space space $ U.CreateTopicDelegation topicId
