@@ -210,7 +210,14 @@ instance ToHtml ViewIdea where
 
             when (has _PhaseWildIdea phase && ideaReachedQuorum ideaInfo) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
-                div_ [class_ "voting-buttons"] "Idee kann auf den Tisch."
+                div_ [class_ "voting-buttons"] $
+                    if CanCreateTopic `elem` userCaps
+                        then button_ [ class_ "btn-cta m-valid"
+                                     , onclick_ $ U.Space spc U.CreateTopic
+                                     ] $ do
+                                 i_ [class_ "icon-check"] nil
+                                 "Idee auf den Tisch bringen (Thema anlegen)."
+                        else "Idee kann auf den Tisch."
 
             feasibilityVerdict True idea caps
 
