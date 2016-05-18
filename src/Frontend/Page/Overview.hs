@@ -29,6 +29,7 @@ import Persistent (findWildIdeasBySpace, getListInfoForIdea, findTopicsBySpace)
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
 
+
 -- * pages
 
 -- | 1. Rooms overview
@@ -66,13 +67,13 @@ sortIdeaSpaces = sortBy (compare `on` ideaSpaceName)
     classname = nonDigits
       where
         digits xs = case span isDigit xs of
-                        ([],[]) -> []
-                        ([],zs) -> nonDigits zs
-                        (ys,zs) -> (Right (read ys)):nonDigits zs
+                        ([], []) -> []
+                        ([], zs) -> nonDigits zs
+                        (ys, zs) -> Right (read ys) : nonDigits zs
         nonDigits xs = case span (not . isDigit) xs of
-                        ([],[]) -> []
-                        ([],zs) -> digits zs
-                        (ys,zs) -> (Left ys):digits zs
+                        ([], []) -> []
+                        ([], zs) -> digits zs
+                        (ys, zs) -> Left ys : digits zs
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
