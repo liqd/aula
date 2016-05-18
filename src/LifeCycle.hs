@@ -134,12 +134,10 @@ data IdeaCapability
 instance SOP.Generic IdeaCapability
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
-ideaCapabilities u r i p =
-       phaseCap u r i p
-    <> editCap u r i
+ideaCapabilities = phaseCap
 
-editCap :: AUID User -> Role -> Idea -> [IdeaCapability]
-editCap uid r i = [CanEdit | r == Moderator || i ^. createdBy == uid]
+editCap :: AUID User -> Idea -> [IdeaCapability]
+editCap uid i = [CanEdit | i ^. createdBy == uid]
 
 allowedDuringFreeze :: [IdeaCapability]
 allowedDuringFreeze = [ CanComment
@@ -154,27 +152,27 @@ filterIfFrozen p | isPhaseFrozen p = filter (`elem` allowedDuringFreeze)
 
 phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
 phaseCap u r i p = filterIfFrozen p $ case p of
-    PhaseWildIdea{}   -> wildIdeaCap i r
-    PhaseRefinement{} -> phaseRefinementCap i r
+    PhaseWildIdea{}   -> wildIdeaCap u i r
+    PhaseRefinement{} -> phaseRefinementCap u i r
     PhaseJury         -> phaseJuryCap i r
     PhaseVoting{}     -> phaseVotingCap i r
     PhaseResult       -> phaseResultCap u i r
 
-wildIdeaCap :: Idea -> Role -> [IdeaCapability]
-wildIdeaCap _i = \case
-    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics]
+wildIdeaCap :: AUID User -> Idea -> Role -> [IdeaCapability]
+wildIdeaCap u i = \case
+    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEdit, CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
-phaseRefinementCap :: Idea -> Role -> [IdeaCapability]
-phaseRefinementCap _i = \case
-    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
+phaseRefinementCap :: AUID User -> Idea -> Role -> [IdeaCapability]
+phaseRefinementCap u i = \case
+    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEdit, CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
