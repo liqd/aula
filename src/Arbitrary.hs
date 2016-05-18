@@ -75,6 +75,7 @@ import Data.Aeson as Aeson
 import Data.Char
 import Data.List as List
 import Data.Maybe (catMaybes)
+import Data.String (fromString)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
 import Generics.SOP
@@ -608,7 +609,9 @@ guestOrStudent clss = elements
     ]
 
 instance Arbitrary UserPass where
-    arbitrary = UserPassInitial <$> arbWord
+    arbitrary = UserPassInitial . fromString <$> someOf 4 8 arb
+                -- ^ if we restrict password characters to printable&ascii in the validation
+                -- rules then we change it here.
     shrink    = gshrink
 
 instance Arbitrary EmailAddress where
