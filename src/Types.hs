@@ -200,6 +200,10 @@ data IdeaLocation =
 
 instance SOP.Generic IdeaLocation
 
+instance HasUILabel IdeaLocation where
+    uilabel (IdeaLocationSpace s) = uilabel s
+    uilabel (IdeaLocationTopic s (AUID t)) = "Thema #" <> fromString (show t) <> " in " <> uilabel s
+
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST

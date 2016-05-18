@@ -453,6 +453,11 @@ instance FormPage MoveIdea where
     formPage v form p@(MoveIdea idea _topics) =
         semanticDiv p .
             form $ do
+                h2_ [class_ "sub-header"] "Idee verschieben"
+                div_ [class_ "container-info"] . p_ $ do
+                    "Soll die Idee '" >> idea ^. ideaTitle . html >> "'"
+                    " aus '" >> idea ^. ideaLocation . uilabeledST . html >> "'"
+                    " verschoben werden?"
                 DF.inputSelect "topic-to-move" v
                 DF.inputSubmit "Verschieben"
                 a_ [class_ "btn", href_ $ U.listIdeas (idea ^. ideaLocation)] "Zurück"
