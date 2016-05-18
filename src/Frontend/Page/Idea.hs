@@ -105,7 +105,7 @@ instance Page EditIdea where
 
 -- | X. Move idea
 -- Move idea to a topic.
-data MoveIdea = MoveIdea Idea [Topic] (Maybe (AUID Topic))
+data MoveIdea = MoveIdea Idea [Topic]
   deriving (Eq, Show, Read)
 
 instance Page MoveIdea where
@@ -438,17 +438,18 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
 instance FormPage MoveIdea where
     type FormPagePayload MoveIdea = Types.MoveIdea
 
-    formAction (MoveIdea idea _topics _activeTopic) = U.moveIdea idea
+    formAction (MoveIdea idea _topics) = U.moveIdea idea
 
-    redirectOf (MoveIdea idea _topics _activeTopic) _ = U.viewIdea idea
+    redirectOf (MoveIdea idea _topics) _ = U.viewIdea idea
 
-    makeForm (MoveIdea _idea topics activeTopic) =
+    makeForm (MoveIdea idea topics) =
         maybe MoveIdeaToWild MoveIdeaToTopic
-        <$> ("topic-to-move" .: DF.choice topicList (Just activeTopic))
+        <$> ("topic-to-move" .: DF.choice topicList (Just currentTopic))
       where
         topicList = (Nothing, "Nach 'wilde Ideen'"):map (Just . view _Id &&& view (topicTitle . html)) topics
+        currentTopic = idea ^. ideaLocation ^? ideaLocationTopicId
 
-    formPage v form p@(MoveIdea idea _topics _activeTopic) =
+    formPage v form p@(MoveIdea idea _topics) =
         semanticDiv p .
             form $ do
                 DF.inputSelect "topic-to-move" v
@@ -614,10 +615,8 @@ moveIdea ideaId =
     formPageHandlerWithMsg
         (equery $ do
             idea <- maybe404 =<< findIdea ideaId
-            let loc         = idea ^. ideaLocation
-                activeTopic = loc  ^? ideaLocationTopicId
-            topics <- findTopicsBySpace (loc ^. ideaLocationSpace)
-            pure $ MoveIdea idea topics activeTopic)
+            topics <- findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
+            pure $ MoveIdea idea topics)
         (Action.moveIdeaToTopic ideaId)
         "The Idee ist verschoben."
 
