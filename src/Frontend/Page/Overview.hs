@@ -98,7 +98,7 @@ instance ToHtml PageOverviewOfWildIdeas where
             p_ [class_ "sub-header"] . span_ $
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-            button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta"] "+ Neue Idee"
+            button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta m-large"] "+ Neue Idee"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
