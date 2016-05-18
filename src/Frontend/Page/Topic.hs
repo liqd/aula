@@ -41,10 +41,12 @@ import Persistent
     , findTopic
     , findTopic
     , findWildIdeasBySpace
+    , IdeaStats(..)
+    , ideaReachedQuorum
+    , listInfoForIdeaIt
     , getListInfoForIdea
     , maybe404
     , phaseEndRefinement
-    , wildIdeasReachedQuorumBySpace
     )
 
 import qualified Action (createTopic, editTopic)
@@ -81,7 +83,7 @@ instance Page ViewTopic where
 -- | 10.1 Create topic: Create topic
 data CreateTopic = CreateTopic
     { _createTopicIdeaSpace   :: IdeaSpace
-    , _createTopicIdeas       :: [Idea]
+    , _createTopicIdeas       :: [IdeaStats]
     , _createTopicRefPhaseEnd :: Timestamp }
   deriving (Eq, Show, Read)
 
@@ -89,7 +91,7 @@ instance Page CreateTopic
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
 -- FIXME: Edit topic page is used for editing a topic and move ideas to the topic.
-data EditTopic = EditTopic IdeaSpace Topic [Idea] [AUID Idea]
+data EditTopic = EditTopic IdeaSpace Topic [IdeaStats] [AUID Idea]
   deriving (Eq, Show, Read)
 
 instance Page EditTopic
@@ -247,7 +249,7 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
-        <*> makeFormIdeaSelection [] _createTopicIdeas
+        <*> makeFormIdeaSelection [] (_listInfoForIdeaIt <$> _createTopicIdeas)
         <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
@@ -257,7 +259,7 @@ instance FormPage CreateTopic where
                     h1_ [class_ "main-heading"] "Thema erstellen"
                     form $ createOrEditTopic v ideas
 
-createOrEditTopic :: Monad m => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
+createOrEditTopic :: Monad m => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 createOrEditTopic v ideas = do
     label_ $ do
         span_ [class_ "label-text"] "Wie soll der Titel des Themas lauten?"
@@ -269,7 +271,7 @@ createOrEditTopic v ideas = do
             Nothing Nothing "desc" v
     label_ $ do
         span_ [class_ "label-text"] $ if null ideas
-            then "Noch keine wilden Ideen haben das Quorum erreicht"
+            then "Es stehen keine Ideen zur Auswahl."
             else "Fügen Sie weitere wilde dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
@@ -290,7 +292,7 @@ instance FormPage EditTopic where
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
-        <*> makeFormIdeaSelection preselected ideas
+        <*> makeFormIdeaSelection preselected (_listInfoForIdeaIt <$> ideas)
 
     formPage v form p@(EditTopic _space _topic ideas _preselected) = do
         semanticDiv p $ do
@@ -307,12 +309,22 @@ ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 -- This form is called both from CreateTopic and EditTopic.  The ideas listed here include all wild
 -- ones in the surrounding space, plus those already in the topic.  The ones already in the topic
 -- are pre-selected.
-formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [Idea] -> HtmlT m ()
-formPageIdeaSelection v ideas =
-    ul_ . for_ (sortBy (compare `on` view ideaTitle) ideas) $ \idea ->
+formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
+formPageIdeaSelection v ideaStats =
+    ul_ . for_ (sortBy (compare `on` view (listInfoForIdeaIt . ideaTitle)) ideaStats) $ \ideaStat ->
         li_ $ do
-            DF.inputCheckbox (ideaToFormField idea) v
-            idea ^. ideaTitle . html
+            DF.inputCheckbox
+                (ideaToFormField $ ideaStat ^. listInfoForIdeaIt)
+                v
+            ideaStat ^. listInfoForIdeaIt
+                        . ideaTitle
+                        . to (reachedQuorum ideaStat)
+                        . html
+  where
+    reachedQuorum s t
+        | ideaReachedQuorum s = t <> " (im quorum)"
+        | otherwise           = t
+
 
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
                       => [AUID Idea] -> [Idea] -> DF.Form v m [AUID Idea]
@@ -363,8 +375,8 @@ createTopic space =
     formPageHandlerCalcMsg
         (do
             now <- getCurrentTimestamp
-            query $ CreateTopic space
-                <$> wildIdeasReachedQuorumBySpace space
+            equery $ CreateTopic space
+                <$> (mapM getListInfoForIdea =<< findWildIdeasBySpace space)
                 <*> phaseEndRefinement now)
         Action.createTopic
         (\_ _ topic -> unwords ["Das Thema", topic ^. topicTitle . showed, "wurde angelegt."])
@@ -379,6 +391,10 @@ editTopic topicId =
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
-        wildIdeas <- findWildIdeasBySpace space
-        ideasInTopic <- findIdeasByTopicId topicId
-        pure $ EditTopic space topic (wildIdeas <> ideasInTopic) (view _Id <$> ideasInTopic)
+        wildIdeas <- mapM getListInfoForIdea =<< findWildIdeasBySpace space
+        ideasInTopic <- mapM getListInfoForIdea =<< findIdeasByTopicId topicId
+        pure $ EditTopic
+                space
+                topic
+                (wildIdeas <> ideasInTopic)
+                (view (listInfoForIdeaIt . _Id) <$> ideasInTopic)
