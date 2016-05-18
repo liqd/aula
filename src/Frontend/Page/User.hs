@@ -170,7 +170,7 @@ userHeaderDiv ctx (ActiveUser user) =
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
         span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
-        p_ [class_ "sub-header"] $ user ^. userDesc . html
+        div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let isOwnProfile = ctx ^. renderContextUser . _Id == user ^. _Id
             btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
