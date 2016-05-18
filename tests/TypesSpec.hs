@@ -43,11 +43,11 @@ spec = do
                   let x' = Aeson.object ["value" Aeson..= x]
                   in Aeson.decode (Aeson.encode x') == Just x'
 
-    describe "diffTimestamps, addTimespan" $ do
-        it "work(1)" . property $
+    describe "diffTimestamps(-), addTimespan(+)" $ do
+        it "(y+x)-x = y" . property $
             \(x :: Timestamp) (y :: Timespan) ->
                 timespanUs ((y `addTimespan` x) `diffTimestamps` x) `shouldBe` timespanUs y
-        it "work(2)" . property $
+        it "y-((y-x)+x) = 0" . property $
             \(x :: Timestamp) (y :: Timestamp) ->
                 timespanUs (y `diffTimestamps` ((y `diffTimestamps` x) `addTimespan` x)) `shouldBe` 0
 
