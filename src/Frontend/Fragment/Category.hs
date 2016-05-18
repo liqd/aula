@@ -12,7 +12,6 @@
 module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
     , categoryFilterButtons
-    , categoryToUiText
     , formPageSelectCategory
     , makeFormSelectCategory
     )
@@ -64,21 +63,13 @@ instance ToHtml CategoryButton where
     toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
         span_ [ class_ "icon-list-button"
               , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
-              ] $ categoryToUiText cat
-
-categoryToUiText :: IsString s => Category -> s
-categoryToUiText CatRules       = "Regeln"
-categoryToUiText CatEquipment   = "Ausstattung"
-categoryToUiText CatTeaching    = "Unterricht"
-categoryToUiText CatTime        = "Zeit"
-categoryToUiText CatEnvironment = "Umgebung"
-
+              ] $ uilabel cat
 
 categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
-            ] $
-            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)]
-                (categoryToUiText cat)
+            ] .
+            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
+                uilabel cat

@@ -116,9 +116,8 @@ instance ToHtml ListItemIdeas where
         ideaListHeader whatPage loc ideasQuery
         div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
       where
-        mCatInfo :: ST
-        mCatInfo = ideasQuery ^. ideasQueryF . _IdeasWithCat . to categoryToUiText
-                 . to (" in der Kategorie " <>)
+        mCatInfo =
+            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeledST . to (" in der Kategorie " <>)
 
     toHtml p@(ListItemIdeas ctx whatPage loc ideasQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader whatPage loc ideasQuery

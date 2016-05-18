@@ -256,6 +256,14 @@ instance ToHttpApiData Category where
         CatTime        -> "time"
         CatEnvironment -> "environment"
 
+instance HasUILabel Category where
+    uilabel = \case
+        CatRules       -> "Regeln"
+        CatEquipment   -> "Ausstattung"
+        CatTeaching    -> "Unterricht"
+        CatTime        -> "Zeit"
+        CatEnvironment -> "Umgebung"
+
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
