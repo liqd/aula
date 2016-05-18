@@ -51,7 +51,7 @@ data ActiveTab = WildIdeas | Topics
 -- * actions
 
 viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageOverviewOfSpaces
-viewRooms = PageOverviewOfSpaces <$> getSpacesForCurrentUser
+viewRooms = PageOverviewOfSpaces . sort <$> getSpacesForCurrentUser
 
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
