@@ -446,7 +446,8 @@ instance FormPage MoveIdea where
         maybe MoveIdeaToWild MoveIdeaToTopic
         <$> ("topic-to-move" .: DF.choice topicList (Just currentTopic))
       where
-        topicList = (Nothing, "Nach 'wilde Ideen'"):map (Just . view _Id &&& view (topicTitle . html)) topics
+        topicList = (Nothing, "Nach 'wilde Ideen'")
+                  : map (Just . view _Id &&& view (topicTitle . html)) topics
         currentTopic = idea ^. ideaLocation ^? ideaLocationTopicId
 
     formPage v form p@(MoveIdea idea _topics) =
