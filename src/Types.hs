@@ -460,7 +460,7 @@ instance Ord IdeaSpace where
                             ([], []) -> []
                             ([], zs) -> nonDigits zs
                             (ys, zs) -> Right (read ys) : nonDigits zs
-            nonDigits xs = case span (not . isDigit) xs of
+            nonDigits xs = case break isDigit xs of
                             ([], []) -> []
                             ([], zs) -> digits zs
                             (ys, zs) -> Left ys : digits zs
