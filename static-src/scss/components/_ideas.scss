@@ -108,3 +108,16 @@
     position: absolute;
     left: -999999px;
 }
+
+.ideas-list-category-container {
+    .icon-list {
+        @include rem(margin-right, 20px);
+        float: right;
+
+        ul li>a,
+        ul li>span {
+            @include rem(font-size, $font-size-smaller);
+            @include rem(padding-top, 50px);
+        }
+    }
+}

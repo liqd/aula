@@ -12,6 +12,14 @@
         text-align: left;
     }
 
+    &.m-display-only {
+        padding: 0;
+
+        ul li {
+            opacity: 1;
+        }
+    }
+
     ul, li {
         display: inline-block;
     }
@@ -43,8 +51,15 @@
             > a, > span {
                 @include rem(padding-top, 60px);
                 color: $color-brand1;
-                cursor: pointer;
                 display: block;
+            }
+
+            > a {
+                cursor: pointer;
+            }
+
+            > span {
+                cursor: default;
             }
 
             &.icon-rules {
