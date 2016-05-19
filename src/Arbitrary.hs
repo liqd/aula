@@ -778,11 +778,11 @@ arbMarkdownTable = pure nil
 
 -- * path
 
-instance Arbitrary P.Main where
+instance Arbitrary (P.Main r) where
     arbitrary = suchThat garbitrary (not . P.isBroken)
     shrink    = gshrink
 
-instance Arbitrary P.IdeaMode where
+instance Arbitrary (P.IdeaMode r) where
     arbitrary = prune <$> garbitrary
       where
         prune (P.OnComment ck P.ReplyToComment) = P.OnComment (pruneCommentKey ck) P.ReplyToComment
@@ -795,19 +795,19 @@ pruneCommentKey = \case
     ck@(CommentKey _ _ [] _) -> ck
     (CommentKey loc idea (c:_) c') -> CommentKey loc idea [c] c'
 
-instance Arbitrary P.CommentMode where
+instance Arbitrary (P.CommentMode r) where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary P.Space where
+instance Arbitrary (P.Space r) where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary P.UserMode where
+instance Arbitrary (P.UserMode r) where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary P.AdminMode where
+instance Arbitrary (P.AdminMode r) where
     arbitrary = garbitrary
     shrink    = gshrink
 
