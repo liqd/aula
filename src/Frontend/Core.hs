@@ -84,7 +84,8 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Config
-import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
+import Data.UriPath (UriPath, absoluteUriPath)
+import Frontend.Path (HasPath(..))
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 

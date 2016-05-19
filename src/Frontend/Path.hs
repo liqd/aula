@@ -20,7 +20,8 @@
 --
 -- Rule: always add (and expect) trailing slashes.
 module Frontend.Path
-    ( Top(..)
+    ( HasPath(..)
+    , Top(..)
     , Main(..)
     , Space(..)
     , IdeaMode(..)
@@ -95,6 +96,10 @@ import Types
 
 
 -- * types
+
+class HasPath p where
+    relPath :: p -> UriPath
+
 
 -- ** Top
 

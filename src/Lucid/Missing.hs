@@ -36,6 +36,7 @@ import qualified Text.Digestive.View as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Data.UriPath
+import Frontend.Path
 
 
 -- | See also https://github.com/chrisdone/lucid/issues/30

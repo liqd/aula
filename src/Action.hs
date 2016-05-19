@@ -131,7 +131,8 @@ import qualified Data.Vector as V
 
 import Action.Smtp
 import Config (Config, GetConfig(..), exposedUrl)
-import Data.UriPath (absoluteUriPath, relPath)
+import Data.UriPath (absoluteUriPath)
+import Frontend.Path (relPath)
 import LifeCycle
 import Logger
 import Logger.EventLog
