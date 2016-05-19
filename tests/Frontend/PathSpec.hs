@@ -92,13 +92,13 @@ spec = do
                     checkPathHandler g
 
   where
-    mainGen :: Gen Main
+    mainGen :: Gen (Main 'AllowGetPost)
     mainGen = arbitrary
 
-    formActionGens :: [(String, Gen Main)]
+    formActionGens :: [(String, Gen (Main 'AllowGetPost))]
     formActionGens = map (\(F g) -> (show (typeOf g), formAction <$> g)) forms
 
-    formRedirectGens :: [(String, Gen Main)]
+    formRedirectGens :: [(String, Gen (Main 'AllowGetPost))]
     formRedirectGens = map (\(F g) -> (show (typeOf g), redirectOf <$> g <*> arb)) forms
 
     forms :: [FormGen]

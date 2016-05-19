@@ -221,7 +221,7 @@ adminFrame t bdy = do
   where
     tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST U.AdminMode ST
+data MenuLink = MenuLink ST (U.AdminMode 'U.AllowGetPost) ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()

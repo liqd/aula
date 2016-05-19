@@ -1,5 +1,7 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -22,6 +24,7 @@
 module Frontend.Path
     ( HasPath(..)
     , Top(..)
+    , Allow(..)
     , Main(..)
     , Space(..)
     , IdeaMode(..)
@@ -97,25 +100,27 @@ import Types
 
 -- * types
 
-class HasPath p where
-    relPath :: p -> UriPath
+data Allow = AllowGetPost | AllowPost
+
+class HasPath (p :: Allow -> *) where
+    relPath :: p r -> UriPath
 
 
 -- ** Top
 
-data Top =
+data Top (r :: Allow) =
     Top
-  | TopMain Main
+  | TopMain (Main r)
   | TopTesting UriPath
   | TopSamples
   | TopStatic UriPath
   deriving Generic
 
-instance SOP.Generic Top
+instance SOP.Generic (Top r)
 
 instance HasPath Top where relPath = top
 
-top :: Top -> UriPath
+top :: Top r -> UriPath
 top Top            = nil
 top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
@@ -125,14 +130,14 @@ top (TopStatic p)  = nil </> "static" <> p
 
 -- ** Main
 
-data Main =
+data Main (r :: Allow) =
     ListSpaces
-  | Space IdeaSpace Space
-  | IdeaPath IdeaLocation IdeaMode
+  | Space IdeaSpace (Space r)
+  | IdeaPath IdeaLocation (IdeaMode r)
   | ListUsers
-  | UserProf (AUID User) UserMode
+  | UserProf (AUID User) (UserMode r)
   | UserSettings
-  | Admin AdminMode
+  | Admin (AdminMode r)
   | DelegationEdit
   | DelegationView
   | Imprint
@@ -142,11 +147,11 @@ data Main =
   | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
   deriving (Generic, Show)
 
-instance SOP.Generic Main
+instance SOP.Generic (Main r)
 
 instance HasPath Main where relPath p = main p nil
 
-main :: Main -> UriPath -> UriPath
+main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
 main (IdeaPath l m)   root = ideaPath l m root
@@ -162,7 +167,7 @@ main Login            root = root </> "login"
 main Logout           root = root </> "logout"
 main Broken           root = root </> "bröken"
 
-ideaPath :: IdeaLocation -> IdeaMode -> UriPath -> UriPath
+ideaPath :: IdeaLocation -> IdeaMode r -> UriPath -> UriPath
 ideaPath loc mode root =
     case loc of
         IdeaLocationSpace isp     -> ideaMode mode $ rootSpace isp
@@ -173,7 +178,7 @@ ideaPath loc mode root =
 
 -- ** Space
 
-data Space =
+data Space (r :: Allow) =
     ListTopics
   | ListIdeasInSpace (Maybe IdeasQuery)
   | ListIdeasInTopic (AUID Topic) ListIdeasInTopicTab (Maybe IdeasQuery)
@@ -183,9 +188,9 @@ data Space =
   | CreateTopicDelegation (AUID Topic)
   deriving (Generic, Show)
 
-instance SOP.Generic Space
+instance SOP.Generic (Space r)
 
-space :: Space -> UriPath -> UriPath
+space :: Space r -> UriPath -> UriPath
 space ListTopics                  root = root </> "topic"
 space (ListIdeasInSpace mq)       root = renderFilter mq $ root </> "ideas"
 space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
@@ -204,7 +209,7 @@ topicTab = \case
 
 -- ** IdeaMode
 
-data IdeaMode =
+data IdeaMode (r :: Allow) =
       CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
@@ -219,13 +224,13 @@ data IdeaMode =
 
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
     -- CommentKey
-    | OnComment CommentKey CommentMode
+    | OnComment CommentKey (CommentMode r)
     | CreatorStatement (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic IdeaMode
+instance SOP.Generic (IdeaMode r)
 
-ideaMode :: IdeaMode -> UriPath -> UriPath
+ideaMode :: IdeaMode r -> UriPath -> UriPath
 ideaMode (ViewIdea i mc)        root = maybe id (flip (</#>) . anchor) mc $
                                        root </> "idea" </> uriPart i </> "view"
 ideaMode (EditIdea i)           root = root </> "idea" </> uriPart i </> "edit"
@@ -246,7 +251,7 @@ ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revoke
 
 -- ** CommentMode
 
-data CommentMode
+data CommentMode (r :: Allow)
     = ReplyToComment
     | DeleteComment
     | ReportComment
@@ -256,9 +261,9 @@ data CommentMode
     | EditReply
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic CommentMode
+instance SOP.Generic (CommentMode r)
 
-commentMode :: CommentKey -> CommentMode -> UriPath -> UriPath
+commentMode :: CommentKey -> CommentMode r -> UriPath -> UriPath
 commentMode (CommentKey _loc i parents commentId) m root =
     case m of
         ReplyToComment  -> base 1 </> "reply"
@@ -280,14 +285,14 @@ commentMode (CommentKey _loc i parents commentId) m root =
             _      -> error $ "Frontend.Path.commentMode.base " <> show n <> ": IMPOSSIBLE"
 
 -- | Do something to a comment (works on all levels).
-onComment :: Comment -> CommentMode -> Main
+onComment :: Comment -> CommentMode r -> Main r
 onComment comment = IdeaPath (ck ^. ckIdeaLocation) . OnComment ck
   where ck = comment ^. _Key
 
 
 -- ** AdminMode
 
-data AdminMode =
+data AdminMode (r :: Allow) =
     AdminDuration
   | AdminQuorum
   | AdminFreeze
@@ -306,9 +311,9 @@ data AdminMode =
   | AdminChangePhase
   deriving (Generic, Show)
 
-instance SOP.Generic AdminMode
+instance SOP.Generic (AdminMode r)
 
-admin :: AdminMode -> UriPath -> UriPath
+admin :: AdminMode r -> UriPath -> UriPath
 admin AdminDuration         path = path </> "duration"
 admin AdminQuorum           path = path </> "quorum"
 admin AdminFreeze           path = path </> "freeze"
@@ -330,69 +335,69 @@ admin AdminChangePhase                path = path </> "change-phase"
 
 -- ** UserMode
 
-data UserMode =
+data UserMode (r :: Allow) =
     UserIdeas
   | UserDelegations
   deriving (Generic, Show)
 
-instance SOP.Generic UserMode
+instance SOP.Generic (UserMode r)
 
-user :: UserMode -> UriPath -> UriPath
+user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
 
 
 -- * paths to ideas
 
-viewIdea :: Idea -> Main
+viewIdea :: Idea -> Main 'AllowGetPost
 viewIdea idea = IdeaPath (idea ^. ideaLocation) (ViewIdea (idea ^. _Id) Nothing)
 
 -- | view idea with anchor pointing to comment
-viewIdeaAtComment :: Idea -> AUID Comment -> Main
+viewIdeaAtComment :: Idea -> AUID Comment -> Main 'AllowGetPost
 viewIdeaAtComment idea =
     viewIdeaAtComment' . CommentKey (idea ^. ideaLocation) (idea ^. _Id) []
 
 -- | Like 'viewIdeaAtComment', for places where we don't have the entire idea available.
-viewIdeaAtComment' :: CommentKey -> Main
+viewIdeaAtComment' :: CommentKey -> Main 'AllowGetPost
 viewIdeaAtComment' c =
     IdeaPath (c ^. ckIdeaLocation) (ViewIdea (c ^. ckIdeaId) (Just (c ^. ckCommentId)))
 
 -- | view an idea that a comment refers to
-viewIdeaOfComment :: Comment -> Main
+viewIdeaOfComment :: Comment -> Main 'AllowGetPost
 viewIdeaOfComment comment = IdeaPath (ck ^. ckIdeaLocation) (ViewIdea (ck ^. ckIdeaId) Nothing)
   where ck = comment ^. _Key
 
-createIdea :: IdeaLocation -> Main
+createIdea :: IdeaLocation -> Main 'AllowGetPost
 createIdea loc = IdeaPath loc CreateIdea
 
-editIdea :: Idea -> Main
+editIdea :: Idea -> Main 'AllowGetPost
 editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
 
-moveIdea :: Idea -> Main
+moveIdea :: Idea -> Main 'AllowGetPost
 moveIdea idea = IdeaPath (idea ^. ideaLocation) $ MoveIdea (idea ^. _Id)
 
-commentOnIdea :: Idea -> Main
+commentOnIdea :: Idea -> Main 'AllowGetPost
 commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _Id)
 
-likeIdea :: Idea -> Main
+likeIdea :: Idea -> Main 'AllowGetPost
 likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 
-judgeIdea :: Idea -> IdeaJuryResultType -> Main
+judgeIdea :: Idea -> IdeaJuryResultType -> Main 'AllowGetPost
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 
-voteOnIdea :: Idea -> IdeaVoteValue -> Main
+voteOnIdea :: Idea -> IdeaVoteValue -> Main 'AllowGetPost
 voteOnIdea idea = IdeaPath (idea ^. ideaLocation) . VoteOnIdea (idea ^. _Id)
 
-unvoteOnIdea :: Idea -> User -> Main
+unvoteOnIdea :: Idea -> User -> Main 'AllowGetPost
 unvoteOnIdea idea u = IdeaPath (idea ^. ideaLocation) $ UnvoteOnIdea (idea ^. _Id) (u ^. _Id)
 
-markIdeaAsWinner :: Idea -> Main
+markIdeaAsWinner :: Idea -> Main 'AllowGetPost
 markIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ MarkIdeaAsWinner (idea ^. _Id)
 
-unmarkIdeaAsWinner :: Idea -> Main
+unmarkIdeaAsWinner :: Idea -> Main 'AllowGetPost
 unmarkIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ UnmarkIdeaAsWinner (idea ^. _Id)
 
-creatorStatement :: Idea -> Main
+creatorStatement :: Idea -> Main 'AllowGetPost
 creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea ^. _Id)
 
 
@@ -400,14 +405,14 @@ creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea
 
 -- | List ideas in any location (space or topic).  The query defaults to Nothing;
 -- in topics, tab defaults to `all`.
-listIdeas :: IdeaLocation -> Main
+listIdeas :: IdeaLocation -> Main 'AllowGetPost
 listIdeas loc = listIdeas' loc Nothing Nothing
 
-listIdeasInTopic :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeasInTopic :: Topic -> ListIdeasInTopicTab -> Maybe IdeasQuery -> Main 'AllowGetPost
 listIdeasInTopic topic =
     listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) . Just
 
-listIdeas' :: IdeaLocation -> Maybe ListIdeasInTopicTab -> Maybe IdeasQuery -> Main
+listIdeas' :: IdeaLocation -> Maybe ListIdeasInTopicTab -> Maybe IdeasQuery -> Main 'AllowGetPost
 listIdeas' (IdeaLocationSpace _) (Just _) _ =
     assert False $ error "listIdeas': must not be called with non-topic location and topic tab!"
 listIdeas' (IdeaLocationTopic spc tid) (Just tab) mquery =
@@ -421,46 +426,46 @@ listIdeas' loc Nothing mquery =
 -- * paths to comments
 
 -- | Reply to a comment (works on all levels).
-replyToComment :: Comment -> Main
+replyToComment :: Comment -> Main 'AllowGetPost
 replyToComment comment = onComment comment ReplyToComment
 
-voteOnComment :: Comment -> UpDown -> Main
+voteOnComment :: Comment -> UpDown -> Main 'AllowGetPost
 voteOnComment comment = onComment comment . VoteOnComment
 
-reportComment :: Comment -> Main
+reportComment :: Comment -> Main 'AllowGetPost
 reportComment comment = onComment comment ReportComment
 
-deleteComment :: Comment -> Main
+deleteComment :: Comment -> Main 'AllowGetPost
 deleteComment comment = onComment comment DeleteComment
 
-viewComment :: Comment -> Main
+viewComment :: Comment -> Main 'AllowGetPost
 viewComment comment = onComment comment ViewComment
 
-editComment :: Comment -> Main
+editComment :: Comment -> Main 'AllowGetPost
 editComment comment = onComment comment EditComment
 
-editReply :: Comment -> Main
+editReply :: Comment -> Main 'AllowGetPost
 editReply comment = onComment comment EditReply
 
 
 -- * paths to admin pages, user profile, user setting
 
-adminViewUsers :: AdminMode
+adminViewUsers :: AdminMode 'AllowGetPost
 adminViewUsers = AdminViewUsers Nothing
 
-adminViewClasses :: AdminMode
+adminViewClasses :: AdminMode 'AllowGetPost
 adminViewClasses = AdminViewClasses Nothing
 
-viewUserProfile :: User -> Main
+viewUserProfile :: User -> Main 'AllowGetPost
 viewUserProfile = viewUserIdProfile . view _Id
 
-viewUserIdProfile :: AUID User -> Main
+viewUserIdProfile :: AUID User -> Main 'AllowGetPost
 viewUserIdProfile uid = UserProf uid UserIdeas
 
 
 -- * aux predicates
 
-isPostOnly :: Main -> Bool
+isPostOnly :: Main r -> Bool
 isPostOnly = \case
     IdeaPath _ m ->
         case m of
@@ -483,7 +488,7 @@ isPostOnly = \case
     -- FIXME[#312] Logout -> True
     _ -> False
 
-isBroken :: Main -> Bool
+isBroken :: Main r -> Bool
 isBroken Broken = True
 isBroken _      = False
 
