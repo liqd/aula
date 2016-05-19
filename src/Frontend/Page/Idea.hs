@@ -45,7 +45,7 @@ import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Feasibility
 import Frontend.Fragment.Note
-import Frontend.Fragment.QuorumBar
+import Frontend.Fragment.VotesBar
 import Frontend.Prelude hiding ((<|>), MoveIdea)
 import Frontend.Validation
 import Persistent.Api
@@ -140,11 +140,6 @@ data EditComment
 
 instance Page EditComment where
 
--- ** non-page types
-
-data IdeaVoteLikeBars = IdeaVoteLikeBars [IdeaCapability] ViewIdea
-  deriving (Eq, Show, Read)
-
 
 -- * templates
 
@@ -156,7 +151,7 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea ctx ideaInfo@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
+    toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -175,7 +170,7 @@ instance ToHtml ViewIdea where
                          IdeaLocationTopic{} -> "Zum Thema"
 
                 let canEdit              = CanEdit              `elem` caps
-                    canCreateTopic       = ideaReachedQuorum ideaInfo && CanCreateTopic `elem` userCaps
+                    canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
                     canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
                 when (canEdit || canCreateTopic || canMoveBetweenTopics) $ do
@@ -217,9 +212,9 @@ instance ToHtml ViewIdea where
                     PhaseResult       -> v >> c
 
             div_ [class_ "sub-heading"] $ do
-                toHtml $ IdeaVoteLikeBars caps p
+                toHtml $ IdeaVoteLikeBars ctx caps stats
 
-            when (has _PhaseWildIdea phase && ideaReachedQuorum ideaInfo) $ do
+            when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
                 div_ [class_ "voting-buttons"] $
                     if CanCreateTopic `elem` userCaps
@@ -297,83 +292,6 @@ instance ToHtml ViewIdea where
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c phase ^. html
-
-instance ToHtml IdeaVoteLikeBars where
-    toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars caps
-                (ViewIdea ctx (IdeaStats idea phase quo voters))) = semanticDiv p $ do
-        let likeBar :: Html () -> Html ()
-            likeBar bs = div_ $ do
-                toHtml (QuorumBar $ percentLikes idea quo)
-                span_ [class_ "like-bar"] $ do
-                    toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
-                bs
-
-            -- FIXME: how do you un-like an idea?
-            likeButtons :: Html ()
-            likeButtons = if CanLike `elem` caps
-                then div_ [class_ "voting-buttons"] $
-                        if userLikesIdea (ctx ^. renderContextUser) idea
-                            then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
-                            else postButton_
-                                    [ class_ "btn"
-                                    , onclickJs jsReloadOnClick
-                                    ]
-                                    (U.likeIdea idea)
-                                    "dafür!"
-                else nil
-
-            voteBar :: Html () -> Html ()
-            voteBar bs = div_ [class_ "voting-widget"] $ do
-                span_ [class_ "progress-bar m-show-abstain"] $ do
-                    span_ [class_ "progress-bar-row"] $ do
-                        span_ [ class_ "progress-bar-progress progress-bar-progress-for"
-                              , style_ . cs $ concat ["width: ", yesPercent, "%"]
-                              ] $ do
-                            span_ [class_ "votes"] yesVotes
-                        span_ [ class_ "progress-bar-progress progress-bar-progress-against"
-                              , style_ . cs $ concat ["width: ", noPercent, "%"]
-                              ] $ do
-                            span_ [class_ "votes"] noVotes
-                        span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
-                            span_ [class_ "votes"] $ voters ^. showed . html
-                bs
-              where
-                yesVotes    = numVotes idea Yes ^. showed . html
-                noVotes     = numVotes idea No  ^. showed . html
-                yesPercent  = max (percentVotes idea voters Yes) 5 ^. showed
-                noPercent   = max (percentVotes idea voters No)  5 ^. showed
-
-            user = ctx ^. renderContextUser
-
-            voteButtons :: Html ()
-            voteButtons = if CanVoteIdea `elem` caps
-                then div_ [class_ "voting-buttons"] $ do
-                    voteButton vote Yes "dafür"
-                    voteButton vote No  "dagegen"
-                else nil
-              where
-                vote = userVotedOnIdea user idea
-
-                -- FIXME: The button for the selected vote value is white.
-                -- Should it be in other color?
-                voteButton (Just w) v | w == v =
-                    postButton_ [ class_ "btn voting-button"
-                                , onclickJs jsReloadOnClick
-                                ]
-                                (U.unvoteOnIdea idea user)
-                voteButton _        v =
-                    postButton_ [ class_ "btn-cta voting-button"
-                                , onclickJs jsReloadOnClick
-                                ]
-                                (U.voteOnIdea idea v)
-
-        case phase of
-            PhaseWildIdea{}   -> toHtml $ likeBar likeButtons
-            PhaseRefinement{} -> nil
-            PhaseJury         -> nil
-            PhaseVoting{}     -> toHtml $ voteBar voteButtons
-            PhaseResult       -> toHtml $ voteBar nil
 
 validateIdeaTitle :: FormCS m r s
 validateIdeaTitle = validate "Titel der Idee" title
