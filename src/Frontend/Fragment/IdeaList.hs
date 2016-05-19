@@ -111,7 +111,6 @@ instance ToHtml ListItemIdea where
                         Just IdeaNotFeasible -> notfeasible
                         Just IdeaFeasible    -> feasible
 
-                    -- TODO: this should be an icon.  the same icon should be shown in module Frontend.Page.Idea, line 218.
                     when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ readyfortable
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
