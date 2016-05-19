@@ -76,12 +76,12 @@ instance ToHtml IdeaVoteLikeBars where
                 -- FIXME: The button for the selected vote value is white.
                 -- Should it be in other color?
                 voteButton (Just w) v | w == v =
-                    postButton_ [ class_ "btn voting-button"
+                    postButton_ [ class_ "btn-cta m-large voting-button m-selected"
                                 , onclickJs jsReloadOnClick
                                 ]
                                 (U.unvoteOnIdea idea user)
                 voteButton _        v =
-                    postButton_ [ class_ "btn-cta voting-button"
+                    postButton_ [ class_ "btn-cta voting-button m-large"
                                 , onclickJs jsReloadOnClick
                                 ]
                                 (U.voteOnIdea idea v)
