@@ -31,8 +31,8 @@ instance ToHtml IdeaVoteLikeBars where
 
             -- FIXME: how do you un-like an idea?
             likeButtons :: Html ()
-            likeButtons = if CanLike `elem` caps
-                then div_ [class_ "voting-buttons"] $
+            likeButtons = when (CanLike `elem` caps) .
+                div_ [class_ "voting-buttons"] $
                         if userLikesIdea (ctx ^. renderContextUser) idea
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                             else postButton_
@@ -41,7 +41,6 @@ instance ToHtml IdeaVoteLikeBars where
                                     ]
                                     (U.likeIdea idea)
                                     "dafür!"
-                else nil
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
@@ -67,11 +66,10 @@ instance ToHtml IdeaVoteLikeBars where
             user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
-            voteButtons = if CanVoteIdea `elem` caps
-                then div_ [class_ "voting-buttons"] $ do
+            voteButtons = when (CanVoteIdea `elem` caps) .
+                div_ [class_ "voting-buttons"] $ do
                     voteButton vote Yes "dafür"
                     voteButton vote No  "dagegen"
-                else nil
               where
                 vote = userVotedOnIdea user idea
 
