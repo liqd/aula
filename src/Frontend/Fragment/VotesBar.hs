@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.VotesBar
+    (IdeaVoteLikeBars(..))
 where
 
 import           Frontend.Fragment.QuorumBar  -- TODO: resolve this into VotesBar?
