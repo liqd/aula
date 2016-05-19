@@ -24,7 +24,6 @@ module LifeCycle
     )
 where
 
-import Control.Exception
 import Control.Lens
 import Data.Monoid
 import GHC.Generics (Generic)
@@ -41,8 +40,6 @@ data PhaseChange
     | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
     | RevertVotingPhaseToJury
     | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
-    | PhaseFreeze { _phaseChangeFreezeNow :: Timestamp }
-    | PhaseThaw { _phaseChangeThawNow :: Timestamp }
   deriving (Eq, Show)
 
 data PhaseAction
@@ -81,21 +78,6 @@ phaseTrans (PhaseVoting ActivePhase{}) RevertVotingPhaseToJury
     = Just (PhaseJury, [])
 phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
     = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
-
--- Freezing and thawing.
---
--- There are no frozen variants of @PhaseJury@ and @PhaseResult@.
--- Freezing or thawing those phases has no effect.  (We do not throw
--- an exception for these because that would require to handle this
--- case in other places where it is less convenient, I think.)
---
--- 'Persistent.Idiom.saveAndEnactFreeze' does not call 'phaseTrans',
--- so if you need to add actions here, you need to rewrite that
--- function first.
-phaseTrans _ (PhaseFreeze _)
-    = assert False $ error "phaseTrans: not applicable for freezing"
-phaseTrans _ (PhaseThaw _)
-    = assert False $ error "phaseTrans: not applicable for thawing"
 
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
