@@ -24,6 +24,7 @@ module LifeCycle
     )
 where
 
+import Control.Exception
 import Control.Lens
 import Data.Monoid
 import GHC.Generics (Generic)
@@ -88,12 +89,13 @@ phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
 -- an exception for these because that would require to handle this
 -- case in other places where it is less convenient, I think.)
 --
--- Persistent.Idiom.saveAndEnactFreeze relies on the fact that these
--- transitions yield no PhaseAction.
-phaseTrans phase (PhaseFreeze now)
-    = Just (freezePhase now phase, [])
-phaseTrans phase (PhaseThaw now)
-    = Just (thawPhase now phase, [])
+-- 'Persistent.Idiom.saveAndEnactFreeze' does not call 'phaseTrans',
+-- so if you need to add actions here, you need to rewrite that
+-- function first.
+phaseTrans _ (PhaseFreeze _)
+    = assert False $ error "phaseTrans: not applicable for freezing"
+phaseTrans _ (PhaseThaw _)
+    = assert False $ error "phaseTrans: not applicable for thawing"
 
 -- Others considered invalid (throw an error later on).
 phaseTrans _ _ = Nothing
