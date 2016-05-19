@@ -105,7 +105,8 @@ instance FormPage PageUserSettings where
             <$> ("email"         .:
                     emailField "Email" (user ^. userEmail))
             <*> ("old-password"  .:
-                    validateOptional "aktuelles Passwort" password (DF.optionalText Nothing))
+                    -- no need to validate the current password
+                    DF.optionalText Nothing)
             <*> ("new-password1" .:
                     validateOptional "neues Passwort" password (DF.optionalText Nothing))
             <*> ("new-password2" .:

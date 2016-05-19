@@ -207,6 +207,10 @@ data IdeaLocation =
 
 instance SOP.Generic IdeaLocation
 
+instance HasUILabel IdeaLocation where
+    uilabel (IdeaLocationSpace s) = uilabel s
+    uilabel (IdeaLocationTopic s (AUID t)) = "Thema #" <> fromString (show t) <> " in " <> uilabel s
+
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
     { _protoIdeaTitle      :: ST
@@ -353,6 +357,14 @@ instance SOP.Generic IdeaVoteResultValue
 
 type instance Proto IdeaVoteResult = IdeaVoteResultValue
 
+data MoveIdea
+    = MoveIdeaToWild
+    | MoveIdeaToTopic (AUID Topic)
+
+moveIdeaElim :: forall t . t -> (AUID Topic -> t) -> MoveIdea -> t
+moveIdeaElim wild topic = \case
+    MoveIdeaToWild    -> wild
+    MoveIdeaToTopic t -> topic t
 
 -- * comment
 
@@ -450,7 +462,28 @@ instance SOP.Generic CommentContext
 data IdeaSpace =
     SchoolSpace
   | ClassSpace { _ideaSpaceSchoolClass :: SchoolClass }
-  deriving (Eq, Ord, Show, Read, Generic)
+  deriving (Eq, Show, Read, Generic)
+
+-- e.g.: ["Klasse 10a", "Klasse 7b", "Klasse 7a"]
+--   ==> ["Klasse 7a", "Klasse 7b", "Klasse 10a"]
+instance Ord IdeaSpace where
+    compare = compare `on` sortableName
+      where
+        sortableName :: IdeaSpace -> Maybe [Either String Int]
+        sortableName SchoolSpace     = Nothing
+        sortableName (ClassSpace cl) = Just . structured . cs . _className $ cl
+
+        structured :: String -> [Either String Int]
+        structured = nonDigits
+          where
+            digits xs = case span isDigit xs of
+                            ([], []) -> []
+                            ([], zs) -> nonDigits zs
+                            (ys, zs) -> Right (read ys) : nonDigits zs
+            nonDigits xs = case break isDigit xs of
+                            ([], []) -> []
+                            ([], zs) -> digits zs
+                            (ys, zs) -> Left ys : digits zs
 
 instance SOP.Generic IdeaSpace
 
@@ -1117,6 +1150,7 @@ deriveSafeCopy 0 'base ''IdeaVoteLikeKey
 deriveSafeCopy 0 'base ''IdeaVoteResult
 deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
+deriveSafeCopy 0 'base ''MoveIdea
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation

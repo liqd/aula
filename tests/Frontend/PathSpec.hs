@@ -11,6 +11,7 @@
 module Frontend.PathSpec
 where
 
+import Control.Monad (forM_)
 import Data.String.Conversions (cs, (<>))
 import Data.Typeable (Typeable, typeOf)
 import Network.HTTP.Types.Status (statusCode)
@@ -34,6 +35,7 @@ import AulaTests (wpasses)
 import Data.UriPath
 import Frontend
 import Frontend.Core
+import Frontend.Page
 import Frontend.Path
 import Types
 
@@ -55,27 +57,78 @@ spec = do
             , U (arb :: Gen UpDown)
             ]
 
-    describe "Paths and handlers" $ do
-        beforeAll mockAulaMain $ do
-            it "Every path has a handler" $ \app -> property . forAllShrinkDef mainGen $ \path ->
-                flip Wai.property app $ do
-                    let uri = cs . ST.takeWhile (/= '#') . absoluteUriPath $ relPath path
-                    resp :: SResponse <- if isPostOnly path then post uri ""
-                                                            else get  uri
-                    let s :: Int    = statusCode . simpleStatus $ resp
-                        b :: String =           cs . simpleBody $ resp
-                        msg = "this test needs arbitrary paths to point to existing data: "
-                          -- FIXME: as long as src/Arbitrary.hs is around and not replaced by
-                          -- src/DemoData.hs or AulaTests/Stories.hs, this text will keep causing
-                          -- trouble, so we just make failing test cases pending.
+    let checkPathHandler gen app = property . forAllShrinkDef gen $ \path ->
+            flip Wai.property app $ do
+                let uri = cs . ST.takeWhile (/= '#') . absoluteUriPath $ relPath path
+                resp :: SResponse <- if isPostOnly path then post uri ""
+                                                        else get  uri
+                let s :: Int    = statusCode . simpleStatus $ resp
+                    b :: String =           cs . simpleBody $ resp
+                    msg = "this test needs arbitrary paths to point to existing data: "
+                      -- FIXME: as long as src/Arbitrary.hs is around and not replaced by
+                      -- src/DemoData.hs or AulaTests/Stories.hs, this text will keep causing
+                      -- trouble, so we just make failing test cases pending.
 
-                    case s of
-                        204 -> wpasses
-                        200 -> wpasses
-                        _   -> error (msg <> show (uri, s, b))
+                case s of
+                    204 -> wpasses
+                    200 -> wpasses
+                    _   -> error (msg <> show (uri, s, b))
+
+    -- NOTE: It also uses the formPage, makeForm, ToHTML instances, where can issues occur.
+    beforeAll mockAulaMain $ do
+
+        describe "Paths and handlers" $ do
+            it "Every path has a handler." $
+                checkPathHandler mainGen
+
+        describe "Valid formAction" $ do
+            forM_ formActionGens $ \(t, g) ->
+                it (t <> " has a formAction.") $
+                    checkPathHandler g
+
+        describe "Valid redirectOf" $ do
+            forM_ formRedirectGens $ \(t, g) ->
+                it (t <> " has a valid redirect.") $
+                    checkPathHandler g
+
   where
     mainGen :: Gen Main
     mainGen = arbitrary
+
+    formActionGens :: [(String, Gen Main)]
+    formActionGens = map (\(F g) -> (show (typeOf g), formAction <$> g)) forms
+
+    formRedirectGens :: [(String, Gen Main)]
+    formRedirectGens = map (\(F g) -> (show (typeOf g), redirectOf <$> g <*> arb)) forms
+
+    forms :: [FormGen]
+    forms =
+        [ F (arb :: Gen CreateIdea)
+        , F (arb :: Gen Frontend.Page.EditIdea)
+        , F (arb :: Gen CommentOnIdea)
+        , F (arb :: Gen PageHomeWithLoginPrompt)
+        , F (arb :: Gen CreateTopic)
+        , F (arb :: Gen PageUserSettings)
+        , F (arb :: Gen Frontend.Page.EditTopic)
+--        , F (arb :: Gen AdminCreateUser) -- FIXME
+        , F (arb :: Gen PageAdminSettingsDurations)
+        , F (arb :: Gen PageAdminSettingsQuorum)
+        , F (arb :: Gen PageAdminSettingsFreeze)
+--        , F (arb :: Gen PageAdminSettingsEventsProtocol)
+        , F (arb :: Gen AdminEditUser) -- FIXME
+        , F (arb :: Gen CreatorStatement)
+        , F (arb :: Gen AdminPhaseChange)
+        , F (arb :: Gen JudgeIdea)
+        , F (arb :: Gen ReportComment)
+        ]
+
+-- FIXME: Unify the Form Arbitrary GADTs.
+data FormGen where
+    F :: ( r ~ FormPageResult m
+         , Show m, Typeable m, FormPage m
+         , Show r, Eq r, Arbitrary r
+         , Arbitrary m
+         ) => Gen m -> FormGen
 
 -- * Each path has a handler
 
