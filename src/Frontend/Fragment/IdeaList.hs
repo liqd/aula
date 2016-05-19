@@ -80,9 +80,6 @@ instance ToHtml ListItemIdea where
                         idea
                         phase
 
-            when (isIdeaInViewTopic whatListPage) $ do
-                feasibilityVerdict False idea caps
-
             a_ [href_ $ U.viewIdea idea] $ do
                 div_ [class_ "col-6-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
@@ -95,8 +92,24 @@ instance ToHtml ListItemIdea where
                     -- FIXME: make another class to replace icon-list-button such that
                     -- these icons are not turned into buttons.
                     -- Also the icons should be smaller.
+
+                    -- TODO: see also: module Frontend.Fragment.Feasibility
+                    -- TODO: for testing, you can just do `case Just IdeaNotFeasible of ...`
+                    case idea ^? juryResult . ideaJuryResultValue of
+                        Nothing -> nil  -- "not judged"
+                        Just IdeaNotFeasible -> do
+                            "not feasible"
+                        Just IdeaFeasible -> do
+                            "feasible"
+
+                    -- TODO: for testing, you can just comment out the next line and just leave a `do` instead of the `when`.
+                    -- TODO: this should be an icon.  the same icon should be shown in module Frontend.Page.Idea, line 218.
+                    when (ideaReachedQuorum ideaInfo && isWild (idea ^. ideaLocation)) $ do
+                        "table"
+
                     div_ [class_ "icon-list m-inline m-display-only"] $ do
                         ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
+
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
                     let showVotes = phase > PhaseJury
