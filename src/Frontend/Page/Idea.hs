@@ -69,7 +69,6 @@ import Persistent
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
 import qualified Data.Map as Map
 import qualified Frontend.Path as U
-import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Types (MoveIdea)
@@ -354,7 +353,7 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
                         -- FIXME: "are you sure?" dialog.
                         "abbrechen"
                     when showDeleteButton .
-                        button_ [class_ "btn-cta", value_ "", Lucid.onclick_ "return areYouSure(); return false"] $ do
+                        button_ [class_ "btn-cta", value_ ""] $ do
                             -- FIXME: delete ideas.
                             -- FIXME: "are you sure?" dialog.
                             i_ [class_ "icon-trash-o"] nil
