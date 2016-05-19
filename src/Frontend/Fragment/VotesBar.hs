@@ -18,6 +18,14 @@ import           Persistent.Idiom
 data IdeaVoteLikeBars = IdeaVoteLikeBars RenderContext [IdeaCapability] IdeaStats
   deriving (Eq, Show, Read)
 
+-- | The issue has been debated for some time now whether we should show three segments (yes, no,
+-- not voted) or just two (yes, no), we introduced a switch.
+data ShowNotVoted = ShowNotVoted | DoNotShowNotVoted
+  deriving (Eq)
+
+showNotVoted :: ShowNotVoted
+showNotVoted = ShowNotVoted
+
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars ctx caps
@@ -54,15 +62,21 @@ instance ToHtml IdeaVoteLikeBars where
                               , style_ $ mconcat ["width: ", prcnt No, "%"]
                               ] $ do
                             span_ [class_ "votes"] (cnt No)
-                        span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
-                            span_ [class_ "votes"] $ voters ^. showed . html
+                        when (showNotVoted == ShowNotVoted) $
+                            span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
+                                      -- FIXME: change class name above: abstain /= not-voted
+                                span_ [class_ "votes"] $ voters ^. showed . html
                 bs
               where
                 cnt :: IdeaVoteValue -> Html ()
                 cnt v = numVotes idea v ^. showed . html
 
                 prcnt :: IdeaVoteValue -> ST
-                prcnt v = max (percentVotes idea voters v) 5 ^. showed . csi
+                prcnt v = max (percentVotes idea oneHundret v) 5 ^. showed . csi
+                  where
+                    oneHundret = case showNotVoted of
+                        ShowNotVoted      -> voters
+                        DoNotShowNotVoted -> numVotes idea Yes + numVotes idea No
 
             user = ctx ^. renderContextUser
 
