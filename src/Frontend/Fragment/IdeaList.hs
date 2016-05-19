@@ -122,6 +122,10 @@ instance ToHtml ListItemIdea where
 
                     when showLikesAndQuorum . toHtml $ QuorumBar (percentLikes idea quo)
                     when showVotes . toHtml $
+                        -- we use the capabilities list to switch the like / vote buttons on or off.
+                        -- this way, if we ever decide to allow like in the list view, but not vote
+                        -- (vote has bigger implications than like and should require the user to
+                        -- enter the detail view), it's very simple to do that here.
                         IdeaVoteLikeBars ctx (caps \\ [CanLike, CanVoteIdea]) stats
 
 instance ToHtml ListItemIdeas where
