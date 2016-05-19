@@ -133,11 +133,11 @@
         }
     }
 
-    .is-feasable .indicator-icon {
+    .is-feasible .indicator-icon {
         @include svg(yay);
     }
 
-    .is-not-feasable .indicator-icon {
+    .is-not-feasible .indicator-icon {
         @include svg(nay);
     }
 

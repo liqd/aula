@@ -93,14 +93,12 @@ instance ToHtml ListItemIdea where
                     div_ [class_ "icon-list indicator-item m-inline m-display-only"] $ do
                         ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
 
-                    -- TODO s/feasable/feasible/g
-
                     let notfeasible = do
-                            div_ [class_ "indicator-item indicator-item-feasability is-not-feasable", title_ "not feasible"] $ do
+                            div_ [class_ "indicator-item indicator-item-feasability is-not-feasible", title_ "not feasible"] $ do
                                 div_ [class_ "indicator-icon"] "nicht durchführbar"
 
                         feasible = do
-                            div_ [class_ "indicator-item indicator-item-feasability is-feasable", title_ "feasible"] $ do
+                            div_ [class_ "indicator-item indicator-item-feasability is-feasible", title_ "feasible"] $ do
                                 div_ [class_ "indicator-icon"] "durchführbar"
 
                         readyfortable = do
