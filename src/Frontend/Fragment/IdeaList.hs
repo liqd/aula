@@ -102,15 +102,17 @@ instance ToHtml ListItemIdea where
                         Nothing -> nil  -- "not judged"
                         Just IdeaNotFeasible -> do
                             div_ [class_ "indicator-item indicator-item-feasability is-not-feasable", title_ "not feasible"] $ do
-                              div_ [class_ "feasability-icon"] "Not Feasable"
+                                div_ [class_ "indicator-icon"] "Not Feasable"
                         Just IdeaFeasible -> do
                             div_ [class_ "indicator-item indicator-item-feasability is-feasable", title_ "feasible"] $ do
-                              div_ [class_ "feasability-icon"] "Feasable"
-
+                                div_ [class_ "indicator-icon"] "Feasable"
+                    div_ [class_ "m-table indicator-item"] $ do
+                          div_ [class_ "indicator-icon"] "Kann auf den Tisch"
                     -- TODO: for testing, you can just comment out the next line and just leave a `do` instead of the `when`.
                     -- TODO: this should be an icon.  the same icon should be shown in module Frontend.Page.Idea, line 218.
                     when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ do
-                        "table"
+                        div_ [class_ "indicator-item m-table"] $ do
+                              div_ [class_ "indicator-icon"] "Kann auf den Tisch"
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage

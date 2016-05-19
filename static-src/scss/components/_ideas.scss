@@ -114,8 +114,9 @@
         @include rem(margin-right, 10px);
         float: right;
 
-        ul li, .feasability-icon {
+        ul li, .indicator-icon {
             background-position: center center;
+            background-repeat: no-repeat;
             background-size: contain;
             text-indent: -999px;
             min-width: 32px;
@@ -123,7 +124,7 @@
 
         ul li>a,
         ul li>span,
-        .feasability-icon {
+        .indicator-icon {
             @include rem(padding-top, 40px);
         }
 
@@ -132,11 +133,16 @@
         }
     }
 
-    .is-feasable .feasability-icon {
+    .is-feasable .indicator-icon {
         @include svg(yay);
     }
 
-    .is-not-feasable .feasability-icon {
+    .is-not-feasable .indicator-icon {
         @include svg(nay);
+    }
+
+    .m-table .indicator-icon {
+        background-image: url(../images/badge_aufdemtisch.png);
+        min-width: 40px;
     }
 }
