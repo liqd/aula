@@ -96,7 +96,7 @@ instance ToHtml IdeaVoteLikeBars where
                                 ]
                                 (U.unvoteOnIdea idea user)
                 voteButton _        v =
-                    postButton_ [ class_ "btn-cta voting-button m-large"
+                    postButton_ [ class_ "btn-cta m-large voting-button m-not-selected"
                                 , onclickJs jsReloadOnClick
                                 ]
                                 (U.voteOnIdea idea v)
