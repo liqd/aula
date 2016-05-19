@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -36,6 +37,7 @@ import qualified Text.Digestive.View as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Data.UriPath
+import Frontend.Path
 
 
 -- | See also https://github.com/chrisdone/lucid/issues/30
@@ -96,25 +98,25 @@ inputSubmit_ attrs value = input_ $
     , value_ value
     ] <> attrs
 
-src_ :: HasPath p => p -> Lucid.Attribute
+src_ :: HasPath p => p 'AllowGetPost -> Lucid.Attribute
 src_ = Lucid.src_ . absoluteUriPath . relPath
 
-href_ :: HasPath p => p -> Lucid.Attribute
+href_ :: HasPath p => p 'AllowGetPost -> Lucid.Attribute
 href_ = Lucid.href_ . absoluteUriPath . relPath
 
-onclick_ :: HasPath p => p -> Lucid.Attribute
+onclick_ :: HasPath p => p 'AllowGetPost -> Lucid.Attribute
 onclick_ p = Lucid.onclick_ ("location.href='" <> absoluteUriPath (relPath p) <> "'")
 
-formMethod_ :: (Monad m, HasPath p) => ST -> [Lucid.Attribute] -> p -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
+formMethod_ :: (Monad m, HasPath p) => ST -> [Lucid.Attribute] -> p a -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
 formMethod_ meth attrs path =
     Lucid.form_ $ [ Lucid.method_ meth
                   , Lucid.action_ (absoluteUriPath (relPath path))
                   ] <> attrs
 
-postLink_ :: HasPath p => [Lucid.Attribute] -> p -> ST -> Monad m => Lucid.HtmlT m ()
+postLink_ :: HasPath p => [Lucid.Attribute] -> p 'AllowPost -> ST -> Monad m => Lucid.HtmlT m ()
 postLink_ attrs path = formMethod_ "POST" [] path . inputSubmit_ attrs
 
-postButton_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
+postButton_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p 'AllowPost -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
 postButton_ attrs path = formMethod_ "POST" [] path . Lucid.button_ ([ type_ "submit" ] <> attrs)
 
 

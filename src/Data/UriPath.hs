@@ -12,7 +12,6 @@ module Data.UriPath
     , (</?>)
     , absoluteUriPath
     , relativeUriPath
-    , HasPath(..)
     , HasUriPart(..))
     where
 
@@ -79,9 +78,6 @@ relativeUriPath u = p <> q
 
 absoluteUriPath :: UriPath -> ST
 absoluteUriPath u = "/" <> relativeUriPath u
-
-class HasPath p where
-    relPath :: p -> UriPath
 
 class HasUriPart p where
     uriPart :: p -> UriPart
