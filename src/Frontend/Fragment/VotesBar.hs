@@ -47,21 +47,22 @@ instance ToHtml IdeaVoteLikeBars where
                 span_ [class_ "progress-bar m-show-abstain"] $ do
                     span_ [class_ "progress-bar-row"] $ do
                         span_ [ class_ "progress-bar-progress progress-bar-progress-for"
-                              , style_ . cs $ concat ["width: ", yesPercent, "%"]
+                              , style_ $ mconcat ["width: ", prcnt Yes, "%"]
                               ] $ do
-                            span_ [class_ "votes"] yesVotes
+                            span_ [class_ "votes"] (cnt Yes)
                         span_ [ class_ "progress-bar-progress progress-bar-progress-against"
-                              , style_ . cs $ concat ["width: ", noPercent, "%"]
+                              , style_ $ mconcat ["width: ", prcnt No, "%"]
                               ] $ do
-                            span_ [class_ "votes"] noVotes
+                            span_ [class_ "votes"] (cnt No)
                         span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
                             span_ [class_ "votes"] $ voters ^. showed . html
                 bs
               where
-                yesVotes    = numVotes idea Yes ^. showed . html
-                noVotes     = numVotes idea No  ^. showed . html
-                yesPercent  = max (percentVotes idea voters Yes) 5 ^. showed
-                noPercent   = max (percentVotes idea voters No)  5 ^. showed
+                cnt :: IdeaVoteValue -> Html ()
+                cnt v = numVotes idea v ^. showed . html
+
+                prcnt :: IdeaVoteValue -> ST
+                prcnt v = max (percentVotes idea voters v) 5 ^. showed . csi
 
             user = ctx ^. renderContextUser
 
