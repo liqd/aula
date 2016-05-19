@@ -24,8 +24,9 @@
     }
 
     &.m-large {
+        @include rem(border-radius, 15px);
         @include rem(font-size, 20px);
-        line-height: $button-height + 10px;
+        line-height: $button-height + 5px;
     }
 }
 
@@ -48,6 +49,14 @@ input[type=submit]:not(.btn-plain) {
     border-radius: $button-height / 2;
     border: none;
     color: #fff;
+
+    &.m-selected {
+        background: darken($button-cta-base-color, 10%);
+    }
+
+    &.m-not-selected {
+        opacity: 0.6;
+    }
 
     &:hover, &:focus {
         background-color: $button-cta-hover-color;

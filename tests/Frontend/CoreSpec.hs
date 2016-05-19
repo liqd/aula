@@ -30,6 +30,7 @@ import Config
 import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
+import Frontend.Path (relPath)
 import Logger (nullLog)
 import Persistent.Idiom (listInfoForIdeaIt)
 import Types

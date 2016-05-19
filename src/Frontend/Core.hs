@@ -84,7 +84,8 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Config
-import Data.UriPath (HasPath(..), UriPath, absoluteUriPath)
+import Data.UriPath (UriPath, absoluteUriPath)
+import Frontend.Path (HasPath(..))
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -288,7 +289,7 @@ class Page p => FormPage p where
     type FormPageResult p = ()
 
     -- | The form action used in form generation
-    formAction :: p -> P.Main
+    formAction :: p -> P.Main 'P.AllowGetPost
     -- | Calculates a redirect address from the given page.
     --
     -- Currently, 'FormPage' forces you to redirect after a form has been processed successfully.
@@ -304,7 +305,7 @@ class Page p => FormPage p where
     -- making impossible to not redirect one day.
     --
     -- Context: github #398, #83.
-    redirectOf :: p -> FormPageResult p -> P.Main
+    redirectOf :: p -> FormPageResult p -> P.Main 'P.AllowGetPost
     -- | Generates a Html view from the given page
     makeForm :: ActionM m => p -> DF.Form (Html ()) m (FormPagePayload p)
     -- | @formPage v f p@
@@ -482,6 +483,7 @@ pageFrame frame = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
