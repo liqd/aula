@@ -20,13 +20,13 @@ where
 
 import Control.Lens
 
+import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
-import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
-import Persistent (IdeaStats(IdeaStats))
+import Persistent (IdeaStats(IdeaStats), ideaReachedQuorum)
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
@@ -96,7 +96,7 @@ instance ToHtml ListItemIdea where
 
                     -- TODO: see also: module Frontend.Fragment.Feasibility
                     -- TODO: for testing, you can just do `case Just IdeaNotFeasible of ...`
-                    case idea ^? juryResult . ideaJuryResultValue of
+                    case idea ^? ideaJuryResult . _Just . ideaJuryResultValue . to ideaJuryResultValueToType of
                         Nothing -> nil  -- "not judged"
                         Just IdeaNotFeasible -> do
                             "not feasible"
@@ -105,7 +105,7 @@ instance ToHtml ListItemIdea where
 
                     -- TODO: for testing, you can just comment out the next line and just leave a `do` instead of the `when`.
                     -- TODO: this should be an icon.  the same icon should be shown in module Frontend.Page.Idea, line 218.
-                    when (ideaReachedQuorum ideaInfo && isWild (idea ^. ideaLocation)) $ do
+                    when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ do
                         "table"
 
                     div_ [class_ "icon-list m-inline m-display-only"] $ do
