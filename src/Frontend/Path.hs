@@ -24,7 +24,7 @@
 module Frontend.Path
     ( HasPath(..)
     , Top(..)
-    , Allow(..)
+    , AllowedMethod(..)
     , Main(..)
     , Space(..)
     , IdeaMode(..)
@@ -100,15 +100,16 @@ import Types
 
 -- * types
 
-data Allow = AllowGetPost | AllowPost
+-- FIXME: Introduce AllowGet only
+data AllowedMethod = AllowGetPost | AllowPost
 
-class HasPath (p :: Allow -> *) where
+class HasPath (p :: AllowedMethod -> *) where
     relPath :: p r -> UriPath
 
 
 -- ** Top
 
-data Top (r :: Allow) =
+data Top (r :: AllowedMethod) =
     Top
   | TopMain (Main r)
   | TopTesting UriPath
@@ -130,7 +131,7 @@ top (TopStatic p)  = nil </> "static" <> p
 
 -- ** Main
 
-data Main (r :: Allow) =
+data Main (r :: AllowedMethod) =
     ListSpaces
   | Space IdeaSpace (Space r)
   | IdeaPath IdeaLocation (IdeaMode r)
@@ -178,7 +179,7 @@ ideaPath loc mode root =
 
 -- ** Space
 
-data Space (r :: Allow) =
+data Space (r :: AllowedMethod) =
     ListTopics
   | ListIdeasInSpace (Maybe IdeasQuery)
   | ListIdeasInTopic (AUID Topic) ListIdeasInTopicTab (Maybe IdeasQuery)
@@ -209,7 +210,7 @@ topicTab = \case
 
 -- ** IdeaMode
 
-data IdeaMode (r :: Allow) =
+data IdeaMode (r :: AllowedMethod) =
       CreateIdea
     | ViewIdea (AUID Idea) (Maybe (AUID Comment))
     | EditIdea (AUID Idea)
@@ -251,7 +252,7 @@ ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revoke
 
 -- ** CommentMode
 
-data CommentMode (r :: Allow)
+data CommentMode (r :: AllowedMethod)
     = ReplyToComment
     | DeleteComment
     | ReportComment
@@ -292,7 +293,7 @@ onComment comment = IdeaPath (ck ^. ckIdeaLocation) . OnComment ck
 
 -- ** AdminMode
 
-data AdminMode (r :: Allow) =
+data AdminMode (r :: AllowedMethod) =
     AdminDuration
   | AdminQuorum
   | AdminFreeze
@@ -335,7 +336,7 @@ admin AdminChangePhase                path = path </> "change-phase"
 
 -- ** UserMode
 
-data UserMode (r :: Allow) =
+data UserMode (r :: AllowedMethod) =
     UserIdeas
   | UserDelegations
   deriving (Generic, Show)
