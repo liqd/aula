@@ -62,7 +62,7 @@ instance ToHtml IdeaVoteLikeBars where
                               , style_ $ mconcat ["width: ", prcnt No, "%"]
                               ] $ do
                             span_ [class_ "votes"] (cnt No)
-                        when (showNotVoted == ShowNotVoted) $
+                        when (showNotVoted == ShowNotVoted) .
                             span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
                                       -- FIXME: change class name above: abstain /= not-voted
                                 span_ [class_ "votes"] $ voters ^. showed . html
