@@ -72,7 +72,7 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage (IdeaStats idea phase quo voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx whatListPage stats@(IdeaStats idea phase quo _voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
             let caps = ideaCapabilities
                         (ctx ^. renderContextUser . _Id)
@@ -121,7 +121,8 @@ instance ToHtml ListItemIdea where
                                 (")" :: ST) ^. html
 
                     when showLikesAndQuorum . toHtml $ QuorumBar (percentLikes idea quo)
-                    when showVotes . toHtml $ VotesBar (percentVotes idea voters Yes)
+                    when showVotes . toHtml $
+                        IdeaVoteLikeBars ctx (caps \\ [CanLike, CanVoteIdea]) stats
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
