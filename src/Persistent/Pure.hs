@@ -117,6 +117,7 @@ module Persistent.Pure
     , addIdeaVoteResult
     , revokeWinnerStatus
     , editIdea
+    , deleteIdea
     , moveIdeaToTopic
     , deleteComment
     , saveDurations
@@ -207,7 +208,7 @@ commentMetas t f (Comment m text votes replies deleted) =
             <*> pure deleted                        -- No MetaInfo in commentDeleted
 
 ideaMetas :: TraverseMetas a -> Traversal' Idea a
-ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes) =
+ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes deleted) =
     Idea <$> t f m                              -- A MetaInfo
          <*> pure title                         -- No MetaInfo in ideaTitle
          <*> pure desc                          -- No MetaInfo in ideaDesc
@@ -218,6 +219,7 @@ ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes) =
          <*> (each . metaInfo . t) f votes      -- Only one MetaInfo per IdeaVote
          <*> (each . metaInfo . t) f juryRes    -- Only one MetaInfo per IdeaJuryResult
          <*> (each . metaInfo . t) f voteRes    -- Only one MetaInfo per IdeaVoteResult
+         <*> pure deleted
 
 -- This is using pattern matching on AulaData to force us to adapt this function when extending it.
 aulaMetas :: TraverseMetas a -> AulaTraversal a
@@ -411,7 +413,11 @@ getSpaces :: Query [IdeaSpace]
 getSpaces = view dbSpaces
 
 getIdeas :: Query [Idea]
-getIdeas = view dbIdeas
+getIdeas = filter (not . view ideaDeleted) <$> getAllIdeas
+
+-- | Returns also the deleted ideas.
+getAllIdeas :: Query [Idea]
+getAllIdeas = view dbIdeas
 
 getWildIdeas :: Query [Idea]
 getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas
@@ -432,10 +438,12 @@ findIdea :: AUID Idea -> MQuery Idea
 findIdea = findInById dbIdeaMap
 
 findIdeaBy :: Eq a => Fold Idea a -> a -> MQuery Idea
-findIdeaBy = findInBy dbIdeas
+findIdeaBy = fmap nonDeletedIdea <..> findInBy dbIdeas
+  where
+    nonDeletedIdea = (>>= (\i -> if i ^. ideaDeleted then Nothing else Just i))
 
 findIdeasByUserId :: AUID User -> Query [Idea]
-findIdeasByUserId uId = findAllIn dbIdeas (\i -> i ^. createdBy == uId)
+findIdeasByUserId uId = filter (not . view ideaDeleted) <$> findAllIn dbIdeas (\i -> i ^. createdBy == uId)
 
 -- | FIXME deal with changedBy and changedAt
 withRecord :: Ord (IdOf a) => AulaLens (AMap a) -> IdOf a -> AulaTraversal a
@@ -579,10 +587,10 @@ findIdeasByTopicId tid = do
         Just t  -> findIdeasByTopic t
 
 findIdeasByTopic :: Topic -> Query [Idea]
-findIdeasByTopic = findAllInBy dbIdeas ideaLocation . topicIdeaLocation
+findIdeasByTopic = fmap (filter (not . view ideaDeleted)) . findAllInBy dbIdeas ideaLocation . topicIdeaLocation
 
 findWildIdeasBySpace :: IdeaSpace -> Query [Idea]
-findWildIdeasBySpace space = findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
+findWildIdeasBySpace space = filter (not . view ideaDeleted) <$> findAllIn dbIdeas ((== IdeaLocationSpace space) . view ideaLocation)
 
 findComment' :: AUID Idea -> [AUID Comment] -> AUID Comment -> MQuery Comment
 findComment' iid parents = preview . dbComment' iid parents
@@ -776,6 +784,7 @@ instance FromProto Idea where
         , _ideaVotes      = nil
         , _ideaJuryResult = Nothing
         , _ideaVoteResult = Nothing
+        , _ideaDeleted    = False
         }
 
 instance FromProto Topic where
@@ -809,6 +818,10 @@ editIdea :: AUID Idea -> ProtoIdea -> AUpdate ()
 editIdea ideaId protoIdea = withIdea ideaId %= (ideaTitle     .~ (protoIdea ^. protoIdeaTitle))
                                              . (ideaDesc      .~ (protoIdea ^. protoIdeaDesc))
                                              . (ideaCategory  .~ (protoIdea ^. protoIdeaCategory))
+
+deleteIdea :: AUID Idea -> AUpdate ()
+deleteIdea ideaId = withIdea ideaId %= (ideaDeleted .~ True)
+
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums

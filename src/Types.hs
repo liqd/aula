@@ -194,6 +194,7 @@ data Idea = Idea
     , _ideaVotes      :: IdeaVotes
     , _ideaJuryResult :: Maybe IdeaJuryResult  -- invariant: isJust => phase of containing topic > JuryPhsae
     , _ideaVoteResult :: Maybe IdeaVoteResult  -- invariant: isJust => phase of containing topic > VotingPhase
+    , _ideaDeleted    :: Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

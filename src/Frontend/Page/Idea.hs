@@ -151,6 +151,18 @@ numberWithUnit i singular_ plural_ =
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
+    toHtml p@(ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
+        | idea ^. ideaDeleted = semanticDiv p $ do
+            div_ [class_ "hero-unit narrow-container"] $ do
+                header_ [class_ "detail-header"] $ do
+                    a_ [ class_ "btn m-back detail-header-back"
+                        , href_ . U.listIdeas $ idea ^. ideaLocation
+                       ] $ case idea ^. ideaLocation of
+                             IdeaLocationSpace{} -> "Zum Ideenraum"
+                             IdeaLocationTopic{} -> "Zum Thema"
+                -- TODO: Translation
+                div_ [] $ p_ "The idea is deleted."
+
     toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
@@ -310,7 +322,7 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage v form p@(CreateIdea iloc) = createOrEditIdea False iloc v form p
+    formPage v form p@(CreateIdea iloc) = createOrEditIdea (Left iloc) v form p
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -326,12 +338,13 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    formPage v form p@(EditIdea idea) = createOrEditIdea True (idea ^. ideaLocation) v form p
+    formPage v form p@(EditIdea idea) = createOrEditIdea (Right idea) v form p
 
 createOrEditIdea :: (Monad m, Typeable page, Page page) =>
-    Bool -> IdeaLocation ->
+    Either IdeaLocation Idea ->
     View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
+createOrEditIdea eLocIdea v form p = semanticDiv p $ do
+    let cancelUrl = either id (view ideaLocation) eLocIdea
     div_ [class_ "container-main popup-page"] $ do
         div_ [class_ "container-narrow"] $ do
             h1_ [class_ "main-heading"] "Deine Idee"
@@ -350,11 +363,16 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
                     a_ [class_ "btn", href_ $ U.listIdeas cancelUrl] $ do
                         -- FIXME: "are you sure?" dialog.
                         "abbrechen"
-                    when showDeleteButton .
-                        button_ [class_ "btn-cta", value_ ""] $ do
-                            -- FIXME: delete ideas.
-                            -- FIXME: "are you sure?" dialog.
-                            i_ [class_ "icon-trash-o"] nil
+            case eLocIdea of
+                Left _ -> nil
+                Right idea ->
+                    footer_ [class_ "form-footer"] $ do
+                        postButtonConfirm_
+                            (Just "Idee wirklich löschen?")
+                            [class_ "btn-cta"
+                            , onclickJs $ jsLoadOnClick (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
+                            ]
+                            (U.deleteIdea idea)
                             "Idee löschen"
 
 instance FormPage MoveIdea where

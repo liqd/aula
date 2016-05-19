@@ -56,7 +56,7 @@ module Frontend.Core
     , makeFrame
 
       -- * js glue
-    , JsCallback, onclickJs, jsReloadOnClick, jsReloadOnClickAnchor
+    , JsCallback, onclickJs, jsReloadOnClick, jsReloadOnClickAnchor, jsLoadOnClick
     )
   where
 
@@ -442,8 +442,9 @@ makeFrame mp = do
 
 -- * js glue
 
-data JsCallback =
-    JsReloadOnClick (Maybe ST)
+data JsCallback
+    = JsReloadOnClick (Maybe ST)
+    | JsLoadOnClick ST
   deriving (Eq, Ord, Show, Read)
 
 jsReloadOnClick :: JsCallback
@@ -452,9 +453,15 @@ jsReloadOnClick = JsReloadOnClick Nothing
 jsReloadOnClickAnchor :: ST -> JsCallback
 jsReloadOnClickAnchor = JsReloadOnClick . Just
 
+jsLoadOnClick :: ST -> JsCallback
+jsLoadOnClick = JsLoadOnClick
+
 onclickJs :: JsCallback -> Attribute
 onclickJs (JsReloadOnClick hash) =
     Lucid.onclick_ $ "reloadOnClick(" <> maybe nil (cs . show) hash <> ")"
+onclickJs (JsLoadOnClick href) =
+    Lucid.onclick_ $ "loadOnClick(" <> (cs $ show href) <> ")"
+
 
 
 -- * lenses

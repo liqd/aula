@@ -114,7 +114,7 @@ data IdeaCapability
     | CanMarkWinner
     | CanAddCreatorStatement
     | CanEditCreatorStatement
-    | CanEdit
+    | CanEdit -- also can delete the idea
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 

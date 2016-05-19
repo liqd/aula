@@ -138,6 +138,11 @@ function reloadOnClick(hash) {
     }, 250);
 }
 
+function loadOnClick(href) {
+    // TODO: Implementation
+    document.location.href = href;
+}
+
 function createPageSample() {
     setTimeout(function() {
         if (document.location.search === "") {

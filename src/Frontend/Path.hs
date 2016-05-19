@@ -48,6 +48,7 @@ module Frontend.Path
     , markIdeaAsWinner
     , unmarkIdeaAsWinner
     , creatorStatement
+    , deleteIdea
 
     -- * paths to idea lists
     , listIdeas
@@ -227,6 +228,7 @@ data IdeaMode (r :: AllowedMethod) =
     -- CommentKey
     | OnComment CommentKey (CommentMode r)
     | CreatorStatement (AUID Idea)
+    | DeleteIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic (IdeaMode r)
@@ -248,6 +250,7 @@ ideaMode CreateIdea             root = root </> "idea" </> "create"
 ideaMode (CreatorStatement i)   root = root </> "idea" </> uriPart i </> "statement"
 ideaMode (MarkIdeaAsWinner i)   root = root </> "idea" </> uriPart i </> "markwinner"
 ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"
+ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
 
 
 -- ** CommentMode
@@ -403,6 +406,8 @@ unmarkIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ UnmarkIdeaAsWinner (
 creatorStatement :: Idea -> Main 'AllowGetPost
 creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea ^. _Id)
 
+deleteIdea :: Idea -> Main 'AllowPost
+deleteIdea idea = IdeaPath (idea ^. ideaLocation) $ DeleteIdea (idea ^. _Id)
 
 -- * paths to idea lists
 
@@ -483,6 +488,7 @@ isPostOnly = \case
             UnvoteOnIdea{}       -> True
             MarkIdeaAsWinner{}   -> True
             UnmarkIdeaAsWinner{} -> True
+            DeleteIdea{}         -> True
             OnComment _ cm ->
                 case cm of
                     VoteOnComment{} -> True

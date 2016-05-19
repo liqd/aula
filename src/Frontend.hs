@@ -229,6 +229,8 @@ type IdeaApi
   :<|> Idea ::> "move" :> FormHandler Page.MoveIdea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH
+       -- delete an idea
+  :<|> Idea ::> "delete" :> PostH
        -- vote on an idea
   :<|> Idea ::> IdeaVoteValue ::> PostH
        -- remove vote from idea
@@ -254,6 +256,7 @@ ideaApi loc
   :<|> form . Page.editIdea
   :<|> form . Page.moveIdea
   :<|> Action.likeIdea
+  :<|> Action.deleteIdea
   :<|> Action.voteOnIdea
   :<|> Action.unvoteOnIdea
   :<|> form . Page.commentOnIdea loc

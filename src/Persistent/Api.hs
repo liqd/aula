@@ -69,6 +69,7 @@ $(makeAcidic ''AulaData
     , 'dangerousResetAulaData
     , 'dangerousRenameAllLogins
     , 'editIdea
+    , 'deleteIdea
     , 'editTopic
     , 'moveIdeasToLocation
     , 'moveIdeaToTopic
