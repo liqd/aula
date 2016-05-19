@@ -27,7 +27,7 @@ function toggleMenu(el, out) {
 }
 
 // Confirm delete
-function areYourSure() {
+function areYouSure() {
     return confirm('Are you sure?');
 }
 

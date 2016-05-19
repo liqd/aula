@@ -354,7 +354,7 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
                         -- FIXME: "are you sure?" dialog.
                         "abbrechen"
                     when showDeleteButton .
-                        button_ [class_ "btn-cta", value_ "", Lucid.onclick_ "return areYourSure()"] $ do
+                        button_ [class_ "btn-cta", value_ "", Lucid.onclick_ "return areYouSure(); return false"] $ do
                             -- FIXME: delete ideas.
                             -- FIXME: "are you sure?" dialog.
                             i_ [class_ "icon-trash-o"] nil

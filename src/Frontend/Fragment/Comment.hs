@@ -67,7 +67,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                     "bearbeiten"
             when (CanDeleteComment `elem` comCaps) .
                 postButton_ [ class_ "btn comment-footer-button"
-                            , Lucid.onclick_ ("if(areYourSure()) reloadOnClick(\"" <> (U.anchor $ comment ^. _Id) <> "\")" :: ST)
+                            , Lucid.onclick_ ("if(areYouSure()) reloadOnClick(\"" <> (U.anchor $ comment ^. _Id) <> "\"); return false" :: ST)
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil
