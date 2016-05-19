@@ -64,7 +64,7 @@ newtype CategoryMiniLabel = CategoryMiniLabel Category
 instance ToHtml CategoryMiniLabel where
     toHtmlRaw = toHtml
     toHtml (CategoryMiniLabel cat) =
-        li_ [class_ $ "icon-" <> toUrlPiece cat] $ span_ $ uilabel cat
+        li_ [class_ $ "icon-" <> toUrlPiece cat] . span_ $ uilabel cat
 
 -- | The "m-active" class is managed in js.  See `static/js/custom.js`.
 instance ToHtml CategoryButton where

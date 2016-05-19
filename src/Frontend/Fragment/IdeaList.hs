@@ -111,7 +111,8 @@ instance ToHtml ListItemIdea where
                         Just IdeaNotFeasible -> notfeasible
                         Just IdeaFeasible    -> feasible
 
-                    when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ readyfortable
+                    when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation))
+                        readyfortable
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
