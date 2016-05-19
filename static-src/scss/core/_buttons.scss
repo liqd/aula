@@ -49,6 +49,14 @@ input[type=submit]:not(.btn-plain) {
     border: none;
     color: #fff;
 
+    &.m-selected {
+        background: darken($button-cta-base-color, 10%);
+    }
+
+    &.m-not-selected {
+        opacity: 0.6;
+    }
+
     &:hover, &:focus {
         background-color: $button-cta-hover-color;
     }
