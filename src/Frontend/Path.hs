@@ -379,22 +379,22 @@ moveIdea idea = IdeaPath (idea ^. ideaLocation) $ MoveIdea (idea ^. _Id)
 commentOnIdea :: Idea -> Main 'AllowGetPost
 commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _Id)
 
-likeIdea :: Idea -> Main 'AllowGetPost
+likeIdea :: Idea -> Main 'AllowPost
 likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 
 judgeIdea :: Idea -> IdeaJuryResultType -> Main 'AllowGetPost
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 
-voteOnIdea :: Idea -> IdeaVoteValue -> Main 'AllowGetPost
+voteOnIdea :: Idea -> IdeaVoteValue -> Main 'AllowPost
 voteOnIdea idea = IdeaPath (idea ^. ideaLocation) . VoteOnIdea (idea ^. _Id)
 
-unvoteOnIdea :: Idea -> User -> Main 'AllowGetPost
+unvoteOnIdea :: Idea -> User -> Main 'AllowPost
 unvoteOnIdea idea u = IdeaPath (idea ^. ideaLocation) $ UnvoteOnIdea (idea ^. _Id) (u ^. _Id)
 
-markIdeaAsWinner :: Idea -> Main 'AllowGetPost
+markIdeaAsWinner :: Idea -> Main 'AllowPost
 markIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ MarkIdeaAsWinner (idea ^. _Id)
 
-unmarkIdeaAsWinner :: Idea -> Main 'AllowGetPost
+unmarkIdeaAsWinner :: Idea -> Main 'AllowPost
 unmarkIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ UnmarkIdeaAsWinner (idea ^. _Id)
 
 creatorStatement :: Idea -> Main 'AllowGetPost
@@ -429,13 +429,13 @@ listIdeas' loc Nothing mquery =
 replyToComment :: Comment -> Main 'AllowGetPost
 replyToComment comment = onComment comment ReplyToComment
 
-voteOnComment :: Comment -> UpDown -> Main 'AllowGetPost
+voteOnComment :: Comment -> UpDown -> Main 'AllowPost
 voteOnComment comment = onComment comment . VoteOnComment
 
 reportComment :: Comment -> Main 'AllowGetPost
 reportComment comment = onComment comment ReportComment
 
-deleteComment :: Comment -> Main 'AllowGetPost
+deleteComment :: Comment -> Main 'AllowPost
 deleteComment comment = onComment comment DeleteComment
 
 viewComment :: Comment -> Main 'AllowGetPost

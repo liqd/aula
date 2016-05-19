@@ -113,12 +113,10 @@ formMethod_ meth attrs path =
                   , Lucid.action_ (absoluteUriPath (relPath path))
                   ] <> attrs
 
--- TODO
-postLink_ :: HasPath p => [Lucid.Attribute] -> p 'AllowGetPost -> ST -> Monad m => Lucid.HtmlT m ()
+postLink_ :: HasPath p => [Lucid.Attribute] -> p 'AllowPost -> ST -> Monad m => Lucid.HtmlT m ()
 postLink_ attrs path = formMethod_ "POST" [] path . inputSubmit_ attrs
 
--- TODO
-postButton_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p 'AllowGetPost -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
+postButton_ :: (Monad m, HasPath p) => [Lucid.Attribute] -> p 'AllowPost -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
 postButton_ attrs path = formMethod_ "POST" [] path . Lucid.button_ ([ type_ "submit" ] <> attrs)
 
 
