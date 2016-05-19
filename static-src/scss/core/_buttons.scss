@@ -24,8 +24,9 @@
     }
 
     &.m-large {
+        @include rem(border-radius, 15px);
         @include rem(font-size, 20px);
-        line-height: $button-height + 10px;
+        line-height: $button-height + 5px;
     }
 }
 

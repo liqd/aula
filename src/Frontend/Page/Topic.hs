@@ -177,10 +177,10 @@ viewTopicHeaderDiv now ctx topic tab = do
                 " "
                 phase ^. displayPhaseTime now . html
             topic ^. topicTitle . html
-        p_ [class_ "sub-header"] $ topic ^. topicDesc . html
+        div_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
             let createIdeaButton = when (CanCreateIdea `elem` caps) .
-                    a_ [ class_ "btn-cta heroic-cta"
+                    a_ [ class_ "btn-cta heroic-cta m-large"
                        , href_ . U.createIdea $ IdeaLocationTopic space topicId
                        ] $
                       "+ Neue Idee"

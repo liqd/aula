@@ -26,6 +26,14 @@ function toggleMenu(el, out) {
     }
 }
 
+// Confirm delete
+function areYouSure(msg) {
+    if (!msg) {
+        msg = "Bitte bestätigen!";
+    }
+    return confirm(msg);
+}
+
 // Mobile menu
 
 document.getElementById("mobile-menu-button").onclick = function() {
