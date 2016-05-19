@@ -483,6 +483,7 @@ pageFrame frame = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
