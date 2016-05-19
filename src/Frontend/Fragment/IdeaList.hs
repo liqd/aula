@@ -92,27 +92,29 @@ instance ToHtml ListItemIdea where
                 div_ [class_ "col-3-12 ideas-list-indicator-container"] $ do
                     div_ [class_ "icon-list indicator-item m-inline m-display-only"] $ do
                         ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
-                    -- FIXME: make another class to replace icon-list-button such that
-                    -- these icons are not turned into buttons.
-                    -- Also the icons should be smaller.
+
+                    -- TODO s/feasable/feasible/g
+
+                    let notfeasible = do
+                            div_ [class_ "indicator-item indicator-item-feasability is-not-feasable", title_ "not feasible"] $ do
+                                div_ [class_ "indicator-icon"] "nicht durchführbar"
+
+                        feasible = do
+                            div_ [class_ "indicator-item indicator-item-feasability is-feasable", title_ "feasible"] $ do
+                                div_ [class_ "indicator-icon"] "durchführbar"
+
+                        readyfortable = do
+                            div_ [class_ "m-table indicator-item"] $ do
+                                  div_ [class_ "indicator-icon"] "Kann auf den Tisch"
 
                     -- TODO: see also: module Frontend.Fragment.Feasibility
-                    -- TODO: for testing, you can just do `case Just IdeaNotFeasible of ...`
                     case idea ^? ideaJuryResult . _Just . ideaJuryResultValue . to ideaJuryResultValueToType of
-                        Nothing -> nil  -- "not judged"
-                        Just IdeaNotFeasible -> do
-                            div_ [class_ "indicator-item indicator-item-feasability is-not-feasable", title_ "not feasible"] $ do
-                                div_ [class_ "indicator-icon"] "Not Feasable"
-                        Just IdeaFeasible -> do
-                            div_ [class_ "indicator-item indicator-item-feasability is-feasable", title_ "feasible"] $ do
-                                div_ [class_ "indicator-icon"] "Feasable"
-                    div_ [class_ "m-table indicator-item"] $ do
-                          div_ [class_ "indicator-icon"] "Kann auf den Tisch"
-                    -- TODO: for testing, you can just comment out the next line and just leave a `do` instead of the `when`.
+                        Nothing              -> nil  -- (not judged)
+                        Just IdeaNotFeasible -> notfeasible
+                        Just IdeaFeasible    -> feasible
+
                     -- TODO: this should be an icon.  the same icon should be shown in module Frontend.Page.Idea, line 218.
-                    when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ do
-                        div_ [class_ "indicator-item m-table"] $ do
-                              div_ [class_ "indicator-icon"] "Kann auf den Tisch"
+                    when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ readyfortable
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
