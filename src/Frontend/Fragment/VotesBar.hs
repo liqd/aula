@@ -27,6 +27,10 @@ data ShowNotVoted = ShowNotVoted | DoNotShowNotVoted
 showNotVoted :: ShowNotVoted
 showNotVoted = ShowNotVoted
 
+-- | If the segments get to narrow, it looks ugly.  This number is the lower width limit.
+minBarSegmentWidth :: Int
+minBarSegmentWidth = 5
+
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars ctx caps
@@ -73,7 +77,7 @@ instance ToHtml IdeaVoteLikeBars where
                 cnt v = numVotes idea v ^. showed . html
 
                 prcnt :: IdeaVoteValue -> ST
-                prcnt v = max (percentVotes idea oneHundret v) 5 ^. showed . csi
+                prcnt v = max (percentVotes idea oneHundret v) minBarSegmentWidth ^. showed . csi
                   where
                     oneHundret = case showNotVoted of
                         ShowNotVoted      -> voters
