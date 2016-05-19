@@ -19,7 +19,6 @@ import Frontend.Prelude
 import LifeCycle
 
 import qualified Frontend.Path as U
-import qualified Lucid
 
 
 data CommentWidget = CommentWidget
@@ -66,8 +65,10 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                     i_ [class_ "icon-pencil"] nil
                     "bearbeiten"
             when (CanDeleteComment `elem` comCaps) .
-                postButton_ [ class_ "btn comment-footer-button"
-                            , Lucid.onclick_ ("if(areYouSure()) reloadOnClick(\"" <> (U.anchor $ comment ^. _Id) <> "\"); return false" :: ST)
+                postButtonConfirm_ (Just "Kommentar wirklich loeschen?")
+                                          -- FIXME: umlauts.  `ö`, `\\u00F6`, or `&ouml;` won't do it.
+                            [ class_ "btn comment-footer-button"
+                            , onclickJs . jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil

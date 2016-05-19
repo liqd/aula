@@ -27,8 +27,11 @@ function toggleMenu(el, out) {
 }
 
 // Confirm delete
-function areYouSure() {
-    return confirm('Are you sure?');
+function areYouSure(msg) {
+    if (!msg) {
+        msg = "Bitte bestätigen!";
+    }
+    return confirm(msg);
 }
 
 // Mobile menu
