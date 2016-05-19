@@ -81,7 +81,7 @@ instance ToHtml ListItemIdea where
                         phase
 
             a_ [href_ $ U.viewIdea idea] $ do
-                div_ [class_ "col-6-12"] $ do
+                div_ [class_ "col-5-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
                     div_ [class_ "ideas-list-text-container"] $ do
                         h2_ [class_ "ideas-list-title"] $ do
@@ -89,7 +89,9 @@ instance ToHtml ListItemIdea where
                             span_ [class_ "ideas-list-author"] $ do
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
 
-                div_ [class_ "col-2-12 ideas-list-indicator-container"] $ do
+                div_ [class_ "col-3-12 ideas-list-indicator-container"] $ do
+                    div_ [class_ "icon-list indicator-item m-inline m-display-only"] $ do
+                        ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
                     -- FIXME: make another class to replace icon-list-button such that
                     -- these icons are not turned into buttons.
                     -- Also the icons should be smaller.
@@ -100,18 +102,15 @@ instance ToHtml ListItemIdea where
                         Nothing -> nil  -- "not judged"
                         Just IdeaNotFeasible -> do
                             div_ [class_ "indicator-item indicator-item-feasability is-not-feasable", title_ "not feasible"] $ do
-                              i_ [class_ "icon-times"] nil
+                              div_ [class_ "feasability-icon"] "Not Feasable"
                         Just IdeaFeasible -> do
                             div_ [class_ "indicator-item indicator-item-feasability is-feasable", title_ "feasible"] $ do
-                              i_ [class_ "icon-check"] nil
+                              div_ [class_ "feasability-icon"] "Feasable"
 
                     -- TODO: for testing, you can just comment out the next line and just leave a `do` instead of the `when`.
                     -- TODO: this should be an icon.  the same icon should be shown in module Frontend.Page.Idea, line 218.
                     when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation)) $ do
                         "table"
-
-                    div_ [class_ "icon-list indicator-item m-inline m-display-only"] $ do
-                        ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
