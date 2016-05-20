@@ -301,7 +301,6 @@ instance FormPage CreateIdea where
     type FormPageResult CreateIdea = Idea
 
     formAction (CreateIdea loc) = U.createIdea loc
-
     redirectOf (CreateIdea _loc) = U.viewIdea
 
     makeForm (CreateIdea loc) =
@@ -317,7 +316,6 @@ instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
 
     formAction (EditIdea idea) = U.editIdea idea
-
     redirectOf (EditIdea idea) _ = U.viewIdea idea
 
     makeForm (EditIdea idea) =
@@ -363,7 +361,6 @@ instance FormPage MoveIdea where
     type FormPagePayload MoveIdea = Types.MoveIdea
 
     formAction (MoveIdea idea _topics) = U.moveIdea idea
-
     redirectOf (MoveIdea idea _topics) _ = U.viewIdea idea
 
     makeForm (MoveIdea idea topics) =
@@ -400,7 +397,6 @@ instance FormPage CommentOnIdea where
     formAction = \case
         (CommentOnIdea idea Nothing)     -> U.commentOnIdea idea
         (CommentOnIdea _ (Just comment)) -> U.replyToComment comment
-
     redirectOf (CommentOnIdea idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentOnIdea{} =
@@ -449,7 +445,6 @@ instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue
 
     formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
-
     redirectOf (JudgeIdea _ _idea topic) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
         -- FIXME: we would like to say `U.listIdeasInTopic topic </#> U.anchor (idea ^. _Id)` here,
         -- but that requires some refactoring around 'redirectOf'.
@@ -503,7 +498,6 @@ instance FormPage ReportComment where
     type FormPagePayload ReportComment = ReportCommentContent
 
     formAction (ReportComment comment) = U.reportComment comment
-
     redirectOf (ReportComment comment) _ = U.viewIdeaOfComment comment
 
     makeForm _ =

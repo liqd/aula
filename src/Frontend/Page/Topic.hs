@@ -238,7 +238,6 @@ instance FormPage CreateTopic where
     type FormPageResult CreateTopic = Topic
 
     formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
-
     redirectOf (CreateTopic _ _ _) topic = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
 
     makeForm CreateTopic{ _createTopicIdeaSpace
@@ -285,7 +284,6 @@ instance FormPage EditTopic where
     type FormPagePayload EditTopic = EditTopicData
 
     formAction (EditTopic space topic _ _) = U.Space space $ U.EditTopic (topic ^. _Id)
-
     redirectOf (EditTopic _ topic _ _) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
 
     makeForm (EditTopic _space topic ideas preselected) =
