@@ -460,7 +460,7 @@ onclickJs :: JsCallback -> Attribute
 onclickJs (JsReloadOnClick hash) =
     Lucid.onclick_ $ "reloadOnClick(" <> maybe nil (cs . show) hash <> ")"
 onclickJs (JsLoadOnClick href) =
-    Lucid.onclick_ $ "loadOnClick(" <> (cs $ show href) <> ")"
+    Lucid.onclick_ $ "loadOnClick(" <> cs (show href) <> ")"
 
 
 
