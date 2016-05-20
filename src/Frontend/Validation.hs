@@ -153,7 +153,7 @@ validateOptional = DF.validateOptional <..> validate'
 inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
 inRange mn mx = fieldParser
     (satisfies isBetween (read <$> many1 digit)
-        <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."])
+        <??> unwords ["Zahl zwischen", show mn, "und", show mx])
   where
     isBetween n = mn <= n && n <= mx
 
@@ -188,10 +188,10 @@ type StringFieldValidator = forall r s . (ConvertibleStrings r String, Convertib
                                          => FieldValidator r s
 
 username :: StringFieldValidator
-username = fieldParser (cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
+username = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
 
 password :: StringFieldValidator
-password = fieldParser (cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)")
+password = fieldParser (cs <$> manyNM 4 12 anyChar <??> "4-12 Zeichen")
 
 title :: StringFieldValidator
 title = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
