@@ -85,24 +85,24 @@ fieldParser parser =
 -- | Cloned from "Text.Parsec.Error" for better (and German) errors.
 showErrorMessagesDe :: [Message] -> String
 showErrorMessagesDe [] = "ungültige Eingabe."
-showErrorMessagesDe msgs = concat $ map ("\n"++) $ clean $
-                            [showSysUnExpect,showUnExpect," (",showExpect,")",showMessages]
+showErrorMessagesDe msgs = ("\n" <>) =<< clean
+      [showSysUnExpect, showUnExpect, " (", showExpect, ")", showMessages]
     where
       msgOr         :: String = "oder"
       msgExpecting  :: String = "erwartet:"
       msgUnExpected :: String = "ungültige Eingabe:"
       msgEndOfInput :: String = "zu wenig Input"
 
-      (sysUnExpect,msgs1) = span ((SysUnExpect "") ==) msgs
-      (unExpect,msgs2)    = span ((UnExpect    "") ==) msgs1
-      (expect,messages)   = span ((Expect      "") ==) msgs2
+      (sysUnExpect,msgs1) = span (SysUnExpect "" ==) msgs
+      (unExpect,msgs2)    = span (UnExpect    "" ==) msgs1
+      (expect,messages)   = span (Expect      "" ==) msgs2
 
       showExpect      = showMany msgExpecting expect
       showUnExpect    = showMany msgUnExpected unExpect
       showSysUnExpect | not (null unExpect) ||
                         null sysUnExpect = ""
-                      | null firstMsg    = msgUnExpected ++ " " ++ msgEndOfInput
-                      | otherwise        = msgUnExpected ++ " " ++ firstMsg
+                      | null firstMsg    = msgUnExpected <> " " <> msgEndOfInput
+                      | otherwise        = msgUnExpected <> " " <> firstMsg
           where
               firstMsg  = messageString (head sysUnExpect)
 
@@ -112,17 +112,17 @@ showErrorMessagesDe msgs = concat $ map ("\n"++) $ clean $
       showMany p ms = case clean (map messageString ms) of
                             []              -> ""
                             ms' | null p    -> commasOr ms'
-                                | otherwise -> p ++ " " ++ commasOr ms'
+                                | otherwise -> p <> " " <> commasOr ms'
 
       commasOr []       = ""
       commasOr [m]      = m
-      commasOr ms       = commaSep (init ms) ++ " " ++ msgOr ++ " " ++ last ms
+      commasOr ms       = commaSep (init ms) <> " " <> msgOr <> " " <> last ms
 
       commaSep          = separate ", " . clean
 
       separate   _ []     = ""
       separate   _ [m]    = m
-      separate sep (m:ms) = m ++ sep ++ separate sep ms
+      separate sep (m:ms) = m <> sep <> separate sep ms
 
       clean             = nub . filter (not . null)
 
