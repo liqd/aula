@@ -92,8 +92,7 @@ instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
     formAction _ = U.UserSettings
-
-    -- Redirect to ourselves, so the user can review the changes.  FUTUREWORK: It would be nice to
+    -- Redirect to ourselves, so the user can review the changes.  TODO: It would be nice to
     -- have a messaging device that prints a line "your changes have been saved" at the top of the
     -- form; without that, UX is still a bit confusing.
     redirectOf _ _ = U.UserSettings
@@ -280,7 +279,6 @@ instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
 
     formAction (EditUserProfile u) = U.editUserProfile u
-
     redirectOf (EditUserProfile u) _ = U.viewUserProfile u
 
     makeForm (EditUserProfile user) =

@@ -543,9 +543,7 @@ roleForm mrole mclass classes =
 instance FormPage AdminEditUser where
     type FormPagePayload AdminEditUser = (Maybe UserLogin, Role)
 
-    formAction (AdminEditUser user _classes) =
-        U.Admin . U.AdminEditUser $ user ^. _Id
-
+    formAction (AdminEditUser user _classes) = U.Admin . U.AdminEditUser $ user ^. _Id
     redirectOf _ _ = U.Admin U.adminViewUsers
 
     makeForm (AdminEditUser user classes) =
