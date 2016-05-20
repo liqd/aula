@@ -303,12 +303,10 @@ instance FormPage EditUserProfile where
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"
 
--- | TODO: user always edits their own profile.
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
-editUserProfile _userId = formPageHandlerWithMsg
-    (EditUserProfile <$> currentUser)
+editUserProfile uid = formPageHandlerWithMsg
+    (EditUserProfile <$> mquery (findUser uid))
     (\up -> do
-        uid <- currentUserId
         case up ^. profileAvatar of
             Nothing ->
                 -- FIXME: this should not be impossible
