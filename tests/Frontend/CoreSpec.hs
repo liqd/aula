@@ -83,6 +83,14 @@ spec = do
         , F (arb :: Gen ReportComment)
         ]
 
+    -- TODO: test this in all forms, for all validation errors.
+    describe "form validation errors" $ do
+        let spc = IdeaLocationSpace SchoolSpace
+            page = CreateIdea spc
+            payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
+          in testValidationError page payload
+            []
+
 
 -- * translate form data back to form input
 
@@ -250,8 +258,31 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
+-- TODO: use this elsewhere.  (in this module?  anywhere else?)  move this function to a good place.
+simulateForm :: (FormPage page, PayloadToEnv payload, payload ~ FormPagePayload page)
+    => page -> payload -> IO (View (Html ()), Maybe payload)
+simulateForm page payload = do
+    let frm = makeForm page
+    env <- runFailOnErrorIO $ (`payloadToEnv` payload) <$> getForm "" frm
+    runFailOnErrorIO $ postForm "" frm (\_ -> pure env)
+
+testValidationError ::
+       ( Typeable page, Show payload
+       , FormPage page, PayloadToEnv payload
+       , payload ~ FormPagePayload page
+       )
+    => page -> payload -> [String] -> Spec
+testValidationError page payload expected =
+    describe ("validation in form " <> show (typeOf page, payload)) . it "works" $ do
+        (v, Nothing) <- simulateForm page payload
+        (show . snd <$> viewErrors v) `shouldBe` expected
+            -- FIXME: render Html instead of showing it?
+
 runFailOnError :: Action a -> PropertyM IO a
-runFailOnError action = run $ do
+runFailOnError = run . runFailOnErrorIO
+
+runFailOnErrorIO :: Action a -> IO a
+runFailOnErrorIO action = do
     cfg <- readConfig nullLog DontWarnMissing
     let env = ActionEnv (error "Dummy RunPersist") cfg nullLog
     unNat (exceptToFail . mkRunAction env) action
