@@ -160,7 +160,7 @@ inRange mn mx = fieldParser
 nonEmpty :: (Eq m, Monoid m) => FieldValidator m m
 nonEmpty = FieldValidator $ \xs ->
     if xs == mempty
-        then DF.Error . fromString $ "darf nicht leer sein"
+        then DF.Error "darf nicht leer sein"
         else DF.Success xs
 
 maxLength :: Int -> FieldValidator Text Text
