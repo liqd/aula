@@ -11,8 +11,8 @@
 
 module Frontend.Fragment.Category
     ( CategoryLabel(CategoryLabel)
+    , CategoryMiniLabel(CategoryMiniLabel)
     , categoryFilterButtons
-    , categoryToUiText
     , formPageSelectCategory
     , makeFormSelectCategory
     )
@@ -58,27 +58,29 @@ instance ToHtml CategoryLabel where
     toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
         -- FIXME: something without the `li_` elem?
 
+newtype CategoryMiniLabel = CategoryMiniLabel Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+instance ToHtml CategoryMiniLabel where
+    toHtmlRaw = toHtml
+    toHtml (CategoryMiniLabel cat) =
+        li_ [class_ $ "icon-" <> toUrlPiece cat] . span_ $ uilabel cat
+
 -- | The "m-active" class is managed in js.  See `static/js/custom.js`.
 instance ToHtml CategoryButton where
     toHtmlRaw = toHtml
     toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
         span_ [ class_ "icon-list-button"
               , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
-              ] $ categoryToUiText cat
-
-categoryToUiText :: IsString s => Category -> s
-categoryToUiText CatRules       = "Regeln"
-categoryToUiText CatEquipment   = "Ausstattung"
-categoryToUiText CatTeaching    = "Unterricht"
-categoryToUiText CatTime        = "Zeit"
-categoryToUiText CatEnvironment = "Umgebung"
-
+              ] $ uilabel cat
 
 categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
+    p_ $ b_ "Filtere nach Kategorie"
+    br_ []
     ul_ . for_ [minBound..] $ \cat -> do
         li_ [ class_ . ST.unwords $
                 ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
-            ] $
-            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)]
-                (categoryToUiText cat)
+            ] .
+            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
+                uilabel cat

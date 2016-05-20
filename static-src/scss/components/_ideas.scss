@@ -38,9 +38,9 @@
     }
 
     > a {
+        @extend .clearfix;
         color: $color-text;
         display: block;
-        overflow: hidden;
 
         &:hover, &:focus {
             color: $color-link;
@@ -107,4 +107,42 @@
 .category-radios {
     position: absolute;
     left: -999999px;
+}
+
+.ideas-list-indicator-container {
+    .indicator-item {
+        @include rem(margin-right, 10px);
+        float: right;
+
+        ul li, .indicator-icon {
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            text-indent: -999px;
+            min-width: 32px;
+        }
+
+        ul li>a,
+        ul li>span,
+        .indicator-icon {
+            @include rem(padding-top, 40px);
+        }
+
+        &:first-child {
+            margin-right: 0;
+        }
+    }
+
+    .is-feasible .indicator-icon {
+        @include svg(yay);
+    }
+
+    .is-not-feasible .indicator-icon {
+        @include svg(nay);
+    }
+
+    .m-table .indicator-icon {
+        background-image: url(../images/badge_aufdemtisch.png);
+        min-width: 40px;
+    }
 }

@@ -4,6 +4,8 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 -- | This module contains snippets which are used all over the pages.
+--
+-- TODO: should this be used in Idea, or inlined?  merge buttons from there into this?
 module Frontend.Fragment.Feasibility
 where
 

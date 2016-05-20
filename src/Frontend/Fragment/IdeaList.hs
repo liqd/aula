@@ -20,13 +20,13 @@ where
 
 import Control.Lens
 
+import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
-import Frontend.Fragment.Feasibility
 import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
-import Persistent (IdeaStats(IdeaStats))
+import Persistent (IdeaStats(IdeaStats), ideaReachedQuorum)
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
@@ -80,17 +80,39 @@ instance ToHtml ListItemIdea where
                         idea
                         phase
 
-            when (isIdeaInViewTopic whatListPage) $ do
-                feasibilityVerdict False idea caps
-
             a_ [href_ $ U.viewIdea idea] $ do
-                div_ [class_ "col-8-12"] $ do
+                div_ [class_ "col-5-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
                     div_ [class_ "ideas-list-text-container"] $ do
                         h2_ [class_ "ideas-list-title"] $ do
                             idea ^. ideaTitle . html
                             span_ [class_ "ideas-list-author"] $ do
                                 "von " <> idea ^. (ideaMeta . metaCreatedByLogin) . unUserLogin . html
+
+                div_ [class_ "col-3-12 ideas-list-indicator-container"] $ do
+                    div_ [class_ "icon-list indicator-item m-inline m-display-only"] $ do
+                        ul_ $ idea ^. ideaCategory . _Just . to CategoryMiniLabel . html
+
+                    let notfeasible = do
+                            div_ [class_ "indicator-item indicator-item-feasability is-not-feasible", title_ "not feasible"] $ do
+                                div_ [class_ "indicator-icon"] "nicht durchführbar"
+
+                        feasible = do
+                            div_ [class_ "indicator-item indicator-item-feasability is-feasible", title_ "feasible"] $ do
+                                div_ [class_ "indicator-icon"] "durchführbar"
+
+                        readyfortable = do
+                            div_ [class_ "m-table indicator-item"] $ do
+                                  div_ [class_ "indicator-icon"] "Kann auf den Tisch"
+
+                    -- TODO: see also: module Frontend.Fragment.Feasibility
+                    case idea ^? ideaJuryResult . _Just . ideaJuryResultValue . to ideaJuryResultValueToType of
+                        Nothing              -> nil  -- (not judged)
+                        Just IdeaNotFeasible -> notfeasible
+                        Just IdeaFeasible    -> feasible
+
+                    when (ideaReachedQuorum stats && isWild (idea ^. ideaLocation))
+                        readyfortable
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
                     let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
@@ -134,9 +156,8 @@ instance ToHtml ListItemIdeas where
         ideaListHeader whatPage loc ideasQuery
         div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
       where
-        mCatInfo :: ST
-        mCatInfo = ideasQuery ^. ideasQueryF . _IdeasWithCat . to categoryToUiText
-                 . to (" in der Kategorie " <>)
+        mCatInfo =
+            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeledST . to (" in der Kategorie " <>)
 
     toHtml p@(ListItemIdeas ctx whatPage loc ideasQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader whatPage loc ideasQuery

@@ -197,10 +197,10 @@ instance ToHtml ViewIdea where
                 " / "
                 let l = do
                         numberWithUnit totalLikes "Like" "Likes"
-                        toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")  -- FIXME: html?
+                        toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")
                     v = do
                         numberWithUnit totalVotes "Stimme" "Stimmen"
-                        toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")  -- FIXME: html?
+                        toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")
                     c = do
                         numberWithUnit totalComments "Verbesserungsvorschlag" "Verbesserungsvorschläge"
 
