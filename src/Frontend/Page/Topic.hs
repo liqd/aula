@@ -225,13 +225,13 @@ displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
         n -> "(Endet in " <> show n <> " Tagen)"
 
 validateTopicTitle :: FormCS m r s
-validateTopicTitle = validate "Title des Themas" title
+validateTopicTitle = validate "Title des Themas" titleV
 
 validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m PlainDocument
 validateTopicDesc =
     validate
         "Thema"
-        (PlainDocument <$> (maxLength Constant.topicDescMaxLength . nonEmpty))
+        (PlainDocument <$> (maxLengthV Constant.topicDescMaxLength . nonEmptyV))
 
 instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic

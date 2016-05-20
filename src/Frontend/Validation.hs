@@ -17,17 +17,17 @@ module Frontend.Validation
     , fieldParser
 
       -- * common validators
-    , inRange
-    , nonEmpty
-    , maxLength
+    , inRangeV
+    , nonEmptyV
+    , maxLengthV
     , DfForm
     , DfTextField
     , dfTextField
     , StringFieldValidator
-    , username
-    , password
-    , title
-    , markdown
+    , usernameV
+    , passwordV
+    , titleV
+    , markdownV
     , emailField
 
       -- * missing parser combinators
@@ -78,15 +78,54 @@ fieldParser
     :: (ConvertibleStrings s String)
     => FieldParser a -> FieldValidator s a
 fieldParser parser =
-    FieldValidator (either (DF.Error . cs . errorString) DF.Success . parse (parser <* eof) "" . cs)
+    FieldValidator (either errorString DF.Success . parse (parser <* eof) "" . cs)
   where
-    errorString = filter (/= '\n') . errorMsgs . errorMessages
-    -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
-    -- are displayed if a parse error happens. Also it gives control to the
-    -- client code to make their translation of those connectors. The German
-    -- translations here are probably not helping to form perfect phrases in
-    -- all situations.
-    errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
+    errorString = DF.Error . cs . filter (/= '\n') . showErrorMessagesDe . errorMessages
+
+-- | Cloned from "Text.Parsec.Error" for better (and German) errors.
+showErrorMessagesDe :: [Message] -> String
+showErrorMessagesDe [] = "ungültige Eingabe."
+showErrorMessagesDe msgs = ("\n" <>) =<< clean
+      [showSysUnExpect, showUnExpect, " (", showExpect, ")", showMessages]
+    where
+      msgOr         :: String = "oder"
+      msgExpecting  :: String = "erwartet:"
+      msgUnExpected :: String = "ungültige Eingabe:"
+      msgEndOfInput :: String = "zu wenig Input"
+
+      (sysUnExpect,msgs1) = span (SysUnExpect "" ==) msgs
+      (unExpect,msgs2)    = span (UnExpect    "" ==) msgs1
+      (expect,messages)   = span (Expect      "" ==) msgs2
+
+      showExpect      = showMany msgExpecting expect
+      showUnExpect    = showMany msgUnExpected unExpect
+      showSysUnExpect | not (null unExpect) ||
+                        null sysUnExpect = ""
+                      | null firstMsg    = msgUnExpected <> " " <> msgEndOfInput
+                      | otherwise        = msgUnExpected <> " " <> firstMsg
+          where
+              firstMsg  = messageString (head sysUnExpect)
+
+      showMessages      = showMany "" messages
+
+      -- helpers
+      showMany p ms = case clean (map messageString ms) of
+                            []              -> ""
+                            ms' | null p    -> commasOr ms'
+                                | otherwise -> p <> " " <> commasOr ms'
+
+      commasOr []       = ""
+      commasOr [m]      = m
+      commasOr ms       = commaSep (init ms) <> " " <> msgOr <> " " <> last ms
+
+      commaSep          = separate ", " . clean
+
+      separate   _ []     = ""
+      separate   _ [m]    = m
+      separate sep (m:ms) = m <> sep <> separate sep ms
+
+      clean             = nub . filter (not . null)
+
 
 validate' :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT m ()) b
 validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
@@ -111,25 +150,23 @@ validateOptional = DF.validateOptional <..> validate'
 
 -- * simple validators
 
-inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
-inRange mn mx = fieldParser
+inRangeV :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
+inRangeV mn mx = fieldParser
     (satisfies isBetween (read <$> many1 digit)
-        <??> unwords ["Eine Zahl zwischen", show mn, "und", show mx, "."])
+        <??> unwords ["Zahl zwischen", show mn, "und", show mx])
   where
     isBetween n = mn <= n && n <= mx
 
-nonEmpty :: (Eq m, Monoid m) => FieldValidator m m
-nonEmpty = FieldValidator $ \xs ->
+nonEmptyV :: (Eq m, Monoid m) => FieldValidator m m
+nonEmptyV = FieldValidator $ \xs ->
     if xs == mempty
-        then DF.Error . fromString $ "darf nicht leer sein"
+        then DF.Error "darf nicht leer sein"
         else DF.Success xs
 
-maxLength :: Int -> FieldValidator Text Text
-maxLength mx = FieldValidator $ \xs ->
-    let l = Text.length xs
-    in if Text.length xs > mx
-        then DF.Error . fromString $
-            unwords ["zu lang, Zahl der zusätzlichen Zeichen:", show (l - mx)]
+maxLengthV :: Int -> FieldValidator Text Text
+maxLengthV mx = FieldValidator $ \xs ->
+    if Text.length xs > mx
+        then DF.Error $ "max." <> cs (show mx) <> " Zeichen"
         else DF.Success xs
 
 type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
@@ -148,17 +185,17 @@ dfTextField s l p = s ^. l & p %%~ DF.text . Just
 type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
                                          => FieldValidator r s
 
-username :: StringFieldValidator
-username = fieldParser (cs <$> manyNM 4 8 letter <??> "4-12 Buchstaben")
+usernameV :: StringFieldValidator
+usernameV = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
 
-password :: StringFieldValidator
-password = fieldParser (cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)")
+passwordV :: StringFieldValidator
+passwordV = fieldParser (cs <$> manyNM 4 12 anyChar <??> "4-12 Zeichen")
 
-title :: StringFieldValidator
-title = fieldParser (cs <$> many1 (alphaNum <|> space))
+titleV :: StringFieldValidator
+titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
 
-markdown :: FieldValidator Document Document
-markdown = unMarkdown ^>> nonEmpty >>^ Markdown
+markdownV :: FieldValidator Document Document
+markdownV = unMarkdown ^>> nonEmptyV >>^ Markdown
 
 emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
 emailField name emailValue =

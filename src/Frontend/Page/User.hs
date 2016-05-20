@@ -104,9 +104,9 @@ instance FormPage PageUserSettings where
                     -- no need to validate the current password
                     DF.optionalText Nothing)
             <*> ("new-password1" .:
-                    validateOptional "neues Passwort" password (DF.optionalText Nothing))
+                    validateOptional "neues Passwort" passwordV (DF.optionalText Nothing))
             <*> ("new-password2" .:
-                    validateOptional "neues Passwort (Wiederholung)" password (DF.optionalText Nothing))
+                    validateOptional "neues Passwort (Wiederholung)" passwordV (DF.optionalText Nothing))
       where
         checkPwdAllOrNothing u@(UserSettingData _ Nothing  Nothing  Nothing)  = pure u
         checkPwdAllOrNothing u@(UserSettingData _ (Just _) (Just _) (Just _)) = pure u
@@ -281,7 +281,7 @@ instance FormPage EditUserProfile where
     makeForm (EditUserProfile user) =
         UserProfile
         <$> ("avatar" .: (cs <$$> DF.file))
-        <*> ("desc"   .: validate "Beschreibung" markdown (dfTextField user userDesc _Markdown))
+        <*> ("desc"   .: validate "Beschreibung" markdownV (dfTextField user userDesc _Markdown))
 
     formPage v form p = do
         semanticDiv p $ do
