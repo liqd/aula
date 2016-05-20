@@ -294,7 +294,7 @@ instance ToHtml ViewIdea where
                         CommentWidget ctx caps c phase ^. html
 
 validateIdeaTitle :: FormCS m r s
-validateIdeaTitle = validate "Titel der Idee" title
+validateIdeaTitle = validate "Titel der Idee" titleV
 
 instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
@@ -306,7 +306,7 @@ instance FormPage CreateIdea where
     makeForm (CreateIdea loc) =
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
-        <*> ("idea-text"     .: validate "Idee" markdown (Markdown <$> DF.text Nothing))
+        <*> ("idea-text"     .: validate "Idee" markdownV (Markdown <$> DF.text Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
@@ -322,7 +322,7 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .:
-                validate "Idee" markdown ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
+                validate "Idee" markdownV ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 

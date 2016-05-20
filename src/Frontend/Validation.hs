@@ -17,17 +17,17 @@ module Frontend.Validation
     , fieldParser
 
       -- * common validators
-    , inRange
-    , nonEmpty
-    , maxLength
+    , inRangeV
+    , nonEmptyV
+    , maxLengthV
     , DfForm
     , DfTextField
     , dfTextField
     , StringFieldValidator
-    , username
-    , password
-    , title
-    , markdown
+    , usernameV
+    , passwordV
+    , titleV
+    , markdownV
     , emailField
 
       -- * missing parser combinators
@@ -150,21 +150,21 @@ validateOptional = DF.validateOptional <..> validate'
 
 -- * simple validators
 
-inRange :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
-inRange mn mx = fieldParser
+inRangeV :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
+inRangeV mn mx = fieldParser
     (satisfies isBetween (read <$> many1 digit)
         <??> unwords ["Zahl zwischen", show mn, "und", show mx])
   where
     isBetween n = mn <= n && n <= mx
 
-nonEmpty :: (Eq m, Monoid m) => FieldValidator m m
-nonEmpty = FieldValidator $ \xs ->
+nonEmptyV :: (Eq m, Monoid m) => FieldValidator m m
+nonEmptyV = FieldValidator $ \xs ->
     if xs == mempty
         then DF.Error "darf nicht leer sein"
         else DF.Success xs
 
-maxLength :: Int -> FieldValidator Text Text
-maxLength mx = FieldValidator $ \xs ->
+maxLengthV :: Int -> FieldValidator Text Text
+maxLengthV mx = FieldValidator $ \xs ->
     if Text.length xs > mx
         then DF.Error $ "max." <> cs (show mx) <> " Zeichen"
         else DF.Success xs
@@ -185,17 +185,17 @@ dfTextField s l p = s ^. l & p %%~ DF.text . Just
 type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
                                          => FieldValidator r s
 
-username :: StringFieldValidator
-username = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
+usernameV :: StringFieldValidator
+usernameV = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
 
-password :: StringFieldValidator
-password = fieldParser (cs <$> manyNM 4 12 anyChar <??> "4-12 Zeichen")
+passwordV :: StringFieldValidator
+passwordV = fieldParser (cs <$> manyNM 4 12 anyChar <??> "4-12 Zeichen")
 
-title :: StringFieldValidator
-title = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
+titleV :: StringFieldValidator
+titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
 
-markdown :: FieldValidator Document Document
-markdown = unMarkdown ^>> nonEmpty >>^ Markdown
+markdownV :: FieldValidator Document Document
+markdownV = unMarkdown ^>> nonEmptyV >>^ Markdown
 
 emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
 emailField name emailValue =
