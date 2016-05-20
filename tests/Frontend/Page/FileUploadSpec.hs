@@ -38,13 +38,13 @@ spec = describe "file upload" $ do
                         , "Jens;Kuhn;jens@example.org"
                         ]
 
-        it "posts users successfully; users will appear under /user" $ \wreq -> do
+        it "posts users successfully; users will appear under /testing/user" $ \wreq -> do
             post wreq "/login"
                 [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
                 `shouldRespond` [codeShouldBe 303]
             post wreq (fileUploadPath "") [classPart, filePart]
                 `shouldRespond` [codeShouldBe 303]
-            get wreq "/user"
+            get wreq "/testing/users"
                 `shouldRespond` [codeShouldBe 200
                                 ,bodyShouldContain "_unUserLastName = &quot;Kuhn&quot"]
 

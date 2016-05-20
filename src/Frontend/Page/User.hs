@@ -178,7 +178,7 @@ userHeaderDiv ctx (ActiveUser user) =
 
         div_ [class_ "heroic-btn-group"] $ if isOwnProfile
             then do
-                btn (U.viewUserProfile user) "+ Profil bearbeiten"
+                btn (U.editUserProfile user) "+ Profil bearbeiten"
             else do
                 btn U.Broken "Klassenweit beauftragen"
                 btn U.Broken "Schulweit beauftragen"
@@ -279,7 +279,7 @@ delegatedVotes userId = do
 instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
 
-    formAction (EditUserProfile u) = U.viewUserProfile u
+    formAction (EditUserProfile u) = U.editUserProfile u
 
     redirectOf (EditUserProfile u) _ = U.viewUserProfile u
 
@@ -303,11 +303,10 @@ instance FormPage EditUserProfile where
                         footer_ [class_ "form-footer"] $ do
                             DF.inputSubmit "Änderungen speichern"
 
-editUserProfile :: ActionM m => FormPageHandler m EditUserProfile
-editUserProfile = formPageHandlerWithMsg
-    (EditUserProfile <$> currentUser)
+editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
+editUserProfile uid = formPageHandlerWithMsg
+    (EditUserProfile <$> mquery (findUser uid))
     (\up -> do
-        uid <- currentUserId
         case up ^. profileAvatar of
             Nothing ->
                 -- FIXME: this should not be impossible

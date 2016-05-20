@@ -68,6 +68,8 @@ module Frontend.Path
     , adminViewClasses
     , viewUserProfile
     , viewUserIdProfile
+    , editUserProfile
+    , editUserIdProfile
 
     -- * aux predicates
     , isPostOnly
@@ -135,7 +137,6 @@ data Main (r :: AllowedMethod) =
     ListSpaces
   | Space IdeaSpace (Space r)
   | IdeaPath IdeaLocation (IdeaMode r)
-  | ListUsers
   | UserProf (AUID User) (UserMode r)
   | UserSettings
   | Admin (AdminMode r)
@@ -156,7 +157,6 @@ main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
 main (IdeaPath l m)   root = ideaPath l m root
-main ListUsers        root = root </> "user"
 main (UserProf uid p) root = user  p (root </> "user" </> uriPart uid)
 main UserSettings     root = root </> "user" </> "settings"
 main (Admin p)        root = admin p (root </> "admin")
@@ -339,6 +339,7 @@ admin AdminChangePhase                path = path </> "change-phase"
 data UserMode (r :: AllowedMethod) =
     UserIdeas
   | UserDelegations
+  | UserEdit
   deriving (Generic, Show)
 
 instance SOP.Generic (UserMode r)
@@ -346,6 +347,7 @@ instance SOP.Generic (UserMode r)
 user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
+user UserEdit        = (</> "edit")
 
 
 -- * paths to ideas
@@ -462,6 +464,12 @@ viewUserProfile = viewUserIdProfile . view _Id
 
 viewUserIdProfile :: AUID User -> Main 'AllowGetPost
 viewUserIdProfile uid = UserProf uid UserIdeas
+
+editUserProfile :: User -> Main 'AllowGetPost
+editUserProfile = editUserIdProfile . view _Id
+
+editUserIdProfile :: AUID User -> Main 'AllowGetPost
+editUserIdProfile uid = UserProf uid UserEdit
 
 
 -- * aux predicates
