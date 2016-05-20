@@ -78,15 +78,54 @@ fieldParser
     :: (ConvertibleStrings s String)
     => FieldParser a -> FieldValidator s a
 fieldParser parser =
-    FieldValidator (either (DF.Error . cs . errorString) DF.Success . parse (parser <* eof) "" . cs)
+    FieldValidator (either errorString DF.Success . parse (parser <* eof) "" . cs)
   where
-    errorString = filter (/= '\n') . errorMsgs . errorMessages
-    -- | Parsec uses 'ParseError' which contains a list of 'Message's, which
-    -- are displayed if a parse error happens. Also it gives control to the
-    -- client code to make their translation of those connectors. The German
-    -- translations here are probably not helping to form perfect phrases in
-    -- all situations.
-    errorMsgs = showErrorMessages "oder" "unbekannt" "erwartet" "unerwartet" "zu kurz"
+    errorString = DF.Error . cs . filter (/= '\n') . showErrorMessagesDe . errorMessages
+
+-- | Cloned from "Text.Parsec.Error" for better (and German) errors.
+showErrorMessagesDe :: [Message] -> String
+showErrorMessagesDe [] = "ungültige Eingabe."
+showErrorMessagesDe msgs = concat $ map ("\n"++) $ clean $
+                            [showSysUnExpect,showUnExpect,showExpect,showMessages]
+    where
+      msgOr :: String = "oder"
+      msgExpecting :: String = "erwartet"
+      msgUnExpected :: String = "unerwartet"
+      msgEndOfInput :: String = "zu kurz"
+
+      (sysUnExpect,msgs1) = span ((SysUnExpect "") ==) msgs
+      (unExpect,msgs2)    = span ((UnExpect    "") ==) msgs1
+      (expect,messages)   = span ((Expect      "") ==) msgs2
+
+      showExpect      = showMany msgExpecting expect
+      showUnExpect    = showMany msgUnExpected unExpect
+      showSysUnExpect | not (null unExpect) ||
+                        null sysUnExpect = ""
+                      | null firstMsg    = msgUnExpected ++ " " ++ msgEndOfInput
+                      | otherwise        = msgUnExpected ++ " " ++ firstMsg
+          where
+              firstMsg  = messageString (head sysUnExpect)
+
+      showMessages      = showMany "" messages
+
+      -- helpers
+      showMany p ms = case clean (map messageString ms) of
+                            []              -> ""
+                            ms' | null p    -> commasOr ms'
+                                | otherwise -> p ++ " " ++ commasOr ms'
+
+      commasOr []       = ""
+      commasOr [m]      = m
+      commasOr ms       = commaSep (init ms) ++ " " ++ msgOr ++ " " ++ last ms
+
+      commaSep          = separate ", " . clean
+
+      separate   _ []     = ""
+      separate   _ [m]    = m
+      separate sep (m:ms) = m ++ sep ++ separate sep ms
+
+      clean             = nub . filter (not . null)
+
 
 validate' :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT m ()) b
 validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
