@@ -820,7 +820,9 @@ editIdea ideaId protoIdea = withIdea ideaId %= (ideaTitle     .~ (protoIdea ^. p
                                              . (ideaCategory  .~ (protoIdea ^. protoIdeaCategory))
 
 deleteIdea :: AUID Idea -> AUpdate ()
-deleteIdea ideaId = withIdea ideaId %= (ideaDeleted .~ True)
+deleteIdea ideaId =
+    withIdea ideaId %= (ideaDeleted .~ True)
+                     . over ideaComments (Map.map (set commentDeleted True))
 
 
 dbDurations :: Lens' AulaData Durations
