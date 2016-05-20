@@ -315,11 +315,13 @@ aulaSpace space
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
+  :<|> "edit"        :> FormHandler EditUserProfile
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
-aulaUser user =
-       makeFrame (Page.createdIdeas   user)
-  :<|> makeFrame (Page.delegatedVotes user)
+aulaUser userId =
+       makeFrame (Page.createdIdeas    userId)
+  :<|> makeFrame (Page.delegatedVotes  userId)
+  :<|> form (Page.editUserProfile userId)
 
 
 type AulaAdmin =

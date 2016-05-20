@@ -68,6 +68,8 @@ module Frontend.Path
     , adminViewClasses
     , viewUserProfile
     , viewUserIdProfile
+    , editUserProfile
+    , editUserIdProfile
 
     -- * aux predicates
     , isPostOnly
@@ -337,6 +339,7 @@ admin AdminChangePhase                path = path </> "change-phase"
 data UserMode (r :: AllowedMethod) =
     UserIdeas
   | UserDelegations
+  | UserEdit
   deriving (Generic, Show)
 
 instance SOP.Generic (UserMode r)
@@ -344,6 +347,7 @@ instance SOP.Generic (UserMode r)
 user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
+user UserEdit        = (</> "edit")
 
 
 -- * paths to ideas
@@ -460,6 +464,12 @@ viewUserProfile = viewUserIdProfile . view _Id
 
 viewUserIdProfile :: AUID User -> Main 'AllowGetPost
 viewUserIdProfile uid = UserProf uid UserIdeas
+
+editUserProfile :: User -> Main 'AllowGetPost
+editUserProfile = editUserIdProfile . view _Id
+
+editUserIdProfile :: AUID User -> Main 'AllowGetPost
+editUserIdProfile uid = UserProf uid UserEdit
 
 
 -- * aux predicates
