@@ -181,24 +181,23 @@ instance ToHtml ViewIdea where
                     canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
                     canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
-                when True $ do
-                    nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                        ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"] $ do
-                                when canEdit . a_ [href_ $ U.editIdea idea] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                    "bearbeiten"
-                                when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                    "Thema erstellen"
-                                when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                    "Idee verschieben"
-                                a_ [href_ (U.reportIdea idea)] $ do
-                                    i_ [class_ "icon-flag"] nil
-                                    "melden"
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] $ do
+                            when canEdit . a_ [href_ $ U.editIdea idea] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                "bearbeiten"
+                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                        -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                                "Thema erstellen"
+                            when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                        -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                                "Idee verschieben"
+                            a_ [href_ (U.reportIdea idea)] $ do
+                                i_ [class_ "icon-flag"] nil
+                                "melden"
 
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
