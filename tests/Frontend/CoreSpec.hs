@@ -258,7 +258,6 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
--- TODO: use this elsewhere.  (in this module?  anywhere else?)  move this function to a good place.
 simulateForm :: (FormPage page, PayloadToEnv payload, payload ~ FormPagePayload page)
     => page -> payload -> IO (View (Html ()), Maybe payload)
 simulateForm page payload = do
@@ -304,28 +303,21 @@ postToForm (F g) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
         page <- pick g
         payload <- pick (arbFormPagePayload page)
-
-        let frm = makeForm page
-        env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
-
-        (v, mpayload) <- runFailOnError $ postForm "" frm (\_ -> pure env)
+        (v, mpayload) <- run $ simulateForm page payload
         case mpayload of
             Nothing       -> fail $ unwords
                                 ("Form validation has failed:" : map show (viewErrors v))
             Just payload' -> liftIO $ payload' `shouldBe` payload
 
     -- FIXME: Valid and invalid form data generation should
-    -- be separated and has a different type class.
+    -- be separated and have a different type class.
     it (show (typeOf g) <> " (process *in*valid form input)") . property . monadicIO $ do
         page <- pick g
         mpayload <- pick (arbFormPageInvalidPayload page)
         forM_ mpayload
             (\payload -> do
-                let frm = makeForm page
-                env <- runFailOnError $ (`payloadToEnv` payload) <$> getForm "" frm
-
-                (_, payload') <- runFailOnError $ postForm "" frm (\_ -> pure env)
-                liftIO $ payload' `shouldBe` Nothing)
+                (_, mpayload') <- run $ simulateForm page payload
+                liftIO $ mpayload' `shouldBe` Nothing)
 
 
 -- | Arbitrary test data generation for the 'FormPagePayload' type.
