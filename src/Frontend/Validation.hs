@@ -165,10 +165,8 @@ nonEmpty = FieldValidator $ \xs ->
 
 maxLength :: Int -> FieldValidator Text Text
 maxLength mx = FieldValidator $ \xs ->
-    let l = Text.length xs
-    in if Text.length xs > mx
-        then DF.Error . fromString $
-            unwords ["zu lang, Zahl der zusätzlichen Zeichen:", show (l - mx)]
+    if Text.length xs > mx
+        then DF.Error $ "max." <> cs (show mx) <> " Zeichen"
         else DF.Success xs
 
 type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
