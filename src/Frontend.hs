@@ -50,7 +50,7 @@ import Frontend.Prelude
 import Frontend.Testing
 import Logger
 import Persistent.Api (RunPersist)
-import Persistent (withPersist, getActiveUsers)
+import Persistent (withPersist)
 
 import qualified Action
 import qualified Backend
@@ -151,9 +151,6 @@ type AulaMain =
        -- enter one space
   :<|> IdeaSpace ::> AulaSpace
 
-       -- view all users
-  :<|> "user" :> GetH (Frame (PageShow [User]))
-
        -- enter user profile
   :<|> User ::> AulaUser
   :<|> "user" :> "settings" :> FormHandler PageUserSettings
@@ -179,7 +176,6 @@ aulaMain =
        makeFrame Page.viewRooms
   :<|> aulaSpace
 
-  :<|> makeFrame (PageShow <$> Action.query getActiveUsers)
   :<|> aulaUser
   :<|> form Page.userSettings
   :<|> aulaAdmin

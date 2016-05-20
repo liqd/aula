@@ -135,7 +135,6 @@ data Main (r :: AllowedMethod) =
     ListSpaces
   | Space IdeaSpace (Space r)
   | IdeaPath IdeaLocation (IdeaMode r)
-  | ListUsers
   | UserProf (AUID User) (UserMode r)
   | UserSettings
   | Admin (AdminMode r)
@@ -156,7 +155,6 @@ main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
 main (IdeaPath l m)   root = ideaPath l m root
-main ListUsers        root = root </> "user"
 main (UserProf uid p) root = user  p (root </> "user" </> uriPart uid)
 main UserSettings     root = root </> "user" </> "settings"
 main (Admin p)        root = admin p (root </> "admin")
