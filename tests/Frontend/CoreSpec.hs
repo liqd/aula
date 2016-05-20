@@ -89,7 +89,7 @@ spec = do
             page = CreateIdea spc
             payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page payload
-            []
+            ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
 
 -- * translate form data back to form input

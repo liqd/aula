@@ -86,12 +86,12 @@ fieldParser parser =
 showErrorMessagesDe :: [Message] -> String
 showErrorMessagesDe [] = "ungültige Eingabe."
 showErrorMessagesDe msgs = concat $ map ("\n"++) $ clean $
-                            [showSysUnExpect,showUnExpect,showExpect,showMessages]
+                            [showSysUnExpect,showUnExpect," (",showExpect,")",showMessages]
     where
-      msgOr :: String = "oder"
-      msgExpecting :: String = "erwartet"
-      msgUnExpected :: String = "unerwartet"
-      msgEndOfInput :: String = "zu kurz"
+      msgOr         :: String = "oder"
+      msgExpecting  :: String = "erwartet:"
+      msgUnExpected :: String = "ungültige Eingabe:"
+      msgEndOfInput :: String = "zu wenig Input"
 
       (sysUnExpect,msgs1) = span ((SysUnExpect "") ==) msgs
       (unExpect,msgs2)    = span ((UnExpect    "") ==) msgs1
@@ -194,7 +194,7 @@ password :: StringFieldValidator
 password = fieldParser (cs <$> manyNM 4 8 anyChar <??> "Ungültiges Passwort (muss 4-12 Zeichen lang sein)")
 
 title :: StringFieldValidator
-title = fieldParser (cs <$> many1 (alphaNum <|> space))
+title = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
 
 markdown :: FieldValidator Document Document
 markdown = unMarkdown ^>> nonEmpty >>^ Markdown
