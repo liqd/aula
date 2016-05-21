@@ -49,6 +49,9 @@ module Action
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
 
+      -- * idea handling
+    , reportIdea
+
       -- * vote handling
     , likeIdea
     , voteOnIdea
@@ -531,6 +534,31 @@ deleteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comm
                           ActionPersist m => m ()
 deleteIdeaCommentReply loc ideaId commentId =
     update . DeleteComment . CommentKey loc ideaId [commentId]
+
+reportIdea :: AUID Idea -> Document -> ActionM m => m ()
+reportIdea ideaId doc = do
+    idea <- mquery $ findIdea ideaId
+    let uri = relPath $ U.viewIdea idea
+    cfg <- viewConfig
+    sendMailToRole Moderator EmailMessage
+        { _msgISpace  = idea ^. ideaLocation . ideaLocationSpace
+        , _msgSubject = "Problematische Idee."
+        , _msgBody = ST.unlines
+            [ "Liebe Moderatoren,"
+            , ""
+            , "Eine Idee wurde als problematisch gemeldet:"
+            , ""
+            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            , ""
+            , cs $ unMarkdown doc
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+        , _msgHtml = Nothing -- Not supported yet
+        }
 
 -- FIXME:
 -- More generally: do we do anything to prevent abuse of the report system?

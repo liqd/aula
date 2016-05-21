@@ -11,6 +11,7 @@ module Frontend.Page.Idea
   , CreateIdea(..)
   , EditIdea(..)
   , MoveIdea(..)
+  , ReportIdea(..)
   , CommentOnIdea(..)
   , EditComment(..)
   , JudgeIdea(..)
@@ -21,6 +22,7 @@ module Frontend.Page.Idea
   , createIdea
   , editIdea
   , moveIdea
+  , Frontend.Page.Idea.reportIdea
   , commentOnIdea
   , replyToComment
   , editComment
@@ -38,6 +40,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
               , eventLogUserCreatesComment, eventLogUserEditsComment
+              , reportIdea
               )
 import Control.Arrow ((&&&))
 import LifeCycle
@@ -110,6 +113,11 @@ data MoveIdea = MoveIdea Idea [Topic]
 
 instance Page MoveIdea where
 
+data ReportIdea = ReportIdea Idea
+  deriving (Eq, Show, Read)
+
+instance Page ReportIdea where
+
 -- | X. Comment idea
 data CommentOnIdea = CommentOnIdea Idea (Maybe Comment)
   deriving (Eq, Show, Read)
@@ -173,21 +181,24 @@ instance ToHtml ViewIdea where
                     canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
                     canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
-                when (canEdit || canCreateTopic || canMoveBetweenTopics) $ do
-                    nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                        ul_ [class_ "pop-menu-list"] $ do
-                            li_ [class_ "pop-menu-list-item"] $ do
-                                when canEdit . a_ [href_ $ U.editIdea idea] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                    "bearbeiten"
-                                when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                    "Thema erstellen"
-                                when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                            -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                    "Idee verschieben"
+                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] $ do
+                            when canEdit . a_ [href_ $ U.editIdea idea] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                "bearbeiten"
+                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                        -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                                "Thema erstellen"
+                            when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
+                                i_ [class_ "icon-pencil"] nil
+                                        -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                                "Idee verschieben"
+                            a_ [href_ (U.reportIdea idea)] $ do
+                                i_ [class_ "icon-flag"] nil
+                                "melden"
+
 
             h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
@@ -507,6 +518,26 @@ instance FormPage ReportComment where
         semanticDiv p $ do
             noteForm reportCommentNote v form ()
 
+reportIdeaNote :: Note Idea
+reportIdeaNote = Note
+    { noteHeaderText = ("Die Idee " <>) . (<> " melden") . view ideaTitle
+    , noteValidationOnField = "Bemerkung"
+    , noteLabelText = "Was möchtest du melden?"
+    }
+
+instance FormPage ReportIdea where
+    type FormPagePayload ReportIdea = Document
+
+    formAction (ReportIdea idea) = U.reportIdea idea
+    redirectOf (ReportIdea idea) _ = U.viewIdea idea
+
+    makeForm _ = noteFormInput reportIdeaNote Nothing
+
+    formPage v form p@(ReportIdea idea) =
+        semanticDiv p $ do
+            noteForm reportIdeaNote v form idea
+
+
 -- * handlers
 
 -- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
@@ -542,7 +573,14 @@ moveIdea ideaId =
             topics <- findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
             pure $ MoveIdea idea topics)
         (Action.moveIdeaToTopic ideaId)
-        "The Idee ist verschoben."
+        "The Idee wurde verschoben."
+
+reportIdea :: ActionM m => AUID Idea -> FormPageHandler m ReportIdea
+reportIdea ideaId =
+    formPageHandlerWithMsg
+        (ReportIdea <$> mquery (findIdea ideaId))
+        (Action.reportIdea ideaId)
+        "Die Idee wurde der Moderation gemeldet."
 
 -- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
 commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea
