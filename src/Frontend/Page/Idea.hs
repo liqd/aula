@@ -520,7 +520,7 @@ instance FormPage ReportComment where
 
 reportIdeaNote :: Note Idea
 reportIdeaNote = Note
-    { noteHeaderText = ("Melden die Idee " <>) . view ideaTitle
+    { noteHeaderText = ("Die Idee " <>) . (<> " melden") . view ideaTitle
     , noteValidationOnField = "Bemerkung"
     , noteLabelText = "Was möchtest du melden?"
     }
@@ -536,6 +536,7 @@ instance FormPage ReportIdea where
     formPage v form p@(ReportIdea idea) =
         semanticDiv p $ do
             noteForm reportIdeaNote v form idea
+
 
 -- * handlers
 
@@ -572,16 +573,14 @@ moveIdea ideaId =
             topics <- findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
             pure $ MoveIdea idea topics)
         (Action.moveIdeaToTopic ideaId)
-        -- TODO: Translation
-        "The Idee ist verschoben."
+        "The Idee wurde verschoben."
 
 reportIdea :: ActionM m => AUID Idea -> FormPageHandler m ReportIdea
 reportIdea ideaId =
     formPageHandlerWithMsg
         (ReportIdea <$> mquery (findIdea ideaId))
         (Action.reportIdea ideaId)
-        -- TODO: Translation
-        "The idea is reported"
+        "Die Idee wurde der Moderation gemeldet."
 
 -- | FIXME: make comments a sub-form and move that to "Frontend.Fragemnts.Comment".
 commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea

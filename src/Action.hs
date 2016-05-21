@@ -535,7 +535,6 @@ deleteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comm
 deleteIdeaCommentReply loc ideaId commentId =
     update . DeleteComment . CommentKey loc ideaId [commentId]
 
--- TODO: Translation
 reportIdea :: AUID Idea -> Document -> ActionM m => m ()
 reportIdea ideaId doc = do
     idea <- mquery $ findIdea ideaId
@@ -543,7 +542,7 @@ reportIdea ideaId doc = do
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
         { _msgISpace  = idea ^. ideaLocation . ideaLocationSpace
-        , _msgSubject = "Problematischer Idee."
+        , _msgSubject = "Problematische Idee."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
