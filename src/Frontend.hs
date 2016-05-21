@@ -322,12 +322,14 @@ type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
   :<|> "edit"        :> FormHandler EditUserProfile
+  :<|> "report"      :> FormHandler ReportUserProfile
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
        makeFrame (Page.createdIdeas    userId)
   :<|> makeFrame (Page.delegatedVotes  userId)
   :<|> form (Page.editUserProfile userId)
+  :<|> form (Page.reportUser userId)
 
 
 type AulaAdmin =

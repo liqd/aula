@@ -45,6 +45,7 @@ module Action
     , validLoggedIn
     , getSpacesForCurrentUser
     , deleteUser
+    , reportUser
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
@@ -593,6 +594,33 @@ reportCommentById ck doc = do
             ]
         , _msgHtml = Nothing -- Not supported yet
         }
+
+-- TODO: Translation
+reportUser :: ActionM m => AUID User -> Document -> m ()
+reportUser uid doc = do
+    user <- mquery $ findUser uid
+    let uri = relPath $ U.viewUserProfile user
+    cfg <- viewConfig
+    sendMailToRole Moderator EmailMessage
+        { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
+        , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
+        , _msgBody = ST.unlines
+            [ "Liebe Moderatoren,"
+            , ""
+            , "A user wurde als problematisch gemeldet:"
+            , ""
+            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            , ""
+            , cs $ unMarkdown doc
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+        , _msgHtml = Nothing -- Not supported yet
+        }
+
 
 -- ASSUMPTION: Idea is in the given idea location.
 reportIdeaComment

@@ -15,6 +15,7 @@ import System.FilePath
 import Action
 import Data.Avatar
 import Frontend.Fragment.IdeaList
+import Frontend.Fragment.Note
 import Frontend.Prelude hiding ((</>), (<.>))
 import Frontend.Validation
 import Persistent.Api
@@ -57,6 +58,11 @@ data EditUserProfile = EditUserProfile User
 
 instance Page EditUserProfile
 
+-- | 8.X Report user profile
+data ReportUserProfile = ReportUserProfile User
+  deriving (Eq, Show, Read)
+
+instance Page ReportUserProfile
 
 -- * templates
 
@@ -178,7 +184,7 @@ userHeaderDiv ctx (ActiveUser user) =
             else do
                 btn U.Broken "Klassenweit beauftragen"
                 btn U.Broken "Schulweit beauftragen"
-                btn U.Broken "melden"
+                btn (U.reportUser user) "melden"
 
 
 -- ** User Profile: Created Ideas
@@ -320,3 +326,35 @@ editUserProfile uid = formPageHandlerWithMsg
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs url
     )
     "Die Änderungen wurden gespeichert."
+
+
+-- ** User profile: Report user
+
+-- TODO: Translate
+reportUserNote :: Note User
+reportUserNote = Note
+    { noteHeaderText        = ("Report: " <>) . view (userLogin . unUserLogin)
+    , noteValidationOnField = "It can not be empty"
+    , noteLabelText         = "What is the problem with the profile?"
+    }
+
+-- TODO
+instance FormPage ReportUserProfile where
+    type FormPagePayload ReportUserProfile = Document
+
+    formAction (ReportUserProfile user) = U.reportUser user
+    redirectOf (ReportUserProfile user) _ = U.viewUserProfile user
+
+    makeForm ReportUserProfile{} =
+        noteFormInput reportUserNote Nothing
+
+    formPage v form p@(ReportUserProfile user) =
+        semanticDiv p $ do
+            noteForm reportUserNote v form user
+
+-- TODO: Translate
+reportUser :: AUID User -> ActionM m => FormPageHandler m ReportUserProfile
+reportUser userId = formPageHandlerWithMsg
+    (ReportUserProfile <$> mquery (findUser userId))
+    (Action.reportUser userId)
+    "The user has been reported."

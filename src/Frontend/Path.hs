@@ -72,6 +72,7 @@ module Frontend.Path
     , viewUserIdProfile
     , editUserProfile
     , editUserIdProfile
+    , reportUser
 
     -- * aux predicates
     , isPostOnly
@@ -346,6 +347,7 @@ data UserMode (r :: AllowedMethod) =
     UserIdeas
   | UserDelegations
   | UserEdit
+  | ReportUser
   deriving (Generic, Show)
 
 instance SOP.Generic (UserMode r)
@@ -354,6 +356,7 @@ user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
 user UserEdit        = (</> "edit")
+user ReportUser      = (</> "report")
 
 
 -- * paths to ideas
@@ -482,6 +485,8 @@ editUserProfile = editUserIdProfile . view _Id
 editUserIdProfile :: AUID User -> Main 'AllowGetPost
 editUserIdProfile uid = UserProf uid UserEdit
 
+reportUser :: User -> Main 'AllowGetPost
+reportUser u = UserProf (u ^. _Id) ReportUser
 
 -- * aux predicates
 
