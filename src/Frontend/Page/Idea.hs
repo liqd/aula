@@ -157,17 +157,21 @@ numberWithUnit i singular_ plural_ =
     toHtmlRaw nbsp <>
     toHtml (if i == 1 then singular_ else plural_)
 
+linkToIdeaLocation :: Monad m => Idea -> HtmlT m ()
+linkToIdeaLocation idea = do
+    a_ [ class_ "btn m-back detail-header-back"
+       , href_ . U.listIdeas $ idea ^. ideaLocation
+       ] $ case idea ^. ideaLocation of
+             IdeaLocationSpace{} -> "Zum Ideenraum"
+             IdeaLocationTopic{} -> "Zum Thema"
+
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml p@(ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
         | idea ^. ideaDeleted = semanticDiv p $ do
             div_ [class_ "hero-unit narrow-container"] $ do
                 header_ [class_ "detail-header"] $ do
-                    a_ [ class_ "btn m-back detail-header-back"
-                        , href_ . U.listIdeas $ idea ^. ideaLocation
-                       ] $ case idea ^. ideaLocation of
-                             IdeaLocationSpace{} -> "Zum Ideenraum"
-                             IdeaLocationTopic{} -> "Zum Thema"
+                    linkToIdeaLocation idea
                 div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
 
     toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
@@ -182,11 +186,7 @@ instance ToHtml ViewIdea where
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
-                a_ [ class_ "btn m-back detail-header-back"
-                   , href_ . U.listIdeas $ idea ^. ideaLocation
-                   ] $ case idea ^. ideaLocation of
-                         IdeaLocationSpace{} -> "Zum Ideenraum"
-                         IdeaLocationTopic{} -> "Zum Thema"
+                linkToIdeaLocation idea
 
                 let canEdit              = CanEdit              `elem` caps
                     canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps

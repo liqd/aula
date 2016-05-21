@@ -526,6 +526,7 @@ unvoteOnIdea ideaId user = do
 deleteIdea :: AUID Idea -> ActionPersist m => m ()
 deleteIdea = update . DeleteIdea
 
+
 -- * Reporting and deleting comments
 
 -- ASSUMPTION: Idea is in the given idea location.
