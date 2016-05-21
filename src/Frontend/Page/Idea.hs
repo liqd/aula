@@ -94,6 +94,11 @@ data ViewIdea = ViewIdea RenderContext IdeaStats
 
 instance Page ViewIdea where
 
+data ViewDeletedIdea = ViewDeletedIdea Idea
+  deriving (Eq, Show, Read)
+
+instance Page ViewDeletedIdea where
+
 -- | 6. Create idea
 data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
@@ -157,8 +162,19 @@ numberWithUnit i singular_ plural_ =
     toHtmlRaw nbsp <>
     toHtml (if i == 1 then singular_ else plural_)
 
+linkToIdeaLocation :: Monad m => Idea -> HtmlT m ()
+linkToIdeaLocation idea = do
+    a_ [ class_ "btn m-back detail-header-back"
+       , href_ . U.listIdeas $ idea ^. ideaLocation
+       ] $ case idea ^. ideaLocation of
+             IdeaLocationSpace{} -> "Zum Ideenraum"
+             IdeaLocationTopic{} -> "Zum Thema"
+
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
+    toHtml (ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
+        | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
+
     toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
@@ -171,13 +187,9 @@ instance ToHtml ViewIdea where
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
-                a_ [ class_ "btn m-back detail-header-back"
-                   , href_ . U.listIdeas $ idea ^. ideaLocation
-                   ] $ case idea ^. ideaLocation of
-                         IdeaLocationSpace{} -> "Zum Ideenraum"
-                         IdeaLocationTopic{} -> "Zum Thema"
+                linkToIdeaLocation idea
 
-                let canEdit              = CanEdit              `elem` caps
+                let canEdit              = CanEditAndDelete `elem` caps
                     canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
                     canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
@@ -260,8 +272,8 @@ instance ToHtml ViewIdea where
                     when (CanMarkWinner `elem` caps) $ do
                         let winnerButton =
                                 postButton_
-                                    [class_ "btn-cta mark-winner-button"
-                                    , onclickJs jsReloadOnClick
+                                    [ class_ "btn-cta mark-winner-button"
+                                    , jsReloadOnClick
                                     ]
 
                         when (isNothing (idea ^. ideaVoteResult)) $
@@ -304,6 +316,14 @@ instance ToHtml ViewIdea where
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c phase ^. html
 
+instance ToHtml ViewDeletedIdea where
+    toHtmlRaw = toHtml
+    toHtml p@(ViewDeletedIdea idea) = semanticDiv p $ do
+            div_ [class_ "hero-unit narrow-container"] $ do
+                header_ [class_ "detail-header"] $ do
+                    linkToIdeaLocation idea
+                div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
+
 validateIdeaTitle :: FormCS m r s
 validateIdeaTitle = validate "Titel der Idee" titleV
 
@@ -321,7 +341,7 @@ instance FormPage CreateIdea where
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
-    formPage v form p@(CreateIdea iloc) = createOrEditIdea False iloc v form p
+    formPage v form p@(CreateIdea iloc) = createOrEditIdea (Left iloc) v form p
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
@@ -337,12 +357,15 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    formPage v form p@(EditIdea idea) = createOrEditIdea True (idea ^. ideaLocation) v form p
+    formPage v form p@(EditIdea idea)
+        | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
+        | otherwise           = createOrEditIdea (Right idea) v form p
 
 createOrEditIdea :: (Monad m, Typeable page, Page page) =>
-    Bool -> IdeaLocation ->
+    Either IdeaLocation Idea ->
     View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
+createOrEditIdea eLocIdea v form p = semanticDiv p $ do
+    let cancelUrl = either id (view ideaLocation) eLocIdea
     div_ [class_ "container-main popup-page"] $ do
         div_ [class_ "container-narrow"] $ do
             h1_ [class_ "main-heading"] "Deine Idee"
@@ -361,11 +384,17 @@ createOrEditIdea showDeleteButton cancelUrl v form p = semanticDiv p $ do
                     a_ [class_ "btn", href_ $ U.listIdeas cancelUrl] $ do
                         -- FIXME: "are you sure?" dialog.
                         "abbrechen"
-                    when showDeleteButton .
-                        button_ [class_ "btn-cta", value_ ""] $ do
-                            -- FIXME: delete ideas.
-                            -- FIXME: "are you sure?" dialog.
-                            i_ [class_ "icon-trash-o"] nil
+            case eLocIdea of
+                Left _ -> nil
+                Right idea ->
+                    footer_ [class_ "form-footer"] $ do
+                        postButtonConfirm_
+                            (Just "Idee wirklich löschen?")
+                            [ class_ "btn-cta"
+                            , jsRedirectOnClick
+                                (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
+                            ]
+                            (U.deleteIdea idea)
                             "Idee löschen"
 
 instance FormPage MoveIdea where

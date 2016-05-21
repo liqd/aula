@@ -62,6 +62,7 @@ module Action
     , unvoteOnIdea
     , Action.setCreatorStatement
     , revokeWinnerStatusOfIdea
+    , Action.deleteIdea
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -521,6 +522,9 @@ unvoteOnIdea :: (ActionM m) => AUID Idea -> AUID User -> m ()
 unvoteOnIdea ideaId user = do
     update $ RemoveVoteFromIdea ideaId user
     (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
+
+deleteIdea :: AUID Idea -> ActionPersist m => m ()
+deleteIdea = update . DeleteIdea
 
 
 -- * Reporting and deleting comments

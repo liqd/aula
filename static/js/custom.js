@@ -124,18 +124,23 @@ function toggleClass(el, cl) {
     }
 }
 
-function reloadOnClick(hash) {
+var reloadDelayMs = 250;
+
+function reloadOnClick(target) {
     // NOTE: it would be nice to avoid reload, but this is not a hard
     // requirement any more.
     // FIXME: this is a race condition: if we wait for 0 ms, the page
     // will usually be reloaded before the POST request updating the
     // score can be processed.
     setTimeout(function() {
-        if (hash) {
-            document.location.hash = hash;
+        if (target && target.hash) {
+            document.location.hash = target.hash;
+        }
+        if (target && target.href) {
+            document.location.href = target.href;
         }
         document.location.reload(true);
-    }, 250);
+    }, reloadDelayMs);
 }
 
 function createPageSample() {

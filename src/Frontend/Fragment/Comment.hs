@@ -68,7 +68,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                 postButtonConfirm_ (Just "Kommentar wirklich loeschen?")
                                           -- FIXME: umlauts.  `ö`, `\\u00F6`, or `&ouml;` won't do it.
                             [ class_ "btn comment-footer-button"
-                            , onclickJs . jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
+                            , jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil
@@ -94,8 +94,7 @@ instance ToHtml CommentVotesWidget where
                 countCommentVotes v votes ^. showed . html
                 let likeButton = if CanVoteComment `elem` caps
                         then postButton_ [ class_ "btn"
-                                         , onclickJs . jsReloadOnClickAnchor . U.anchor
-                                               $ comment ^. _Id
+                                         , jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
                                          ]
                                      (U.voteOnComment comment v)
                         else div_ [class_ "btn"]
