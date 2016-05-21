@@ -94,6 +94,11 @@ data ViewIdea = ViewIdea RenderContext IdeaStats
 
 instance Page ViewIdea where
 
+data ViewDeletedIdea = ViewDeletedIdea Idea
+  deriving (Eq, Show, Read)
+
+instance Page ViewDeletedIdea where
+
 -- | 6. Create idea
 data CreateIdea = CreateIdea IdeaLocation
   deriving (Eq, Show, Read)
@@ -167,12 +172,8 @@ linkToIdeaLocation idea = do
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
-        | idea ^. ideaDeleted = semanticDiv p $ do
-            div_ [class_ "hero-unit narrow-container"] $ do
-                header_ [class_ "detail-header"] $ do
-                    linkToIdeaLocation idea
-                div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
+    toHtml (ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
+        | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
 
     toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
@@ -315,6 +316,14 @@ instance ToHtml ViewIdea where
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c phase ^. html
 
+instance ToHtml ViewDeletedIdea where
+    toHtmlRaw = toHtml
+    toHtml p@(ViewDeletedIdea idea) = semanticDiv p $ do
+            div_ [class_ "hero-unit narrow-container"] $ do
+                header_ [class_ "detail-header"] $ do
+                    linkToIdeaLocation idea
+                div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
+
 validateIdeaTitle :: FormCS m r s
 validateIdeaTitle = validate "Titel der Idee" titleV
 
@@ -348,7 +357,9 @@ instance FormPage EditIdea where
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 
-    formPage v form p@(EditIdea idea) = createOrEditIdea (Right idea) v form p
+    formPage v form p@(EditIdea idea)
+        | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
+        | otherwise           = createOrEditIdea (Right idea) v form p
 
 createOrEditIdea :: (Monad m, Typeable page, Page page) =>
     Either IdeaLocation Idea ->
