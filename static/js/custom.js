@@ -139,8 +139,9 @@ function reloadOnClick(hash) {
 }
 
 function loadOnClick(href) {
-    // TODO: Implementation
-    document.location.href = href;
+    setTimeout(function() {
+        document.location.href = href;
+    }, 250);
 }
 
 function createPageSample() {
