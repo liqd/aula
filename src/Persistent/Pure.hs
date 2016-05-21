@@ -433,6 +433,7 @@ addIdeaSpaceIfNotExists ispace = do
 addIdea :: AddDb Idea
 addIdea = addDb dbIdeaMap
 
+-- | Returns an idea, even if it is deleted.
 findIdea :: AUID Idea -> MQuery Idea
 findIdea = findInById dbIdeaMap
 
