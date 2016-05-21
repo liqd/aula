@@ -160,7 +160,7 @@ instance ToHtml ViewIdea where
                        ] $ case idea ^. ideaLocation of
                              IdeaLocationSpace{} -> "Zum Ideenraum"
                              IdeaLocationTopic{} -> "Zum Thema"
-                div_ [] $ p_ "Diese Idee wurde gelöscht."
+                div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
 
     toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
