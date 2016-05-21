@@ -56,7 +56,7 @@ module Frontend.Core
     , makeFrame
 
       -- * js glue
-    , JsCallback, onclickJs, jsReloadOnClick, jsReloadOnClickAnchor, jsLoadOnClick
+    , JsCallback, jsReloadOnClick, jsReloadOnClickAnchor, jsRedirectOnClick
     )
   where
 
@@ -443,25 +443,31 @@ makeFrame mp = do
 -- * js glue
 
 data JsCallback
-    = JsReloadOnClick (Maybe ST)
-    | JsLoadOnClick ST
+    = JsReloadOnClick
+    | JsReloadOnClickAnchor ST
+    | JsRedirectOnClick ST
   deriving (Eq, Ord, Show, Read)
 
-jsReloadOnClick :: JsCallback
-jsReloadOnClick = JsReloadOnClick Nothing
-
-jsReloadOnClickAnchor :: ST -> JsCallback
-jsReloadOnClickAnchor = JsReloadOnClick . Just
-
-jsLoadOnClick :: ST -> JsCallback
-jsLoadOnClick = JsLoadOnClick
-
 onclickJs :: JsCallback -> Attribute
-onclickJs (JsReloadOnClick hash) =
-    Lucid.onclick_ $ "reloadOnClick(" <> maybe nil (cs . show) hash <> ")"
-onclickJs (JsLoadOnClick href) =
-    Lucid.onclick_ $ "loadOnClick(" <> cs (show href) <> ")"
+onclickJs = \case
+    JsReloadOnClick              -> hdl "{}"
+    (JsReloadOnClickAnchor hash) -> hdl $ target "hash" hash
+    (JsRedirectOnClick href)     -> hdl $ target "href" href
+  where
+    hdl :: ST -> Attribute
+    hdl = Lucid.onclick_ . ("reloadOnClick(" <>) . (<> ")")
 
+    target :: ST -> ST -> ST
+    target key val = "{" <> key <> ": " <> cs (show val) <> "}"
+
+jsReloadOnClick :: Attribute
+jsReloadOnClick = onclickJs JsReloadOnClick
+
+jsReloadOnClickAnchor :: ST -> Attribute
+jsReloadOnClickAnchor = onclickJs . JsReloadOnClickAnchor
+
+jsRedirectOnClick :: ST -> Attribute
+jsRedirectOnClick = onclickJs . JsRedirectOnClick
 
 
 -- * lenses

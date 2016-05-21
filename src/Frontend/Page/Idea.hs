@@ -272,8 +272,8 @@ instance ToHtml ViewIdea where
                     when (CanMarkWinner `elem` caps) $ do
                         let winnerButton =
                                 postButton_
-                                    [class_ "btn-cta mark-winner-button"
-                                    , onclickJs jsReloadOnClick
+                                    [ class_ "btn-cta mark-winner-button"
+                                    , jsReloadOnClick
                                     ]
 
                         when (isNothing (idea ^. ideaVoteResult)) $
@@ -390,8 +390,9 @@ createOrEditIdea eLocIdea v form p = semanticDiv p $ do
                     footer_ [class_ "form-footer"] $ do
                         postButtonConfirm_
                             (Just "Idee wirklich löschen?")
-                            [class_ "btn-cta"
-                            , onclickJs $ jsLoadOnClick (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
+                            [ class_ "btn-cta"
+                            , jsRedirectOnClick
+                                (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
                             ]
                             (U.deleteIdea idea)
                             "Idee löschen"

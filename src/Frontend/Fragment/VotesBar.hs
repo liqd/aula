@@ -49,9 +49,7 @@ instance ToHtml IdeaVoteLikeBars where
                         if userLikesIdea (ctx ^. renderContextUser) idea
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                             else postButton_
-                                    [ class_ "btn"
-                                    , onclickJs jsReloadOnClick
-                                    ]
+                                    [class_ "btn", jsReloadOnClick]
                                     (U.likeIdea idea)
                                     "dafür!"
 
@@ -97,12 +95,12 @@ instance ToHtml IdeaVoteLikeBars where
                 -- Should it be in other color?
                 voteButton (Just w) v | w == v =
                     postButton_ [ class_ "btn-cta m-large voting-button m-selected"
-                                , onclickJs jsReloadOnClick
+                                , jsReloadOnClick
                                 ]
                                 (U.unvoteOnIdea idea user)
                 voteButton _        v =
                     postButton_ [ class_ "btn-cta m-large voting-button m-not-selected"
-                                , onclickJs jsReloadOnClick
+                                , jsReloadOnClick
                                 ]
                                 (U.voteOnIdea idea v)
 
