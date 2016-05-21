@@ -440,7 +440,7 @@ findIdea = findInById dbIdeaMap
 findIdeaBy :: Eq a => Fold Idea a -> a -> MQuery Idea
 findIdeaBy = fmap nonDeletedIdea <..> findInBy dbIdeas
   where
-    nonDeletedIdea = (>>= (\i -> justIfP i (view ideaDeleted)))
+    nonDeletedIdea = (>>= (\i -> justIfP i (not . view ideaDeleted)))
 
 findIdeasByUserId :: AUID User -> Query [Idea]
 findIdeasByUserId uId = filter (not . view ideaDeleted) <$> findAllIn dbIdeas (\i -> i ^. createdBy == uId)
