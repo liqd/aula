@@ -226,6 +226,10 @@ instance Arbitrary MoveIdea where
     arbitrary = MoveIdea <$> arb <*> arb
     shrink (MoveIdea x y) = MoveIdea <$> shr x <*> shr y
 
+instance Arbitrary ReportIdea where
+    arbitrary = ReportIdea <$> arb
+    shrink (ReportIdea x) = ReportIdea <$> shr x
+
 instance Arbitrary CommentOnIdea where
     arbitrary = CommentOnIdea <$> arb <*> arb
     shrink (CommentOnIdea x y) = CommentOnIdea <$> shr x <*> shr y

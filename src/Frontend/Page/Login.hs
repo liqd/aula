@@ -57,7 +57,7 @@ instance FormPage PageHomeWithLoginPrompt where
 
     makeForm _ = validateM checkLogin $
         LoginFormData
-        <$> ("user" .: validate "Login" username (DF.string Nothing))
+        <$> ("user" .: validate "Login" usernameV (DF.string Nothing))
         <*> ("pass" .: DF.text Nothing)
             -- No validation is needed when login only when setting/changing passwords.
 

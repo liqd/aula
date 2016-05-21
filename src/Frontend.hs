@@ -231,6 +231,8 @@ type IdeaApi
   :<|> Idea ::> "like" :> PostH
        -- delete an idea
   :<|> Idea ::> "delete" :> PostH
+       -- report an idea
+  :<|> Idea ::> "report" :> FormHandler Page.ReportIdea
        -- vote on an idea
   :<|> Idea ::> IdeaVoteValue ::> PostH
        -- remove vote from idea
@@ -257,6 +259,7 @@ ideaApi loc
   :<|> form . Page.moveIdea
   :<|> Action.likeIdea
   :<|> Action.deleteIdea
+  :<|> form . Page.reportIdea
   :<|> Action.voteOnIdea
   :<|> Action.unvoteOnIdea
   :<|> form . Page.commentOnIdea loc

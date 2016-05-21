@@ -40,6 +40,7 @@ module Frontend.Path
     , createIdea
     , editIdea
     , moveIdea
+    , reportIdea
     , commentOnIdea
     , likeIdea
     , judgeIdea
@@ -229,6 +230,7 @@ data IdeaMode (r :: AllowedMethod) =
     | OnComment CommentKey (CommentMode r)
     | CreatorStatement (AUID Idea)
     | DeleteIdea (AUID Idea)
+    | ReportIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic (IdeaMode r)
@@ -251,6 +253,7 @@ ideaMode (CreatorStatement i)   root = root </> "idea" </> uriPart i </> "statem
 ideaMode (MarkIdeaAsWinner i)   root = root </> "idea" </> uriPart i </> "markwinner"
 ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"
 ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
+ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
 
 
 -- ** CommentMode
@@ -381,6 +384,9 @@ editIdea idea = IdeaPath (idea ^. ideaLocation) $ EditIdea (idea ^. _Id)
 
 moveIdea :: Idea -> Main 'AllowGetPost
 moveIdea idea = IdeaPath (idea ^. ideaLocation) $ MoveIdea (idea ^. _Id)
+
+reportIdea :: Idea -> Main 'AllowGetPost
+reportIdea idea = IdeaPath (idea ^. ideaLocation) $ ReportIdea (idea ^. _Id)
 
 commentOnIdea :: Idea -> Main 'AllowGetPost
 commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _Id)

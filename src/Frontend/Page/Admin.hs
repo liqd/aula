@@ -265,7 +265,7 @@ instance FormPage PageAdminSettingsDurations where
       where
         period name getter = validate
             name
-            (DurationDays <$> inRange Constant.minElabPeriod Constant.maxElabPeriod)
+            (DurationDays <$> inRangeV Constant.minElabPeriod Constant.maxElabPeriod)
             (DF.string (Just (show . unDurationDays $ dur ^. getter)))
         pNam ph = uilabel $ ph (error "PageAdminSettingsDurations: impossible")
 
@@ -303,7 +303,7 @@ instance FormPage PageAdminSettingsQuorum where
       where
         percentage name getter = validate
             name
-            (inRange 1 100)
+            (inRangeV 1 100)
             (DF.string (Just (show (q ^. getter))))
 
     formPage v form p = adminFrame p . semanticDiv p . form $ do
@@ -441,7 +441,7 @@ instance FormPage AdminCreateUser where
             -- FIXME: Users with more than one name?
             firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben"))
             lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben"))
-            loginName = validateOptional "Login" (UserLogin <$> username)
+            loginName = validateOptional "Login" (UserLogin <$> usernameV)
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
