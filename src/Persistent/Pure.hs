@@ -413,11 +413,10 @@ getSpaces :: Query [IdeaSpace]
 getSpaces = view dbSpaces
 
 getIdeas :: Query [Idea]
-getIdeas = filter (not . view ideaDeleted) <$> getAllIdeas
+getIdeas = filter (not . view ideaDeleted) <$> getIdeasIncludingDeleted
 
--- | Returns also the deleted ideas.
-getAllIdeas :: Query [Idea]
-getAllIdeas = view dbIdeas
+getIdeasIncludingDeleted :: Query [Idea]
+getIdeasIncludingDeleted = view dbIdeas
 
 getWildIdeas :: Query [Idea]
 getWildIdeas = filter (isWild . view ideaLocation) <$> getIdeas

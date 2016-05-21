@@ -114,7 +114,7 @@ data IdeaCapability
     | CanMarkWinner
     | CanAddCreatorStatement
     | CanEditCreatorStatement
-    | CanEdit -- also can delete the idea
+    | CanEditAndDelete
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
   deriving (Enum, Eq, Ord, Show, Read, Generic)
 
@@ -124,7 +124,7 @@ ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
 ideaCapabilities = phaseCap
 
 editCap :: AUID User -> Idea -> [IdeaCapability]
-editCap uid i = [CanEdit | i ^. createdBy == uid]
+editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
 
 allowedDuringFreeze :: [IdeaCapability]
 allowedDuringFreeze = [ CanComment
@@ -150,7 +150,7 @@ wildIdeaCap u i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEdit, CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []
 
@@ -159,7 +159,7 @@ phaseRefinementCap u i = \case
     Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEdit, CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
     Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 

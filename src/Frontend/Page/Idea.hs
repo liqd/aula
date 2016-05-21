@@ -189,7 +189,7 @@ instance ToHtml ViewIdea where
             header_ [class_ "detail-header"] $ do
                 linkToIdeaLocation idea
 
-                let canEdit              = CanEdit              `elem` caps
+                let canEdit              = CanEditAndDelete `elem` caps
                     canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
                     canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
