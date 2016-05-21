@@ -10,7 +10,8 @@
 {-# LANGUAGE TemplateHaskell        #-}
 
 module Action.Smtp
-    ( EmailMessage(..), msgSubject, msgBody, msgHtml
+    ( EmailMessage(..), msgSubjectLabel, msgSubjectText, msgBody, msgHtml
+    , EmailSubjectLabel(..)
     , HasSendMail(sendMailToAddress)
     , SendMailError(..), ThrowSendMailError(..), MonadSendMailError
     , sendMailToAddressIO
@@ -51,11 +52,16 @@ instance ThrowSendMailError SendMailError where
 
 type MonadSendMailError e m = (MonadError e m, ThrowSendMailError e)
 
+data EmailSubjectLabel
+    = IdeaSpaceSubject IdeaSpace
+    | UserLoginSubject UserLogin
+  deriving (Eq, Ord, Show, Read, Generic)
+
 data EmailMessage = EmailMessage
-    { _msgISpace  :: IdeaSpace
-    , _msgSubject :: ST
-    , _msgBody    :: ST
-    , _msgHtml    :: Maybe ST
+    { _msgSubjectLabel :: EmailSubjectLabel
+    , _msgSubjectText  :: ST
+    , _msgBody         :: ST
+    , _msgHtml         :: Maybe ST
     }
     deriving (Eq, Ord, Show, Read, Generic)
 
@@ -81,7 +87,7 @@ sendMailToAddressIO logger receiver msg = do
     cfg <- viewConfig
     let scfg   = cfg ^. smtpConfig
         sender = Address (Just $ scfg ^. senderName . to cs) (scfg ^. senderEmail . to cs)
-        subj   = "[" <> msg ^. msgISpace . to showIdeaSpace . csi <> "] " <> msg ^. msgSubject
+        subj   = "[" <> subjectLabel <> "] " <> msg ^. msgSubjectText
         mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody)
     r <- liftIO $ do
         logger . LogEntry DEBUG . cs $ "sending email: " <> ppShow (receiver, msg)
@@ -98,6 +104,9 @@ sendMailToAddressIO logger receiver msg = do
         Left (e :: IOException) ->
             throwSendMailError $ IOErrorRunningSendMail e
   where
+    subjectLabel = case msg ^. msgSubjectLabel of
+        IdeaSpaceSubject is -> cs $ showIdeaSpace is
+        UserLoginSubject ul -> ul ^. unUserLogin
 
 sendMailToUser :: HasSendMail e r m => [SendMailFlag] -> User -> EmailMessage -> m ()
 sendMailToUser _ user _
@@ -116,7 +125,7 @@ sendMailToUser flags user msg = do
 checkSendMail :: Config -> IO ()
 checkSendMail cfg = do
     let address = Address Nothing "user@example.com"
-        msg     = EmailMessage SchoolSpace "Test Mail" "This is a test" Nothing
+        msg     = EmailMessage (IdeaSpaceSubject SchoolSpace) "Test Mail" "This is a test" Nothing
 
         action :: ReaderT Config (ExceptT SendMailError IO) ()
         action = sendMailToAddressIO print address msg

@@ -397,15 +397,15 @@ phaseAction topic phasact = do
     case phasact of
       JuryPhasePrincipalEmail ->
           sendMailToRole Principal EmailMessage
-              { _msgISpace  = topic ^. topicIdeaSpace
-              , _msgSubject = "Thema in der Prüfungsphase"
+              { _msgSubjectLabel = topic ^. topicIdeaSpace . to IdeaSpaceSubject
+              , _msgSubjectText  = "Thema in der Prüfungsphase"
               , _msgBody    = topicTemplate "Schulleitung" "Prüfungsphase"
               , _msgHtml    = Nothing -- Not supported yet
               }
       ResultPhaseModeratorEmail ->
           sendMailToRole Moderator EmailMessage
-              { _msgISpace  = topic ^. topicIdeaSpace
-              , _msgSubject = "Thema in der Ergebnisphase"
+              { _msgSubjectLabel = topic ^. topicIdeaSpace . to IdeaSpaceSubject
+              , _msgSubjectText  = "Thema in der Ergebnisphase"
               , _msgBody    = topicTemplate "Moderatoren" "Ergebnisphase"
               , _msgHtml    = Nothing -- Not supported yet
               }
@@ -545,8 +545,8 @@ reportIdea ideaId doc = do
     let uri = relPath $ U.viewIdea idea
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
-        { _msgISpace  = idea ^. ideaLocation . ideaLocationSpace
-        , _msgSubject = "Problematische Idee."
+        { _msgSubjectLabel = idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject
+        , _msgSubjectText  = "Problematische Idee."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
@@ -575,8 +575,8 @@ reportCommentById ck doc = do
     let uri = relPath $ U.viewComment comment
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
-        { _msgISpace  = comment ^. _Key . ckIdeaLocation . ideaLocationSpace
-        , _msgSubject = "Problematischer Verbesserungsvorschlag."
+        { _msgSubjectLabel = comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject
+        , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
