@@ -114,16 +114,21 @@ spec = do
         , F (arb :: Gen AdminCreateClass)
         , F (arb :: Gen AdminPhaseChange)
 
+          -- idea forms
         , F (arb :: Gen CreateIdea)
-        , F (arb :: Gen Frontend.Page.EditIdea)
+        , F (arb :: Gen Frontend.Page.MoveIdea)
         , F (arb :: Gen CommentOnIdea)
+        , F (arb :: Gen Frontend.Page.EditIdea)
+        , F (arb :: Gen EditComment)
+        , F (arb :: Gen JudgeIdea)
+        , F (arb :: Gen CreatorStatement)
+        , F (arb :: Gen ReportComment)
+        , F (arb :: Gen ReportIdea)
+
         , F (arb :: Gen PageHomeWithLoginPrompt)
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen Frontend.Page.EditTopic)
-        , F (arb :: Gen CreatorStatement)
-        , F (arb :: Gen JudgeIdea)
-        , F (arb :: Gen ReportComment)
         ]
 
 -- FIXME: Unify the Form Arbitrary GADTs.
