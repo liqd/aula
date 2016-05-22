@@ -125,7 +125,9 @@ spec = do
         , F (arb :: Gen ReportComment)
         , F (arb :: Gen ReportIdea)
 
+          -- login forms
         , F (arb :: Gen PageHomeWithLoginPrompt)
+
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen Frontend.Page.EditTopic)
