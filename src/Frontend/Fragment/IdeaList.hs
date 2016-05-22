@@ -23,7 +23,6 @@ import Control.Lens
 import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
-import Frontend.Fragment.QuorumBar
 import Frontend.Fragment.VotesBar
 import LifeCycle
 import Persistent (IdeaStats(IdeaStats), ideaReachedQuorum)
@@ -39,10 +38,6 @@ data WhatListPage
 
 makeLenses ''WhatListPage
 makePrisms ''WhatListPage
-
-isIdeaInViewTopic :: WhatListPage -> Bool
-isIdeaInViewTopic (IdeaInViewTopic _) = True
-isIdeaInViewTopic _                   = False
 
 -- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
@@ -72,9 +67,9 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx whatListPage stats@(IdeaStats idea phase quo _voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx _whatListPage stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            let caps = ideaCapabilities
+            let caps = ideaCapabilities  -- TODO: move this into IdeaVoteLikeBars?
                         (ctx ^. renderContextUser . _Id)
                         (ctx ^. renderContextUser . userRole)
                         idea
@@ -115,8 +110,6 @@ instance ToHtml ListItemIdea where
                         readyfortable
 
                 div_ [class_ "col-4-12 ideas-list-meta-container"] $ do
-                    let showLikesAndQuorum = not $ isIdeaInViewTopic whatListPage
-                    let showVotes = phase > PhaseJury
                     ul_ [class_ "meta-list"] $ do
                         li_ [class_ "meta-list-item"] $ do
                             i_ [class_ "meta-list-icon icon-comment-o"] nil
@@ -124,31 +117,11 @@ instance ToHtml ListItemIdea where
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
 
-                        when showLikesAndQuorum . li_ [class_ "meta-list-item"] $ do
-                            i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
-
-                        when showVotes . li_ [class_ "meta-list-item"] $ do
-                            let nyes   = numVotes idea Yes
-                                nno    = numVotes idea No
-                                ntotal = nyes + nno
-                            i_ [class_ "meta-list-icon icon-voting"] nil
-                            toHtml $ show ntotal <> if ntotal == 1 then " Stimme" else " Stimmen"
-                            when (ntotal > 0) $ do
-                                (" (" :: ST) ^. html
-                                let button val nam =
-                                      val ^. showed . html >>
-                                      i_ [class_ $ "icon-thumbs-o-" <> nam] nil
-                                button nyes "up" >> "/" >> button nno "down"
-                                (")" :: ST) ^. html
-
-                    when showLikesAndQuorum . toHtml $ QuorumBar (percentLikes idea quo)
-                    when showVotes . toHtml $
-                        -- we use the capabilities list to switch the like / vote buttons on or off.
-                        -- this way, if we ever decide to allow like in the list view, but not vote
-                        -- (vote has bigger implications than like and should require the user to
-                        -- enter the detail view), it's very simple to do that here.
-                        IdeaVoteLikeBars ctx (caps \\ [CanLike, CanVoteIdea]) stats
+                    -- we use the capabilities list to switch the like / vote buttons on or off.
+                    -- this way, if we ever decide to allow like in the list view, but not vote
+                    -- (vote has bigger implications than like and should require the user to
+                    -- enter the detail view), it's very simple to do that here.
+                    toHtml $ IdeaVoteLikeBars ctx (caps \\ [CanLike, CanVoteIdea]) stats
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml

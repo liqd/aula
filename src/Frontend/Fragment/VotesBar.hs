@@ -9,7 +9,6 @@ module Frontend.Fragment.VotesBar
     (IdeaVoteLikeBars(..))
 where
 
-import           Frontend.Fragment.QuorumBar  -- TODO: resolve this into VotesBar?
 import qualified Frontend.Path as U
 import           Frontend.Prelude
 import           LifeCycle
@@ -37,7 +36,11 @@ instance ToHtml IdeaVoteLikeBars where
                 (IdeaStats idea phase quo voters)) = semanticDiv p $ do
         let likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
-                toHtml (QuorumBar $ percentLikes idea quo)
+                span_ [class_ "progress-bar"] $ do
+                    span_ [ class_ "progress-bar-progress"
+                          , style_ ("width: " <> (cs . show $ percentLikes idea quo) <> "%")
+                          ]
+                        nil
                 span_ [class_ "like-bar"] $ do
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
@@ -60,11 +63,17 @@ instance ToHtml IdeaVoteLikeBars where
                         span_ [ class_ "progress-bar-progress progress-bar-progress-for"
                               , style_ $ mconcat ["width: ", prcnt Yes, "%"]
                               ] $ do
-                            span_ [class_ "votes"] (cnt Yes)
+                            span_ [class_ "votes"] $ do
+                                cnt Yes
+                                i_ [class_ "icon-thumbs-o-up"] nil
+
                         span_ [ class_ "progress-bar-progress progress-bar-progress-against"
                               , style_ $ mconcat ["width: ", prcnt No, "%"]
                               ] $ do
-                            span_ [class_ "votes"] (cnt No)
+                            span_ [class_ "votes"] $ do
+                                cnt No
+                                i_ [class_ "icon-thumbs-o-down"] nil
+
                         when (showNotVoted == ShowNotVoted) .
                             span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
                                       -- FIXME: change class name above: abstain /= not-voted
