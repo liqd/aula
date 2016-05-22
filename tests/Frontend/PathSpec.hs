@@ -103,21 +103,25 @@ spec = do
 
     forms :: [FormGen]
     forms =
-        [ F (arb :: Gen CreateIdea)
+          -- admin forms
+        [ F (arb :: Gen PageAdminSettingsDurations)
+        , F (arb :: Gen PageAdminSettingsQuorum)
+        , F (arb :: Gen PageAdminSettingsFreeze)
+        , F (arb :: Gen PageAdminSettingsEventsProtocol)
+        , F (arb :: Gen AdminEditUser)
+        , F (arb :: Gen AdminDeleteUser)
+        , F (arb :: Gen AdminCreateUser)
+        , F (arb :: Gen AdminCreateClass)
+        , F (arb :: Gen AdminPhaseChange)
+
+        , F (arb :: Gen CreateIdea)
         , F (arb :: Gen Frontend.Page.EditIdea)
         , F (arb :: Gen CommentOnIdea)
         , F (arb :: Gen PageHomeWithLoginPrompt)
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen Frontend.Page.EditTopic)
---        , F (arb :: Gen AdminCreateUser) -- FIXME
-        , F (arb :: Gen PageAdminSettingsDurations)
-        , F (arb :: Gen PageAdminSettingsQuorum)
-        , F (arb :: Gen PageAdminSettingsFreeze)
---        , F (arb :: Gen PageAdminSettingsEventsProtocol)
-        , F (arb :: Gen AdminEditUser) -- FIXME
         , F (arb :: Gen CreatorStatement)
-        , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen JudgeIdea)
         , F (arb :: Gen ReportComment)
         ]
