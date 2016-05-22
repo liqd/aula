@@ -96,7 +96,6 @@ library
       Frontend.Fragment.Feasibility
       Frontend.Fragment.IdeaList
       Frontend.Fragment.Note
-      Frontend.Fragment.QuorumBar
       Frontend.Fragment.VotesBar
       Frontend.Page
       Frontend.Page.Admin

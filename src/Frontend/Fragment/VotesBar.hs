@@ -6,17 +6,19 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.VotesBar
-    (IdeaVoteLikeBars(..))
+    (IdeaVoteLikeBars(..), IdeaVoteLikeBarsMode(..))
 where
 
-import           Frontend.Fragment.QuorumBar  -- TODO: resolve this into VotesBar?
 import qualified Frontend.Path as U
 import           Frontend.Prelude
 import           LifeCycle
 import           Persistent.Idiom
 
 
-data IdeaVoteLikeBars = IdeaVoteLikeBars RenderContext [IdeaCapability] IdeaStats
+data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaVoteLikeBarsMode RenderContext IdeaStats
+  deriving (Eq, Show, Read)
+
+data IdeaVoteLikeBarsMode = IdeaVoteLikeBarsPlain | IdeaVoteLikeBarsWithButtons
   deriving (Eq, Show, Read)
 
 -- | The issue has been debated for some time now whether we should show three segments (yes, no,
@@ -33,25 +35,37 @@ minBarSegmentWidth = 5
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars ctx caps
-                (IdeaStats idea phase quo voters)) = semanticDiv p $ do
-        let likeBar :: Html () -> Html ()
+    toHtml p@(IdeaVoteLikeBars mode ctx (IdeaStats idea phase quo voters)) = semanticDiv p $ do
+        let caps = ideaCapabilities
+                        (ctx ^. renderContextUser . _Id)
+                        (ctx ^. renderContextUser . userRole)
+                        idea
+                        phase
+                \\ case mode of
+                    IdeaVoteLikeBarsPlain       -> [CanLike, CanVoteIdea]
+                    IdeaVoteLikeBarsWithButtons -> []
+
+            likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
-                toHtml (QuorumBar $ percentLikes idea quo)
+                span_ [class_ "progress-bar"] $ do
+                    span_ [ class_ "progress-bar-progress"
+                          , style_ ("width: " <> (cs . show $ percentLikes idea quo) <> "%")
+                          ]
+                        nil
                 span_ [class_ "like-bar"] $ do
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
 
-            -- FIXME: how do you un-like an idea?
             likeButtons :: Html ()
             likeButtons = when (CanLike `elem` caps) .
                 div_ [class_ "voting-buttons"] $
                         if userLikesIdea (ctx ^. renderContextUser) idea
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
+                                 -- (ideas can not be un-liked)
                             else postButton_
                                     [class_ "btn", jsReloadOnClick]
                                     (U.likeIdea idea)
-                                    "dafür!"
+                                    "Auf den Tisch!"  -- FIXME: put table badge here, too!
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
@@ -60,11 +74,17 @@ instance ToHtml IdeaVoteLikeBars where
                         span_ [ class_ "progress-bar-progress progress-bar-progress-for"
                               , style_ $ mconcat ["width: ", prcnt Yes, "%"]
                               ] $ do
-                            span_ [class_ "votes"] (cnt Yes)
+                            span_ [class_ "votes"] $ do
+                                cnt Yes
+                                i_ [class_ "icon-thumbs-o-up"] nil
+
                         span_ [ class_ "progress-bar-progress progress-bar-progress-against"
                               , style_ $ mconcat ["width: ", prcnt No, "%"]
                               ] $ do
-                            span_ [class_ "votes"] (cnt No)
+                            span_ [class_ "votes"] $ do
+                                cnt No
+                                i_ [class_ "icon-thumbs-o-down"] nil
+
                         when (showNotVoted == ShowNotVoted) .
                             span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
                                       -- FIXME: change class name above: abstain /= not-voted
