@@ -93,7 +93,6 @@ instance ToHtml ListItemIdea where
                             div_ [class_ "m-table indicator-item"] $ do
                                   div_ [class_ "indicator-icon"] "Kann auf den Tisch"
 
-                    -- TODO: see also: module Frontend.Fragment.Feasibility
                     case idea ^? ideaJuryResult . _Just . ideaJuryResultValue . to ideaJuryResultValueToType of
                         Nothing              -> nil  -- (not judged)
                         Just IdeaNotFeasible -> notfeasible
