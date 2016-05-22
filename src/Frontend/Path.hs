@@ -418,6 +418,7 @@ creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea
 deleteIdea :: Idea -> Main 'AllowPost
 deleteIdea idea = IdeaPath (idea ^. ideaLocation) $ DeleteIdea (idea ^. _Id)
 
+
 -- * paths to idea lists
 
 -- | List ideas in any location (space or topic).  The query defaults to Nothing;
@@ -487,6 +488,7 @@ editUserIdProfile uid = UserProf uid UserEdit
 
 reportUser :: User -> Main 'AllowGetPost
 reportUser u = UserProf (u ^. _Id) ReportUser
+
 
 -- * aux predicates
 
