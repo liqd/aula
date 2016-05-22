@@ -132,8 +132,10 @@ spec = do
         , F (arb :: Gen CreateTopic)
         , F (arb :: Gen EditTopic)
 
+          -- user forms
         , F (arb :: Gen PageUserSettings)
-        , F (arb :: Gen Frontend.Page.EditTopic)
+        , F (arb :: Gen EditUserProfile)
+        , F (arb :: Gen ReportUserProfile)
         ]
 
 -- FIXME: Unify the Form Arbitrary GADTs.
