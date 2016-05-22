@@ -219,7 +219,7 @@ instance ToHtml ViewIdea where
                    ] $ idea ^. createdByLogin . unUserLogin . html
                 " / "
                 let l = do
-                        numberWithUnit totalLikes "Like" "Likes"
+                        numberWithUnit totalLikes "Quorum-Stimme" "Quorum-Stimmen"
                         toHtmlRaw (" " <> nbsp <> " / " <> nbsp <> " ")
                     v = do
                         numberWithUnit totalVotes "Stimme" "Stimmen"

@@ -51,7 +51,7 @@ instance ToHtml IdeaVoteLikeBars where
                             else postButton_
                                     [class_ "btn", jsReloadOnClick]
                                     (U.likeIdea idea)
-                                    "dafür!"
+                                    "Auf den Tisch!"  -- FIXME: put table badge here, too!
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
