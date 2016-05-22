@@ -42,12 +42,12 @@ instance ToHtml IdeaVoteLikeBars where
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
                 bs
 
-            -- FIXME: how do you un-like an idea?
             likeButtons :: Html ()
             likeButtons = when (CanLike `elem` caps) .
                 div_ [class_ "voting-buttons"] $
                         if userLikesIdea (ctx ^. renderContextUser) idea
                             then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
+                                 -- (ideas can not be un-liked)
                             else postButton_
                                     [class_ "btn", jsReloadOnClick]
                                     (U.likeIdea idea)
