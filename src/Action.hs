@@ -45,6 +45,7 @@ module Action
     , validLoggedIn
     , getSpacesForCurrentUser
     , deleteUser
+    , reportUser
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
@@ -397,15 +398,15 @@ phaseAction topic phasact = do
     case phasact of
       JuryPhasePrincipalEmail ->
           sendMailToRole Principal EmailMessage
-              { _msgISpace  = topic ^. topicIdeaSpace
-              , _msgSubject = "Thema in der Prüfungsphase"
+              { _msgSubjectLabel = topic ^. topicIdeaSpace . to IdeaSpaceSubject
+              , _msgSubjectText  = "Thema in der Prüfungsphase"
               , _msgBody    = topicTemplate "Schulleitung" "Prüfungsphase"
               , _msgHtml    = Nothing -- Not supported yet
               }
       ResultPhaseModeratorEmail ->
           sendMailToRole Moderator EmailMessage
-              { _msgISpace  = topic ^. topicIdeaSpace
-              , _msgSubject = "Thema in der Ergebnisphase"
+              { _msgSubjectLabel = topic ^. topicIdeaSpace . to IdeaSpaceSubject
+              , _msgSubjectText  = "Thema in der Ergebnisphase"
               , _msgBody    = topicTemplate "Moderatoren" "Ergebnisphase"
               , _msgHtml    = Nothing -- Not supported yet
               }
@@ -545,8 +546,8 @@ reportIdea ideaId doc = do
     let uri = relPath $ U.viewIdea idea
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
-        { _msgISpace  = idea ^. ideaLocation . ideaLocationSpace
-        , _msgSubject = "Problematische Idee."
+        { _msgSubjectLabel = idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject
+        , _msgSubjectText  = "Problematische Idee."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
@@ -575,8 +576,8 @@ reportCommentById ck doc = do
     let uri = relPath $ U.viewComment comment
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
-        { _msgISpace  = comment ^. _Key . ckIdeaLocation . ideaLocationSpace
-        , _msgSubject = "Problematischer Verbesserungsvorschlag."
+        { _msgSubjectLabel = comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject
+        , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
@@ -593,6 +594,32 @@ reportCommentById ck doc = do
             ]
         , _msgHtml = Nothing -- Not supported yet
         }
+
+reportUser :: ActionM m => AUID User -> Document -> m ()
+reportUser uid doc = do
+    user <- mquery $ findUser uid
+    let uri = relPath $ U.viewUserProfile user
+    cfg <- viewConfig
+    sendMailToRole Moderator EmailMessage
+        { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
+        , _msgSubjectText  = "Problematisches Nutzerprofil."
+        , _msgBody = ST.unlines
+            [ "Liebe Moderatoren,"
+            , ""
+            , "Ein Nutzerprofil wurde als problematisch gemeldet:"
+            , ""
+            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+                -- FIXME: do we want to send urls by email?  phishing and all?
+            , ""
+            , ""
+            , cs $ unMarkdown doc
+            , ""
+            , "hochachtungsvoll,"
+            , "Ihr Aula-Benachrichtigungsdienst"
+            ]
+        , _msgHtml = Nothing -- Not supported yet
+        }
+
 
 -- ASSUMPTION: Idea is in the given idea location.
 reportIdeaComment

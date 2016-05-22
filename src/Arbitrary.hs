@@ -269,6 +269,10 @@ instance Arbitrary EditUserProfile where
     arbitrary = EditUserProfile <$> arb
     shrink (EditUserProfile x) = EditUserProfile <$> shr x
 
+instance Arbitrary ReportUserProfile where
+    arbitrary = ReportUserProfile <$> arb
+    shrink (ReportUserProfile x) = ReportUserProfile <$> shr x
+
 instance Arbitrary CreateTopic where
     arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicRefPhaseEnd
     shrink (CreateTopic x y z) = CreateTopic <$> shr x <*> shr y <*> shr z

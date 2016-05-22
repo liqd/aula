@@ -83,7 +83,7 @@ spec = do
         , F (arb :: Gen ReportComment)
         ]
 
-    -- TODO: test this in all forms, for all validation errors.
+    -- FIXME: test this in all forms, for all validation errors.
     describe "form validation errors" $ do
         let spc = IdeaLocationSpace SchoolSpace
             page = CreateIdea spc
