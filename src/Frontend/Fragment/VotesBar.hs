@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.VotesBar
-    (IdeaVoteLikeBars(..))
+    (IdeaVoteLikeBars(..), IdeaVoteLikeBarsMode(..))
 where
 
 import qualified Frontend.Path as U
@@ -15,7 +15,10 @@ import           LifeCycle
 import           Persistent.Idiom
 
 
-data IdeaVoteLikeBars = IdeaVoteLikeBars RenderContext [IdeaCapability] IdeaStats
+data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaVoteLikeBarsMode RenderContext IdeaStats
+  deriving (Eq, Show, Read)
+
+data IdeaVoteLikeBarsMode = IdeaVoteLikeBarsPlain | IdeaVoteLikeBarsWithButtons
   deriving (Eq, Show, Read)
 
 -- | The issue has been debated for some time now whether we should show three segments (yes, no,
@@ -32,9 +35,17 @@ minBarSegmentWidth = 5
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars ctx caps
-                (IdeaStats idea phase quo voters)) = semanticDiv p $ do
-        let likeBar :: Html () -> Html ()
+    toHtml p@(IdeaVoteLikeBars mode ctx (IdeaStats idea phase quo voters)) = semanticDiv p $ do
+        let caps = ideaCapabilities
+                        (ctx ^. renderContextUser . _Id)
+                        (ctx ^. renderContextUser . userRole)
+                        idea
+                        phase
+                \\ case mode of
+                    IdeaVoteLikeBarsPlain       -> [CanLike, CanVoteIdea]
+                    IdeaVoteLikeBarsWithButtons -> []
+
+            likeBar :: Html () -> Html ()
             likeBar bs = div_ $ do
                 span_ [class_ "progress-bar"] $ do
                     span_ [ class_ "progress-bar-progress"

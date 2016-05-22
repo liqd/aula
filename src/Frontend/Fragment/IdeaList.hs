@@ -24,7 +24,6 @@ import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
 import Frontend.Fragment.VotesBar
-import LifeCycle
 import Persistent (IdeaStats(IdeaStats), ideaReachedQuorum)
 
 import qualified Frontend.Path as U
@@ -67,14 +66,8 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx _whatListPage stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
+    toHtml p@(ListItemIdea ctx _whatListPage stats@(IdeaStats idea _phase _quo _voters)) = semanticDiv p $ do
         div_ [class_ "ideas-list-item"] $ do
-            let caps = ideaCapabilities  -- TODO: move this into IdeaVoteLikeBars?
-                        (ctx ^. renderContextUser . _Id)
-                        (ctx ^. renderContextUser . userRole)
-                        idea
-                        phase
-
             a_ [href_ $ U.viewIdea idea] $ do
                 div_ [class_ "col-5-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
@@ -117,11 +110,7 @@ instance ToHtml ListItemIdea where
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
 
-                    -- we use the capabilities list to switch the like / vote buttons on or off.
-                    -- this way, if we ever decide to allow like in the list view, but not vote
-                    -- (vote has bigger implications than like and should require the user to
-                    -- enter the detail view), it's very simple to do that here.
-                    toHtml $ IdeaVoteLikeBars ctx (caps \\ [CanLike, CanVoteIdea]) stats
+                    toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsPlain ctx stats
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml

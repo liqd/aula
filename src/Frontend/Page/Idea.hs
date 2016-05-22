@@ -235,7 +235,7 @@ instance ToHtml ViewIdea where
                     PhaseResult       -> v >> c
 
             div_ [class_ "sub-heading"] $ do
-                toHtml $ IdeaVoteLikeBars ctx caps stats
+                toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsWithButtons ctx stats
 
             when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                 -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
