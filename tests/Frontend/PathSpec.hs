@@ -128,7 +128,10 @@ spec = do
           -- login forms
         , F (arb :: Gen PageHomeWithLoginPrompt)
 
+          -- topic forms
         , F (arb :: Gen CreateTopic)
+        , F (arb :: Gen EditTopic)
+
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen Frontend.Page.EditTopic)
         ]
