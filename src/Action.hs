@@ -595,7 +595,6 @@ reportCommentById ck doc = do
         , _msgHtml = Nothing -- Not supported yet
         }
 
--- TODO: Translation
 reportUser :: ActionM m => AUID User -> Document -> m ()
 reportUser uid doc = do
     user <- mquery $ findUser uid
@@ -603,11 +602,11 @@ reportUser uid doc = do
     cfg <- viewConfig
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
-        , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
+        , _msgSubjectText  = "Problematisches Nutzerprofil."
         , _msgBody = ST.unlines
             [ "Liebe Moderatoren,"
             , ""
-            , "A user wurde als problematisch gemeldet:"
+            , "Ein Nutzerprofil wurde als problematisch gemeldet:"
             , ""
             , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
                 -- FIXME: do we want to send urls by email?  phishing and all?

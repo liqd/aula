@@ -330,15 +330,13 @@ editUserProfile uid = formPageHandlerWithMsg
 
 -- ** User profile: Report user
 
--- TODO: Translate
 reportUserNote :: Note User
 reportUserNote = Note
     { noteHeaderText        = ("Report: " <>) . view (userLogin . unUserLogin)
-    , noteValidationOnField = "It can not be empty"
-    , noteLabelText         = "What is the problem with the profile?"
+    , noteValidationOnField = "Begründung"
+    , noteLabelText         = "Warum möchtest du das Nutzerprofil melden?"
     }
 
--- TODO
 instance FormPage ReportUserProfile where
     type FormPagePayload ReportUserProfile = Document
 
@@ -352,9 +350,8 @@ instance FormPage ReportUserProfile where
         semanticDiv p $ do
             noteForm reportUserNote v form user
 
--- TODO: Translate
 reportUser :: AUID User -> ActionM m => FormPageHandler m ReportUserProfile
 reportUser userId = formPageHandlerWithMsg
     (ReportUserProfile <$> mquery (findUser userId))
     (Action.reportUser userId)
-    "The user has been reported."
+    "Das Nutzerprofil wurde der Moderation gemeldet."
