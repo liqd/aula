@@ -332,9 +332,9 @@ editUserProfile uid = formPageHandlerWithMsg
 
 reportUserNote :: Note User
 reportUserNote = Note
-    { noteHeaderText        = ("Report: " <>) . view (userLogin . unUserLogin)
-    , noteValidationOnField = "Begründung"
-    , noteLabelText         = "Warum möchtest du das Nutzerprofil melden?"
+    { noteHeaderText                = ("Report: " <>) . view (userLogin . unUserLogin)
+    , noteLabelText                 = "Warum möchtest du das Nutzerprofil melden?"
+    , noteFieldNameInValiationError = "Begründung"
     }
 
 instance FormPage ReportUserProfile where

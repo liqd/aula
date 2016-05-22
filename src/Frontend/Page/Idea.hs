@@ -425,9 +425,9 @@ instance FormPage MoveIdea where
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
-    { noteHeaderText        = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
-    , noteValidationOnField = "Verbesserungsvorschlag"
-    , noteLabelText         = "Was möchtest du sagen?"
+    { noteHeaderText                = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
+    , noteLabelText                 = "Was möchtest du sagen?"
+    , noteFieldNameInValiationError = "Verbesserungsvorschlag"
     }
 
 instance FormPage CommentOnIdea where
@@ -469,9 +469,9 @@ instance FormPage EditComment where
 
 judgeIdeaNote :: IdeaJuryResultType -> Note Idea
 judgeIdeaNote juryType = Note
-    { noteHeaderText        = (headerText <>) . view ideaTitle
-    , noteValidationOnField = "Anmerkungen zur Durchführbarkeit"
-    , noteLabelText         = labelText
+    { noteHeaderText                = (headerText <>) . view ideaTitle
+    , noteLabelText                 = labelText
+    , noteFieldNameInValiationError = "Anmerkungen zur Durchführbarkeit"
     }
   where
     headerText = case juryType of
@@ -505,9 +505,9 @@ instance FormPage JudgeIdea where
 
 creatorStatementNote :: Note Idea
 creatorStatementNote = Note
-    { noteHeaderText        = ("Ansage des Gewinners zur Idee " <>) . view ideaTitle
-    , noteValidationOnField = "Statement des Autors"
-    , noteLabelText         = "Was möchtest du sagen?"
+    { noteHeaderText                = ("Ansage des Gewinners zur Idee " <>) . view ideaTitle
+    , noteLabelText                 = "Was möchtest du sagen?"
+    , noteFieldNameInValiationError = "Statement des Autors"
     }
 
 instance FormPage CreatorStatement where
@@ -529,9 +529,9 @@ newtype ReportCommentContent = ReportCommentContent
 
 reportCommentNote :: Note ()
 reportCommentNote = Note
-    { noteHeaderText        = const "Verbesserungsvorschlag melden"
-    , noteValidationOnField = "Bemerkung"
-    , noteLabelText         = "Was möchtest du melden?"
+    { noteHeaderText                = const "Verbesserungsvorschlag melden"
+    , noteLabelText                 = "Was möchtest du melden?"
+    , noteFieldNameInValiationError = "Bemerkung"
     }
 
 instance FormPage ReportComment where
@@ -549,9 +549,9 @@ instance FormPage ReportComment where
 
 reportIdeaNote :: Note Idea
 reportIdeaNote = Note
-    { noteHeaderText = ("Die Idee " <>) . (<> " melden") . view ideaTitle
-    , noteValidationOnField = "Bemerkung"
-    , noteLabelText = "Was möchtest du melden?"
+    { noteHeaderText                = ("Die Idee " <>) . (<> " melden") . view ideaTitle
+    , noteLabelText                 = "Was möchtest du melden?"
+    , noteFieldNameInValiationError = "Bemerkung"
     }
 
 instance FormPage ReportIdea where
