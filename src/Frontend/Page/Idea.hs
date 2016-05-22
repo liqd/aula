@@ -46,7 +46,6 @@ import Control.Arrow ((&&&))
 import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
-import Frontend.Fragment.Feasibility
 import Frontend.Fragment.Note
 import Frontend.Fragment.VotesBar
 import Frontend.Prelude hiding ((<|>), MoveIdea)
@@ -315,6 +314,39 @@ instance ToHtml ViewIdea where
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c phase ^. html
+
+
+feasibilityVerdict :: Bool -> Idea -> [IdeaCapability] -> Monad m => HtmlT m ()
+feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
+    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
+        explToHtml (Markdown text) = do
+            p_ "Begründung:"
+            p_ $ toHtml text
+
+    when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
+        div_ [class_ "admin-buttons"] $ do
+            button_ [ class_ "btn-cta m-valid"
+                    , onclick_ $ U.judgeIdea idea IdeaFeasible
+                    ] $ do
+                i_ [class_ "icon-check"] nil
+                "durchführbar"
+            button_ [ class_ "btn-cta m-invalid"
+                    , onclick_ $ U.judgeIdea idea IdeaNotFeasible
+                    ] $ do
+                i_ [class_ "icon-times"] nil
+                "nicht durchführbar"
+
+    case _ideaJuryResult idea of
+        Nothing -> nil
+        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
+            div_ [class_ "info-text m-realised"] $ do
+                h3_ [class_ "info-text-header"] "durchführbar"
+                maybeExpl ^. _Just . to explToHtml
+        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
+            div_ [class_ "info-text m-unrealised"] $ do
+                h3_ [class_ "info-text-header"] "nicht durchführbar"
+                explToHtml expl
+
 
 instance ToHtml ViewDeletedIdea where
     toHtmlRaw = toHtml
