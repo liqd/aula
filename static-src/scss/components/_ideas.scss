@@ -115,11 +115,12 @@
         float: right;
 
         ul li, .indicator-icon {
+            @include rem(width, 32px);
             background-position: center center;
             background-repeat: no-repeat;
             background-size: contain;
-            text-indent: -9999px;
             min-width: 32px;
+            text-indent: -9999px;
         }
 
         ul li>a,
