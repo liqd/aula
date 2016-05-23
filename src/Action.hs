@@ -836,7 +836,6 @@ eventLogIdeaNewLocation change = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogIdeaNewLocation (idea ^. _Key) mfrom mto
 
--- TODO: throw this in all applicable situations.
 eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
 eventLogIdeaReachesQuorum idea = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
