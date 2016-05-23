@@ -17,6 +17,7 @@ import Frontend.Validation
 
 data Note h = Note
     { noteHeaderText                :: h -> ST
+    , noteExplanation               :: Maybe ST
     , noteLabelText                 :: ST
     , noteFieldNameInValiationError :: ST
     }
@@ -31,6 +32,7 @@ noteForm
 noteForm note v form header = do
     div_ [class_ "container-note"] $ do
         h1_ [class_ "main-heading"] . toHtml $ noteHeaderText note header
+        (div_ [class_ "container-info"] . p_ . toHtml) `mapM_` noteExplanation note
         form $ do
             label_ $ do
                 span_ [class_ "label-text"] . toHtml $ noteLabelText note

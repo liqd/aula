@@ -458,6 +458,7 @@ instance FormPage MoveIdea where
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
     { noteHeaderText                = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
+    , noteExplanation               = Nothing
     , noteLabelText                 = "Was möchtest du sagen?"
     , noteFieldNameInValiationError = "Verbesserungsvorschlag"
     }
@@ -502,6 +503,7 @@ instance FormPage EditComment where
 judgeIdeaNote :: IdeaJuryResultType -> Note Idea
 judgeIdeaNote juryType = Note
     { noteHeaderText                = (headerText <>) . view ideaTitle
+    , noteExplanation               = Nothing
     , noteLabelText                 = labelText
     , noteFieldNameInValiationError = "Anmerkungen zur Durchführbarkeit"
     }
@@ -538,6 +540,7 @@ instance FormPage JudgeIdea where
 creatorStatementNote :: Note Idea
 creatorStatementNote = Note
     { noteHeaderText                = ("Ansage des Gewinners zur Idee " <>) . view ideaTitle
+    , noteExplanation               = Nothing
     , noteLabelText                 = "Was möchtest du sagen?"
     , noteFieldNameInValiationError = "Statement des Autors"
     }
@@ -562,6 +565,7 @@ newtype ReportCommentContent = ReportCommentContent
 reportCommentNote :: Note ()
 reportCommentNote = Note
     { noteHeaderText                = const "Verbesserungsvorschlag melden"
+    , noteExplanation               = Just "Hier kannst einen Verbesserungsvorschlag wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird den Verbesserungsvorschlag schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Was möchtest du melden?"
     , noteFieldNameInValiationError = "Bemerkung"
     }
@@ -582,6 +586,7 @@ instance FormPage ReportComment where
 reportIdeaNote :: Note Idea
 reportIdeaNote = Note
     { noteHeaderText                = ("Die Idee " <>) . (<> " melden") . view ideaTitle
+    , noteExplanation               = Just "Hier kannst eine Idee wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird die Idee schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Was möchtest du melden?"
     , noteFieldNameInValiationError = "Bemerkung"
     }
