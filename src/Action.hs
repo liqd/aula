@@ -818,7 +818,6 @@ eventLogUserDelegates ctx toUser = do
                                   <$> mquery (findIdea iid)
     eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
 
--- TODO: throw this in all applicable situations.
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
