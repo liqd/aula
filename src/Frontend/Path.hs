@@ -68,6 +68,7 @@ module Frontend.Path
     -- * paths to admin pages, user profile, user setting
     , adminViewUsers
     , adminViewClasses
+    , adminResetPassword
     , viewUserProfile
     , viewUserIdProfile
     , editUserProfile
@@ -317,6 +318,7 @@ data AdminMode (r :: AllowedMethod) =
   | AdminTopicNextPhase (AUID Topic)
   | AdminTopicVotingPrevPhase (AUID Topic)
   | AdminChangePhase
+  | AdminResetPassword (AUID User)
   deriving (Generic, Show)
 
 instance SOP.Generic (AdminMode r)
@@ -339,6 +341,7 @@ admin (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
 admin (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> "next-phase"
 admin (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
 admin AdminChangePhase                path = path </> "change-phase"
+admin (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </> "reset-pwd"
 
 
 -- ** UserMode
@@ -473,6 +476,9 @@ adminViewUsers = AdminViewUsers Nothing
 
 adminViewClasses :: AdminMode 'AllowGetPost
 adminViewClasses = AdminViewClasses Nothing
+
+adminResetPassword :: User -> AdminMode 'AllowGetPost
+adminResetPassword u = AdminResetPassword (u ^. _Id)
 
 viewUserProfile :: User -> Main 'AllowGetPost
 viewUserProfile = viewUserIdProfile . view _Id

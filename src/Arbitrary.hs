@@ -332,6 +332,11 @@ instance Arbitrary PageAdminSettingsEventsProtocol where
     shrink (PageAdminSettingsEventsProtocol x) =
         PageAdminSettingsEventsProtocol <$> shr x
 
+instance Arbitrary PageAdminResetPassword where
+    arbitrary = PageAdminResetPassword <$> arb <*> arb
+    shrink (PageAdminResetPassword x y) =
+        PageAdminResetPassword <$> shr x <*> shr y
+
 instance Arbitrary AdminPhaseChangeForTopicData where
     arbitrary = AdminPhaseChangeForTopicData <$> arb <*> arb
     shrink (AdminPhaseChangeForTopicData x y) =

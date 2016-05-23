@@ -120,6 +120,12 @@ data PageAdminSettingsEventsProtocol =
 
 instance Page PageAdminSettingsEventsProtocol
 
+data PageAdminResetPassword =
+    PageAdminResetPassword User InitialPassword
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminResetPassword
+
 data CreateUserPayload = CreateUserPayload
     { _createUserFirstName :: UserFirstName
     , _createUserLastName  :: UserLastName
@@ -192,6 +198,9 @@ instance ToMenuItem PageAdminSettingsEventsProtocol where
 
 instance ToMenuItem AdminPhaseChange where
     toMenuItem _ = MenuItemPhaseChange
+
+instance ToMenuItem PageAdminResetPassword where
+    toMenuItem _ = MenuItemUsers
 
 -- * templates
 
@@ -579,7 +588,7 @@ instance FormPage AdminEditUser where
                                                  -- form logic, this is a pure UI task.)
                     span_ [class_ "label-text"] "Klasse"
                     inputSelect_ [class_ "m-stretch"]  "class" v
-                a_ [href_ U.Broken, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                 div_ [class_ "admin-buttons"] $ do
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     DF.inputSubmit "Änderungen speichern"
@@ -827,6 +836,36 @@ instance FormPage AdminPhaseChange where
                 p_ "Vorwärts/Rückwärts"
                 DF.inputSelect "dir" v
             DF.inputSubmit "Verschieben!"
+
+instance FormPage PageAdminResetPassword where
+    type FormPagePayload PageAdminResetPassword = InitialPassword
+
+    formAction (PageAdminResetPassword u _p) = U.Admin $ U.adminResetPassword u
+    redirectOf (PageAdminResetPassword u _p) _ = U.Admin . U.AdminEditUser $ u ^. _Id
+
+    makeForm (PageAdminResetPassword _u p) =
+        InitialPassword <$> ("new-pwd" .: DF.text (p ^. unInitialPassword . to Just))
+
+    -- TODO: Styling
+    -- TODO: Translation
+    formPage v form p@(PageAdminResetPassword usr pwd) = adminFrame p . semanticDiv p $ do
+        h3_ "Reset password for user"
+        form $ do
+            div_ $ do
+                p_ . toHtml $ "Reset password for user: " <> usr ^. userLogin . unUserLogin
+                p_ . toHtml $ "New password:" <> (pwd ^. unInitialPassword)
+                p_ "Are you sure???"
+            div_ $ do
+                DF.inputHidden "new-pwd" v
+                DF.inputSubmit "Sure!"
+                a_ [class_ "btn", href_ $ redirectOf p ()] "Zurück"
+
+-- TODO: Translation
+adminResetPassword :: ActionM m => AUID User -> FormPageHandler m PageAdminResetPassword
+adminResetPassword userId = formPageHandlerWithMsg
+    (PageAdminResetPassword <$> mquery (findActiveUser userId) <*> mkRandomPassword)
+    (Action.resetPassword userId)
+    "The password has changed!"
 
 
 -- * csv file handling

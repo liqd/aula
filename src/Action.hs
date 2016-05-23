@@ -82,6 +82,9 @@ module Action
     , Action.editIdea
     , Action.moveIdeaToTopic
 
+      -- * admin
+    , resetPassword
+
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
@@ -688,6 +691,14 @@ setCreatorStatement = update <..> SetCreatorStatement
 revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
+
+-- * admin
+
+resetPassword :: ActionM m => AUID User -> InitialPassword -> m ()
+resetPassword = update <..> ResetUserPass
+
+
+-- * phase shift
 
 data PhaseShiftResult =
     PhaseShiftResultOk (AUID Topic) Phase Phase
