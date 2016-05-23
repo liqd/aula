@@ -483,7 +483,7 @@ moveIdeaToTopic :: ActionM m => AUID Idea -> MoveIdea -> m ()
 moveIdeaToTopic ideaId moveIdea = do
     idea <- mquery $ findIdea ideaId
     update $ Persist.MoveIdeaToTopic ideaId moveIdea
-    eventLogIdeaNewLocation $ IdeaChangedLocation
+    eventLogIdeaNewLocation `mapM_` ideaChangedLocation
         idea
         (idea ^? ideaLocation . ideaLocationTopicId)
         (moveIdeaElim Nothing Just moveIdea)
@@ -828,7 +828,10 @@ eventLogTopicNewPhase topic fromPhase toPhase =
 eventLogIdeaNewLocation
     :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
     => IdeaChangedLocation -> m ()
-eventLogIdeaNewLocation (IdeaChangedLocation idea mfrom mto) = do
+eventLogIdeaNewLocation change = do
+    let idea  = change ^. ideaChangedLocationIdea
+        mfrom = change ^. ideaChangedLocationFrom
+        mto   = change ^. ideaChangedLocationTo
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogIdeaNewLocation (idea ^. _Key) mfrom mto

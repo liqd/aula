@@ -97,7 +97,8 @@ module Persistent.Pure
     , addTopic
     , editTopic
     , withTopic
-    , IdeaChangedLocation(..)
+    , IdeaChangedLocation, ideaChangedLocation
+    , ideaChangedLocationIdea, ideaChangedLocationFrom, ideaChangedLocationTo
     , moveIdeasToLocation
     , findTopic
     , findTopicBy
@@ -492,7 +493,7 @@ editTopic topicId (EditTopicData title desc ideas) = do
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
     previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
     space <- view topicIdeaSpace <$> (maybe404 =<< liftAQuery (findTopic topicId))
-    (<>) <$> moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)  -- TODO: filter out ideas that haven't moved?
+    (<>) <$> moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
          <*> moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 withTopic :: AUID Topic -> AulaTraversal Topic
@@ -529,22 +530,28 @@ getTopics :: Query [Topic]
 getTopics = view dbTopics
 
 data IdeaChangedLocation = IdeaChangedLocation
-    { _ideaChangedLocationId   :: Idea
+    { _ideaChangedLocationIdea :: Idea
     , _ideaChangedLocationFrom :: Maybe (AUID Topic)
     , _ideaChangedLocationTo   :: Maybe (AUID Topic)
     }
   deriving (Eq, Ord, Show, Read)
 
+ideaChangedLocation :: Idea -> Maybe (AUID Topic) -> Maybe (AUID Topic)
+                    -> Maybe IdeaChangedLocation
+ideaChangedLocation i f t = if f == t
+    then Nothing
+    else Just $ IdeaChangedLocation i f t
+
 moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate [IdeaChangedLocation]
 moveIdeasToLocation ideaIds newloc = do
     result <- forM ideaIds $ \ideaId -> do
         idea <- maybe404 =<< liftAQuery (findIdea ideaId)
-        pure $ IdeaChangedLocation idea
+        pure $ ideaChangedLocation idea
                   (idea ^? ideaLocation . ideaLocationTopicId)
                   (newloc ^? ideaLocationTopicId)
     for_ ideaIds $ \ideaId ->
         withIdea ideaId . ideaLocation .= newloc
-    return result
+    return $ catMaybes result
 
 moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
 moveIdeaToTopic ideaId mTopicId =
@@ -867,3 +874,6 @@ dangerousResetAulaData = put emptyAulaData
 
 dangerousRenameAllLogins :: ST -> AUpdate ()
 dangerousRenameAllLogins suffix = aulaUserLogins . _UserLogin <>= suffix
+
+
+makeLenses ''IdeaChangedLocation
