@@ -12,6 +12,7 @@ import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
 import Control.Monad (zipWithM_, (>=>))
+import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -198,8 +199,8 @@ universe rnd = do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics <- mapM (currentUserAddDb (AddTopic now))
-                =<< generate numberOfTopics rnd (genTopic now ideaSpaces)
+    topics <- fst <$$> (mapM (update . AddTopic now . EnvWith admin now)
+                =<< generate numberOfTopics rnd (genTopic now ideaSpaces))
 
     ideas <- mapM (currentUserAddDb AddIdea)
                 =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
@@ -240,7 +241,8 @@ userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocation
 -- | Generate one arbitrary item of each type (idea, user, ...)
 -- plus one extra user for logging test.
 --
--- Note that no user is getting logged in by this code.
+-- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
+-- the event procotol for moderators.
 genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
     now <- getCurrentTimestamp
@@ -284,7 +286,7 @@ genInitialTestDb = do
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    topic <- update $ AddTopic now (EnvWith user1 now ProtoTopic
+    (topic, _) <- update $ AddTopic now (EnvWith user1 now ProtoTopic
         { _protoTopicTitle       = "topic-title"
         , _protoTopicDesc        = PlainDocument "topic-desc"
         , _protoTopicImage       = ""
@@ -296,6 +298,6 @@ genInitialTestDb = do
     -- (make sure topic id is what we expect in some test cases.)
     case topic ^. _Id of (AUID 5) -> pure ()
 
-    update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
+    _ <- update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()

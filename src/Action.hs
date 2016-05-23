@@ -294,7 +294,7 @@ addWithUser addA user protoA = do
     now <- getCurrentTimestamp
     update $ addA (EnvWith user now protoA)
 
--- FIXME: rename @{currentUserAddDb,addWithCurrentUser}*@ for consistency with 'addWithUser'.
+-- TODO: rename @{currentUserAddDb,addWithCurrentUser}*@ for consistency with 'addWithUser'.
 
 currentUserAddDb :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m a
 currentUserAddDb addA protoA = do
@@ -458,14 +458,17 @@ type Create_ a = forall m. (ActionM m) => Proto a -> m ()
 createTopic :: Create Topic
 createTopic proto = do
     now <- getCurrentTimestamp
-    topic <- currentUserAddDb (AddTopic now) proto
+    cUser <- currentUser
+    (topic, ideasChangeLocation) <- update $ AddTopic now (EnvWith cUser now proto)
     eventLogUserCreatesTopic topic
+    eventLogIdeaNewTopic `mapM_` ideasChangeLocation
     pure topic
 
 editTopic :: ActionM m => AUID Topic -> EditTopicData -> m ()
 editTopic topicId topic = do
-    update $ EditTopic topicId topic
+    ideasChangedLocation <- update $ EditTopic topicId topic
     eventLogUserEditsTopic =<< mquery (findTopic topicId)
+    eventLogIdeaNewTopic `mapM_` ideasChangedLocation
 
 createIdea :: Create Idea
 createIdea proto = do
@@ -482,7 +485,7 @@ moveIdeaToTopic :: ActionM m => AUID Idea -> MoveIdea -> m ()
 moveIdeaToTopic ideaId moveIdea = do
     idea <- mquery $ findIdea ideaId
     update $ Persist.MoveIdeaToTopic ideaId moveIdea
-    eventLogIdeaNewTopic
+    eventLogIdeaNewTopic $ IdeaChangedLocation
         idea
         (idea ^? ideaLocation . ideaLocationTopicId)
         (moveIdeaElim Nothing Just moveIdea)
@@ -824,11 +827,12 @@ eventLogTopicNewPhase topic fromPhase toPhase =
             -- FIXME: the triggering user should not always be the creator of the topic.
         EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
 
--- TODO: throw this in all applicable situations.
+-- TODO: s/eventLogIdeaNewTopic/eventLogIdeaNewLocation/
+-- TODO: s/EventLogIdeaNewTopic/EventLogIdeaNewLocation/
 eventLogIdeaNewTopic
     :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
-    => Idea -> Maybe (AUID Topic) -> Maybe (AUID Topic) -> m ()
-eventLogIdeaNewTopic idea mfrom mto = do
+    => IdeaChangedLocation -> m ()
+eventLogIdeaNewTopic (IdeaChangedLocation idea mfrom mto) = do
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogIdeaNewTopic (idea ^. _Key) mfrom mto

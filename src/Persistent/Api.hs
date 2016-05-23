@@ -46,6 +46,8 @@ type RunPersist = RunPersistT IO
 askDb :: Acid.Query AulaData AulaData
 askDb = ask
 
+deriveSafeCopy 0 'base ''IdeaChangedLocation
+
 $(makeAcidic ''AulaData
     [ 'addCommentToIdea
     , 'setCommentDesc

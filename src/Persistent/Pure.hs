@@ -97,6 +97,7 @@ module Persistent.Pure
     , addTopic
     , editTopic
     , withTopic
+    , IdeaChangedLocation(..)
     , moveIdeasToLocation
     , findTopic
     , findTopicBy
@@ -137,7 +138,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
-import Control.Monad (unless, replicateM, when)
+import Control.Monad (unless, when, replicateM, forM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
@@ -486,13 +487,13 @@ setUserLoginAndRole uid mlogin role = do
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid url = withUser uid . userAvatar ?= url
 
-editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
+editTopic :: AUID Topic -> EditTopicData -> AUpdate [IdeaChangedLocation]
 editTopic topicId (EditTopicData title desc ideas) = do
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
     previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
     space <- view topicIdeaSpace <$> (maybe404 =<< liftAQuery (findTopic topicId))
-    moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
-    moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
+    (<>) <$> moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)  -- TODO: filter out ideas that haven't moved?
+         <*> moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 withTopic :: AUID Topic -> AulaTraversal Topic
 withTopic = withRecord dbTopicMap
@@ -527,10 +528,23 @@ getSpacesForRole role =
 getTopics :: Query [Topic]
 getTopics = view dbTopics
 
-moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
-moveIdeasToLocation ideaIds location =
+data IdeaChangedLocation = IdeaChangedLocation
+    { _ideaChangedLocationId   :: Idea
+    , _ideaChangedLocationFrom :: Maybe (AUID Topic)
+    , _ideaChangedLocationTo   :: Maybe (AUID Topic)
+    }
+  deriving (Eq, Ord, Show, Read)
+
+moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate [IdeaChangedLocation]
+moveIdeasToLocation ideaIds newloc = do
+    result <- forM ideaIds $ \ideaId -> do
+        idea <- maybe404 =<< liftAQuery (findIdea ideaId)
+        pure $ IdeaChangedLocation idea
+                  (idea ^? ideaLocation . ideaLocationTopicId)
+                  (newloc ^? ideaLocationTopicId)
     for_ ideaIds $ \ideaId ->
-        withIdea ideaId . ideaLocation .= location
+        withIdea ideaId . ideaLocation .= newloc
+    return result
 
 moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
 moveIdeaToTopic ideaId mTopicId =
@@ -542,7 +556,7 @@ moveIdeaToTopic ideaId mTopicId =
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase
 
-addTopic :: Timestamp -> AddDb Topic
+addTopic :: Timestamp -> EnvWithProto Topic -> AUpdate (Topic, [IdeaChangedLocation])
 addTopic now pt = do
     t <- addDb dbTopicMap pt
     dbFrozen <- liftAQuery $ view dbFreeze
@@ -554,8 +568,7 @@ addTopic now pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
-    return topic
+    (topic,) <$> moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
 
 addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap
