@@ -32,7 +32,7 @@ stories: .phony aula.unregister
 
 # aware of aula and thentos sources
 sensei-full: .phony unregister-full
-	$(EXEC) sensei -j5 $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
+	$(EXEC) sensei -j5 $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large
 
 seito: .phony
 	sleep 0.2 && seito
