@@ -111,7 +111,7 @@ instance ToHtml LoginDemoHints where
                               Principal     -> nil
                               Admin         -> nil
                     td_ . toHtml $ (u ^. userEmailAddress :: ST)
-                    td_ . toHtml . (\case (UserPassInitial s) -> s; s -> cs $ show s) $ u ^. userPassword)
+                    td_ . toHtml . (\case (UserPassInitial (InitialPassword s)) -> s; s -> cs $ show s) $ u ^. userPassword)
                   `mapM_` users
 
 

@@ -25,7 +25,6 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
-  :<|> "random-password" :> GetH (PageShow UserPass)
   :<|> "undefined" :> GetH ()
   :<|> "error500" :> GetH ()
   :<|> "error303" :> GetH ()
@@ -37,7 +36,6 @@ aulaTesting =
   :<|> ((`PublicFrame` []) . PageShow <$> Action.query getTopics)
   :<|> ((`PublicFrame` []) . PageShow <$> Action.query getAllUsers)
 
-  :<|> (PageShow <$> mkRandomPassword)
   :<|> undefined  -- (intentional)
   :<|> throwError500 "testing error500"
   :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })

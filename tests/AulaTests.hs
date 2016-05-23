@@ -152,7 +152,7 @@ someTestUser = user
             , _profileDesc   = Markdown nil
             }
         , _userSettings  = UserSettings
-            { _userSettingsPassword = UserPassInitial ""
+            { _userSettingsPassword = UserPassInitial (InitialPassword "")
             , _userSettingsEmail    = Nothing
             }
         }

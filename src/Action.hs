@@ -236,7 +236,7 @@ class (MonadError ActionExcept m) => ActionPersist m where
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
 class ActionRandomPassword m where
-    mkRandomPassword :: m UserPass
+    mkRandomPassword :: m InitialPassword
 
 class ActionCurrentTimestamp m where
     getCurrentTimestamp :: m Timestamp

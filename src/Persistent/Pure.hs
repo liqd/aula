@@ -702,7 +702,7 @@ nextId = AUID <$> (dbLastId <+= 1)
 
 -- | No 'FromProto' instance, since this is more complex, due to the possible
 -- auto-generating of logins and passwords.
-userFromProto :: MetaInfo User -> UserLogin -> UserPass -> Proto User -> User
+userFromProto :: MetaInfo User -> UserLogin -> InitialPassword -> Proto User -> User
 userFromProto metainfo uLogin uPassword proto = User
     { _userMeta      = metainfo
     , _userLogin     = uLogin
@@ -710,7 +710,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userLastName  = proto ^. protoUserLastName
     , _userRole      = proto ^. protoUserRole
     , _userSettings  = UserSettings
-        { _userSettingsPassword = uPassword
+        { _userSettingsPassword = UserPassInitial uPassword
         , _userSettingsEmail    = proto ^. protoUserEmail
         }
     , _userProfile   = UserProfile

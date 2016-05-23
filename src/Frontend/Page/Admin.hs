@@ -905,7 +905,7 @@ adminInitialPasswordsCsv clss =
     InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of
-        UserPassInitial ps -> Just $ CsvUserRecord
+        UserPassInitial (InitialPassword ps) -> Just $ CsvUserRecord
               (u ^. userFirstName)
               (u ^. userLastName)
               (u ^. userEmail)
