@@ -88,14 +88,16 @@ phaseTrans _ _ = Nothing
 -- FIXME: Extend the list
 data UserCapability
     = CanCreateTopic
+    | CanEditUser
   deriving (Eq, Show)
 
-userCapabilities :: IdeaSpace -> Role -> [UserCapability]
-userCapabilities _s = \case
+
+userCapabilities :: Role -> [UserCapability]
+userCapabilities = \case
     Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanCreateTopic]
+    Moderator        -> [CanCreateTopic, CanEditUser]
     Principal        -> []
     Admin            -> []
 

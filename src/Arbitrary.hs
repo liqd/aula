@@ -266,8 +266,8 @@ instance Arbitrary PageUserSettings where
     shrink (PageUserSettings x) = PageUserSettings <$> shr x
 
 instance Arbitrary EditUserProfile where
-    arbitrary = EditUserProfile <$> arb
-    shrink (EditUserProfile x) = EditUserProfile <$> shr x
+    arbitrary = EditUserProfile <$> arb <*> arb
+    shrink (EditUserProfile x y) = EditUserProfile <$> shr x <*> shr y
 
 instance Arbitrary ReportUserProfile where
     arbitrary = ReportUserProfile <$> arb

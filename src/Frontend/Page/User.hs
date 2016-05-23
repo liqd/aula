@@ -18,6 +18,7 @@ import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
 import Frontend.Prelude hiding ((</>), (<.>))
 import Frontend.Validation
+import LifeCycle
 import Persistent.Api
     ( SetUserEmail(SetUserEmail)
     , SetUserPass(SetUserPass)
@@ -53,7 +54,7 @@ data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes RenderContext
 instance Page PageUserProfileDelegatedVotes
 
 -- | 8.X User profile: Editing the public profile
-data EditUserProfile = EditUserProfile User
+data EditUserProfile = EditUserProfile RenderContext User
   deriving (Eq, Show, Read)
 
 instance Page EditUserProfile
@@ -175,16 +176,20 @@ userHeaderDiv ctx (ActiveUser user) =
         span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
-        let isOwnProfile = ctx ^. renderContextUser . _Id == user ^. _Id
-            btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
+        let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
+            editProfileBtn = btn (U.editUserProfile user) "+ Profil bearbeiten"
 
-        div_ [class_ "heroic-btn-group"] $ if isOwnProfile
+        div_ [class_ "heroic-btn-group"] $ if isOwnProfile ctx user
             then do
-                btn (U.editUserProfile user) "+ Profil bearbeiten"
+                editProfileBtn
             else do
-                btn U.Broken "Klassenweit beauftragen"
-                btn U.Broken "Schulweit beauftragen"
+                when True $ do  -- FIXME: `CanVoteIdea `elem` caps`, but caps need to be refactored for that.
+                                -- FIXME: (in the process, we should merge CanVote{Idea,Topic}.  it's the same thing.)
+                    btn U.Broken "Klassenweit beauftragen"
+                    btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
+                let caps = ctx ^. renderContextUser . userRole . to userCapabilities
+                when (CanEditUser `elem` caps) editProfileBtn
 
 
 -- ** User Profile: Created Ideas
@@ -278,22 +283,28 @@ delegatedVotes userId = do
 
 -- ** User Profile: Edit profile
 
+isOwnProfile :: RenderContext -> User -> Bool
+isOwnProfile ctx user = ctx ^. renderContextUser . _Id == user ^. _Id
+
 instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
 
-    formAction (EditUserProfile u) = U.editUserProfile u
-    redirectOf (EditUserProfile u) _ = U.viewUserProfile u
+    formAction (EditUserProfile _ctx u) = U.editUserProfile u
+    redirectOf (EditUserProfile _ctx u) _ = U.viewUserProfile u
 
-    makeForm (EditUserProfile user) =
+    makeForm (EditUserProfile _ctx user) =
         UserProfile
         <$> ("avatar" .: (cs <$$> DF.file))
         <*> ("desc"   .: validate "Beschreibung" markdownV (dfTextField user userDesc _Markdown))
 
-    formPage v form p = do
+    formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv p $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Profil bearbeiten"
+                    h1_ [class_ "main-heading"] .
+                        toHtml $ if isOwnProfile ctx user
+                            then "Eigenes Nutzerprofil bearbeiten"
+                            else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
                     form $ do
                         label_ $ do
                             span_ [class_ "label-text"] "Avatar"
@@ -306,7 +317,7 @@ instance FormPage EditUserProfile where
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
-    (EditUserProfile <$> mquery (findUser uid))
+    (EditUserProfile <$> renderContext <*> mquery (findUser uid))
     (\up -> do
         case up ^. profileAvatar of
             Nothing ->
