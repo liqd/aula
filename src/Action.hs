@@ -104,7 +104,7 @@ module Action
     , eventLogUserVotesOnIdea
     , eventLogUserVotesOnComment
     , eventLogUserDelegates
-    , eventLogIdeaNewTopic
+    , eventLogIdeaNewLocation
     , eventLogIdeaReachesQuorum
     , WarmUp, warmUp
     )
@@ -459,14 +459,14 @@ createTopic proto = do
     cUser <- currentUser
     (topic, ideasChangeLocation) <- update $ AddTopic now (EnvWith cUser now proto)
     eventLogUserCreatesTopic topic
-    eventLogIdeaNewTopic `mapM_` ideasChangeLocation
+    eventLogIdeaNewLocation `mapM_` ideasChangeLocation
     pure topic
 
 editTopic :: ActionM m => AUID Topic -> EditTopicData -> m ()
 editTopic topicId topic = do
     ideasChangedLocation <- update $ EditTopic topicId topic
     eventLogUserEditsTopic =<< mquery (findTopic topicId)
-    eventLogIdeaNewTopic `mapM_` ideasChangedLocation
+    eventLogIdeaNewLocation `mapM_` ideasChangedLocation
 
 createIdea :: Create Idea
 createIdea proto = do
@@ -483,7 +483,7 @@ moveIdeaToTopic :: ActionM m => AUID Idea -> MoveIdea -> m ()
 moveIdeaToTopic ideaId moveIdea = do
     idea <- mquery $ findIdea ideaId
     update $ Persist.MoveIdeaToTopic ideaId moveIdea
-    eventLogIdeaNewTopic $ IdeaChangedLocation
+    eventLogIdeaNewLocation $ IdeaChangedLocation
         idea
         (idea ^? ideaLocation . ideaLocationTopicId)
         (moveIdeaElim Nothing Just moveIdea)
@@ -825,15 +825,13 @@ eventLogTopicNewPhase topic fromPhase toPhase =
             -- FIXME: the triggering user should not always be the creator of the topic.
         EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
 
--- TODO: s/eventLogIdeaNewTopic/eventLogIdeaNewLocation/
--- TODO: s/EventLogIdeaNewTopic/EventLogIdeaNewLocation/
-eventLogIdeaNewTopic
+eventLogIdeaNewLocation
     :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
     => IdeaChangedLocation -> m ()
-eventLogIdeaNewTopic (IdeaChangedLocation idea mfrom mto) = do
+eventLogIdeaNewLocation (IdeaChangedLocation idea mfrom mto) = do
     uid <- currentUserId
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
-        EventLogIdeaNewTopic (idea ^. _Key) mfrom mto
+        EventLogIdeaNewLocation (idea ^. _Key) mfrom mto
 
 -- TODO: throw this in all applicable situations.
 eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
@@ -873,9 +871,9 @@ instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
             -> EventLogUserDelegates s <$> warmUp' u
         EventLogTopicNewPhase t p1 p2
             -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2
-        EventLogIdeaNewTopic i mt1 mt2
+        EventLogIdeaNewLocation i mt1 mt2
             -> do i' <- warmUp' i; mt1' <- mapM warmUp' mt1; mt2' <- mapM warmUp' mt2;
-                  pure $ EventLogIdeaNewTopic i' mt1' mt2'
+                  pure $ EventLogIdeaNewLocation i' mt1' mt2'
         EventLogIdeaReachesQuorum i
             -> EventLogIdeaReachesQuorum <$> warmUp' i
 
