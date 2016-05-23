@@ -300,10 +300,9 @@ instance FormPage EditUserProfile where
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] .
-                        -- TODO: Translation
                         toHtml $ if isOwnProfile ctx user
-                            then "Edit profile"
-                            else "Edit profile of " <> user ^. userLogin . unUserLogin
+                            then "Eigenes Nutzerprofil bearbeiten"
+                            else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
                     form $ do
                         label_ $ do
                             span_ [class_ "label-text"] "Avatar"
