@@ -1,6 +1,8 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 {-# LANGUAGE OverloadedStrings #-}
+
+-- | Why tag test: https://github.com/liqd/aula/blob/master/docs/test-suites.md
 module Test.Hspec.Missing where
 
 import Data.Monoid

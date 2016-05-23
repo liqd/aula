@@ -5,19 +5,19 @@
 # Change to the source directory which is attacehed as docker volume
 cd /liqd/aula
 
-NO_OF_CASES="100"
-SIZE_OF_CASES="30"
+QC_MAX_SUCCESS="100"
+QC_MAX_SIZE="30"
 
 while [[ $# > 1 ]]
 do
 key=$1
 case $key in
 	--qc-max-success)
-	NO_OF_CASES="$2"
+	QC_MAX_SUCCESS="$2"
 	shift
 	;;
 	--qc-max-size)
-	SIZE_OF_CASES="$2"
+	QC_MAX_SIZE="$2"
 	shift
 	;;
 	*)
@@ -26,7 +26,7 @@ esac
 shift
 done
 
-stack install --fast --test --test-arguments "--qc-max-success=${NO_OF_CASES} --qc-max-size=${SIZE_OF_CASES}" --coverage --allow-different-user --pedantic aula
+stack install --fast --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" --coverage --allow-different-user --pedantic aula
 
 # FIXME: Coveralls coverage
 # # Test

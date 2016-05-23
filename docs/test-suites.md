@@ -1,14 +1,14 @@
 # Testing
 
 During the development if an issue occurs, we try to program the type system
-to reject codes which could lead to similar issues in the future. The second
-defense line is to write quick check properties that checks against the
+to reject code which could lead to similar issues in the future. The second
+defense line is to write quick check properties that check against the
 assumptions we have at the moment.
 
 As the test suite grows it is necessary to make a separation between the
 tests which we run during the development cycle and those tests that should
-be run on the continuous integration. We call the first one as **smoke
-suite**, the second one we can ommit the 'smoke' preffix, or it can be called the **large suite**.
+be run on the continuous integration. We call it **smoke suite**,
+the second one we can omit the 'smoke' prefix, or it can be called the **large suite**.
 
 ## Smoke test suite
 
@@ -26,5 +26,5 @@ parameter. Also includes the test cases with the `Large` tag.
 
 ## Future test suites
 
-In the future integration, stress, and UI based test could be written
+In the future, integration, stress, and UI based tests could be written
 which should be run before releases.
