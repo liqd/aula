@@ -184,13 +184,13 @@ instance ToHtml ViewIdea where
             caps          = ideaCapabilities uid role idea phase
             userCaps      = userCapabilities role
 
+            canEdit              = CanEditAndDelete `elem` caps
+            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
+            canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
+
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
                 linkToIdeaLocation idea
-
-                let canEdit              = CanEditAndDelete `elem` caps
-                    canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
-                    canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
