@@ -346,13 +346,13 @@ type EnvWithProto a = EnvWith (Proto a)
 {-
     Functions of type @AddDb a@ are commonly partial applications of @addDb@.
     Thus such a function still lacks the @EnvWithProto a@, namely some meta-data and the @Proto a@,
-    combinators such as @addWithUser@ and @currentUserAddDb@ deal with building and providing the
+    combinators such as @addWithUser@ and @addWithCurrentUser@ deal with building and providing the
     meta-data. On subtelty introduced by AcidState is that instead of using directly the functions
     of type @AddDb@ one must use their event counter part.
     For instance @addIdea@ has type @AddDb Idea@, namely @EnvWithProto Idea -> AUpdate Idea@
     while @AddIdea@ has type @EnvWithProto Idea -> AddIdea@.
     Here are some examples:
-    * @currentUserAddDb AddIdea someUser@
+    * @addWithCurrentUser AddIdea someUser@
     * @addWithUser AddIdea someUser someProtoIdea@
     * @addWithUser (AddLikeToIdea someIdeaId) someUser ()@
 -}

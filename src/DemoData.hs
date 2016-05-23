@@ -157,7 +157,7 @@ updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
 addUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
 addUserWithEmailFromConfig =
-    setEmailFromConfig >=> currentUserAddDb AddUser
+    setEmailFromConfig >=> addWithCurrentUser AddUser
 
 addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
 addFirstUserWithEmailFromConfig pu = do
@@ -202,7 +202,7 @@ universe rnd = do
     topics <- fst <$$> (mapM (update . AddTopic now . EnvWith admin now)
                 =<< generate numberOfTopics rnd (genTopic now ideaSpaces))
 
-    ideas <- mapM (currentUserAddDb AddIdea)
+    ideas <- mapM (addWithCurrentUser AddIdea)
                 =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
     sequence_ =<< generate numberOfLikes rnd (genLike ideas students)

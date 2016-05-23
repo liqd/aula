@@ -35,8 +35,8 @@ module Action
     , loginByUser, loginByName
     , userLoggedOut
     , addWithUser
-    , currentUserAddDb
-    , currentUserAddDb_
+    , addWithCurrentUser
+    , addWithCurrentUser_
     , currentUser
     , currentUserId
     , modifyCurrentUser
@@ -294,15 +294,13 @@ addWithUser addA user protoA = do
     now <- getCurrentTimestamp
     update $ addA (EnvWith user now protoA)
 
--- TODO: rename @{currentUserAddDb,addWithCurrentUser}*@ for consistency with 'addWithUser'.
-
-currentUserAddDb :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m a
-currentUserAddDb addA protoA = do
+addWithCurrentUser :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m a
+addWithCurrentUser addA protoA = do
     cUser <- currentUser
     addWithUser addA cUser protoA
 
-currentUserAddDb_ :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m ()
-currentUserAddDb_ addA protoA = void $ currentUserAddDb addA protoA
+addWithCurrentUser_ :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m ()
+addWithCurrentUser_ addA protoA = void $ addWithCurrentUser addA protoA
 
 -- | Returns the current user
 currentUser :: (ActionPersist m, ActionUserHandler m) => m User
@@ -472,7 +470,7 @@ editTopic topicId topic = do
 
 createIdea :: Create Idea
 createIdea proto = do
-    idea <- currentUserAddDb AddIdea proto
+    idea <- addWithCurrentUser AddIdea proto
     eventLogUserCreatesIdea idea
     pure idea
 
@@ -495,7 +493,7 @@ moveIdeaToTopic ideaId moveIdea = do
 
 likeIdea :: ActionM m => AUID Idea -> m ()
 likeIdea ideaId = do
-    currentUserAddDb_ (AddLikeToIdea ideaId) ()
+    addWithCurrentUser_ (AddLikeToIdea ideaId) ()
     do (idea, info) <- equery $ do
           ide <- maybe404 =<< findIdea ideaId
           inf <- getListInfoForIdea ide
@@ -504,7 +502,7 @@ likeIdea ideaId = do
 
 voteOnIdea :: AUID Idea -> Create_ IdeaVote
 voteOnIdea ideaId vote = do
-    currentUserAddDb_ (AddVoteToIdea ideaId) vote
+    addWithCurrentUser_ (AddVoteToIdea ideaId) vote
     (`eventLogUserVotesOnIdea` Just vote) =<< mquery (findIdea ideaId)
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
@@ -513,13 +511,13 @@ voteOnIdea ideaId vote = do
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
 voteIdeaComment loc ideaId commentId vote = do
     let ck = CommentKey loc ideaId [] commentId
-    currentUserAddDb_ (AddCommentVote ck) vote
+    addWithCurrentUser_ (AddCommentVote ck) vote
     eventLogUserVotesOnComment ck vote
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
 voteIdeaCommentReply loc ideaId commentId =
-    currentUserAddDb_ . AddCommentVote . CommentKey loc ideaId [commentId]
+    addWithCurrentUser_ . AddCommentVote . CommentKey loc ideaId [commentId]
 
 -- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
 unvoteOnIdea :: (ActionM m) => AUID Idea -> AUID User -> m ()
@@ -652,7 +650,7 @@ getIdeaTopicInJuryPhase iid = do
 markIdeaInJuryPhase :: ActionM m => AUID Idea -> IdeaJuryResultValue -> m ()
 markIdeaInJuryPhase iid rv = do
     topic <- getIdeaTopicInJuryPhase iid
-    currentUserAddDb_ (AddIdeaJuryResult iid) rv
+    addWithCurrentUser_ (AddIdeaJuryResult iid) rv
     eventLogUserMarksIdeaFeasible iid . Just $ ideaJuryResultValueToType rv
     checkCloseJuryPhase topic
 
@@ -683,7 +681,7 @@ markIdeaInResultPhase iid rv = do
     idea  <- mquery $ findIdea iid
     topic <- mquery $ ideaTopic idea
     equery $ checkInPhase (PhaseResult ==) idea topic
-    currentUserAddDb_ (AddIdeaVoteResult iid) rv
+    addWithCurrentUser_ (AddIdeaVoteResult iid) rv
 
 setCreatorStatement :: ActionM m => AUID Idea -> Document -> m ()
 setCreatorStatement = update <..> SetCreatorStatement

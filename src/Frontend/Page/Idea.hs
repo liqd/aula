@@ -35,7 +35,7 @@ module Frontend.Page.Idea
 where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
-              , currentUserAddDb, equery, mquery, update
+              , addWithCurrentUser, equery, mquery, update
               , markIdeaInJuryPhase
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
@@ -649,7 +649,7 @@ commentOnIdea loc ideaId =
     formPageHandlerWithMsg
         (CommentOnIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
         (\cc -> do
-            comment <- currentUserAddDb (AddCommentToIdea loc ideaId) cc
+            comment <- addWithCurrentUser (AddCommentToIdea loc ideaId) cc
             eventLogUserCreatesComment comment
             return comment)
         "Der Verbesserungsvorschlag wurde gespeichert."
@@ -676,7 +676,7 @@ replyToComment loc ideaId commentId =
                       comment <- idea ^. ideaComments . at commentId
                       pure $ CommentOnIdea idea (Just comment))
         (\cc -> do
-            comment <- currentUserAddDb (AddReply $ CommentKey loc ideaId [] commentId) cc
+            comment <- addWithCurrentUser (AddReply $ CommentKey loc ideaId [] commentId) cc
             eventLogUserCreatesComment comment
             return comment)
         "Der Verbesserungsvorschlag wurde gespeichert."

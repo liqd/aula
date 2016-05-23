@@ -613,7 +613,7 @@ adminCreateUser = formPageHandlerCalcMsg
         forM_ (up ^? createUserRole . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         pwd <- mkRandomPassword
-        currentUserAddDb_ AddUser ProtoUser
+        addWithCurrentUser_ AddUser ProtoUser
             { _protoUserLogin     = up ^. createUserLogin
             , _protoUserFirstName = up ^. createUserFirstName
             , _protoUserLastName  = up ^. createUserLastName
@@ -769,7 +769,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
     p role (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
         pwd <- mkRandomPassword
-        currentUserAddDb AddUser ProtoUser
+        addWithCurrentUser AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
