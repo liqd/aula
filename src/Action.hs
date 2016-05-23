@@ -818,14 +818,14 @@ eventLogUserDelegates ctx toUser = do
                                   <$> mquery (findIdea iid)
     eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
 
--- FIXME: throw this in all applicable situations.
+-- TODO: throw this in all applicable situations.
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
             -- FIXME: the triggering user should not always be the creator of the topic.
         EventLogTopicNewPhase (topic ^. _Id) fromPhase toPhase
 
--- FIXME: throw this in all applicable situations.
+-- TODO: throw this in all applicable situations.
 eventLogIdeaNewTopic
     :: (ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
     => Idea -> Maybe (AUID Topic) -> Maybe (AUID Topic) -> m ()
@@ -834,7 +834,7 @@ eventLogIdeaNewTopic idea mfrom mto = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogIdeaNewTopic (idea ^. _Key) mfrom mto
 
--- FIXME: throw this in all applicable situations.
+-- TODO: throw this in all applicable situations.
 eventLogIdeaReachesQuorum :: (ActionCurrentTimestamp m, ActionLog m) => Idea -> m ()
 eventLogIdeaReachesQuorum idea = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) (idea ^. createdBy) $
