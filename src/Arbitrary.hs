@@ -690,6 +690,9 @@ instance Arbitrary PhaseChangeDir where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary EventsProtocolFilter where
+    arbitrary = EventsProtocolFilter <$> arb
+    shrink (EventsProtocolFilter x) = EventsProtocolFilter <$> shr x
 
 -- * aula-specific helpers
 

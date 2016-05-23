@@ -18,7 +18,7 @@ import Control.Monad.Reader
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
-import Test.QuickCheck
+import Test.QuickCheck hiding (Large)
 
 import Arbitrary ()
 import DemoData hiding (generate)
@@ -31,7 +31,7 @@ import Types
 import qualified Action
 import qualified Action.Implementation as Action
 
-import AulaTests (testConfig, passes, someTestUser)
+import AulaTests (testConfig, passes, someTestUser, tag, TestSuite(..))
 
 
 -- | a database state containing one arbitrary item of each type (idea, user, ...)
@@ -216,7 +216,7 @@ persistApiSpec imp = do
 -- * Regression suite
 
 regression :: PersistenceImpl -> Spec
-regression imp = describe "regression" $ do
+regression imp = tag Large . describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp imp
             "addIdea" getIdeas AddIdea

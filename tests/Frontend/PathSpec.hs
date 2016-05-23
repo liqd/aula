@@ -23,7 +23,7 @@ import Servant.Missing hiding (redirect)
 import Servant.Mock (HasMock(..), mock)
 import Test.Hspec (Spec, beforeAll, describe, it)
 import Test.Hspec.Wai (get, post)
-import Test.QuickCheck
+import Test.QuickCheck hiding (Large)
 import Text.Digestive.View (getForm)
 
 import qualified Data.Text as ST
@@ -31,7 +31,7 @@ import qualified Test.Hspec.Wai.QuickCheck as Wai (property)
 
 import Action.Dummy
 import Arbitrary
-import AulaTests (wpasses)
+import AulaTests (wpasses, TestSuite(..), tag)
 import Data.UriPath
 import Frontend
 import Frontend.Core
@@ -81,12 +81,12 @@ spec = do
             it "Every path has a handler." $
                 checkPathHandler mainGen
 
-        describe "Valid formAction" $ do
+        tag Large . describe "Valid formAction" $ do
             forM_ formActionGens $ \(t, g) ->
                 it (t <> " has a formAction.") $
                     checkPathHandler g
 
-        describe "Valid redirectOf" $ do
+        tag Large . describe "Valid redirectOf" $ do
             forM_ formRedirectGens $ \(t, g) ->
                 it (t <> " has a valid redirect.") $
                     checkPathHandler g
@@ -103,26 +103,43 @@ spec = do
 
     forms :: [FormGen]
     forms =
-        [ F (arb :: Gen CreateIdea)
-        , F (arb :: Gen Frontend.Page.EditIdea)
-        , F (arb :: Gen CommentOnIdea)
-        , F (arb :: Gen PageHomeWithLoginPrompt)
-        , F (arb :: Gen CreateTopic)
-        , F (arb :: Gen PageUserSettings)
-        , F (arb :: Gen Frontend.Page.EditTopic)
---        , F (arb :: Gen AdminCreateUser) -- FIXME
-        , F (arb :: Gen PageAdminSettingsDurations)
+          -- admin forms
+        [ F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
         , F (arb :: Gen PageAdminSettingsFreeze)
---        , F (arb :: Gen PageAdminSettingsEventsProtocol)
-        , F (arb :: Gen AdminEditUser) -- FIXME
-        , F (arb :: Gen CreatorStatement)
+        , F (arb :: Gen PageAdminSettingsEventsProtocol)
+        , F (arb :: Gen AdminEditUser)
+        , F (arb :: Gen AdminDeleteUser)
+        , F (arb :: Gen AdminCreateUser)
+        , F (arb :: Gen AdminCreateClass)
         , F (arb :: Gen AdminPhaseChange)
+
+          -- idea forms
+        , F (arb :: Gen CreateIdea)
+        , F (arb :: Gen Frontend.Page.MoveIdea)
+        , F (arb :: Gen CommentOnIdea)
+        , F (arb :: Gen Frontend.Page.EditIdea)
+        , F (arb :: Gen EditComment)
         , F (arb :: Gen JudgeIdea)
+        , F (arb :: Gen CreatorStatement)
         , F (arb :: Gen ReportComment)
+        , F (arb :: Gen ReportIdea)
+
+          -- login forms
+        , F (arb :: Gen PageHomeWithLoginPrompt)
+
+          -- topic forms
+        , F (arb :: Gen CreateTopic)
+        , F (arb :: Gen EditTopic)
+
+          -- user forms
+        , F (arb :: Gen PageUserSettings)
+        , F (arb :: Gen EditUserProfile)
+        , F (arb :: Gen ReportUserProfile)
         ]
 
--- FIXME: Unify the Form Arbitrary GADTs.
+-- FIXME: Unify the Form Arbitrary GADTs and generate the form
+-- list as we generate the AllModules.
 data FormGen where
     F :: ( r ~ FormPageResult m
          , Show m, Typeable m, FormPage m

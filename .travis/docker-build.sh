@@ -1,17 +1,32 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 /liqd/aula/.travis/docker-link-stack-workdir.sh
 
 # Change to the source directory which is attacehed as docker volume
 cd /liqd/aula
 
-if [ -z "$1" ] ; then
-    NO_OF_CASES="100"
-else
-    NO_OF_CASES="$1"
-fi
+QC_MAX_SUCCESS="100"
+QC_MAX_SIZE="30"
 
-stack install --fast --test --test-arguments "-a ${NO_OF_CASES}" --coverage --allow-different-user --pedantic aula
+while [[ $# > 1 ]]
+do
+key=$1
+case $key in
+	--qc-max-success)
+	QC_MAX_SUCCESS="$2"
+	shift
+	;;
+	--qc-max-size)
+	QC_MAX_SIZE="$2"
+	shift
+	;;
+	*)
+	;;
+esac
+shift
+done
+
+stack install --fast --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" --coverage --allow-different-user --pedantic aula
 
 # FIXME: Coveralls coverage
 # # Test
