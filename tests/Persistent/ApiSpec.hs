@@ -104,7 +104,7 @@ addDbSpec :: (Foldable f, Arbitrary proto, HasAUpdate ev a)
           => PersistenceImpl -> String -> Query (f a) -> (EnvWith proto -> ev) -> Spec
 addDbSpec imp name getXs addX = addDbSpecProp imp name getXs addX id (\_ _ -> passes)
 
--- | like 'addDbSpec', but takes a function that strips extra info from the translates result value.
+-- | like 'addDbSpec', but takes a function that strips extra info from the result value.
 addDbSpec' :: (Foldable f, Arbitrary proto, HasAUpdate ev a')
           => PersistenceImpl -> String -> Query (f a) -> (EnvWith proto -> ev) -> (a' -> a) -> Spec
 addDbSpec' imp name getXs addX stripX = addDbSpecProp imp name getXs addX stripX (\_ _ -> passes)
