@@ -267,7 +267,7 @@ instance ToHtml ViewIdea where
             -- mark winning idea
             -- FIXME: Styling
             when (isFeasibleIdea idea) $ do
-                div_ [class_ "winning-idea"] $ do
+                div_ [class_ "winning-idea voting-buttons"] $ do
                     when (CanMarkWinner `elem` caps) $ do
                         let winnerButton =
                                 postButton_
