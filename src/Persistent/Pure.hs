@@ -468,10 +468,9 @@ setUserEmail uid email = withUser uid . userEmail ?= email
 resetUserPass :: AUID User -> InitialPassword -> AUpdate ()
 resetUserPass uid userPass = withUser uid . userSettings . userSettingsPassword .= UserPassInitial userPass
 
--- FIXME: Use encoding
-setUserPass :: AUID User -> ST -> AUpdate ()
+setUserPass :: AUID User -> EncryptedPassword -> AUpdate ()
 setUserPass uid pass =
-    withUser uid . userSettings . userSettingsPassword .= UserPassEncrypted (cs pass)
+    withUser uid . userSettings . userSettingsPassword .= UserPassEncrypted pass
 
 setUserLoginAndRole :: AUID User -> Maybe UserLogin -> Role -> AUpdate ()
 setUserLoginAndRole uid mlogin role = do

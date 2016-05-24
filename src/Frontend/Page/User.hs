@@ -91,7 +91,7 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
       | p == pwd  = pure u
       | otherwise = passwordError
 
-    checkEncryptedPwd p
+    checkEncryptedPwd (FakeEncryptedPassword p)
       | p == cs pwd = pure u
       | otherwise   = passwordError
 
@@ -162,7 +162,7 @@ userSettings =
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
-        (update . SetUserPass uid) `mapM_` mnewPass1
+        (update . SetUserPass uid . FakeEncryptedPassword . cs) `mapM_` mnewPass1
 
 userHeaderDiv :: (Monad m) => RenderContext -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =
