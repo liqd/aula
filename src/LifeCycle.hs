@@ -12,11 +12,16 @@ module LifeCycle
     , freezePhase
     , thawPhase
 
+      -- * Visibility
+    , ItemVisibility(..)
+    , ideaItemVisibility
+
       -- * capabilities
     , UserCapability(..)
     , userCapabilities
     , IdeaCapability(..)
     , ideaCapabilities
+    , ideaCapabilitiesInAllPhase
     , CommentCapability(..)
     , commentCapabilities
     , TopicCapability(..)
@@ -25,6 +30,7 @@ module LifeCycle
 where
 
 import Control.Lens
+import Control.Monad (join)
 import Data.Monoid
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
@@ -129,6 +135,28 @@ data IdeaCapability
   deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaCapability
+
+data ItemVisibility
+    = Active
+    | NonActive
+    | NonCapable
+  deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
+
+ideaItemVisibility :: AUID User -> Role -> Idea -> Phase -> IdeaCapability -> ItemVisibility
+ideaItemVisibility u r i p c
+    | c `elem` ideaCapabilities u r i p         = Active
+    | c `elem` ideaCapabilitiesInAllPhase u r i = NonActive
+    | otherwise                                 = NonCapable
+
+-- ASSUMPTION: The list of a phase should be part of the AllPhase list.
+ideaCapabilitiesInAllPhase :: AUID User -> Role -> Idea -> [IdeaCapability]
+ideaCapabilitiesInAllPhase u r i = join
+    [ wildIdeaCap u i r
+    , phaseRefinementCap u i r
+    , phaseJuryCap i r
+    , phaseVotingCap i r
+    , phaseResultCap u i r
+    ]
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
 ideaCapabilities = phaseCap

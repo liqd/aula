@@ -169,6 +169,12 @@ linkToIdeaLocation idea = do
              IdeaLocationSpace{} -> "Zum Ideenraum"
              IdeaLocationTopic{} -> "Zum Thema"
 
+activeItem :: Monoid b => ItemVisibility -> (a -> b) -> (a -> b) -> a -> b
+activeItem v active nonActive body = case v of
+    Active     -> active $ body
+    NonActive  -> nonActive $ body
+    NonCapable -> nil
+
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml (ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
@@ -182,6 +188,7 @@ instance ToHtml ViewIdea where
             role          = ctx ^. renderContextUser . userRole
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = ideaCapabilities uid role idea phase
+            caps'         = ideaItemVisibility uid role idea phase
             userCaps      = userCapabilities role
 
             canEdit              = CanEditAndDelete `elem` caps
@@ -240,13 +247,23 @@ instance ToHtml ViewIdea where
                 div_ [class_ "table-actions m-no-hover"] $ do
                     div_ [class_ "icon-list m-inline"] . ul_ $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
+                    when (ideaReachedQuorum stats) $
+                        activeItem
+                            (caps' CanCreateTopic)
+                            (button_ [ class_ "btn-cta m-valid"
+                                     , onclick_ $ U.Space spc U.CreateTopic
+                                     ])
+                            (span_ [class_ "btn-cta m-valid btn-inactive"])
+                            (do i_ [class_ "icon-check"] nil
+                                "Auf den Tisch bringen")
+{-
                     when canCreateTopic $ do
                         button_ [ class_ "btn-cta m-valid"
                                 , onclick_ $ U.Space spc U.CreateTopic
                                 ] $ do
                             i_ [class_ "icon-check"] nil
                             "Auf den Tisch bringen"
-
+-}
             feasibilityVerdict True idea caps
 
             -- creator statement
