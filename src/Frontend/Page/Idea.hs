@@ -242,10 +242,10 @@ instance ToHtml ViewIdea where
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                     when canCreateTopic $ do
                         button_ [ class_ "btn-cta m-valid"
-                                     , onclick_ $ U.Space spc U.CreateTopic
-                                     ] $ do
-                                 i_ [class_ "icon-check"] nil
-                                 "Auf den Tisch bringen"
+                                , onclick_ $ U.Space spc U.CreateTopic
+                                ] $ do
+                            i_ [class_ "icon-check"] nil
+                            "Auf den Tisch bringen"
 
             feasibilityVerdict True idea caps
 
