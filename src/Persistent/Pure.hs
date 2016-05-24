@@ -96,8 +96,11 @@ module Persistent.Pure
     , getTopics
     , setTopicPhase
     , addTopic
+    , addTopicYieldLocs
     , editTopic
     , withTopic
+    , IdeaChangedLocation, ideaChangedLocation
+    , ideaChangedLocationIdea, ideaChangedLocationFrom, ideaChangedLocationTo
     , moveIdeasToLocation
     , findTopic
     , findTopicBy
@@ -138,7 +141,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
-import Control.Monad (unless, replicateM, when)
+import Control.Monad (unless, when, replicateM, forM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
@@ -346,13 +349,13 @@ type EnvWithProto a = EnvWith (Proto a)
 {-
     Functions of type @AddDb a@ are commonly partial applications of @addDb@.
     Thus such a function still lacks the @EnvWithProto a@, namely some meta-data and the @Proto a@,
-    combinators such as @addWithUser@ and @currentUserAddDb@ deal with building and providing the
+    combinators such as @addWithUser@ and @addWithCurrentUser@ deal with building and providing the
     meta-data. On subtelty introduced by AcidState is that instead of using directly the functions
     of type @AddDb@ one must use their event counter part.
     For instance @addIdea@ has type @AddDb Idea@, namely @EnvWithProto Idea -> AUpdate Idea@
     while @AddIdea@ has type @EnvWithProto Idea -> AddIdea@.
     Here are some examples:
-    * @currentUserAddDb AddIdea someUser@
+    * @addWithCurrentUser AddIdea someUser@
     * @addWithUser AddIdea someUser someProtoIdea@
     * @addWithUser (AddLikeToIdea someIdeaId) someUser ()@
 -}
@@ -490,13 +493,14 @@ setUserLoginAndRole uid mlogin role = do
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid url = withUser uid . userAvatar ?= url
 
-editTopic :: AUID Topic -> EditTopicData -> AUpdate ()
+-- | Update topic value.  Returns information about the ideas that have changed location.
+editTopic :: AUID Topic -> EditTopicData -> AUpdate [IdeaChangedLocation]
 editTopic topicId (EditTopicData title desc ideas) = do
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
     previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
     space <- view topicIdeaSpace <$> (maybe404 =<< liftAQuery (findTopic topicId))
-    moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
-    moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
+    (<>) <$> moveIdeasToLocation previouslyInTopic (IdeaLocationSpace space)
+         <*> moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 withTopic :: AUID Topic -> AulaTraversal Topic
 withTopic = withRecord dbTopicMap
@@ -531,10 +535,29 @@ getSpacesForRole role =
 getTopics :: Query [Topic]
 getTopics = view dbTopics
 
-moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate ()
-moveIdeasToLocation ideaIds location =
+data IdeaChangedLocation = IdeaChangedLocation
+    { _ideaChangedLocationIdea :: Idea
+    , _ideaChangedLocationFrom :: Maybe (AUID Topic)
+    , _ideaChangedLocationTo   :: Maybe (AUID Topic)
+    }
+  deriving (Eq, Ord, Show, Read)
+
+ideaChangedLocation :: Idea -> Maybe (AUID Topic) -> Maybe (AUID Topic)
+                    -> Maybe IdeaChangedLocation
+ideaChangedLocation i f t = if f == t
+    then Nothing
+    else Just $ IdeaChangedLocation i f t
+
+moveIdeasToLocation :: [AUID Idea] -> IdeaLocation -> AUpdate [IdeaChangedLocation]
+moveIdeasToLocation ideaIds newloc = do
+    result <- forM ideaIds $ \ideaId -> do
+        idea <- maybe404 =<< liftAQuery (findIdea ideaId)
+        pure $ ideaChangedLocation idea
+                  (idea ^? ideaLocation . ideaLocationTopicId)
+                  (newloc ^? ideaLocationTopicId)
     for_ ideaIds $ \ideaId ->
-        withIdea ideaId . ideaLocation .= location
+        withIdea ideaId . ideaLocation .= newloc
+    return $ catMaybes result
 
 moveIdeaToTopic :: AUID Idea -> MoveIdea -> AUpdate ()
 moveIdeaToTopic ideaId mTopicId =
@@ -546,8 +569,15 @@ moveIdeaToTopic ideaId mTopicId =
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase
 
+-- | Create a new topic from a topic proto and return it.  This calls 'addTopicYieldLocs', but
+-- discards information about the ideas that have moved location.
 addTopic :: Timestamp -> AddDb Topic
-addTopic now pt = do
+addTopic now pt = fst <$> addTopicYieldLocs now pt
+
+-- | Like 'addTopic', but return extra information about the ideas that have been moved in or out of
+-- the topic.
+addTopicYieldLocs :: Timestamp -> EnvWithProto Topic -> AUpdate (Topic, [IdeaChangedLocation])
+addTopicYieldLocs now pt = do
     t <- addDb dbTopicMap pt
     dbFrozen <- liftAQuery $ view dbFreeze
     when (dbFrozen == Frozen) . setTopicPhase (t ^. _Id) $ freezePhase now (t ^. topicPhase)
@@ -558,8 +588,7 @@ addTopic now pt = do
     -- Options:
     -- - Make it do nothing
     -- - Make it fail hard
-    moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
-    return topic
+    (topic,) <$> moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
 
 addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap
@@ -858,3 +887,6 @@ dangerousResetAulaData = put emptyAulaData
 
 dangerousRenameAllLogins :: ST -> AUpdate ()
 dangerousRenameAllLogins suffix = aulaUserLogins . _UserLogin <>= suffix
+
+
+makeLenses ''IdeaChangedLocation

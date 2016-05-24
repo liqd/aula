@@ -90,7 +90,7 @@ addDbSpecProp imp name getXs addX propX =
             t = it "adds one" $ \rp -> do
                     before' <- length <$> runQ rp getXs
                     (now, p) <- liftIO $ generate arbitrary
-                    r <- runU rp $ addX (EnvWith someTestUser now p)
+                    r <- runU rp . addX $ EnvWith someTestUser now p
                     after' <- length <$> runQ rp getXs
                     after' `shouldBe` before' + 1
                     propX p r

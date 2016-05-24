@@ -1035,7 +1035,7 @@ mkFishUser mSchoolClass avatarPath = do
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
     let pu = ProtoUser Nothing fnam lnam role (InitialPassword "dummy password") Nothing (Markdown nil)
-    user <- currentUserAddDb AddUser pu
+    user <- addWithCurrentUser AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
 
@@ -1090,7 +1090,7 @@ fishDelegationNetworkAction mSchoolClass = do
                 else do
                     u1  <- genGen $ elements users'
                     u2  <- genGen $ elements users'
-                    (:[]) <$> currentUserAddDb AddDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> addWithCurrentUser AddDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel
 

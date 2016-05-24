@@ -58,7 +58,7 @@ data EventLogItemValue user topic idea comment =
       -- easier.
   | EventLogUserDelegates         DelegationContext user
   | EventLogTopicNewPhase         topic Phase Phase
-  | EventLogIdeaNewTopic          idea (Maybe topic) (Maybe topic)
+  | EventLogIdeaNewLocation          idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea
   deriving (Eq, Show, Generic)
 
@@ -170,7 +170,7 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
             , objLink topic
             ]
 
-        f (EventLogIdeaNewTopic (Middle3 -> idea) mt1 mt2) = CSV.toRecord
+        f (EventLogIdeaNewLocation (Middle3 -> idea) mt1 mt2) = CSV.toRecord
             [ "verschiebt " <> objDesc idea <> " von " <> show_ mt1 <> " nach " <> show_ mt2 <> "."
             , objLink idea
             ]

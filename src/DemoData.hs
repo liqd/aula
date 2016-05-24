@@ -156,7 +156,7 @@ updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
 addUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
 addUserWithEmailFromConfig =
-    setEmailFromConfig >=> currentUserAddDb AddUser
+    setEmailFromConfig >=> addWithCurrentUser AddUser
 
 addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
 addFirstUserWithEmailFromConfig pu = do
@@ -198,10 +198,10 @@ universe rnd = do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics <- mapM (currentUserAddDb (AddTopic now))
+    topics <- mapM (addWithCurrentUser (AddTopic now))
                 =<< generate numberOfTopics rnd (genTopic now ideaSpaces)
 
-    ideas <- mapM (currentUserAddDb AddIdea)
+    ideas <- mapM (addWithCurrentUser AddIdea)
                 =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
 
     sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
@@ -240,7 +240,8 @@ userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocation
 -- | Generate one arbitrary item of each type (idea, user, ...)
 -- plus one extra user for logging test.
 --
--- Note that no user is getting logged in by this code.
+-- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
+-- the event procotol for moderators.
 genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
     now <- getCurrentTimestamp
@@ -296,6 +297,6 @@ genInitialTestDb = do
     -- (make sure topic id is what we expect in some test cases.)
     case topic ^. _Id of (AUID 5) -> pure ()
 
-    update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
+    _ <- update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()
