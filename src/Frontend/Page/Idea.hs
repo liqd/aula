@@ -238,7 +238,7 @@ instance ToHtml ViewIdea where
 
             when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                 div_ [class_ "table-actions m-no-hover"] $ do
-                    div_ [class_ "icon-list m-inline"] $ ul_ $ do
+                    div_ [class_ "icon-list m-inline"] . ul_ $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                     when canCreateTopic $ do
                         button_ [ class_ "btn-cta m-valid"

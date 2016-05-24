@@ -68,7 +68,7 @@ instance ToHtml IdeaVoteLikeBars where
                                 "Idee Auf den Tisch Bringen"  -- FIXME: #558 button should not be shows in quorum has been reached
                     a_ [class_ "btn-cta voting-button", href_ U.Broken] $ do
                         i_ [class_ "icon-bullhorn"] nil
-                        "Stimme Beauftragen" -- FIXME: Dummy
+                        "Stimme beauftragen"
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
