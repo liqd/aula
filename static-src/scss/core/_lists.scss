@@ -3,6 +3,10 @@
     background: $color-grey-lighter;
     text-align: center;
 
+    + .btn-cta {
+        @include rem(margin-top, 20px);
+    }
+
     .view-category & {
         @include rem(padding-top, 10px);
     }
@@ -40,7 +44,8 @@
                 opacity: 1;
             }
 
-            .view-category & {
+            .view-category &,
+            .m-no-hover & {
                 opacity: 1;
 
                 > a, > span {
@@ -80,6 +85,14 @@
 
             &.icon-environment {
                 @include svg(icon_umgebung);
+            }
+
+            &.icon-table {
+                background-image: url(../images/badge_aufdemtisch.png);
+
+                > a, > span {
+                    @include rem(padding-top, 50px);
+                }
             }
 
             &:last-child {
