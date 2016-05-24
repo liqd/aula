@@ -33,10 +33,20 @@ import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
 import Frontend.Prelude as X hiding (get, put)
+import Test.Hspec.Missing as X
+
 import Arbitrary (constantSampleTimestamp)
 import Logger (LogLevel(..), nullLog)
 import Persistent (mkMetaInfo)
 
+
+-- Be default, test cases are part of the smoke test suite.
+data TestSuite
+    = Large
+  deriving (Eq, Show)
+
+instance Tag TestSuite where
+    tagText = cs . show
 
 testConfig :: IO Config
 testConfig = do
@@ -142,7 +152,7 @@ someTestUser = user
             , _profileDesc   = Markdown nil
             }
         , _userSettings  = UserSettings
-            { _userSettingsPassword = UserPassInitial ""
+            { _userSettingsPassword = UserPassInitial (InitialPassword "")
             , _userSettingsEmail    = Nothing
             }
         }

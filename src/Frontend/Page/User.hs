@@ -87,7 +87,7 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
   where
     passwordError = DF.Error "Das alte Passwort ist nicht korrekt"
 
-    checkInitialPwd p
+    checkInitialPwd (InitialPassword p)
       | p == pwd  = pure u
       | otherwise = passwordError
 
@@ -344,6 +344,7 @@ editUserProfile uid = formPageHandlerWithMsg
 reportUserNote :: Note User
 reportUserNote = Note
     { noteHeaderText                = ("Report: " <>) . view (userLogin . unUserLogin)
+    , noteExplanation               = Just "Hier kannst ein Nutzerprofil wegen eines verletzenden oder anstößigen Inhalts beim Moderationsteam melden. Das Team erhält eine Benachrichtigung und wird die Idee schnellstmöglich überprüfen. Bitte gib unten einen Grund an, warum du den Inhalt für anstößig oder verletzend hältst."
     , noteLabelText                 = "Warum möchtest du das Nutzerprofil melden?"
     , noteFieldNameInValiationError = "Begründung"
     }
