@@ -1,7 +1,3 @@
-.ideas-list-item {
-    overflow: hidden;
-}
-
 .ideas-header {
     @extend .hero-unit;
     min-height: 290px;
@@ -49,6 +45,16 @@
 
     .admin-buttons {
         @include rem(margin-bottom, 20px);
+    }
+
+    .progress-bar, .progress-bar.m-show-abstain {
+        [class^='icon-'], [class*=' icon-'] {
+            display: none;
+        }
+
+        .votes {
+            @include rem(font-size, 11px);
+        }
     }
 }
 
