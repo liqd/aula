@@ -339,7 +339,7 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
     case _ideaJuryResult idea of
         Nothing -> nil
         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-            div_ [class_ "icon-list m-display-only m-inline"] $ ul_ $ do
+            div_ [class_ "icon-list m-display-only m-inline"] . ul_ $ do
                 li_ [class_ "icon-feasible"] $ span_ "durchführbar"
                 maybeExpl ^. _Just . to explToHtml
         Just (IdeaJuryResult _ (NotFeasible expl)) -> do
