@@ -9,6 +9,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -31,6 +32,7 @@ import Data.Time
 import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
+import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
@@ -231,11 +233,8 @@ displayPhaseTime now = phaseStatus . to info
         n -> "in " <> show n <> " Tagen"
 
     displayTimespanFrozen st = (cs . show . stampToDays $ st) <> " Tage nach den Ferien"
-
     stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1
-
-    showStamp (Timestamp t) = " am " <> formatTime defaultTimeLocale "%F" t
-                           <> " um ca. " <> formatTime defaultTimeLocale "%h" t <> " Uhr"
+    showStamp = formatTime aulaTimeLocale " am %F um ca. %H Uhr %Z" . unsafeTimestampToLocalTime
 
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" titleV

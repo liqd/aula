@@ -34,6 +34,8 @@ module Config
     , logging
     , logLevel
     , eventLogPath
+    , unsafeTimestampToLocalTime
+    , aulaTimeLocale
     )
 where
 
@@ -44,6 +46,7 @@ import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String.Conversions (SBS, cs)
+import Data.Time
 import Data.Version (showVersion)
 import Data.Yaml
 import GHC.Generics
@@ -51,6 +54,8 @@ import System.Directory
 import System.Environment
 import System.FilePath ((</>))
 import Thentos.Frontend.CSRF (GetCsrfSecret(..), CsrfSecret(..))
+
+import qualified System.IO.Unsafe
 
 import Logger
 import Types
@@ -223,3 +228,17 @@ getSamplesPath = fromMaybe (error msg) . lookup var <$> getEnvironment
 
 releaseVersion :: String
 releaseVersion = "[v" <> showVersion Paths.version <> "]"
+
+
+-- * system time, time zones
+
+-- | This works as long as the running system doesn't move from one time zone to the other.  It
+-- would be nicer to make that an extra 'Action' class, but I argue that it's not worth the time to
+-- do it (and to have to handle the slightly larger code base from now on).
+unsafeTimestampToLocalTime :: Timestamp -> ZonedTime
+unsafeTimestampToLocalTime (Timestamp t) = System.IO.Unsafe.unsafePerformIO $ utcToLocalZonedTime t
+
+aulaTimeLocale :: TimeLocale
+aulaTimeLocale = defaultTimeLocale
+  { knownTimeZones = knownTimeZones defaultTimeLocale
+                  <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
