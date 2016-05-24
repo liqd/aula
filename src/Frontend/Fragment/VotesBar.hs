@@ -80,14 +80,12 @@ instance ToHtml IdeaVoteLikeBars where
                               ] $ do
                             span_ [class_ "votes"] $ do
                                 cnt Yes
-                                i_ [class_ "icon-thumbs-o-up"] nil
 
                         span_ [ class_ "progress-bar-progress progress-bar-progress-against"
                               , style_ $ mconcat ["width: ", prcnt No, "%"]
                               ] $ do
                             span_ [class_ "votes"] $ do
                                 cnt No
-                                i_ [class_ "icon-thumbs-o-down"] nil
 
                         when (showNotVoted == ShowNotVoted) .
                             span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do

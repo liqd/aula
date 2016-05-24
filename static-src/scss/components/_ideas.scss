@@ -48,10 +48,6 @@
     }
 
     .progress-bar, .progress-bar.m-show-abstain {
-        [class^='icon-'], [class*=' icon-'] {
-            display: none;
-        }
-
         .votes {
             @include rem(font-size, 11px);
         }
