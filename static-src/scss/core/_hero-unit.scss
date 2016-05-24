@@ -29,6 +29,7 @@
     }
 
     .icon-list {
+        @include rem(margin-top, 30px);
         padding: 0;
         text-align: center;
     }
@@ -105,7 +106,7 @@
     }
 
     .m-not-feasible {
-        color: $color-positive;
+        color: $color-negative;
     }
 
     [class^="icon-"] {
