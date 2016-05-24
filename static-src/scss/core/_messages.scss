@@ -16,11 +16,15 @@
 
     ul {
         @include rem(padding, 3px 10px);
-        background: $color-negative;
+        background: $color-positive;
         border-radius: 0 0 4px 4px;
         color: white;
         display: inline-block;
         margin: 0 auto;
         width: 60%;
+    }
+
+    &.m-error ul {
+        background-color: $color-negative;
     }
 }
