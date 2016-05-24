@@ -667,9 +667,15 @@ newtype InitialPassword = InitialPassword { _unInitialPassword :: ST }
 
 instance SOP.Generic InitialPassword
 
+-- FIXME: use "Crypto.Scrypt.EncryptedPass"
+newtype EncryptedPassword = FakeEncryptedPassword { _unEncryptedPassword :: SBS }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic EncryptedPassword
+
 data UserPass =
     UserPassInitial   { _userPassInitial   :: InitialPassword }
-  | UserPassEncrypted { _userPassEncrypted :: SBS } -- FIXME: use "Crypto.Scrypt.EncryptedPass"
+  | UserPassEncrypted { _userPassEncrypted :: EncryptedPassword }
   | UserPassDeactivated
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -677,7 +683,7 @@ instance SOP.Generic UserPass
 
 -- | General eliminator for the 'UserPass' type.
 -- It is similar to the 'maybe' function.
-userPassElim :: (InitialPassword -> t) -> (SBS -> t) -> t -> UserPass -> t
+userPassElim :: (InitialPassword -> t) -> (EncryptedPassword -> t) -> t -> UserPass -> t
 userPassElim initial encrypted deactivated = \case
     UserPassInitial x   -> initial     x
     UserPassEncrypted x -> encrypted   x
@@ -1024,6 +1030,7 @@ instance Binary CommentKey
 instance Binary CommentVote
 instance Binary CommentVoteKey
 instance Binary CommentContent
+instance Binary EncryptedPassword
 instance Binary PlainDocument
 instance Binary Delegation
 instance Binary DelegationContext
@@ -1091,6 +1098,7 @@ makeLenses ''CommentContext
 makeLenses ''CommentKey
 makeLenses ''CommentVote
 makeLenses ''CommentVoteKey
+makeLenses ''EncryptedPassword
 makeLenses ''PlainDocument
 makeLenses ''Delegation
 makeLenses ''DelegationContext
@@ -1138,6 +1146,7 @@ deriveSafeCopy 0 'base ''CommentContent
 deriveSafeCopy 0 'base ''CommentKey
 deriveSafeCopy 0 'base ''CommentVote
 deriveSafeCopy 0 'base ''CommentVoteKey
+deriveSafeCopy 0 'base ''EncryptedPassword
 deriveSafeCopy 0 'base ''PlainDocument
 deriveSafeCopy 0 'base ''Delegation
 deriveSafeCopy 0 'base ''DelegationContext

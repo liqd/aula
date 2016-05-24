@@ -471,12 +471,9 @@ setUserEmail uid email = withUser uid . userEmail ?= email
 resetUserPass :: AUID User -> InitialPassword -> AUpdate ()
 resetUserPass uid userPass = withUser uid . userSettings . userSettingsPassword .= UserPassInitial userPass
 
-setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()
-setUserPass _uid _oldPass newPass1 newPass2 = do
-    when (newPass1 /= newPass2) $ throwError500 "passwords do not match!"
-    -- FIXME: check _oldPass
-    -- FIXME: set newPass1
-    return ()
+setUserPass :: AUID User -> EncryptedPassword -> AUpdate ()
+setUserPass uid pass =
+    withUser uid . userSettings . userSettingsPassword .= UserPassEncrypted pass
 
 setUserLoginAndRole :: AUID User -> Maybe UserLogin -> Role -> AUpdate ()
 setUserLoginAndRole uid mlogin role = do

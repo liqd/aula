@@ -631,6 +631,10 @@ instance Arbitrary InitialPassword where
                 -- rules then we change it here.
     shrink = gshrink
 
+instance Arbitrary EncryptedPassword where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary UserPass where
     arbitrary = UserPassInitial <$> arb
     shrink    = gshrink
