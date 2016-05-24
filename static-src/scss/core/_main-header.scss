@@ -138,6 +138,11 @@
 .detail-header {
     @include rem(padding, 23px 32px);
 
+    .pop-menu, .detail-header-back {
+        position: relative;
+        z-index: 20;
+    }
+
     .detail-header-back {
         float: left;
     }
