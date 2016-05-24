@@ -87,6 +87,14 @@
                 @include svg(icon_umgebung);
             }
 
+            &.icon-feasable {
+                @include svg(yay);
+            }
+
+            &.icon-not-feasable {
+                @include svg(nay);
+            }
+
             &.icon-table {
                 background-image: url(../images/badge_aufdemtisch.png);
 

@@ -29,6 +29,7 @@
     }
 
     .icon-list {
+        @include rem(margin-top, 30px);
         padding: 0;
         text-align: center;
     }

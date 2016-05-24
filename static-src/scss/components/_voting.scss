@@ -84,7 +84,7 @@ $progress-bar-height: 5px;
 }
 
 .voting-buttons {
-    @include rem(margin-top, 50px);
+    @include rem(margin-top, 30px);
 
     .voting-button, form {
         @include rem(margin-right, 15px);
