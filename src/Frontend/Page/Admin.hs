@@ -202,6 +202,7 @@ instance ToMenuItem AdminPhaseChange where
 instance ToMenuItem PageAdminResetPassword where
     toMenuItem _ = MenuItemUsers
 
+
 -- * templates
 
 -- ** Duration
