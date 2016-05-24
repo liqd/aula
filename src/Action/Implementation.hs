@@ -16,6 +16,8 @@ module Action.Implementation
     )
 where
 
+import Debug.Trace
+
 import Codec.Picture
 import Control.Exception (throwIO, try, ErrorCall(ErrorCall), SomeException(SomeException))
 import Control.Lens
@@ -142,7 +144,7 @@ instance CleanupTempFiles Action where
 
 instance ActionAvatar Action where
     readImageFile = actionIO . readImage
-    savePngImageFile p = actionIO . savePngImage p
+    savePngImageFile p = actionIO . savePngImage (traceShowId p)
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.

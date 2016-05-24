@@ -10,6 +10,7 @@
 module Frontend.Page.FileUploadSpec
 where
 
+import System.Directory
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import AulaTests
@@ -81,3 +82,26 @@ spec = describe "file upload" $ do
         forM_ ts $ \(label, file) -> it label $ do
             let v :: Either String [CsvUserRecord] = decodeCsv $ LBS.unlines file
             length <$> v `shouldBe` Right (length file - 1)
+
+    describe "avatar upload" . around withServer $ do
+        let filePart :: Part
+            filePart = partFileSource ("/user/" <> cs userid <> "/edit.avatar") testimage
+                     & partContentType ?~ "image/png"
+
+            userid :: String = "1"
+            testimage :: FilePath = "av.png"
+
+        it "accepts images" $ \wreq -> do
+            liftIO $ getCurrentDirectory >>= print
+            post wreq "/login"
+                [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+                `shouldRespond` [codeShouldBe 303]
+            post wreq (cs . absoluteUriPath . U.relPath $ U.Admin U.AdminCreateClass) [filePart]
+                `shouldRespond` [codeShouldBe 201]
+            get wreq (cs . absoluteUriPath . U.relPath . U.TopStatic $ "avatar/" <> fromString userid <> ".png")
+                `shouldRespond` [codeShouldBe 200]
+
+            pendingWith "next thing to try: find where it thinks it stores the image.  also, figure out where to store images, really."
+
+        it "accepts very small images" $ \_wreq -> do
+            pendingWith "..."
