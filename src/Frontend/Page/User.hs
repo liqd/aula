@@ -87,7 +87,7 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
   where
     passwordError = DF.Error "Das alte Passwort ist nicht korrekt"
 
-    checkInitialPwd p
+    checkInitialPwd (InitialPassword p)
       | p == pwd  = pure u
       | otherwise = passwordError
 

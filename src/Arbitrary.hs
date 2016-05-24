@@ -332,6 +332,11 @@ instance Arbitrary PageAdminSettingsEventsProtocol where
     shrink (PageAdminSettingsEventsProtocol x) =
         PageAdminSettingsEventsProtocol <$> shr x
 
+instance Arbitrary PageAdminResetPassword where
+    arbitrary = PageAdminResetPassword <$> arb <*> arb
+    shrink (PageAdminResetPassword x y) =
+        PageAdminResetPassword <$> shr x <*> shr y
+
 instance Arbitrary AdminPhaseChangeForTopicData where
     arbitrary = AdminPhaseChangeForTopicData <$> arb <*> arb
     shrink (AdminPhaseChangeForTopicData x y) =
@@ -620,10 +625,14 @@ guestOrStudent clss = elements
     , ClassGuest clss
     ]
 
-instance Arbitrary UserPass where
-    arbitrary = UserPassInitial . fromString <$> someOf 4 8 arb
+instance Arbitrary InitialPassword where
+    arbitrary = InitialPassword . fromString <$> someOf 4 8 arb
                 -- ^ if we restrict password characters to printable&ascii in the validation
                 -- rules then we change it here.
+    shrink = gshrink
+
+instance Arbitrary UserPass where
+    arbitrary = UserPassInitial <$> arb
     shrink    = gshrink
 
 instance Arbitrary EmailAddress where
@@ -1025,7 +1034,7 @@ mkFishUser mSchoolClass avatarPath = do
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam role (UserPassInitial "dummy password") Nothing (Markdown nil)
+    let pu = ProtoUser Nothing fnam lnam role (InitialPassword "dummy password") Nothing (Markdown nil)
     user <- currentUserAddDb AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
@@ -1044,7 +1053,7 @@ fishDelegationNetworkIO = do
             now <- getCurrentTimestamp
             admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                Admin (UserPassInitial "admin") Nothing (Markdown nil)
+                Admin (InitialPassword "admin") Nothing (Markdown nil)
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 

@@ -82,6 +82,9 @@ module Action
     , Action.editIdea
     , Action.moveIdeaToTopic
 
+      -- * admin
+    , resetPassword
+
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
@@ -236,7 +239,7 @@ class (MonadError ActionExcept m) => ActionPersist m where
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
 class ActionRandomPassword m where
-    mkRandomPassword :: m UserPass
+    mkRandomPassword :: m InitialPassword
 
 class ActionCurrentTimestamp m where
     getCurrentTimestamp :: m Timestamp
@@ -688,6 +691,14 @@ setCreatorStatement = update <..> SetCreatorStatement
 revokeWinnerStatusOfIdea :: ActionM m => AUID Idea -> m ()
 revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 
+
+-- * admin
+
+resetPassword :: ActionM m => AUID User -> InitialPassword -> m ()
+resetPassword = update <..> ResetUserPass
+
+
+-- * phase shift
 
 data PhaseShiftResult =
     PhaseShiftResultOk (AUID Topic) Phase Phase
