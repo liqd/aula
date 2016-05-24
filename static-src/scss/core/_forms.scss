@@ -78,7 +78,8 @@ select {
     }
 }
 
-.form-error {
+.form-error,
+.digestive-functors-error-list {
     @include rem(margin-bottom, 30px);
     color: $color-negative;
     display: block;
