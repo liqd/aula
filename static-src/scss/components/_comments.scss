@@ -133,6 +133,11 @@ $author-image-size: 37px;
             margin-right: 0;
         }
     }
+
+    .comment-footer-button {
+        @include rem(font-size, $font-size-normal);
+        font-weight: bold;
+    }
 }
 
 .container-comment-idea {

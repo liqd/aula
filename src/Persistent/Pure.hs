@@ -92,6 +92,7 @@ module Persistent.Pure
     , setUserPass
     , setUserLoginAndRole
     , setUserAvatar
+    , resetUserPass
     , getTopics
     , setTopicPhase
     , addTopic
@@ -467,6 +468,9 @@ setUserProfileDesc uid desc = withUser uid . userProfile . profileDesc .= desc
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid email = withUser uid . userEmail ?= email
 
+resetUserPass :: AUID User -> InitialPassword -> AUpdate ()
+resetUserPass uid userPass = withUser uid . userSettings . userSettingsPassword .= UserPassInitial userPass
+
 setUserPass :: AUID User -> Maybe ST -> Maybe ST -> Maybe ST -> AUpdate ()
 setUserPass _uid _oldPass newPass1 newPass2 = do
     when (newPass1 /= newPass2) $ throwError500 "passwords do not match!"
@@ -731,7 +735,7 @@ nextId = AUID <$> (dbLastId <+= 1)
 
 -- | No 'FromProto' instance, since this is more complex, due to the possible
 -- auto-generating of logins and passwords.
-userFromProto :: MetaInfo User -> UserLogin -> UserPass -> Proto User -> User
+userFromProto :: MetaInfo User -> UserLogin -> InitialPassword -> Proto User -> User
 userFromProto metainfo uLogin uPassword proto = User
     { _userMeta      = metainfo
     , _userLogin     = uLogin
@@ -739,7 +743,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userLastName  = proto ^. protoUserLastName
     , _userRole      = proto ^. protoUserRole
     , _userSettings  = UserSettings
-        { _userSettingsPassword = uPassword
+        { _userSettingsPassword = UserPassInitial uPassword
         , _userSettingsEmail    = proto ^. protoUserEmail
         }
     , _userProfile   = UserProfile

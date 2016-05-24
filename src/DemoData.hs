@@ -256,7 +256,7 @@ genInitialTestDb = do
         , _protoUserFirstName = "A."
         , _protoUserLastName  = "Admin"
         , _protoUserRole      = Admin
-        , _protoUserPassword  = UserPassInitial "pssst"
+        , _protoUserPassword  = InitialPassword "pssst"
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = Markdown nil
         }
@@ -266,7 +266,7 @@ genInitialTestDb = do
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
         , _protoUserRole      = Admin
-        , _protoUserPassword  = UserPassInitial "geheim"
+        , _protoUserPassword  = InitialPassword "geheim"
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = Markdown nil
         })
