@@ -62,13 +62,14 @@ instance ToHtml IdeaVoteLikeBars where
                     if userLikesIdea (ctx ^. renderContextUser) idea
                         then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                              -- (ideas can not be un-liked)
-                        else postButton_
+                        else do
+                            postButton_
                                 [class_ "btn-cta voting-button", jsReloadOnClick]
                                 (U.likeIdea idea)
                                 "Idee Auf den Tisch Bringen"  -- FIXME: #558 button should not be shows in quorum has been reached
-                    a_ [class_ "btn-cta voting-button", href_ U.Broken] $ do
-                        i_ [class_ "icon-bullhorn"] nil
-                        "Stimme beauftragen"
+                            a_ [class_ "btn-cta voting-button", href_ U.Broken] $ do
+                                i_ [class_ "icon-bullhorn"] nil
+                                "Stimme beauftragen"
 
             voteBar :: Html () -> Html ()
             voteBar bs = div_ [class_ "voting-widget"] $ do
