@@ -847,26 +847,28 @@ instance FormPage PageAdminResetPassword where
     makeForm (PageAdminResetPassword _u p) =
         InitialPassword <$> ("new-pwd" .: DF.text (p ^. unInitialPassword . to Just))
 
-    -- TODO: Styling
-    -- TODO: Translation
     formPage v form p@(PageAdminResetPassword usr pwd) = adminFrame p . semanticDiv p $ do
-        h3_ "Reset password for user"
+        h3_ $ "Passwort zurücksetzen für Nutzer #" <> usr ^. _Id . unAUID . showed . html
         form $ do
             div_ $ do
-                p_ . toHtml $ "Reset password for user: " <> usr ^. userLogin . unUserLogin
-                p_ . toHtml $ "New password:" <> (pwd ^. unInitialPassword)
-                p_ "Are you sure???"
+                table_ [class_ "admin-table", style_ "padding: 30px"] $ do
+                    tr_ $ do
+                        td_ "Login:"
+                        td_ $ usr ^. userLogin . unUserLogin . html
+                    tr_ $ do
+                        td_ "New password:"
+                        td_ $ pwd ^. unInitialPassword . html
+                p_ "Soll diesees Passwort gesetzt werden?"
             div_ $ do
                 DF.inputHidden "new-pwd" v
-                DF.inputSubmit "Sure!"
+                DF.inputSubmit "Ja!"
                 a_ [class_ "btn", href_ $ redirectOf p ()] "Zurück"
 
--- TODO: Translation
 adminResetPassword :: ActionM m => AUID User -> FormPageHandler m PageAdminResetPassword
 adminResetPassword userId = formPageHandlerWithMsg
     (PageAdminResetPassword <$> mquery (findActiveUser userId) <*> mkRandomPassword)
     (Action.resetPassword userId)
-    "The password has changed!"
+    ("Das Password von Nutzer #" <> userId ^. unAUID . showed . csi <> " wurde geändert!")
 
 
 -- * csv file handling
