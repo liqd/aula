@@ -32,6 +32,14 @@ import qualified Generics.SOP as SOP
 import Types
 
 
+-- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
+-- or can only do things that 'Admin's need to do (@isThere == False@).
+thereIsAGod :: (Bounded a, Enum a) => [a] -> [a]
+thereIsAGod nope = if isThere then [minBound..] else nope
+  where
+    isThere = True
+
+
 -- * Phase transition matrix
 
 data PhaseChange
@@ -89,7 +97,7 @@ phaseTrans _ _ = Nothing
 data UserCapability
     = CanCreateTopic
     | CanEditUser
-  deriving (Eq, Show)
+  deriving (Eq, Show, Enum, Bounded)
 
 
 userCapabilities :: Role -> [UserCapability]
@@ -99,7 +107,7 @@ userCapabilities = \case
     SchoolGuest      -> []
     Moderator        -> [CanCreateTopic, CanEditUser]
     Principal        -> []
-    Admin            -> []
+    Admin            -> thereIsAGod []
 
 
 -- * Idea Capabilities
@@ -118,7 +126,7 @@ data IdeaCapability
     | CanEditCreatorStatement
     | CanEditAndDelete
     | CanMoveBetweenTopics  -- also move between (and into and out of) topics
-  deriving (Enum, Eq, Ord, Show, Read, Generic)
+  deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaCapability
 
@@ -154,7 +162,7 @@ wildIdeaCap u i = \case
     SchoolGuest      -> []
     Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
-    Admin            -> []
+    Admin            -> thereIsAGod []
 
 phaseRefinementCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseRefinementCap u i = \case
@@ -163,7 +171,7 @@ phaseRefinementCap u i = \case
     SchoolGuest      -> []
     Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
     Principal        -> []
-    Admin            -> []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
+    Admin            -> thereIsAGod []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
 phaseJuryCap :: Idea -> Role -> [IdeaCapability]
 phaseJuryCap _i = \case
@@ -172,7 +180,7 @@ phaseJuryCap _i = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> [CanMarkFeasiblity]
-    Admin            -> []
+    Admin            -> thereIsAGod []
 
 phaseVotingCap :: Idea -> Role -> [IdeaCapability]
 phaseVotingCap i = \case
@@ -181,7 +189,7 @@ phaseVotingCap i = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> []
+    Admin            -> thereIsAGod []
 
 phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
 phaseResultCap u i = \case
@@ -192,7 +200,7 @@ phaseResultCap u i = \case
                                   [CanEditCreatorStatement | ideaHasCreatorStatement i]
                                   | isFeasibleIdea i ]
     Principal        -> []
-    Admin            -> []
+    Admin            -> thereIsAGod []
 
 
 -- ** Helpers
@@ -242,7 +250,7 @@ data TopicCapability
     | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
     | CanCreateIdea
     | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
-  deriving (Eq, Show)
+  deriving (Eq, Show, Enum, Bounded)
 
 topicCapabilities :: Phase -> Role -> [TopicCapability]
 topicCapabilities = \case
@@ -260,7 +268,7 @@ topicWildIdeaCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> []
+    Admin            -> thereIsAGod []
 
 topicRefinementCaps :: Role -> [TopicCapability]
 topicRefinementCaps = \case
@@ -269,7 +277,7 @@ topicRefinementCaps = \case
     SchoolGuest      -> []
     Moderator        -> [CanEditTopic, CanPhaseForwardTopic]
     Principal        -> []
-    Admin            -> [CanPhaseForwardTopic]
+    Admin            -> thereIsAGod [CanPhaseForwardTopic]
 
 topicJuryCaps :: Role -> [TopicCapability]
 topicJuryCaps = \case
@@ -278,7 +286,7 @@ topicJuryCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
+    Admin            -> thereIsAGod [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
 topicVotingCaps :: Role -> [TopicCapability]
 topicVotingCaps = \case
@@ -287,7 +295,7 @@ topicVotingCaps = \case
     SchoolGuest      -> []
     Moderator        -> [CanPhaseForwardTopic]
     Principal        -> []
-    Admin            -> [CanPhaseForwardTopic, CanPhaseBackwardTopic]
+    Admin            -> thereIsAGod [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
 topicResultCaps :: Role -> [TopicCapability]
 topicResultCaps = \case
@@ -296,4 +304,4 @@ topicResultCaps = \case
     SchoolGuest      -> []
     Moderator        -> []
     Principal        -> []
-    Admin            -> [CanPhaseBackwardTopic]
+    Admin            -> thereIsAGod [CanPhaseBackwardTopic]
