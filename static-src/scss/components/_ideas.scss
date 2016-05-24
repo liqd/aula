@@ -147,3 +147,7 @@
         min-width: 40px;
     }
 }
+
+.table-actions {
+    @include rem(margin-top, 25px);
+}

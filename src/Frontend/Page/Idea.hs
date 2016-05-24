@@ -237,15 +237,15 @@ instance ToHtml ViewIdea where
                 toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsWithButtons ctx stats
 
             when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
-                -- FIXME: design; see https://marvelapp.com/ehhb43#10108433
-                div_ [class_ "voting-buttons"] $
-                    if canCreateTopic
-                        then button_ [ class_ "btn-cta m-valid"
+                div_ [class_ "table-actions m-no-hover"] $ do
+                    div_ [class_ "icon-list m-inline"] $ ul_ $ do
+                        li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
+                    when canCreateTopic $ do
+                        button_ [ class_ "btn-cta m-valid"
                                      , onclick_ $ U.Space spc U.CreateTopic
                                      ] $ do
                                  i_ [class_ "icon-check"] nil
-                                 "Idee auf den Tisch bringen (Thema anlegen)."
-                        else "Idee kann auf den Tisch."
+                                 "Auf den Tisch bringen"
 
             feasibilityVerdict True idea caps
 
