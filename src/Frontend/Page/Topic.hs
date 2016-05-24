@@ -235,7 +235,7 @@ displayPhaseTime now = phaseStatus . to info
     stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1
 
     showStamp (Timestamp t) = " am " <> formatTime defaultTimeLocale "%F" t
-                           <> " um " <> formatTime defaultTimeLocale "%T" t
+                           <> " um ca. " <> formatTime defaultTimeLocale "%h" t <> " Uhr"
 
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" titleV
