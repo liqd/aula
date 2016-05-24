@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE OverloadedStrings    #-}
 
+{-# OPTIONS_GHC -Werror -Wall     #-}
+
 module TypesSpec where
 
 import Data.Binary (encode, decode)
@@ -14,7 +16,6 @@ import qualified Data.Aeson as Aeson
 
 import Arbitrary ()
 import AulaTests (tag, TestSuite(..))
-import Frontend.Prelude (when)
 import Types
 
 
