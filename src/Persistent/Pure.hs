@@ -489,6 +489,7 @@ setUserLoginAndRole uid mlogin role = do
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid url = withUser uid . userAvatar ?= url
 
+-- | Update topic value.  Returns information about the ideas that have changed location.
 editTopic :: AUID Topic -> EditTopicData -> AUpdate [IdeaChangedLocation]
 editTopic topicId (EditTopicData title desc ideas) = do
     withTopic topicId %= (set topicTitle title . set topicDesc desc)
@@ -564,9 +565,13 @@ moveIdeaToTopic ideaId mTopicId =
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase
 
+-- | Create a new topic from a topic proto and return it.  This calls 'addTopicYieldLocs', but
+-- discards information about the ideas that have moved location.
 addTopic :: Timestamp -> AddDb Topic
 addTopic now pt = fst <$> addTopicYieldLocs now pt
 
+-- | Like 'addTopic', but return extra information about the ideas that have been moved in or out of
+-- the topic.
 addTopicYieldLocs :: Timestamp -> EnvWithProto Topic -> AUpdate (Topic, [IdeaChangedLocation])
 addTopicYieldLocs now pt = do
     t <- addDb dbTopicMap pt
