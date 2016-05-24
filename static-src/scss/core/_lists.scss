@@ -87,11 +87,11 @@
                 @include svg(icon_umgebung);
             }
 
-            &.icon-feasable {
+            &.icon-feasible {
                 @include svg(yay);
             }
 
-            &.icon-not-feasable {
+            &.icon-not-feasible {
                 @include svg(nay);
             }
 
