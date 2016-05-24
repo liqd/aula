@@ -151,7 +151,6 @@ viewTopicHeaderDiv now ctx topic tab = do
             when (canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic) .
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
-                        -- FIXME: There is no EditTopic path defined.
                         when canEditTopic .
                             li_ [class_ "pop-menu-list-item"] $ do
                                 a_ [id_ "edit-topic",  href_ . U.Space space $ U.EditTopic topicId] $ do
