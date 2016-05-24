@@ -95,6 +95,7 @@ module Persistent.Pure
     , getTopics
     , setTopicPhase
     , addTopic
+    , addTopicYieldLocs
     , editTopic
     , withTopic
     , IdeaChangedLocation, ideaChangedLocation
@@ -563,8 +564,11 @@ moveIdeaToTopic ideaId mTopicId =
 setTopicPhase :: AUID Topic -> Phase -> AUpdate ()
 setTopicPhase tid phase = withTopic tid . topicPhase .= phase
 
-addTopic :: Timestamp -> EnvWithProto Topic -> AUpdate (Topic, [IdeaChangedLocation])
-addTopic now pt = do
+addTopic :: Timestamp -> AddDb Topic
+addTopic now pt = fst <$> addTopicYieldLocs now pt
+
+addTopicYieldLocs :: Timestamp -> EnvWithProto Topic -> AUpdate (Topic, [IdeaChangedLocation])
+addTopicYieldLocs now pt = do
     t <- addDb dbTopicMap pt
     dbFrozen <- liftAQuery $ view dbFreeze
     when (dbFrozen == Frozen) . setTopicPhase (t ^. _Id) $ freezePhase now (t ^. topicPhase)

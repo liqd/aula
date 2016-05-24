@@ -12,7 +12,6 @@ import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
 import Control.Monad (zipWithM_, (>=>))
-import Data.Functor.Infix ((<$$>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -199,8 +198,8 @@ universe rnd = do
     avatars   <- generate numberOfStudents rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
-    topics <- fst <$$> (mapM (update . AddTopic now . EnvWith admin now)
-                =<< generate numberOfTopics rnd (genTopic now ideaSpaces))
+    topics <- mapM (addWithCurrentUser (AddTopic now))
+                =<< generate numberOfTopics rnd (genTopic now ideaSpaces)
 
     ideas <- mapM (addWithCurrentUser AddIdea)
                 =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
@@ -286,7 +285,7 @@ genInitialTestDb = do
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
-    (topic, _) <- update $ AddTopic now (EnvWith user1 now ProtoTopic
+    topic <- update $ AddTopic now (EnvWith user1 now ProtoTopic
         { _protoTopicTitle       = "topic-title"
         , _protoTopicDesc        = PlainDocument "topic-desc"
         , _protoTopicImage       = ""

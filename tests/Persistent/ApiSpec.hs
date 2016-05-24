@@ -15,7 +15,6 @@ import Control.Exception (assert)
 import Control.Lens hiding (elements)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Data.Functor.Infix ((<$$>))
 import Data.String.Conversions
 import Servant.Server
 import Test.Hspec
@@ -77,22 +76,21 @@ getDbSpec imp name getXs = do
                 xs <- runQ rp getXs
                 length xs `shouldNotBe` 0
 
-addDbSpecProp :: forall f proto ev a a'.
-                 (Foldable f, Arbitrary proto, HasAUpdate ev a')
+addDbSpecProp :: forall f proto ev a.
+                 (Foldable f, Arbitrary proto, HasAUpdate ev a)
               => PersistenceImpl
               -> String
               -> Query (f a)
               -> (EnvWith proto -> ev)
-              -> (a' -> a)
               -> (proto -> Either PersistExcept a -> Expectation)
               -> Spec
-addDbSpecProp imp name getXs addX stripX propX =
+addDbSpecProp imp name getXs addX propX =
     describe name $ do
         let t :: SpecWith RunPersist
             t = it "adds one" $ \rp -> do
                     before' <- length <$> runQ rp getXs
                     (now, p) <- liftIO $ generate arbitrary
-                    r <- stripX <$$> (runU rp . addX $ EnvWith someTestUser now p)
+                    r <- runU rp . addX $ EnvWith someTestUser now p
                     after' <- length <$> runQ rp getXs
                     after' `shouldBe` before' + 1
                     propX p r
@@ -102,12 +100,7 @@ addDbSpecProp imp name getXs addX stripX propX =
 
 addDbSpec :: (Foldable f, Arbitrary proto, HasAUpdate ev a)
           => PersistenceImpl -> String -> Query (f a) -> (EnvWith proto -> ev) -> Spec
-addDbSpec imp name getXs addX = addDbSpecProp imp name getXs addX id (\_ _ -> passes)
-
--- | like 'addDbSpec', but takes a function that strips extra info from the result value.
-addDbSpec' :: (Foldable f, Arbitrary proto, HasAUpdate ev a')
-          => PersistenceImpl -> String -> Query (f a) -> (EnvWith proto -> ev) -> (a' -> a) -> Spec
-addDbSpec' imp name getXs addX stripX = addDbSpecProp imp name getXs addX stripX (\_ _ -> passes)
+addDbSpec imp name getXs addX = addDbSpecProp imp name getXs addX (\_ _ -> passes)
 
 findInBySpec :: (Eq a, Show a, Arbitrary k) =>
                 PersistenceImpl -> String -> Query [a] -> (k -> Query (Maybe a)) ->
@@ -186,7 +179,7 @@ persistApiSpec imp = do
     addDbSpec imp "addUsers" getAllUsers AddUser
 
     getDbSpec imp "getTopics" getTopics
-    addDbSpec' imp "addTopics" getTopics (AddTopic (assert False $ error "(no current time for freezing)")) fst
+    addDbSpec imp "addTopics" getTopics (AddTopic (assert False $ error "(no current time for freezing)"))
 
     findInBySpec imp "findUserByLogin" getAllUsers findUserByLogin userLogin ("not" <>)
     findInBySpec imp "findTopic" getTopics findTopic _Id changeAUID
@@ -226,5 +219,5 @@ regression :: PersistenceImpl -> Spec
 regression imp = describe "regression" $ do
     describe "IdeaSpace in proto idea and saved idea should be the same" $
         addDbSpecProp imp
-            "addIdea" getIdeas AddIdea id
+            "addIdea" getIdeas AddIdea
             (\p (Right i) -> i ^. ideaLocation `shouldBe` p ^. protoIdeaLocation)

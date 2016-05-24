@@ -457,7 +457,7 @@ createTopic :: Create Topic
 createTopic proto = do
     now <- getCurrentTimestamp
     cUser <- currentUser
-    (topic, ideasChangeLocation) <- update $ AddTopic now (EnvWith cUser now proto)
+    (topic, ideasChangeLocation) <- update $ AddTopicYieldLocs now (EnvWith cUser now proto)
     eventLogUserCreatesTopic topic
     eventLogIdeaNewLocation `mapM_` ideasChangeLocation
     pure topic
