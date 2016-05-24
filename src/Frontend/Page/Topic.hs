@@ -9,6 +9,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -27,9 +28,11 @@ where
 import Control.Category ((.))
 import Control.Exception (assert)
 import Data.List (sortBy)
+import Data.Time
 import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
+import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
@@ -216,13 +219,22 @@ viewTopicHeaderDiv now ctx topic tab = do
                 PhaseResult       -> t1 >> t3 >> t4
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
-displayPhaseTime now = phaseStatus . phaseLeftoverFrom now . to displayTimespan
+displayPhaseTime now = phaseStatus . to info
   where
-    displayTimespan t = case timespanDays t of
-        -- n | n < 0 -> assert False $ error "displayPhaseTime"  (this breaks the test suite)
-        0 -> "(Endet heute)"
-        1 -> "(Endet morgen)"
-        n -> "(Endet in " <> show n <> " Tagen)"
+    info t@(ActivePhase stamp) =
+        "(Endet " <> displayTimespan t <> showStamp stamp <> ")"
+    info t@(FrozenPhase _) =
+        "(Endet " <> displayTimespanFrozen t <> ")"
+
+    displayTimespan st = case stampToDays st of
+        -- n | n < 0 -> assert False $ error "displayPhaseTime"  -- (this breaks the test suite)
+        0 -> "heute"
+        1 -> "morgen"
+        n -> "in " <> show n <> " Tagen"
+
+    displayTimespanFrozen st = (cs . show . stampToDays $ st) <> " Tage nach den Ferien"
+    stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1
+    showStamp = formatTime aulaTimeLocale " am %F um ca. %H Uhr %Z" . unsafeTimestampToLocalTime
 
 validateTopicTitle :: FormCS m r s
 validateTopicTitle = validate "Title des Themas" titleV
