@@ -185,7 +185,7 @@ instance ToHtml ViewIdea where
             userCaps      = userCapabilities role
 
             canEdit              = CanEditAndDelete `elem` caps
-            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
+            canCreateTopic       = ideaReachedQuorum stats && Clickable CanCreateTopic `elem` userCaps
             canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
 
         div_ [class_ "hero-unit narrow-container"] $ do

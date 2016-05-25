@@ -190,7 +190,7 @@ userHeaderDiv ctx (ActiveUser user) =
                     btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
                 let caps = ctx ^. renderContextUser . userRole . to userCapabilities
-                when (CanEditUser `elem` caps) editProfileBtn
+                when (Clickable CanEditUser `elem` caps) editProfileBtn
 
 
 -- ** User Profile: Created Ideas
