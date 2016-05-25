@@ -36,7 +36,7 @@ import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
-import LifeCycle (TopicCapability(..), topicCapabilities)
+import LifeCycle (Capability(..), topicCapabilities)
 import Persistent
     ( findDelegationsByContext
     , findIdeasByTopic

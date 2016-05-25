@@ -316,7 +316,7 @@ instance ToHtml ViewIdea where
                         CommentWidget ctx caps c phase ^. html
 
 
-feasibilityVerdict :: Monad m => Bool -> Idea -> [IdeaCapability] -> HtmlT m ()
+feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
         explToHtml (Markdown text) = do

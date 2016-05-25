@@ -464,7 +464,7 @@ instance Arbitrary IdeaStats where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary IdeaCapability where
+instance Arbitrary Capability where
     arbitrary = garbitrary
     shrink    = gshrink
 
@@ -504,10 +504,6 @@ instance Arbitrary UpDown where
     shrink    = gshrink
 
 instance Arbitrary CommentContext where
-    arbitrary = garbitrary
-    shrink    = gshrink
-
-instance Arbitrary CommentCapability where
     arbitrary = garbitrary
     shrink    = gshrink
 

@@ -23,7 +23,7 @@ import qualified Frontend.Path as U
 
 data CommentWidget = CommentWidget
     { _cwRenderContext :: RenderContext
-    , _cwIdeaCaps      :: [IdeaCapability]
+    , _cwIdeaCaps      :: [Capability]
     , _cwComment       :: Comment
     , _cwPhase         :: Phase
     }
@@ -79,7 +79,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment (w ^. cwPhase)
 
 
-data CommentVotesWidget = CommentVotesWidget [IdeaCapability] Comment
+data CommentVotesWidget = CommentVotesWidget [Capability] Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
