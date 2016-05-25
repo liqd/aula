@@ -105,7 +105,7 @@ data Clickable a = Clickable a | GrayedOut a
 
 userCapabilities :: Role -> [Clickable UserCapability]
 userCapabilities = \case
-    Student    _clss -> []
+    Student    _clss -> [GrayedOut CanEditUser]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> Clickable <$> [CanCreateTopic, CanEditUser]
