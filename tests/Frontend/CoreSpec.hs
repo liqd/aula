@@ -344,6 +344,8 @@ postToForm (F g) = do
 class FormPage p => ArbFormPagePayload p where
     -- | Generates valid form inputs.
     arbFormPagePayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen r
+    arbFormPagePayload _ = arbitrary
+
     -- | Generates invalid form inputs, if possible
     arbFormPageInvalidPayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen (Maybe r)
     arbFormPageInvalidPayload _ = return Nothing
@@ -359,7 +361,6 @@ instance ArbFormPagePayload Frontend.Page.EditIdea where
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPagePayload CommentOnIdea where
-    arbFormPagePayload _ = CommentContent <$> arb
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = Quorums <$> boundary 1 100
@@ -373,7 +374,6 @@ instance ArbFormPagePayload PageAdminSettingsQuorum where
             ]
 
 instance ArbFormPagePayload PageAdminSettingsFreeze where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsDurations where
     arbFormPagePayload _ = Durations <$> days <*> days
@@ -381,10 +381,8 @@ instance ArbFormPagePayload PageAdminSettingsDurations where
         days = DurationDays . getPositive <$> arbitrary
 
 instance ArbFormPagePayload PageUserSettings where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageHomeWithLoginPrompt where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic space ideas _timestamp) =
@@ -405,13 +403,10 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <**> (set editTopicDesc <$> arb)
 
 instance ArbFormPagePayload AdminEditUser where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload AdminPhaseChange where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload CreatorStatement where
-    arbFormPagePayload _ = arb
     arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
 
 instance ArbFormPagePayload JudgeIdea where
@@ -426,12 +421,9 @@ instance ArbFormPagePayload JudgeIdea where
         = pure . Just . NotFeasible $ Markdown ""
 
 instance ArbFormPagePayload ReportComment where
-    arbFormPagePayload _ = ReportCommentContent <$> arb
-
     arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""
 
 instance ArbFormPagePayload ReportUserProfile where
-    arbFormPagePayload _ = arbitrary
 
 {- FIXME: File tests
 instance PayloadToEnv UserProfile where
@@ -441,10 +433,8 @@ instance PayloadToEnv UserProfile where
 -}
 
 instance ArbFormPagePayload EditUserProfile where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload Frontend.Page.MoveIdea where
-    arbFormPagePayload _ = arbitrary
 
 {- FIXME: Use choice
 instance PayloadToEnv Types.MoveIdea where
@@ -454,13 +444,10 @@ instance PayloadToEnv Types.MoveIdea where
 -}
 
 instance ArbFormPagePayload EditComment where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload ReportIdea where
-    arbFormPagePayload _ = arbitrary
 
 instance ArbFormPagePayload PageAdminSettingsEventsProtocol where
-    arbFormPagePayload _ = arbitrary
 
 {- FIXME: Choice
 instance PayloadToEnv EventsProtocolFilter where
@@ -468,14 +455,12 @@ instance PayloadToEnv EventsProtocolFilter where
 -}
 
 instance ArbFormPagePayload AdminDeleteUser where
-    arbFormPagePayload _ = arbitrary
 
 instance PayloadToEnv () where
     payloadToEnvMapping _ () = \case
         _ -> pure [TextInput ""]
 
 instance ArbFormPagePayload AdminCreateUser where
-    arbFormPagePayload _ = arbitrary
 
 {- FIXME: Choice
 instance PayloadToEnv CreateUserPayload where
@@ -484,7 +469,6 @@ instance PayloadToEnv CreateUserPayload where
 -}
 
 instance ArbFormPagePayload AdminCreateClass where
-    arbFormPagePayload _ = arbitrary
 
 {- FIXME: File
 instance PayloadToEnv BatchCreateUsersFormData where
@@ -493,7 +477,6 @@ instance PayloadToEnv BatchCreateUsersFormData where
 -}
 
 instance ArbFormPagePayload PageAdminResetPassword where
-    arbFormPagePayload _ = arbitrary
 
 instance PayloadToEnv InitialPassword where
     payloadToEnvMapping _ (InitialPassword pwd) = \case
