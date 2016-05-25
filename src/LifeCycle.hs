@@ -13,13 +13,10 @@ module LifeCycle
     , thawPhase
 
       -- * capabilities
-    , UserCapability(..)
+    , Capability(..)
     , userCapabilities
-    , IdeaCapability(..)
     , ideaCapabilities
-    , CommentCapability(..)
     , commentCapabilities
-    , TopicCapability(..)
     , topicCapabilities
     )
 where
@@ -91,16 +88,44 @@ phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
 phaseTrans _ _ = Nothing
 
 
--- * User capabilities
+-- * Capabilities
 
--- FIXME: Extend the list
-data UserCapability
-    = CanCreateTopic
+-- | What a user can do with an idea.
+--
+-- The view of an idea is default and controlled by access control.
+data Capability
+    -- Idea
+    = CanLike
+    | CanVoteIdea
+    | CanComment
+    | CanVoteComment
+    | CanMarkFeasiblity -- also can add jury statement
+    | CanMarkWinner
+    | CanAddCreatorStatement
+    | CanEditCreatorStatement
+    | CanEditAndDelete
+    | CanMoveBetweenTopics  -- also move between (and into and out of) topics
+    -- Comment
+    | CanReplyComment
+    | CanDeleteComment
+    | CanEditComment
+    -- Topic
+    | CanPhaseForwardTopic
+    | CanPhaseBackwardTopic
+    | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
+    | CanCreateIdea
+    | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
+    -- User
+    | CanCreateTopic
     | CanEditUser
-  deriving (Eq, Show, Enum, Bounded)
+  deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic Capability
 
 
-userCapabilities :: Role -> [UserCapability]
+-- ** User capabilities
+
+userCapabilities :: Role -> [Capability]
 userCapabilities = \case
     Student    _clss -> []
     ClassGuest _clss -> []
@@ -112,42 +137,25 @@ userCapabilities = \case
 
 -- * Idea Capabilities
 
--- | What a user can do with an idea.
---
--- The view of an idea is default and controlled by access control.
-data IdeaCapability
-    = CanLike
-    | CanVoteIdea
-    | CanComment
-    | CanVoteComment
-    | CanMarkFeasiblity -- also can add jury statement
-    | CanMarkWinner
-    | CanAddCreatorStatement
-    | CanEditCreatorStatement
-    | CanEditAndDelete
-    | CanMoveBetweenTopics  -- also move between (and into and out of) topics
-  deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic IdeaCapability
-
-ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
+ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Capability]
 ideaCapabilities = phaseCap
 
-editCap :: AUID User -> Idea -> [IdeaCapability]
+editCap :: AUID User -> Idea -> [Capability]
 editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
 
-allowedDuringFreeze :: [IdeaCapability]
+allowedDuringFreeze :: [Capability]
 allowedDuringFreeze = [ CanComment
                       , CanMarkFeasiblity
                       , CanAddCreatorStatement
                       , CanMarkWinner
                       ]
 
-filterIfFrozen :: Phase -> [IdeaCapability] -> [IdeaCapability]
+filterIfFrozen :: Phase -> [Capability] -> [Capability]
 filterIfFrozen p | isPhaseFrozen p = filter (`elem` allowedDuringFreeze)
                  | otherwise       = id
 
-phaseCap :: AUID User -> Role -> Idea -> Phase -> [IdeaCapability]
+phaseCap :: AUID User -> Role -> Idea -> Phase -> [Capability]
 phaseCap u r i p = filterIfFrozen p $ case p of
     PhaseWildIdea{}   -> wildIdeaCap u i r
     PhaseRefinement{} -> phaseRefinementCap u i r
@@ -155,7 +163,7 @@ phaseCap u r i p = filterIfFrozen p $ case p of
     PhaseVoting{}     -> phaseVotingCap i r
     PhaseResult       -> phaseResultCap u i r
 
-wildIdeaCap :: AUID User -> Idea -> Role -> [IdeaCapability]
+wildIdeaCap :: AUID User -> Idea -> Role -> [Capability]
 wildIdeaCap u i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
     ClassGuest _clss -> []
@@ -164,7 +172,7 @@ wildIdeaCap u i = \case
     Principal        -> []
     Admin            -> thereIsAGod []
 
-phaseRefinementCap :: AUID User -> Idea -> Role -> [IdeaCapability]
+phaseRefinementCap :: AUID User -> Idea -> Role -> [Capability]
 phaseRefinementCap u i = \case
     Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
     ClassGuest _clss -> []
@@ -173,7 +181,7 @@ phaseRefinementCap u i = \case
     Principal        -> []
     Admin            -> thereIsAGod []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
-phaseJuryCap :: Idea -> Role -> [IdeaCapability]
+phaseJuryCap :: Idea -> Role -> [Capability]
 phaseJuryCap _i = \case
     Student    _clss -> []
     ClassGuest _clss -> []
@@ -182,7 +190,7 @@ phaseJuryCap _i = \case
     Principal        -> [CanMarkFeasiblity]
     Admin            -> thereIsAGod []
 
-phaseVotingCap :: Idea -> Role -> [IdeaCapability]
+phaseVotingCap :: Idea -> Role -> [Capability]
 phaseVotingCap i = \case
     Student    _clss -> [CanVoteIdea | isFeasibleIdea i]
     ClassGuest _clss -> []
@@ -191,7 +199,7 @@ phaseVotingCap i = \case
     Principal        -> []
     Admin            -> thereIsAGod []
 
-phaseResultCap :: AUID User -> Idea -> Role -> [IdeaCapability]
+phaseResultCap :: AUID User -> Idea -> Role -> [Capability]
 phaseResultCap u i = \case
     Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i, isWinning i]
     ClassGuest _clss -> []
@@ -203,30 +211,15 @@ phaseResultCap u i = \case
     Admin            -> thereIsAGod []
 
 
--- ** Helpers
+-- *** Helpers
 
 isCreatorOf :: HasMetaInfo a => AUID User -> a -> Bool
 isCreatorOf u = (u ==) . view createdBy
 
 
--- * Comment Capabilities
+-- ** Comment Capabilities
 
--- These capabilities are specific to a particular comment. Using IdeaCapability would
--- be too coarse and would not allow distinguish that authors can delete only their own
--- comments (we need the individual 'Comment' as a function argument for that).
-data CommentCapability
-    = CanReplyComment
-      -- To reply to a comment you need both this capability and the 'CanComment' capability
-      -- for the corresponding idea.
-      -- FIXME: we shouldn't make a difference between the right to make a comment and the
-      -- right to make a sub-comment.
-    | CanDeleteComment
-    | CanEditComment
-  deriving (Enum, Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic CommentCapability
-
-commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [CommentCapability]
+commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [Capability]
 commentCapabilities uid role comment phase
     | comment ^. commentDeleted = []
     | ongoingDebate phase = mconcat $
@@ -241,18 +234,9 @@ commentCapabilities uid role comment phase
         _                 -> False
 
 
--- * Topic capabilities
+-- ** Topic capabilities
 
--- FIXME: Extend the list
-data TopicCapability
-    = CanPhaseForwardTopic
-    | CanPhaseBackwardTopic
-    | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
-    | CanCreateIdea
-    | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
-  deriving (Eq, Show, Enum, Bounded)
-
-topicCapabilities :: Phase -> Role -> [TopicCapability]
+topicCapabilities :: Phase -> Role -> [Capability]
 topicCapabilities = \case
     p | isPhaseFrozen p -> const []
     PhaseWildIdea{}     -> topicWildIdeaCaps
@@ -261,7 +245,7 @@ topicCapabilities = \case
     PhaseVoting{}       -> topicVotingCaps
     PhaseResult         -> topicResultCaps
 
-topicWildIdeaCaps :: Role -> [TopicCapability]
+topicWildIdeaCaps :: Role -> [Capability]
 topicWildIdeaCaps = \case
     Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
@@ -270,7 +254,7 @@ topicWildIdeaCaps = \case
     Principal        -> []
     Admin            -> thereIsAGod []
 
-topicRefinementCaps :: Role -> [TopicCapability]
+topicRefinementCaps :: Role -> [Capability]
 topicRefinementCaps = \case
     Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
@@ -279,7 +263,7 @@ topicRefinementCaps = \case
     Principal        -> []
     Admin            -> thereIsAGod [CanPhaseForwardTopic]
 
-topicJuryCaps :: Role -> [TopicCapability]
+topicJuryCaps :: Role -> [Capability]
 topicJuryCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
@@ -288,7 +272,7 @@ topicJuryCaps = \case
     Principal        -> []
     Admin            -> thereIsAGod [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
-topicVotingCaps :: Role -> [TopicCapability]
+topicVotingCaps :: Role -> [Capability]
 topicVotingCaps = \case
     Student    _clss -> [CanVoteTopic]
     ClassGuest _clss -> []
@@ -297,7 +281,7 @@ topicVotingCaps = \case
     Principal        -> []
     Admin            -> thereIsAGod [CanPhaseForwardTopic, CanPhaseBackwardTopic]
 
-topicResultCaps :: Role -> [TopicCapability]
+topicResultCaps :: Role -> [Capability]
 topicResultCaps = \case
     Student    _clss -> []
     ClassGuest _clss -> []
