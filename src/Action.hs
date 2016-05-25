@@ -446,7 +446,8 @@ topicForcePhaseChange dir tid = do
   where
     -- this implicitly triggers the change to voting phase.
     makeEverythingFeasible topic = do
-        ideas <- query $ findIdeasByTopic topic
+        let nonMarked = not . has (ideaJuryResult . _Just)
+        ideas <- filter nonMarked <$> query (findIdeasByTopic topic)
         forM_ ideas $ \idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)
         view topicPhase <$> mquery (findTopic (topic ^. _Id))
 

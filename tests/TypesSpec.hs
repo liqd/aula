@@ -1,6 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE OverloadedStrings    #-}
 
+{-# OPTIONS_GHC -Werror -Wall     #-}
+
 module TypesSpec where
 
 import Data.Binary (encode, decode)
@@ -13,13 +15,9 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Aeson as Aeson
 
 import Arbitrary ()
-import Frontend.Prelude (when)
+import AulaTests (tag, TestSuite(..))
 import Types
 
-
--- | run also the tests that take many seconds
-beThorough :: Bool
-beThorough = False
 
 spec :: Spec
 spec = do
@@ -51,7 +49,7 @@ spec = do
             \(x :: Timestamp) (y :: Timestamp) ->
                 timespanUs (y `diffTimestamps` ((y `diffTimestamps` x) `addTimespan` x)) `shouldBe` 0
 
-    when beThorough $ do
+    tag Large $ do
         describe "DelegationNetwork" $ do
             it "generates" . property $
                 \(dn :: DelegationNetwork) -> length (show dn) `shouldNotBe` 0
