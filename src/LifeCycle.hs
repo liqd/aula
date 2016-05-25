@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE NamedFieldPuns  #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns    #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -17,6 +18,8 @@ module LifeCycle
       -- * capabilities
     , Clickable(..), unClickable
     , Capability(..)
+    , elemCaps
+
     , userCapabilities
     , ideaCapabilities
     , commentCapabilities
@@ -26,7 +29,7 @@ where
 
 import Control.Lens
 import Control.Monad (join)
-import Data.List ((\\), nub)
+import Data.List ((\\), find, nub)
 import Data.Monoid
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
@@ -135,6 +138,10 @@ data Clickable a
 instance SOP.Generic a => SOP.Generic (Clickable a)
 
 makeLenses ''Clickable
+
+elemCaps :: Capability -> [Clickable Capability] -> Bool
+elemCaps c (find ((c ==) . _unClickable) -> Just _) = True
+elemCaps _ _ = False
 
 -- ** User capabilities
 

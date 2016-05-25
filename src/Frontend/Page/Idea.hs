@@ -169,6 +169,13 @@ linkToIdeaLocation idea = do
              IdeaLocationSpace{} -> "Zum Ideenraum"
              IdeaLocationTopic{} -> "Zum Thema"
 
+-- ASSUMPTION: The caps list does con contain the same value marked as
+-- Clickable and GrayedOut
+clickable :: (Eq cap, Monad m) => [Clickable cap] -> cap -> (m () -> m ()) -> (m () -> m ())-> m () -> m ()
+clickable caps cap clickable_ grayedout body = do
+    when ((Clickable cap) `elem` caps) $ clickable_ body
+    when ((GrayedOut cap) `elem` caps) $ grayedout  body
+
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
     toHtml (ViewIdea _ctx (IdeaStats idea _phase _quo _voters))
@@ -236,16 +243,19 @@ instance ToHtml ViewIdea where
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsWithButtons ctx stats
 
-            when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
+            let quorumReached = ideaReachedQuorum stats
+            when (has _PhaseWildIdea phase && quorumReached) $ do
                 div_ [class_ "table-actions m-no-hover"] $ do
                     div_ [class_ "icon-list m-inline"] . ul_ $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
-                    when canCreateTopic $ do
-                        button_ [ class_ "btn-cta m-valid"
-                                , onclick_ $ U.Space spc U.CreateTopic
-                                ] $ do
-                            i_ [class_ "icon-check"] nil
-                            "Auf den Tisch bringen"
+                    when quorumReached $ do
+                        clickable caps CanCreateTopic
+                            (button_ [ class_ "btn-cta m-valid"
+                                     , onclick_ $ U.Space spc U.CreateTopic
+                                     ])
+                            (span_ [class_ "btn-cta m-inactive"])
+                            (do i_ [class_ "icon-check"] nil
+                                "Auf den Tisch bringen")
 
             feasibilityVerdict True idea caps
 
@@ -268,12 +278,15 @@ instance ToHtml ViewIdea where
             -- FIXME: Styling
             when (isFeasibleIdea idea) $ do
                 div_ [class_ "winning-idea voting-buttons"] $ do
-                    when (Clickable CanMarkWinner `elem` caps) $ do
-                        let winnerButton =
-                                postButton_
-                                    [ class_ "btn-cta mark-winner-button"
-                                    , jsReloadOnClick
-                                    ]
+                    when (CanMarkWinner `elemCaps` caps) $ do
+                        let winnerButton path text =
+                                clickable caps CanMarkWinner
+                                    (postButton_
+                                        [ class_ "btn-cta mark-winner-button"
+                                        , jsReloadOnClick
+                                        ] path)
+                                    (span_ [class_ "btn-cta mark-winner-button m-inactive"])
+                                    text
 
                         when (isNothing (idea ^. ideaVoteResult)) $
                             winnerButton (U.markIdeaAsWinner idea) "Idee hat gewonnen"
@@ -305,11 +318,12 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ do
                             numberWithUnit totalComments
                                 "Verbesserungsvorschlag" "Verbesserungsvorschläge"
-                        when (Clickable CanComment `elem` caps) $
-                            button_ [ value_ "create_comment"
-                                    , class_ "btn-cta comments-header-button"
-                                    , onclick_ (U.commentOnIdea idea)]
-                                "Neuer Verbesserungsvorschlag"
+                        clickable caps CanComment
+                            (button_ [ value_ "create_comment"
+                                     , class_ "btn-cta comments-header-button"
+                                     , onclick_ (U.commentOnIdea idea)])
+                            (span_ [class_ "btn-cta comments-header-button m-inactive"])
+                            "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
@@ -323,18 +337,22 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
             p_ "Begründung:"
             p_ $ toHtml text
 
-    when (renderJuryButtons && Clickable CanMarkFeasiblity `elem` caps) $ do
+    when (renderJuryButtons && CanMarkFeasiblity `elemCaps` caps) $ do
         div_ [class_ "admin-buttons"] $ do
-            button_ [ class_ "btn-cta m-valid"
-                    , onclick_ $ U.judgeIdea idea IdeaFeasible
-                    ] $ do
-                i_ [class_ "icon-check"] nil
-                "durchführbar"
-            button_ [ class_ "btn-cta m-invalid"
-                    , onclick_ $ U.judgeIdea idea IdeaNotFeasible
-                    ] $ do
-                i_ [class_ "icon-times"] nil
-                "nicht durchführbar"
+            clickable caps CanMarkFeasiblity
+                (button_ [ class_ "btn-cta m-valid"
+                         , onclick_ $ U.judgeIdea idea IdeaFeasible
+                         ])
+                (span_ [ class_ "btn-cta m-valid m-inactive"])
+                (do i_ [class_ "icon-check"] nil
+                    "durchführbar")
+            clickable caps CanMarkFeasiblity
+                (button_ [ class_ "btn-cta m-invalid"
+                         , onclick_ $ U.judgeIdea idea IdeaNotFeasible
+                         ])
+                (span_ [class_ "btn-cta m-invalid m-inactive"])
+                (do i_ [class_ "icon-times"] nil
+                    "nicht durchführbar")
 
     case _ideaJuryResult idea of
         Nothing -> nil
