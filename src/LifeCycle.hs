@@ -1,6 +1,8 @@
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE LambdaCase     #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE DeriveFunctor   #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -13,6 +15,7 @@ module LifeCycle
     , thawPhase
 
       -- * capabilities
+    , Clickable(..), unClickable
     , Capability(..)
     , userCapabilities
     , ideaCapabilities
@@ -22,6 +25,8 @@ module LifeCycle
 where
 
 import Control.Lens
+import Control.Monad (join)
+import Data.List ((\\), nub)
 import Data.Monoid
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
@@ -122,6 +127,14 @@ data Capability
 
 instance SOP.Generic Capability
 
+data Clickable a
+    = Clickable { _unClickable :: a }
+    | GrayedOut { _unClickable :: a }
+  deriving (Eq, Functor, Ord, Read, Show, Generic)
+
+instance SOP.Generic a => SOP.Generic (Clickable a)
+
+makeLenses ''Clickable
 
 -- ** User capabilities
 
@@ -137,9 +150,24 @@ userCapabilities = \case
 
 -- * Idea Capabilities
 
+ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Clickable Capability]
+ideaCapabilities u r i p =
+    let activeCaps = nub $ ideaCapabilitiesInPhase u r i p
+        allCaps    = nub $ ideaCapabilitiesInAllPhases u r i
+    in (Clickable <$> activeCaps) <> (GrayedOut <$> (allCaps \\ activeCaps))
 
-ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Capability]
-ideaCapabilities = phaseCap
+-- ASSUMPTION: The list of a phase should be part of the AllPhase list.
+ideaCapabilitiesInAllPhases :: AUID User -> Role -> Idea -> [Capability]
+ideaCapabilitiesInAllPhases u r i = join
+    [ wildIdeaCap u i r
+    , phaseRefinementCap u i r
+    , phaseJuryCap i r
+    , phaseVotingCap i r
+    , phaseResultCap u i r
+    ]
+
+ideaCapabilitiesInPhase :: AUID User -> Role -> Idea -> Phase -> [Capability]
+ideaCapabilitiesInPhase = phaseCap
 
 editCap :: AUID User -> Idea -> [Capability]
 editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]

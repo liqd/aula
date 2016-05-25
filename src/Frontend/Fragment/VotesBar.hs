@@ -42,7 +42,7 @@ instance ToHtml IdeaVoteLikeBars where
                         idea
                         phase
                 \\ case mode of
-                    IdeaVoteLikeBarsPlain       -> [CanLike, CanVoteIdea]
+                    IdeaVoteLikeBarsPlain       -> [Clickable, GrayedOut] <*> [CanLike, CanVoteIdea]
                     IdeaVoteLikeBarsWithButtons -> []
 
             likeBar :: Html () -> Html ()
@@ -57,7 +57,7 @@ instance ToHtml IdeaVoteLikeBars where
                 bs
 
             likeButtons :: Html ()
-            likeButtons = when (CanLike `elem` caps) .
+            likeButtons = when (Clickable CanLike `elem` caps) .
                 div_ [class_ "voting-buttons"] $ do
                     if userLikesIdea (ctx ^. renderContextUser) idea
                         then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
@@ -106,7 +106,7 @@ instance ToHtml IdeaVoteLikeBars where
             user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
-            voteButtons = when (CanVoteIdea `elem` caps) .
+            voteButtons = when (Clickable CanVoteIdea `elem` caps) .
                 div_ [class_ "voting-buttons"] $ do
                     voteButton vote Yes "dafür"
                     voteButton vote No  "dagegen"

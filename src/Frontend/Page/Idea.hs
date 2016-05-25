@@ -184,9 +184,9 @@ instance ToHtml ViewIdea where
             caps          = ideaCapabilities uid role idea phase
             userCaps      = userCapabilities role
 
-            canEdit              = CanEditAndDelete `elem` caps
+            canEdit              = Clickable CanEditAndDelete `elem` caps
             canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
-            canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
+            canMoveBetweenTopics = Clickable CanMoveBetweenTopics `elem` caps
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -250,7 +250,7 @@ instance ToHtml ViewIdea where
             feasibilityVerdict True idea caps
 
             -- creator statement
-            when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
+            when (any (`elem` caps) [Clickable CanAddCreatorStatement, Clickable CanEditCreatorStatement]) $ do
                 div_ [class_ "creator-statement-button"] $ do
                     button_ [ class_ "btn-cta m-valid"
                             , onclick_ $ U.creatorStatement idea
@@ -268,7 +268,7 @@ instance ToHtml ViewIdea where
             -- FIXME: Styling
             when (isFeasibleIdea idea) $ do
                 div_ [class_ "winning-idea voting-buttons"] $ do
-                    when (CanMarkWinner `elem` caps) $ do
+                    when (Clickable CanMarkWinner `elem` caps) $ do
                         let winnerButton =
                                 postButton_
                                     [ class_ "btn-cta mark-winner-button"
@@ -305,7 +305,7 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ do
                             numberWithUnit totalComments
                                 "Verbesserungsvorschlag" "Verbesserungsvorschläge"
-                        when (CanComment `elem` caps) $
+                        when (Clickable CanComment `elem` caps) $
                             button_ [ value_ "create_comment"
                                     , class_ "btn-cta comments-header-button"
                                     , onclick_ (U.commentOnIdea idea)]
@@ -316,14 +316,14 @@ instance ToHtml ViewIdea where
                         CommentWidget ctx caps c phase ^. html
 
 
-feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
+feasibilityVerdict :: Monad m => Bool -> Idea -> [Clickable Capability] -> HtmlT m ()
 feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
         explToHtml (Markdown text) = do
             p_ "Begründung:"
             p_ $ toHtml text
 
-    when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
+    when (renderJuryButtons && Clickable CanMarkFeasiblity `elem` caps) $ do
         div_ [class_ "admin-buttons"] $ do
             button_ [ class_ "btn-cta m-valid"
                     , onclick_ $ U.judgeIdea idea IdeaFeasible

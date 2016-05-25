@@ -23,7 +23,7 @@ import qualified Frontend.Path as U
 
 data CommentWidget = CommentWidget
     { _cwRenderContext :: RenderContext
-    , _cwIdeaCaps      :: [Capability]
+    , _cwIdeaCaps      :: [Clickable Capability]
     , _cwComment       :: Comment
     , _cwPhase         :: Phase
     }
@@ -52,7 +52,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
             else comment ^. commentText . html
     unless (comment ^. commentDeleted) . footer_ [class_ "comment-footer"] $ do
         div_ [class_ "comment-footer-buttons"] $ do
-            when (CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
+            when (Clickable CanComment `elem` w ^. cwIdeaCaps && CanReplyComment `elem` comCaps) .
                 button_ [class_ "btn comment-footer-button", onclick_ $ U.replyToComment comment] $ do
                     i_ [class_ "icon-reply"] nil
                     "antworten"
@@ -79,7 +79,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment (w ^. cwPhase)
 
 
-data CommentVotesWidget = CommentVotesWidget [Capability] Comment
+data CommentVotesWidget = CommentVotesWidget [Clickable Capability] Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
@@ -92,7 +92,7 @@ instance ToHtml CommentVotesWidget where
         voteButton v = do
             span_ [class_ $ "comment-vote-" <> vs] $ do
                 countCommentVotes v votes ^. showed . html
-                let likeButton = if CanVoteComment `elem` caps
+                let likeButton = if Clickable CanVoteComment `elem` caps
                         then postButton_ [ class_ "btn"
                                          , jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
                                          ]

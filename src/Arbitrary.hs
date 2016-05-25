@@ -468,6 +468,10 @@ instance Arbitrary Capability where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance (Arbitrary a, Generic a) => Arbitrary (Clickable a) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary
     shrink    = gshrink
