@@ -13,6 +13,7 @@ module LifeCycle
     , thawPhase
 
       -- * capabilities
+    , Clickable(..)
     , UserCapability(..)
     , userCapabilities
     , IdeaCapability(..)
@@ -99,15 +100,17 @@ data UserCapability
     | CanEditUser
   deriving (Eq, Show, Enum, Bounded)
 
+data Clickable a = Clickable a | GrayedOut a
+  deriving (Eq, Show)
 
-userCapabilities :: Role -> [UserCapability]
+userCapabilities :: Role -> [Clickable UserCapability]
 userCapabilities = \case
-    Student    _clss -> []
+    Student    _clss -> [GrayedOut CanEditUser]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanCreateTopic, CanEditUser]
+    Moderator        -> Clickable <$> [CanCreateTopic, CanEditUser]
     Principal        -> []
-    Admin            -> thereIsAGod []
+    Admin            -> []
 
 
 -- * Idea Capabilities
@@ -226,6 +229,8 @@ data CommentCapability
 
 instance SOP.Generic CommentCapability
 
+-- | TODO: make this a decision table again.  it's more verbose, but more readable and more
+-- maintainable.
 commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [CommentCapability]
 commentCapabilities uid role comment phase
     | comment ^. commentDeleted = []

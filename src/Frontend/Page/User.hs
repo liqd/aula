@@ -189,8 +189,16 @@ userHeaderDiv ctx (ActiveUser user) =
                     btn U.Broken "Klassenweit beauftragen"
                     btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
-                let caps = ctx ^. renderContextUser . userRole . to userCapabilities
-                when (CanEditUser `elem` caps) editProfileBtn
+                let caps = ctx ^. renderContextUser . userRole . to userCapabilities  -- TODO: this name introduction may have become unnecessary.
+                eliminate caps CanEditUser
+                    editProfileBtn
+                    "[[[something grayed out.]]]"
+
+-- | TODO: better name for this function.
+eliminate :: (Eq cap, Monad m) => [Clickable cap] -> cap -> HtmlT m () -> HtmlT m () -> HtmlT m ()
+eliminate caps cap clickable grayedout = do
+    when (Clickable cap `elem` caps) clickable
+    when (GrayedOut cap `elem` caps) grayedout
 
 
 -- ** User Profile: Created Ideas
