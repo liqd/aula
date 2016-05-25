@@ -110,7 +110,7 @@ import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
 import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
-import Types hiding (MoveIdea)
+import Types
 
 import qualified Frontend.Constant
 import qualified Frontend.Path as P
@@ -222,7 +222,7 @@ instance Arbitrary EditIdea where
     arbitrary = EditIdea <$> arb
     shrink (EditIdea x) = EditIdea <$> shr x
 
-instance Arbitrary MoveIdea where
+instance Arbitrary Frontend.Page.MoveIdea where
     arbitrary = MoveIdea <$> arb <*> arb
     shrink (MoveIdea x y) = MoveIdea <$> shr x <*> shr y
 
@@ -476,6 +476,9 @@ instance Arbitrary SortIdeasBy where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary Types.MoveIdea where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * comment
 
@@ -702,6 +705,14 @@ instance Arbitrary PhaseChangeDir where
 instance Arbitrary EventsProtocolFilter where
     arbitrary = EventsProtocolFilter <$> arb
     shrink (EventsProtocolFilter x) = EventsProtocolFilter <$> shr x
+
+instance Arbitrary CreateUserPayload where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary BatchCreateUsersFormData where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * aula-specific helpers
 

@@ -361,6 +361,9 @@ type instance Proto IdeaVoteResult = IdeaVoteResultValue
 data MoveIdea
     = MoveIdeaToWild
     | MoveIdeaToTopic (AUID Topic)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic MoveIdea
 
 moveIdeaElim :: forall t . t -> (AUID Topic -> t) -> MoveIdea -> t
 moveIdeaElim wild topic = \case

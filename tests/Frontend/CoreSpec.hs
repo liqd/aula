@@ -63,24 +63,41 @@ spec = do
         , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         ]
-    describe "PageFormView" $ mapM_ testForm [
---          F (arb :: Gen CreateIdea)  -- FIXME: Category selection gets the default Nothing in parsing the protoIdea
---          F (arb :: Gen Frontend.Page.EditIdea)  -- FIXME:  Category selection gets the default Nothing in parsing the protoIdea
-          F (arb :: Gen CommentOnIdea)
---      , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME cannot fetch the password back from the payload
-        , F (arb :: Gen CreateTopic)
---        , F (arb :: Gen PageUserSettings) -- FIXME cannot fetch the password back from the payload
-        , F (arb :: Gen Frontend.Page.EditTopic)
---        , F (arb :: Gen AdminCreateUser) -- FIXME
-        , F (arb :: Gen PageAdminSettingsDurations)
+    describe "PageFormView" $ mapM_ testForm
+          -- admin forms
+        [ F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
         , F (arb :: Gen PageAdminSettingsFreeze)
---        , F (arb :: Gen PageAdminSettingsEventsProtocol)  -- FIXME (at some point we should look into these again...)
---        , F (arb :: Gen AdminEditUser) -- FIXME:
-        , F (arb :: Gen CreatorStatement)
+--        , F (arb :: Gen PageAdminSettingsEventsProtocol) -- FIXME: choice is used
+--        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
+        , F (arb :: Gen AdminDeleteUser) -- TODO: Introduce new unit type
+--        , F (arb :: Gen AdminCreateUser) -- FIXME: Use choice
+--        , F (arb :: Gen AdminCreateClass) -- FIXME: File upload
         , F (arb :: Gen AdminPhaseChange)
+        , F (arb :: Gen PageAdminResetPassword)
+
+          -- idea forms
+        , F (arb :: Gen CreateIdea)
+--        , F (arb :: Gen Frontend.Page.MoveIdea)
+        , F (arb :: Gen CommentOnIdea)
+        , F (arb :: Gen Frontend.Page.EditIdea)
+        , F (arb :: Gen EditComment)
         , F (arb :: Gen JudgeIdea)
+        , F (arb :: Gen CreatorStatement)
         , F (arb :: Gen ReportComment)
+        , F (arb :: Gen ReportIdea)
+
+          -- login forms
+--        , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME: Implement dummy persistent to fetch data
+
+          -- topic forms
+        , F (arb :: Gen CreateTopic)
+        , F (arb :: Gen EditTopic)
+
+          -- user forms
+--        , F (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
+--        , F (arb :: Gen EditUserProfile) -- FIXME: File upload
+        , F (arb :: Gen ReportUserProfile)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -412,3 +429,72 @@ instance ArbFormPagePayload ReportComment where
     arbFormPagePayload _ = ReportCommentContent <$> arb
 
     arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""
+
+instance ArbFormPagePayload ReportUserProfile where
+    arbFormPagePayload _ = arbitrary
+
+{- FIXME: File tests
+instance PayloadToEnv UserProfile where
+    payloadToEnvMapping _ (UserProfile _file (Markdown desc)) = \case
+        "avatar" -> undefined -- pure [TextInput comment]
+        "desc"   -> pure [TextInput desc]
+-}
+
+instance ArbFormPagePayload EditUserProfile where
+    arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload Frontend.Page.MoveIdea where
+    arbFormPagePayload _ = arbitrary
+
+{- FIXME: Use choice
+instance PayloadToEnv Types.MoveIdea where
+    payloadToEnvMapping _ (UserProfile _file (Markdown desc)) = \case
+        "" -> undefined -- pure [TextInput comment]
+        "desc"   -> pure [TextInput desc]
+-}
+
+instance ArbFormPagePayload EditComment where
+    arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload ReportIdea where
+    arbFormPagePayload _ = arbitrary
+
+instance ArbFormPagePayload PageAdminSettingsEventsProtocol where
+    arbFormPagePayload _ = arbitrary
+
+{- FIXME: Choice
+instance PayloadToEnv EventsProtocolFilter where
+    func =
+-}
+
+instance ArbFormPagePayload AdminDeleteUser where
+    arbFormPagePayload _ = arbitrary
+
+instance PayloadToEnv () where
+    payloadToEnvMapping _ () = \case
+        _ -> pure [TextInput ""]
+
+instance ArbFormPagePayload AdminCreateUser where
+    arbFormPagePayload _ = arbitrary
+
+{- FIXME: Choice
+instance PayloadToEnv CreateUserPayload where
+    payloadToEnvMapping _ () = \case
+        _ -> pure [TextInput ""]
+-}
+
+instance ArbFormPagePayload AdminCreateClass where
+    arbFormPagePayload _ = arbitrary
+
+{- FIXME: File
+instance PayloadToEnv BatchCreateUsersFormData where
+    payloadToEnvMapping _ () = \case
+        _ -> pure [TextInput ""]
+-}
+
+instance ArbFormPagePayload PageAdminResetPassword where
+    arbFormPagePayload _ = arbitrary
+
+instance PayloadToEnv InitialPassword where
+    payloadToEnvMapping _ (InitialPassword pwd) = \case
+        "new-pwd" -> pure [TextInput pwd]
