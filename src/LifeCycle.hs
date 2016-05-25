@@ -226,6 +226,8 @@ data CommentCapability
 
 instance SOP.Generic CommentCapability
 
+-- | TODO: make this a decision table again.  it's more verbose, but more readable and more
+-- maintainable.
 commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [CommentCapability]
 commentCapabilities uid role comment phase
     | comment ^. commentDeleted = []
