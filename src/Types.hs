@@ -594,7 +594,7 @@ followsPhase _               _                   = False
 -- * user
 
 data UserProfile = UserProfile
-    { _profileAvatar :: Maybe URL
+    { _profileAvatar :: Maybe URL -- FIXME: This is a FilePath now
     , _profileDesc   :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)

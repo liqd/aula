@@ -98,7 +98,7 @@ spec = do
 
           -- user forms
 --        , F (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
---        , F (arb :: Gen EditUserProfile) -- FIXME: File upload
+        , F (arb :: Gen EditUserProfile)
         , F (arb :: Gen ReportUserProfile)
         ]
 
@@ -460,14 +460,16 @@ instance ArbFormPagePayload ReportComment where
 
 instance ArbFormPagePayload ReportUserProfile
 
-{- FIXME: File tests
-instance PayloadToEnv UserProfile where
-    payloadToEnvMapping _ (UserProfile _file (Markdown desc)) = \case
-        "avatar" -> undefined -- pure [TextInput comment]
-        "desc"   -> pure [TextInput desc]
--}
+instance ArbFormPagePayload EditUserProfile where
+    arbFormPagePayload _ =
+        UserProfile
+        <$> oneof [pure Nothing, Just . (cs :: String -> ST) . getNonEmpty <$> arb]
+        <*> arb
 
-instance ArbFormPagePayload EditUserProfile
+instance PayloadToEnv UserProfile where
+    payloadToEnvMapping _ _ (UserProfile murl (Markdown desc)) = \case
+        "avatar" -> pure $ FileInput . cs <$> maybeToList murl
+        "desc"   -> pure [TextInput desc]
 
 -- FIXME: Move ideas to wild is not generated
 instance ArbFormPagePayload Frontend.Page.MoveIdea where
