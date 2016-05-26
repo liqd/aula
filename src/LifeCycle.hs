@@ -120,7 +120,7 @@ data Capability
     -- Topic
     | CanPhaseForwardTopic
     | CanPhaseBackwardTopic
-    | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
+    | CanEditTopic  -- FIXME: Separate move ideas to topic and change title desc.
     | CanCreateIdea
     | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
     -- User
@@ -142,6 +142,7 @@ makeLenses ''Clickable
 elemCaps :: Capability -> [Clickable Capability] -> Bool
 elemCaps c (find ((c ==) . _unClickable) -> Just _) = True
 elemCaps _ _ = False
+
 
 -- ** User capabilities
 
