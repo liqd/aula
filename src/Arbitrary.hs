@@ -480,6 +480,7 @@ instance Arbitrary Types.MoveIdea where
     arbitrary = garbitrary
     shrink    = gshrink
 
+
 -- * comment
 
 instance Arbitrary Comment where
@@ -713,6 +714,7 @@ instance Arbitrary CreateUserPayload where
 instance Arbitrary BatchCreateUsersFormData where
     arbitrary = garbitrary
     shrink    = gshrink
+
 
 -- * aula-specific helpers
 
