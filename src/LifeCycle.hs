@@ -165,7 +165,7 @@ phaseCap u r i p = filterIfFrozen p $ case p of
 
 wildIdeaCap :: AUID User -> Idea -> Role -> [Capability]
 wildIdeaCap u i = \case
-    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenLocations] <> editCap u i
+    Student    _clss -> [CanLike, CanComment, CanVoteComment] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
@@ -174,7 +174,7 @@ wildIdeaCap u i = \case
 
 phaseRefinementCap :: AUID User -> Idea -> Role -> [Capability]
 phaseRefinementCap u i = \case
-    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenLocations] <> editCap u i
+    Student    _clss -> [CanComment, CanVoteComment] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
