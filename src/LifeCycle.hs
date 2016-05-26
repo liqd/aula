@@ -105,6 +105,7 @@ phaseTrans _ _ = Nothing
 -- | What a user can do with an idea.
 --
 -- The view of an idea is default and controlled by access control.
+-- FIXME: clarify relationship of 'CanEditTopic' with 'CanMoveBetweenLocations' (in the types?)
 data Capability
     -- Idea
     = CanLike
@@ -116,7 +117,7 @@ data Capability
     | CanAddCreatorStatement
     | CanEditCreatorStatement
     | CanEditAndDelete
-    | CanMoveBetweenTopics  -- also move between (and into and out of) topics
+    | CanMoveBetweenLocations
     -- Comment
     | CanReplyComment
     | CanDeleteComment
@@ -124,7 +125,7 @@ data Capability
     -- Topic
     | CanPhaseForwardTopic
     | CanPhaseBackwardTopic
-    | CanEditTopic  -- FIXME: Separate move ideas to topic and change title desc.
+    | CanEditTopic
     | CanCreateIdea
     -- User
     | CanCreateTopic
@@ -216,19 +217,19 @@ phaseCap u r i p = filterIfFrozen p $ case p of
 
 wildIdeaCap :: AUID User -> Idea -> Role -> [Capability]
 wildIdeaCap u i = \case
-    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
+    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenLocations] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
     Principal        -> []
     Admin            -> thereIsAGod []
 
 phaseRefinementCap :: AUID User -> Idea -> Role -> [Capability]
 phaseRefinementCap u i = \case
-    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
+    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenLocations] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
     Principal        -> []
     Admin            -> thereIsAGod []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
