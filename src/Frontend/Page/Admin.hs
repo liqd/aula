@@ -662,13 +662,16 @@ adminEditClass clss =
     AdminEditClass clss
     <$> (makeUserView <$$> query (getUsersInClass clss))
 
+data AdminDeleteUserPayload = AdminDeleteUserPayload
+  deriving (Eq, Show)
+
 instance FormPage AdminDeleteUser where
-    type FormPagePayload AdminDeleteUser = ()
+    type FormPagePayload AdminDeleteUser = AdminDeleteUserPayload
 
     formAction (AdminDeleteUser user) = U.Admin $ U.AdminDeleteUser (user ^. _Id)
     redirectOf _ _ = U.Admin U.adminViewUsers
 
-    makeForm _ = pure ()
+    makeForm _ = pure AdminDeleteUserPayload
 
     formPage _v form p@(AdminDeleteUser user) =
         adminFrame p . semanticDiv p . form $ do

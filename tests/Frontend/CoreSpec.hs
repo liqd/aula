@@ -72,7 +72,7 @@ spec = do
         , F (arb :: Gen PageAdminSettingsFreeze)
         , F (arb :: Gen PageAdminSettingsEventsProtocol)
 --        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
-        , F (arb :: Gen AdminDeleteUser) -- TODO: Introduce new unit type
+        , F (arb :: Gen AdminDeleteUser)
 --        , F (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , F (arb :: Gen AdminCreateClass)
         , F (arb :: Gen AdminPhaseChange)
@@ -511,8 +511,8 @@ instance PayloadToEnv EventsProtocolFilter where
 
 instance ArbFormPagePayload AdminDeleteUser
 
-instance PayloadToEnv () where
-    payloadToEnvMapping _ _ () = \case
+instance PayloadToEnv AdminDeleteUserPayload where
+    payloadToEnvMapping _ _ _ = \case
         _ -> pure [TextInput ""]
 
 instance ArbFormPagePayload AdminCreateUser
