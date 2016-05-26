@@ -147,7 +147,7 @@ selectValue ref v xs x =
 data EmptyPayloadContext = EmptyPayloadContext
   deriving (Show, Eq)
 
--- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
+-- | In order to be able to call 'payloadToEnv', define a `PayloadToEnv' instance.
 class PayloadToEnv a where
     type PayloadToEnvContext a :: *
     type PayloadToEnvContext a = EmptyPayloadContext
@@ -364,7 +364,8 @@ postToForm (F g) = do
                 liftIO $ mpayload' `shouldBe` Nothing)
 
 
--- | Arbitrary test data generation for the 'FormPagePayload' type.
+-- | Arbitrary test data generation of the 'FormPagePayload' associated
+-- type from 'FormPage'.
 --
 -- In some cases the arbitrary data generation depends on the 'Page' context
 -- and the 'FormPagePayload' has to compute data from the context.
