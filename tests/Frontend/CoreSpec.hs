@@ -74,7 +74,7 @@ spec = do
 --        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
         , F (arb :: Gen AdminDeleteUser) -- TODO: Introduce new unit type
 --        , F (arb :: Gen AdminCreateUser) -- FIXME: Use choice
---        , F (arb :: Gen AdminCreateClass) -- FIXME: File upload
+        , F (arb :: Gen AdminCreateClass) -- FIXME: File upload
         , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen PageAdminResetPassword)
 
@@ -521,13 +521,13 @@ instance PayloadToEnv CreateUserPayload where
         _ -> pure [TextInput ""]
 -}
 
-instance ArbFormPagePayload AdminCreateClass
+instance ArbFormPagePayload AdminCreateClass where
+    arbFormPagePayload _ = BatchCreateUsersFormData <$> arbPhrase <*> arb
 
-{- FIXME: File
 instance PayloadToEnv BatchCreateUsersFormData where
-    payloadToEnvMapping _ () = \case
-        _ -> pure [TextInput ""]
--}
+    payloadToEnvMapping _ _ (BatchCreateUsersFormData classname mfilepath) = \case
+        "classname" -> pure [TextInput classname]
+        "file"      -> pure $ FileInput <$> maybeToList mfilepath
 
 instance ArbFormPagePayload PageAdminResetPassword
 
