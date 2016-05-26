@@ -1,8 +1,10 @@
+{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE ViewPatterns          #-}
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-missing-signatures -fno-warn-incomplete-patterns #-}
@@ -105,7 +107,7 @@ spec = do
         let spc = IdeaLocationSpace SchoolSpace
             page = CreateIdea spc
             payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
-          in testValidationError page payload
+          in testValidationError page EmptyPayloadContext payload
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
 
@@ -142,9 +144,19 @@ selectValue ref v xs x =
     showValue ((`lookup` xs) -> Just y) = y
     showValue z = error $ unwords ["selectValue: no option found.", show z]
 
+data EmptyPayloadContext = EmptyPayloadContext
+  deriving (Show, Eq)
+
 -- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
 class PayloadToEnv a where
-    payloadToEnvMapping :: View (Html ()) -> a -> ST -> Action [FormInput]
+    type PayloadToEnvContext a :: *
+    type PayloadToEnvContext a = EmptyPayloadContext
+
+    payloadDefaultContext :: Proxy a -> PayloadToEnvContext a
+    default payloadDefaultContext :: Proxy a -> EmptyPayloadContext
+    payloadDefaultContext _ = EmptyPayloadContext
+
+    payloadToEnvMapping   :: PayloadToEnvContext a -> View (Html ()) -> a -> ST -> Action [FormInput]
 
 -- | When context dependent data is constructed via forms with the 'pure' combinator
 -- in the form description, in the digestive functors libarary an empty path will
@@ -154,18 +166,18 @@ class PayloadToEnv a where
 -- Example:
 --
 -- >>> ProtoIdea <$> ... <*> pure ScoolSpave <*> ...
-payloadToEnv :: (PayloadToEnv a) => View (Html ()) -> a -> Env Action
-payloadToEnv _ _ [""]       = pure []
-payloadToEnv v a ["", path] = payloadToEnvMapping v a path
+payloadToEnv :: (PayloadToEnv a) => PayloadToEnvContext a -> View (Html ()) -> a -> Env Action
+payloadToEnv _ _ _ [""]       = pure []
+payloadToEnv c v a ["", path] = payloadToEnvMapping c v a path
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnvMapping _v (ProtoIdea t (Markdown d) c _is) = \case
+    payloadToEnvMapping _ _v (ProtoIdea t (Markdown d) c _is) = \case
         "title"         -> pure [TextInput t]
         "idea-text"     -> pure [TextInput d]
         "idea-category" -> pure [TextInput $ fromMaybe nil (cs . show . fromEnum <$> c)]
 
 instance PayloadToEnv User where
-    payloadToEnvMapping _ u = \case
+    payloadToEnvMapping _ _ u = \case
         "user" -> pure [TextInput $ u ^. userLogin . unUserLogin]
         "pass" -> pure []
 
@@ -175,7 +187,7 @@ ideaCheckboxValue iids path =
         else "off"
 
 instance PayloadToEnv ProtoTopic where
-    payloadToEnvMapping _ (ProtoTopic title (PlainDocument desc) image _ iids _) path'
+    payloadToEnvMapping _ _ (ProtoTopic title (PlainDocument desc) image _ iids _) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title" = pure [TextInput title]
         | path == "desc"  = pure [TextInput desc]
@@ -184,7 +196,7 @@ instance PayloadToEnv ProtoTopic where
         path :: String = cs path'
 
 instance PayloadToEnv EditTopicData where
-    payloadToEnvMapping _ (EditTopicData title (PlainDocument desc) iids) path'
+    payloadToEnvMapping _ _ (EditTopicData title (PlainDocument desc) iids) path'
         | "idea-" `isPrefixOf` path = pure [TextInput $ ideaCheckboxValue iids path]
         | path == "title"           = pure [TextInput title]
         | path == "desc"            = pure [TextInput desc]
@@ -192,24 +204,24 @@ instance PayloadToEnv EditTopicData where
         path :: String = cs path'
 
 instance PayloadToEnv UserSettingData where
-    payloadToEnvMapping _ (UserSettingData email oldpass newpass1 newpass2) = \case
+    payloadToEnvMapping _ _ (UserSettingData email oldpass newpass1 newpass2) = \case
         "email"         -> pure [TextInput $ email ^. _Just . re emailAddress]
         "old-password"  -> pure [TextInput $ fromMaybe "" oldpass]
         "new-password1" -> pure [TextInput $ fromMaybe "" newpass1]
         "new-password2" -> pure [TextInput $ fromMaybe "" newpass2]
 
 instance PayloadToEnv Durations where
-    payloadToEnvMapping _ (Durations elab vote) = \case
+    payloadToEnvMapping _ _ (Durations elab vote) = \case
         "elab-duration" -> pure [TextInput (cs . show . unDurationDays $ elab)]
         "vote-duration" -> pure [TextInput (cs . show . unDurationDays $ vote)]
 
 instance PayloadToEnv Quorums where
-    payloadToEnvMapping _ (Quorums school clss) = \case
+    payloadToEnvMapping _ _ (Quorums school clss) = \case
         "school-quorum" -> pure [TextInput (cs $ show school)]
         "class-quorum"  -> pure [TextInput (cs $ show clss)]
 
 instance PayloadToEnv Freeze where
-    payloadToEnvMapping _ b = \case
+    payloadToEnvMapping _ _ b = \case
         "freeze" -> pure [TextInput $ showOption b]
       where
         -- (using internal df keys here is a bit fragile, but it works for now.)
@@ -217,7 +229,7 @@ instance PayloadToEnv Freeze where
         showOption Frozen    = "/admin/freeze.freeze.1"
 
 instance PayloadToEnv Role where
-    payloadToEnvMapping v r = \case
+    payloadToEnvMapping _ v r = \case
         "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
         -- FIXME: Selection does not work for composite types like school class.
         "class" -> pure [TextInput $ selectValue "class" v classes (r ^?! roleSchoolClass)]
@@ -225,26 +237,26 @@ instance PayloadToEnv Role where
         classes = (id &&& cs . view className) <$> schoolClasses
 
 instance PayloadToEnv CommentContent where
-    payloadToEnvMapping _ (CommentContent (Markdown comment)) = \case
+    payloadToEnvMapping _ _ (CommentContent (Markdown comment)) = \case
         "note-text" -> pure [TextInput comment]
 
 instance PayloadToEnv AdminPhaseChangeForTopicData where
-    payloadToEnvMapping v (AdminPhaseChangeForTopicData (AUID tid) dir) = \case
+    payloadToEnvMapping _ v (AdminPhaseChangeForTopicData (AUID tid) dir) = \case
         "topic-id" -> pure [TextInput $ cs (show tid)]
         "dir"      -> pure [TextInput $ selectValue "dir" v dirs dir]
       where
         dirs = (id &&& uilabel) <$> [Forward, Backward]
 
 instance PayloadToEnv IdeaJuryResultValue where
-    payloadToEnvMapping _ r = \case
+    payloadToEnvMapping _ _ r = \case
         "note-text" -> pure [TextInput $ r ^. ideaResultReason . _Markdown]
 
 instance PayloadToEnv ReportCommentContent  where
-    payloadToEnvMapping _ (ReportCommentContent (Markdown m)) = \case
+    payloadToEnvMapping _ _ (ReportCommentContent (Markdown m)) = \case
         "note-text" -> pure [TextInput m]
 
 instance PayloadToEnv Document  where
-    payloadToEnvMapping _ (Markdown m) = \case
+    payloadToEnvMapping _ _ (Markdown m) = \case
         "note-text" -> pure [TextInput m]
 
 
@@ -264,6 +276,9 @@ data FormGen where
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
          , ArbFormPagePayload m, Arbitrary m
+         , c ~ PayloadToEnvContext r
+         , c ~ ArbFormPagePayloadContext m
+         , Show c
          ) => Gen m -> FormGen
 
 testForm :: FormGen -> Spec
@@ -279,22 +294,28 @@ renderForm (F g) =
             return . LT.length . renderText $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
-simulateForm :: (FormPage page, PayloadToEnv payload, payload ~ FormPagePayload page)
-    => page -> payload -> IO (View (Html ()), Maybe payload)
-simulateForm page payload = do
+simulateForm
+    :: forall page payload payloadCtx .
+        ( FormPage page
+        , PayloadToEnv payload
+        , payload ~ FormPagePayload page
+        , payloadCtx ~ PayloadToEnvContext payload)
+    => page -> payloadCtx -> payload -> IO (View (Html ()), Maybe payload)
+simulateForm page ctx payload = do
     let frm = makeForm page
-    env <- runFailOnErrorIO $ (`payloadToEnv` payload) <$> getForm "" frm
+    env <- runFailOnErrorIO $ (\formx -> payloadToEnv ctx formx payload) <$> getForm "" frm
     runFailOnErrorIO $ postForm "" frm (\_ -> pure env)
 
 testValidationError ::
        ( Typeable page, Show payload
        , FormPage page, PayloadToEnv payload
        , payload ~ FormPagePayload page
+       , payloadCtx ~ PayloadToEnvContext payload
        )
-    => page -> payload -> [String] -> Spec
-testValidationError page payload expected =
+    => page -> payloadCtx -> payload -> [String] -> Spec
+testValidationError page ctx payload expected =
     describe ("validation in form " <> show (typeOf page, payload)) . it "works" $ do
-        (v, Nothing) <- simulateForm page payload
+        (v, Nothing) <- simulateForm page ctx payload
         (show . snd <$> viewErrors v) `shouldBe` expected
             -- FIXME: render Html instead of showing it?
 
@@ -323,8 +344,9 @@ postToForm :: FormGen -> Spec
 postToForm (F g) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
         page <- pick g
+        ctx <- pick (arbFormPagePayloadCtx page)
         payload <- pick (arbFormPagePayload page)
-        (v, mpayload) <- run $ simulateForm page payload
+        (v, mpayload) <- run $ simulateForm page ctx payload
         case mpayload of
             Nothing       -> fail $ unwords
                                 ("Form validation has failed:" : map show (viewErrors v))
@@ -334,10 +356,11 @@ postToForm (F g) = do
     -- be separated and have a different type class.
     it (show (typeOf g) <> " (process *in*valid form input)") . property . monadicIO $ do
         page <- pick g
+        ctx <- pick (arbFormPagePayloadCtx page)
         mpayload <- pick (arbFormPageInvalidPayload page)
         forM_ mpayload
             (\payload -> do
-                (_, mpayload') <- run $ simulateForm page payload
+                (_, mpayload') <- run $ simulateForm page ctx payload
                 liftIO $ mpayload' `shouldBe` Nothing)
 
 
@@ -346,12 +369,19 @@ postToForm (F g) = do
 -- In some cases the arbitrary data generation depends on the 'Page' context
 -- and the 'FormPagePayload' has to compute data from the context.
 class FormPage p => ArbFormPagePayload p where
+    type ArbFormPagePayloadContext p :: *
+    type ArbFormPagePayloadContext p = EmptyPayloadContext
+
+    arbFormPagePayloadCtx :: p -> Gen (ArbFormPagePayloadContext p)
+    default arbFormPagePayloadCtx :: p -> Gen EmptyPayloadContext
+    arbFormPagePayloadCtx _ = pure EmptyPayloadContext
+
     -- | Generates valid form inputs.
-    arbFormPagePayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen r
+    arbFormPagePayload :: (r ~ FormPagePayload p, Arbitrary r, Show r) => p -> Gen r
     arbFormPagePayload _ = arbitrary
 
     -- | Generates invalid form inputs, if possible
-    arbFormPageInvalidPayload :: (r ~ FormPagePayload p, FormPage p, Arbitrary r, Show r) => p -> Gen (Maybe r)
+    arbFormPageInvalidPayload :: (r ~ FormPagePayload p, Arbitrary r, Show r) => p -> Gen (Maybe r)
     arbFormPageInvalidPayload _ = return Nothing
 
 
@@ -461,7 +491,7 @@ instance PayloadToEnv EventsProtocolFilter where
 instance ArbFormPagePayload AdminDeleteUser
 
 instance PayloadToEnv () where
-    payloadToEnvMapping _ () = \case
+    payloadToEnvMapping _ _ () = \case
         _ -> pure [TextInput ""]
 
 instance ArbFormPagePayload AdminCreateUser
@@ -483,5 +513,5 @@ instance PayloadToEnv BatchCreateUsersFormData where
 instance ArbFormPagePayload PageAdminResetPassword
 
 instance PayloadToEnv InitialPassword where
-    payloadToEnvMapping _ (InitialPassword pwd) = \case
+    payloadToEnvMapping _ _ (InitialPassword pwd) = \case
         "new-pwd" -> pure [TextInput pwd]
