@@ -182,11 +182,6 @@ instance ToHtml ViewIdea where
             role          = ctx ^. renderContextUser . userRole
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = ideaCapabilities uid role idea phase
-            userCaps      = userCapabilities role
-
-            canEdit              = Clickable CanEditAndDelete `elem` caps
-            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
-            canMoveBetweenTopics = Clickable CanMoveBetweenLocations `elem` caps
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -195,17 +190,29 @@ instance ToHtml ViewIdea where
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            when canEdit . a_ [href_ $ U.editIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                i_ [class_ "icon-pencil"] nil
+
+                            eitherClickableGrayedOut caps CanEditAndDelete
+                                (a_ [href_ $ U.editIdea idea])
+                                id
+                                (do i_ [class_ "icon-pencil"] nil
+                                    "bearbeiten")
+
+                            let bare = do
+                                    i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Thema erstellen"
-                            when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
+                                    "Thema erstellen"
+                                link = if ideaReachedQuorum stats
+                                          then eitherClickableGrayedOut caps CanCreateTopic
+                                                  (a_ [href_ $ U.Space spc U.CreateTopic]) id
+                                          else id
+                             in link bare
+
+                            eitherClickableGrayedOut caps CanMoveBetweenLocations
+                                (a_ [href_ $ U.moveIdea idea])
+                                id
+                                (do i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Idee verschieben"
+                                    "Idee verschieben")
                             a_ [href_ (U.reportIdea idea)] $ do
                                 i_ [class_ "icon-flag"] nil
                                 "melden"
