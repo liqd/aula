@@ -73,8 +73,8 @@ spec = do
         , F (arb :: Gen PageAdminSettingsEventsProtocol)
 --        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
         , F (arb :: Gen AdminDeleteUser) -- TODO: Introduce new unit type
---        , F (arb :: Gen AdminCreateUser) -- FIXME: Use choice
-        , F (arb :: Gen AdminCreateClass) -- FIXME: File upload
+--        , F (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
+        , F (arb :: Gen AdminCreateClass)
         , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen PageAdminResetPassword)
 
@@ -515,10 +515,19 @@ instance PayloadToEnv () where
 
 instance ArbFormPagePayload AdminCreateUser
 
-{- FIXME: Choice
+{- TODO
+  1) Frontend.Core.PageFormView Gen AdminCreateUser (process valid forms)
+       uncaught exception: ErrorCall (Prelude.!!: index too large) (after 1 test)
+
 instance PayloadToEnv CreateUserPayload where
-    payloadToEnvMapping _ () = \case
-        _ -> pure [TextInput ""]
+    payloadToEnvMapping _ _ (CreateUserPayload _firstname _lastname _mlogin _email _role) = \case
+        "firstname" -> pure [TextInput "a"]
+        "lastname"  -> pure [TextInput "a"]
+        -- "login"     -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
+        "login"     -> pure [TextInput "aaaaa"]
+        "email"     -> pure [TextInput "a@a.com"]
+        "role"      -> pure [TextInput "a"]
+        "class"     -> pure [TextInput "a"]
 -}
 
 instance ArbFormPagePayload AdminCreateClass where
