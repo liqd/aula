@@ -550,15 +550,19 @@ roleForm mrole mclass classes =
         <$> ("role"  .: chooseRole mrole)
         <*> ("class" .: chooseClass classes mclass)
 
+data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) Role
+  deriving (Eq, Show)
+
 instance FormPage AdminEditUser where
-    type FormPagePayload AdminEditUser = (Maybe UserLogin, Role)
+    type FormPagePayload AdminEditUser = AdminEditUserPayload
 
     formAction (AdminEditUser user _classes) = U.Admin . U.AdminEditUser $ user ^. _Id
     redirectOf _ _ = U.Admin U.adminViewUsers
 
     makeForm (AdminEditUser user classes) =
-        (,) <$> ("login" .: validateUserLogin)
-            <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+        AdminEditUserPayload
+        <$> ("login" .: validateUserLogin)
+        <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
       where
         validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
         validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
@@ -646,7 +650,7 @@ adminViewClasses qf = AdminViewClasses (mkClassesQuery qf) <$> query getSchoolCl
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = formPageHandlerCalcMsg
     (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
-    (update . uncurry (SetUserLoginAndRole uid))
+    (\(AdminEditUserPayload mlogin role) -> update $ SetUserLoginAndRole uid mlogin role)
     (\(AdminEditUser u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role

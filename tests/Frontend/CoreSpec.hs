@@ -71,7 +71,7 @@ spec = do
         , F (arb :: Gen PageAdminSettingsQuorum)
         , F (arb :: Gen PageAdminSettingsFreeze)
         , F (arb :: Gen PageAdminSettingsEventsProtocol)
---        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
+--        , F (arb :: Gen AdminEditUser) -- FIXME: Implement dummy persistent
         , F (arb :: Gen AdminDeleteUser)
 --        , F (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , F (arb :: Gen AdminCreateClass)
@@ -438,6 +438,14 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <**> (set editTopicDesc <$> arb)
 
 instance ArbFormPagePayload AdminEditUser
+
+instance PayloadToEnv AdminEditUserPayload where
+    payloadToEnvMapping _ v (AdminEditUserPayload mlogin role) = \case
+        "login" -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
+        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (role ^. roleSelection)]
+        "class" -> pure $ TextInput . selectValue "class" v classValues <$> maybeToList (role ^? roleSchoolClass)
+      where
+        classValues = (id &&& cs . view className) <$> schoolClasses
 
 instance ArbFormPagePayload AdminPhaseChange
 

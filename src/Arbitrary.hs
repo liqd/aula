@@ -719,6 +719,10 @@ instance Arbitrary BatchCreateUsersFormData where
 instance Arbitrary AdminDeleteUserPayload where
     arbitrary = pure AdminDeleteUserPayload
 
+instance Arbitrary AdminEditUserPayload where
+    arbitrary = AdminEditUserPayload <$> arb <*> arb
+    shrink (AdminEditUserPayload x y) = AdminEditUserPayload <$> shr x <*> shr y
+
 -- * aula-specific helpers
 
 instance Arbitrary (AUID a) where
