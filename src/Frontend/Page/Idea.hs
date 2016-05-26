@@ -173,8 +173,8 @@ linkToIdeaLocation idea = do
 -- Clickable and GrayedOut
 clickable :: (Eq cap, Monad m) => [Clickable cap] -> cap -> (m () -> m ()) -> (m () -> m ())-> m () -> m ()
 clickable caps cap clickable_ grayedout body = do
-    when ((Clickable cap) `elem` caps) $ clickable_ body
-    when ((GrayedOut cap) `elem` caps) $ grayedout  body
+    when (Clickable cap `elem` caps) $ clickable_ body
+    when (GrayedOut cap `elem` caps) $ grayedout  body
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
@@ -279,14 +279,13 @@ instance ToHtml ViewIdea where
             when (isFeasibleIdea idea) $ do
                 div_ [class_ "winning-idea voting-buttons"] $ do
                     when (CanMarkWinner `elemCaps` caps) $ do
-                        let winnerButton path text =
+                        let winnerButton path =
                                 clickable caps CanMarkWinner
                                     (postButton_
                                         [ class_ "btn-cta mark-winner-button"
                                         , jsReloadOnClick
                                         ] path)
                                     (span_ [class_ "btn-cta mark-winner-button m-inactive"])
-                                    text
 
                         when (isNothing (idea ^. ideaVoteResult)) $
                             winnerButton (U.markIdeaAsWinner idea) "Idee hat gewonnen"

@@ -29,6 +29,4 @@ spec = do
     sameItemDoesNotAppearDifferently :: [Clickable Capability] -> Bool
     sameItemDoesNotAppearDifferently cs =
         let x = (swapSide <$> cs) `intersect` cs
-        in if null x
-            then True
-            else error $ show x
+        in null x || error (show x)
