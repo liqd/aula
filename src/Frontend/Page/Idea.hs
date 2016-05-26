@@ -170,8 +170,9 @@ linkToIdeaLocation idea = do
              IdeaLocationSpace{} -> "Zum Ideenraum"
              IdeaLocationTopic{} -> "Zum Thema"
 
-clickable :: (Eq cap, Monad m) => [Clickable cap] -> cap -> (m () -> m ()) -> (m () -> m ())-> m () -> m ()
-clickable caps cap clickable_ grayedout
+eitherClickableGrayedOut :: (Eq cap, Monad m, trans ~ (m () -> m ()))
+    => [Clickable cap] -> cap -> trans -> trans -> trans
+eitherClickableGrayedOut caps cap clickable_ grayedout
     | cble && gout = Control.Exception.assert False $ error "clickable eliminator: internal error."
     | cble         = clickable_
     | gout         = grayedout
@@ -253,7 +254,7 @@ instance ToHtml ViewIdea where
                     div_ [class_ "icon-list m-inline"] . ul_ $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                     when quorumReached $ do
-                        clickable caps CanCreateTopic
+                        eitherClickableGrayedOut caps CanCreateTopic
                             (button_ [ class_ "btn-cta m-valid"
                                      , onclick_ $ U.Space spc U.CreateTopic
                                      ])
@@ -284,7 +285,7 @@ instance ToHtml ViewIdea where
                 div_ [class_ "winning-idea voting-buttons"] $ do
                     when (CanMarkWinner `elemCaps` caps) $ do
                         let winnerButton path =
-                                clickable caps CanMarkWinner
+                                eitherClickableGrayedOut caps CanMarkWinner
                                     (postButton_
                                         [ class_ "btn-cta mark-winner-button"
                                         , jsReloadOnClick
@@ -321,7 +322,7 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ do
                             numberWithUnit totalComments
                                 "Verbesserungsvorschlag" "Verbesserungsvorschläge"
-                        clickable caps CanComment
+                        eitherClickableGrayedOut caps CanComment
                             (button_ [ value_ "create_comment"
                                      , class_ "btn-cta comments-header-button"
                                      , onclick_ (U.commentOnIdea idea)])
@@ -342,14 +343,14 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
 
     when (renderJuryButtons && CanMarkFeasiblity `elemCaps` caps) $ do
         div_ [class_ "admin-buttons"] $ do
-            clickable caps CanMarkFeasiblity
+            eitherClickableGrayedOut caps CanMarkFeasiblity
                 (button_ [ class_ "btn-cta m-valid"
                          , onclick_ $ U.judgeIdea idea IdeaFeasible
                          ])
                 (span_ [ class_ "btn-cta m-valid m-inactive"])
                 (do i_ [class_ "icon-check"] nil
                     "durchführbar")
-            clickable caps CanMarkFeasiblity
+            eitherClickableGrayedOut caps CanMarkFeasiblity
                 (button_ [ class_ "btn-cta m-invalid"
                          , onclick_ $ U.judgeIdea idea IdeaNotFeasible
                          ])

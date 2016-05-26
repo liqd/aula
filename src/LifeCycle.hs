@@ -164,7 +164,7 @@ ideaCapabilities u r i p =
         allCaps    = nub $ ideaCapabilitiesInAllPhases u r i
     in (Clickable <$> activeCaps) <> (GrayedOut <$> (allCaps \\ activeCaps))
 
--- ASSUMPTION: The list of a phase should be part of the AllPhase list.
+-- | The union of the idea caps of all phases
 ideaCapabilitiesInAllPhases :: AUID User -> Role -> Idea -> [Capability]
 ideaCapabilitiesInAllPhases u r i = join
     [ wildIdeaCap u i r
