@@ -108,7 +108,7 @@ phaseTrans _ _ = Nothing
 data Capability
     -- Idea
     = CanLike
-    | CanVoteIdea
+    | CanVote
     | CanComment
     | CanVoteComment
     | CanMarkFeasiblity -- also can add jury statement
@@ -126,7 +126,6 @@ data Capability
     | CanPhaseBackwardTopic
     | CanEditTopic  -- FIXME: Separate move ideas to topic and change title desc.
     | CanCreateIdea
-    | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
     -- User
     | CanCreateTopic
     | CanEditUser
@@ -244,7 +243,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [Capability]
 phaseVotingCap i = \case
-    Student    _clss -> [CanVoteIdea | isFeasibleIdea i]
+    Student    _clss -> [CanVote | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -326,7 +325,7 @@ topicJuryCaps = \case
 
 topicVotingCaps :: Role -> [Capability]
 topicVotingCaps = \case
-    Student    _clss -> [CanVoteTopic]
+    Student    _clss -> [CanVote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanPhaseForwardTopic]
