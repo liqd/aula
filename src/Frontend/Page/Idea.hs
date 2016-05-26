@@ -69,6 +69,7 @@ import Persistent
     )
 
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
+import qualified Control.Exception
 import qualified Data.Map as Map
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -169,12 +170,15 @@ linkToIdeaLocation idea = do
              IdeaLocationSpace{} -> "Zum Ideenraum"
              IdeaLocationTopic{} -> "Zum Thema"
 
--- ASSUMPTION: The caps list does con contain the same value marked as
--- Clickable and GrayedOut
 clickable :: (Eq cap, Monad m) => [Clickable cap] -> cap -> (m () -> m ()) -> (m () -> m ())-> m () -> m ()
-clickable caps cap clickable_ grayedout body = do
-    when (Clickable cap `elem` caps) $ clickable_ body
-    when (GrayedOut cap `elem` caps) $ grayedout  body
+clickable caps cap clickable_ grayedout
+    | cble && gout = Control.Exception.assert False $ error "clickable eliminator: internal error."
+    | cble         = clickable_
+    | gout         = grayedout
+    | otherwise    = const $ pure ()
+  where
+    cble = Clickable cap `elem` caps
+    gout = GrayedOut cap `elem` caps
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
