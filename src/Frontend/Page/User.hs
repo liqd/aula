@@ -184,11 +184,11 @@ userHeaderDiv ctx (ActiveUser user) =
             then do
                 editProfileBtn
             else do
-                when CanVote `elem` caps $ do
+                let caps = ctx ^. renderContextUser . userRole . to userCapabilities
+                when (CanVote `elem` caps) $ do
                     btn U.Broken "Klassenweit beauftragen"
                     btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
-                let caps = ctx ^. renderContextUser . userRole . to userCapabilities
                 when (CanEditUser `elem` caps) editProfileBtn
 
 

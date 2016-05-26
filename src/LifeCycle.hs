@@ -127,7 +127,7 @@ instance SOP.Generic Capability
 
 userCapabilities :: Role -> [Capability]
 userCapabilities = \case
-    Student    _clss -> []
+    Student    _clss -> [CanVote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanCreateTopic, CanEditUser]
