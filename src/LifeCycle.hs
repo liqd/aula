@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns  #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns    #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -16,9 +17,11 @@ module LifeCycle
     , thawPhase
 
       -- * capabilities
-    , Clickable(..), unClickable
     , Capability(..)
     , elemCaps
+    , Clickable(..)
+    , unClickable
+    , eitherClickableGrayedOut
 
     , userCapabilities
     , ideaCapabilities
@@ -27,12 +30,13 @@ module LifeCycle
     )
 where
 
-import Control.Lens
-import Control.Monad (join)
-import Data.List ((\\), find, nub)
-import Data.Monoid
-import GHC.Generics (Generic)
+import qualified Control.Exception
+import           Control.Lens
+import           Control.Monad (join)
+import           Data.List ((\\), find, nub)
+import           Data.Monoid
 import qualified Generics.SOP as SOP
+import           GHC.Generics (Generic)
 
 import Types
 
@@ -130,6 +134,11 @@ data Capability
 
 instance SOP.Generic Capability
 
+elemCaps :: Capability -> [Clickable Capability] -> Bool
+elemCaps c (find ((c ==) . _unClickable) -> Just _) = True
+elemCaps _ _ = False
+
+
 data Clickable a
     = Clickable { _unClickable :: a }
     | GrayedOut { _unClickable :: a }
@@ -139,9 +148,16 @@ instance SOP.Generic a => SOP.Generic (Clickable a)
 
 makeLenses ''Clickable
 
-elemCaps :: Capability -> [Clickable Capability] -> Bool
-elemCaps c (find ((c ==) . _unClickable) -> Just _) = True
-elemCaps _ _ = False
+eitherClickableGrayedOut :: (Eq cap, Monad m, trans ~ (m () -> m ()))
+    => [Clickable cap] -> cap -> trans -> trans -> trans
+eitherClickableGrayedOut caps cap clickable_ grayedout
+    | cble && gout = Control.Exception.assert False $ error "clickable eliminator: internal error."
+    | cble         = clickable_
+    | gout         = grayedout
+    | otherwise    = const $ pure ()
+  where
+    cble = Clickable cap `elem` caps
+    gout = GrayedOut cap `elem` caps
 
 
 -- ** User capabilities

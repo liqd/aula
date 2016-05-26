@@ -69,7 +69,6 @@ import Persistent
     )
 
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
-import qualified Control.Exception
 import qualified Data.Map as Map
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -169,17 +168,6 @@ linkToIdeaLocation idea = do
        ] $ case idea ^. ideaLocation of
              IdeaLocationSpace{} -> "Zum Ideenraum"
              IdeaLocationTopic{} -> "Zum Thema"
-
-eitherClickableGrayedOut :: (Eq cap, Monad m, trans ~ (m () -> m ()))
-    => [Clickable cap] -> cap -> trans -> trans -> trans
-eitherClickableGrayedOut caps cap clickable_ grayedout
-    | cble && gout = Control.Exception.assert False $ error "clickable eliminator: internal error."
-    | cble         = clickable_
-    | gout         = grayedout
-    | otherwise    = const $ pure ()
-  where
-    cble = Clickable cap `elem` caps
-    gout = GrayedOut cap `elem` caps
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
