@@ -80,7 +80,7 @@ spec = do
 
           -- idea forms
         , F (arb :: Gen CreateIdea)
---        , F (arb :: Gen Frontend.Page.MoveIdea)
+        , F (arb :: Gen Frontend.Page.MoveIdea)
         , F (arb :: Gen CommentOnIdea)
         , F (arb :: Gen Frontend.Page.EditIdea)
         , F (arb :: Gen EditComment)
@@ -468,14 +468,22 @@ instance PayloadToEnv UserProfile where
 
 instance ArbFormPagePayload EditUserProfile
 
-instance ArbFormPagePayload Frontend.Page.MoveIdea
+-- FIXME: Move ideas to wild is not generated
+instance ArbFormPagePayload Frontend.Page.MoveIdea where
+    type ArbFormPagePayloadContext Frontend.Page.MoveIdea = [Topic]
+    arbFormPagePayloadCtx (MoveIdea _ideas topics) = pure topics
+    arbFormPagePayload (MoveIdea _ideas topics) =
+        MoveIdeaToTopic <$> Test.QuickCheck.elements (view _Id <$> topics)
 
-{- FIXME: Use choice
 instance PayloadToEnv Types.MoveIdea where
-    payloadToEnvMapping _ (UserProfile _file (Markdown desc)) = \case
-        "" -> undefined -- pure [TextInput comment]
-        "desc"   -> pure [TextInput desc]
--}
+    type PayloadToEnvContext Types.MoveIdea = [Topic]
+    payloadDefaultContext _ = []
+    -- FIXME: MoveIdeaToWild is not handled properly
+    payloadToEnvMapping _ _v MoveIdeaToWild     = const $ pure []
+    payloadToEnvMapping ts v (MoveIdeaToTopic t) = \case
+        "topic-to-move" -> pure [TextInput $ selectValue "topic-to-move" v topicIds t]
+      where
+        topicIds = (view _Id &&& cs . view topicTitle) <$> ts
 
 instance ArbFormPagePayload EditComment
 

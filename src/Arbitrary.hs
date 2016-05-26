@@ -88,6 +88,7 @@ import Test.QuickCheck
     , elements, oneof, vectorOf, frequency, scale, generate, arbitrary, listOf, suchThat
     , forAllShrink
     )
+import Test.QuickCheck.Modifiers
 import Test.QuickCheck.Instances ()
 import Text.Email.Validate as Email (localPart, domainPart, emailAddress, toByteString, unsafeEmailAddress)
 
@@ -223,7 +224,7 @@ instance Arbitrary EditIdea where
     shrink (EditIdea x) = EditIdea <$> shr x
 
 instance Arbitrary Frontend.Page.MoveIdea where
-    arbitrary = MoveIdea <$> arb <*> arb
+    arbitrary = MoveIdea <$> arb <*> (getNonEmpty <$> arb)
     shrink (MoveIdea x y) = MoveIdea <$> shr x <*> shr y
 
 instance Arbitrary ReportIdea where
