@@ -129,14 +129,18 @@ spec = do
 -- Since the item descriptions are available only as 'Html', not as text, and 'Html' doesn't have
 -- 'Eq', we need to apply another trick and transform both the category value and the item
 -- description to 'LT'.
-selectValue :: Eq a => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> ST
-selectValue ref v xs x = case find test choices of Just (i, _, _) -> value i
+selectValue :: (Show a, Eq a) => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> ST
+selectValue ref v xs x =
+    case find test choices of
+        Just (i, _, _) -> value i
+        Nothing -> error $ unwords ["selectValue: no option found.", show x]
   where
     ref'    = absoluteRef ref v
     value i = ref' <> "." <> i
     choices = fieldInputChoice ref v
     test (_, sx :: Html (), _) = showValue x == renderText sx
     showValue ((`lookup` xs) -> Just y) = y
+    showValue z = error $ unwords ["selectValue: no option found.", show z]
 
 -- | In order to be able to call 'payloadToEnvMapping, define a `PayloadToEnv' instance.
 class PayloadToEnv a where
