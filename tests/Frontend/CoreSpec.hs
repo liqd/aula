@@ -70,7 +70,7 @@ spec = do
         [ F (arb :: Gen PageAdminSettingsDurations)
         , F (arb :: Gen PageAdminSettingsQuorum)
         , F (arb :: Gen PageAdminSettingsFreeze)
---        , F (arb :: Gen PageAdminSettingsEventsProtocol) -- FIXME: choice is used
+        , F (arb :: Gen PageAdminSettingsEventsProtocol)
 --        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
         , F (arb :: Gen AdminDeleteUser) -- TODO: Introduce new unit type
 --        , F (arb :: Gen AdminCreateUser) -- FIXME: Use choice
@@ -135,14 +135,14 @@ selectValue :: (Show a, Eq a) => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> 
 selectValue ref v xs x =
     case find test choices of
         Just (i, _, _) -> value i
-        Nothing -> error $ unwords ["selectValue: no option found.", show x]
+        Nothing -> error $ unwords ["selectValue: no option found.", show x, show xs]
   where
     ref'    = absoluteRef ref v
     value i = ref' <> "." <> i
     choices = fieldInputChoice ref v
     test (_, sx :: Html (), _) = showValue x == renderText sx
     showValue ((`lookup` xs) -> Just y) = y
-    showValue z = error $ unwords ["selectValue: no option found.", show z]
+    showValue z = error $ unwords ["selectValue: no option found.", show z, show xs]
 
 data EmptyPayloadContext = EmptyPayloadContext
   deriving (Show, Eq)
@@ -479,7 +479,7 @@ instance PayloadToEnv Types.MoveIdea where
     type PayloadToEnvContext Types.MoveIdea = [Topic]
     payloadDefaultContext _ = []
     -- FIXME: MoveIdeaToWild is not handled properly
-    payloadToEnvMapping _ _v MoveIdeaToWild     = const $ pure []
+    payloadToEnvMapping _ _v MoveIdeaToWild      = const $ pure []
     payloadToEnvMapping ts v (MoveIdeaToTopic t) = \case
         "topic-to-move" -> pure [TextInput $ selectValue "topic-to-move" v topicIds t]
       where
@@ -489,12 +489,22 @@ instance ArbFormPagePayload EditComment
 
 instance ArbFormPagePayload ReportIdea
 
-instance ArbFormPagePayload PageAdminSettingsEventsProtocol
+instance ArbFormPagePayload PageAdminSettingsEventsProtocol where
+    type ArbFormPagePayloadContext PageAdminSettingsEventsProtocol = [IdeaSpace]
+    arbFormPagePayloadCtx (PageAdminSettingsEventsProtocol spaces) = pure spaces
+    arbFormPagePayload (PageAdminSettingsEventsProtocol [])
+        = pure $ EventsProtocolFilter Nothing
+    arbFormPagePayload (PageAdminSettingsEventsProtocol spaces)
+        = EventsProtocolFilter . Just <$> Test.QuickCheck.elements spaces
 
-{- FIXME: Choice
 instance PayloadToEnv EventsProtocolFilter where
-    func =
--}
+    type PayloadToEnvContext EventsProtocolFilter = [IdeaSpace]
+    payloadDefaultContext _ = [SchoolSpace]
+    payloadToEnvMapping is v (EventsProtocolFilter mIdeaSpace) = \case
+        "space" -> pure [TextInput $ selectValue "space" v vs mIdeaSpace]
+      where
+        vs :: [(Maybe IdeaSpace, LT.Text)]
+        vs = (Nothing, "(Alle Ideenräume)") : ((Just &&& cs . toUrlPiece) <$> is)
 
 instance ArbFormPagePayload AdminDeleteUser
 
