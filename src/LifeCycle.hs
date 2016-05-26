@@ -1,6 +1,10 @@
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE LambdaCase     #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE DeriveFunctor   #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns    #-}
+{-# LANGUAGE TypeFamilies    #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -14,6 +18,11 @@ module LifeCycle
 
       -- * capabilities
     , Capability(..)
+    , elemCaps
+    , Clickable(..)
+    , unClickable
+    , eitherClickableGrayedOut
+
     , userCapabilities
     , ideaCapabilities
     , commentCapabilities
@@ -21,10 +30,13 @@ module LifeCycle
     )
 where
 
-import Control.Lens
-import Data.Monoid
-import GHC.Generics (Generic)
+import qualified Control.Exception
+import           Control.Lens
+import           Control.Monad (join)
+import           Data.List ((\\), find, nub)
+import           Data.Monoid
 import qualified Generics.SOP as SOP
+import           GHC.Generics (Generic)
 
 import Types
 
@@ -93,10 +105,11 @@ phaseTrans _ _ = Nothing
 -- | What a user can do with an idea.
 --
 -- The view of an idea is default and controlled by access control.
+-- FIXME: clarify relationship of 'CanEditTopic' with 'CanMoveBetweenLocations' (in the types?)
 data Capability
     -- Idea
     = CanLike
-    | CanVoteIdea
+    | CanVote
     | CanComment
     | CanVoteComment
     | CanMarkFeasiblity -- also can add jury statement
@@ -104,7 +117,7 @@ data Capability
     | CanAddCreatorStatement
     | CanEditCreatorStatement
     | CanEditAndDelete
-    | CanMoveBetweenTopics  -- also move between (and into and out of) topics
+    | CanMoveBetweenLocations
     -- Comment
     | CanReplyComment
     | CanDeleteComment
@@ -112,15 +125,39 @@ data Capability
     -- Topic
     | CanPhaseForwardTopic
     | CanPhaseBackwardTopic
-    | CanEditTopic -- FIXME: Separate move ideas to topic and change title desc.
+    | CanEditTopic
     | CanCreateIdea
-    | CanVoteTopic  -- (name for symmetry with 'CanVoteIdea'; needed only for delegation here)
     -- User
     | CanCreateTopic
     | CanEditUser
   deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Capability
+
+elemCaps :: Capability -> [Clickable Capability] -> Bool
+elemCaps c (find ((c ==) . _unClickable) -> Just _) = True
+elemCaps _ _ = False
+
+
+data Clickable a
+    = Clickable { _unClickable :: a }
+    | GrayedOut { _unClickable :: a }
+  deriving (Eq, Functor, Ord, Read, Show, Generic)
+
+instance SOP.Generic a => SOP.Generic (Clickable a)
+
+makeLenses ''Clickable
+
+eitherClickableGrayedOut :: (Eq cap, Monad m, trans ~ (m () -> m ()))
+    => [Clickable cap] -> cap -> trans -> trans -> trans
+eitherClickableGrayedOut caps cap clickable_ grayedout
+    | cble && gout = Control.Exception.assert False $ error "clickable eliminator: internal error."
+    | cble         = clickable_
+    | gout         = grayedout
+    | otherwise    = const $ pure ()
+  where
+    cble = Clickable cap `elem` caps
+    gout = GrayedOut cap `elem` caps
 
 
 -- ** User capabilities
@@ -137,9 +174,24 @@ userCapabilities = \case
 
 -- * Idea Capabilities
 
+ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Clickable Capability]
+ideaCapabilities u r i p =
+    let activeCaps = nub $ ideaCapabilitiesInPhase u r i p
+        allCaps    = nub $ ideaCapabilitiesInAllPhases u r i
+    in (Clickable <$> activeCaps) <> (GrayedOut <$> (allCaps \\ activeCaps))
 
-ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Capability]
-ideaCapabilities = phaseCap
+-- | The union of the idea caps of all phases
+ideaCapabilitiesInAllPhases :: AUID User -> Role -> Idea -> [Capability]
+ideaCapabilitiesInAllPhases u r i = join
+    [ wildIdeaCap u i r
+    , phaseRefinementCap u i r
+    , phaseJuryCap i r
+    , phaseVotingCap i r
+    , phaseResultCap u i r
+    ]
+
+ideaCapabilitiesInPhase :: AUID User -> Role -> Idea -> Phase -> [Capability]
+ideaCapabilitiesInPhase = phaseCap
 
 editCap :: AUID User -> Idea -> [Capability]
 editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
@@ -165,19 +217,19 @@ phaseCap u r i p = filterIfFrozen p $ case p of
 
 wildIdeaCap :: AUID User -> Idea -> Role -> [Capability]
 wildIdeaCap u i = \case
-    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
+    Student    _clss -> [CanLike, CanComment, CanVoteComment, CanMoveBetweenLocations] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
     Principal        -> []
     Admin            -> thereIsAGod []
 
 phaseRefinementCap :: AUID User -> Idea -> Role -> [Capability]
 phaseRefinementCap u i = \case
-    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenTopics] <> editCap u i
+    Student    _clss -> [CanComment, CanVoteComment, CanMoveBetweenLocations] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenTopics]
+    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
     Principal        -> []
     Admin            -> thereIsAGod []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
@@ -192,7 +244,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [Capability]
 phaseVotingCap i = \case
-    Student    _clss -> [CanVoteIdea | isFeasibleIdea i]
+    Student    _clss -> [CanVote | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -274,7 +326,7 @@ topicJuryCaps = \case
 
 topicVotingCaps :: Role -> [Capability]
 topicVotingCaps = \case
-    Student    _clss -> [CanVoteTopic]
+    Student    _clss -> [CanVote]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanPhaseForwardTopic]

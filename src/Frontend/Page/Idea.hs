@@ -182,11 +182,7 @@ instance ToHtml ViewIdea where
             role          = ctx ^. renderContextUser . userRole
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = ideaCapabilities uid role idea phase
-            userCaps      = userCapabilities role
-
-            canEdit              = CanEditAndDelete `elem` caps
-            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
-            canMoveBetweenTopics = CanMoveBetweenTopics `elem` caps
+                         <> (Clickable <$> userCapabilities role)
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -195,17 +191,29 @@ instance ToHtml ViewIdea where
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            when canEdit . a_ [href_ $ U.editIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                i_ [class_ "icon-pencil"] nil
+
+                            eitherClickableGrayedOut caps CanEditAndDelete
+                                (a_ [href_ $ U.editIdea idea])
+                                id
+                                (do i_ [class_ "icon-pencil"] nil
+                                    "bearbeiten")
+
+                            let bare = do
+                                    i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Thema erstellen"
-                            when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
+                                    "Thema erstellen"
+                                link = if ideaReachedQuorum stats
+                                          then eitherClickableGrayedOut caps CanCreateTopic
+                                                  (a_ [href_ $ U.Space spc U.CreateTopic]) id
+                                          else id
+                             in link bare
+
+                            eitherClickableGrayedOut caps CanMoveBetweenLocations
+                                (a_ [href_ $ U.moveIdea idea])
+                                id
+                                (do i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Idee verschieben"
+                                    "Idee verschieben")
                             a_ [href_ (U.reportIdea idea)] $ do
                                 i_ [class_ "icon-flag"] nil
                                 "melden"
@@ -236,21 +244,24 @@ instance ToHtml ViewIdea where
             div_ [class_ "sub-heading"] $ do
                 toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsWithButtons ctx stats
 
-            when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
+            let quorumReached = ideaReachedQuorum stats
+            when (has _PhaseWildIdea phase && quorumReached) $ do
                 div_ [class_ "table-actions m-no-hover"] $ do
                     div_ [class_ "icon-list m-inline"] . ul_ $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
-                    when canCreateTopic $ do
-                        button_ [ class_ "btn-cta m-valid"
-                                , onclick_ $ U.Space spc U.CreateTopic
-                                ] $ do
-                            i_ [class_ "icon-check"] nil
-                            "Auf den Tisch bringen"
+                    when quorumReached $ do
+                        eitherClickableGrayedOut caps CanCreateTopic
+                            (button_ [ class_ "btn-cta m-valid"
+                                     , onclick_ $ U.Space spc U.CreateTopic
+                                     ])
+                            (span_ [class_ "btn-cta m-inactive"])
+                            (do i_ [class_ "icon-check"] nil
+                                "Auf den Tisch bringen")
 
             feasibilityVerdict True idea caps
 
             -- creator statement
-            when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
+            when (any (`elem` caps) [Clickable CanAddCreatorStatement, Clickable CanEditCreatorStatement]) $ do
                 div_ [class_ "creator-statement-button"] $ do
                     button_ [ class_ "btn-cta m-valid"
                             , onclick_ $ U.creatorStatement idea
@@ -268,12 +279,14 @@ instance ToHtml ViewIdea where
             -- FIXME: Styling
             when (isFeasibleIdea idea) $ do
                 div_ [class_ "winning-idea voting-buttons"] $ do
-                    when (CanMarkWinner `elem` caps) $ do
-                        let winnerButton =
-                                postButton_
-                                    [ class_ "btn-cta mark-winner-button"
-                                    , jsReloadOnClick
-                                    ]
+                    when (CanMarkWinner `elemCaps` caps) $ do
+                        let winnerButton path =
+                                eitherClickableGrayedOut caps CanMarkWinner
+                                    (postButton_
+                                        [ class_ "btn-cta mark-winner-button"
+                                        , jsReloadOnClick
+                                        ] path)
+                                    (span_ [class_ "btn-cta mark-winner-button m-inactive"])
 
                         when (isNothing (idea ^. ideaVoteResult)) $
                             winnerButton (U.markIdeaAsWinner idea) "Idee hat gewonnen"
@@ -305,36 +318,41 @@ instance ToHtml ViewIdea where
                         h2_ [class_ "comments-header-heading"] $ do
                             numberWithUnit totalComments
                                 "Verbesserungsvorschlag" "Verbesserungsvorschläge"
-                        when (CanComment `elem` caps) $
-                            button_ [ value_ "create_comment"
-                                    , class_ "btn-cta comments-header-button"
-                                    , onclick_ (U.commentOnIdea idea)]
-                                "Neuer Verbesserungsvorschlag"
+                        eitherClickableGrayedOut caps CanComment
+                            (button_ [ value_ "create_comment"
+                                     , class_ "btn-cta comments-header-button"
+                                     , onclick_ (U.commentOnIdea idea)])
+                            (span_ [class_ "btn-cta comments-header-button m-inactive"])
+                            "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
                         CommentWidget ctx caps c phase ^. html
 
 
-feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
+feasibilityVerdict :: Monad m => Bool -> Idea -> [Clickable Capability] -> HtmlT m ()
 feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
         explToHtml (Markdown text) = do
             p_ "Begründung:"
             p_ $ toHtml text
 
-    when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
+    when (renderJuryButtons && CanMarkFeasiblity `elemCaps` caps) $ do
         div_ [class_ "admin-buttons"] $ do
-            button_ [ class_ "btn-cta m-valid"
-                    , onclick_ $ U.judgeIdea idea IdeaFeasible
-                    ] $ do
-                i_ [class_ "icon-check"] nil
-                "durchführbar"
-            button_ [ class_ "btn-cta m-invalid"
-                    , onclick_ $ U.judgeIdea idea IdeaNotFeasible
-                    ] $ do
-                i_ [class_ "icon-times"] nil
-                "nicht durchführbar"
+            eitherClickableGrayedOut caps CanMarkFeasiblity
+                (button_ [ class_ "btn-cta m-valid"
+                         , onclick_ $ U.judgeIdea idea IdeaFeasible
+                         ])
+                (span_ [ class_ "btn-cta m-valid m-inactive"])
+                (do i_ [class_ "icon-check"] nil
+                    "durchführbar")
+            eitherClickableGrayedOut caps CanMarkFeasiblity
+                (button_ [ class_ "btn-cta m-invalid"
+                         , onclick_ $ U.judgeIdea idea IdeaNotFeasible
+                         ])
+                (span_ [class_ "btn-cta m-invalid m-inactive"])
+                (do i_ [class_ "icon-times"] nil
+                    "nicht durchführbar")
 
     case _ideaJuryResult idea of
         Nothing -> nil
