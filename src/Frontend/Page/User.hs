@@ -184,8 +184,7 @@ userHeaderDiv ctx (ActiveUser user) =
             then do
                 editProfileBtn
             else do
-                when True $ do  -- FIXME: `CanVoteIdea `elem` caps`, but caps need to be refactored for that.
-                                -- FIXME: (in the process, we should merge CanVote{Idea,Topic}.  it's the same thing.)
+                when CanVote `elem` caps $ do
                     btn U.Broken "Klassenweit beauftragen"
                     btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
