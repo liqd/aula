@@ -182,6 +182,7 @@ instance ToHtml ViewIdea where
             role          = ctx ^. renderContextUser . userRole
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = ideaCapabilities uid role idea phase
+                         <> (Clickable <$> userCapabilities role)
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
