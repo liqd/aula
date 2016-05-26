@@ -360,7 +360,7 @@ instance ArbFormPagePayload Frontend.Page.EditIdea where
     arbFormPagePayload (Frontend.Page.EditIdea idea) =
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
-instance ArbFormPagePayload CommentOnIdea where
+instance ArbFormPagePayload CommentOnIdea
 
 instance ArbFormPagePayload PageAdminSettingsQuorum where
     arbFormPagePayload _ = Quorums <$> boundary 1 100
@@ -373,16 +373,16 @@ instance ArbFormPagePayload PageAdminSettingsQuorum where
             , (100+) . getPositive <$> arbitrary
             ]
 
-instance ArbFormPagePayload PageAdminSettingsFreeze where
+instance ArbFormPagePayload PageAdminSettingsFreeze
 
 instance ArbFormPagePayload PageAdminSettingsDurations where
     arbFormPagePayload _ = Durations <$> days <*> days
       where
         days = DurationDays . getPositive <$> arbitrary
 
-instance ArbFormPagePayload PageUserSettings where
+instance ArbFormPagePayload PageUserSettings
 
-instance ArbFormPagePayload PageHomeWithLoginPrompt where
+instance ArbFormPagePayload PageHomeWithLoginPrompt
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic space ideas _timestamp) =
@@ -402,9 +402,9 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <*> pure (view (listInfoForIdeaIt . _Id) <$> ideas)
         <**> (set editTopicDesc <$> arb)
 
-instance ArbFormPagePayload AdminEditUser where
+instance ArbFormPagePayload AdminEditUser
 
-instance ArbFormPagePayload AdminPhaseChange where
+instance ArbFormPagePayload AdminPhaseChange
 
 instance ArbFormPagePayload CreatorStatement where
     arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
@@ -423,7 +423,7 @@ instance ArbFormPagePayload JudgeIdea where
 instance ArbFormPagePayload ReportComment where
     arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""
 
-instance ArbFormPagePayload ReportUserProfile where
+instance ArbFormPagePayload ReportUserProfile
 
 {- FIXME: File tests
 instance PayloadToEnv UserProfile where
@@ -432,9 +432,9 @@ instance PayloadToEnv UserProfile where
         "desc"   -> pure [TextInput desc]
 -}
 
-instance ArbFormPagePayload EditUserProfile where
+instance ArbFormPagePayload EditUserProfile
 
-instance ArbFormPagePayload Frontend.Page.MoveIdea where
+instance ArbFormPagePayload Frontend.Page.MoveIdea
 
 {- FIXME: Use choice
 instance PayloadToEnv Types.MoveIdea where
@@ -443,24 +443,24 @@ instance PayloadToEnv Types.MoveIdea where
         "desc"   -> pure [TextInput desc]
 -}
 
-instance ArbFormPagePayload EditComment where
+instance ArbFormPagePayload EditComment
 
-instance ArbFormPagePayload ReportIdea where
+instance ArbFormPagePayload ReportIdea
 
-instance ArbFormPagePayload PageAdminSettingsEventsProtocol where
+instance ArbFormPagePayload PageAdminSettingsEventsProtocol
 
 {- FIXME: Choice
 instance PayloadToEnv EventsProtocolFilter where
     func =
 -}
 
-instance ArbFormPagePayload AdminDeleteUser where
+instance ArbFormPagePayload AdminDeleteUser
 
 instance PayloadToEnv () where
     payloadToEnvMapping _ () = \case
         _ -> pure [TextInput ""]
 
-instance ArbFormPagePayload AdminCreateUser where
+instance ArbFormPagePayload AdminCreateUser
 
 {- FIXME: Choice
 instance PayloadToEnv CreateUserPayload where
@@ -468,7 +468,7 @@ instance PayloadToEnv CreateUserPayload where
         _ -> pure [TextInput ""]
 -}
 
-instance ArbFormPagePayload AdminCreateClass where
+instance ArbFormPagePayload AdminCreateClass
 
 {- FIXME: File
 instance PayloadToEnv BatchCreateUsersFormData where
@@ -476,7 +476,7 @@ instance PayloadToEnv BatchCreateUsersFormData where
         _ -> pure [TextInput ""]
 -}
 
-instance ArbFormPagePayload PageAdminResetPassword where
+instance ArbFormPagePayload PageAdminResetPassword
 
 instance PayloadToEnv InitialPassword where
     payloadToEnvMapping _ (InitialPassword pwd) = \case
