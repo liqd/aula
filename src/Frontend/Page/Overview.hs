@@ -114,7 +114,13 @@ instance ToHtml PageOverviewOfTopics where
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
-                let userCaps = userCapabilities (ctx ^. renderContextUser . userRole)
+                let userCaps = capabilities CapCtx
+                                   { capCtxRole    = ctx ^. renderContextUser . userRole
+                                   , capCtxPhase   = Nothing
+                                   , capCtxUser    = Nothing
+                                   , capCtxIdea    = Nothing
+                                   , capCtxComment = Nothing
+                                   }
                 when (CanCreateTopic `elem` userCaps) $
                     button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta m-large"] "+ Neues Thema"
 

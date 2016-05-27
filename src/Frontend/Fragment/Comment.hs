@@ -76,7 +76,14 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
   where
     comment = w ^. cwComment
     user = w ^. cwRenderContext . renderContextUser
-    comCaps = commentCapabilities (user ^. _Id) (user ^. userRole) comment (w ^. cwPhase)
+    comCaps = capabilities CapCtx
+        { capCtxRole    = user ^. userRole
+        , capCtxPhase   = Just $ w ^. cwPhase
+        , capCtxUser    = Just $ user ^. _Id
+        , capCtxIdea    = Nothing  -- FIXME: there is an idea in the context here, and it should be
+                                   -- mentioned for principal reasons.
+        , capCtxComment = Just comment
+        }
 
 
 data CommentVotesWidget = CommentVotesWidget [Capability] Comment

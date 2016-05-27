@@ -36,11 +36,13 @@ minBarSegmentWidth = 5
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars mode ctx (IdeaStats idea phase quo voters)) = semanticDiv p $ do
-        let caps = ideaCapabilities
-                        (ctx ^. renderContextUser . _Id)
-                        (ctx ^. renderContextUser . userRole)
-                        idea
-                        phase
+        let caps = capabilities CapCtx
+                        { capCtxRole    = ctx ^. renderContextUser . userRole
+                        , capCtxPhase   = Just phase
+                        , capCtxUser    = Just $ ctx ^. renderContextUser . _Id
+                        , capCtxIdea    = Just idea
+                        , capCtxComment = Nothing
+                        }
                 \\ case mode of
                     IdeaVoteLikeBarsPlain       -> [CanLike, CanVote]
                     IdeaVoteLikeBarsWithButtons -> []

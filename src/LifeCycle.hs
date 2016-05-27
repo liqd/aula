@@ -14,14 +14,13 @@ module LifeCycle
 
       -- * capabilities
     , Capability(..)
-    , userCapabilities
-    , ideaCapabilities
-    , commentCapabilities
-    , topicCapabilities
+    , CapCtx(..)
+    , capabilities
     )
 where
 
 import Control.Lens
+import Data.Maybe
 import Data.Monoid
 import GHC.Generics (Generic)
 import qualified Generics.SOP as SOP
@@ -100,7 +99,7 @@ data Capability
     | CanVote
     | CanComment
     | CanVoteComment
-    | CanMarkFeasiblity -- also can add jury statement
+    | CanMarkFeasiblity  -- also can add jury statement
     | CanMarkWinner
     | CanAddCreatorStatement
     | CanEditCreatorStatement
@@ -121,6 +120,32 @@ data Capability
   deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Capability
+
+data CapCtx = CapCtx
+    { capCtxRole    :: Role
+    , capCtxPhase   :: Maybe Phase
+    , capCtxUser    :: Maybe (AUID User)
+    , capCtxIdea    :: Maybe Idea
+    , capCtxComment :: Maybe Comment
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic CapCtx
+
+capabilities :: CapCtx -> [Capability]
+capabilities ctx = mconcat $
+       [ userCapabilities r ]
+    <> [ ideaCapabilities u r i p    | u <- l mu, i <- l mi, p <- l mp ]
+    <> [ commentCapabilities u r c p | u <- l mu, c <- l mc, p <- l mp ]
+    <> [ topicCapabilities p r       | p <- l mp ]
+  where
+    r  = ctx ^. to capCtxRole
+    mp = ctx ^. to capCtxPhase
+    mu = ctx ^. to capCtxUser
+    mi = ctx ^. to capCtxIdea
+    mc = ctx ^. to capCtxComment
+
+    l = maybeToList
 
 
 -- ** User capabilities
