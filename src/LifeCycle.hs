@@ -139,11 +139,11 @@ capabilities ctx = mconcat $
     <> [ commentCapabilities u r c p | u <- l mu, c <- l mc, p <- l mp ]
     <> [ topicCapabilities p r       | p <- l mp ]
   where
-    r  = ctx ^. to capCtxRole
-    mp = ctx ^. to capCtxPhase
-    mu = ctx ^. to capCtxUser
-    mi = ctx ^. to capCtxIdea
-    mc = ctx ^. to capCtxComment
+    r  = capCtxRole    ctx
+    mp = capCtxPhase   ctx
+    mu = capCtxUser    ctx
+    mi = capCtxIdea    ctx
+    mc = capCtxComment ctx
 
     l = maybeToList
 
