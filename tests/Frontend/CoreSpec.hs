@@ -149,14 +149,14 @@ selectValue :: (Show a, Eq a) => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> 
 selectValue ref v xs x =
     case find test choices of
         Just (i, _, _) -> value i
-        Nothing -> error $ unwords ["selectValue: no option found.", show x, show xs]
+        Nothing -> error $ unwords ["selectValue: no option found. Value:", show x, "in values", show xs, "and choices", show choices]
   where
     ref'    = absoluteRef ref v
     value i = ref' <> "." <> i
     choices = fieldInputChoice ref v
     test (_, sx :: Html (), _) = showValue x == renderText sx
     showValue ((`lookup` xs) -> Just y) = y
-    showValue z = error $ unwords ["selectValue: no option found.", show z, show xs]
+    showValue z = error $ unwords ["selectValue: no option found. Value:", show z, "in values", show xs]
 
 data EmptyPayloadContext = EmptyPayloadContext
   deriving (Show, Eq)
