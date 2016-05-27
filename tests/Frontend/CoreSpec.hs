@@ -33,6 +33,7 @@ import Frontend.Fragment.Comment
 import Frontend.Page
 import Frontend.Path (relPath)
 import Logger (nullLog)
+import Persistent.Implementation (mkRunPersist)
 import Persistent.Idiom (listInfoForIdeaIt)
 import Types
 
@@ -335,8 +336,9 @@ runFailOnError = run . runFailOnErrorIO
 
 runFailOnErrorIO :: Action a -> IO a
 runFailOnErrorIO action = do
-    cfg <- readConfig nullLog DontWarnMissing
-    let env = ActionEnv (error "Dummy RunPersist") cfg nullLog
+    cfg <- testConfig
+    persist <- mkRunPersist nullLog cfg
+    let env = ActionEnv persist cfg nullLog
     unNat (exceptToFail . mkRunAction env) action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
