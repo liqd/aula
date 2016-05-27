@@ -72,7 +72,7 @@ spec = do
         , f (arb :: Gen PageAdminSettingsQuorum)
         , f (arb :: Gen PageAdminSettingsFreeze)
         , f (arb :: Gen PageAdminSettingsEventsProtocol)
---        , f (arb :: Gen AdminEditUser) -- FIXME: No value is found in selection
+        , f (adminEditUserGen :: Gen AdminEditUser)
         , f (arb :: Gen AdminDeleteUser)
 --        , f (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , f (arb :: Gen AdminCreateClass)
@@ -112,6 +112,9 @@ spec = do
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
   where
+    -- FIXME: Generate the payload based on the AdminEditUser type
+    adminEditUserGen = AdminEditUser <$> arb <*> pure schoolClasses
+
     checkLoadedUser = shouldBe `on` view userLogin
     pu u = ProtoUser
             (Just u)
