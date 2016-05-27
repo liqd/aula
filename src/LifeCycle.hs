@@ -96,7 +96,9 @@ phaseTrans _ _ = Nothing
 data Capability
     -- Idea
     = CanLike
-    | CanVote
+    | CanVoteInGeneral
+    | CanVoteOnIdea  -- can vote on one idea
+    | CanVoteOnTopic -- can vote on one topic
     | CanComment
     | CanVoteComment
     | CanMarkFeasiblity  -- also can add jury statement
@@ -152,7 +154,7 @@ capabilities ctx = mconcat $
 
 userCapabilities :: Role -> [Capability]
 userCapabilities = \case
-    Student    _clss -> [CanVote]
+    Student    _clss -> [CanVoteInGeneral]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanCreateTopic, CanEditUser]
@@ -217,7 +219,7 @@ phaseJuryCap _i = \case
 
 phaseVotingCap :: Idea -> Role -> [Capability]
 phaseVotingCap i = \case
-    Student    _clss -> [CanVote | isFeasibleIdea i]
+    Student    _clss -> [CanVoteOnIdea | isFeasibleIdea i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
@@ -299,7 +301,7 @@ topicJuryCaps = \case
 
 topicVotingCaps :: Role -> [Capability]
 topicVotingCaps = \case
-    Student    _clss -> [CanVote]
+    Student    _clss -> [CanVoteOnTopic]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanPhaseForwardTopic]

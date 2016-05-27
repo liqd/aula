@@ -44,7 +44,7 @@ instance ToHtml IdeaVoteLikeBars where
                         , capCtxComment = Nothing
                         }
                 \\ case mode of
-                    IdeaVoteLikeBarsPlain       -> [CanLike, CanVote]
+                    IdeaVoteLikeBarsPlain       -> [CanLike, CanVoteOnIdea]
                     IdeaVoteLikeBarsWithButtons -> []
 
             likeBar :: Html () -> Html ()
@@ -108,7 +108,7 @@ instance ToHtml IdeaVoteLikeBars where
             user = ctx ^. renderContextUser
 
             voteButtons :: Html ()
-            voteButtons = when (CanVote `elem` caps) .
+            voteButtons = when (CanVoteOnIdea `elem` caps) .
                 div_ [class_ "voting-buttons"] $ do
                     voteButton vote Yes "dafür"
                     voteButton vote No  "dagegen"
