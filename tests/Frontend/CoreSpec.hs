@@ -112,7 +112,7 @@ spec = do
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
   where
-    checkLoadedUser = shouldBe `on` (view userLogin)
+    checkLoadedUser = shouldBe `on` view userLogin
     pu u = ProtoUser
             (Just u)
             (UserFirstName "first")
@@ -448,9 +448,8 @@ instance ArbFormPagePayload PageHomeWithLoginPrompt where
     arbFormPagePayload _ = arb <**> (set userLogin <$> validUserLogin)
       where
         validUserLogin =
-            choose (4,12)
-            >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z'])
-            >>= return . UserLogin . cs
+            UserLogin . cs <$>
+            (choose (4,12) >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z']))
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic space ideas _timestamp) =
