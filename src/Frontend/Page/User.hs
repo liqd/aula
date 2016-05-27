@@ -192,7 +192,7 @@ userHeaderDiv ctx (ActiveUser user) =
                                , capCtxComment = Nothing
                                }
 
-                when (CanVoteInGeneral `elem` caps) $ do
+                when (CanVote `elem` caps) $ do
                     btn U.Broken "Klassenweit beauftragen"
                     btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
