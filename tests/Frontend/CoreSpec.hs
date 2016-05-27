@@ -27,8 +27,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Action.Implementation
-import Arbitrary (arb, arbPhrase, forAllShrinkDef, schoolClasses)
-import Config
+import Arbitrary (arb, arbPhrase, forAllShrinkDef, schoolClasses, constantSampleTimestamp)
 import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
@@ -67,39 +66,39 @@ spec = do
         ]
     describe "PageFormView" $ mapM_ testForm
           -- admin forms
-        [ F (arb :: Gen PageAdminSettingsDurations)
-        , F (arb :: Gen PageAdminSettingsQuorum)
-        , F (arb :: Gen PageAdminSettingsFreeze)
-        , F (arb :: Gen PageAdminSettingsEventsProtocol)
---        , F (arb :: Gen AdminEditUser) -- FIXME: Implement dummy persistent
-        , F (arb :: Gen AdminDeleteUser)
---        , F (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
-        , F (arb :: Gen AdminCreateClass)
-        , F (arb :: Gen AdminPhaseChange)
-        , F (arb :: Gen PageAdminResetPassword)
+        [ f (arb :: Gen PageAdminSettingsDurations)
+        , f (arb :: Gen PageAdminSettingsQuorum)
+        , f (arb :: Gen PageAdminSettingsFreeze)
+        , f (arb :: Gen PageAdminSettingsEventsProtocol)
+        , f (arb :: Gen AdminEditUser)
+        , f (arb :: Gen AdminDeleteUser)
+--        , f (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
+        , f (arb :: Gen AdminCreateClass)
+        , f (arb :: Gen AdminPhaseChange)
+        , f (arb :: Gen PageAdminResetPassword)
 
           -- idea forms
-        , F (arb :: Gen CreateIdea)
-        , F (arb :: Gen Frontend.Page.MoveIdea)
-        , F (arb :: Gen CommentOnIdea)
-        , F (arb :: Gen Frontend.Page.EditIdea)
-        , F (arb :: Gen EditComment)
-        , F (arb :: Gen JudgeIdea)
-        , F (arb :: Gen CreatorStatement)
-        , F (arb :: Gen ReportComment)
-        , F (arb :: Gen ReportIdea)
+        , f (arb :: Gen CreateIdea)
+        , f (arb :: Gen Frontend.Page.MoveIdea)
+        , f (arb :: Gen CommentOnIdea)
+        , f (arb :: Gen Frontend.Page.EditIdea)
+        , f (arb :: Gen EditComment)
+        , f (arb :: Gen JudgeIdea)
+        , f (arb :: Gen CreatorStatement)
+        , f (arb :: Gen ReportComment)
+        , f (arb :: Gen ReportIdea)
 
           -- login forms
---        , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME: Implement dummy persistent to fetch data
+        , f (arb :: Gen PageHomeWithLoginPrompt)
 
           -- topic forms
-        , F (arb :: Gen CreateTopic)
-        , F (arb :: Gen EditTopic)
+        , f (arb :: Gen CreateTopic)
+        , f (arb :: Gen EditTopic)
 
           -- user forms
---        , F (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
-        , F (arb :: Gen EditUserProfile)
-        , F (arb :: Gen ReportUserProfile)
+--        , f (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
+        , f (arb :: Gen EditUserProfile)
+        , f (arb :: Gen ReportUserProfile)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -271,7 +270,7 @@ checkToHtmlInstance (H g) =
     it (show $ typeOf g) . property . forAllShrinkDef g $ \pageSource ->
         LT.length (renderText (toHtml pageSource)) > 0
 
-data FormGen where
+data FormTest where
     F :: ( r ~ FormPagePayload m
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
@@ -279,15 +278,25 @@ data FormGen where
          , c ~ PayloadToEnvContext r
          , c ~ ArbFormPagePayloadContext m
          , Show c
-         ) => Gen m -> FormGen
+         ) => Gen m -> (m -> r -> Action ()) -> (r -> r -> IO ()) -> FormTest
 
-testForm :: FormGen -> Spec
+f :: ( r ~ FormPagePayload m
+         , Show m, Typeable m, FormPage m
+         , Show r, Eq r, Arbitrary r, PayloadToEnv r
+         , ArbFormPagePayload m, Arbitrary m
+         , c ~ PayloadToEnvContext r
+         , c ~ ArbFormPagePayloadContext m
+         , Show c
+     ) => Gen m -> FormTest
+f gen = F gen (\_ _ -> pure ()) shouldBe
+
+testForm :: FormTest -> Spec
 testForm fg = renderForm fg >> postToForm fg
 
 -- | Checks if the form rendering does not contains bottoms and
 -- the view has all the fields defined for GET form creation.
-renderForm :: FormGen -> Spec
-renderForm (F g) =
+renderForm :: FormTest -> Spec
+renderForm (F g _ _) =
     it (show (typeOf g) <> " (show empty form)") . property . forAllShrinkDef g $ \page -> monadicIO $ do
         len <- runFailOnError $ do
             v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
@@ -300,11 +309,13 @@ simulateForm
         , PayloadToEnv payload
         , payload ~ FormPagePayload page
         , payloadCtx ~ PayloadToEnvContext payload)
-    => page -> payloadCtx -> payload -> IO (View (Html ()), Maybe payload)
-simulateForm page ctx payload = do
+    => (page -> payload -> Action ()) -> page -> payloadCtx -> payload -> IO (View (Html ()), Maybe payload)
+simulateForm actionCtx page ctx payload = do
     let frm = makeForm page
     env <- runFailOnErrorIO $ (\formx -> payloadToEnv ctx formx payload) <$> getForm "" frm
-    runFailOnErrorIO $ postForm "" frm (\_ -> pure env)
+    runFailOnErrorIO $ do
+        actionCtx page payload
+        postForm "" frm (\_ -> pure env)
 
 testValidationError ::
        ( Typeable page, Show payload
@@ -315,7 +326,7 @@ testValidationError ::
     => page -> payloadCtx -> payload -> [String] -> Spec
 testValidationError page ctx payload expected =
     describe ("validation in form " <> show (typeOf page, payload)) . it "works" $ do
-        (v, Nothing) <- simulateForm page ctx payload
+        (v, Nothing) <- simulateForm (\_ _ -> pure ()) page ctx payload --TODO
         (show . snd <$> viewErrors v) `shouldBe` expected
             -- FIXME: render Html instead of showing it?
 
@@ -340,17 +351,17 @@ runFailOnErrorIO action = do
 -- happens in an appropriate 'ArbitraryBadEnv' instance.  For the test to succeed, we compare the
 -- errors in the view constructed by 'postForm' against the expected errors generated along with the
 -- bad env.
-postToForm :: FormGen -> Spec
-postToForm (F g) = do
+postToForm :: FormTest -> Spec
+postToForm (F g c check) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
         page <- pick g
         ctx <- pick (arbFormPagePayloadCtx page)
         payload <- pick (arbFormPagePayload page)
-        (v, mpayload) <- run $ simulateForm page ctx payload
+        (v, mpayload) <- run $ simulateForm c page ctx payload
         case mpayload of
             Nothing       -> fail $ unwords
                                 ("Form validation has failed:" : map show (viewErrors v))
-            Just payload' -> liftIO $ payload' `shouldBe` payload
+            Just payload' -> liftIO $ payload' `check` payload
 
     -- FIXME: Valid and invalid form data generation should
     -- be separated and have a different type class.
@@ -360,7 +371,7 @@ postToForm (F g) = do
         mpayload <- pick (arbFormPageInvalidPayload page)
         forM_ mpayload
             (\payload -> do
-                (_, mpayload') <- run $ simulateForm page ctx payload
+                (_, mpayload') <- run $ simulateForm c page ctx payload
                 liftIO $ mpayload' `shouldBe` Nothing)
 
 
