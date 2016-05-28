@@ -40,7 +40,7 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 
 import Data.UriPath
-import Persistent.Idiom (IdeaStats(..), listInfoForIdeaIt, ideaSupport)
+import Persistent.Idiom (IdeaStats(..), ideaStatsIdea, ideaSupport)
 import Types
 
 
@@ -83,7 +83,7 @@ toggleIdeasFilter cat q
 
 instance Filter   Category where
     type Filtered Category = IdeaStats
-    applyFilter c = filter $ (== Just c) . view (listInfoForIdeaIt . ideaCategory)
+    applyFilter c = filter $ (== Just c) . view (ideaStatsIdea . ideaCategory)
     renderFilter  = renderQueryParam
 
 type instance FilterName Category = "category"
@@ -123,7 +123,7 @@ instance Filter   SortIdeasBy where
         SortIdeasByTime    -> byTime
         SortIdeasBySupport -> bySupport . byTime
       where
-        byTime = downSortOn $ listInfoForIdeaIt . createdAt
+        byTime = downSortOn $ ideaStatsIdea . createdAt
         bySupport = downSortOn $ to (\(IdeaStats idea phase _ _) -> ideaSupport phase idea)
 
     renderFilter = renderQueryParam

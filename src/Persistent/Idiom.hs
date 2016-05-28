@@ -46,13 +46,13 @@ getVotersForSpace space = filter hasAccess <$> getActiveUsers
     isStudentInClass _ _ = False
 
 
--- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
+-- | @_ideaStatsQuorum@ is the number of likes (quorum votes) needed for the quorum to be
 -- reached.
 data IdeaStats = IdeaStats
-    { _listInfoForIdeaIt         :: Idea
-    , _listInfoForIdeaPhase      :: Phase
-    , _listInfoForIdeaQuorum     :: Int
-    , _listInfoForIdeaNoOfVoters :: Int
+    { _ideaStatsIdea       :: Idea
+    , _ideaStatsPhase      :: Phase
+    , _ideaStatsQuorum     :: Int
+    , _ideaStatsNoOfVoters :: Int
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -74,8 +74,8 @@ getIdeaStats idea = do
 ideaReachedQuorum :: IdeaStats -> Bool
 ideaReachedQuorum i = reached >= needed
   where
-    reached = noOfLikes $ _listInfoForIdeaIt i
-    needed  = _listInfoForIdeaQuorum i
+    reached = noOfLikes $ _ideaStatsIdea i
+    needed  = _ideaStatsQuorum i
 
 quorumForSpace :: IdeaSpace -> Query Percent
 quorumForSpace = \case

@@ -46,7 +46,7 @@ import Persistent
     , findWildIdeasBySpace
     , IdeaStats(..)
     , ideaReachedQuorum
-    , listInfoForIdeaIt
+    , ideaStatsIdea
     , getIdeaStats
     , maybe404
     , phaseEndRefinement
@@ -267,7 +267,7 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
-        <*> makeFormIdeaSelection [] (_listInfoForIdeaIt <$> _createTopicIdeas)
+        <*> makeFormIdeaSelection [] (_ideaStatsIdea <$> _createTopicIdeas)
         <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
@@ -309,7 +309,7 @@ instance FormPage EditTopic where
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
-        <*> makeFormIdeaSelection preselected (_listInfoForIdeaIt <$> ideas)
+        <*> makeFormIdeaSelection preselected (_ideaStatsIdea <$> ideas)
 
     formPage v form p@(EditTopic _space _topic ideas _preselected) = do
         semanticDiv p $ do
@@ -329,14 +329,14 @@ ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 formPageIdeaSelection v ideaStats =
     table_ [class_ "admin-table", style_ "padding: 30px"] .
-      for_ (sortBy (compare `on` view (listInfoForIdeaIt . ideaTitle)) ideaStats) $ \ideaStat ->
+      for_ (sortBy (compare `on` view (ideaStatsIdea . ideaTitle)) ideaStats) $ \ideaStat ->
           tr_ $ do
               td_ $ do
                   DF.inputCheckbox
-                      (ideaToFormField $ ideaStat ^. listInfoForIdeaIt)
+                      (ideaToFormField $ ideaStat ^. ideaStatsIdea)
                       v
               td_ $ do
-                  ideaStat ^. listInfoForIdeaIt . ideaTitle . html
+                  ideaStat ^. ideaStatsIdea . ideaTitle . html
               td_ . when (ideaReachedQuorum ideaStat) $ do
                   img_ [src_ . U.TopStatic $ "images/badge_aufdemtisch.png", width_ "31"]
 
@@ -354,8 +354,8 @@ makeFormIdeaSelection preselected ideas =
 
 ideaFilterForTab :: ViewTopicTab -> [IdeaStats] -> [IdeaStats]
 ideaFilterForTab = \case
-    TabIdeas ListIdeasInTopicTabWinning _ -> filter (isWinning . view listInfoForIdeaIt)
-    TabIdeas ListIdeasInTopicTabVoting  _ -> filter (isFeasibleIdea . view listInfoForIdeaIt)
+    TabIdeas ListIdeasInTopicTabWinning _ -> filter (isWinning . view ideaStatsIdea)
+    TabIdeas ListIdeasInTopicTabVoting  _ -> filter (isFeasibleIdea . view ideaStatsIdea)
     _                                     -> id
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
@@ -412,4 +412,4 @@ editTopic topicId =
                 space
                 topic
                 (wildIdeas <> ideasInTopic)
-                (view (listInfoForIdeaIt . _Id) <$> ideasInTopic)
+                (view (ideaStatsIdea . _Id) <$> ideasInTopic)

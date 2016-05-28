@@ -455,7 +455,7 @@ mkListItemIdeasInLocation loc = repair <$> mkListItemIdeas
     repair :: ListItemIdeas -> ListItemIdeas
     repair lst = lst
         & (listItemIdeasLocation .~ loc)
-        . (listItemIdeasData %~ fmap (listInfoForIdeaIt . ideaLocation .~ loc))
+        . (listItemIdeasData %~ fmap (ideaStatsIdea . ideaLocation .~ loc))
 
 instance Arbitrary IdeasQuery where
     arbitrary = garbitrary

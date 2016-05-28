@@ -34,7 +34,7 @@ import Frontend.Page
 import Frontend.Path (relPath)
 import Logger (nullLog)
 import Persistent.Implementation (mkRunPersist)
-import Persistent.Idiom (listInfoForIdeaIt)
+import Persistent.Idiom (ideaStatsIdea)
 import Persistent.Api (AddFirstUser(..))
 import Types
 
@@ -453,7 +453,7 @@ instance ArbFormPagePayload PageHomeWithLoginPrompt where
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic space ideas _timestamp) =
             set protoTopicIdeaSpace space
-          . set protoTopicIdeas (map (^. listInfoForIdeaIt . _Id) ideas)
+          . set protoTopicIdeas (map (^. ideaStatsIdea . _Id) ideas)
         <$> arbitrary
         <**> (set protoTopicDesc<$> arb)
 
@@ -465,7 +465,7 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         -- FIXME: Generate a sublist from the given ideas
         -- Ideas should be a set which contains only once one idea. And the random
         -- result generation should select from those ideas only.
-        <*> pure (view (listInfoForIdeaIt . _Id) <$> ideas)
+        <*> pure (view (ideaStatsIdea . _Id) <$> ideas)
         <**> (set editTopicDesc <$> arb)
 
 instance ArbFormPagePayload AdminEditUser where
