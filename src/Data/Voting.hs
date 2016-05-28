@@ -26,6 +26,8 @@ data Voter = Voter Int
 
 data Vote = Yes | No
 
+data Topic = Topic Int
+  deriving (Eq, Ord)
 
 -- * category
 
@@ -50,12 +52,13 @@ instance Eq v => Category (DCat v) where
       | b0 == b1  = DelegationCat a c
       | otherwise = NoDelegation
 
+
 -- * pure model
 
 data DelegationMap = DelegationMap {
         _delegationMap
             :: Map
-                Voter -- who delegates
+                (Voter, Topic) -- who delegates in which topic
                 Voter -- to whom delegates
     }
 
@@ -72,7 +75,7 @@ data Delegations = Delegations {
     }
 
 data Votings = Votings {
-      _votings :: Map Voter (Voter, Vote)
+      _votings :: Map (Voter, Topic) (Voter, Vote)
     }
 
 data DelegationState = DelegationState {
@@ -88,12 +91,12 @@ makeLenses ''DelegationState
 
 emptyDelegations = Delegations (DelegationMap Map.empty) (CoDelegationMap Map.empty)
 
-setDelegationPure :: Voter -> Voter -> Delegations -> Delegations
-setDelegationPure from to (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
+setDelegationPure :: Voter -> Topic -> Voter -> Delegations -> Delegations
+setDelegationPure from topic to (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
     = Delegations dmap' coDmap'
   where
-    dmap' = DelegationMap $ Map.insert from to dmap
-    coDmap' = CoDelegationMap $ case Map.lookup from dmap of
+    dmap' = DelegationMap $ Map.insert (from, topic) to dmap
+    coDmap' = CoDelegationMap $ case Map.lookup (from, topic) dmap of
         Nothing  -> Map.insert to (Set.singleton from) coDmap
         Just to' -> let coDmap0 = Map.update (deleteValue from) to coDmap
                         coDmap1 = case Map.lookup to' coDmap0 of
@@ -102,33 +105,40 @@ setDelegationPure from to (Delegations (DelegationMap dmap) (CoDelegationMap coD
                     in coDmap1
     deleteValue d ds = let ds' = Set.delete d ds in if Set.null ds' then Nothing else Just ds'
 
-canVotePure :: Voter -> DelegationMap -> Bool
-canVotePure v (DelegationMap dmap) = isNothing $ Map.lookup v dmap
+delegatedForTopic :: Voter -> Topic -> Voter -> DelegationMap -> Bool
+delegatedForTopic from topic to (DelegationMap dmap) =
+    maybe False (to ==) $ Map.lookup (from, topic) dmap
 
-getDelegatorsPure :: Voter -> CoDelegationMap -> [Voter]
-getDelegatorsPure v (CoDelegationMap dmap) = fix voters v
+canVotePure :: Voter -> Topic -> DelegationMap -> Bool
+canVotePure v t (DelegationMap dmap) = isNothing $ Map.lookup (v, t) dmap
+
+getDelegatorsPure :: Voter -> Topic -> DelegationMap -> CoDelegationMap -> [Voter]
+getDelegatorsPure v t dmap (CoDelegationMap codmap) = fix voters v
   where
-    voters rec v = v : maybe [] (mconcat . map rec) (Set.toList <$> Map.lookup v dmap)
+    voters rec v =
+        v : maybe [] (mconcat . map rec)
+                (filter (\d -> delegatedForTopic d t v dmap) . Set.toList
+                    <$> Map.lookup v codmap)
 
-setVotePure :: Voter -> Vote -> Voter -> Votings -> Votings
-setVotePure voter vote delegator (Votings vmap) =
-    Votings $ Map.insert delegator (voter, vote) vmap
+setVoteForPure :: Voter -> Topic -> Vote -> Voter -> Votings -> Votings
+setVoteForPure voter topic vote delegator (Votings vmap) =
+    Votings $ Map.insert (delegator, topic) (voter, vote) vmap
 
 
 -- * monadic api
 
 class Monad m => DelegationM m where
-    setDelegation :: Voter -> Voter -> m ()
-    canVote       :: Voter -> m Bool
-    getDelegators :: Voter -> m [Voter]
-    voteFor       :: Voter -> Vote -> Voter -> m ()
+    setDelegation :: Voter -> Topic -> Voter -> m ()
+    canVote       :: Voter -> Topic -> m Bool
+    getDelegators :: Voter -> Topic -> m [Voter]
+    voteFor       :: Voter -> Topic -> Vote -> Voter -> m ()
 
-vote :: DelegationM m => Voter -> Vote -> m ()
-vote voter voteValue = do
-    c <- canVote voter
+vote :: DelegationM m => Voter -> Topic -> Vote -> m ()
+vote voter topic voteValue = do
+    c <- canVote voter topic
     when c $ do
-        voteFor voter voteValue voter
-        getDelegators voter >>= mapM_ (voteFor voter voteValue)
+        voteFor voter topic voteValue voter
+        getDelegators voter topic >>= mapM_ (voteFor voter topic voteValue)
 
 -- * state monad implementation
 
@@ -136,7 +146,11 @@ newtype DelegationT m a = DelegationT { unDelegationT :: StateT DelegationState 
   deriving (Functor, Applicative, Monad, MonadState DelegationState)
 
 instance Monad m => DelegationM (DelegationT m) where
-    setDelegation f t = delegationsState %= (setDelegationPure f t)
-    canVote v         = use $ delegationsState . delegations   . to (canVotePure v)
-    getDelegators v   = use $ delegationsState . coDelegations . to (getDelegatorsPure v)
-    voteFor v x d     = votingsState %= (setVotePure v x d)
+    setDelegation f tp t = delegationsState %= (setDelegationPure f tp t)
+    canVote v tp         = use $ delegationsState . delegations   . to (canVotePure v tp)
+
+    getDelegators v t    = getDelegatorsPure v t
+                            <$> use (delegationsState . delegations)
+                            <*> use (delegationsState . coDelegations)
+
+    voteFor v t x d      = votingsState %= (setVoteForPure v t x d)
