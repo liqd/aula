@@ -18,6 +18,8 @@ import Data.Functor.Infix ((<$$>))
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
+import qualified Data.Map as Map
+import qualified Data.Monoid
 import qualified Generics.SOP as SOP
 
 import LifeCycle
@@ -153,3 +155,56 @@ saveAndEnactFreeze now shouldBeFrozenOrNot = do
       freezeOrNot topic = setTopicPhase (topic ^. _Id) . change now $ topic ^. topicPhase
   topics <- liftAQuery getTopics
   mapM_ freezeOrNot topics
+
+
+-- * voting logic
+
+countVotes :: Getting Data.Monoid.Any IdeaVoteValue a -> Idea -> Int
+countVotes v = length . filter (has v) . map (view ideaVoteValue) . Map.elems . view ideaVotes
+
+-- | If an idea is accepted, it has a chance at getting implemented.  The distinction between
+-- "accepted" (automatically determined) and "winning" (decided by moderator) is necessary because
+-- two accepted ideas may be contradictory.  Identifying such contradictions requires language
+-- skills beyond those of the aula system.
+ideaAccepted :: AUID Idea -> EQuery Bool
+ideaAccepted = ideaAcceptedByMajority
+
+ideaAcceptedByMajority :: AUID Idea -> EQuery Bool
+ideaAcceptedByMajority iid = do
+    idea      <- maybe404 =<< findIdea iid
+    quo       <- (`div` 3) . length <$> getVotersForIdea idea
+    let nyes   = countVotes _Yes idea
+        nno    = countVotes _No idea
+        ntotal = nyes + nno
+    pure $ nyes > nno && ntotal >= quo
+
+ideaAcceptedByQuorum :: AUID Idea -> EQuery Bool
+ideaAcceptedByQuorum iid = do
+    idea      <- maybe404 =<< findIdea iid
+    quo       <- (`div` 3) . length <$> getVotersForIdea idea
+    let nyes   = countVotes _Yes idea
+        nno    = countVotes _No idea
+    pure $ nyes >= quo && nno < quo
+
+-- | An un-normalized number for the popularity of an idea.  Can be an arbitrary integer, but higher
+-- always means more popular.  This is the number by which feasible ideas are ordered in the result
+-- phase.
+newtype Support = Support Int
+  deriving (Eq, Ord, Show, Read)
+
+ideaSupport :: Phase -> Idea -> Support
+ideaSupport = \case
+    PhaseWildIdea{}   -> ideaLikeSupport
+    PhaseRefinement{} -> ideaLikeSupport
+    PhaseJury{}       -> ideaLikeSupport
+    PhaseVoting{}     -> ideaVoteSupport
+    PhaseResult{}     -> ideaVoteSupport
+
+ideaLikeSupport :: Idea -> Support
+ideaLikeSupport = Support . length . view ideaLikes
+
+ideaVoteSupport :: Idea -> Support
+ideaVoteSupport = ideaVoteSupportByAbsDiff
+
+ideaVoteSupportByAbsDiff :: Idea -> Support
+ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No idea
