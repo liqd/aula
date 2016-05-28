@@ -114,7 +114,7 @@ runClient (Free (LikeIdea t k)) = do
     _ <- step . lift $ Action.likeIdea (idea ^. _Id)
     postcondition $ do
         Just idea' <- findIdeaByTitle t
-        noOfLikes idea' `shouldBe` (noOfLikes idea + 1)
+        length (idea' ^. ideaLikes) `shouldBe` (length (idea ^. ideaLikes) + 1)
     runClient k
 
 runClient (Free (DeleteIdea _t k)) = do

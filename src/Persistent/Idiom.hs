@@ -74,7 +74,7 @@ getIdeaStats idea = do
 ideaReachedQuorum :: IdeaStats -> Bool
 ideaReachedQuorum i = reached >= needed
   where
-    reached = noOfLikes $ _ideaStatsIdea i
+    reached = length . view ideaLikes $ _ideaStatsIdea i
     needed  = _ideaStatsQuorum i
 
 quorumForSpace :: IdeaSpace -> Query Percent
