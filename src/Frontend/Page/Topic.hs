@@ -352,10 +352,10 @@ makeFormIdeaSelection preselected ideas =
 
 -- * handlers
 
-ideaFilterForTab :: ViewTopicTab -> [Idea] -> [Idea]
+ideaFilterForTab :: ViewTopicTab -> [IdeaStats] -> [IdeaStats]
 ideaFilterForTab = \case
-    TabIdeas ListIdeasInTopicTabWinning _ -> filter isWinning
-    TabIdeas ListIdeasInTopicTabVoting  _ -> filter isFeasibleIdea
+    TabIdeas ListIdeasInTopicTabWinning _ -> filter (isWinning . view listInfoForIdeaIt)
+    TabIdeas ListIdeasInTopicTabVoting  _ -> filter (isFeasibleIdea . view listInfoForIdeaIt)
     _                                     -> id
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
@@ -371,18 +371,18 @@ viewTopic tab topicId = do
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
             _ ->
               do
-                let loc = topicIdeaLocation topic
-                    ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
-                               $ tab ^? viewTopicTabQuery
-                ideas <- applyFilter ideasQuery . ideaFilterForTab tab
-                         <$> findIdeasByTopic topic
-                let topicTabKind = fromMaybe (error "viewTopic: impossible (2).")
+                let loc          = topicIdeaLocation topic
+                    ideasQuery   = fromMaybe (assert False $ error "viewTopic: impossible.")
+                                 $ tab ^? viewTopicTabQuery
+                    topicTabKind = fromMaybe (error "viewTopic: impossible (2).")
                                  $ tab ^? topicTab
-                ideasAndNumVoters <-
-                    ListItemIdeas ctx (IdeaInViewTopic topicTabKind) loc ideasQuery
-                    <$> getIdeaStats `mapM` ideas
+                ideas <- applyFilter ideasQuery . ideaFilterForTab tab
+                     <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
 
-                pure $ ViewTopicIdeas now ctx tab topic ideasAndNumVoters)
+                let listItemIdeas =
+                        ListItemIdeas ctx (IdeaInViewTopic topicTabKind) loc ideasQuery ideas
+
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas)
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
