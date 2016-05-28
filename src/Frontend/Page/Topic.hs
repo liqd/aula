@@ -63,7 +63,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * types
 
 data ViewTopicTab
-  = TabIdeas { _topicTab :: ListIdeasInTopicTab, _viewTopicTabQuery :: IdeasQuery }
+  = TabIdeas { _topicTab :: ListIdeasInTopicTab, viewTopicTabQuery :: IdeasQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -377,18 +377,14 @@ viewTopic tab topicId = do
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
-            TabIdeas ideasTab _ ->
+            TabIdeas ideasTab ideasQuery ->
               do
-                let loc          = topicIdeaLocation topic
-                    ideasQuery   = fromMaybe (assert False $ error "viewTopic: impossible.")
-                                 $ tab ^? viewTopicTabQuery
-                    topicTabKind = fromMaybe (error "viewTopic: impossible (2).")
-                                 $ tab ^? topicTab
+                let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
                      <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
 
                 let listItemIdeas =
-                        ListItemIdeas ctx (IdeaInViewTopic topicTabKind) loc ideasQuery ideas
+                        ListItemIdeas ctx (IdeaInViewTopic ideasTab) loc ideasQuery ideas
 
                 pure $ ViewTopicIdeas now ctx tab topic listItemIdeas)
 
