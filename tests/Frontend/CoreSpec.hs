@@ -375,9 +375,9 @@ runFailOnErrorIO action = do
 postToForm :: FormTest -> Spec
 postToForm (FormTest g c check) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
-        page <- pick g
-        ctx <- pick (arbFormPagePayloadCtx page)
-        payload <- pick (arbFormPagePayload page)
+        page          <- pick g
+        ctx           <- pick (arbFormPagePayloadCtx page)
+        payload       <- pick (arbFormPagePayload page)
         (v, mpayload) <- run $ simulateForm c page ctx payload
         case mpayload of
             Nothing       -> fail $ unwords
