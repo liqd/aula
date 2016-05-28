@@ -277,12 +277,12 @@ type TopicApi =
        -- view topic details (tabs "Alle Ideen", ..., "Beauftragte Stimmen")
 
        -- view topic details (tabs "Alle Ideen", "Beauftragte Stimmen")
-  :<|> Topic ::> "ideas"              :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "all"     :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "voting"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas"               :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "all"      :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "voting"   :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
   :<|> Topic ::> "ideas" :> "accepted" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
-  :<|> Topic ::> "ideas" :> "winning" :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)  -- TODO: align
-  :<|> Topic ::> "delegations"        :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "ideas" :> "winning"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
+  :<|> Topic ::> "delegations"         :> GetH (Frame ViewTopic)
 
        -- create new topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic

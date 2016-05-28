@@ -207,10 +207,10 @@ space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "d
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
-    ListIdeasInTopicTabAll     -> id
-    ListIdeasInTopicTabVoting  -> (</> "voting")
+    ListIdeasInTopicTabAll      -> id
+    ListIdeasInTopicTabVoting   -> (</> "voting")
     ListIdeasInTopicTabAccepted -> (</> "accepted")
-    ListIdeasInTopicTabWinning -> (</> "winning")  -- TODO: align
+    ListIdeasInTopicTabWinning  -> (</> "winning")
 
 
 -- ** IdeaMode

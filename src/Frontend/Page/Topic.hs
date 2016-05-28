@@ -105,11 +105,11 @@ instance Page EditTopic
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabIdeas ListIdeasInTopicTabAll     _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
-    TabIdeas ListIdeasInTopicTabVoting  _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
+    TabIdeas ListIdeasInTopicTabAll      _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
+    TabIdeas ListIdeasInTopicTabVoting   _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
     TabIdeas ListIdeasInTopicTabAccepted _ -> ideaLnk  "tab-voting"      "Angenommene Ideen"
-    TabIdeas ListIdeasInTopicTabWinning _ -> ideaLnk  "tab-winning"     "Gewinner"  -- TODO: align.
-    TabDelegation                         -> delegLnk "tab-delegations" "Beauftrage Stimmen"
+    TabIdeas ListIdeasInTopicTabWinning  _ -> ideaLnk  "tab-winning"     "Gewinner"
+    TabDelegation                          -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
     ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
     delegLnk = lnk (U.Space (topic ^. topicIdeaSpace) . U.ViewTopicDelegations $ (topic ^. _Id))
@@ -210,10 +210,10 @@ viewTopicHeaderDiv now ctx topic tab = do
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll     emptyIdeasQuery)
-                t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting  emptyIdeasQuery)
+            let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll      emptyIdeasQuery)
+                t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting   emptyIdeasQuery)
                 t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAccepted emptyIdeasQuery)
-                t4 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning emptyIdeasQuery)  -- TODO: align
+                t4 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning  emptyIdeasQuery)
                 t5 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.
