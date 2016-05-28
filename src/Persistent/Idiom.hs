@@ -56,12 +56,6 @@ data IdeaStats = IdeaStats
 
 makeLenses ''IdeaStats
 
-ideaReachedQuorum :: IdeaStats -> Bool
-ideaReachedQuorum i = reached >= needed
-  where
-    reached = noOfLikes $ _listInfoForIdeaIt i
-    needed  = _listInfoForIdeaQuorum i
-
 instance SOP.Generic IdeaStats
 
 getIdeaStats :: Idea -> EQuery IdeaStats
@@ -74,6 +68,12 @@ getIdeaStats idea = do
             Nothing -> views dbFreeze (Just . PhaseWildIdea)
             Just tid -> view topicPhase <$$> findTopic tid
     pure $ IdeaStats idea phase quVotesRequired voters
+
+ideaReachedQuorum :: IdeaStats -> Bool
+ideaReachedQuorum i = reached >= needed
+  where
+    reached = noOfLikes $ _listInfoForIdeaIt i
+    needed  = _listInfoForIdeaQuorum i
 
 quorumForSpace :: IdeaSpace -> Query Percent
 quorumForSpace = \case
