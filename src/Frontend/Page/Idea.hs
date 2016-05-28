@@ -62,7 +62,7 @@ import Persistent
     ( findComment
     , findIdea
     , findTopicsBySpace
-    , getListInfoForIdea
+    , getIdeaStats
     , ideaReachedQuorum
     , ideaTopic
     , maybe404
@@ -616,7 +616,7 @@ instance FormPage ReportIdea where
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
-viewIdea ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getListInfoForIdea)
+viewIdea ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getIdeaStats)
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea

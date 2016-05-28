@@ -47,7 +47,7 @@ import Persistent
     , IdeaStats(..)
     , ideaReachedQuorum
     , listInfoForIdeaIt
-    , getListInfoForIdea
+    , getIdeaStats
     , maybe404
     , phaseEndRefinement
     )
@@ -380,7 +380,7 @@ viewTopic tab topicId = do
                                  $ tab ^? topicTab
                 ideasAndNumVoters <-
                     ListItemIdeas ctx (IdeaInViewTopic topicTabKind) loc ideasQuery
-                    <$> getListInfoForIdea `mapM` ideas
+                    <$> getIdeaStats `mapM` ideas
 
                 pure $ ViewTopicIdeas now ctx tab topic ideasAndNumVoters)
 
@@ -391,7 +391,7 @@ createTopic space =
         (do
             now <- getCurrentTimestamp
             equery $ CreateTopic space
-                <$> (mapM getListInfoForIdea =<< findWildIdeasBySpace space)
+                <$> (mapM getIdeaStats =<< findWildIdeasBySpace space)
                 <*> phaseEndRefinement now)
         Action.createTopic
         (\_ _ topic -> unwords ["Das Thema", topic ^. topicTitle . showed, "wurde angelegt."])
@@ -406,8 +406,8 @@ editTopic topicId =
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
-        wildIdeas <- mapM getListInfoForIdea =<< findWildIdeasBySpace space
-        ideasInTopic <- mapM getListInfoForIdea =<< findIdeasByTopicId topicId
+        wildIdeas <- mapM getIdeaStats =<< findWildIdeasBySpace space
+        ideasInTopic <- mapM getIdeaStats =<< findIdeasByTopicId topicId
         pure $ EditTopic
                 space
                 topic

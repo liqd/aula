@@ -64,8 +64,8 @@ ideaReachedQuorum i = reached >= needed
 
 instance SOP.Generic IdeaStats
 
-getListInfoForIdea :: Idea -> EQuery IdeaStats
-getListInfoForIdea idea = do
+getIdeaStats :: Idea -> EQuery IdeaStats
+getIdeaStats idea = do
     voters <- length <$> getVotersForIdea idea
     quPercent <- quorum idea
     let quVotesRequired = voters * quPercent `div` 100

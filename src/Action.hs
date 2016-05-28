@@ -500,7 +500,7 @@ likeIdea ideaId = do
     addWithCurrentUser_ (AddLikeToIdea ideaId) ()
     do (idea, info) <- equery $ do
           ide <- maybe404 =<< findIdea ideaId
-          inf <- getListInfoForIdea ide
+          inf <- getIdeaStats ide
           pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
