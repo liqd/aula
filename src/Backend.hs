@@ -45,6 +45,7 @@ type ManageStateApi =
        "wipe"        :> Post '[JSON] ()
   :<|> "create-init" :> Post '[JSON] ()
   :<|> "create-demo" :> Post '[JSON] ()
+  :<|> "create-votes" :> Post '[JSON] ()
   :<|> "rename-logins" :> Capture "suffix" ST :> Post '[JSON] ()
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
@@ -52,4 +53,5 @@ manageStateApi =
        update DangerousResetAulaData
   :<|> genInitialTestDb
   :<|> mkUniverse
+  :<|> genVotingPhaseTopic
   :<|> update . DangerousRenameAllLogins

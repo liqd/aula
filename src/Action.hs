@@ -35,6 +35,7 @@ module Action
     , loginByUser, loginByName
     , userLoggedOut
     , addWithUser
+    , addWithUser_
     , addWithCurrentUser
     , addWithCurrentUser_
     , currentUser
@@ -296,6 +297,10 @@ addWithUser :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
 addWithUser addA user protoA = do
     now <- getCurrentTimestamp
     update $ addA (EnvWith user now protoA)
+
+addWithUser_ :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
+               (EnvWithProto a -> ev) -> User -> Proto a -> m ()
+addWithUser_ addA user protoA = void $ addWithUser addA user protoA
 
 addWithCurrentUser :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m a
 addWithCurrentUser addA protoA = do

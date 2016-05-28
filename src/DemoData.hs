@@ -300,3 +300,55 @@ genInitialTestDb = do
     _ <- update $ MoveIdeasToLocation [topicIdea ^. _Id] (topicIdeaLocation topic)
 
     return ()
+
+
+-- * special-purpose state bits
+
+-- | An idea in voting phase with lots of votes and some ideas accepted.  Requires user "admin".
+genVotingPhaseTopic :: (GenArbitrary m, ActionM m) => m ()
+genVotingPhaseTopic = do
+    now <- getCurrentTimestamp
+    rnd <- mkQCGen <$> genGen arbitrary
+
+    let votingClass = SchoolClass 2016 "7v"
+        spc = ClassSpace votingClass
+    update $ AddIdeaSpaceIfNotExists spc
+
+    admin <- mquery $ findUserByLogin "admin"
+    loginByUser admin
+
+    students <- do
+        students' <- generate 28 rnd (genStudent [votingClass])
+        vs        <- mapM addUserWithEmailFromConfig students'
+        avatars   <- generate 28 rnd genAvatar
+        zipWithM_ updateAvatar vs avatars
+        pure vs
+
+    topic <- update $ AddTopic now (EnvWith admin now ProtoTopic
+        { _protoTopicTitle       = "Neues Schwimmbad"
+        , _protoTopicDesc        = PlainDocument "Das alte Schwimmbad ist nicht mehr schön!"
+        , _protoTopicImage       = ""
+        , _protoTopicIdeaSpace   = spc
+        , _protoTopicIdeas       = []
+        , _protoTopicRefPhaseEnd = TimespanDays 14 `addTimespan` now
+        })
+
+    ideas <- mapM (addWithCurrentUser AddIdea)
+                =<< generate 12 rnd (genIdea [spc] [topic])
+
+    topicForcePhaseChange Forward (topic ^. _Id)
+    topicForcePhaseChange Forward (topic ^. _Id)
+
+    randomVotes students ideas
+
+    return ()
+
+
+randomVotes :: (GenArbitrary m, ActionM m) => [User] -> [Idea] -> m ()
+randomVotes students ideas = some $ do
+    idea <- genGen $ elements ideas
+    user <- genGen $ elements students
+    vote <- genGen arbitrary
+    addWithUser_ (AddVoteToIdea $ idea ^. _Id) user vote
+  where
+    some = sequence_ . replicate ((length ideas * length students * 40) `div` 100)
