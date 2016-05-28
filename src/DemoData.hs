@@ -11,7 +11,7 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
-import Control.Monad (zipWithM_, (>=>))
+import Control.Monad (zipWithM_, replicateM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>))
@@ -351,4 +351,4 @@ randomVotes students ideas = some $ do
     vote <- genGen arbitrary
     addWithUser_ (AddVoteToIdea $ idea ^. _Id) user vote
   where
-    some = sequence_ . replicate ((length ideas * length students * 40) `div` 100)
+    some = replicateM_ $ (length ideas * length students * 40) `div` 100

@@ -167,22 +167,15 @@ countVotes v = length . filter (has v) . map (view ideaVoteValue) . Map.elems . 
 -- two accepted ideas may be contradictory.  Identifying such contradictions requires language
 -- skills beyond those of the aula system.
 ideaAccepted :: IdeaStats -> Bool
-ideaAccepted = ideaAcceptedByMajority
-
-ideaAcceptedByMajority :: IdeaStats -> Bool
-ideaAcceptedByMajority (IdeaStats idea _ _ numVoters) = nyes > nno && ntotal >= quo
+ideaAccepted (IdeaStats idea _ _ numVoters) = _ideaAcceptedByMajority
   where
+    _ideaAcceptedByMajority = nyes > nno && ntotal >= quo
+    _ideaAcceptedByQuorum   = nyes >= quo && nno < quo
+
     quo    = numVoters `div` 3
     nyes   = countVotes _Yes idea
     nno    = countVotes _No idea
     ntotal = nyes + nno
-
-ideaAcceptedByQuorum :: IdeaStats -> Bool
-ideaAcceptedByQuorum (IdeaStats idea _ _ numVoters) = nyes >= quo && nno < quo
-  where
-    quo    = numVoters `div` 3
-    nyes   = countVotes _Yes idea
-    nno    = countVotes _No idea
 
 -- | An un-normalized number for the popularity of an idea.  Can be an arbitrary integer, but higher
 -- always means more popular.  This is the number by which feasible ideas are ordered in the result
