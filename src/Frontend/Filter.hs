@@ -40,11 +40,13 @@ import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 
 import Data.UriPath
+import Persistent.Idiom (IdeaStats(..), ideaStatsIdea, ideaSupport)
 import Types
 
 
 -- * filter (also does sort)
 
+-- | The associated type decides the values that are filtered / sorted.
 class Filter a where
     type Filtered a
     applyFilter  :: a -> [Filtered a] -> [Filtered a]
@@ -80,18 +82,18 @@ toggleIdeasFilter cat q
     | otherwise             = IdeasWithCat cat
 
 instance Filter   Category where
-    type Filtered Category = Idea
-    applyFilter c = filter $ (== Just c) . view ideaCategory
+    type Filtered Category = IdeaStats
+    applyFilter c = filter $ (== Just c) . view (ideaStatsIdea . ideaCategory)
     renderFilter  = renderQueryParam
 
 type instance FilterName Category = "category"
 
 instance Filter     IdeasFilterQuery where
-    type Filtered   IdeasFilterQuery = Idea
+    type Filtered   IdeasFilterQuery = IdeaStats
     applyFilter  f = applyFilter  $ f ^? catFilter
     renderFilter f = renderFilter $ f ^? catFilter
 
-data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
+data SortIdeasBy = SortIdeasBySupport | SortIdeasByTime
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance HasUILabel SortIdeasBy where
@@ -115,14 +117,14 @@ instance ToHttpApiData SortIdeasBy where
         SortIdeasBySupport -> "support"
 
 instance Filter   SortIdeasBy where
-    type Filtered SortIdeasBy = Idea
+    type Filtered SortIdeasBy = IdeaStats
 
     applyFilter = \case
         SortIdeasByTime    -> byTime
         SortIdeasBySupport -> bySupport . byTime
       where
-        byTime = downSortOn createdAt
-        bySupport = downSortOn $ ideaLikes . to length
+        byTime = downSortOn $ ideaStatsIdea . createdAt
+        bySupport = downSortOn $ to (\(IdeaStats idea phase _ _) -> ideaSupport phase idea)
 
     renderFilter = renderQueryParam
 
@@ -145,7 +147,7 @@ emptyIdeasQuery :: IdeasQuery
 emptyIdeasQuery = IdeasQuery AllIdeas minBound
 
 instance Filter IdeasQuery where
-    type Filtered IdeasQuery = Idea
+    type Filtered IdeasQuery = IdeaStats
 
     applyFilter  (IdeasQuery f s) = applyFilter  s . applyFilter  f
     renderFilter (IdeasQuery f s) = renderFilter s . renderFilter f

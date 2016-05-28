@@ -31,7 +31,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
-import Data.Map as Map (Map, fromList, size)
+import Data.Map as Map (Map, fromList)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
@@ -226,9 +226,10 @@ instance SOP.Generic ProtoIdea
 type instance Proto Idea = ProtoIdea
 
 data ListIdeasInTopicTab =
-    ListIdeasInTopicTabAll
-  | ListIdeasInTopicTabVoting
-  | ListIdeasInTopicTabWinning
+    ListIdeasInTopicTabAll       -- ^ feasible as well as infeasible
+  | ListIdeasInTopicTabVoting    -- ^ feasible, but not accepted (yet); see 'ideaAccepted'
+  | ListIdeasInTopicTabAccepted  -- ^ feaasible and accepted
+  | ListIdeasInTopicTabWinning   -- ^ feasible, accepted, and marked as winning
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ListIdeasInTopicTab
@@ -1425,9 +1426,6 @@ isWild (IdeaLocationTopic _ _) = False
 userVotedOnIdea :: User -> Idea -> Maybe IdeaVoteValue
 userVotedOnIdea user idea =
     idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue
-
-noOfLikes :: Idea -> Int
-noOfLikes = view (ideaLikes . to Map.size)
 
 userLikesIdea :: User -> Idea -> Bool
 userLikesIdea user idea =

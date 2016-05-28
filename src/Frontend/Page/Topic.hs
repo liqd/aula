@@ -46,10 +46,11 @@ import Persistent
     , findWildIdeasBySpace
     , IdeaStats(..)
     , ideaReachedQuorum
-    , listInfoForIdeaIt
-    , getListInfoForIdea
+    , ideaStatsIdea
+    , getIdeaStats
     , maybe404
     , phaseEndRefinement
+    , ideaAccepted
     )
 
 import qualified Action (createTopic, editTopic)
@@ -62,7 +63,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * types
 
 data ViewTopicTab
-  = TabIdeas { _topicTab :: ListIdeasInTopicTab, _viewTopicTabQuery :: IdeasQuery }
+  = TabIdeas { _topicTab :: ListIdeasInTopicTab, viewTopicTabQuery :: IdeasQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -105,10 +106,11 @@ instance Page EditTopic
 tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink topic curTab targetTab =
   case targetTab of
-    TabIdeas ListIdeasInTopicTabAll     _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
-    TabIdeas ListIdeasInTopicTabVoting  _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
-    TabIdeas ListIdeasInTopicTabWinning _ -> ideaLnk  "tab-winning"     "Gewinner"
-    TabDelegation                         -> delegLnk "tab-delegations" "Beauftrage Stimmen"
+    TabIdeas ListIdeasInTopicTabAll      _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
+    TabIdeas ListIdeasInTopicTabVoting   _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
+    TabIdeas ListIdeasInTopicTabAccepted _ -> ideaLnk  "tab-voting"      "Angenommene Ideen"
+    TabIdeas ListIdeasInTopicTabWinning  _ -> ideaLnk  "tab-winning"     "Gewinner"
+    TabDelegation                          -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
     ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
     delegLnk = lnk (U.Space (topic ^. topicIdeaSpace) . U.ViewTopicDelegations $ (topic ^. _Id))
@@ -209,21 +211,22 @@ viewTopicHeaderDiv now ctx topic tab = do
                 PhaseResult       -> nil
 
         div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll     emptyIdeasQuery)
-                t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting  emptyIdeasQuery)
-                t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning emptyIdeasQuery)
-                t4 = tabLink topic tab TabDelegation
+            let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll      emptyIdeasQuery)
+                t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting   emptyIdeasQuery)
+                t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAccepted emptyIdeasQuery)
+                t4 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning  emptyIdeasQuery)
+                t5 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.
               -- but if we did that, it would be nice to not lose the settings when moving back and
               -- forth between delegation and idea tabs, either.
 
             case phase of
-                PhaseWildIdea{}   -> t1
-                PhaseRefinement{} -> t1
-                PhaseJury         -> t1
-                PhaseVoting{}     -> t1 >> t2
-                PhaseResult       -> t1 >> t3 >> t4
+                PhaseWildIdea{}   -> t1                   >> t5
+                PhaseRefinement{} -> t1                   >> t5
+                PhaseJury         -> t1                   >> t5
+                PhaseVoting{}     -> t1 >> t2 >> t3       >> t5
+                PhaseResult       -> t1       >> t3 >> t4 >> t5
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . to info
@@ -267,7 +270,7 @@ instance FormPage CreateTopic where
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure _createTopicIdeaSpace
-        <*> makeFormIdeaSelection [] (_listInfoForIdeaIt <$> _createTopicIdeas)
+        <*> makeFormIdeaSelection [] (_ideaStatsIdea <$> _createTopicIdeas)
         <*> pure _createTopicRefPhaseEnd
 
     formPage v form p@(CreateTopic _space ideas _timestamp) =
@@ -309,7 +312,7 @@ instance FormPage EditTopic where
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
-        <*> makeFormIdeaSelection preselected (_listInfoForIdeaIt <$> ideas)
+        <*> makeFormIdeaSelection preselected (_ideaStatsIdea <$> ideas)
 
     formPage v form p@(EditTopic _space _topic ideas _preselected) = do
         semanticDiv p $ do
@@ -329,14 +332,14 @@ ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 formPageIdeaSelection v ideaStats =
     table_ [class_ "admin-table", style_ "padding: 30px"] .
-      for_ (sortBy (compare `on` view (listInfoForIdeaIt . ideaTitle)) ideaStats) $ \ideaStat ->
+      for_ (sortBy (compare `on` view (ideaStatsIdea . ideaTitle)) ideaStats) $ \ideaStat ->
           tr_ $ do
               td_ $ do
                   DF.inputCheckbox
-                      (ideaToFormField $ ideaStat ^. listInfoForIdeaIt)
+                      (ideaToFormField $ ideaStat ^. ideaStatsIdea)
                       v
               td_ $ do
-                  ideaStat ^. listInfoForIdeaIt . ideaTitle . html
+                  ideaStat ^. ideaStatsIdea . ideaTitle . html
               td_ . when (ideaReachedQuorum ideaStat) $ do
                   img_ [src_ . U.TopStatic $ "images/badge_aufdemtisch.png", width_ "31"]
 
@@ -352,11 +355,16 @@ makeFormIdeaSelection preselected ideas =
 
 -- * handlers
 
-ideaFilterForTab :: ViewTopicTab -> [Idea] -> [Idea]
+ideaFilterForTab :: ListIdeasInTopicTab -> [IdeaStats] -> [IdeaStats]
 ideaFilterForTab = \case
-    TabIdeas ListIdeasInTopicTabWinning _ -> filter isWinning
-    TabIdeas ListIdeasInTopicTabVoting  _ -> filter isFeasibleIdea
-    _                                     -> id
+    ListIdeasInTopicTabAll      -> id
+    ListIdeasInTopicTabVoting   -> filter fea . filter (not . acc)
+    ListIdeasInTopicTabAccepted -> filter acc
+    ListIdeasInTopicTabWinning  -> filter win
+  where
+    win = isWinning      . view ideaStatsIdea
+    fea = isFeasibleIdea . view ideaStatsIdea
+    acc = ideaAccepted
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
@@ -369,20 +377,16 @@ viewTopic tab topicId = do
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
-            _ ->
+            TabIdeas ideasTab ideasQuery ->
               do
                 let loc = topicIdeaLocation topic
-                    ideasQuery = fromMaybe (assert False $ error "viewTopic: impossible.")
-                               $ tab ^? viewTopicTabQuery
-                ideas <- applyFilter ideasQuery . ideaFilterForTab tab
-                         <$> findIdeasByTopic topic
-                let topicTabKind = fromMaybe (error "viewTopic: impossible (2).")
-                                 $ tab ^? topicTab
-                ideasAndNumVoters <-
-                    ListItemIdeas ctx (IdeaInViewTopic topicTabKind) loc ideasQuery
-                    <$> getListInfoForIdea `mapM` ideas
+                ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
+                     <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
 
-                pure $ ViewTopicIdeas now ctx tab topic ideasAndNumVoters)
+                let listItemIdeas =
+                        ListItemIdeas ctx (IdeaInViewTopic ideasTab) loc ideasQuery ideas
+
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas)
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
@@ -391,7 +395,7 @@ createTopic space =
         (do
             now <- getCurrentTimestamp
             equery $ CreateTopic space
-                <$> (mapM getListInfoForIdea =<< findWildIdeasBySpace space)
+                <$> (mapM getIdeaStats =<< findWildIdeasBySpace space)
                 <*> phaseEndRefinement now)
         Action.createTopic
         (\_ _ topic -> unwords ["Das Thema", topic ^. topicTitle . showed, "wurde angelegt."])
@@ -406,10 +410,10 @@ editTopic topicId =
     getPage = equery $ do
         topic <- maybe404 =<< findTopic topicId
         let space = topic ^. topicIdeaSpace
-        wildIdeas <- mapM getListInfoForIdea =<< findWildIdeasBySpace space
-        ideasInTopic <- mapM getListInfoForIdea =<< findIdeasByTopicId topicId
+        wildIdeas <- mapM getIdeaStats =<< findWildIdeasBySpace space
+        ideasInTopic <- mapM getIdeaStats =<< findIdeasByTopicId topicId
         pure $ EditTopic
                 space
                 topic
                 (wildIdeas <> ideasInTopic)
-                (view (listInfoForIdeaIt . _Id) <$> ideasInTopic)
+                (view (ideaStatsIdea . _Id) <$> ideasInTopic)

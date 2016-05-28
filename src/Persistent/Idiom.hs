@@ -18,6 +18,8 @@ import Data.Functor.Infix ((<$$>))
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
+import qualified Data.Map as Map
+import qualified Data.Monoid
 import qualified Generics.SOP as SOP
 
 import LifeCycle
@@ -44,28 +46,22 @@ getVotersForSpace space = filter hasAccess <$> getActiveUsers
     isStudentInClass _ _ = False
 
 
--- | @_listInfoForIdeaQuorum@ is the number of likes (quorum votes) needed for the quorum to be
+-- | @_ideaStatsQuorum@ is the number of likes (quorum votes) needed for the quorum to be
 -- reached.
 data IdeaStats = IdeaStats
-    { _listInfoForIdeaIt         :: Idea
-    , _listInfoForIdeaPhase      :: Phase
-    , _listInfoForIdeaQuorum     :: Int
-    , _listInfoForIdeaNoOfVoters :: Int
+    { _ideaStatsIdea       :: Idea
+    , _ideaStatsPhase      :: Phase
+    , _ideaStatsQuorum     :: Int
+    , _ideaStatsNoOfVoters :: Int
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 makeLenses ''IdeaStats
 
-ideaReachedQuorum :: IdeaStats -> Bool
-ideaReachedQuorum i = reached >= needed
-  where
-    reached = noOfLikes $ _listInfoForIdeaIt i
-    needed  = _listInfoForIdeaQuorum i
-
 instance SOP.Generic IdeaStats
 
-getListInfoForIdea :: Idea -> EQuery IdeaStats
-getListInfoForIdea idea = do
+getIdeaStats :: Idea -> EQuery IdeaStats
+getIdeaStats idea = do
     voters <- length <$> getVotersForIdea idea
     quPercent <- quorum idea
     let quVotesRequired = voters * quPercent `div` 100
@@ -74,6 +70,12 @@ getListInfoForIdea idea = do
             Nothing -> views dbFreeze (Just . PhaseWildIdea)
             Just tid -> view topicPhase <$$> findTopic tid
     pure $ IdeaStats idea phase quVotesRequired voters
+
+ideaReachedQuorum :: IdeaStats -> Bool
+ideaReachedQuorum i = reached >= needed
+  where
+    reached = length . view ideaLikes $ _ideaStatsIdea i
+    needed  = _ideaStatsQuorum i
 
 quorumForSpace :: IdeaSpace -> Query Percent
 quorumForSpace = \case
@@ -153,3 +155,47 @@ saveAndEnactFreeze now shouldBeFrozenOrNot = do
       freezeOrNot topic = setTopicPhase (topic ^. _Id) . change now $ topic ^. topicPhase
   topics <- liftAQuery getTopics
   mapM_ freezeOrNot topics
+
+
+-- * voting logic
+
+countVotes :: Getting Data.Monoid.Any IdeaVoteValue a -> Idea -> Int
+countVotes v = length . filter (has v) . map (view ideaVoteValue) . Map.elems . view ideaVotes
+
+-- | If an idea is accepted, it has a chance at getting implemented.  The distinction between
+-- "accepted" (automatically determined) and "winning" (decided by moderator) is necessary because
+-- two accepted ideas may be contradictory.  Identifying such contradictions requires language
+-- skills beyond those of the aula system.
+ideaAccepted :: IdeaStats -> Bool
+ideaAccepted (IdeaStats idea _ _ numVoters) = _ideaAcceptedByMajority
+  where
+    _ideaAcceptedByMajority = nyes > nno && ntotal >= quo
+    _ideaAcceptedByQuorum   = nyes >= quo && nno < quo
+
+    quo    = numVoters `div` 3
+    nyes   = countVotes _Yes idea
+    nno    = countVotes _No idea
+    ntotal = nyes + nno
+
+-- | An un-normalized number for the popularity of an idea.  Can be an arbitrary integer, but higher
+-- always means more popular.  This is the number by which feasible ideas are ordered in the result
+-- phase.
+newtype Support = Support Int
+  deriving (Eq, Ord, Show, Read)
+
+ideaSupport :: Phase -> Idea -> Support
+ideaSupport = \case
+    PhaseWildIdea{}   -> ideaLikeSupport
+    PhaseRefinement{} -> ideaLikeSupport
+    PhaseJury{}       -> ideaLikeSupport
+    PhaseVoting{}     -> ideaVoteSupport
+    PhaseResult{}     -> ideaVoteSupport
+
+ideaLikeSupport :: Idea -> Support
+ideaLikeSupport = Support . length . view ideaLikes
+
+ideaVoteSupport :: Idea -> Support
+ideaVoteSupport = ideaVoteSupportByAbsDiff
+
+ideaVoteSupportByAbsDiff :: Idea -> Support
+ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No idea

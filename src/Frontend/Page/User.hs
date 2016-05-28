@@ -25,7 +25,7 @@ import Persistent.Api
     , SetUserProfileDesc(SetUserProfileDesc)
     , SetUserProfile(SetUserProfile)
     )
-import Persistent (findUser, findIdeasByUserId, getListInfoForIdea)
+import Persistent (findUser, findIdeasByUserId, getIdeaStats)
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
@@ -228,7 +228,7 @@ createdIdeas userId = do
         user  <- makeUserView <$> (maybe404 =<< findUser userId)
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
-              <$> (findIdeasByUserId userId >>= mapM getListInfoForIdea)
+              <$> (findIdeasByUserId userId >>= mapM getIdeaStats)
         pure $ PageUserProfileCreatedIdeas ctx user ideas)
 
 

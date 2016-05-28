@@ -20,7 +20,7 @@ import Action
 import LifeCycle
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude
-import Persistent (findWildIdeasBySpace, getListInfoForIdea, findTopicsBySpace)
+import Persistent (findWildIdeasBySpace, getIdeaStats, findTopicsBySpace)
 
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
@@ -57,9 +57,8 @@ viewIdeas :: (ActionPersist m, ActionUserHandler m)
 viewIdeas space ideasQuery = do
     ctx <- renderContext
     PageOverviewOfWildIdeas ctx space <$> equery (do
-        is  <- applyFilter ideasQuery <$> findWildIdeasBySpace space
-        ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery
-            <$> getListInfoForIdea `mapM` is)
+        is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
+        pure $ ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery is)
 
 viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
 viewTopics space = PageOverviewOfTopics <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
