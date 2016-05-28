@@ -72,7 +72,9 @@ spec = do
         , formTest (arb :: Gen PageAdminSettingsQuorum)
         , formTest (arb :: Gen PageAdminSettingsFreeze)
         , formTest (arb :: Gen PageAdminSettingsEventsProtocol)
-        , formTest (adminEditUserGen :: Gen AdminEditUser)
+        , formTest (AdminEditUser <$> arb <*> pure schoolClasses)
+                  -- FIXME: Generate the payload based on the AdminEditUser type
+
         , formTest (arb :: Gen AdminDeleteUser)
 --        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , formTest (arb :: Gen AdminCreateClass)
@@ -91,7 +93,17 @@ spec = do
         , formTest (arb :: Gen ReportIdea)
 
           -- login forms
-        , FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser checkLoadedUser
+        , let createUser (PageHomeWithLoginPrompt _) user =
+                  void . update $ AddFirstUser constantSampleTimestamp (pu (user ^. userLogin))
+              pu u = ProtoUser
+                      (Just u)
+                      (UserFirstName "first")
+                      (UserLastName "last")
+                      (Student (head schoolClasses))
+                      (InitialPassword "dummy password")
+                      Nothing
+                      (Markdown nil)
+          in FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser (shouldBe `on` view userLogin)
 
           -- topic forms
         , formTest (arb :: Gen CreateTopic)
@@ -110,22 +122,6 @@ spec = do
             payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
-
-  where
-    -- FIXME: Generate the payload based on the AdminEditUser type
-    adminEditUserGen = AdminEditUser <$> arb <*> pure schoolClasses
-
-    checkLoadedUser = shouldBe `on` view userLogin
-    pu u = ProtoUser
-            (Just u)
-            (UserFirstName "first")
-            (UserLastName "last")
-            (Student (head schoolClasses))
-            (InitialPassword "dummy password")
-            Nothing
-            (Markdown nil)
-    createUser (PageHomeWithLoginPrompt _) user = void . update $
-        AddFirstUser constantSampleTimestamp (pu (user ^. userLogin))
 
 
 -- * translate form data back to form input
