@@ -93,7 +93,7 @@ instance Filter     IdeasFilterQuery where
     applyFilter  f = applyFilter  $ f ^? catFilter
     renderFilter f = renderFilter $ f ^? catFilter
 
-data SortIdeasBy = SortIdeasByTime | SortIdeasBySupport
+data SortIdeasBy = SortIdeasBySupport | SortIdeasByTime
   deriving (Eq, Ord, Show, Read, Enum, Bounded, Generic)
 
 instance HasUILabel SortIdeasBy where
