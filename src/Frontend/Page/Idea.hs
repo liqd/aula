@@ -250,7 +250,7 @@ instance ToHtml ViewIdea where
                                 , onclick_ $ U.Space spc U.CreateTopic
                                 ] $ do
                             i_ [class_ "icon-check"] nil
-                            "Auf den Tisch bringen"
+                            "Thema anlegen"
 
             feasibilityVerdict True idea caps
 
