@@ -550,6 +550,8 @@ roleForm mrole mclass classes =
         <$> ("role"  .: chooseRole mrole)
         <*> ("class" .: chooseClass classes mclass)
 
+-- | (the login must always be provided in the posted data, but it is turned into Nothing in the
+-- validator if it has not changed.)
 data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) Role
   deriving (Eq, Show)
 

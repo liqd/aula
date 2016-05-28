@@ -73,8 +73,6 @@ spec = do
         , formTest (arb :: Gen PageAdminSettingsFreeze)
         , formTest (arb :: Gen PageAdminSettingsEventsProtocol)
         , formTest (AdminEditUser <$> arb <*> pure schoolClasses)
-                  -- FIXME: Generate the payload based on the AdminEditUser type
-
         , formTest (arb :: Gen AdminDeleteUser)
 --        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , formTest (arb :: Gen AdminCreateClass)
@@ -470,7 +468,13 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <*> pure (view (listInfoForIdeaIt . _Id) <$> ideas)
         <**> (set editTopicDesc <$> arb)
 
-instance ArbFormPagePayload AdminEditUser
+instance ArbFormPagePayload AdminEditUser where
+    arbFormPagePayload (AdminEditUser _ classes) =
+        AdminEditUserPayload <$> els logins <*> els roles
+      where
+        els    = Test.QuickCheck.elements
+        logins = Nothing : (Just . UserLogin . ("frsh!!" <>) . cs . show <$> [(0 :: Int)..8])
+        roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
 
 instance PayloadToEnv AdminEditUserPayload where
     payloadToEnvMapping _ v (AdminEditUserPayload mlogin role) = \case
