@@ -68,39 +68,39 @@ spec = do
         ]
     describe "PageFormView" $ mapM_ testForm
           -- admin forms
-        [ f (arb :: Gen PageAdminSettingsDurations)
-        , f (arb :: Gen PageAdminSettingsQuorum)
-        , f (arb :: Gen PageAdminSettingsFreeze)
-        , f (arb :: Gen PageAdminSettingsEventsProtocol)
-        , f (adminEditUserGen :: Gen AdminEditUser)
-        , f (arb :: Gen AdminDeleteUser)
---        , f (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
-        , f (arb :: Gen AdminCreateClass)
-        , f (arb :: Gen AdminPhaseChange)
-        , f (arb :: Gen PageAdminResetPassword)
+        [ formTest (arb :: Gen PageAdminSettingsDurations)
+        , formTest (arb :: Gen PageAdminSettingsQuorum)
+        , formTest (arb :: Gen PageAdminSettingsFreeze)
+        , formTest (arb :: Gen PageAdminSettingsEventsProtocol)
+        , formTest (adminEditUserGen :: Gen AdminEditUser)
+        , formTest (arb :: Gen AdminDeleteUser)
+--        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
+        , formTest (arb :: Gen AdminCreateClass)
+        , formTest (arb :: Gen AdminPhaseChange)
+        , formTest (arb :: Gen PageAdminResetPassword)
 
           -- idea forms
-        , f (arb :: Gen CreateIdea)
-        , f (arb :: Gen Frontend.Page.MoveIdea)
-        , f (arb :: Gen CommentOnIdea)
-        , f (arb :: Gen Frontend.Page.EditIdea)
-        , f (arb :: Gen EditComment)
-        , f (arb :: Gen JudgeIdea)
-        , f (arb :: Gen CreatorStatement)
-        , f (arb :: Gen ReportComment)
-        , f (arb :: Gen ReportIdea)
+        , formTest (arb :: Gen CreateIdea)
+        , formTest (arb :: Gen Frontend.Page.MoveIdea)
+        , formTest (arb :: Gen CommentOnIdea)
+        , formTest (arb :: Gen Frontend.Page.EditIdea)
+        , formTest (arb :: Gen EditComment)
+        , formTest (arb :: Gen JudgeIdea)
+        , formTest (arb :: Gen CreatorStatement)
+        , formTest (arb :: Gen ReportComment)
+        , formTest (arb :: Gen ReportIdea)
 
           -- login forms
-        , F (arb :: Gen PageHomeWithLoginPrompt) createUser checkLoadedUser
+        , FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser checkLoadedUser
 
           -- topic forms
-        , f (arb :: Gen CreateTopic)
-        , f (arb :: Gen EditTopic)
+        , formTest (arb :: Gen CreateTopic)
+        , formTest (arb :: Gen EditTopic)
 
           -- user forms
---        , f (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
-        , f (arb :: Gen EditUserProfile)
-        , f (arb :: Gen ReportUserProfile)
+--        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
+        , formTest (arb :: Gen EditUserProfile)
+        , formTest (arb :: Gen ReportUserProfile)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -289,7 +289,8 @@ checkToHtmlInstance (H g) =
         LT.length (renderText (toHtml pageSource)) > 0
 
 data FormTest where
-    F :: ( r ~ FormPagePayload m
+    FormTest :: (
+           r ~ FormPagePayload m
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
          , ArbFormPagePayload m, Arbitrary m
@@ -298,7 +299,8 @@ data FormTest where
          , Show c
          ) => Gen m -> (m -> r -> Action ()) -> (r -> r -> IO ()) -> FormTest
 
-f :: ( r ~ FormPagePayload m
+formTest :: (
+           r ~ FormPagePayload m
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
          , ArbFormPagePayload m, Arbitrary m
@@ -306,7 +308,7 @@ f :: ( r ~ FormPagePayload m
          , c ~ ArbFormPagePayloadContext m
          , Show c
      ) => Gen m -> FormTest
-f gen = F gen (\_ _ -> pure ()) shouldBe
+formTest gen = FormTest gen (\_ _ -> pure ()) shouldBe
 
 testForm :: FormTest -> Spec
 testForm fg = renderForm fg >> postToForm fg
@@ -314,7 +316,7 @@ testForm fg = renderForm fg >> postToForm fg
 -- | Checks if the form rendering does not contains bottoms and
 -- the view has all the fields defined for GET form creation.
 renderForm :: FormTest -> Spec
-renderForm (F g _ _) =
+renderForm (FormTest g _ _) =
     it (show (typeOf g) <> " (show empty form)") . property . forAllShrinkDef g $ \page -> monadicIO $ do
         len <- runFailOnError $ do
             v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
@@ -371,7 +373,7 @@ runFailOnErrorIO action = do
 -- errors in the view constructed by 'postForm' against the expected errors generated along with the
 -- bad env.
 postToForm :: FormTest -> Spec
-postToForm (F g c check) = do
+postToForm (FormTest g c check) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
         page <- pick g
         ctx <- pick (arbFormPagePayloadCtx page)
