@@ -209,7 +209,8 @@ topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
     ListIdeasInTopicTabAll     -> id
     ListIdeasInTopicTabVoting  -> (</> "voting")
-    ListIdeasInTopicTabWinning -> (</> "winning")
+    ListIdeasInTopicTabAccepted -> (</> "accepted")
+    ListIdeasInTopicTabWinning -> (</> "winning")  -- TODO: align
 
 
 -- ** IdeaMode

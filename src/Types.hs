@@ -226,9 +226,10 @@ instance SOP.Generic ProtoIdea
 type instance Proto Idea = ProtoIdea
 
 data ListIdeasInTopicTab =
-    ListIdeasInTopicTabAll
-  | ListIdeasInTopicTabVoting
-  | ListIdeasInTopicTabWinning
+    ListIdeasInTopicTabAll       -- ^ feasible as well as infeasible
+  | ListIdeasInTopicTabVoting    -- ^ feasible, but not accepted (yet); see 'ideaAccepted'
+  | ListIdeasInTopicTabAccepted  -- ^ feaasible and accepted
+  | ListIdeasInTopicTabWinning   -- ^ feasible, accepted, and marked as winning
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ListIdeasInTopicTab

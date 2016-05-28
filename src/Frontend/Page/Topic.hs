@@ -107,7 +107,8 @@ tabLink topic curTab targetTab =
   case targetTab of
     TabIdeas ListIdeasInTopicTabAll     _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
     TabIdeas ListIdeasInTopicTabVoting  _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
-    TabIdeas ListIdeasInTopicTabWinning _ -> ideaLnk  "tab-winning"     "Gewinner"
+    TabIdeas ListIdeasInTopicTabAccepted _ -> ideaLnk  "tab-voting"      "Angenommene Ideen"
+    TabIdeas ListIdeasInTopicTabWinning _ -> ideaLnk  "tab-winning"     "Gewinner"  -- TODO: align.
     TabDelegation                         -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
     ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
@@ -211,19 +212,20 @@ viewTopicHeaderDiv now ctx topic tab = do
         div_ [class_ "heroic-tabs"] $ do
             let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll     emptyIdeasQuery)
                 t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting  emptyIdeasQuery)
-                t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning emptyIdeasQuery)
-                t4 = tabLink topic tab TabDelegation
+                t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAccepted emptyIdeasQuery)
+                t4 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning emptyIdeasQuery)  -- TODO: align
+                t5 = tabLink topic tab TabDelegation
 
               -- FIXME: we could see if we have any filter settings to save from another tab here.
               -- but if we did that, it would be nice to not lose the settings when moving back and
               -- forth between delegation and idea tabs, either.
 
             case phase of
-                PhaseWildIdea{}   -> t1
-                PhaseRefinement{} -> t1
-                PhaseJury         -> t1
-                PhaseVoting{}     -> t1 >> t2
-                PhaseResult       -> t1 >> t3 >> t4
+                PhaseWildIdea{}   -> t1                   >> t5
+                PhaseRefinement{} -> t1                   >> t5
+                PhaseJury         -> t1                   >> t5
+                PhaseVoting{}     -> t1 >> t2 >> t3       >> t5
+                PhaseResult       -> t1       >> t3 >> t4 >> t5
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . to info
@@ -352,11 +354,16 @@ makeFormIdeaSelection preselected ideas =
 
 -- * handlers
 
-ideaFilterForTab :: ViewTopicTab -> [IdeaStats] -> [IdeaStats]
+ideaFilterForTab :: ListIdeasInTopicTab -> [IdeaStats] -> [IdeaStats]
 ideaFilterForTab = \case
-    TabIdeas ListIdeasInTopicTabWinning _ -> filter (isWinning . view ideaStatsIdea)
-    TabIdeas ListIdeasInTopicTabVoting  _ -> filter (isFeasibleIdea . view ideaStatsIdea)
-    _                                     -> id
+    ListIdeasInTopicTabAll      -> id
+    ListIdeasInTopicTabVoting   -> filter fea . filter (not . acc)
+    ListIdeasInTopicTabAccepted -> filter acc
+    ListIdeasInTopicTabWinning  -> filter win
+  where
+    win = isWinning           . view ideaStatsIdea
+    fea = isFeasibleIdea      . view ideaStatsIdea
+    acc = const True  -- TODO: equery ideaAccepted . view ideaStatsIdea
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
@@ -369,14 +376,14 @@ viewTopic tab topicId = do
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
-            _ ->
+            TabIdeas ideasTab _ ->
               do
                 let loc          = topicIdeaLocation topic
                     ideasQuery   = fromMaybe (assert False $ error "viewTopic: impossible.")
                                  $ tab ^? viewTopicTabQuery
                     topicTabKind = fromMaybe (error "viewTopic: impossible (2).")
                                  $ tab ^? topicTab
-                ideas <- applyFilter ideasQuery . ideaFilterForTab tab
+                ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
                      <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
 
                 let listItemIdeas =
