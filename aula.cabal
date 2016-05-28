@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.13.0
+version:        0.14.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -338,7 +338,6 @@ test-suite spec
       Frontend.Page.LoginSpec
       Frontend.PathSpec
       FrontendSpec
-      LifeCycleSpec
       Persistent.ApiSpec
       Test.Hspec.Missing
       TypesSpec
