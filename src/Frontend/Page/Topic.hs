@@ -36,7 +36,7 @@ import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
-import LifeCycle (Capability(..), topicCapabilities)
+import LifeCycle (Capability(..), CapCtx(..), capabilities)
 import Persistent
     ( findDelegationsByContext
     , findIdeasByTopic
@@ -136,7 +136,14 @@ instance ToHtml ViewTopic where
 
 viewTopicHeaderDiv :: Monad m => Timestamp -> RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv now ctx topic tab = do
-    let caps    = topicCapabilities phase (ctx ^. renderContextUser . userRole)
+    let caps    = capabilities CapCtx
+                      { capCtxRole    = ctx ^. renderContextUser . userRole
+                      , capCtxPhase   = Just phase
+                      , capCtxUser    = Nothing
+                      , capCtxIdea    = Nothing
+                      , capCtxComment = Nothing
+                      }
+
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
         space   = topic ^. topicIdeaSpace

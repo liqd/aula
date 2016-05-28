@@ -181,11 +181,16 @@ instance ToHtml ViewIdea where
             uid           = ctx ^. renderContextUser . _Id
             role          = ctx ^. renderContextUser . userRole
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
-            caps          = ideaCapabilities uid role idea phase
-            userCaps      = userCapabilities role
+            caps          = capabilities CapCtx
+                                { capCtxRole    = role
+                                , capCtxPhase   = Just phase
+                                , capCtxUser    = Just uid
+                                , capCtxIdea    = Just idea
+                                , capCtxComment = Nothing
+                                }
 
             canEdit              = CanEditAndDelete `elem` caps
-            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` userCaps
+            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` caps
             canMoveBetweenTopics = CanMoveBetweenLocations `elem` caps
 
         div_ [class_ "hero-unit narrow-container"] $ do
