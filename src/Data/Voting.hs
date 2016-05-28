@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -139,6 +140,21 @@ vote voter topic voteValue = do
     when c $ do
         voteFor voter topic voteValue voter
         getDelegators voter topic >>= mapM_ (voteFor voter topic voteValue)
+
+
+-- * deep embedding
+
+data DelegationDSL a where
+    SetDelegation :: Voter -> Topic -> Voter         -> DelegationDSL ()
+    CanVote       :: Voter -> Topic                  -> DelegationDSL Bool
+    GetDelegators :: Voter -> Topic                  -> DelegationDSL [Voter]
+    VoteFor       :: Voter -> Topic -> Vote -> Voter -> DelegationDSL ()
+
+delegation :: (DelegationM m) => DelegationDSL a -> m a
+delegation (SetDelegation f tp t) = setDelegation f tp t
+delegation (CanVote v t)          = canVote v t
+delegation (GetDelegators v t)    = getDelegators v t
+delegation (VoteFor f tp x t)     = voteFor f tp x t
 
 -- * state monad implementation
 
