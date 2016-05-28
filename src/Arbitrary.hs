@@ -716,6 +716,12 @@ instance Arbitrary BatchCreateUsersFormData where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary AdminDeleteUserPayload where
+    arbitrary = pure AdminDeleteUserPayload
+
+instance Arbitrary AdminEditUserPayload where
+    arbitrary = AdminEditUserPayload <$> arb <*> arb
+    shrink (AdminEditUserPayload x y) = AdminEditUserPayload <$> shr x <*> shr y
 
 -- * aula-specific helpers
 

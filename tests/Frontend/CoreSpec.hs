@@ -27,14 +27,15 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Action.Implementation
-import Arbitrary (arb, arbPhrase, forAllShrinkDef, schoolClasses)
-import Config
+import Arbitrary (arb, arbPhrase, forAllShrinkDef, schoolClasses, constantSampleTimestamp)
 import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
 import Frontend.Path (relPath)
 import Logger (nullLog)
+import Persistent.Implementation (mkRunPersist)
 import Persistent.Idiom (listInfoForIdeaIt)
+import Persistent.Api (AddFirstUser(..))
 import Types
 
 import AulaTests
@@ -67,39 +68,49 @@ spec = do
         ]
     describe "PageFormView" $ mapM_ testForm
           -- admin forms
-        [ F (arb :: Gen PageAdminSettingsDurations)
-        , F (arb :: Gen PageAdminSettingsQuorum)
-        , F (arb :: Gen PageAdminSettingsFreeze)
-        , F (arb :: Gen PageAdminSettingsEventsProtocol)
---        , F (arb :: Gen AdminEditUser) -- TODO: Introduce newtype
-        , F (arb :: Gen AdminDeleteUser) -- TODO: Introduce new unit type
---        , F (arb :: Gen AdminCreateUser) -- FIXME: Use choice
---        , F (arb :: Gen AdminCreateClass) -- FIXME: File upload
-        , F (arb :: Gen AdminPhaseChange)
-        , F (arb :: Gen PageAdminResetPassword)
+        [ formTest (arb :: Gen PageAdminSettingsDurations)
+        , formTest (arb :: Gen PageAdminSettingsQuorum)
+        , formTest (arb :: Gen PageAdminSettingsFreeze)
+        , formTest (arb :: Gen PageAdminSettingsEventsProtocol)
+        , formTest (AdminEditUser <$> arb <*> pure schoolClasses)
+        , formTest (arb :: Gen AdminDeleteUser)
+--        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
+        , formTest (arb :: Gen AdminCreateClass)
+        , formTest (arb :: Gen AdminPhaseChange)
+        , formTest (arb :: Gen PageAdminResetPassword)
 
           -- idea forms
-        , F (arb :: Gen CreateIdea)
-        , F (arb :: Gen Frontend.Page.MoveIdea)
-        , F (arb :: Gen CommentOnIdea)
-        , F (arb :: Gen Frontend.Page.EditIdea)
-        , F (arb :: Gen EditComment)
-        , F (arb :: Gen JudgeIdea)
-        , F (arb :: Gen CreatorStatement)
-        , F (arb :: Gen ReportComment)
-        , F (arb :: Gen ReportIdea)
+        , formTest (arb :: Gen CreateIdea)
+        , formTest (arb :: Gen Frontend.Page.MoveIdea)
+        , formTest (arb :: Gen CommentOnIdea)
+        , formTest (arb :: Gen Frontend.Page.EditIdea)
+        , formTest (arb :: Gen EditComment)
+        , formTest (arb :: Gen JudgeIdea)
+        , formTest (arb :: Gen CreatorStatement)
+        , formTest (arb :: Gen ReportComment)
+        , formTest (arb :: Gen ReportIdea)
 
           -- login forms
---        , F (arb :: Gen PageHomeWithLoginPrompt) -- FIXME: Implement dummy persistent to fetch data
+        , let createUser (PageHomeWithLoginPrompt _) user =
+                  void . update $ AddFirstUser constantSampleTimestamp (pu (user ^. userLogin))
+              pu u = ProtoUser
+                      (Just u)
+                      (UserFirstName "first")
+                      (UserLastName "last")
+                      (Student (head schoolClasses))
+                      (InitialPassword "dummy password")
+                      Nothing
+                      (Markdown nil)
+          in FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser (shouldBe `on` view userLogin)
 
           -- topic forms
-        , F (arb :: Gen CreateTopic)
-        , F (arb :: Gen EditTopic)
+        , formTest (arb :: Gen CreateTopic)
+        , formTest (arb :: Gen EditTopic)
 
           -- user forms
---        , F (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
---        , F (arb :: Gen EditUserProfile) -- FIXME: File upload
-        , F (arb :: Gen ReportUserProfile)
+--        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
+        , formTest (arb :: Gen EditUserProfile)
+        , formTest (arb :: Gen ReportUserProfile)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -135,14 +146,14 @@ selectValue :: (Show a, Eq a) => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> 
 selectValue ref v xs x =
     case find test choices of
         Just (i, _, _) -> value i
-        Nothing -> error $ unwords ["selectValue: no option found.", show x, show xs]
+        Nothing -> error $ unwords ["selectValue: no option found. Value:", show x, "in values", show xs, "and choices", show choices]
   where
     ref'    = absoluteRef ref v
     value i = ref' <> "." <> i
     choices = fieldInputChoice ref v
     test (_, sx :: Html (), _) = showValue x == renderText sx
     showValue ((`lookup` xs) -> Just y) = y
-    showValue z = error $ unwords ["selectValue: no option found.", show z, show xs]
+    showValue z = error $ unwords ["selectValue: no option found. Value:", show z, "in values", show xs]
 
 data EmptyPayloadContext = EmptyPayloadContext
   deriving (Show, Eq)
@@ -271,23 +282,35 @@ checkToHtmlInstance (H g) =
     it (show $ typeOf g) . property . forAllShrinkDef g $ \pageSource ->
         LT.length (renderText (toHtml pageSource)) > 0
 
-data FormGen where
-    F :: ( r ~ FormPagePayload m
+data FormTest where
+    FormTest :: (
+           r ~ FormPagePayload m
          , Show m, Typeable m, FormPage m
          , Show r, Eq r, Arbitrary r, PayloadToEnv r
          , ArbFormPagePayload m, Arbitrary m
          , c ~ PayloadToEnvContext r
          , c ~ ArbFormPagePayloadContext m
          , Show c
-         ) => Gen m -> FormGen
+         ) => Gen m -> (m -> r -> Action ()) -> (r -> r -> IO ()) -> FormTest
 
-testForm :: FormGen -> Spec
+formTest :: (
+           r ~ FormPagePayload m
+         , Show m, Typeable m, FormPage m
+         , Show r, Eq r, Arbitrary r, PayloadToEnv r
+         , ArbFormPagePayload m, Arbitrary m
+         , c ~ PayloadToEnvContext r
+         , c ~ ArbFormPagePayloadContext m
+         , Show c
+     ) => Gen m -> FormTest
+formTest gen = FormTest gen (\_ _ -> pure ()) shouldBe
+
+testForm :: FormTest -> Spec
 testForm fg = renderForm fg >> postToForm fg
 
 -- | Checks if the form rendering does not contains bottoms and
 -- the view has all the fields defined for GET form creation.
-renderForm :: FormGen -> Spec
-renderForm (F g) =
+renderForm :: FormTest -> Spec
+renderForm (FormTest g _ _) =
     it (show (typeOf g) <> " (show empty form)") . property . forAllShrinkDef g $ \page -> monadicIO $ do
         len <- runFailOnError $ do
             v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
@@ -300,11 +323,13 @@ simulateForm
         , PayloadToEnv payload
         , payload ~ FormPagePayload page
         , payloadCtx ~ PayloadToEnvContext payload)
-    => page -> payloadCtx -> payload -> IO (View (Html ()), Maybe payload)
-simulateForm page ctx payload = do
+    => (page -> payload -> Action ()) -> page -> payloadCtx -> payload -> IO (View (Html ()), Maybe payload)
+simulateForm actionCtx page ctx payload = do
     let frm = makeForm page
     env <- runFailOnErrorIO $ (\formx -> payloadToEnv ctx formx payload) <$> getForm "" frm
-    runFailOnErrorIO $ postForm "" frm (\_ -> pure env)
+    runFailOnErrorIO $ do
+        actionCtx page payload
+        postForm "" frm (\_ -> pure env)
 
 testValidationError ::
        ( Typeable page, Show payload
@@ -315,7 +340,7 @@ testValidationError ::
     => page -> payloadCtx -> payload -> [String] -> Spec
 testValidationError page ctx payload expected =
     describe ("validation in form " <> show (typeOf page, payload)) . it "works" $ do
-        (v, Nothing) <- simulateForm page ctx payload
+        (v, Nothing) <- simulateForm (\_ _ -> pure ()) page ctx payload --TODO
         (show . snd <$> viewErrors v) `shouldBe` expected
             -- FIXME: render Html instead of showing it?
 
@@ -324,8 +349,9 @@ runFailOnError = run . runFailOnErrorIO
 
 runFailOnErrorIO :: Action a -> IO a
 runFailOnErrorIO action = do
-    cfg <- readConfig nullLog DontWarnMissing
-    let env = ActionEnv (error "Dummy RunPersist") cfg nullLog
+    cfg <- testConfig
+    persist <- mkRunPersist nullLog cfg
+    let env = ActionEnv persist cfg nullLog
     unNat (exceptToFail . mkRunAction env) action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
@@ -340,17 +366,17 @@ runFailOnErrorIO action = do
 -- happens in an appropriate 'ArbitraryBadEnv' instance.  For the test to succeed, we compare the
 -- errors in the view constructed by 'postForm' against the expected errors generated along with the
 -- bad env.
-postToForm :: FormGen -> Spec
-postToForm (F g) = do
+postToForm :: FormTest -> Spec
+postToForm (FormTest g c check) = do
     it (show (typeOf g) <> " (process valid forms)") . property . monadicIO $ do
-        page <- pick g
-        ctx <- pick (arbFormPagePayloadCtx page)
-        payload <- pick (arbFormPagePayload page)
-        (v, mpayload) <- run $ simulateForm page ctx payload
+        page          <- pick g
+        ctx           <- pick (arbFormPagePayloadCtx page)
+        payload       <- pick (arbFormPagePayload page)
+        (v, mpayload) <- run $ simulateForm c page ctx payload
         case mpayload of
             Nothing       -> fail $ unwords
                                 ("Form validation has failed:" : map show (viewErrors v))
-            Just payload' -> liftIO $ payload' `shouldBe` payload
+            Just payload' -> liftIO $ payload' `check` payload
 
     -- FIXME: Valid and invalid form data generation should
     -- be separated and have a different type class.
@@ -360,7 +386,7 @@ postToForm (F g) = do
         mpayload <- pick (arbFormPageInvalidPayload page)
         forM_ mpayload
             (\payload -> do
-                (_, mpayload') <- run $ simulateForm page ctx payload
+                (_, mpayload') <- run $ simulateForm c page ctx payload
                 liftIO $ mpayload' `shouldBe` Nothing)
 
 
@@ -417,7 +443,12 @@ instance ArbFormPagePayload PageAdminSettingsDurations where
 
 instance ArbFormPagePayload PageUserSettings
 
-instance ArbFormPagePayload PageHomeWithLoginPrompt
+instance ArbFormPagePayload PageHomeWithLoginPrompt where
+    arbFormPagePayload _ = arb <**> (set userLogin <$> validUserLogin)
+      where
+        validUserLogin =
+            UserLogin . cs <$>
+            (choose (4,12) >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z']))
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic space ideas _timestamp) =
@@ -437,7 +468,21 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <*> pure (view (listInfoForIdeaIt . _Id) <$> ideas)
         <**> (set editTopicDesc <$> arb)
 
-instance ArbFormPagePayload AdminEditUser
+instance ArbFormPagePayload AdminEditUser where
+    arbFormPagePayload (AdminEditUser _ classes) =
+        AdminEditUserPayload <$> els logins <*> els roles
+      where
+        els    = Test.QuickCheck.elements
+        logins = Nothing : (Just . UserLogin . ("frsh!!" <>) . cs . show <$> [(0 :: Int)..8])
+        roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
+
+instance PayloadToEnv AdminEditUserPayload where
+    payloadToEnvMapping _ v (AdminEditUserPayload mlogin role) = \case
+        "login" -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
+        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (role ^. roleSelection)]
+        "class" -> pure $ TextInput . selectValue "class" v classValues <$> maybeToList (role ^? roleSchoolClass)
+      where
+        classValues = (id &&& cs . view className) <$> schoolClasses
 
 instance ArbFormPagePayload AdminPhaseChange
 
@@ -460,14 +505,16 @@ instance ArbFormPagePayload ReportComment where
 
 instance ArbFormPagePayload ReportUserProfile
 
-{- FIXME: File tests
-instance PayloadToEnv UserProfile where
-    payloadToEnvMapping _ (UserProfile _file (Markdown desc)) = \case
-        "avatar" -> undefined -- pure [TextInput comment]
-        "desc"   -> pure [TextInput desc]
--}
+instance ArbFormPagePayload EditUserProfile where
+    arbFormPagePayload _ =
+        UserProfile
+        <$> oneof [pure Nothing, Just . (cs :: String -> ST) . getNonEmpty <$> arb]
+        <*> arb
 
-instance ArbFormPagePayload EditUserProfile
+instance PayloadToEnv UserProfile where
+    payloadToEnvMapping _ _ (UserProfile murl (Markdown desc)) = \case
+        "avatar" -> pure $ FileInput . cs <$> maybeToList murl
+        "desc"   -> pure [TextInput desc]
 
 -- FIXME: Move ideas to wild is not generated
 instance ArbFormPagePayload Frontend.Page.MoveIdea where
@@ -509,25 +556,34 @@ instance PayloadToEnv EventsProtocolFilter where
 
 instance ArbFormPagePayload AdminDeleteUser
 
-instance PayloadToEnv () where
-    payloadToEnvMapping _ _ () = \case
+instance PayloadToEnv AdminDeleteUserPayload where
+    payloadToEnvMapping _ _ _ = \case
         _ -> pure [TextInput ""]
 
 instance ArbFormPagePayload AdminCreateUser
 
-{- FIXME: Choice
+{- TODO
+  1) Frontend.Core.PageFormView Gen AdminCreateUser (process valid forms)
+       uncaught exception: ErrorCall (Prelude.!!: index too large) (after 1 test)
+
 instance PayloadToEnv CreateUserPayload where
-    payloadToEnvMapping _ () = \case
-        _ -> pure [TextInput ""]
+    payloadToEnvMapping _ _ (CreateUserPayload _firstname _lastname _mlogin _email _role) = \case
+        "firstname" -> pure [TextInput "a"]
+        "lastname"  -> pure [TextInput "a"]
+        -- "login"     -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
+        "login"     -> pure [TextInput "aaaaa"]
+        "email"     -> pure [TextInput "a@a.com"]
+        "role"      -> pure [TextInput "a"]
+        "class"     -> pure [TextInput "a"]
 -}
 
-instance ArbFormPagePayload AdminCreateClass
+instance ArbFormPagePayload AdminCreateClass where
+    arbFormPagePayload _ = BatchCreateUsersFormData <$> arbPhrase <*> arb
 
-{- FIXME: File
 instance PayloadToEnv BatchCreateUsersFormData where
-    payloadToEnvMapping _ () = \case
-        _ -> pure [TextInput ""]
--}
+    payloadToEnvMapping _ _ (BatchCreateUsersFormData classname mfilepath) = \case
+        "classname" -> pure [TextInput classname]
+        "file"      -> pure $ FileInput <$> maybeToList mfilepath
 
 instance ArbFormPagePayload PageAdminResetPassword
 
