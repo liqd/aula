@@ -50,6 +50,7 @@ import Persistent
     , getIdeaStats
     , maybe404
     , phaseEndRefinement
+    , ideaAccepted
     )
 
 import qualified Action (createTopic, editTopic)
@@ -361,9 +362,9 @@ ideaFilterForTab = \case
     ListIdeasInTopicTabAccepted -> filter acc
     ListIdeasInTopicTabWinning  -> filter win
   where
-    win = isWinning           . view ideaStatsIdea
-    fea = isFeasibleIdea      . view ideaStatsIdea
-    acc = const True  -- TODO: equery ideaAccepted . view ideaStatsIdea
+    win = isWinning      . view ideaStatsIdea
+    fea = isFeasibleIdea . view ideaStatsIdea
+    acc = ideaAccepted
 
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
