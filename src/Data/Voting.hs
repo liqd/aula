@@ -9,6 +9,7 @@ where
 
 import Prelude       hiding ((.))
 import Data.Function hiding ((.))
+import Data.String.Conversions (ST)
 import Control.Applicative hiding (empty)
 import Control.Category
 import Control.Lens
@@ -30,7 +31,9 @@ data Vote = Yes | No
 data Idea = Idea Int
   deriving (Eq, Ord)
 
-data Topic = Topic Idea
+data Topic
+    = TopicIdea Idea
+    | TopicRef  ST
   deriving (Eq, Ord)
 
 -- * category
@@ -74,6 +77,9 @@ insertDMap f tp t (DelegationMap dmap) = DelegationMap $ case Map.lookup f dmap 
     Nothing -> Map.insert f (Map.singleton tp t) dmap
     Just dm -> Map.insert f (Map.insert tp t dm) dmap
 
+candidates :: Voter -> DelegationMap -> Map Topic Voter
+candidates v (DelegationMap dmap) = fromMaybe Map.empty $ Map.lookup v dmap
+
 data CoDelegationMap = CoDelegationMap {
         _coDelegationMap
             :: Map
@@ -90,18 +96,29 @@ data Votings = Votings {
       _votings :: Map (Voter, Idea) (Voter, Vote)
     }
 
+data TopicTree = TopicTree {
+     _topicTree :: Map Topic Topic
+    }
+
 data DelegationState = DelegationState {
       _delegationsState :: Delegations
     , _votingsState     :: Votings
+    , _topicTreeState   :: TopicTree
     }
+
 
 makeLenses ''DelegationMap
 makeLenses ''CoDelegationMap
 makeLenses ''Delegations
 makeLenses ''Votings
+makeLenses ''TopicTree
 makeLenses ''DelegationState
 
 emptyDelegations = Delegations (DelegationMap Map.empty) (CoDelegationMap Map.empty)
+emptyVotings     = Votings   Map.empty
+emptyTopicTree   = TopicTree Map.empty
+
+emptyDelegationState = DelegationState emptyDelegations emptyVotings emptyTopicTree
 
 setDelegationPure :: Voter -> Topic -> Voter -> Delegations -> Delegations
 setDelegationPure from topic to (Delegations dmap (CoDelegationMap coDmap))
@@ -117,26 +134,40 @@ setDelegationPure from topic to (Delegations dmap (CoDelegationMap coDmap))
                     in coDmap1
     deleteValue d ds = let ds' = Set.delete d ds in if Set.null ds' then Nothing else Just ds'
 
-delegatedForIdea :: Voter -> Idea -> Voter -> DelegationMap -> Bool
-delegatedForIdea from idea to dmap =
-    maybe False (to ==) $ lookupDMap from (TopicIdea idea) dmap
 
+topicHiearchy :: Topic -> TopicTree -> [Topic]
+topicHiearchy t (TopicTree tmap) = fix path t
+  where
+    path rec t = maybe [] ((t:) . rec) (Map.lookup t tmap)
 
 canVotePure :: Voter -> Idea -> DelegationMap -> TopicTree -> Bool
 canVotePure v i dmap ttree =
     all isNothing $ (\t -> lookupDMap v t dmap) <$> topicHiearchy (TopicIdea i) ttree
 
-getDelegatorsPure :: Voter -> Idea -> DelegationMap -> CoDelegationMap -> [Voter]
-getDelegatorsPure v i dmap (CoDelegationMap codmap) = fix voters v
+getDelegatorsPure :: Voter -> Idea -> DelegationMap -> CoDelegationMap -> TopicTree -> [Voter]
+getDelegatorsPure v i dmap (CoDelegationMap codmap) ttree = fix voters v
   where
+    -- idea -> class -> school
+    topicPath  = topicHiearchy (TopicIdea i) ttree
+
+    -- If the first voter in the candidate list is the `v`, `v` is
+    -- responsible for the voting for the user u
+    supporter u =
+        let cm = candidates u dmap
+        in case catMaybes $ map (\t -> Map.lookup t cm) topicPath of
+            []     -> False
+            v' : _ -> v' == v
+
     voters rec v =
         v : maybe [] (mconcat . map rec)
-                (filter (\d -> delegatedForIdea d i v dmap) . Set.toList
-                    <$> Map.lookup v codmap)
+                     (filter supporter . Set.toList <$> Map.lookup v codmap)
 
 setVoteForPure :: Voter -> Idea -> Vote -> Voter -> Votings -> Votings
 setVoteForPure voter idea vote delegator (Votings vmap) =
     Votings $ Map.insert (delegator, idea) (voter, vote) vmap
+
+setTopicDepPure :: Topic -> Topic -> TopicTree -> TopicTree
+setTopicDepPure f t (TopicTree tmap) = TopicTree (Map.insert f t tmap)
 
 
 -- * monadic api
@@ -187,6 +218,7 @@ instance Monad m => DelegationM (DelegationT m) where
     getDelegators v t    = getDelegatorsPure v t
                             <$> use (delegationsState . delegations)
                             <*> use (delegationsState . coDelegations)
+                            <*> use topicTreeState
 
     voteFor v t x d      = votingsState %= (setVoteForPure v t x d)
 
