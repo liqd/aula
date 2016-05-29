@@ -144,8 +144,8 @@ canVotePure :: Voter -> Idea -> DelegationMap -> TopicTree -> Bool
 canVotePure v i dmap ttree =
     all isNothing $ (\t -> lookupDMap v t dmap) <$> topicHiearchy (TopicIdea i) ttree
 
-getDelegatorsPure :: Voter -> Idea -> DelegationMap -> CoDelegationMap -> TopicTree -> [Voter]
-getDelegatorsPure v i dmap (CoDelegationMap codmap) ttree = fix voters v
+getSupportersPure :: Voter -> Idea -> DelegationMap -> CoDelegationMap -> TopicTree -> [Voter]
+getSupportersPure v i dmap (CoDelegationMap codmap) ttree = fix voters v
   where
     -- idea -> class -> school
     topicPath  = topicHiearchy (TopicIdea i) ttree
@@ -175,7 +175,7 @@ setTopicDepPure f t (TopicTree tmap) = TopicTree (Map.insert f t tmap)
 class Monad m => DelegationM m where
     setDelegation :: Voter -> Topic -> Voter -> m ()
     canVote       :: Voter -> Idea  -> m Bool
-    getDelegators :: Voter -> Idea  -> m [Voter]
+    getSupporters :: Voter -> Idea  -> m [Voter]
     voteFor       :: Voter -> Idea  -> Vote -> Voter -> m ()
     setTopicDep   :: Topic -> Topic -> m ()
 
@@ -184,7 +184,7 @@ vote voter idea voteValue = do
     c <- canVote voter idea
     when c $ do
         voteFor voter idea voteValue voter
-        getDelegators voter idea >>= mapM_ (voteFor voter idea voteValue)
+        getSupporters voter idea >>= mapM_ (voteFor voter idea voteValue)
 
 
 -- * deep embedding
@@ -192,14 +192,14 @@ vote voter idea voteValue = do
 data DelegationDSL a where
     SetDelegation :: Voter -> Topic -> Voter         -> DelegationDSL ()
     CanVote       :: Voter -> Idea                   -> DelegationDSL Bool
-    GetDelegators :: Voter -> Idea                   -> DelegationDSL [Voter]
+    GetSupporters :: Voter -> Idea                   -> DelegationDSL [Voter]
     VoteFor       :: Voter -> Idea  -> Vote -> Voter -> DelegationDSL ()
     SetTopicDep   :: Topic -> Topic                  -> DelegationDSL ()
 
 delegation :: (DelegationM m) => DelegationDSL a -> m a
 delegation (SetDelegation f tp t) = setDelegation f tp t
 delegation (CanVote v t)          = canVote v t
-delegation (GetDelegators v i)    = getDelegators v i
+delegation (GetSupporters v i)    = getSupporters v i
 delegation (VoteFor f tp x t)     = voteFor f tp x t
 delegation (SetTopicDep f t)      = setTopicDep f t
 
@@ -215,7 +215,7 @@ instance Monad m => DelegationM (DelegationT m) where
                             <$> use (delegationsState . delegations)
                             <*> use topicTreeState
 
-    getDelegators v t    = getDelegatorsPure v t
+    getSupporters v t    = getSupportersPure v t
                             <$> use (delegationsState . delegations)
                             <*> use (delegationsState . coDelegations)
                             <*> use topicTreeState
