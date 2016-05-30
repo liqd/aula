@@ -100,7 +100,7 @@ spec = do
                       (Student (head schoolClasses))
                       (InitialPassword "dummy password")
                       Nothing
-                      (Markdown nil)
+                      (markdown nil)
           in FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser (shouldBe `on` view userLogin)
 
           -- topic forms
@@ -117,7 +117,7 @@ spec = do
     describe "form validation errors" $ do
         let spc = IdeaLocationSpace SchoolSpace
             page = CreateIdea spc
-            payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
+            payload = ProtoIdea "!@" (markdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
@@ -487,7 +487,7 @@ instance PayloadToEnv AdminEditUserPayload where
 instance ArbFormPagePayload AdminPhaseChange
 
 instance ArbFormPagePayload CreatorStatement where
-    arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
+    arbFormPageInvalidPayload _ = pure . Just $ markdown ""
 
 instance ArbFormPagePayload JudgeIdea where
     arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
@@ -498,10 +498,10 @@ instance ArbFormPagePayload JudgeIdea where
     arbFormPageInvalidPayload (JudgeIdea IdeaFeasible _ _)
         = pure Nothing
     arbFormPageInvalidPayload (JudgeIdea IdeaNotFeasible _ _)
-        = pure . Just . NotFeasible $ Markdown ""
+        = pure . Just . NotFeasible $ markdown ""
 
 instance ArbFormPagePayload ReportComment where
-    arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""
+    arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ markdown ""
 
 instance ArbFormPagePayload ReportUserProfile
 

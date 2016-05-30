@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.11.2.
+-- This file has been generated from package.yaml by hpack version 0.14.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -85,6 +85,7 @@ library
       Config
       Daemon
       Data.Avatar
+      Data.Markdown
       Data.UriPath
       DemoData
       Frontend

@@ -748,15 +748,15 @@ instance Arbitrary PlainDocument where
 -- ** markdown
 
 instance Arbitrary Document where
-    arbitrary = Markdown . mconcat <$> someOf 1 3 arbParagraph
+    arbitrary = markdown . mconcat <$> someOf 1 3 arbParagraph
             -- FIXME: use 'arbMarkdown'
             -- (but make sure the layout and random content look better first!)
 
-    shrink (Markdown "") = []
-    shrink _ = [Markdown "", Markdown "x"]
+    shrink md | md == (markdown "") = []
+    shrink _ = [markdown "", markdown "x"]
 
 arbMarkdown :: Gen Document
-arbMarkdown = Markdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
+arbMarkdown = markdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
   where
     title i   = (<> "\n\n") . ((ST.replicate i "#" <> " ") <>) <$> arbPhrase
     sections  = (`vectorOf` section) =<< elements [3..5]
@@ -1054,7 +1054,7 @@ mkFishUser mSchoolClass avatarPath = do
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam role (InitialPassword "dummy password") Nothing (Markdown nil)
+    let pu = ProtoUser Nothing fnam lnam role (InitialPassword "dummy password") Nothing (markdown nil)
     user <- addWithCurrentUser AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
@@ -1073,7 +1073,7 @@ fishDelegationNetworkIO = do
             now <- getCurrentTimestamp
             admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                Admin (InitialPassword "admin") Nothing (Markdown nil)
+                Admin (InitialPassword "admin") Nothing (markdown nil)
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 

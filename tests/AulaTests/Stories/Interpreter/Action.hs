@@ -92,7 +92,7 @@ runClient (Free (CreateIdea t d c k)) = do
     Just i <- use csIdeaSpace
     let location = IdeaLocationSpace i
     step . lift . (Page.createIdea location ^. formProcessor) $
-        ProtoIdea t (Markdown d) (Just c) location
+        ProtoIdea t (markdown d) (Just c) location
     Just _idea <- postcondition $ findIdeaByTitle t
     runClient k
 
@@ -102,7 +102,7 @@ runClient (Free (EditIdea ot nt d c k)) = do
         Nothing <- findIdeaByTitle nt
         pure idea
     step . lift . (Page.editIdea (idea ^. _Id) ^. formProcessor) $
-        ProtoIdea nt (Markdown d) (Just c) (idea ^. ideaLocation)
+        ProtoIdea nt (markdown d) (Just c) (idea ^. ideaLocation)
     postcondition $ do
         Nothing <- findIdeaByTitle ot
         Just _idea <- findIdeaByTitle nt
@@ -191,7 +191,7 @@ runClient (Free (MoveIdea _i _ot _nt k)) = do
 runClient (Free (CommentOnIdea t c k)) = do
     Just idea <- precondition $ findIdeaByTitle t
     step . lift $ (Page.commentOnIdea (idea ^. ideaLocation) (idea ^. _Id) ^. formProcessor)
-                                    (CommentContent $ Markdown c)
+                                    (CommentContent $ markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
@@ -210,7 +210,7 @@ runClient (Free (ReplyToComment t cp c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
     step . lift $
         (Page.replyToComment (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) ^. formProcessor)
-                               (CommentContent $ Markdown c)
+                               (CommentContent $ markdown c)
     postcondition $ checkIdeaComment t c
     runClient k
 
@@ -266,7 +266,7 @@ runClient (Free (ReportComment t c d k)) = do
             (idea ^. ideaLocation)
             (idea ^. _Id)
             (comment ^. _Id)
-            (Markdown d)
+            (markdown d)
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
@@ -279,7 +279,7 @@ runClient (Free (ReportCommentReply t c1 c2 d k)) = do
             (idea ^. _Id)
             (comment1 ^. _Id)
             (comment2 ^. _Id)
-            (Markdown d)
+            (markdown d)
     -- FIXME: Add postcondition checking. Test email sending?
     runClient k
 
@@ -288,10 +288,10 @@ runClient (Free (SetCreatorStatement t s k)) = do
         Just idea <- findIdeaByTitle t
         (idea ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning) `shouldBe` Just Nothing
         pure idea
-    step . lift . Action.setCreatorStatement (idea ^. _Id) $ Markdown s
+    step . lift . Action.setCreatorStatement (idea ^. _Id) $ markdown s
     postcondition $ do
         Just idea' <- findIdeaByTitle t
-        (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just) `shouldBe` Just (Markdown s)
+        (idea' ^? ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just) `shouldBe` Just (markdown s)
     runClient k
 
 runClient (Free (SetFreeze shouldBeFrozenOrNot k)) = do

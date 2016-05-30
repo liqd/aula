@@ -195,7 +195,7 @@ titleV :: StringFieldValidator
 titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
 
 markdownV :: FieldValidator Document Document
-markdownV = unMarkdown ^>> nonEmptyV >>^ Markdown
+markdownV = unMarkdown ^>> nonEmptyV >>^ markdown
 
 emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
 emailField name emailValue =

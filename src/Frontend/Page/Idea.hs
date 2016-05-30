@@ -374,7 +374,7 @@ instance FormPage CreateIdea where
     makeForm (CreateIdea loc) =
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
-        <*> ("idea-text"     .: validate "Idee" markdownV (Markdown <$> DF.text Nothing))
+        <*> ("idea-text"     .: validate "Idee" markdownV (markdown <$> DF.text Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
