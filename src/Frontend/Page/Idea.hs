@@ -324,9 +324,9 @@ instance ToHtml ViewIdea where
 feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
-        explToHtml (Markdown text) = do
+        explToHtml md = do
             p_ "Begründung:"
-            p_ $ toHtml text
+            p_ $ toHtml md
 
     when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
         div_ [class_ "admin-buttons"] $ do
