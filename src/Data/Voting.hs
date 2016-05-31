@@ -219,10 +219,8 @@ class Monad m => DelegationM m where
 vote :: DelegationM m => Voter -> Idea -> Vote -> m ()
 vote voter idea voteValue = do
     let topic = TopicIdea idea
-    c <- canVote voter idea
-    when c $ do
-        voteFor voter idea voteValue voter
-        getSupporters voter topic >>= mapM_ (voteFor voter idea voteValue)
+    voteFor voter idea voteValue voter
+    getSupporters voter topic >>= mapM_ (voteFor voter idea voteValue)
 
 
 -- * deep embedding
