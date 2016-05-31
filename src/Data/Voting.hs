@@ -81,13 +81,20 @@ data DelegationMap = DelegationMap {
     }
   deriving (Eq, Show)
 
+lookupDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> Map k1 (Map k2 v) -> Maybe v
+lookupDoubleMap k1 k2 m = Map.lookup k1 m >>= Map.lookup k2 
+
+insertDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> v -> Map k1 (Map k2 v) -> Map k1 (Map k2 v)
+insertDoubleMap k1 k2 v m = case Map.lookup k1 m of
+    Nothing -> Map.insert k1 (Map.singleton k2 v) m
+    Just m' -> Map.insert k1 (Map.insert k2 v m') m
+
 lookupDMap :: Voter -> Topic -> DelegationMap -> Maybe Voter
-lookupDMap v t (DelegationMap dmap) = Map.lookup v dmap >>= Map.lookup t
+lookupDMap v t (DelegationMap dmap) = lookupDoubleMap v t dmap
 
 insertDMap :: Voter -> Topic -> Voter -> DelegationMap -> DelegationMap
-insertDMap f tp t (DelegationMap dmap) = DelegationMap $ case Map.lookup f dmap of
-    Nothing -> Map.insert f (Map.singleton tp t) dmap
-    Just dm -> Map.insert f (Map.insert tp t dm) dmap
+insertDMap f tp t (DelegationMap dmap) = DelegationMap $ 
+    insertDoubleMap f tp t dmap
 
 candidates :: Voter -> DelegationMap -> Map Topic Voter
 candidates v (DelegationMap dmap) = fromMaybe Map.empty $ Map.lookup v dmap
@@ -96,7 +103,7 @@ data CoDelegationMap = CoDelegationMap {
         _coDelegationMap
             :: Map
                 Voter   -- who is delegated
-                (Set Voter) -- by whom
+                (Map Topic (Set Voter)) -- by whom
     }
   deriving (Eq, Show)
 
@@ -138,20 +145,21 @@ emptyTopicTree   = TopicTree Map.empty
 emptyDelegationState = DelegationState emptyDelegations emptyVotings emptyTopicTree
 
 setDelegationPure :: Voter -> Topic -> Voter -> Delegations -> Delegations
-setDelegationPure from topic to (Delegations dmap (CoDelegationMap coDmap))
+setDelegationPure from topic to (Delegations dm@(DelegationMap dmap) (CoDelegationMap coDmap))
     = Delegations dmap' coDmap'
   where
-    dmap' = insertDMap from topic to dmap
-    coDmap' = CoDelegationMap $ case lookupDMap from topic dmap of
-        -- There were no deligation in the given topic
-        Nothing  -> Map.insert to (Set.singleton from) coDmap
-        -- There was a deligation in the given topic
-        Just to' -> let coDmap0 = Map.update (deleteValue from) to coDmap
-                        coDmap1 = case Map.lookup to' coDmap0 of
-                                    Nothing -> Map.insert to' (Set.singleton from) coDmap0
-                                    Just ds -> Map.insert to' (Set.insert from ds) coDmap0
-                    in coDmap1
-    deleteValue d ds = let ds' = Set.delete d ds in if Set.null ds' then Nothing else Just ds'
+    mOldTo = lookupDoubleMap from topic dmap
+
+    dmap'   = DelegationMap (insertDoubleMap from topic to dmap)
+    coDmap' = CoDelegationMap coDmap1
+    coDmap0 = maybe coDmap (\to' -> coDmap & at to' . _Just . at topic . _Just . at from .~ Nothing
+                                           & at to' . _Just . at topic %~ deleteEmpty
+                                           & at to' %~ deleteEmpty) mOldTo
+    coDmap1 = insertDoubleMap to topic (Set.insert from $ fromMaybe Set.empty (lookupDoubleMap to topic coDmap0)) coDmap0
+
+    deleteEmpty (Just s) | null s = Nothing
+    deleteEmpty x                 = x
+
 
 -- | Non empty list of topics, from leaf to root.
 topicHiearchyPure :: Topic -> TopicTree -> [Topic]
@@ -179,7 +187,7 @@ getSupportersPure v t dmap (CoDelegationMap codmap) ttree = fix voters v
 
     voters rec v =
         v : maybe [] (mconcat . map rec)
-                     (filter supporter . Set.toList <$> Map.lookup v codmap)
+                     (filter supporter . Set.toList <$> lookupDoubleMap v t codmap)
 
 setVoteForPure :: Voter -> Idea -> Vote -> Voter -> Votings -> Votings
 setVoteForPure voter idea vote delegator (Votings vmap) =
@@ -438,6 +446,7 @@ runTC comp = do
 main = do
     let (f,i,t) = ((Voter 1), (Idea 1), (Voter 2))
         tp = TopicRef "tp"
+
     runTC $ do
         setDelegationProp1 f i t
 
@@ -473,7 +482,6 @@ main = do
     runTC $ do
         setTopicDep (TopicIdea i) tp
         setTopicDepProp2 i tp
-
 
     let topics = TopicRef . cs . show <$> [1..10]
     let buildTree = zipWithM setTopicDep topics (tail topics)
