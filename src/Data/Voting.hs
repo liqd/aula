@@ -33,8 +33,6 @@ import Test.QuickCheck.Monadic
 
 import Debug.Trace
 
-data VoterKind = VoterKind
-
 data Voter = Voter Int
   deriving (Eq, Ord, Show)
 
@@ -48,29 +46,6 @@ data Topic
     = TopicIdea Idea
     | TopicRef  ST
   deriving (Eq, Ord, Show)
-
--- * category
-
-data DCat v (a :: VoterKind) (b :: VoterKind)
-    = DelegationCat v v
-    | IdentityDelegation
-    | NoDelegation
-
-identity :: Voter -> DCat Voter 'VoterKind 'VoterKind
-identity v = DelegationCat v v
-
-delegate :: Voter -> Voter -> DCat Voter 'VoterKind 'VoterKind
-delegate from to = DelegationCat from to
-
-instance Eq v => Category (DCat v) where
-    id = IdentityDelegation
-    NoDelegation . x = NoDelegation
-    x . NoDelegation = NoDelegation
-    IdentityDelegation . (DelegationCat a b) = DelegationCat a b
-    (DelegationCat a b) . IdentityDelegation = DelegationCat a b
-    (DelegationCat b1 c) . (DelegationCat a b0)
-      | b0 == b1  = DelegationCat a c
-      | otherwise = NoDelegation
 
 
 -- * pure model
