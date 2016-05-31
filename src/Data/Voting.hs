@@ -196,7 +196,7 @@ setVoteForPure voter idea vote delegator (Votings vmap) =
     Votings $ Map.insert (delegator, idea) (voter, vote) vmap
 
 setTopicDepPure :: Topic -> Topic -> TopicTree -> Either DelegationError TopicTree
-setTopicDepPure f t (TopicTree tm) | Just f == Map.lookup t tm = Left DelegationCircularTopicDependency
+setTopicDepPure f t tt | elem f (topicHiearchyPure t tt) = Left DelegationCircularTopicDependency
 setTopicDepPure f t tm@(TopicTree tmap) =
     Right $ case Map.lookup t tmap of
         Just f' | f == f' -> tm -- Avoid circular deps should throw an error
@@ -262,7 +262,7 @@ runDelegation :: DelegationT Identity a -> Either DelegationError (a, Delegation
 runDelegation d = runIdentity . runExceptT $ runStateT (unDelegationT d) emptyDelegationState
 
 runDelegationInTest :: DelegationT Identity Property -> Property
-runDelegationInTest d = either checkException (label "valid program") . runIdentity . runExceptT $ evalStateT (unDelegationT d) emptyDelegationState
+runDelegationInTest d = either checkException (label "Valid Program") . runIdentity . runExceptT $ evalStateT (unDelegationT d) emptyDelegationState
   where
     checkException DelegationCircularTopicDependency = label "Circular Topic Dependency" True
     checkException s = error (show s)
@@ -306,14 +306,14 @@ instance Arbitrary Vote where
     shrink _   = []
 
 voterNames :: [Int]
-voterNames = [1..100]
+voterNames = [1..50]
 
 instance Arbitrary Voter where
     arbitrary = Voter <$> elements voterNames
     shrink (Voter x) = Voter <$> shrink x
 
 ideaNames :: [Int]
-ideaNames = [1..100]
+ideaNames = [1..50]
 
 instance Arbitrary Idea where
     arbitrary = Idea <$> elements ideaNames
@@ -418,7 +418,7 @@ instance Arbitrary DelegationProgram where
 
 interpretDelegationStep :: DelegationM m => (Int, DelegationDSL ())-> m (Maybe String)
 interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
-    !supporters <- getSupporters t tp
+    supporters <- getSupporters t tp
     delegation step
     supporters' <- getSupporters t tp
     let r = (case elem f supporters of
@@ -444,12 +444,15 @@ interpretDelegationStep (j,step@(Vote v i x)) = do
 
 drawSeparator = putStrLn "*******************"
 
+noOfTests = 100000
+sizeOfTests = 1000
+
 quickCheckDelegation p = do
-    quickCheck $ monadic runDelegationInTest p
+    quickCheckWith stdArgs { maxSuccess = noOfTests, maxSize = sizeOfTests } $ monadic runDelegationInTest p
     drawSeparator
 
 quickCheckDelegationCtx c p = do
-    quickCheck $ monadic (\m -> runDelegationInTest (c >> m)) p
+    quickCheckWith stdArgs { maxSuccess = noOfTests, maxSize = sizeOfTests } $ monadic (\m -> runDelegationInTest (c >> m)) p
     drawSeparator
 
 
@@ -506,7 +509,7 @@ main = do
         run (setTopicDepProp2Pre i t) >>= pre
         run (setTopicDepProp2 i t) >>= assert
 
-    quickCheck $ forAllShrink arbitrary shrink $ \program ->
+    quickCheckWith stdArgs { maxSuccess = noOfTests, maxSize = sizeOfTests } $ forAllShrink arbitrary shrink $ \program ->
         monadic runDelegationInTest (interpretDelegationProgram program)
 
     runTC $ do
