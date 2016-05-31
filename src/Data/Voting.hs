@@ -263,10 +263,8 @@ instance Arbitrary (DelegationDSL ()) where
         ]
     shrink (Vote x y z) = Vote <$> shrink x <*> shrink y <*> shrink z
 
-data DelegationProgramStep = DelegationProgramStep Int (DelegationDSL ())
-
 delegationProgram :: Gen DelegationProgram
-delegationProgram = (DelegationProgram . (zipWith DelegationProgramStep [1..])) <$> (listOf $ delegationStepGen)
+delegationProgram = DelegationProgram <$> (listOf1 $ delegationStepGen)
 
 instance Arbitrary DelegationProgram where
     arbitrary = delegationProgram
@@ -386,22 +384,18 @@ setTopicDepProp2 i t = do
     setTopicDep ti t
     (hiearchy==) <$> topicHiearchy ti
 
-newtype DelegationProgram = DelegationProgram { unDelegationProgram :: [DelegationProgramStep] }
-
-instance Arbitrary DelegationProgramStep where
-    arbitrary = error "Arbitrary DelegationProgramStep"
-    shrink (DelegationProgramStep n p) = DelegationProgramStep n <$> shrink p
+newtype DelegationProgram = DelegationProgram { unDelegationProgram :: [DelegationDSL ()] }
 
 instance Show DelegationProgram where
-    show (DelegationProgram instr) = unlines $ map (\(DelegationProgramStep n i) -> unwords [show n, "\t", show i]) instr
+    show (DelegationProgram instr) = unlines . map (\(n, i) -> unwords [show n, "\t", show i]) $ zip [1..] instr
 
 interpretDelegationProgram :: DelegationM m => DelegationProgram -> PropertyM m ()
 interpretDelegationProgram =
-    mapM_ (run . interpretDelegationStep >=> (maybe (pure ()) fail))
+    mapM_ (run . interpretDelegationStep >=> (maybe (pure ()) fail)) . zip [1..]
     . unDelegationProgram
 
-interpretDelegationStep :: DelegationM m => DelegationProgramStep -> m (Maybe String)
-interpretDelegationStep (DelegationProgramStep i step@(SetDelegation f tp t)) = do
+interpretDelegationStep :: DelegationM m => (Int, DelegationDSL ())-> m (Maybe String)
+interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
     !supporters <- getSupporters t tp
     delegation step
     supporters' <- getSupporters t tp
@@ -411,14 +405,14 @@ interpretDelegationStep (DelegationProgramStep i step@(SetDelegation f tp t)) = 
     pure $ if r
         then Nothing
         else Just $ show (i, step, elem f supporters, show f, supporters, supporters')
-interpretDelegationStep (DelegationProgramStep i step@(SetTopicDep t0 t1)) = do
+interpretDelegationStep (i,step@(SetTopicDep t0 t1)) = do
     hiearchy <- topicHiearchy t1
     delegation step
     hiearchy' <- topicHiearchy t0
     pure $ if (t0:hiearchy == hiearchy')
         then Nothing
         else Just $ show (i, step, t0:hiearchy, hiearchy')
-interpretDelegationStep (DelegationProgramStep j step@(Vote v i x)) = do
+interpretDelegationStep (j,step@(Vote v i x)) = do
     supporters <- getSupporters v (TopicIdea i)
     delegation step
     b <- all (Just (v, x) ==) <$> (forM (v:supporters) $ \s -> getVote s i)
