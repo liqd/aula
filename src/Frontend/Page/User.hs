@@ -42,19 +42,19 @@ data PageUserSettings = PageUserSettings User
 instance Page PageUserSettings
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas RenderContext UserView ListItemIdeas
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas
 
 -- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes RenderContext UserView [Delegation]
+data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes CapCtx UserView [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes
 
 -- | 8.X User profile: Editing the public profile
-data EditUserProfile = EditUserProfile RenderContext User
+data EditUserProfile = EditUserProfile CapCtx User
   deriving (Eq, Show, Read)
 
 instance Page EditUserProfile
@@ -164,7 +164,7 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         (update . SetUserPass uid . FakeEncryptedPassword . cs) `mapM_` mnewPass1
 
-userHeaderDiv :: (Monad m) => RenderContext -> UserView -> HtmlT m ()
+userHeaderDiv :: (Monad m) => CapCtx -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -184,14 +184,7 @@ userHeaderDiv ctx (ActiveUser user) =
             then do
                 editProfileBtn
             else do
-                let caps = capabilities CapCtx
-                               { capCtxRole    = ctx ^. renderContextUser . userRole
-                               , capCtxPhase   = Nothing
-                               , capCtxUser    = Nothing
-                               , capCtxIdea    = Nothing
-                               , capCtxComment = Nothing
-                               }
-
+                let caps = capabilities ctx
                 when (CanVote `elem` caps) $ do
                     btn U.Broken "Klassenweit beauftragen"
                     btn U.Broken "Schulweit beauftragen"
@@ -223,7 +216,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
 createdIdeas :: (ActionPersist m, ActionUserHandler m)
     => AUID User -> m PageUserProfileCreatedIdeas
 createdIdeas userId = do
-    ctx <- renderContext
+    ctx <- currentUserCapCtx
     equery (do
         user  <- makeUserView <$> (maybe404 =<< findUser userId)
         ideas <- ListItemIdeas ctx IdeaInUserProfile
@@ -283,15 +276,15 @@ delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
 delegatedVotes userId = do
     PageUserProfileDelegatedVotes
-    <$> renderContext
+    <$> currentUserCapCtx
     <*> (makeUserView <$> mquery (findUser userId))
     <*> pure [] -- FIXME
 
 
 -- ** User Profile: Edit profile
 
-isOwnProfile :: RenderContext -> User -> Bool
-isOwnProfile ctx user = ctx ^. renderContextUser . _Id == user ^. _Id
+isOwnProfile :: CapCtx -> User -> Bool
+isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
 
 instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
@@ -324,7 +317,7 @@ instance FormPage EditUserProfile where
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
-    (EditUserProfile <$> renderContext <*> mquery (findUser uid))
+    (EditUserProfile <$> currentUserCapCtx <*> mquery (findUser uid))
     (\up -> do
         case up ^. profileAvatar of
             Nothing ->

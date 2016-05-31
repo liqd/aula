@@ -162,6 +162,9 @@ instance ( Generic a, Generic b, Generic c
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary CapCtx where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * pages
 
@@ -216,39 +219,40 @@ instance Arbitrary ViewIdea where
     shrink (ViewIdea ctx ideaList) = ViewIdea <$> shr ctx <*> shr ideaList
 
 instance Arbitrary CreateIdea where
-    arbitrary = CreateIdea <$> arb
-    shrink (CreateIdea x) = CreateIdea <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary EditIdea where
-    arbitrary = EditIdea <$> arb
-    shrink (EditIdea x) = EditIdea <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Frontend.Page.MoveIdea where
-    arbitrary = MoveIdea <$> arb <*> (getNonEmpty <$> arb)
-    shrink (MoveIdea x y) = MoveIdea <$> shr x <*> shr y
+    arbitrary = MoveIdea <$> arb <*> arb <*> (getNonEmpty <$> arb)
+    shrink (MoveIdea x y z) = MoveIdea <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary ReportIdea where
-    arbitrary = ReportIdea <$> arb
-    shrink (ReportIdea x) = ReportIdea <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentOnIdea where
-    arbitrary = CommentOnIdea <$> arb <*> arb
-    shrink (CommentOnIdea x y) = CommentOnIdea <$> shr x <*> shr y
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary EditComment where
-    arbitrary = EditComment <$> arb <*> arb
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary JudgeIdea where
-    arbitrary = JudgeIdea <$> arb <*> arb <*> arb
-    shrink (JudgeIdea x y z) = JudgeIdea <$> shr x <*> shr y <*> shr z
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CreatorStatement where
-    arbitrary = CreatorStatement <$> arb
-    shrink (CreatorStatement x) = CreatorStatement <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ReportComment where
-    arbitrary = ReportComment <$> arb
-    shrink (ReportComment x) = ReportComment <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas)
@@ -275,12 +279,12 @@ instance Arbitrary ReportUserProfile where
     shrink (ReportUserProfile x) = ReportUserProfile <$> shr x
 
 instance Arbitrary CreateTopic where
-    arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicRefPhaseEnd
-    shrink (CreateTopic x y z) = CreateTopic <$> shr x <*> shr y <*> shr z
+    arbitrary = CreateTopic <$> arb <*> arb <*> arb <*> arbTopicRefPhaseEnd
+    shrink (CreateTopic x y z t) = CreateTopic <$> shr x <*> shr y <*> shr z <*> shr t
 
 instance Arbitrary EditTopic where
-    arbitrary = EditTopic <$> arb <*> arb <*> arb <*> arb
-    shrink (EditTopic x y z w) = EditTopic <$> shr x <*> shr y <*> shr z <*> shr w
+    arbitrary = EditTopic <$> arb <*> arb <*> arb <*> arb <*> arb
+    shrink (EditTopic x y z s t) = EditTopic <$> shr x <*> shr y <*> shr z <*> shr s <*> shr t
 
 instance Arbitrary EditTopicData where
     arbitrary = EditTopicData <$> arbPhrase <*> arb <*> arb

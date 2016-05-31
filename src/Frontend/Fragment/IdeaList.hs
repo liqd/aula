@@ -21,6 +21,7 @@ where
 import Control.Lens
 
 import Types
+import LifeCycle (CapCtx)
 import Frontend.Prelude
 import Frontend.Fragment.Category
 import Frontend.Fragment.VotesBar
@@ -40,7 +41,7 @@ makePrisms ''WhatListPage
 
 -- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
-      { _listItemRenderContext  :: RenderContext
+      { _listItemIdeaCtx        :: CapCtx
       , _listItemIdeaWhatPage   :: WhatListPage
       , _listItemIdeaInfo       :: IdeaStats
       }
@@ -49,7 +50,7 @@ data ListItemIdea = ListItemIdea
 -- | An idea list.  Contains the information for constructing 'ListItemIdea' values, plus the
 -- search/filter header of the list.
 data ListItemIdeas = ListItemIdeas
-      { _listItemIdeasCtx      :: RenderContext
+      { _listItemIdeasCtx      :: CapCtx
       , _listItemIdeasWhatPage :: WhatListPage
       , _listItemIdeasLocation :: IdeaLocation
       , _listItemIdeasFilter   :: IdeasQuery

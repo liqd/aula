@@ -86,6 +86,12 @@ module Action
       -- * admin
     , resetPassword
 
+      -- * capabilities
+    , currentUserCapCtx
+    , locationCapCtx
+    , ideaCapCtx
+    , commentCapCtx
+
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
@@ -918,3 +924,37 @@ instance ActionM m => WarmUp' m Idea where
 
 instance ActionM m => WarmUp' m Comment where
     warmUp' k = mquery (findComment k)
+
+currentUserCapCtx :: (ActionPersist m, ActionUserHandler m) => m CapCtx
+currentUserCapCtx = do
+    user <- currentUser
+    pure $ CapCtx
+        { _capCtxUser    = user
+        , _capCtxPhase   = Nothing
+        , _capCtxIdea    = Nothing
+        , _capCtxComment = Nothing
+        }
+
+locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+               => IdeaLocation -> m (CapCtx, Maybe Topic)
+locationCapCtx loc = do
+    ctx <- currentUserCapCtx
+    mtopic <-
+        case loc ^? ideaLocationTopicId of
+            Just tid -> Just <$> mquery (findTopic tid)
+            Nothing  -> pure Nothing
+    pure (ctx & capCtxPhase .~ (mtopic ^? _Just . topicPhase), mtopic)
+
+ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+           => AUID Idea -> m (CapCtx, Maybe Topic, Idea)
+ideaCapCtx iid = do
+    idea <- mquery $ findIdea iid
+    (ctx, mtopic) <- locationCapCtx $ idea ^. ideaLocation
+    pure (ctx & capCtxIdea ?~ idea, mtopic, idea)
+
+commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+              => CommentKey -> m (CapCtx, Maybe Topic, Idea, Comment)
+commentCapCtx ck = do
+    (ctx, mtopic, idea) <- ideaCapCtx $ ck ^. ckIdeaId
+    comment <- mquery $ findComment ck
+    pure (ctx & capCtxComment ?~ comment, mtopic, idea, comment)

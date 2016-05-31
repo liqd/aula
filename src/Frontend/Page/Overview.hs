@@ -33,11 +33,11 @@ data PageOverviewOfSpaces = PageOverviewOfSpaces [IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas RenderContext IdeaSpace ListItemIdeas
+data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas CapCtx IdeaSpace ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageOverviewOfTopics = PageOverviewOfTopics RenderContext IdeaSpace [Topic]
+data PageOverviewOfTopics = PageOverviewOfTopics CapCtx IdeaSpace [Topic]
   deriving (Eq, Show, Read)
 
 data Tabs = Tabs ActiveTab IdeaSpace
@@ -55,13 +55,13 @@ viewRooms = PageOverviewOfSpaces . sort <$> getSpacesForCurrentUser
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
-    ctx <- renderContext
+    ctx <- currentUserCapCtx
     PageOverviewOfWildIdeas ctx space <$> equery (do
         is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
         pure $ ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery is)
 
 viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
-viewTopics space = PageOverviewOfTopics <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
+viewTopics space = PageOverviewOfTopics <$> currentUserCapCtx <*> pure space <*> query (findTopicsBySpace space)
 
 
 -- * templates
@@ -113,14 +113,7 @@ instance ToHtml PageOverviewOfTopics where
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
-                let userCaps = capabilities CapCtx
-                                   { capCtxRole    = ctx ^. renderContextUser . userRole
-                                   , capCtxPhase   = Nothing
-                                   , capCtxUser    = Nothing
-                                   , capCtxIdea    = Nothing
-                                   , capCtxComment = Nothing
-                                   }
-                when (CanCreateTopic `elem` userCaps) $
+                when (CanCreateTopic `elem` capabilities ctx) $
                     button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta m-large"] "+ Neues Thema"
 
             forM_ topics $ \topic -> do

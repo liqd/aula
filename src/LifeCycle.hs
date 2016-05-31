@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE LambdaCase     #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -14,7 +15,7 @@ module LifeCycle
 
       -- * capabilities
     , Capability(..)
-    , CapCtx(..)
+    , CapCtx(..), capCtxUser, capCtxIdea, capCtxPhase, capCtxComment
     , capabilities
     )
 where
@@ -122,28 +123,29 @@ data Capability
 instance SOP.Generic Capability
 
 data CapCtx = CapCtx
-    { capCtxRole    :: Role
-    , capCtxPhase   :: Maybe Phase
-    , capCtxUser    :: Maybe (AUID User)
-    , capCtxIdea    :: Maybe Idea
-    , capCtxComment :: Maybe Comment
+    { _capCtxUser    :: User
+    , _capCtxPhase   :: Maybe Phase
+    , _capCtxIdea    :: Maybe Idea
+    , _capCtxComment :: Maybe Comment
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+makeLenses ''CapCtx
 
 instance SOP.Generic CapCtx
 
 capabilities :: CapCtx -> [Capability]
 capabilities ctx = mconcat $
        [ userCapabilities r ]
-    <> [ ideaCapabilities u r i p    | u <- l mu, i <- l mi, p <- l mp ]
-    <> [ commentCapabilities u r c p | u <- l mu, c <- l mc, p <- l mp ]
-    <> [ topicCapabilities p r       | p <- l mp ]
+    <> [ ideaCapabilities (u ^. _Id) r i p    | i <- l mi, p <- l mp ]
+    <> [ commentCapabilities (u ^. _Id) r c p | c <- l mc, p <- l mp ]
+    <> [ topicCapabilities p r                | p <- l mp ]
   where
-    r  = capCtxRole    ctx
-    mp = capCtxPhase   ctx
-    mu = capCtxUser    ctx
-    mi = capCtxIdea    ctx
-    mc = capCtxComment ctx
+    u  = ctx ^. capCtxUser
+    r  = u ^. userRole
+    mp = ctx ^. capCtxPhase
+    mi = ctx ^. capCtxIdea
+    mc = ctx ^. capCtxComment
 
     l = maybeToList
 
