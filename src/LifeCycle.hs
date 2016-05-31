@@ -96,7 +96,8 @@ phaseTrans _ _ = Nothing
 -- FIXME: clarify relationship of 'CanEditTopic' with 'CanMoveBetweenLocations' (in the types?)
 data Capability
     -- Idea
-    = CanLike
+    = CanView
+    | CanLike
     | CanVote
     | CanComment
     | CanVoteComment
@@ -113,6 +114,7 @@ data Capability
     -- Topic
     | CanPhaseForwardTopic
     | CanPhaseBackwardTopic
+    | CanViewTopic
     | CanEditTopic
     | CanCreateIdea
     -- User
@@ -122,6 +124,8 @@ data Capability
 
 instance SOP.Generic Capability
 
+-- TODO: the current context does not provide with the IdeaSpace, which seems
+-- required to restrict students to their class.
 data CapCtx = CapCtx
     { _capCtxUser    :: User
     , _capCtxPhase   :: Maybe Phase
@@ -166,7 +170,7 @@ userCapabilities = \case
 
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Capability]
-ideaCapabilities = phaseCap
+ideaCapabilities uid r i p = CanView : phaseCap uid r i p
 
 editCap :: AUID User -> Idea -> [Capability]
 editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
@@ -264,7 +268,7 @@ commentCapabilities uid role comment phase
 -- ** Topic capabilities
 
 topicCapabilities :: Phase -> Role -> [Capability]
-topicCapabilities = \case
+topicCapabilities = (\f r -> CanViewTopic : f r) . \case
     p | isPhaseFrozen p -> const []
     PhaseWildIdea{}     -> topicWildIdeaCaps
     PhaseRefinement{}   -> topicRefinementCaps

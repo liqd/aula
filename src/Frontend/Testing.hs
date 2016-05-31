@@ -42,8 +42,7 @@ aulaTesting =
 
 data Page404 = Page404
 
-instance Page Page404 where
-    isPrivatePage _ = False
+instance Page Page404 where isAuthorized = publicPage
 
 instance ToHtml Page404 where
     toHtmlRaw = toHtml

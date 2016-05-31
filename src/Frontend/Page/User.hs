@@ -39,31 +39,43 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 data PageUserSettings = PageUserSettings User
   deriving (Eq, Show, Read)
 
-instance Page PageUserSettings
+instance Page PageUserSettings where
+    -- The use settings page always goes to the profile of the current logged in user.
+    isAuthorized = userPage
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
   deriving (Eq, Show, Read)
 
-instance Page PageUserProfileCreatedIdeas
+instance Page PageUserProfileCreatedIdeas where
+    isAuthorized = userPage -- Are profiles public?
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes CapCtx UserView [Delegation]
   deriving (Eq, Show, Read)
 
-instance Page PageUserProfileDelegatedVotes
+instance Page PageUserProfileDelegatedVotes where
+    isAuthorized = userPage -- Are profiles public?
 
 -- | 8.X User profile: Editing the public profile
 data EditUserProfile = EditUserProfile CapCtx User
   deriving (Eq, Show, Read)
 
-instance Page EditUserProfile
+instance Page EditUserProfile where
+    -- Can the admin edit any profile through that endpoint?
+    isAuthorized = authNeedPage $ \(EditUserProfile ctx u) ->
+        if isOwnProfile ctx u
+            then accessGranted
+            else accessDenied "You can only edit your own profile" Nothing
 
 -- | 8.X Report user profile
 data ReportUserProfile = ReportUserProfile User
   deriving (Eq, Show, Read)
 
-instance Page ReportUserProfile
+instance Page ReportUserProfile where
+    -- If you can view the profile of a user then you can report on it.
+    -- Any user who is logged in can view the profile of any other user.
+    isAuthorized = userPage
 
 -- * templates
 

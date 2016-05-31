@@ -95,6 +95,7 @@ data ViewTopic
 makeLenses ''ViewTopic
 
 instance Page ViewTopic where
+    isAuthorized = authNeedCaps [CanViewTopic] vtCtx
     extraBodyClasses _ = ["m-shadow"]
 
 -- | 10.1 Create topic: Create topic
@@ -107,7 +108,8 @@ data CreateTopic = CreateTopic
 
 makeLenses ''CreateTopic
 
-instance Page CreateTopic
+instance Page CreateTopic where
+    isAuthorized = authNeedCaps [CanCreateTopic] ctCtx
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
 -- FIXME: Edit topic page is used for editing a topic and move ideas to the topic.
@@ -122,7 +124,8 @@ data EditTopic = EditTopic
 
 makeLenses ''EditTopic
 
-instance Page EditTopic
+instance Page EditTopic where
+    isAuthorized = authNeedCaps [CanEditTopic] etCtx
 
 
 -- * templates

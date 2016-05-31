@@ -27,7 +27,7 @@ instance ToHtml PageDelegateVote where  -- FIXME: remove bogus instance.
     toHtmlRaw = toHtml
     toHtml p = semanticDiv p "PageDelegateVote"
 
-instance Page PageDelegateVote
+instance Page PageDelegateVote where isAuthorized = adminPage -- FIXME who needs to see this
 
 instance FormPage PageDelegateVote where  -- FIXME
     type FormPagePayload PageDelegateVote = ()
@@ -41,6 +41,7 @@ data PageDelegationNetwork = PageDelegationNetwork
   deriving (Eq, Show, Read)
 
 instance Page PageDelegationNetwork where
+    isAuthorized = userPage -- FIXME who needs to see this
     extraPageHeaders _ = do
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
         script_ [src_ $ U.TopStatic "d3-aula.js"]

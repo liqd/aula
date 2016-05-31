@@ -70,7 +70,6 @@ import Persistent
 
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
@@ -98,11 +97,10 @@ instance SOP.Generic ViewIdea
 makeLenses ''ViewIdea
 
 instance Page ViewIdea where
+    isAuthorized = authNeedCaps [CanView] viCtx
 
 data ViewDeletedIdea = ViewDeletedIdea Idea
   deriving (Eq, Show, Read)
-
-instance Page ViewDeletedIdea where
 
 -- | 6. Create idea
 data CreateIdea = CreateIdea { _ciCtx :: CapCtx, _ciLoc :: IdeaLocation }
@@ -113,6 +111,7 @@ instance SOP.Generic CreateIdea
 makeLenses ''CreateIdea
 
 instance Page CreateIdea where
+    isAuthorized = authNeedCaps [CanCreateIdea] ciCtx
 
 -- | 7. Edit idea
 data EditIdea = EditIdea { _eiCtx :: CapCtx, _eiIdea :: Idea }
@@ -123,6 +122,7 @@ instance SOP.Generic EditIdea
 makeLenses ''EditIdea
 
 instance Page EditIdea where
+    isAuthorized = authNeedCaps [CanEditAndDelete] eiCtx
 
 -- | X. Move idea
 -- Move idea to a topic.
@@ -134,6 +134,7 @@ instance SOP.Generic MoveIdea
 makeLenses ''MoveIdea
 
 instance Page MoveIdea where
+    isAuthorized = authNeedCaps [CanMoveBetweenLocations] miCtx
 
 data ReportIdea = ReportIdea { _riCtx :: CapCtx, _riIdea :: Idea }
   deriving (Eq, Show, Read, Generic)
@@ -143,6 +144,8 @@ instance SOP.Generic ReportIdea
 makeLenses ''ReportIdea
 
 instance Page ReportIdea where
+    -- You can report as soon as you can view the idea.
+    isAuthorized = authNeedCaps [CanView] riCtx
 
 -- | X. Comment idea
 data CommentOnIdea = CommentOnIdea
@@ -154,6 +157,7 @@ instance SOP.Generic CommentOnIdea
 makeLenses ''CommentOnIdea
 
 instance Page CommentOnIdea where
+    isAuthorized = authNeedCaps [CanComment] coiCtx
 
 -- | X. Deem idea feasible / not feasible
 -- Assumption: The idea is located in the topic (via 'IdeaLocation').
@@ -170,6 +174,7 @@ instance SOP.Generic JudgeIdea
 makeLenses ''JudgeIdea
 
 instance Page JudgeIdea where
+    isAuthorized = authNeedCaps [CanMarkFeasiblity] jiCtx
 
 data CreatorStatement = CreatorStatement { _csCtx :: CapCtx, _csIdea :: Idea }
   deriving (Eq, Show, Read, Generic)
@@ -179,6 +184,7 @@ instance SOP.Generic CreatorStatement
 makeLenses ''CreatorStatement
 
 instance Page CreatorStatement where
+    isAuthorized = authNeedCaps [CanEditCreatorStatement] csCtx
 
 data ReportComment = ReportComment { _rcCtx :: CapCtx, _rcComment :: Comment }
   deriving (Eq, Show, Read, Generic)
@@ -188,6 +194,8 @@ instance SOP.Generic ReportComment
 makeLenses ''ReportComment
 
 instance Page ReportComment where
+    -- You can report as soon as you can view the comment/idea.
+    isAuthorized = authNeedCaps [CanView] rcCtx
 
 -- We could track wether or not the comment is a reply, but this information is not used yet.
 data EditComment
@@ -199,6 +207,7 @@ instance SOP.Generic EditComment
 makeLenses ''EditComment
 
 instance Page EditComment where
+    isAuthorized = authNeedCaps [CanEditComment] ecCtx
 
 -- * templates
 

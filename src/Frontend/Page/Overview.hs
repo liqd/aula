@@ -83,7 +83,9 @@ instance ToHtml PageOverviewOfSpaces where
                     span_ [class_ "item-room-image"] nil
                     h2_ [class_ "item-room-title"] $ uilabel ispace
 
-instance Page PageOverviewOfSpaces
+instance Page PageOverviewOfSpaces where
+    -- Any logged in user is authorized since viewRooms is already selecting the right view
+    isAuthorized = userPage
 
 instance ToHtml PageOverviewOfWildIdeas where
     toHtmlRaw = toHtml
@@ -101,6 +103,8 @@ instance ToHtml PageOverviewOfWildIdeas where
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 instance Page PageOverviewOfWildIdeas where
+    -- Any logged in user is authorized since findWildIdeasBySpace is already selecting the right view
+    isAuthorized = userPage
     extraBodyClasses _ = ["m-shadow"]
 
 instance ToHtml PageOverviewOfTopics where
@@ -141,7 +145,9 @@ instance ToHtml PageOverviewOfTopics where
                                 span_ [class_ "theme-grid-item-link"]
                                     "view topic"
 
-instance Page PageOverviewOfTopics
+instance Page PageOverviewOfTopics where
+    -- Any logged in user is authorized since findTopicsBySpace is already selecting the right view
+    isAuthorized = userPage
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml

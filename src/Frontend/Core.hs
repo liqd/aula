@@ -39,11 +39,23 @@ module Frontend.Core
       -- * pages
     , Page(..)
     , PageShow(..)
+    , AccessResult(..)
+    , AccessInput(..)
+    , accessGranted
+    , accessDeferred
+    , accessDenied
+    , publicPage
+    , adminPage
+    , pageForRole
+    , userPage
+    , redirectLogin
+    , authNeedPage
+    , authNeedCaps
 
       -- * forms
     , FormPage
     , FormPagePayload, FormPageResult
-    , formAction, redirectOf, makeForm, formPage, guardPage
+    , formAction, redirectOf, makeForm, formPage
 
     , FormPageRep(..)
     , FormPageHandler, formGetPage, formProcessor, formStatusMessage
@@ -65,6 +77,8 @@ import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_, when)
+import Control.Applicative (liftA2)
+import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
 import GHC.TypeLits (Symbol)
@@ -72,11 +86,12 @@ import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
-import Servant.Missing (FormH, getFormDataEnv)
+import Servant.Missing (FormH, getFormDataEnv, throwError500)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -84,8 +99,9 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Config
-import Data.UriPath (UriPath, absoluteUriPath)
+import Data.UriPath (absoluteUriPath)
 import Frontend.Path (HasPath(..))
+import LifeCycle
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -180,9 +196,11 @@ class IsTab a
 instance IsTab ListIdeasInTopicTab
 instance IsTab a => IsTab (Maybe a)
 
+err303With :: ConvertibleStrings uri SBS => uri -> ServantErr
+err303With uri = Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
-redirect uri = throwServantErr $
-    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+redirect = throwServantErr . err303With
 
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
@@ -236,10 +254,32 @@ renderContext = RenderContext <$> currentUser
 
 -- * pages
 
+data AccessResult
+  = AccessGranted
+  | AccessDenied { _accessDeniedMsg :: ST, _accessDeniedRedirect :: Maybe URL }
+  | AccessDeferred
+
+instance Monoid AccessResult where
+    mempty = AccessGranted
+    AccessGranted `mappend` x = x
+    x `mappend` AccessGranted = x
+    AccessDeferred `mappend` x = x
+    x `mappend` AccessDeferred = x
+    AccessDenied s0 u0 `mappend` AccessDenied s1 u1 =
+        AccessDenied (s0 <> "\n\n" <> s1) (getFirst (First u0 <> First u1))
+
+data AccessInput a
+  = NotLoggedIn
+  | LoggedIn { _authUser :: User, _authPage :: Maybe a }
+
+instance Functor AccessInput where
+    fmap f = \case
+        NotLoggedIn -> NotLoggedIn
+        LoggedIn u mp -> LoggedIn u (f <$> mp)
+
 -- | Defines some properties for pages
 class Page p where
-    isPrivatePage :: proxy p -> Bool
-    isPrivatePage _ = True
+    isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
@@ -247,18 +287,69 @@ class Page p where
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
-instance Page () where
-    isPrivatePage _ = False
+accessGranted :: Applicative m => m AccessResult
+accessGranted = pure AccessGranted
 
-instance Page ST where
-    isPrivatePage _ = True -- safer default, might need to be changed if needed
+accessDenied :: Applicative m => ST -> Maybe (P.Main 'P.AllowGetPost) -> m AccessResult
+accessDenied m u = pure $ AccessDenied m (absoluteUriPath . relPath <$> u)
+
+accessDeferred :: Applicative m => m AccessResult
+accessDeferred = pure AccessDeferred
+
+redirectLogin :: Applicative m => m AccessResult
+redirectLogin = accessDenied "Not logged in" $ Just P.Login
+
+userPage :: Applicative m => AccessInput any -> m AccessResult
+userPage LoggedIn{}  = accessGranted
+userPage NotLoggedIn = redirectLogin
+
+pageForRole :: Applicative m => Role -> AccessInput any -> m AccessResult
+pageForRole r (LoggedIn u _)
+    | u ^. userRole == r  = accessGranted
+    | otherwise           = accessDenied ("Expecting " <> r ^. uilabeled <> " role.") Nothing
+pageForRole _ NotLoggedIn = redirectLogin
+
+publicPage :: Applicative m => any -> m AccessResult
+publicPage _ = accessGranted
+
+adminPage :: Applicative m => AccessInput any -> m AccessResult
+adminPage = pageForRole Admin
+
+authNeedPage :: Applicative m => (p -> m AccessResult) -> AccessInput p -> m AccessResult
+authNeedPage withPage = \case
+    NotLoggedIn         -> redirectLogin
+    LoggedIn _ Nothing  -> accessDeferred
+    LoggedIn _ (Just p) -> withPage p
+
+authNeedCaps :: [Capability] -> Getter p CapCtx -> Applicative m => AccessInput p -> m AccessResult
+authNeedCaps needCaps' capCtx = authNeedPage $ \p ->
+    let
+        needCaps = Set.fromList needCaps'
+        haveCaps = Set.fromList $ capabilities (p ^. capCtx)
+        diffCaps = needCaps `Set.difference` haveCaps
+    in
+    if Set.null diffCaps
+        then accessGranted
+        else accessDenied ("Missing capabilities " <> cs (show diffCaps)) Nothing
+
+instance Page () where isAuthorized = publicPage
+
+instance Page ST where isAuthorized = adminPage
 
 instance (Page a, Page b) => Page (Beside a b) where
-    isPrivatePage _ = isPrivatePage (Proxy :: Proxy a) || isPrivatePage (Proxy :: Proxy b)
+    isAuthorized = \case
+        NotLoggedIn ->
+            isAuthorized (NotLoggedIn :: AccessInput a) <<>> isAuthorized (NotLoggedIn :: AccessInput b)
+        LoggedIn u Nothing ->
+            isAuthorized (LoggedIn u Nothing :: AccessInput a) <<>> isAuthorized (LoggedIn u Nothing :: AccessInput b)
+        LoggedIn u (Just (a `Beside` b)) ->
+            isAuthorized (LoggedIn u (Just a)) <<>> isAuthorized (LoggedIn u (Just b))
+      where
+        (<<>>) = liftA2 (<>)
     extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
 instance Page p => Page (Frame p) where
-    isPrivatePage  _ = isPrivatePage (Proxy :: Proxy p)
+    isAuthorized a = isAuthorized (_frameBody <$> a)
     extraPageHeaders = extraPageHeaders . _frameBody
 
 
@@ -266,7 +357,8 @@ instance Page p => Page (Frame p) where
 newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
 
-instance Page (PageShow a)
+instance Page (PageShow a) where
+    isAuthorized = adminPage
 
 instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
     mimeRender Proxy = cs . ppShow
@@ -312,20 +404,19 @@ class Page p => FormPage p where
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
-    -- | Guard the form, if the 'guardPage' returns an UriPath the page will
-    -- be redirected.
-    -- FIXME: Use P.Main
-    guardPage :: (ActionM m) => p -> m (Maybe UriPath)
-    guardPage _ = pure Nothing
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
-data FormPageRep p = FormPageRep (View (Html ())) ST p
+data FormPageRep p = FormPageRep
+    { _formPageRepView   :: View (Html ())
+    , _formPageRepAction :: ST
+    , _formPageRepPage   :: p
+    }
 
 instance (Show p) => Show (FormPageRep p) where
     show (FormPageRep _v _a p) = show p
 
 instance Page p => Page (FormPageRep p) where
-    isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)
+    isAuthorized = isAuthorized . fmap _formPageRepPage
     extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
 
 instance FormPage p => ToHtml (FormPageRep p) where
@@ -392,18 +483,15 @@ form formHandler = getH :<|> postH
     processor = _formProcessor formHandler
     formMessage = _formStatusMessage formHandler
 
-    guard page = mapM_ (redirect . absoluteUriPath) =<< guardPage page
 
     getH = makeFrame $ do
         page <- getPage
-        guard page
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
     postH formData = makeFrame $ do
         page <- getPage
-        guard page
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
@@ -430,14 +518,35 @@ data Frame body
     | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
-makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+-- TODO rename me
+makeFrame :: forall m p. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
           => m p -> m (Frame p)
 makeFrame mp = do
-  isli <- isLoggedIn
-  let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
-  if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
-     | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> flushMessages
-     | otherwise             -> PublicFrame <$> mp <*> flushMessages
+    isli <- isLoggedIn
+    if isli
+        then do
+            user <- currentUser
+            access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
+            case access0 of
+                AccessGranted -> Frame user <$> mp <*> flushMessages
+                AccessDenied s u -> handleDenied s u
+                AccessDeferred -> do
+                    p <- mp
+                    access1 <- isAuthorized (LoggedIn user (Just p))
+                    case access1 of
+                        AccessGranted -> Frame user p <$> flushMessages
+                        AccessDenied s u -> handleDenied s u
+                        AccessDeferred ->
+                            throwError500 "AccessDeferred should not be used with LoggedIn"
+        else do
+            -- PublicFrame <$> mp <*> flushMessages
+            access <- isAuthorized (NotLoggedIn :: AccessInput p)
+            case access of
+                AccessGranted -> PublicFrame <$> mp <*> flushMessages
+                AccessDenied s u -> handleDenied s u
+                AccessDeferred -> throwError500 "AccessDeferred should not be used with NotLoggedIn"
+  where
+    handleDenied s u = throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
 
 
 -- * js glue

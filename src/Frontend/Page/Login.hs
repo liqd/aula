@@ -27,7 +27,10 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt LoginDemoHints
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
-    isPrivatePage _ = False
+    isAuthorized = \case
+        -- Redirect from login if the user is already logged in.
+        NotLoggedIn -> accessGranted
+        LoggedIn{}  -> accessDenied "You are already logged in" (Just U.ListSpaces)
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
 data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
@@ -72,11 +75,6 @@ instance FormPage PageHomeWithLoginPrompt where
                     p_ [class_ "text-muted login-register-form-notice"]
                         "Solltest du dein Passwort nicht mehr kennen, melde dich bitte bei den Admins euer Schule."
             toHtml loginDemoHints
-
-    guardPage _ = do
-        -- Redirect from login if the user is already logged in.
-        li <- Action.isLoggedIn
-        pure $ if li then Just $ U.relPath U.ListSpaces else Nothing
 
 
 instance ToHtml LoginDemoHints where
