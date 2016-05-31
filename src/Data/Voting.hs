@@ -50,45 +50,17 @@ data Topic
 
 -- * pure model
 
-data DelegationMap = DelegationMap {
-        _delegationMap
-            :: Map
-                Voter -- who delegates in which topic
-                (Map Topic Voter) -- to whom delegates
-    }
+data Delegations = Delegations { unDelegations :: Set (Voter, Topic, Voter) }
   deriving (Eq, Show)
 
-lookupDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> Map k1 (Map k2 v) -> Maybe v
-lookupDoubleMap k1 k2 m = Map.lookup k1 m >>= Map.lookup k2 
+candidates :: Voter -> Delegations -> [(Voter, Topic, Voter)]
+candidates v (Delegations dset) = filter ((v ==) . view _1) $ Set.toList dset
 
-insertDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> v -> Map k1 (Map k2 v) -> Map k1 (Map k2 v)
-insertDoubleMap k1 k2 v m = case Map.lookup k1 m of
-    Nothing -> Map.insert k1 (Map.singleton k2 v) m
-    Just m' -> Map.insert k1 (Map.insert k2 v m') m
+delegators :: Voter -> Delegations -> [(Voter, Topic, Voter)]
+delegators v (Delegations dset) = filter ((v==) . view _3) $ Set.toList dset
 
-lookupDMap :: Voter -> Topic -> DelegationMap -> Maybe Voter
-lookupDMap v t (DelegationMap dmap) = lookupDoubleMap v t dmap
-
-insertDMap :: Voter -> Topic -> Voter -> DelegationMap -> DelegationMap
-insertDMap f tp t (DelegationMap dmap) = DelegationMap $ 
-    insertDoubleMap f tp t dmap
-
-candidates :: Voter -> DelegationMap -> Map Topic Voter
-candidates v (DelegationMap dmap) = fromMaybe Map.empty $ Map.lookup v dmap
-
-data CoDelegationMap = CoDelegationMap {
-        _coDelegationMap
-            :: Map
-                Voter   -- who is delegated
-                (Map Topic (Set Voter)) -- by whom
-    }
-  deriving (Eq, Show)
-
-data Delegations = Delegations {
-      _delegations   :: DelegationMap
-    , _coDelegations :: CoDelegationMap
-    }
-  deriving (Eq, Show)
+topicDelegators :: Voter -> Topic -> Delegations -> [(Voter, Topic, Voter)]
+topicDelegators v t = filter ((t==) . view _2) . delegators v
 
 data Votings = Votings {
       _votings :: Map (Voter, Idea) (Voter, Vote)
@@ -107,36 +79,22 @@ data DelegationState = DelegationState {
     }
   deriving (Eq, Show)
 
-
-makeLenses ''DelegationMap
-makeLenses ''CoDelegationMap
 makeLenses ''Delegations
 makeLenses ''Votings
 makeLenses ''TopicTree
 makeLenses ''DelegationState
 
-emptyDelegations = Delegations (DelegationMap Map.empty) (CoDelegationMap Map.empty)
+emptyDelegations = Delegations Set.empty
 emptyVotings     = Votings   Map.empty
 emptyTopicTree   = TopicTree Map.empty
 
 emptyDelegationState = DelegationState emptyDelegations emptyVotings emptyTopicTree
 
 setDelegationPure :: Voter -> Topic -> Voter -> Delegations -> Delegations
-setDelegationPure from topic to (Delegations dm@(DelegationMap dmap) (CoDelegationMap coDmap))
-    = Delegations dmap' coDmap'
-  where
-    mOldTo = lookupDoubleMap from topic dmap
-
-    dmap'   = DelegationMap (insertDoubleMap from topic to dmap)
-    coDmap' = CoDelegationMap coDmap1
-    coDmap0 = maybe coDmap (\to' -> coDmap & at to' . _Just . at topic . _Just . at from .~ Nothing
-                                           & at to' . _Just . at topic %~ deleteEmpty
-                                           & at to' %~ deleteEmpty) mOldTo
-    coDmap1 = insertDoubleMap to topic (Set.insert from $ fromMaybe Set.empty (lookupDoubleMap to topic coDmap0)) coDmap0
-
-    deleteEmpty (Just s) | null s = Nothing
-    deleteEmpty x                 = x
-
+setDelegationPure f tp t (Delegations dset) = Delegations .
+    Set.insert (f,tp,t)
+    . Set.filter (\(f',tp',_) -> not (f' == f && tp' == tp))
+    $ dset
 
 -- | Non empty list of topics, from leaf to root.
 topicHiearchyPure :: Topic -> TopicTree -> [Topic]
@@ -144,12 +102,8 @@ topicHiearchyPure t (TopicTree tmap) = fix path t
   where
     path rec t = maybe [t] ((t:) . rec) (Map.lookup t tmap)
 
-canVotePure :: Voter -> Idea -> DelegationMap -> TopicTree -> Bool
-canVotePure v i dmap ttree =
-    all isNothing $ (\t -> lookupDMap v t dmap) <$> topicHiearchyPure (TopicIdea i) ttree
-
-getSupportersPure :: Voter -> Topic -> DelegationMap -> CoDelegationMap -> TopicTree -> [Voter]
-getSupportersPure v t dmap (CoDelegationMap codmap) ttree = fix voters v
+getSupportersPure :: Voter -> Topic -> Delegations -> TopicTree -> [Voter]
+getSupportersPure v t dset ttree = fix voters v
   where
     -- idea -> class -> school
     topicPath  = topicHiearchyPure t ttree
@@ -157,14 +111,14 @@ getSupportersPure v t dmap (CoDelegationMap codmap) ttree = fix voters v
     -- If the first voter in the candidate list is the `v`, `v` is
     -- responsible for the voting for the user u
     supporter u =
-        let cm = candidates u dmap
+        -- FIXME: Assumption: only one candidate per topic
+        let cm = Map.fromList . map ((,) <$> view _2 <*> view _3) $ candidates u dset
         in case catMaybes $ map (\t -> Map.lookup t cm) topicPath of
             []     -> False
             v' : _ -> v' == v
 
     voters rec v =
-        v : maybe [] (mconcat . map rec)
-                     (filter supporter . Set.toList <$> lookupDoubleMap v t codmap)
+        v : (mconcat . map rec) (filter supporter <$> map (view _1) $ topicDelegators v t dset)
 
 setVoteForPure :: Voter -> Idea -> Vote -> Voter -> Votings -> Votings
 setVoteForPure voter idea vote delegator (Votings vmap) =
@@ -184,7 +138,6 @@ getVotePure v i (Votings vmap) = Map.lookup (v,i) vmap
 
 class Monad m => DelegationM m where
     setDelegation :: Voter -> Topic -> Voter -> m ()
-    canVote       :: Voter -> Idea  -> m Bool
     getSupporters :: Voter -> Topic -> m [Voter]
     voteFor       :: Voter -> Idea  -> Vote -> Voter -> m ()
     setTopicDep   :: Topic -> Topic -> m ()
@@ -202,7 +155,6 @@ vote voter idea voteValue = do
 
 data DelegationDSL a where
     SetDelegation :: Voter -> Topic -> Voter         -> DelegationDSL ()
-    CanVote       :: Voter -> Idea                   -> DelegationDSL Bool
     GetSupporters :: Voter -> Topic                  -> DelegationDSL [Voter]
     VoteFor       :: Voter -> Idea  -> Vote -> Voter -> DelegationDSL ()
     SetTopicDep   :: Topic -> Topic                  -> DelegationDSL ()
@@ -214,7 +166,6 @@ deriving instance Show a => Show (DelegationDSL a)
 
 delegation :: (DelegationM m) => DelegationDSL a -> m a
 delegation (SetDelegation f tp t) = setDelegation f tp t
-delegation (CanVote v t)          = canVote v t
 delegation (GetSupporters v t)    = getSupporters v t
 delegation (VoteFor f tp x t)     = voteFor f tp x t
 delegation (SetTopicDep f t)      = setTopicDep f t
@@ -248,13 +199,9 @@ throwDelegationError (Right a) = return a
 
 instance Monad m => DelegationM (DelegationT m) where
     setDelegation f tp t = delegationsState %= (setDelegationPure f tp t)
-    canVote v i          = canVotePure v i
-                            <$> use (delegationsState . delegations)
-                            <*> use topicTreeState
 
     getSupporters v t    = getSupportersPure v t
-                            <$> use (delegationsState . delegations)
-                            <*> use (delegationsState . coDelegations)
+                            <$> use delegationsState
                             <*> use topicTreeState
 
     voteFor v t x d      = votingsState %= (setVoteForPure v t x d)
