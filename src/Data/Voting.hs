@@ -339,9 +339,9 @@ interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
     supporters <- getSupporters t tp
     delegation step
     supporters' <- getSupporters t tp
-    let r = (case elem f supporters of
-                True  -> (supporters == )
-                False -> (elem f)) $ supporters'
+    let r = case elem f supporters of
+                    True  -> supporters == supporters'
+                    False -> (elem f supporters') && (length supporters' == 1 + (length supporters))
     pure $ if r
         then Nothing
         else Just $ show (i, step, elem f supporters, show f, supporters, supporters')
@@ -362,7 +362,7 @@ interpretDelegationStep (j,step@(Vote v i x)) = do
 
 drawSeparator = putStrLn "*******************"
 
-noOfTests = 100000
+noOfTests = 10000
 sizeOfTests = 1000
 
 quickCheckDelegation p = do
