@@ -156,9 +156,7 @@ vote voter idea voteValue = do
 data DelegationDSL a where
     SetDelegation :: Voter -> Topic -> Voter         -> DelegationDSL ()
     GetSupporters :: Voter -> Topic                  -> DelegationDSL [Voter]
-    VoteFor       :: Voter -> Idea  -> Vote -> Voter -> DelegationDSL ()
     SetTopicDep   :: Topic -> Topic                  -> DelegationDSL ()
-    TopicHiearchy :: Topic                           -> DelegationDSL [Topic]
     GetVote       :: Voter -> Idea                   -> DelegationDSL (Maybe (Voter, Vote))
     Vote          :: Voter -> Idea -> Vote           -> DelegationDSL ()
 
@@ -167,9 +165,7 @@ deriving instance Show a => Show (DelegationDSL a)
 delegation :: (DelegationM m) => DelegationDSL a -> m a
 delegation (SetDelegation f tp t) = setDelegation f tp t
 delegation (GetSupporters v t)    = getSupporters v t
-delegation (VoteFor f tp x t)     = voteFor f tp x t
 delegation (SetTopicDep f t)      = setTopicDep f t
-delegation (TopicHiearchy t)      = topicHiearchy t
 delegation (GetVote v i)          = getVote v i
 delegation (Vote v i x)           = vote v i x
 
