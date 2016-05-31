@@ -12,12 +12,14 @@
 module Data.Voting
 where
 
-import Prelude       hiding ((.))
-import Data.Function hiding ((.))
+import Prelude       hiding ((.), id)
+import Data.Function hiding ((.), id)
 import Data.String.Conversions (ST, cs)
 import Control.Applicative hiding (empty)
 import Control.Category
+import Control.Exception (SomeException)
 import Control.Lens hiding (elements, pre)
+import Control.Monad.Except
 import Control.Monad.State
 
 import Data.Map (Map)
@@ -193,9 +195,10 @@ setVoteForPure :: Voter -> Idea -> Vote -> Voter -> Votings -> Votings
 setVoteForPure voter idea vote delegator (Votings vmap) =
     Votings $ Map.insert (delegator, idea) (voter, vote) vmap
 
-setTopicDepPure :: Topic -> Topic -> TopicTree -> TopicTree
+setTopicDepPure :: Topic -> Topic -> TopicTree -> Either DelegationError TopicTree
+setTopicDepPure f t (TopicTree tm) | Just f == Map.lookup t tm = Left DelegationCircularTopicDependency
 setTopicDepPure f t tm@(TopicTree tmap) =
-    case Map.lookup t tmap of
+    Right $ case Map.lookup t tmap of
         Just f' | f == f' -> tm -- Avoid circular deps should throw an error
         _                 -> TopicTree (Map.insert f t tmap)
 
@@ -247,48 +250,28 @@ delegation (GetVote v i)          = getVote v i
 delegation (Vote v i x)           = vote v i x
 
 
-delegationStepGen :: Gen (DelegationDSL ())
-delegationStepGen = frequency
-    [ (3, (do v <- arbitrary
-              SetDelegation v <$> arbitrary <*> arbitrary `suchThat` (/=v)))
-    , (1, (do t <- arbitrary
-              SetTopicDep t <$> arbitrary `suchThat` (/=t)))
-    , (1, SetTopicDep   <$> (TopicIdea <$> arbitrary) <*> arbitrary)
-    , (5, Vote          <$> arbitrary <*> arbitrary <*> arbitrary)
-    ]
-
-instance Arbitrary (DelegationDSL ()) where
-    arbitrary = delegationStepGen
-    shrink (SetDelegation x y z) =
-        [ SetDelegation x' y' z'
-        | x' <- shrink x, y' <- shrink y, z' <- shrink z
-        , x' /= z'
-        ]
-    shrink (SetTopicDep x y) =
-        [ SetTopicDep x' y'
-        | x' <- shrink x, y' <- shrink y
-        , x' /= y'
-        ]
-    shrink (Vote x y z) = Vote <$> shrink x <*> shrink y <*> shrink z
-
-delegationProgram :: Gen DelegationProgram
-delegationProgram = DelegationProgram <$> (listOf1 $ delegationStepGen)
-
-instance Arbitrary DelegationProgram where
-    arbitrary = delegationProgram
-    shrink (DelegationProgram x) = DelegationProgram <$> shrink x
-
 -- * state monad implementation
 
-newtype DelegationT m a = DelegationT { unDelegationT :: StateT DelegationState m a }
-  deriving (Functor, Applicative, Monad, MonadState DelegationState)
+data DelegationError
+    = DelegationCircularTopicDependency
+    | DelegationException SomeException
+  deriving Show
 
-runDelegation :: DelegationT Identity a -> (a, DelegationState)
-runDelegation d = runIdentity $ runStateT (unDelegationT d) emptyDelegationState
+newtype DelegationT m a = DelegationT { unDelegationT :: StateT DelegationState (ExceptT DelegationError m) a }
+  deriving (Functor, Applicative, Monad, MonadState DelegationState, MonadError DelegationError)
 
-runDelegation' :: DelegationT Identity a -> a
-runDelegation' d = runIdentity $ evalStateT (unDelegationT d) emptyDelegationState
+runDelegation :: DelegationT Identity a -> Either DelegationError (a, DelegationState)
+runDelegation d = runIdentity . runExceptT $ runStateT (unDelegationT d) emptyDelegationState
 
+runDelegationInTest :: DelegationT Identity Property -> Property
+runDelegationInTest d = either checkException (label "valid program") . runIdentity . runExceptT $ evalStateT (unDelegationT d) emptyDelegationState
+  where
+    checkException DelegationCircularTopicDependency = label "Circular Topic Dependency" True
+    checkException s = error (show s)
+
+throwDelegationError :: Monad m => Either DelegationError a -> DelegationT m a
+throwDelegationError (Left e)  = throwError e
+throwDelegationError (Right a) = return a
 
 instance Monad m => DelegationM (DelegationT m) where
     setDelegation f tp t = delegationsState %= (setDelegationPure f tp t)
@@ -303,7 +286,9 @@ instance Monad m => DelegationM (DelegationT m) where
 
     voteFor v t x d      = votingsState %= (setVoteForPure v t x d)
 
-    setTopicDep f t      = topicTreeState %= setTopicDepPure f t
+    setTopicDep f t      = setTopicDepPure f t <$> use topicTreeState
+                            >>= throwDelegationError
+                            >>= (topicTreeState .=)
 
     topicHiearchy t      = topicHiearchyPure t <$> use topicTreeState
 
@@ -402,6 +387,37 @@ interpretDelegationProgram =
     mapM_ (run . interpretDelegationStep >=> (maybe (pure ()) fail)) . zip [1..]
     . unDelegationProgram
 
+delegationStepGen :: Gen (DelegationDSL ())
+delegationStepGen = frequency
+    [ (3, (do v <- arbitrary
+              SetDelegation v <$> arbitrary <*> arbitrary `suchThat` (/=v)))
+    , (1, (do t <- arbitrary
+              SetTopicDep t <$> arbitrary `suchThat` (/=t)))
+    , (1, SetTopicDep   <$> (TopicIdea <$> arbitrary) <*> arbitrary)
+    , (5, Vote          <$> arbitrary <*> arbitrary <*> arbitrary)
+    ]
+
+instance Arbitrary (DelegationDSL ()) where
+    arbitrary = delegationStepGen
+    shrink (SetDelegation x y z) =
+        [ SetDelegation x' y' z'
+        | x' <- shrink x, y' <- shrink y, z' <- shrink z
+        , x' /= z'
+        ]
+    shrink (SetTopicDep x y) =
+        [ SetTopicDep x' y'
+        | x' <- shrink x, y' <- shrink y
+        , x' /= y'
+        ]
+    shrink (Vote x y z) = Vote <$> shrink x <*> shrink y <*> shrink z
+
+delegationProgram :: Gen DelegationProgram
+delegationProgram = DelegationProgram <$> (listOf1 $ delegationStepGen)
+
+instance Arbitrary DelegationProgram where
+    arbitrary = delegationProgram
+    shrink (DelegationProgram x) = DelegationProgram <$> shrink x
+
 interpretDelegationStep :: DelegationM m => (Int, DelegationDSL ())-> m (Maybe String)
 interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
     !supporters <- getSupporters t tp
@@ -431,11 +447,11 @@ interpretDelegationStep (j,step@(Vote v i x)) = do
 drawSeparator = putStrLn "*******************"
 
 quickCheckDelegation p = do
-    quickCheck $ monadic runDelegation' p
+    quickCheck $ monadic runDelegationInTest p
     drawSeparator
 
 quickCheckDelegationCtx c p = do
-    quickCheck $ monadic (\m -> runDelegation' (c >> m)) p
+    quickCheck $ monadic (\m -> runDelegationInTest (c >> m)) p
     drawSeparator
 
 
@@ -493,7 +509,7 @@ main = do
         run (setTopicDepProp2 i t) >>= assert
 
     quickCheck $ forAllShrink arbitrary shrink $ \program ->
-        monadic runDelegation' (interpretDelegationProgram program)
+        monadic runDelegationInTest (interpretDelegationProgram program)
 
     runTC $ do
         setDelegationProp1 f i t
