@@ -665,10 +665,6 @@ instance Arbitrary UserSettingData where
     shrink (UserSettingData x y z w)
         = UserSettingData <$> shr x <*> shr y <*> shr z <*> shr w
 
-instance Arbitrary RenderContext where
-    arbitrary = RenderContext <$> arbitrary
-    shrink (RenderContext x) = RenderContext <$> shr x
-
 
 -- * admin
 

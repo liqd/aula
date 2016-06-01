@@ -32,10 +32,6 @@ module Frontend.Core
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
     , numLikes, percentLikes, numVotes, percentVotes
 
-      -- * render context
-    , RenderContext(RenderContext), _renderContextUser, renderContextUser
-    , renderContext
-
       -- * pages
     , Page(..)
     , PageShow(..)
@@ -237,19 +233,6 @@ percentVotes idea numVoters vv = {- assert c -} v
     v = if numVoters == 0
           then 100
           else (numVotes idea vv * 100) `div` numVoters
-
-
--- * render context
-
--- | Contains all the information which is needed to render a user role dependent functionality.
-data RenderContext = RenderContext
-      { _renderContextUser     :: User
-      }
-  deriving (Eq, Read, Show)
-
--- | Calculates the render context for role sensitive page rendering
-renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
-renderContext = RenderContext <$> currentUser
 
 
 -- * pages
@@ -581,7 +564,6 @@ jsRedirectOnClick = onclickJs . JsRedirectOnClick
 
 -- * lenses
 
-makeLenses ''RenderContext
 makeLenses ''FormPageHandler
 makeLenses ''Frame
 
