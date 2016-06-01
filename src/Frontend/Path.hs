@@ -106,7 +106,7 @@ import Types
 
 -- * types
 
--- FIXME: Introduce AllowGet only
+-- FIXME: Introduce AllowGet only, or better make it a list of [GET|POST].
 data AllowedMethod = AllowGetPost | AllowPost
 
 class HasPath (p :: AllowedMethod -> *) where

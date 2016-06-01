@@ -38,7 +38,7 @@ aulaTesting =
 
   :<|> undefined  -- (intentional)
   :<|> throwError500 "testing error500"
-  :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
+  :<|> redirect ("/target" :: String)
 
 data Page404 = Page404
 
