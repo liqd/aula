@@ -55,5 +55,15 @@ instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 
 -- * validation and construction
 
-markdown :: ST -> Document  -- TODO: Either Error Document
-markdown = Markdown  -- TODO: implement!
+markdown :: ST -> Either [ST] Document
+markdown = Right . Markdown  -- TODO: implement!
+
+-- | Be careful not to use `mappend` on user input!  The concatenation will be checked by
+-- `markdown`, but the failure case will crash hard.
+--
+-- TODO: test monoid laws
+instance Monoid Document where
+    mempty = Markdown mempty
+    mappend (Markdown a) (Markdown b) = case markdown $ mappend a b of
+        Right v -> v
+        Left es -> error $ "instance Monoid Document: " <> show (es, a, b)

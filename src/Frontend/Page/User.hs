@@ -302,7 +302,7 @@ instance FormPage EditUserProfile where
     makeForm (EditUserProfile _ctx user) =
         UserProfile
         <$> ("avatar" .: (cs <$$> DF.file))
-        <*> ("desc"   .: validate "Beschreibung" markdownV (dfTextField user userDesc _Markdown))
+        <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv p $ do

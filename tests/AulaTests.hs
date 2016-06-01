@@ -149,7 +149,7 @@ someTestUser = user
         , _userRole      = Admin
         , _userProfile   = UserProfile
             { _profileAvatar = Nothing
-            , _profileDesc   = markdown nil
+            , _profileDesc   = nil
             }
         , _userSettings  = UserSettings
             { _userSettingsPassword = UserPassInitial (InitialPassword "")

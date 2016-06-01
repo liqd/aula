@@ -41,7 +41,7 @@ import Prelude hiding ((.))
 
 import Control.Arrow
 import Control.Category as Cat
-import Data.Text as Text (Text, length)
+import Data.Text as Text (Text, length)  -- TODO: use string-conversions
 
 import Text.Digestive as DF
 import Text.Email.Validate as Email
@@ -50,13 +50,16 @@ import Text.Parsec.Error
 
 import Frontend.Prelude as Frontend hiding ((<|>))
 
+import qualified Data.Text as ST 
+
+
 type FieldName = String
 type FieldParser a = Parsec String () a
 
 
 -- * field validation
 
-newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result ST b }
+newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result ST b }  -- TODO: make this a list of ST so we can have multiple errors in one field. (adjust to this change in fieldEither)
 
 instance Functor (FieldValidator a) where
     fmap g (FieldValidator f) = FieldValidator (fmap g . f)
@@ -67,9 +70,14 @@ instance Cat.Category FieldValidator where
 
 instance Arrow FieldValidator where
     arr f   = FieldValidator (DF.Success . f)
-    first f = FieldValidator $ \(x,y) -> case unFieldValidator f x of
-                DF.Success z -> DF.Success (z,y)
+    first f = FieldValidator $ \(x, y) -> case unFieldValidator f x of
+                DF.Success z -> DF.Success (z, y)
                 DF.Error   e -> DF.Error e
+
+fieldEither :: (a -> Either [ST] b) -> FieldValidator a b
+fieldEither fun = FieldValidator $ \a -> case fun a of
+    Right v -> DF.Success v
+    Left es -> DF.Error $ ST.unlines es
 
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
@@ -194,8 +202,8 @@ passwordV = fieldParser (cs <$> manyNM 4 12 anyChar <??> "4-12 Zeichen")
 titleV :: StringFieldValidator
 titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
 
-markdownV :: FieldValidator Document Document
-markdownV = unMarkdown ^>> nonEmptyV >>^ markdown
+markdownV :: FieldValidator ST Document
+markdownV = nonEmptyV >>> fieldEither markdown
 
 emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
 emailField name emailValue =
