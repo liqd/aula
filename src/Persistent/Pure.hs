@@ -169,13 +169,13 @@ import LifeCycle (freezePhase)
 -- * state type
 
 data AulaData = AulaData
-    { _dbSpaceSet            :: Set IdeaSpace
-    , _dbIdeaMap             :: Ideas
-    , _dbUserMap             :: Users
-    , _dbTopicMap            :: Topics
-    , _dbDelegationMap       :: Delegations
-    , _dbSettings            :: Settings
-    , _dbLastId              :: Integer
+    { _dbSpaceSet            :: !(Set IdeaSpace)
+    , _dbIdeaMap             :: !Ideas
+    , _dbUserMap             :: !Users
+    , _dbTopicMap            :: !Topics
+    , _dbDelegationMap       :: !Delegations
+    , _dbSettings            :: !Settings
+    , _dbLastId              :: !Integer
     }
   deriving (Eq, Show, Read, Typeable)
 
@@ -286,12 +286,12 @@ liftAQuery m = gets (runReader m)
 -- | FIXME: this will have constructors dedicated for specific errors, and 'ServantErr' will only be
 -- introduced later.
 data PersistExcept
-    = PersistError500 { persistErrorMessage :: String }
+    = PersistError500 { persistErrorMessage :: !String }
         -- FIXME: rename to PersistExceptInternal; drop ThrowError500 instance for something prismatic just for PersistExcept
-    | PersistError404 { persistErrorMessage :: String }
+    | PersistError404 { persistErrorMessage :: !String }
         -- FIXME: rename to PersistExceptNotFound
-    | PersistErrorNotImplemented { persistErrorMessage :: String }
-    | UserLoginInUse UserLogin
+    | PersistErrorNotImplemented { persistErrorMessage :: !String }
+    | UserLoginInUse !UserLogin
     deriving (Eq, Show)
 
 makePrisms ''PersistExcept
@@ -330,9 +330,9 @@ assertAulaDataM = liftAQuery
     See also @EnvWithProto@.
 -}
 data EnvWith a = EnvWith
-    { _envUser :: User
-    , _envNow  :: Timestamp
-    , _envWith :: a
+    { _envUser :: !User
+    , _envNow  :: !Timestamp
+    , _envWith :: !a
     }
 
 makeLenses ''EnvWith
@@ -533,9 +533,9 @@ getTopics :: Query [Topic]
 getTopics = view dbTopics
 
 data IdeaChangedLocation = IdeaChangedLocation
-    { _ideaChangedLocationIdea :: Idea
-    , _ideaChangedLocationFrom :: Maybe (AUID Topic)
-    , _ideaChangedLocationTo   :: Maybe (AUID Topic)
+    { _ideaChangedLocationIdea :: !Idea
+    , _ideaChangedLocationFrom :: !(Maybe (AUID Topic))
+    , _ideaChangedLocationTo   :: !(Maybe (AUID Topic))
     }
   deriving (Eq, Ord, Show, Read)
 

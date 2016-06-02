@@ -32,7 +32,7 @@ import qualified Generics.SOP as SOP
 
 data WhatListPage
     = IdeaInIdeasOverview
-    | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
+    | IdeaInViewTopic { _whatListPageTopicTab :: !ListIdeasInTopicTab }
     | IdeaInUserProfile
   deriving (Eq, Show, Read, Generic)
 
@@ -41,20 +41,20 @@ makePrisms ''WhatListPage
 
 -- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
-      { _listItemIdeaCtx        :: CapCtx
-      , _listItemIdeaWhatPage   :: WhatListPage
-      , _listItemIdeaInfo       :: IdeaStats
+      { _listItemIdeaCtx        :: !CapCtx
+      , _listItemIdeaWhatPage   :: !WhatListPage
+      , _listItemIdeaInfo       :: !IdeaStats
       }
   deriving (Eq, Show, Read, Generic)
 
 -- | An idea list.  Contains the information for constructing 'ListItemIdea' values, plus the
 -- search/filter header of the list.
 data ListItemIdeas = ListItemIdeas
-      { _listItemIdeasCtx      :: CapCtx
-      , _listItemIdeasWhatPage :: WhatListPage
-      , _listItemIdeasLocation :: IdeaLocation
-      , _listItemIdeasFilter   :: IdeasQuery
-      , _listItemIdeasData     :: [IdeaStats]
+      { _listItemIdeasCtx      :: !CapCtx
+      , _listItemIdeasWhatPage :: WhatListPage -- TODO!
+      , _listItemIdeasLocation :: IdeaLocation -- TODO!
+      , _listItemIdeasFilter   :: !IdeasQuery
+      , _listItemIdeasData     :: [IdeaStats] -- TODO!
       }
   deriving (Eq, Show, Read, Generic)
 

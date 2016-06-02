@@ -15,7 +15,7 @@ import           LifeCycle
 import           Persistent.Idiom
 
 
-data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaVoteLikeBarsMode CapCtx IdeaStats
+data IdeaVoteLikeBars = IdeaVoteLikeBars !IdeaVoteLikeBarsMode !CapCtx !IdeaStats
   deriving (Eq, Show, Read)
 
 data IdeaVoteLikeBarsMode = IdeaVoteLikeBarsPlain | IdeaVoteLikeBarsWithButtons

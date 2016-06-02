@@ -22,9 +22,9 @@ import qualified Frontend.Path as U
 
 
 data CommentWidget = CommentWidget
-    { _cwCapCtx   :: CapCtx
-    , _cwIdeaCaps :: [Capability]
-    , _cwComment  :: Comment
+    { _cwCapCtx   :: !CapCtx
+    , _cwIdeaCaps :: ![Capability]
+    , _cwComment  :: !Comment
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -77,7 +77,7 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
     comCaps = capabilities (w ^. cwCapCtx)
 
 
-data CommentVotesWidget = CommentVotesWidget [Capability] Comment
+data CommentVotesWidget = CommentVotesWidget ![Capability] !Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml

@@ -37,7 +37,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * page
 
 -- | 9. User settings
-data PageUserSettings = PageUserSettings User
+data PageUserSettings = PageUserSettings !User
   deriving (Eq, Show, Read)
 
 makeLenses ''PageUserSettings
@@ -48,7 +48,7 @@ instance Page PageUserSettings where
     isAuthorized = userPage
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas !CapCtx !UserView !ListItemIdeas
   deriving (Eq, Show, Read)
 
 makeLenses ''PageUserProfileCreatedIdeas
@@ -58,7 +58,7 @@ instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
 -- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes CapCtx UserView [Delegation]
+data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes !CapCtx !UserView ![Delegation]
   deriving (Eq, Show, Read)
 
 makeLenses ''PageUserProfileDelegatedVotes
@@ -68,7 +68,7 @@ instance Page PageUserProfileDelegatedVotes where
     isAuthorized = userPage -- Are profiles public?
 
 -- | 8.X User profile: Editing the public profile
-data EditUserProfile = EditUserProfile CapCtx User
+data EditUserProfile = EditUserProfile !CapCtx !User
   deriving (Eq, Show, Read)
 
 makeLenses ''EditUserProfile
@@ -82,7 +82,7 @@ instance Page EditUserProfile where
             else accessDenied "You can only edit your own profile"
 
 -- | 8.X Report user profile
-data ReportUserProfile = ReportUserProfile User
+data ReportUserProfile = ReportUserProfile !User
   deriving (Eq, Show, Read)
 
 makeLenses ''ReportUserProfile

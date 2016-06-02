@@ -41,10 +41,10 @@ thereIsAGod nope = if isThere then [minBound..] else nope
 
 data PhaseChange
     = PhaseTimeout
-    | AllIdeasAreMarked { _phaseChangeTimeout :: Timestamp }
-    | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
+    | AllIdeasAreMarked { _phaseChangeTimeout :: !Timestamp }
+    | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: !Timestamp }
     | RevertVotingPhaseToJury
-    | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
+    | RevertResultPhaseToVoting { _phaseChangeTimeout :: !Timestamp }
   deriving (Eq, Show)
 
 data PhaseAction
@@ -127,11 +127,11 @@ instance SOP.Generic Capability
 -- TODO: the current context does not provide with the IdeaSpace, which seems
 -- required to restrict students to their class.
 data CapCtx = CapCtx
-    { _capCtxUser    :: User
-    , _capCtxSpace   :: Maybe IdeaSpace
-    , _capCtxPhase   :: Maybe Phase
-    , _capCtxIdea    :: Maybe Idea
-    , _capCtxComment :: Maybe Comment
+    { _capCtxUser    :: !User
+    , _capCtxSpace   :: !(Maybe IdeaSpace)
+    , _capCtxPhase   :: !(Maybe Phase)
+    , _capCtxIdea    :: !(Maybe Idea)
+    , _capCtxComment :: !(Maybe Comment)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

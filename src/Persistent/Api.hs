@@ -33,7 +33,7 @@ deriveSafeCopy 0 'base ''AulaData
 
 data RunPersistT m =
         RunPersist
-                  { _rpDesc   :: String
+                  { _rpDesc   :: !String
                   , _rpQuery  :: m AulaData
                   , _rpUpdate :: forall ev. (UpdateEvent ev, EventState ev ~ AulaData) => ev -> m (EventResult ev)
                   , _rpClose  :: m ()

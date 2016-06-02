@@ -122,7 +122,7 @@ instance SOP.Generic DurationDays
 -- | Percentage values from 0 to 100, used in quorum computations.
 type Percent = Int
 
-data Either3 a b c = Left3 a | Middle3 b | Right3 c
+data Either3 a b c = Left3 !a | Middle3 !b | Right3 !c
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a b c)
@@ -184,17 +184,17 @@ class FromProto t where
 
 -- | "Idee".  Ideas can be either be wild or contained in exactly one 'Topic'.
 data Idea = Idea
-    { _ideaMeta       :: MetaInfo Idea
-    , _ideaTitle      :: ST
-    , _ideaDesc       :: Document
-    , _ideaCategory   :: Maybe Category
-    , _ideaLocation   :: IdeaLocation
-    , _ideaComments   :: Comments
-    , _ideaLikes      :: IdeaLikes
-    , _ideaVotes      :: IdeaVotes
-    , _ideaJuryResult :: Maybe IdeaJuryResult  -- invariant: isJust => phase of containing topic > JuryPhsae
-    , _ideaVoteResult :: Maybe IdeaVoteResult  -- invariant: isJust => phase of containing topic > VotingPhase
-    , _ideaDeleted    :: Bool
+    { _ideaMeta       :: !(MetaInfo Idea)
+    , _ideaTitle      :: ST -- TODO!
+    , _ideaDesc       :: !Document
+    , _ideaCategory   :: !(Maybe Category)
+    , _ideaLocation   :: !IdeaLocation
+    , _ideaComments   :: !Comments
+    , _ideaLikes      :: !IdeaLikes
+    , _ideaVotes      :: !IdeaVotes
+    , _ideaJuryResult :: !(Maybe IdeaJuryResult)  -- invariant: isJust => phase of containing topic > JuryPhsae
+    , _ideaVoteResult :: !(Maybe IdeaVoteResult)  -- invariant: isJust => phase of containing topic > VotingPhase
+    , _ideaDeleted    :: !Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -202,8 +202,8 @@ instance SOP.Generic Idea
 
 -- | Invariant: for all @IdeaLocationTopic space tid@: idea space of topic with id 'tid' is 'space'.
 data IdeaLocation =
-      IdeaLocationSpace { _ideaLocationSpace :: IdeaSpace }
-    | IdeaLocationTopic { _ideaLocationSpace :: IdeaSpace, _ideaLocationTopicId :: AUID Topic }
+      IdeaLocationSpace { _ideaLocationSpace :: !IdeaSpace }
+    | IdeaLocationTopic { _ideaLocationSpace :: !IdeaSpace, _ideaLocationTopicId :: !(AUID Topic) }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaLocation
@@ -214,10 +214,10 @@ instance HasUILabel IdeaLocation where
 
 -- | Prototype for Idea creation.
 data ProtoIdea = ProtoIdea
-    { _protoIdeaTitle      :: ST
-    , _protoIdeaDesc       :: Document
-    , _protoIdeaCategory   :: Maybe Category
-    , _protoIdeaLocation   :: IdeaLocation
+    { _protoIdeaTitle      :: ST -- TODO!
+    , _protoIdeaDesc       :: Document -- TODO!
+    , _protoIdeaCategory   :: !(Maybe Category)
+    , _protoIdeaLocation   :: IdeaLocation -- TODO!
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -272,7 +272,7 @@ instance HasUILabel Category where
 
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
-data IdeaLike = IdeaLike
+newtype IdeaLike = IdeaLike
     { _likeMeta  :: MetaInfo IdeaLike
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -283,8 +283,8 @@ type instance Proto IdeaLike = ()
 
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote'.
 data IdeaVote = IdeaVote
-    { _ideaVoteMeta  :: MetaInfo IdeaVote
-    , _ideaVoteValue :: IdeaVoteValue
+    { _ideaVoteMeta  :: !(MetaInfo IdeaVote)
+    , _ideaVoteValue :: !IdeaVoteValue
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -298,16 +298,16 @@ data IdeaVoteValue = Yes | No
 instance SOP.Generic IdeaVoteValue
 
 data IdeaVoteLikeKey = IdeaVoteLikeKey
-    { _ivIdea :: AUID Idea
-    , _ivUser :: AUID User
+    { _ivIdea :: !(AUID Idea)
+    , _ivUser :: !(AUID User)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVoteLikeKey
 
 data IdeaJuryResult = IdeaJuryResult
-    { _ideaJuryResultMeta   :: MetaInfo IdeaJuryResult
-    , _ideaJuryResultValue  :: IdeaJuryResultValue
+    { _ideaJuryResultMeta   :: !(MetaInfo IdeaJuryResult)
+    , _ideaJuryResultValue  :: !IdeaJuryResultValue
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -321,8 +321,8 @@ data IdeaJuryResultType
 instance SOP.Generic IdeaJuryResultType
 
 data IdeaJuryResultValue
-    = NotFeasible { _ideaResultNotFeasibleReason :: Document }
-    | Feasible    { _ideaResultFeasibleReason    :: Maybe Document }
+    = NotFeasible { _ideaResultNotFeasibleReason :: !Document }
+    | Feasible    { _ideaResultFeasibleReason    :: !(Maybe Document) }
   deriving (Eq, Ord, Show, Read, Generic)
 
 type instance Proto IdeaJuryResult = IdeaJuryResultValue
@@ -343,15 +343,15 @@ showJuryResultTypeUI IdeaFeasible    = "durchführbar"
 instance SOP.Generic IdeaJuryResultValue
 
 data IdeaVoteResult = IdeaVoteResult
-    { _ideaVoteResultMeta   :: MetaInfo IdeaVoteResult
-    , _ideaVoteResultValue  :: IdeaVoteResultValue
+    { _ideaVoteResultMeta   :: !(MetaInfo IdeaVoteResult)
+    , _ideaVoteResultValue  :: !IdeaVoteResultValue
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVoteResult
 
 data IdeaVoteResultValue
-    = Winning     { _ideaResultCreatorStatement  :: Maybe Document }
+    = Winning     { _ideaResultCreatorStatement  :: !(Maybe Document) }
     | EnoughVotes Bool
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -361,7 +361,7 @@ type instance Proto IdeaVoteResult = IdeaVoteResultValue
 
 data MoveIdea
     = MoveIdeaToWild
-    | MoveIdeaToTopic (AUID Topic)
+    | MoveIdeaToTopic !(AUID Topic)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic MoveIdea
@@ -382,11 +382,11 @@ moveIdeaElim wild topic = \case
 -- for a comment, or even against it.  Even though the latter may never make sense, somebody may
 -- still learn something from trying it out, and this is a teaching application.
 data Comment = Comment
-    { _commentMeta    :: MetaInfo Comment
-    , _commentText    :: Document
-    , _commentVotes   :: CommentVotes
-    , _commentReplies :: Comments
-    , _commentDeleted :: Bool
+    { _commentMeta    :: !(MetaInfo Comment)
+    , _commentText    :: !Document
+    , _commentVotes   :: !CommentVotes
+    , _commentReplies :: !Comments
+    , _commentDeleted :: !Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -407,9 +407,9 @@ commentNestingElim top nested = \case
 --              then `y` is a reply to `x`. See also `traverseParents` for a use of that field.
 data CommentKey = CommentKey
     { _ckIdeaLocation  :: IdeaLocation
-    , _ckIdeaId        :: AUID Idea
-    , _ckParents       :: [AUID Comment]
-    , _ckCommentId     :: AUID Comment
+    , _ckIdeaId        :: !(AUID Idea)
+    , _ckParents       :: ![AUID Comment]
+    , _ckCommentId     :: !(AUID Comment)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -423,7 +423,7 @@ instance SOP.Generic CommentKey
 
 data CommentVoteKey = CommentVoteKey
     { _cvCommentKey :: CommentKey
-    , _cvUser      :: AUID User
+    , _cvUser       :: !(AUID User)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -438,7 +438,7 @@ type instance Proto Comment = CommentContent
 
 -- | "Stimme" for "Verbesserungsvorschlag"
 data CommentVote = CommentVote
-    { _commentVoteMeta  :: MetaInfo CommentVote
+    { _commentVoteMeta  :: !(MetaInfo CommentVote)
     , _commentVoteValue :: UpDown
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -453,8 +453,8 @@ data UpDown = Up | Down
 instance SOP.Generic UpDown
 
 data CommentContext = CommentContext
-    { _parentIdea    :: Idea
-    , _parentComment :: Maybe Comment
+    { _parentIdea    :: !Idea
+    , _parentComment :: !(Maybe Comment)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -466,7 +466,7 @@ instance SOP.Generic CommentContext
 -- | "Ideenraum" is one of "Klasse", "Schule".
 data IdeaSpace =
     SchoolSpace
-  | ClassSpace { _ideaSpaceSchoolClass :: SchoolClass }
+  | ClassSpace { _ideaSpaceSchoolClass :: !SchoolClass }
   deriving (Eq, Show, Read, Generic)
 
 -- e.g.: ["Klasse 10a", "Klasse 7b", "Klasse 7a"]
@@ -499,8 +499,8 @@ ideaSpaceToSchoolClass _                 = Nothing
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass
-    { _classSchoolYear :: Int -- ^ e.g. 2015
-    , _className       :: ST  -- ^ e.g. "7a"
+    { _classSchoolYear :: !Int -- ^ e.g. 2015
+    , _className       :: !ST  -- ^ e.g. "7a"
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -515,24 +515,24 @@ schoolClass = SchoolClass
 -- has reached a quorum, plus more ideas that the moderator decides belong here.  'Topic's have
 -- 'Phase's.  All 'Idea's in a 'Topic' must have the same 'IdeaSpace' as the 'Topic'.
 data Topic = Topic
-    { _topicMeta      :: MetaInfo Topic
-    , _topicTitle     :: ST
-    , _topicDesc      :: PlainDocument
-    , _topicImage     :: URL
-    , _topicIdeaSpace :: IdeaSpace
-    , _topicPhase     :: Phase
+    { _topicMeta      :: !(MetaInfo Topic)
+    , _topicTitle     :: ST -- TODO!
+    , _topicDesc      :: PlainDocument -- TODO!
+    , _topicImage     :: !URL
+    , _topicIdeaSpace :: !IdeaSpace
+    , _topicPhase     :: !Phase
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Topic
 
 data ProtoTopic = ProtoTopic
-    { _protoTopicTitle       :: ST
-    , _protoTopicDesc        :: PlainDocument
-    , _protoTopicImage       :: URL
-    , _protoTopicIdeaSpace   :: IdeaSpace
-    , _protoTopicIdeas       :: [AUID Idea]
-    , _protoTopicRefPhaseEnd :: Timestamp
+    { _protoTopicTitle       :: ST -- TODO!
+    , _protoTopicDesc        :: !PlainDocument
+    , _protoTopicImage       :: !URL
+    , _protoTopicIdeaSpace   :: IdeaSpace -- TODO!
+    , _protoTopicIdeas       :: [AUID Idea] -- TODO!
+    , _protoTopicRefPhaseEnd :: Timestamp -- TODO!
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -542,17 +542,17 @@ type instance Proto Topic = ProtoTopic
 
 -- Edit topic description and add ideas to topic.
 data EditTopicData = EditTopicData
-    { _editTopicTitle    :: ST
-    , _editTopicDesc     :: PlainDocument
-    , _editTopicAddIdeas :: [AUID Idea]
+    { _editTopicTitle    :: !ST
+    , _editTopicDesc     :: !PlainDocument
+    , _editTopicAddIdeas :: ![AUID Idea]
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic EditTopicData
 
 data PhaseStatus
-  = ActivePhase { _phaseEnd :: Timestamp }
-  | FrozenPhase { _phaseLeftover :: Timespan }
+  = ActivePhase { _phaseEnd      :: !Timestamp }
+  | FrozenPhase { _phaseLeftover :: !Timespan }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic PhaseStatus
@@ -565,11 +565,11 @@ phaseLeftoverFrom now f = \case
 -- | Topic phases.  (Phase 1.: "wild ideas", is where 'Topic's are born, and we don't need a
 -- constructor for that here.)
 data Phase =
-    PhaseWildIdea   { _phaseWildFrozen :: Freeze }
-  | PhaseRefinement { _phaseStatus :: PhaseStatus }
+    PhaseWildIdea   { _phaseWildFrozen :: !Freeze }
+  | PhaseRefinement { _phaseStatus :: !PhaseStatus }
                                -- ^ 2. "Ausarbeitungsphase"
   | PhaseJury                  -- ^ 3. "Prüfungsphase"
-  | PhaseVoting     { _phaseStatus :: PhaseStatus }
+  | PhaseVoting     { _phaseStatus :: !PhaseStatus }
                                -- ^ 4. "Abstimmungsphase"
   | PhaseResult                -- ^ 5. "Ergebnisphase"
   deriving (Eq, Ord, Show, Read, Generic)
@@ -595,29 +595,29 @@ followsPhase _               _                   = False
 -- * user
 
 data UserProfile = UserProfile
-    { _profileAvatar :: Maybe URL -- FIXME: This is a FilePath now
-    , _profileDesc   :: Document
+    { _profileAvatar :: !(Maybe URL) -- FIXME: This is a FilePath now
+    , _profileDesc   :: !Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserProfile
 
 data UserSettings = UserSettings
-    { _userSettingsPassword :: UserPass
-    , _userSettingsEmail    :: Maybe EmailAddress
+    { _userSettingsPassword :: UserPass -- TODO!
+    , _userSettingsEmail    :: Maybe EmailAddress -- TODO!
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserSettings
 
 data User = User
-    { _userMeta      :: MetaInfo User
-    , _userLogin     :: UserLogin
-    , _userFirstName :: UserFirstName
-    , _userLastName  :: UserLastName
-    , _userRole      :: Role
-    , _userProfile   :: UserProfile
-    , _userSettings  :: UserSettings
+    { _userMeta      :: (MetaInfo User)
+    , _userLogin     :: UserLogin -- TODO!
+    , _userFirstName :: !UserFirstName
+    , _userLastName  :: !UserLastName
+    , _userRole      :: Role -- TODO!
+    , _userProfile   :: !UserProfile
+    , _userSettings  :: UserSettings -- TODO!
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -636,18 +636,18 @@ type instance Proto User = ProtoUser
 
 -- FIXME: Reduce the information which stored in the 'DeleteUser' constructor.
 data UserView
-    = ActiveUser  { _activeUser  :: User }
-    | DeletedUser { _deletedUser :: User }
+    = ActiveUser  { _activeUser  :: !User }
+    | DeletedUser { _deletedUser :: !User }
   deriving (Eq, Ord, Show, Read, Generic)
 
 data ProtoUser = ProtoUser
-    { _protoUserLogin     :: Maybe UserLogin
-    , _protoUserFirstName :: UserFirstName
-    , _protoUserLastName  :: UserLastName
-    , _protoUserRole      :: Role
-    , _protoUserPassword  :: InitialPassword
-    , _protoUserEmail     :: Maybe EmailAddress
-    , _protoUserDesc      :: Document
+    { _protoUserLogin     :: !(Maybe UserLogin)
+    , _protoUserFirstName :: !UserFirstName
+    , _protoUserLastName  :: !UserLastName
+    , _protoUserRole      :: !Role
+    , _protoUserPassword  :: !InitialPassword
+    , _protoUserEmail     :: (Maybe EmailAddress) -- TODO!
+    , _protoUserDesc      :: !Document
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -656,8 +656,8 @@ instance SOP.Generic ProtoUser
 -- | Note that all roles except 'Student' and 'ClassGuest' have the same access to all IdeaSpaces.
 -- (Rationale: e.g. teachers have trust each other and can cover for each other.)
 data Role =
-    Student    { _roleSchoolClass :: SchoolClass }
-  | ClassGuest { _roleSchoolClass :: SchoolClass } -- ^ e.g., parents
+    Student    { _roleSchoolClass :: !SchoolClass }
+  | ClassGuest { _roleSchoolClass :: !SchoolClass } -- ^ e.g., parents
   | SchoolGuest  -- ^ e.g., researchers
   | Moderator
   | Principal
@@ -678,8 +678,8 @@ newtype EncryptedPassword = FakeEncryptedPassword { _unEncryptedPassword :: SBS 
 instance SOP.Generic EncryptedPassword
 
 data UserPass =
-    UserPassInitial   { _userPassInitial   :: InitialPassword }
-  | UserPassEncrypted { _userPassEncrypted :: EncryptedPassword }
+    UserPassInitial   { _userPassInitial   :: !InitialPassword }
+  | UserPassEncrypted { _userPassEncrypted :: !EncryptedPassword }
   | UserPassDeactivated
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -710,10 +710,10 @@ instance SafeCopy EmailAddress where
 
 -- | "Beauftragung"
 data Delegation = Delegation
-    { _delegationMeta    :: MetaInfo Delegation
-    , _delegationContext :: DelegationContext
-    , _delegationFrom    :: AUID User
-    , _delegationTo      :: AUID User
+    { _delegationMeta    :: !(MetaInfo Delegation)
+    , _delegationContext :: !DelegationContext
+    , _delegationFrom    :: !(AUID User)
+    , _delegationTo      :: !(AUID User)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -723,9 +723,9 @@ type instance Proto Delegation = ProtoDelegation
 
 -- | "Beauftragung"
 data ProtoDelegation = ProtoDelegation
-    { _protoDelegationContext :: DelegationContext
-    , _protoDelegationFrom    :: AUID User
-    , _protoDelegationTo      :: AUID User
+    { _protoDelegationContext :: !DelegationContext
+    , _protoDelegationFrom    :: !(AUID User)
+    , _protoDelegationTo      :: !(AUID User)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -733,16 +733,16 @@ instance SOP.Generic ProtoDelegation
 
 data DelegationContext =
     DlgCtxGlobal
-  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
-  | DlgCtxTopicId   { _delCtxTopicId   :: AUID Topic }
-  | DlgCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
+  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: !IdeaSpace    }
+  | DlgCtxTopicId   { _delCtxTopicId   :: !(AUID Topic) }
+  | DlgCtxIdeaId    { _delCtxIdeaId    :: !(AUID Idea)  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationContext
 
 data DelegationNetwork = DelegationNetwork
-    { _networkUsers         :: [User]
-    , _networkDelegations   :: [Delegation]
+    { _networkUsers         :: ![User]
+    , _networkDelegations   :: ![Delegation]
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -751,16 +751,16 @@ instance SOP.Generic DelegationNetwork
 -- | Elaboration and Voting phase durations
 -- FIXME: elaboration and refinement are the same thing.  pick one term!
 data Durations = Durations
-    { _elaborationPhase :: DurationDays
-    , _votingPhase      :: DurationDays
+    { _elaborationPhase :: !DurationDays
+    , _votingPhase      :: !DurationDays
     }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic Durations
 
 data Quorums = Quorums
-    { _schoolQuorumPercentage :: Int
-    , _classQuorumPercentage  :: Int -- (there is only one quorum for all classes, see gh#318)
+    { _schoolQuorumPercentage :: !Int
+    , _classQuorumPercentage  :: !Int -- (there is only one quorum for all classes, see gh#318)
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -772,9 +772,9 @@ data Freeze = NotFrozen | Frozen
 instance SOP.Generic Freeze
 
 data Settings = Settings
-    { _durations :: Durations
-    , _quorums   :: Quorums
-    , _freeze    :: Freeze
+    { _durations :: !Durations
+    , _quorums   :: !Quorums
+    , _freeze    :: !Freeze
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -853,13 +853,13 @@ instance HasUriPart (AUID a) where
 -- np@2016-04-18: Actually `Idea MetaInfo` does not work well. Parameters of kind `* -> *` are not
 -- well supported by generics and deriving mechanisms.
 data GMetaInfo a k = MetaInfo
-    { _metaKey             :: k
-    , _metaCreatedBy       :: AUID User
-    , _metaCreatedByLogin  :: UserLogin -- FIXME: If the user is deleted it still contains the user information
-    , _metaCreatedByAvatar :: Maybe URL
-    , _metaCreatedAt       :: Timestamp
-    , _metaChangedBy       :: AUID User
-    , _metaChangedAt       :: Timestamp
+    { _metaKey             :: !k
+    , _metaCreatedBy       :: !(AUID User)
+    , _metaCreatedByLogin  :: !UserLogin -- FIXME: If the user is deleted it still contains the user information
+    , _metaCreatedByAvatar :: !(Maybe URL)
+    , _metaCreatedAt       :: !Timestamp
+    , _metaChangedBy       :: !(AUID User)
+    , _metaChangedAt       :: !Timestamp
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -932,12 +932,12 @@ timestampFormatLength :: Int
 timestampFormatLength = length ("1864-04-13_13:01:33_846177415049" :: String)
 
 data Timespan =  -- FIXME: import this from thentos?  create a package thentos-base?
-    TimespanUs    Integer
-  | TimespanMs    Integer
-  | TimespanSecs  Integer
-  | TimespanMins  Integer
-  | TimespanHours Integer
-  | TimespanDays  Integer
+    TimespanUs    !Integer
+  | TimespanMs    !Integer
+  | TimespanSecs  !Integer
+  | TimespanMins  !Integer
+  | TimespanHours !Integer
+  | TimespanDays  !Integer
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Timespan

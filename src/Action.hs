@@ -165,10 +165,10 @@ type StatusMessage = ST
 
 -- | User representation during an action
 data UserState = UserState
-    { _usSessionToken :: Maybe ThentosSessionToken
-    , _usCsrfToken    :: Maybe CsrfToken
-    , _usUserId       :: Maybe (AUID User)
-    , _usMessages     :: [StatusMessage]
+    { _usSessionToken :: !(Maybe ThentosSessionToken)
+    , _usCsrfToken    :: !(Maybe CsrfToken)
+    , _usUserId       :: !(Maybe (AUID User))
+    , _usMessages     :: ![StatusMessage]
     }
   deriving (Show, Eq)
 
@@ -178,9 +178,9 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing []
 
 data ActionEnv = ActionEnv
-    { _envRunPersist :: RunPersist
-    , _envConfig     :: Config
-    , _envLogger     :: SendLogMsg
+    { _envRunPersist :: !RunPersist
+    , _envConfig     :: !Config
+    , _envLogger     :: !SendLogMsg
     }
 
 makeLenses ''ActionEnv
@@ -195,11 +195,11 @@ instance GetConfig ActionEnv where
 --
 -- FIXME: 'ServantErr' should be abstracted away.
 data ActionExcept
-    = ActionExcept { unActionExcept :: ServantErr }
-    | ActionPersistExcept PersistExcept
-    | ActionSendMailExcept SendMailError
-    | ActionEventLogExcept SomeException
-    | ActionIOExcept SomeException
+    = ActionExcept { unActionExcept :: !ServantErr }
+    | ActionPersistExcept !PersistExcept
+    | ActionSendMailExcept !SendMailError
+    | ActionEventLogExcept !SomeException
+    | ActionIOExcept !SomeException
     deriving (Show)
 
 makePrisms ''ActionExcept
@@ -716,10 +716,10 @@ resetPassword = update <..> ResetUserPass
 -- * phase shift
 
 data PhaseShiftResult =
-    PhaseShiftResultOk (AUID Topic) Phase Phase
-  | PhaseShiftResultNoBackwardsFromRefinement (AUID Topic)
-  | PhaseShiftResultNoForwardFromResult (AUID Topic)
-  | PhaseShiftResultNoShiftingWhenFrozen (AUID Topic)
+    PhaseShiftResultOk !(AUID Topic) !Phase !Phase
+  | PhaseShiftResultNoBackwardsFromRefinement !(AUID Topic)
+  | PhaseShiftResultNoForwardFromResult !(AUID Topic)
+  | PhaseShiftResultNoShiftingWhenFrozen !(AUID Topic)
   deriving (Eq, Ord, Show, Read)
 
 instance HasUILabel PhaseShiftResult where

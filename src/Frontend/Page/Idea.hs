@@ -89,7 +89,7 @@ import qualified Types (MoveIdea)
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea { _viCtx :: CapCtx, _viStats :: IdeaStats }
+data ViewIdea = ViewIdea { _viCtx :: !CapCtx, _viStats :: !IdeaStats }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic ViewIdea
@@ -100,11 +100,11 @@ makePrisms ''ViewIdea
 instance Page ViewIdea where
     isAuthorized = authNeedCaps [CanView] viCtx
 
-data ViewDeletedIdea = ViewDeletedIdea Idea
+data ViewDeletedIdea = ViewDeletedIdea !Idea
   deriving (Eq, Show, Read)
 
 -- | 6. Create idea
-data CreateIdea = CreateIdea { _ciCtx :: CapCtx, _ciLoc :: IdeaLocation }
+data CreateIdea = CreateIdea { _ciCtx :: !CapCtx, _ciLoc :: !IdeaLocation }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic CreateIdea
@@ -116,7 +116,7 @@ instance Page CreateIdea where
     isAuthorized = authNeedCaps [CanCreateIdea] ciCtx
 
 -- | 7. Edit idea
-data EditIdea = EditIdea { _eiCtx :: CapCtx, _eiIdea :: Idea }
+data EditIdea = EditIdea { _eiCtx :: !CapCtx, _eiIdea :: !Idea }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic EditIdea
@@ -129,7 +129,7 @@ instance Page EditIdea where
 
 -- | X. Move idea
 -- Move idea to a topic.
-data MoveIdea = MoveIdea { _miCtx :: CapCtx, _miIdea :: Idea, _miTopicChoices :: [Topic] }
+data MoveIdea = MoveIdea { _miCtx :: !CapCtx, _miIdea :: !Idea, _miTopicChoices :: ![Topic] }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic MoveIdea
@@ -140,7 +140,7 @@ makePrisms ''MoveIdea
 instance Page MoveIdea where
     isAuthorized = authNeedCaps [CanMoveBetweenLocations] miCtx
 
-data ReportIdea = ReportIdea { _riCtx :: CapCtx, _riIdea :: Idea }
+data ReportIdea = ReportIdea { _riCtx :: !CapCtx, _riIdea :: !Idea }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic ReportIdea
@@ -154,7 +154,7 @@ instance Page ReportIdea where
 
 -- | X. Comment idea
 data CommentOnIdea = CommentOnIdea
-    { _coiCtx :: CapCtx, _coiIdea :: Idea, _coiComment :: Maybe Comment }
+    { _coiCtx :: !CapCtx, _coiIdea :: !Idea, _coiComment :: !(Maybe Comment) }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic CommentOnIdea
@@ -168,10 +168,10 @@ instance Page CommentOnIdea where
 -- | X. Deem idea feasible / not feasible
 -- Assumption: The idea is located in the topic (via 'IdeaLocation').
 data JudgeIdea = JudgeIdea
-    { _jiCtx    :: CapCtx
-    , _jiResult :: IdeaJuryResultType
-    , _jiIdea   :: Idea
-    , _jiTopic  :: Topic
+    { _jiCtx    :: !CapCtx
+    , _jiResult :: !IdeaJuryResultType
+    , _jiIdea   :: !Idea
+    , _jiTopic  :: !Topic
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -183,7 +183,7 @@ makePrisms ''JudgeIdea
 instance Page JudgeIdea where
     isAuthorized = authNeedCaps [CanMarkFeasiblity] jiCtx
 
-data CreatorStatement = CreatorStatement { _csCtx :: CapCtx, _csIdea :: Idea }
+data CreatorStatement = CreatorStatement { _csCtx :: !CapCtx, _csIdea :: !Idea }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic CreatorStatement
@@ -194,7 +194,7 @@ makePrisms ''CreatorStatement
 instance Page CreatorStatement where
     isAuthorized = authNeedCaps [CanEditCreatorStatement] csCtx
 
-data ReportComment = ReportComment { _rcCtx :: CapCtx, _rcComment :: Comment }
+data ReportComment = ReportComment { _rcCtx :: !CapCtx, _rcComment :: !Comment }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic ReportComment
@@ -208,7 +208,7 @@ instance Page ReportComment where
 
 -- We could track wether or not the comment is a reply, but this information is not used yet.
 data EditComment
-    = EditComment { _ecCtx :: CapCtx, _ecIdea :: Idea, _ecComment :: Comment }
+    = EditComment { _ecCtx :: !CapCtx, _ecIdea :: !Idea, _ecComment :: !Comment }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic EditComment

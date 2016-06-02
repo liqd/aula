@@ -43,7 +43,7 @@ instance ConvertibleStrings UriPart String where
 -- aim at.  Mentioned in RFC3986 as "has been witnessed in the wild, but not often".
 data UriPath = DiffUriParts
     { appendUriParts    :: [UriPart] -> [UriPart]
-    , diffUriPartsQuery :: HTTP.Query
+    , diffUriPartsQuery :: !HTTP.Query
     }
 
 instance Monoid UriPath where

@@ -67,7 +67,7 @@ instance Filter a => Filter (Maybe a) where
 
 -- * filter and sort ideas
 
-data IdeasFilterQuery = AllIdeas | IdeasWithCat { _catFilter :: Category }
+data IdeasFilterQuery = AllIdeas | IdeasWithCat { _catFilter :: !Category }
   deriving (Eq, Ord, Show, Read, Generic)
 type IdeasFilterApi = FilterApi Category
 
@@ -131,8 +131,8 @@ instance Filter   SortIdeasBy where
 type instance FilterName SortIdeasBy = "sortby"
 
 data IdeasQuery = IdeasQuery
-    { _ideasQueryF :: IdeasFilterQuery
-    , _ideasQueryS :: SortIdeasBy
+    { _ideasQueryF :: !IdeasFilterQuery
+    , _ideasQueryS :: !SortIdeasBy
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -227,7 +227,7 @@ instance Filter SearchUsers where
 
 type instance FilterName SearchUsers = "search"
 
-data UsersFilterQuery = AllUsers | UsersWithText { _searchUsers :: SearchUsers }
+data UsersFilterQuery = AllUsers | UsersWithText { _searchUsers :: !SearchUsers }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UsersFilterQuery
@@ -244,8 +244,8 @@ instance Filter UsersFilterQuery where
     renderFilter f = renderFilter $ f ^? searchUsers
 
 data UsersQuery = UsersQuery
-    { _usersQueryF :: UsersFilterQuery
-    , _usersQueryS :: SortUsersBy
+    { _usersQueryF :: !UsersFilterQuery
+    , _usersQueryS :: !SortUsersBy
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -271,7 +271,7 @@ newtype SearchClasses = SearchClasses ST
 
 type ClassesFilterApi = FilterApi SearchClasses
 
-data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: SearchClasses }
+data ClassesFilterQuery = AllClasses | ClassesWithText { _searchClasses :: !SearchClasses }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic SearchClasses

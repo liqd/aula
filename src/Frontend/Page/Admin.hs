@@ -53,7 +53,7 @@ import qualified Frontend.Path as U
 
 -- | 11.1 Admin settings: Durations
 data PageAdminSettingsDurations =
-    PageAdminSettingsDurations Durations
+    PageAdminSettingsDurations !Durations
   deriving (Eq, Show, Read)
 
 makeLenses ''PageAdminSettingsDurations
@@ -63,7 +63,7 @@ instance Page PageAdminSettingsDurations where isAuthorized = adminPage
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
-    PageAdminSettingsQuorum Quorums
+    PageAdminSettingsQuorum !Quorums
   deriving (Eq, Show, Read)
 
 makeLenses ''PageAdminSettingsQuorum
@@ -73,7 +73,7 @@ instance Page PageAdminSettingsQuorum where isAuthorized = adminPage
 
 -- | Admin settings: Freeze
 data PageAdminSettingsFreeze =
-    PageAdminSettingsFreeze Freeze
+    PageAdminSettingsFreeze !Freeze
   deriving (Eq, Show, Read)
 
 makeLenses ''PageAdminSettingsFreeze
@@ -82,7 +82,7 @@ makePrisms ''PageAdminSettingsFreeze
 instance Page PageAdminSettingsFreeze where isAuthorized = adminPage
 
 -- | 11.3 Admin settings: Manage groups & permissions
-data AdminViewUsers = AdminViewUsers UsersQuery [UserView]
+data AdminViewUsers = AdminViewUsers !UsersQuery ![UserView]
   deriving (Eq, Show, Read)
 
 makeLenses ''AdminViewUsers
@@ -90,7 +90,7 @@ makePrisms ''AdminViewUsers
 
 instance Page AdminViewUsers where isAuthorized = adminPage
 
-data AdminCreateUser = AdminCreateUser [SchoolClass]
+data AdminCreateUser = AdminCreateUser ![SchoolClass]
   deriving (Eq, Show, Read)
 
 makeLenses ''AdminCreateUser
@@ -98,7 +98,7 @@ makePrisms ''AdminCreateUser
 
 instance Page AdminCreateUser where isAuthorized = adminPage
 
-data AdminEditUser = AdminEditUser User [SchoolClass]
+data AdminEditUser = AdminEditUser !User ![SchoolClass]
   deriving (Eq, Show, Read)
 
 makeLenses ''AdminEditUser
@@ -106,7 +106,7 @@ makePrisms ''AdminEditUser
 
 instance Page AdminEditUser where isAuthorized = adminPage
 
-data AdminDeleteUser = AdminDeleteUser User
+data AdminDeleteUser = AdminDeleteUser !User
   deriving (Eq, Show, Read)
 
 makeLenses ''AdminDeleteUser
@@ -114,7 +114,7 @@ makePrisms ''AdminDeleteUser
 
 instance Page AdminDeleteUser where isAuthorized = adminPage
 
-data AdminViewClasses = AdminViewClasses ClassesFilterQuery [SchoolClass]
+data AdminViewClasses = AdminViewClasses !ClassesFilterQuery ![SchoolClass]
   deriving (Eq, Show, Read)
 
 makeLenses ''AdminViewClasses
@@ -130,7 +130,7 @@ makePrisms ''AdminCreateClass
 
 instance Page AdminCreateClass where isAuthorized = adminPage
 
-data AdminEditClass = AdminEditClass SchoolClass [UserView]
+data AdminEditClass = AdminEditClass !SchoolClass ![UserView]
   deriving (Eq, Show, Read)
 
 makeLenses ''AdminEditClass
@@ -148,7 +148,7 @@ instance Page AdminPhaseChange where isAuthorized = adminPage
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
-    PageAdminSettingsEventsProtocol [IdeaSpace]
+    PageAdminSettingsEventsProtocol ![IdeaSpace]
   deriving (Eq, Show, Read)
 
 makeLenses ''PageAdminSettingsEventsProtocol
@@ -157,7 +157,7 @@ makePrisms ''PageAdminSettingsEventsProtocol
 instance Page PageAdminSettingsEventsProtocol where isAuthorized = adminPage
 
 data PageAdminResetPassword =
-    PageAdminResetPassword User InitialPassword
+    PageAdminResetPassword !User !InitialPassword
   deriving (Eq, Show, Read)
 
 makeLenses ''PageAdminResetPassword
@@ -166,11 +166,11 @@ makePrisms ''PageAdminResetPassword
 instance Page PageAdminResetPassword where isAuthorized = adminPage
 
 data CreateUserPayload = CreateUserPayload
-    { _createUserFirstName :: UserFirstName
-    , _createUserLastName  :: UserLastName
-    , _createUserLogin     :: Maybe UserLogin
-    , _createUserEmail     :: Maybe EmailAddress
-    , _createUserRole      :: Role
+    { _createUserFirstName :: !UserFirstName
+    , _createUserLastName  :: !UserLastName
+    , _createUserLogin     :: !(Maybe UserLogin)
+    , _createUserEmail     :: !(Maybe EmailAddress)
+    , _createUserRole      :: !Role
     }
   deriving (Eq, Generic, Show)
 
@@ -273,7 +273,7 @@ adminFrame t bdy = do
   where
     tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST (U.AdminMode 'U.AllowGetPost) ST
+data MenuLink = MenuLink !ST !(U.AdminMode 'U.AllowGetPost) !ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
@@ -608,7 +608,7 @@ instance HasUILabel RoleSelection where
 
 -- | (the login must always be provided in the posted data, but it is turned into Nothing in the
 -- validator if it has not changed.)
-data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) Role
+data AdminEditUserPayload = AdminEditUserPayload !(Maybe UserLogin) !Role
   deriving (Eq, Show)
 
 makeLenses ''AdminEditUserPayload
@@ -752,7 +752,7 @@ adminDeleteUser uid =
 
 -- ** Events protocol
 
-data EventsProtocolFilter = EventsProtocolFilter (Maybe IdeaSpace)
+data EventsProtocolFilter = EventsProtocolFilter !(Maybe IdeaSpace)
   deriving (Eq, Ord, Show, Read)
 
 makeLenses ''EventsProtocolFilter
@@ -791,7 +791,7 @@ adminEventLogCsv mspc = hdrs . maybe id filterEventLog mspc <$> readEventLog
 
 -- * Classes Create
 
-data BatchCreateUsersFormData = BatchCreateUsersFormData ST (Maybe FilePath)
+data BatchCreateUsersFormData = BatchCreateUsersFormData !ST !(Maybe FilePath)
   deriving (Eq, Show, Generic)
 
 instance SOP.Generic BatchCreateUsersFormData
@@ -867,7 +867,7 @@ adminPhaseChange =
         (\(AdminPhaseChangeForTopicData tid dir) -> Action.topicForcePhaseChange dir tid)
 
 
-data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) PhaseChangeDir
+data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData !(AUID Topic) !PhaseChangeDir
   deriving (Eq, Show)
 
 instance FormPage AdminPhaseChange where
@@ -940,17 +940,17 @@ adminResetPassword userId = formPageHandlerWithMsg
 -- * csv file handling
 
 data CsvUserRecord = CsvUserRecord
-    { _csvUserRecordFirst       :: UserFirstName
-    , _csvUserRecordLast        :: UserLastName
-    , _csvUserRecordEmail       :: Maybe EmailAddress
-    , _csvUserRecordLogin       :: Maybe UserLogin
-    , _csvUserRecordInitialPass :: Maybe ST
+    { _csvUserRecordFirst       :: !UserFirstName
+    , _csvUserRecordLast        :: !UserLastName
+    , _csvUserRecordEmail       :: !(Maybe EmailAddress)
+    , _csvUserRecordLogin       :: !(Maybe UserLogin)
+    , _csvUserRecordInitialPass :: !(Maybe ST)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic CsvUserRecord
 
-data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
+data InitialPasswordsCsv = InitialPasswordsCsv ![CsvUserRecord]
   deriving (Eq, Ord, Show, Read, Generic)
 
 makeLenses ''InitialPasswordsCsv

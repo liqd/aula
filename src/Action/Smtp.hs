@@ -32,8 +32,8 @@ import Logger
 import Types
 
 data SendMailError
-  = IOErrorRunningSendMail IOException
-  | NoEmailAddressForUser User
+  = IOErrorRunningSendMail !IOException
+  | NoEmailAddressForUser !User
   deriving (Eq)
 
 instance Show SendMailError where
@@ -53,15 +53,15 @@ instance ThrowSendMailError SendMailError where
 type MonadSendMailError e m = (MonadError e m, ThrowSendMailError e)
 
 data EmailSubjectLabel
-    = IdeaSpaceSubject IdeaSpace
-    | UserLoginSubject UserLogin
+    = IdeaSpaceSubject !IdeaSpace
+    | UserLoginSubject !UserLogin
   deriving (Eq, Ord, Show, Read, Generic)
 
 data EmailMessage = EmailMessage
-    { _msgSubjectLabel :: EmailSubjectLabel
-    , _msgSubjectText  :: ST
-    , _msgBody         :: ST
-    , _msgHtml         :: Maybe ST
+    { _msgSubjectLabel :: !EmailSubjectLabel
+    , _msgSubjectText  :: !ST
+    , _msgBody         :: !ST
+    , _msgHtml         :: !(Maybe ST)
     }
     deriving (Eq, Ord, Show, Read, Generic)
 

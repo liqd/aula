@@ -24,7 +24,7 @@ import qualified Lucid
 -- * page
 
 -- | 16. Home page with login prompt
-data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt LoginDemoHints
+data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt !LoginDemoHints
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
@@ -34,13 +34,13 @@ instance Page PageHomeWithLoginPrompt where
         LoggedIn{}  -> accessRedirected "You are already logged in" U.ListSpaces
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
-data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
+data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: ![User] }
   deriving (Eq, Show, Read)
 
 
 -- * templates
 
-data LoginFormData = LoginFormData ST ST
+data LoginFormData = LoginFormData !ST !ST
   deriving (Eq, Ord, Show)
 
 makePrisms ''LoginFormData

@@ -117,10 +117,10 @@ class HasPath (p :: AllowedMethod -> *) where
 
 data Top (r :: AllowedMethod) =
     Top
-  | TopMain (Main r)
-  | TopTesting UriPath
+  | TopMain !(Main r)
+  | TopTesting !UriPath
   | TopSamples
-  | TopStatic UriPath
+  | TopStatic !UriPath
   deriving Generic
 
 instance SOP.Generic (Top r)
@@ -139,11 +139,11 @@ top (TopStatic p)  = nil </> "static" <> p
 
 data Main (r :: AllowedMethod) =
     ListSpaces
-  | Space IdeaSpace (Space r)
-  | IdeaPath IdeaLocation (IdeaMode r)
-  | UserProf (AUID User) (UserMode r)
+  | Space !IdeaSpace !(Space r)
+  | IdeaPath !IdeaLocation !(IdeaMode r)
+  | UserProf !(AUID User) !(UserMode r)
   | UserSettings
-  | Admin (AdminMode r)
+  | Admin !(AdminMode r)
   | DelegationEdit
   | DelegationView
   | Imprint
@@ -185,12 +185,12 @@ ideaPath loc mode root =
 
 data Space (r :: AllowedMethod) =
     ListTopics
-  | ListIdeasInSpace (Maybe IdeasQuery)
-  | ListIdeasInTopic (AUID Topic) ListIdeasInTopicTab (Maybe IdeasQuery)
+  | ListIdeasInSpace !(Maybe IdeasQuery)
+  | ListIdeasInTopic !(AUID Topic) !ListIdeasInTopicTab !(Maybe IdeasQuery)
   | CreateTopic
-  | EditTopic (AUID Topic)
-  | ViewTopicDelegations (AUID Topic)
-  | CreateTopicDelegation (AUID Topic)
+  | EditTopic !(AUID Topic)
+  | ViewTopicDelegations !(AUID Topic)
+  | CreateTopicDelegation !(AUID Topic)
   deriving (Generic, Show)
 
 instance SOP.Generic (Space r)
@@ -217,23 +217,23 @@ topicTab = \case
 
 data IdeaMode (r :: AllowedMethod) =
       CreateIdea
-    | ViewIdea (AUID Idea) (Maybe (AUID Comment))
-    | EditIdea (AUID Idea)
-    | MoveIdea (AUID Idea)
-    | LikeIdea (AUID Idea)
-    | VoteOnIdea (AUID Idea) IdeaVoteValue
-    | UnvoteOnIdea (AUID Idea) (AUID User)
-    | JudgeIdea (AUID Idea) IdeaJuryResultType
-    | CommentOnIdea (AUID Idea)
-    | MarkIdeaAsWinner (AUID Idea)
-    | UnmarkIdeaAsWinner (AUID Idea)
+    | ViewIdea !(AUID Idea) !(Maybe (AUID Comment))
+    | EditIdea !(AUID Idea)
+    | MoveIdea !(AUID Idea)
+    | LikeIdea !(AUID Idea)
+    | VoteOnIdea !(AUID Idea) !IdeaVoteValue
+    | UnvoteOnIdea !(AUID Idea) !(AUID User)
+    | JudgeIdea !(AUID Idea) !IdeaJuryResultType
+    | CommentOnIdea !(AUID Idea)
+    | MarkIdeaAsWinner !(AUID Idea)
+    | UnmarkIdeaAsWinner !(AUID Idea)
 
     -- FIXME: rename as CommentMode and move to Main since we have the IdeaLocation available in
     -- CommentKey
-    | OnComment CommentKey (CommentMode r)
-    | CreatorStatement (AUID Idea)
-    | DeleteIdea (AUID Idea)
-    | ReportIdea (AUID Idea)
+    | OnComment !CommentKey !(CommentMode r)
+    | CreatorStatement !(AUID Idea)
+    | DeleteIdea !(AUID Idea)
+    | ReportIdea !(AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic (IdeaMode r)
@@ -266,7 +266,7 @@ data CommentMode (r :: AllowedMethod)
     | DeleteComment
     | ReportComment
     | ViewComment
-    | VoteOnComment UpDown
+    | VoteOnComment !UpDown
     | EditComment
     | EditReply
   deriving (Eq, Ord, Show, Read, Generic)
@@ -307,19 +307,19 @@ data AdminMode (r :: AllowedMethod) =
   | AdminQuorum
   | AdminFreeze
   | AdminCreateUser
-  | AdminEditUser (AUID User)
-  | AdminDeleteUser (AUID User)
-  | AdminViewUsers (Maybe UsersQuery)
+  | AdminEditUser !(AUID User)
+  | AdminDeleteUser !(AUID User)
+  | AdminViewUsers !(Maybe UsersQuery)
   | AdminCreateClass
-  | AdminEditClass SchoolClass
-  | AdminViewClasses (Maybe ClassesFilterQuery)
+  | AdminEditClass !SchoolClass
+  | AdminViewClasses !(Maybe ClassesFilterQuery)
   | AdminEvent
-  | AdminDlPass SchoolClass
-  | AdminDlEvents (Maybe IdeaSpace)
-  | AdminTopicNextPhase (AUID Topic)
-  | AdminTopicVotingPrevPhase (AUID Topic)
+  | AdminDlPass !SchoolClass
+  | AdminDlEvents !(Maybe IdeaSpace)
+  | AdminTopicNextPhase !(AUID Topic)
+  | AdminTopicVotingPrevPhase !(AUID Topic)
   | AdminChangePhase
-  | AdminResetPassword (AUID User)
+  | AdminResetPassword !(AUID User)
   deriving (Generic, Show)
 
 instance SOP.Generic (AdminMode r)

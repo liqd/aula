@@ -29,6 +29,7 @@ type ReportText = ST
 
 -- * the dsl ("the action sentences")
 
+-- FIXME: should this type be more strict?
 data Step a where
     -- User actions
     Login               :: UserLogin -> a -> Step a

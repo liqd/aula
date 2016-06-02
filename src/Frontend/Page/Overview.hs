@@ -29,18 +29,18 @@ import qualified Frontend.Path as U
 -- * pages
 
 -- | 1. Rooms overview
-data PageOverviewOfSpaces = PageOverviewOfSpaces [IdeaSpace]
+data PageOverviewOfSpaces = PageOverviewOfSpaces ![IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas CapCtx IdeaSpace ListItemIdeas
+data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas !CapCtx !IdeaSpace !ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageOverviewOfTopics = PageOverviewOfTopics CapCtx IdeaSpace [Topic]
+data PageOverviewOfTopics = PageOverviewOfTopics !CapCtx !IdeaSpace ![Topic]
   deriving (Eq, Show, Read)
 
-data Tabs = Tabs ActiveTab IdeaSpace
+data Tabs = Tabs !ActiveTab !IdeaSpace
   deriving (Eq, Show, Read)
 
 data ActiveTab = WildIdeas | Topics

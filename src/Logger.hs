@@ -27,8 +27,8 @@ data LogLevel
 -- (moderator event log, syslog, admin email, devops email, ...), and decide what to do with each
 -- event based on its type.
 data LogEntry =
-    LogEntry LogLevel ST
-  | LogEntryForModerator EventLogItemCold
+    LogEntry !LogLevel !ST
+  | LogEntryForModerator !EventLogItemCold
   deriving (Eq, Show)
 
 type SendLogMsg = LogEntry -> IO ()

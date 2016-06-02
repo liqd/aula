@@ -176,7 +176,7 @@ type FormCS m r s =
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
 
-data Beside a b = Beside a b
+data Beside a b = Beside !a !b
 
 instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
     toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
@@ -241,7 +241,7 @@ percentVotes idea numVoters vv = {- assert c -} v
 
 data AccessResult
   = AccessGranted
-  | AccessDenied { _accessDeniedMsg :: ST, _accessDeniedRedirect :: Maybe URL }
+  | AccessDenied { _accessDeniedMsg :: !ST, _accessDeniedRedirect :: !(Maybe URL) }
   | AccessDeferred
 
 instance Monoid AccessResult where
@@ -255,7 +255,7 @@ instance Monoid AccessResult where
 
 data AccessInput a
   = NotLoggedIn
-  | LoggedIn { _authUser :: User, _authPage :: Maybe a }
+  | LoggedIn { _authUser :: !User, _authPage :: !(Maybe a) }
 
 instance Functor AccessInput where
     fmap f = \case
@@ -402,9 +402,9 @@ class Page p => FormPage p where
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep
-    { _formPageRepView   :: View (Html ())
-    , _formPageRepAction :: ST
-    , _formPageRepPage   :: p
+    { _formPageRepView   :: !(View (Html ()))
+    , _formPageRepAction :: !ST
+    , _formPageRepPage   :: !p
     }
 
 instance (Show p) => Show (FormPageRep p) where
@@ -508,8 +508,8 @@ form formHandler = getH :<|> postH
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body
-    = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
-    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
+    = Frame { _frameUser :: !User, _frameBody :: !body, _frameMessages :: ![StatusMessage] }
+    | PublicFrame                { _frameBody :: !body, _frameMessages :: ![StatusMessage] }
   deriving (Show, Read, Functor)
 
 -- TODO rename me
@@ -546,8 +546,8 @@ makeFrame mp = do
 
 data JsCallback
     = JsReloadOnClick
-    | JsReloadOnClickAnchor ST
-    | JsRedirectOnClick ST
+    | JsReloadOnClickAnchor !ST
+    | JsRedirectOnClick !ST
   deriving (Eq, Ord, Show, Read)
 
 onclickJs :: JsCallback -> Attribute

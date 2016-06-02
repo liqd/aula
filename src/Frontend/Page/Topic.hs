@@ -61,7 +61,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * types
 
 data ViewTopicTab
-  = TabIdeas { _topicTab :: ListIdeasInTopicTab, viewTopicTabQuery :: IdeasQuery }
+  = TabIdeas { _topicTab :: !ListIdeasInTopicTab, viewTopicTabQuery :: !IdeasQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -76,11 +76,11 @@ makePrisms ''ViewTopicTab
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
   = ViewTopicIdeas
-    { _vtNow         :: Timestamp
-    , _vtCtx         :: CapCtx
-    , _vtTab         :: ViewTopicTab
-    , _vtTopic       :: Topic
-    , _vtIdeas       :: ListItemIdeas
+    { _vtNow   :: !Timestamp
+    , _vtCtx   :: !CapCtx
+    , _vtTab   :: !ViewTopicTab
+    , _vtTopic :: !Topic
+    , _vtIdeas :: !ListItemIdeas
     }
   | ViewTopicDelegations
     { _vtNow         :: Timestamp
@@ -99,10 +99,10 @@ instance Page ViewTopic where
 
 -- | 10.1 Create topic: Create topic
 data CreateTopic = CreateTopic
-    { _ctCtx         :: CapCtx
-    , _ctIdeaSpace   :: IdeaSpace
-    , _ctIdeas       :: [IdeaStats]
-    , _ctRefPhaseEnd :: Timestamp }
+    { _ctCtx         :: !CapCtx
+    , _ctIdeaSpace   :: !IdeaSpace
+    , _ctIdeas       :: ![IdeaStats]
+    , _ctRefPhaseEnd :: !Timestamp }
   deriving (Eq, Show, Read)
 
 makeLenses ''CreateTopic
@@ -114,11 +114,11 @@ instance Page CreateTopic where
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
 -- FIXME: Edit topic page is used for editing a topic and move ideas to the topic.
 data EditTopic = EditTopic
-    { _etCtx        :: CapCtx
-    , _etIdeaSpace  :: IdeaSpace
-    , _etTopic      :: Topic
-    , _etIdeasStats :: [IdeaStats]
-    , _etIdeas      :: [AUID Idea]
+    { _etCtx        :: !CapCtx
+    , _etIdeaSpace  :: !IdeaSpace
+    , _etTopic      :: !Topic
+    , _etIdeasStats :: ![IdeaStats]
+    , _etIdeas      :: ![AUID Idea]
     }
   deriving (Eq, Show, Read)
 
