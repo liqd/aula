@@ -31,10 +31,24 @@ import qualified Data.Text as ST
 import qualified Data.Vector as Vector
 
 
+html5Element :: ST -> Bool
+html5Element el = case html5Elements of
+    Html5Elements els -> el `elem` els
+
+html5Attribute :: ST -> ST -> Bool
+html5Attribute el attr = case html5Attributes of
+    Html5Attributes attrs -> any (`elem` attrs) [(Nothing, attr), (Just el, attr)]
+
+-- | currently doesn't allow for any css.
+css3Property :: ST -> Bool
+css3Property _ = False
+
+
 unsafeFromJSON :: (FromJSON a, Typeable a) => Value -> a
 unsafeFromJSON v = case fromJSON v of
     Success s -> s
     Error   e -> error $ "usafeFromJSON: " <> show e
+
 
 newtype Html5Elements = Html5Elements [ST]
   deriving (Eq, Ord, Show, Read)
@@ -75,19 +89,6 @@ instance FromJSON Css3Properties where
         els0 :: Value   <- withObject "html5 elem whitelist" (.: "allowed") v
         els1 :: [Value] <- withArray "element list" (pure . Vector.toList) els0
         Css3Properties <$> (withText "element" (pure . cs) `mapM` els1)
-
-
-html5Element :: ST -> Bool
-html5Element el = case html5Elements of
-    Html5Elements els -> el `elem` els
-
-html5Attribute :: ST -> ST -> Bool
-html5Attribute el attr = case html5Attributes of
-    Html5Attributes attrs -> any (`elem` attrs) [(Nothing, attr), (Just el, attr)]
-
-css3Property :: ST -> Bool
-css3Property prop = case css3Properties of
-    Css3Properties props -> prop `elem` props
 
 
 -- /src/com/google/caja/lang/html/html5-elements-whitelist.json
