@@ -31,10 +31,9 @@ import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 
 import qualified Data.Aeson as Aeson
+import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Text.HTML.Parser as HTML
-
-import Data.Markdown.HtmlWhiteLists
 
 
 newtype Document = Markdown { unMarkdown :: ST }
@@ -59,9 +58,22 @@ instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 -- * validation and construction
 
 markdown :: ST -> Either [ST] Document
-markdown raw = case HTML.tagStream raw of
+markdown raw = case mconcat $ tokenToErrors <$> HTML.tagStream raw of
     []  -> Right $ Markdown raw
-    bad -> Left $ (("illegal html tag: " <>) . cs . show) <$> bad  -- TODO: be more lenient on benevolent html.
+    bad -> Left bad
+
+tokenToErrors :: HTML.Token -> [ST]
+tokenToErrors = mconcat . \case
+    (HTML.TagOpen el attrs) -> badEl el : (badAttr el <$> attrs)
+    (HTML.TagClose el)      -> [badEl el]
+    (HTML.Doctype _)        -> [["doc type not allowed"]]
+    _                       -> []
+  where
+    badEl el =
+        ["unsafe html5 element: " <> el | not $ WhiteLists.html5Element el]
+    badAttr el (HTML.Attr aname _) =
+        ["unsafe html5 attribute " <> aname | not $ WhiteLists.html5Attribute el aname]
+      
 
 -- | Be careful not to use `mappend` on user input!  The concatenation will be checked by
 -- `markdown`, but the failure case will crash hard.

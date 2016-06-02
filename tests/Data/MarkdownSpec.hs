@@ -30,7 +30,7 @@ spec = do
         it "understands whitelists (css3)"        $ show css3Properties  `shouldNotBe` nil
   
         it "rejects bad html" $ do
-            markdown "<script>" `shouldBe` Left ["illegal html tag: TagOpen \"script\" []"]
+            markdown "<script>" `shouldBe` Left ["unsafe html5 element: script"]
         it "accepts good html" $ do
             pending
             (unMarkdown <$> markdown "<h1>") `shouldBe` Right "<h1>"
