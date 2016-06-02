@@ -758,8 +758,8 @@ instance Arbitrary Document where
             -- FIXME: use 'arbMarkdown'
             -- (but make sure the layout and random content look better first!)
 
-    shrink md | md == (unsafeMarkdown "") = []
-    shrink _ = [unsafeMarkdown "", unsafeMarkdown "x"]
+    shrink md | md == nil = []
+    shrink _ = [nil, unsafeMarkdown "x"]
 
 arbMarkdown :: Gen Document
 arbMarkdown = unsafeMarkdown <$> ((<>) <$> title 1 <*> (mconcat <$> sections))
