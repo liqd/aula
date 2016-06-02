@@ -25,13 +25,16 @@ spec = do
             \(x :: Document) y z -> x <> (y <> z) `shouldBe` (x <> y) <> z
 
     describe "html" $ do
-        it "understands whitelists (html5 elems)" $ show html5Elements   `shouldNotBe` nil
-        it "understands whitelists (html5 attrs)" $ show html5Attributes `shouldNotBe` nil
-        it "understands whitelists (css3)"        $ show css3Properties  `shouldNotBe` nil
-  
-        it "rejects bad html" $ do
-            markdown "<script>" `shouldBe` Left ["unsafe html5 element: script"]
-        it "accepts good html" $ do
-            pending
-            (unMarkdown <$> markdown "<h1>") `shouldBe` Right "<h1>"
+        it "understands whitelists (html5 elems)" $ show htmlElements   `shouldNotBe` nil
+        it "understands whitelists (html5 attrs)" $ show htmlAttributes `shouldNotBe` nil
+        it "understands whitelists (css3)"        $ show css3Properties `shouldNotBe` nil
 
+        it "rejects bad html elems" $ do
+            markdown "<script>" `shouldBe` Left ["unsafe html element: script"]
+        it "rejects bad html attrs" $ do
+            pending
+        it "rejects bad css props" $ do
+            pending
+        it "accepts good html" $ do
+            let good = "<div align=\"center\" style=\"padding-top:13;\">"
+            (unMarkdown <$> markdown good) `shouldBe` Right good

@@ -23,6 +23,7 @@ module Data.Markdown
   ( Document, markdown, unMarkdown )
 where
 
+import Data.CaseInsensitive
 import Control.Lens
 import Data.Binary
 import Data.SafeCopy (deriveSafeCopy, base)
@@ -32,6 +33,7 @@ import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
+import qualified Data.Text as ST
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Text.HTML.Parser as HTML
 
@@ -68,12 +70,22 @@ tokenToErrors = mconcat . \case
     (HTML.TagClose el)      -> [badEl el]
     (HTML.Doctype _)        -> [["doc type not allowed"]]
     _                       -> []
+
+
+badEl :: ST -> [ST]
+badEl (mk -> el) =
+    ["unsafe html element: " <> foldedCase el | el `notElem` els]
   where
-    badEl el =
-        ["unsafe html5 element: " <> el | not $ WhiteLists.html5Element el]
-    badAttr el (HTML.Attr aname _) =
-        ["unsafe html5 attribute " <> aname | not $ WhiteLists.html5Attribute el aname]
-      
+    WhiteLists.HtmlElements els = WhiteLists.htmlElements
+
+badAttr :: ST -> HTML.Attr -> [ST]
+badAttr (mk -> el) (HTML.Attr (mk -> akey) (mk -> aval)) =
+    ["unsafe html attribute " <> foldedCase akey
+        | not $ any (`elem` attrs) [(Nothing, akey), (Just el, akey)]]
+  where
+    WhiteLists.HtmlAttributes attrs = WhiteLists.htmlAttributes
+    WhiteLists.Css3Properties props = WhiteLists.css3Properties
+
 
 -- | Be careful not to use `mappend` on user input!  The concatenation will be checked by
 -- `markdown`, but the failure case will crash hard.

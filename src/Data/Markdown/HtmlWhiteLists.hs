@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
 {-# LANGUAGE LambdaCase                  #-}
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE QuasiQuotes                 #-}
@@ -8,13 +9,8 @@
 
 -- | source: https://github.com/google/caja/
 module Data.Markdown.HtmlWhiteLists
-    ( html5Element
-    , html5Attribute
-    , css3Property
-
-      -- (more for testing, really)
-    , Html5Elements(..), html5Elements
-    , Html5Attributes(..), html5Attributes
+    ( HtmlElements(..), htmlElements
+    , HtmlAttributes(..), htmlAttributes
     , Css3Properties(..), css3Properties
     )
 where
@@ -23,25 +19,12 @@ import Control.Applicative ((<|>))
 import Control.Monad ((>=>))
 import Data.Aeson
 import Data.Aeson.QQ (aesonQQ)
-import Data.Aeson.Types
+import Data.CaseInsensitive
 import Data.String.Conversions
 import Data.Typeable
 
 import qualified Data.Text as ST
 import qualified Data.Vector as Vector
-
-
-html5Element :: ST -> Bool
-html5Element el = case html5Elements of
-    Html5Elements els -> el `elem` els
-
-html5Attribute :: ST -> ST -> Bool
-html5Attribute el attr = case html5Attributes of
-    Html5Attributes attrs -> any (`elem` attrs) [(Nothing, attr), (Just el, attr)]
-
--- | currently doesn't allow for any css.
-css3Property :: ST -> Bool
-css3Property _ = False
 
 
 unsafeFromJSON :: (FromJSON a, Typeable a) => Value -> a
@@ -50,49 +33,178 @@ unsafeFromJSON v = case fromJSON v of
     Error   e -> error $ "usafeFromJSON: " <> show e
 
 
-newtype Html5Elements = Html5Elements [ST]
-  deriving (Eq, Ord, Show, Read)
+newtype HtmlElements = HtmlElements [CI ST]
+  deriving (Eq, Ord, Show, Read, Monoid)
 
-instance FromJSON Html5Elements where
+instance FromJSON HtmlElements where
     parseJSON v = do
-        els0 :: Value   <- withObject "html5 elem whitelist" (.: "allowed") v
+        els0 :: Value   <- withObject "html elem whitelist" (.: "allowed") v
         els1 :: [Value] <- withArray "element list" (pure . Vector.toList) els0
-        Html5Elements <$> (withText "element" (pure . cs) `mapM` els1)
+        HtmlElements <$> (withText "element" (pure . mk) `mapM` els1)
 
 
 -- | every attribute consists of a maybe-element and an attribute.  if the element is nothing, the
 -- attribute is allowed in all elements.
-newtype Html5Attributes = Html5Attributes [(Maybe ST, ST)]
-  deriving (Eq, Ord, Show, Read)
+newtype HtmlAttributes = HtmlAttributes [(Maybe (CI ST), (CI ST))]
+  deriving (Eq, Ord, Show, Read, Monoid)
 
-instance FromJSON Html5Attributes where
+instance FromJSON HtmlAttributes where
     parseJSON v = do
-        els0 :: Value   <- withObject "html5 elem whitelist" (.: "allowed") v
+        els0 :: Value   <- withObject "html attribute whitelist" (.: "allowed") v
         els1 :: [Value] <- withArray "element list" (pure . Vector.toList) els0
 
-        let parseAttr, o, p :: Value -> Parser (Maybe ST, ST)
-            parseAttr s = o s <|> p s
+        let parseAttr s = o s <|> p s
 
             o = withObject "key with comment" (.: "key") >=> p
-            p = withText "attr" $ \case (ST.splitOn "::" -> [el, attr]) -> pure (f el, attr)
+            p = withText "attr" $ \case (ST.splitOn "::" -> [el, attr]) -> pure (mk <$> f el, mk attr)
                                         bad -> fail ("no element constraint: " <> show bad)
             f "*" = Nothing
-            f el  = Just el
+            f el  = Just $ el
 
-        Html5Attributes <$> parseAttr `mapM` els1
+        HtmlAttributes <$> parseAttr `mapM` els1
 
-newtype Css3Properties = Css3Properties [ST]
+newtype Css3Properties = Css3Properties [CI ST]
   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Css3Properties where
     parseJSON v = do
-        els0 :: Value   <- withObject "html5 elem whitelist" (.: "allowed") v
+        els0 :: Value   <- withObject "css elem whitelist" (.: "allowed") v
         els1 :: [Value] <- withArray "element list" (pure . Vector.toList) els0
-        Css3Properties <$> (withText "element" (pure . cs) `mapM` els1)
+        Css3Properties <$> (withText "element" (pure . mk) `mapM` els1)
 
+
+htmlElements :: HtmlElements
+htmlElements = html4Elements <> html5Elements
+
+-- /src/com/google/caja/lang/html/html4-elements-whitelist.json
+html4Elements :: HtmlElements
+html4Elements = unsafeFromJSON [aesonQQ|
+{
+  "description": [
+      "See http://code.google.com/p/google-caja/wiki/CajaWhitelists",
+      "The denied is not necessary but lets us document why they're denied."
+      ],
+
+  "allowed": [
+      "A",
+      "ABBR",
+      "ACRONYM",
+      "ADDRESS",
+      "AREA",
+      "B",
+      "BDO",
+      "BIG",
+      "BLOCKQUOTE",
+      "BR",
+      "BUTTON",
+      "CAPTION",
+      "CENTER",
+      "CITE",
+      "CODE",
+      "COL",
+      "COLGROUP",
+      "DD",
+      "DEL",
+      "DFN",
+      "DIR",
+      "DIV",
+      "DL",
+      "DT",
+      "EM",
+      "FIELDSET",
+      "FONT",
+      "FORM",
+      "H1",
+      "H2",
+      "H3",
+      "H4",
+      "H5",
+      "H6",
+      "HR",
+      "I",
+      "IFRAME",
+      "IMG",
+      "INPUT",
+      "INS",
+      "KBD",
+      "LABEL",
+      "LEGEND",
+      "LI",
+      "MAP",
+      "MENU",
+      "OL",
+      "OPTGROUP",
+      "OPTION",
+      "P",
+      "PRE",
+      "Q",
+      "S",
+      "SAMP",
+      "SELECT",
+      "SMALL",
+      "SPAN",
+      "STRIKE",
+      "STRONG",
+      "SUB",
+      "SUP",
+      "TABLE",
+      "TBODY",
+      "TD",
+      "TEXTAREA",
+      "TFOOT",
+      "TH",
+      "THEAD",
+      "TR",
+      "TT",
+      "U",
+      "UL",
+      "VAR"
+      ],
+
+  "denied": [
+      { "key": "APPLET",
+        "reason": "disallow because allows scripting" },
+      { "key": "BASE",
+        "reason":
+            "affects global state and could be used to redirect requests" },
+      { "key": "BASEFONT",
+        "reason": "affects global state" },
+      { "key": "BODY",
+        "reason": "a global level tag" },
+      { "key": "FRAME",
+        "reason": "can be used to cause javascript execution" },
+      { "key": "FRAMESET",
+        "reason": "only useful with banned elements" },
+      { "key": "HEAD",
+        "reason": "a global level tag" },
+      { "key": "HTML",
+        "reason": "a global level tag" },
+      { "key": "ISINDEX",
+        "reason": "can be used to change page location" },
+      { "key": "LINK",
+        "reason": "can be used to load other javascript, e.g. on print" },
+      { "key": "META",
+        "reason": "can be used to cause page reloads" },
+      { "key": "NOFRAMES",
+        "reason": "useless since frames can't be used" },
+      { "key": "NOSCRIPT",
+        "reason": "useless since javascript must be loaded" },
+      { "key": "OBJECT",
+        "reason": "allows scripting" },
+      { "key": "PARAM",
+        "reason": "useless since applet and object banned" },
+      { "key": "SCRIPT",
+        "reason": "allows execution of arbitrary script" },
+      { "key": "STYLE",
+        "reason": "allows global definition of styles." },
+      { "key": "TITLE",
+        "reason": "a global level tag" }
+      ]
+}
+|]
 
 -- /src/com/google/caja/lang/html/html5-elements-whitelist.json
-html5Elements :: Html5Elements
+html5Elements :: HtmlElements
 html5Elements = unsafeFromJSON [aesonQQ|
 {
   "allowed": [
@@ -136,8 +248,296 @@ html5Elements = unsafeFromJSON [aesonQQ|
 }
 |]
 
+htmlAttributes :: HtmlAttributes
+htmlAttributes = html4Attributes <> html5Attributes
+
+-- /src/com/google/caja/lang/html/html4-attributes-whitelist.json
+html4Attributes :: HtmlAttributes
+html4Attributes = unsafeFromJSON [aesonQQ|
+{
+  "description":
+      "A whitelist of allowed attributes by element and attribute name.",
+  "allowed": [
+      "TD::ABBR",
+      "TH::ABBR",
+      "FORM::ACCEPT",
+      "INPUT::ACCEPT",
+      "A::ACCESSKEY",
+      "AREA::ACCESSKEY",
+      "BUTTON::ACCESSKEY",
+      "INPUT::ACCESSKEY",
+      "LABEL::ACCESSKEY",
+      "LEGEND::ACCESSKEY",
+      "TEXTAREA::ACCESSKEY",
+      "FORM::ACTION",
+      "CAPTION::ALIGN",
+      "IFRAME::ALIGN",
+      "IMG::ALIGN",
+      "INPUT::ALIGN",
+      "LEGEND::ALIGN",
+      "TABLE::ALIGN",
+      "HR::ALIGN",
+      "DIV::ALIGN",
+      "H1::ALIGN",
+      "H2::ALIGN",
+      "H3::ALIGN",
+      "H4::ALIGN",
+      "H5::ALIGN",
+      "H6::ALIGN",
+      "P::ALIGN",
+      "COL::ALIGN",
+      "COLGROUP::ALIGN",
+      "TBODY::ALIGN",
+      "TD::ALIGN",
+      "TFOOT::ALIGN",
+      "TH::ALIGN",
+      "THEAD::ALIGN",
+      "TR::ALIGN",
+      "BODY::ALINK",
+      "AREA::ALT",
+      "IMG::ALT",
+      "INPUT::ALT",
+      "TD::AXIS",
+      "TH::AXIS",
+      "BODY::BACKGROUND",
+      "TABLE::BGCOLOR",
+      "TR::BGCOLOR",
+      "TD::BGCOLOR",
+      "TH::BGCOLOR",
+      "BODY::BGCOLOR",
+      "TABLE::BORDER",
+      "IMG::BORDER",
+      "TABLE::CELLPADDING",
+      "TABLE::CELLSPACING",
+      "COL::CHAR",
+      "COLGROUP::CHAR",
+      "TBODY::CHAR",
+      "TD::CHAR",
+      "TFOOT::CHAR",
+      "TH::CHAR",
+      "THEAD::CHAR",
+      "TR::CHAR",
+      "COL::CHAROFF",
+      "COLGROUP::CHAROFF",
+      "TBODY::CHAROFF",
+      "TD::CHAROFF",
+      "TFOOT::CHAROFF",
+      "TH::CHAROFF",
+      "THEAD::CHAROFF",
+      "TR::CHAROFF",
+      "INPUT::CHECKED",
+      "BLOCKQUOTE::CITE",
+      "Q::CITE",
+      "DEL::CITE",
+      "INS::CITE",
+      "*::CLASS",
+      "BR::CLEAR",
+      "FONT::COLOR",
+      "TEXTAREA::COLS",
+      "TD::COLSPAN",
+      "TH::COLSPAN",
+      "DIR::COMPACT",
+      "DL::COMPACT",
+      "MENU::COMPACT",
+      "OL::COMPACT",
+      "UL::COMPACT",
+      "AREA::COORDS",
+      "A::COORDS",
+      "DEL::DATETIME",
+      "INS::DATETIME",
+      "*::DIR",
+      "BDO::DIR",
+      "BUTTON::DISABLED",
+      "INPUT::DISABLED",
+      "OPTGROUP::DISABLED",
+      "OPTION::DISABLED",
+      "SELECT::DISABLED",
+      "TEXTAREA::DISABLED",
+      "FORM::ENCTYPE",
+      "FONT::FACE",
+      "LABEL::FOR",
+      "TABLE::FRAME",
+      "IFRAME::FRAMEBORDER",
+      "TD::HEADERS",
+      "TH::HEADERS",
+      "IFRAME::HEIGHT",
+      "TD::HEIGHT",
+      "TH::HEIGHT",
+      "IMG::HEIGHT",
+      "A::HREF",
+      "AREA::HREF",
+      "A::HREFLANG",
+      "IMG::HSPACE",
+      "*::ID",
+      "IMG::ISMAP",
+      "INPUT::ISMAP",
+      "OPTION::LABEL",
+      "OPTGROUP::LABEL",
+      "*::LANG",
+      "BODY::LINK",
+      "IFRAME::MARGINHEIGHT",
+      "IFRAME::MARGINWIDTH",
+      "INPUT::MAXLENGTH",
+      "FORM::METHOD",
+      "SELECT::MULTIPLE",
+      "BUTTON::NAME",
+      "TEXTAREA::NAME",
+      "SELECT::NAME",
+      "FORM::NAME",
+      "FRAME::NAME",
+      "IMG::NAME",
+      "A::NAME",
+      "INPUT::NAME",
+      "MAP::NAME",
+      "AREA::NOHREF",
+      "HR::NOSHADE",
+      "TD::NOWRAP",
+      "TH::NOWRAP",
+      "A::ONBLUR",
+      "AREA::ONBLUR",
+      "BUTTON::ONBLUR",
+      "INPUT::ONBLUR",
+      "LABEL::ONBLUR",
+      "SELECT::ONBLUR",
+      "TEXTAREA::ONBLUR",
+      "INPUT::ONCHANGE",
+      "SELECT::ONCHANGE",
+      "TEXTAREA::ONCHANGE",
+      "*::ONCLICK",
+      "*::ONDBLCLICK",
+      "A::ONFOCUS",
+      "AREA::ONFOCUS",
+      "BUTTON::ONFOCUS",
+      "INPUT::ONFOCUS",
+      "LABEL::ONFOCUS",
+      "SELECT::ONFOCUS",
+      "TEXTAREA::ONFOCUS",
+      "*::ONKEYDOWN",
+      "*::ONKEYPRESS",
+      "*::ONKEYUP",
+      "BODY::ONLOAD",
+      "*::ONMOUSEDOWN",
+      "*::ONMOUSEMOVE",
+      "*::ONMOUSEOUT",
+      "*::ONMOUSEOVER",
+      "*::ONMOUSEUP",
+      "FORM::ONRESET",
+      "*::ONSCROLL",
+      "INPUT::ONSELECT",
+      "TEXTAREA::ONSELECT",
+      "FORM::ONSUBMIT",
+      "BODY::ONUNLOAD",
+      "TEXTAREA::READONLY",
+      "INPUT::READONLY",
+      "TEXTAREA::ROWS",
+      "TD::ROWSPAN",
+      "TH::ROWSPAN",
+      "TABLE::RULES",
+      "TD::SCOPE",
+      "TH::SCOPE",
+      "OPTION::SELECTED",
+      "AREA::SHAPE",
+      "A::SHAPE",
+      "HR::SIZE",
+      "FONT::SIZE",
+      "INPUT::SIZE",
+      "SELECT::SIZE",
+      "COL::SPAN",
+      "COLGROUP::SPAN",
+      "INPUT::SRC",
+      "IMG::SRC",
+      "OL::START",
+      "*::STYLE",
+      "TABLE::SUMMARY",
+      "*::TABINDEX",
+      "A::TARGET",
+      "AREA::TARGET",
+      "FORM::TARGET",
+      "BODY::TEXT",
+      "*::TITLE",
+      "A::TYPE",
+      "INPUT::TYPE",
+      "LI::TYPE",
+      "OL::TYPE",
+      "UL::TYPE",
+      "BUTTON::TYPE",
+      "IMG::USEMAP",
+      "INPUT::USEMAP",
+      "COL::VALIGN",
+      "COLGROUP::VALIGN",
+      "TBODY::VALIGN",
+      "TD::VALIGN",
+      "TFOOT::VALIGN",
+      "TH::VALIGN",
+      "THEAD::VALIGN",
+      "TR::VALIGN",
+      "INPUT::VALUE",
+      "OPTION::VALUE",
+      "BUTTON::VALUE",
+      "LI::VALUE",
+      "HTML::VERSION",
+      "BODY::VLINK",
+      "IMG::VSPACE",
+      "COL::WIDTH",
+      "COLGROUP::WIDTH",
+      "HR::WIDTH",
+      "IFRAME::WIDTH",
+      "IMG::WIDTH",
+      "PRE::WIDTH",
+      "TABLE::WIDTH",
+      "TD::WIDTH",
+      "TH::WIDTH"
+    ],
+  "denied": [
+      { "key": "FORM::ACCEPT-CHARSET",
+        "reason": [
+            "Per bug 585, this is an infrequently used and poorly",
+            "understood attribute that could lead to mismatched encoding",
+            "attacks.  Could be used to sneak content through a proxy in a",
+            "wrong encoding?"
+          ] },
+      { "key": "A::CHARSET",
+        "reason": [
+            "Per bug 585:  Charset is disallowed since it allows overriding",
+            "of Content-type headers.  A server might specify UTF-8 via the",
+            "header Content-type:text/javascript;charset=UTF-8, but an",
+            "embedding page might cause that file to be interpreted as UTF-7.",
+            "According to http://www.w3schools.com/TAGS/att_a_charset.asp: ",
+            "The charset attribute is not supported in any of the major browsers."
+          ] },
+      { "key": "A::REL",
+        "reason": [
+            "Can make an assertion about the entire page.",
+            "TODO(kpreid): Allow filtering rels to include e.g. 'nofollow'"
+          ] },
+      { "key": "A::REV",
+        "reason": [
+            "Can make an assertion about the entire page.",
+            "TODO(kpreid): Allow filtering rels to include e.g. 'nofollow'"
+          ] },
+      "LINK::CHARSET",
+      "SCRIPT::CHARSET",
+      { "key": "IMG::LONGDESC",
+        "reason": "Not supported by any major browser" },
+      { "key": "IFRAME::LONGDESC",
+        "reason": "Not supported by any major browser" }
+    ],
+  "types": [
+      { "key": "IFRAME::ID",
+        "type": "ID", "optional": true,
+        "reason": [
+            "We allow a restricted set of attributes on IFRAMEs to allow them ",
+            "to be used as shims to work around IE layout bugs.",
+            "But we do not allow either NAME or ID since those are not ",
+            "required for shims and affect publicly visible browser global ",
+            "state like the frame graph."
+        ] }
+    ]
+}
+|]
+
 -- /src/com/google/caja/lang/html/html5-attributes-whitelist.json
-html5Attributes :: Html5Attributes
+html5Attributes :: HtmlAttributes
 html5Attributes = unsafeFromJSON [aesonQQ|
 {
   "allowed": [
