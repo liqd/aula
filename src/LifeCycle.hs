@@ -128,6 +128,7 @@ instance SOP.Generic Capability
 -- required to restrict students to their class.
 data CapCtx = CapCtx
     { _capCtxUser    :: User
+    , _capCtxSpace   :: Maybe IdeaSpace
     , _capCtxPhase   :: Maybe Phase
     , _capCtxIdea    :: Maybe Idea
     , _capCtxComment :: Maybe Comment

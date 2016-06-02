@@ -55,13 +55,14 @@ viewRooms = PageOverviewOfSpaces . sort <$> getSpacesForCurrentUser
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
-    ctx <- currentUserCapCtx
+    ctx <- spaceCapCtx space
     PageOverviewOfWildIdeas ctx space <$> equery (do
         is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
         pure $ ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery is)
 
 viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
-viewTopics space = PageOverviewOfTopics <$> currentUserCapCtx <*> pure space <*> query (findTopicsBySpace space)
+viewTopics space =
+    PageOverviewOfTopics <$> spaceCapCtx space <*> pure space <*> query (findTopicsBySpace space)
 
 
 -- * templates

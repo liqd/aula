@@ -88,7 +88,9 @@ module Action
 
       -- * capabilities
     , currentUserCapCtx
+    , spaceCapCtx
     , locationCapCtx
+    , topicCapCtx
     , ideaCapCtx
     , commentCapCtx
 
@@ -930,20 +932,37 @@ currentUserCapCtx = do
     user <- currentUser
     pure CapCtx
         { _capCtxUser    = user
+        , _capCtxSpace   = Nothing
         , _capCtxPhase   = Nothing
         , _capCtxIdea    = Nothing
         , _capCtxComment = Nothing
         }
 
+spaceCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => IdeaSpace -> m CapCtx
+spaceCapCtx space = do
+    userCtx <- currentUserCapCtx
+    pure $ userCtx & capCtxSpace ?~ space
+
 locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
                => IdeaLocation -> m (CapCtx, Maybe Topic)
 locationCapCtx loc = do
-    ctx <- currentUserCapCtx
     mtopic <-
         case loc ^? ideaLocationTopicId of
             Just tid -> Just <$> mquery (findTopic tid)
             Nothing  -> pure Nothing
-    pure (ctx & capCtxPhase .~ (mtopic ^? _Just . topicPhase), mtopic)
+    spaceCtx <- spaceCapCtx $ loc ^. ideaLocationSpace
+    let ctx = spaceCtx & capCtxPhase .~ (mtopic ^? _Just . topicPhase)
+    pure (ctx, mtopic)
+
+topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => AUID Topic -> m (CapCtx, Topic)
+topicCapCtx topicId = do
+    userCtx <- currentUserCapCtx
+    topic <- mquery $ findTopic topicId
+    let ctx = userCtx & capCtxSpace ?~ (topic ^. topicIdeaSpace)
+                      & capCtxPhase ?~ (topic ^. topicPhase)
+    pure (ctx, topic)
 
 ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
            => AUID Idea -> m (CapCtx, Maybe Topic, Idea)

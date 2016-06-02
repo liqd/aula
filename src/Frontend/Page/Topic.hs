@@ -31,24 +31,21 @@ import Data.Time
 import Prelude hiding ((.))
 
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
-               currentUserCapCtx, getCurrentTimestamp)
+               spaceCapCtx, topicCapCtx, getCurrentTimestamp)
 import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
-import LifeCycle (Capability(..), CapCtx(..), capabilities, capCtxPhase)
+import LifeCycle (Capability(..), CapCtx(..), capabilities)
 import Persistent
     ( findDelegationsByContext
     , findIdeasByTopic
     , findIdeasByTopicId
-    , findTopic
-    , findTopic
     , findWildIdeasBySpace
     , IdeaStats(..)
     , ideaReachedQuorum
     , ideaStatsIdea
     , getIdeaStats
-    , maybe404
     , phaseEndRefinement
     , ideaAccepted
     )
@@ -387,17 +384,14 @@ ideaFilterForTab = \case
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
 viewTopic tab topicId = do
-    userCtx <- currentUserCapCtx
     now <- getCurrentTimestamp
-    equery (do
-        topic <- maybe404 =<< findTopic topicId
-        let ctx = userCtx & capCtxPhase ?~ (topic ^. topicPhase)
+    (ctx, topic) <- topicCapCtx topicId
+    equery $
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
-            TabIdeas ideasTab ideasQuery ->
-              do
+            TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
                      <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
@@ -405,13 +399,13 @@ viewTopic tab topicId = do
                 let listItemIdeas =
                         ListItemIdeas ctx (IdeaInViewTopic ideasTab) loc ideasQuery ideas
 
-                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas)
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
 createTopic space =
     formPageHandlerCalcMsg
-        (do ctx <- currentUserCapCtx
+        (do ctx <- spaceCapCtx space
             now <- getCurrentTimestamp
             equery $ CreateTopic ctx space
                 <$> (mapM getIdeaStats =<< findWildIdeasBySpace space)
@@ -422,14 +416,12 @@ createTopic space =
 editTopic :: ActionM m => AUID Topic -> FormPageHandler m EditTopic
 editTopic topicId =
     formPageHandlerWithMsg
-        (getPage =<< currentUserCapCtx)
+        (getPage =<< topicCapCtx topicId)
         (Action.editTopic topicId)
         "Das Thema wurde gespeichert."
   where
-    getPage userCtx = equery $ do
-        topic <- maybe404 =<< findTopic topicId
+    getPage (ctx, topic) = equery $ do
         let space = topic ^. topicIdeaSpace
-            ctx = userCtx & capCtxPhase ?~ (topic ^. topicPhase)
         wildIdeas <- mapM getIdeaStats =<< findWildIdeasBySpace space
         ideasInTopic <- mapM getIdeaStats =<< findIdeasByTopicId topicId
         pure $ EditTopic

@@ -117,7 +117,7 @@ spec = do
     -- FIXME: test this in all forms, for all validation errors.
     describe "form validation errors" $ do
         let spc = IdeaLocationSpace SchoolSpace
-            ctx = CapCtx (error "CoreSpec: IMPOSSIBLE") Nothing Nothing Nothing
+            ctx = CapCtx (error "CoreSpec: IMPOSSIBLE") Nothing Nothing Nothing Nothing
             page = CreateIdea ctx spc
             payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
