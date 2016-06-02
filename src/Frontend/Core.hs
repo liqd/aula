@@ -466,7 +466,6 @@ form formHandler = getH :<|> postH
     processor = _formProcessor formHandler
     formMessage = _formStatusMessage formHandler
 
-
     getH = makeFrame $ do
         page <- getPage
         let fa = absoluteUriPath . relPath $ formAction page
@@ -522,7 +521,6 @@ makeFrame mp = do
                         AccessDeferred ->
                             throwError500 "AccessDeferred should not be used with LoggedIn"
         else do
-            -- PublicFrame <$> mp <*> flushMessages
             access <- isAuthorized (NotLoggedIn :: AccessInput p)
             case access of
                 AccessGranted -> PublicFrame <$> mp <*> flushMessages
