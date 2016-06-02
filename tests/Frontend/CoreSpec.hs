@@ -63,7 +63,6 @@ spec = do
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen AdminViewUsers)
         , H (arb :: Gen AdminViewClasses)
-        , H (arb :: Gen PageDelegateVote)
         , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)

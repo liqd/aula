@@ -14,31 +14,89 @@ where
 import Prelude
 
 import Access
+import Control.Arrow ((&&&))
+
+import Action (ActionM, currentUser, delegateTo, equery)
 import Frontend.Core
 import Frontend.Prelude
+import Persistent
 
 import qualified Frontend.Path as U
-
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote
+data PageDelegateVote = PageDelegateVote DScopeFull [User]
   deriving (Eq, Show, Read)
-
-instance ToHtml PageDelegateVote where  -- FIXME: remove bogus instance.
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageDelegateVote"
 
 instance Page PageDelegateVote where isAuthorized = adminPage -- FIXME who needs to see this
 
-instance FormPage PageDelegateVote where  -- FIXME
-    type FormPagePayload PageDelegateVote = ()
-    formAction _   = U.Broken
-    redirectOf _ _ = U.Broken
-    makeForm _     = pure ()
-    formPage _ _ _ = pure ()
+newtype PageDelegationVotePayload = PageDelegationVotePayload
+    { unPageDelegationVotePayload :: AUID User }
+  deriving (Eq, Show, Read)
+
+instance FormPage PageDelegateVote where
+    type FormPagePayload PageDelegateVote = PageDelegationVotePayload
+
+    formAction (PageDelegateVote scope _users) = case scope of
+        DScopeGlobalFull          -> U.Broken
+        DScopeIdeaSpaceFull _space -> U.Broken
+        DScopeTopicFull     topic -> U.delegateVoteOnTopic topic
+        DScopeIdeaFull      idea  -> U.delegateVoteOnIdea idea
+
+    redirectOf (PageDelegateVote scope _users) _ = case scope of
+        DScopeGlobalFull          -> U.Broken
+        DScopeIdeaSpaceFull _space -> U.Broken
+        DScopeTopicFull     topic -> U.viewTopic topic
+        DScopeIdeaFull      idea  -> U.viewIdea idea
+
+    -- FIXME: Show the existing delegation
+    makeForm (PageDelegateVote _scope users) =
+        PageDelegationVotePayload
+        <$> "user-to-delegate" .: DF.choice userList Nothing
+      where
+        userList = (view _Id &&& view (userLogin . unUserLogin . html)) <$> users
+
+    formPage v f p@(PageDelegateVote _scope _users) = semanticDiv p . f $ do
+        -- FIXME: Table from users
+        DF.inputSelect "user-to-delegate" v
+        DF.inputSubmit "Save delegation"
+        -- FIXME: Cancel button
+
+ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
+ideaDelegation iid = formPageHandlerWithMsg
+    (equery $
+        do idea <- maybe404 =<< findIdea iid
+           users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
+           pure $ PageDelegateVote (DScopeIdeaFull idea) users)
+    (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
+    "Delegation is marked" -- TODO: Translation
+
+topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
+topicDelegation tid = formPageHandlerWithMsg
+    (equery $
+        do topic <- maybe404 =<< findTopic tid
+           users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
+           pure $ PageDelegateVote (DScopeTopicFull topic) users)
+    (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
+    "Delegation is marked" -- TODO: Translation
+
+ideaSpaceDelegation :: ActionM m => IdeaSpace -> FormPageHandler m PageDelegateVote
+ideaSpaceDelegation ideaSpace = formPageHandlerWithMsg
+    (PageDelegateVote (DScopeIdeaSpaceFull ideaSpace)
+        <$> equery (usersForIdeaSpace ideaSpace))
+    (Action.delegateTo (DScopeIdeaSpace ideaSpace) . unPageDelegationVotePayload)
+    "Delegation is marked" -- TODO: Translation
+
+fullDelegation :: ActionM m => FormPageHandler m PageDelegateVote
+fullDelegation = formPageHandlerWithMsg
+    (PageDelegateVote DScopeGlobalFull <$> equery getActiveUsers)
+    (Action.delegateTo DScopeGlobal . unPageDelegationVotePayload)
+    "Delegation is marked" -- TODO: Translation
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork
+-- FIXME: Render all the delegations not just the current user related ones.
+data PageDelegationNetwork = PageDelegationNetwork [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageDelegationNetwork where
@@ -50,7 +108,8 @@ instance Page PageDelegationNetwork where
 
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
-    toHtml p@PageDelegationNetwork = semanticDiv p $ do
+    toHtml p@(PageDelegationNetwork delegations) = semanticDiv p $ do
+        p_ . toHtml $ show delegations
         img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
 {-
         let bigHr = do
@@ -109,5 +168,7 @@ instance ToHtml PageDelegationNetwork where
         bigHr
 -}
 
-viewDelegationNetwork :: Applicative m => m PageDelegationNetwork
-viewDelegationNetwork = pure PageDelegationNetwork
+viewDelegationNetwork :: ActionM m => m PageDelegationNetwork
+viewDelegationNetwork = do
+    user <- currentUser
+    PageDelegationNetwork <$> equery (findDelegationsByDelegatee (user ^. _Id))

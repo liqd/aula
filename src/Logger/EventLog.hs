@@ -56,7 +56,7 @@ data EventLogItemValue user topic idea comment =
       -- nice: the first comment is either the target (if a top-level comment) or the parent of the
       -- target; the second is either absent (for top-level comments) or the target.  this could be
       -- easier.
-  | EventLogUserDelegates         DelegationContext user
+  | EventLogUserDelegates         DScope user
   | EventLogTopicNewPhase         topic Phase Phase
   | EventLogIdeaNewLocation          idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea
@@ -158,8 +158,8 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
                     Down -> "gegen"
             what = objDesc (Right3 $ fromMaybe comment mcomment)
 
-        f (EventLogUserDelegates ctxDesc toUser) = CSV.toRecord
-            [ "delegiert in " <> show ctxDesc <> " an " <> toUser ^. userLogin . _UserLogin . csi
+        f (EventLogUserDelegates ctxDesc delegate) = CSV.toRecord
+            [ "delegiert in " <> show ctxDesc <> " an " <> delegate ^. userLogin . _UserLogin . csi
             , "(kein Link verfügbar)"
             -- FIXME: there should be a link, and 'show ctxDesc' needs to be polished.
             ]

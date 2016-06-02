@@ -203,9 +203,12 @@ userHeaderDiv ctx (ActiveUser user) =
                 editProfileBtn
             else do
                 let caps = capabilities ctx
-                when (CanDelegate `elem` caps) $ do
-                    btn U.Broken "Klassenweit beauftragen"
-                    btn U.Broken "Schulweit beauftragen"
+                -- FIXME: Do not render the buttons for itself
+                -- FIXME: Styling
+                when (CanVote `elem` caps) $ do
+                    postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Klassenweit beauftragen"
+                    -- FIXME: Render the button if the user is in the same class as the current one
+                    postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
                 when (CanEditUser `elem` caps) editProfileBtn
 

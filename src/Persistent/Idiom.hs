@@ -13,13 +13,16 @@ module Persistent.Idiom
 where
 
 import Control.Lens
-import Control.Monad (unless)
+import Control.Monad (forM, unless)
 import Data.Functor.Infix ((<$$>))
+import Data.Maybe (catMaybes)
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map
 import qualified Data.Monoid
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Generics.SOP as SOP
 
 import LifeCycle
@@ -202,3 +205,57 @@ ideaVoteSupport = ideaVoteSupportByAbsDiff
 
 ideaVoteSupportByAbsDiff :: Idea -> Support
 ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No idea
+
+
+-- * voting
+
+votingPower :: AUID User -> DScope -> EQuery [User]
+votingPower vid scope = do
+    hiearchy <- scopeHiearchy scope
+    vs <- Set.toList <$> voters hiearchy (Set.singleton vid) vid
+    catMaybes <$> forM vs findUser
+  where
+    voters (path :: [DScope]) (discovered :: Set (AUID User)) (user :: AUID User) = do
+        -- Set.fromList O(n*log n) is better than nub O(n^2)
+        oneStepNewDelegatees
+            <- (`Set.difference` discovered) . Set.fromList . fmap _delegationFrom . concat
+                <$> forM path (scopeDelegatees user)
+        allNewDelegatees <- Set.unions
+            <$> forM (Set.toList oneStepNewDelegatees)
+                     (voters path (oneStepNewDelegatees `Set.union` discovered))
+        pure (discovered `Set.union` allNewDelegatees)
+
+scopeDelegatees :: AUID User -> DScope -> Query [Delegation]
+scopeDelegatees uid scope =
+    filter ((&&) <$> ((uid ==) . view delegationTo)
+                 <*> ((scope ==) . view delegationContext))
+    <$> allDelegations
+
+getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
+getVote uid iid = do
+    idea  <- maybe404 =<< findIdea iid
+    let mVoteValue = idea ^? ideaVotes . at uid . _Just
+    case mVoteValue of
+        Nothing -> pure Nothing
+        Just vv -> do
+            voter <- maybe404 =<< findUser (vv ^. ideaVoteDelegate)
+            pure $ Just (voter, vv ^. ideaVoteValue)
+
+scopeHiearchy :: DScope -> EQuery [DScope]
+scopeHiearchy = \case
+    DScopeGlobal           -> pure [DScopeGlobal]
+    s@(DScopeIdeaSpace {}) -> pure [s, DScopeGlobal]
+    t@(DScopeTopicId tid)  -> do
+        space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
+        (t:) <$> scopeHiearchy (DScopeIdeaSpace space)
+    i@(DScopeIdeaId iid)     -> do
+        loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
+        (i:) <$> scopeHiearchy (case loc of
+            IdeaLocationSpace s    -> DScopeIdeaSpace s
+            IdeaLocationTopic _s t -> DScopeTopicId   t)
+
+-- FIXME: Display only students
+usersForIdeaSpace :: IdeaSpace -> EQuery [User]
+usersForIdeaSpace = \case
+    SchoolSpace       -> getActiveUsers
+    ClassSpace school -> getUsersInClass school
