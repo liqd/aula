@@ -41,7 +41,6 @@ import Prelude hiding ((.))
 
 import Control.Arrow
 import Control.Category as Cat
-import Data.Text as Text (Text, length)  -- TODO: use string-conversions
 
 import Text.Digestive as DF
 import Text.Email.Validate as Email
@@ -59,7 +58,7 @@ type FieldParser a = Parsec String () a
 
 -- * field validation
 
-newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result ST b }  -- TODO: make this a list of ST so we can have multiple errors in one field. (adjust to this change in fieldEither)
+newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result [ST] b }
 
 instance Functor (FieldValidator a) where
     fmap g (FieldValidator f) = FieldValidator (fmap g . f)
@@ -75,9 +74,7 @@ instance Arrow FieldValidator where
                 DF.Error   e -> DF.Error e
 
 fieldEither :: (a -> Either [ST] b) -> FieldValidator a b
-fieldEither fun = FieldValidator $ \a -> case fun a of
-    Right v -> DF.Success v
-    Left es -> DF.Error $ ST.unlines es
+fieldEither fun = FieldValidator $ either DF.Error DF.Success . fun
 
 -- FIXME: Use (Error -> Html) instead of toHtml. (In other words: use typed
 -- validation errors instead of strings).
@@ -88,12 +85,12 @@ fieldParser
 fieldParser parser =
     FieldValidator (either errorString DF.Success . parse (parser <* eof) "" . cs)
   where
-    errorString = DF.Error . cs . filter (/= '\n') . showErrorMessagesDe . errorMessages
+    errorString = DF.Error . fmap cs . showErrorMessagesDe . errorMessages
 
 -- | Cloned from "Text.Parsec.Error" for better (and German) errors.
-showErrorMessagesDe :: [Message] -> String
-showErrorMessagesDe [] = "ungültige Eingabe."
-showErrorMessagesDe msgs = ("\n" <>) =<< clean
+showErrorMessagesDe :: [Message] -> [String]
+showErrorMessagesDe [] = ["ungültige Eingabe."]
+showErrorMessagesDe msgs = (:[]) . filter (/= '\n') . mconcat . clean $
       [showSysUnExpect, showUnExpect, " (", showExpect, ")", showMessages]
     where
       msgOr         :: String = "oder"
@@ -132,6 +129,7 @@ showErrorMessagesDe msgs = ("\n" <>) =<< clean
       separate   _ [m]    = m
       separate sep (m:ms) = m <> sep <> separate sep ms
 
+      clean            :: [String] -> [String]
       clean             = nub . filter (not . null)
 
 
@@ -139,12 +137,12 @@ validate' :: (Monad m) => FieldName -> FieldValidator a b -> a -> Result (HtmlT 
 validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
   where
     errorToHtml (DF.Success x) = DF.Success x
-    errorToHtml (DF.Error x)   = DF.Error $ toHtml x
+    errorToHtml (DF.Error x)   = DF.Error $ toHtml `mapM_` x
 
     addFieldNameToError :: FieldName -> FieldValidator a b -> FieldValidator a b
     addFieldNameToError fieldName (FieldValidator w) = FieldValidator $ \x -> case w x of
         s@(DF.Success _) -> s
-        DF.Error e       -> DF.Error $ cs fieldName <> ": " <> e
+        DF.Error es      -> DF.Error $ ((cs fieldName <> ": ") <>) <$> es
 
 validate
     :: Monad m => FieldName -> FieldValidator s a -> Form (Html ()) m s -> Form (Html ()) m a
@@ -168,13 +166,13 @@ inRangeV mn mx = fieldParser
 nonEmptyV :: (Eq m, Monoid m) => FieldValidator m m
 nonEmptyV = FieldValidator $ \xs ->
     if xs == mempty
-        then DF.Error "darf nicht leer sein"
+        then DF.Error ["darf nicht leer sein"]
         else DF.Success xs
 
-maxLengthV :: Int -> FieldValidator Text Text
+maxLengthV :: Int -> FieldValidator ST ST
 maxLengthV mx = FieldValidator $ \xs ->
-    if Text.length xs > mx
-        then DF.Error $ "max." <> cs (show mx) <> " Zeichen"
+    if ST.length xs > mx
+        then DF.Error ["max." <> cs (show mx) <> " Zeichen"]
         else DF.Success xs
 
 type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
