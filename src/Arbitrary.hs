@@ -572,7 +572,7 @@ instance Arbitrary IdeaLocation where
 -- * user
 
 instance Arbitrary User where
-    arbitrary = garbitrary <**> (set userRole <$> garbitrary)
+    arbitrary = garbitrary
     shrink    = gshrink
 
 instance Arbitrary UserView where
