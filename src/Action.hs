@@ -928,7 +928,7 @@ instance ActionM m => WarmUp' m Comment where
 currentUserCapCtx :: (ActionPersist m, ActionUserHandler m) => m CapCtx
 currentUserCapCtx = do
     user <- currentUser
-    pure $ CapCtx
+    pure CapCtx
         { _capCtxUser    = user
         , _capCtxPhase   = Nothing
         , _capCtxIdea    = Nothing
