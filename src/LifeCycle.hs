@@ -140,11 +140,12 @@ makeLenses ''CapCtx
 instance SOP.Generic CapCtx
 
 capabilities :: CapCtx -> [Capability]
-capabilities (CapCtx u _ mp mi mc) = mconcat $
-       [ userCapabilities r ]
-    <> [ ideaCapabilities (u ^. _Id) r i p    | i <- l mi, p <- l mp ]
-    <> [ commentCapabilities (u ^. _Id) r c p | c <- l mc, p <- l mp ]
-    <> [ topicCapabilities p r                | p <- l mp ]
+capabilities (CapCtx u _ mp mi mc) = mconcat . mconcat $
+    [ [ userCapabilities r ]
+    , [ ideaCapabilities (u ^. _Id) r i p    | i <- l mi, p <- l mp ]
+    , [ commentCapabilities (u ^. _Id) r c p | c <- l mc, p <- l mp ]
+    , [ topicCapabilities p r                | p <- l mp ]
+    ]
   where
     r = u ^. userRole
     l = maybeToList
