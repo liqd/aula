@@ -15,7 +15,7 @@ module LifeCycle
 
       -- * capabilities
     , Capability(..)
-    , CapCtx(..), capCtxUser, capCtxIdea, capCtxPhase, capCtxComment
+    , CapCtx(..), capCtxUser, capCtxSpace, capCtxIdea, capCtxPhase, capCtxComment
     , capabilities
     )
 where
