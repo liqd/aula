@@ -34,6 +34,8 @@ import qualified Data.Aeson as Aeson
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Text.HTML.Parser as HTML
 
+import Data.Markdown.HtmlWhiteLists
+
 
 newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)

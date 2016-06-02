@@ -29,6 +29,7 @@ library
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -87,6 +88,7 @@ library
       Daemon
       Data.Avatar
       Data.Markdown
+      Data.Markdown.HtmlWhiteLists
       Data.UriPath
       DemoData
       Frontend
@@ -137,6 +139,7 @@ executable aula-html-dummies
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -202,6 +205,7 @@ executable aula-server
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -265,6 +269,7 @@ test-suite spec
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary

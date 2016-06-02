@@ -6,9 +6,10 @@
 module Data.MarkdownSpec where
 
 import Data.Monoid ((<>))
-import Test.Hspec (Spec, describe, it, shouldBe, pending)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe, pending)
 import Test.QuickCheck (property)
 
+import Data.Markdown.HtmlWhiteLists as WhiteLists
 import Arbitrary ()
 import Types
 
@@ -24,6 +25,10 @@ spec = do
             \(x :: Document) y z -> x <> (y <> z) `shouldBe` (x <> y) <> z
 
     describe "html" $ do
+        it "understands whitelists (html5 elems)" $ show html5Elements   `shouldNotBe` nil
+        it "understands whitelists (html5 attrs)" $ show html5Attributes `shouldNotBe` nil
+        it "understands whitelists (css3)"        $ show css3Properties  `shouldNotBe` nil
+  
         it "rejects bad html" $ do
             markdown "<script>" `shouldBe` Left ["illegal html tag: TagOpen \"script\" []"]
         it "accepts good html" $ do

@@ -20,6 +20,7 @@ dependencies:
     - thentos-core >=0.5.0
     - aeson
     - aeson-pretty
+    - aeson-qq
     - acid-state >=0.14
     - basic-sop
     - binary
