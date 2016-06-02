@@ -310,15 +310,19 @@ authNeedPage withPage = \case
     LoggedIn _ (Just p) -> withPage p
 
 authNeedCaps :: [Capability] -> Getter p CapCtx -> Applicative m => AccessInput p -> m AccessResult
-authNeedCaps needCaps' capCtx = authNeedPage $ \p ->
+authNeedCaps needCaps' getCapCtx = authNeedPage $ \p ->
     let
+        capCtx   = p ^. getCapCtx
         needCaps = Set.fromList needCaps'
-        haveCaps = Set.fromList $ capabilities (p ^. capCtx)
+        haveCaps = Set.fromList $ capabilities capCtx
         diffCaps = needCaps `Set.difference` haveCaps
     in
     if Set.null diffCaps
         then accessGranted
-        else accessDenied ("Missing capabilities " <> cs (show diffCaps))
+        else accessDenied $ "Missing capabilities " <> cs (show (Set.toList diffCaps))
+                         <> " given capabilities " <> cs (show haveCaps)
+                         <> " given context " <> cs (ppShow capCtx)
+        -- ^ FIXME: In production we can hide this message.
 
 isOwnProfile :: CapCtx -> User -> Bool
 isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
