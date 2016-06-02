@@ -38,7 +38,7 @@ where
 
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , addWithCurrentUser, equery, mquery, update
-              , locationCapCtx, ideaCapCtx, commentCapCtx
+              , locationCapCtx, ideaCapCtx, ideaCapCtx', commentCapCtx, commentCapCtx'
               , markIdeaInJuryPhase
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
@@ -645,16 +645,15 @@ instance FormPage ReportIdea where
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
 viewIdea ideaId = do
-    (ctx, _, idea) <- ideaCapCtx ideaId
-    stats <- equery $ getIdeaStats idea
+    (ctx, idea) <- ideaCapCtx ideaId
+    stats <- equery $ getIdeaStats idea -- FIXME ideaCapCtx' is giving the phase already
     pure $ ViewIdea ctx stats
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
 createIdea loc =
     formPageHandlerWithMsg
-        (do (ctx, _) <- locationCapCtx loc
-            pure $ CreateIdea ctx loc)
+        (CreateIdea <$> locationCapCtx loc <*> pure loc)
         Action.createIdea
         "Die Idee wurde angelegt."
 
@@ -664,15 +663,14 @@ createIdea loc =
 editIdea :: ActionM m => AUID Idea -> FormPageHandler m EditIdea
 editIdea ideaId =
     formPageHandlerWithMsg
-        (do (ctx, _, idea) <- ideaCapCtx ideaId
-            pure $ EditIdea ctx idea)
+        (uncurry EditIdea <$> ideaCapCtx ideaId)
         (Action.editIdea ideaId)
         "Die Änderungen wurden gespeichert."
 
 moveIdea :: ActionM m => AUID Idea -> FormPageHandler m MoveIdea
 moveIdea ideaId =
     formPageHandlerWithMsg
-        (do (ctx, _, idea) <- ideaCapCtx ideaId
+        (do (ctx, idea) <- ideaCapCtx ideaId
             topics <- equery $ findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
             pure $ MoveIdea ctx idea topics)
         (Action.moveIdeaToTopic ideaId)
@@ -681,8 +679,7 @@ moveIdea ideaId =
 reportIdea :: ActionM m => AUID Idea -> FormPageHandler m ReportIdea
 reportIdea ideaId =
     formPageHandlerWithMsg
-        (do (ctx, _, idea) <- ideaCapCtx ideaId
-            pure $ ReportIdea ctx idea)
+        (uncurry ReportIdea <$> ideaCapCtx ideaId)
         (Action.reportIdea ideaId)
         "Die Idee wurde der Moderation gemeldet."
 
@@ -690,7 +687,7 @@ reportIdea ideaId =
 commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea
 commentOnIdea loc ideaId =
     formPageHandlerWithMsg
-        (do (ctx, _, idea) <- ideaCapCtx ideaId
+        (do (ctx, idea) <- ideaCapCtx ideaId
             pure $ CommentOnIdea ctx idea Nothing)
         (\cc -> do
             comment <- addWithCurrentUser (AddCommentToIdea loc ideaId) cc
@@ -701,7 +698,7 @@ commentOnIdea loc ideaId =
 editComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m EditComment
 editComment loc iid cid =
     formPageHandlerWithMsg
-        (do (ctx, _, idea, comment) <- commentCapCtx $ commentKey loc iid cid
+        (do (ctx, _, _, idea, comment) <- commentCapCtx' $ commentKey loc iid cid
             pure $ EditComment ctx idea comment)
         (\desc -> do
             let ck = commentKey loc iid cid
@@ -712,7 +709,7 @@ editComment loc iid cid =
 replyToComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentOnIdea
 replyToComment loc ideaId commentId =
     formPageHandlerWithMsg
-        (do (ctx, _, idea) <- ideaCapCtx ideaId
+        (do (ctx, idea) <- ideaCapCtx ideaId
             pure . CommentOnIdea ctx idea $ idea ^. ideaComments . at commentId)
         (\cc -> do
             comment <- addWithCurrentUser (AddReply $ CommentKey loc ideaId [] commentId) cc
@@ -723,7 +720,7 @@ replyToComment loc ideaId commentId =
 editReply :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> FormPageHandler m EditComment
 editReply loc iid pcid cid =
     formPageHandlerWithMsg
-        (do (ctx, _, idea, comment) <- commentCapCtx $ replyKey loc iid pcid cid
+        (do (ctx, _, _, idea, comment) <- commentCapCtx' $ replyKey loc iid pcid cid
             pure $ EditComment ctx idea comment)
         (\desc -> do
             let ck = replyKey loc iid pcid cid
@@ -735,7 +732,7 @@ editReply loc iid pcid cid =
 judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> FormPageHandler m JudgeIdea
 judgeIdea ideaId juryType =
     formPageHandlerWithMsg
-        (do (ctx, mtopic, idea) <- ideaCapCtx ideaId
+        (do (ctx, mtopic, _, idea) <- ideaCapCtx' ideaId
             topic <- mquery $ pure mtopic
             pure $ JudgeIdea ctx juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
@@ -747,8 +744,7 @@ creatorStatementOfIdea idea = idea ^? ideaVoteResult . _Just . ideaVoteResultVal
 creatorStatement :: ActionM m => AUID Idea -> FormPageHandler m CreatorStatement
 creatorStatement ideaId =
     formPageHandlerWithMsg
-        (do (ctx, _, idea) <- ideaCapCtx ideaId
-            pure $ CreatorStatement ctx idea)
+        (uncurry CreatorStatement <$> ideaCapCtx ideaId)
         (Action.setCreatorStatement ideaId)
         "Das Statement wurde gespeichert."
 
@@ -757,8 +753,7 @@ reportComment
     -> FormPageHandler m ReportComment
 reportComment loc iid cid =
     formPageHandlerWithMsg
-        (do (ctx, _, _, comment) <- commentCapCtx $ commentKey loc iid cid
-            pure $ ReportComment ctx comment)
+        (uncurry ReportComment <$> commentCapCtx (commentKey loc iid cid))
         (Action.reportIdeaComment loc iid cid . unReportCommentContent)
         "Die Meldung wurde abgeschickt."
 
@@ -767,7 +762,6 @@ reportReply
     -> FormPageHandler m ReportComment
 reportReply loc iid pcid cid =
     formPageHandlerWithMsg
-        (do (ctx, _, _, comment) <- commentCapCtx $ replyKey loc iid pcid cid
-            pure $ ReportComment ctx comment)
+        (uncurry ReportComment <$> commentCapCtx (replyKey loc iid pcid cid))
         (Action.reportIdeaCommentReply loc iid pcid cid . unReportCommentContent)
         "Die Meldung wurde abgeschickt."

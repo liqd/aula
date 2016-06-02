@@ -60,15 +60,18 @@ makeLenses ''IdeaStats
 
 instance SOP.Generic IdeaStats
 
+currentPhaseWildIdea :: EQuery Phase
+currentPhaseWildIdea = views dbFreeze PhaseWildIdea
+
 getIdeaStats :: Idea -> EQuery IdeaStats
 getIdeaStats idea = do
     voters <- length <$> getVotersForIdea idea
     quPercent <- quorum idea
     let quVotesRequired = voters * quPercent `div` 100
     phase :: Phase
-        <- maybe404 =<< case idea ^. ideaMaybeTopicId of
-            Nothing -> views dbFreeze (Just . PhaseWildIdea)
-            Just tid -> view topicPhase <$$> findTopic tid
+        <- case idea ^. ideaMaybeTopicId of
+            Nothing -> currentPhaseWildIdea
+            Just tid -> view topicPhase <$> (maybe404 =<< findTopic tid)
     pure $ IdeaStats idea phase quVotesRequired voters
 
 ideaReachedQuorum :: IdeaStats -> Bool
