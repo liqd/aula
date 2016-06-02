@@ -60,8 +60,6 @@ markdown = Right . Markdown  -- TODO: implement!
 
 -- | Be careful not to use `mappend` on user input!  The concatenation will be checked by
 -- `markdown`, but the failure case will crash hard.
---
--- TODO: test monoid laws
 instance Monoid Document where
     mempty = Markdown mempty
     mappend (Markdown a) (Markdown b) = case markdown $ mappend a b of
