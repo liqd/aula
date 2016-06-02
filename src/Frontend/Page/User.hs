@@ -295,9 +295,6 @@ delegatedVotes userId = do
 
 -- ** User Profile: Edit profile
 
-isOwnProfile :: CapCtx -> User -> Bool
-isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
-
 instance FormPage EditUserProfile where
     type FormPagePayload EditUserProfile = UserProfile
 

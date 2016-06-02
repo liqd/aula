@@ -47,6 +47,7 @@ module Frontend.Core
     , redirectLogin
     , authNeedPage
     , authNeedCaps
+    , isOwnProfile
 
       -- * forms
     , FormPage
@@ -314,6 +315,9 @@ authNeedCaps needCaps' capCtx = authNeedPage $ \p ->
     if Set.null diffCaps
         then accessGranted
         else accessDenied ("Missing capabilities " <> cs (show diffCaps)) Nothing
+
+isOwnProfile :: CapCtx -> User -> Bool
+isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
 
 instance Page () where isAuthorized = publicPage
 
