@@ -94,7 +94,7 @@ badAttr (mk -> el) (HTML.Attr (mk -> akey) (mk -> aval)) =
 badCssPropsIn :: CI ST -> CI ST -> [ST]
 badCssPropsIn akey aval
     | akey /= "style" = []
-    | otherwise = case (fmap extractProps . CSS.tokenize . foldedCase $ aval) of
+    | otherwise = case fmap extractProps . CSS.tokenize . foldedCase $ aval of
         Left err -> ["could not parse style attribute: " <> cs err]
         Right ps -> ("unsafe css property: " <>) . foldedCase <$> (mk <$> ps) \\ props
   where

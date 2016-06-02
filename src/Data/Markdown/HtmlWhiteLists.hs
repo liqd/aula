@@ -45,7 +45,7 @@ instance FromJSON HtmlElements where
 
 -- | every attribute consists of a maybe-element and an attribute.  if the element is nothing, the
 -- attribute is allowed in all elements.
-newtype HtmlAttributes = HtmlAttributes [(Maybe (CI ST), (CI ST))]
+newtype HtmlAttributes = HtmlAttributes [(Maybe (CI ST), CI ST)]
   deriving (Eq, Ord, Show, Read, Monoid)
 
 instance FromJSON HtmlAttributes where
@@ -59,7 +59,7 @@ instance FromJSON HtmlAttributes where
             p = withText "attr" $ \case (ST.splitOn "::" -> [el, attr]) -> pure (mk <$> f el, mk attr)
                                         bad -> fail ("no element constraint: " <> show bad)
             f "*" = Nothing
-            f el  = Just $ el
+            f el  = Just el
 
         HtmlAttributes <$> parseAttr `mapM` els1
 
@@ -236,7 +236,7 @@ html5Elements = unsafeFromJSON [aesonQQ|
     "VIDEO",
     "WBR"
   ],
-  
+
   "denied": [
     { "key": "DIALOG",
       "reason": "can be displayed as a full-page modal dialog; needs further review" },
