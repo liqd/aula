@@ -139,8 +139,20 @@ makeLenses ''CapCtx
 
 instance SOP.Generic CapCtx
 
+checkSpace :: Maybe IdeaSpace -> Maybe SchoolClass -> Bool
+-- If we have the context of a particular class and a role tied to a particular class
+-- then they must be equal to be accepted.
+checkSpace (Just (ClassSpace c0)) (Just c1) = c0 == c1
+-- Otherwise there is no restrictions, namely:
+-- * When the context is not restricted to a particular idea space.
+-- * When the role is not tied to a particular school class, then no restrictions.
+-- * When the context is the whole school, then no restrictions.
+checkSpace _ _ = True
+
 capabilities :: CapCtx -> [Capability]
-capabilities (CapCtx u _ mp mi mc) = mconcat . mconcat $
+capabilities (CapCtx u ms mp mi mc)
+    | not . checkSpace ms $ r ^? roleSchoolClass = []
+    | otherwise = mconcat . mconcat $
     [ [ userCapabilities r ]
     , [ ideaCapabilities (u ^. _Id) r i p    | i <- l mi, p <- l mp ]
     , [ commentCapabilities (u ^. _Id) r c p | c <- l mc, p <- l mp ]
