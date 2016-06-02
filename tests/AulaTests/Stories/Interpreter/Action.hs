@@ -39,8 +39,8 @@ import AulaTests.Stories.DSL
 -- of the state of server states, it is also can be used
 -- to simulate web clients state.
 data ClientState = ClientState {
-      _csIdeaSpace :: Maybe IdeaSpace
-    , _csUser      :: Maybe User
+      _csIdeaSpace :: !(Maybe IdeaSpace)
+    , _csUser      :: !(Maybe User)
     }
   deriving (Eq, Show)
 

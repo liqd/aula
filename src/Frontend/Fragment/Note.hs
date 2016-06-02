@@ -17,9 +17,9 @@ import Frontend.Validation
 
 data Note h = Note
     { noteHeaderText                :: h -> ST
-    , noteExplanation               :: Maybe ST
-    , noteLabelText                 :: ST
-    , noteFieldNameInValiationError :: ST
+    , noteExplanation               :: !(Maybe ST)
+    , noteLabelText                 :: !ST
+    , noteFieldNameInValiationError :: !ST
     }
 
 noteForm

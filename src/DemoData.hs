@@ -125,8 +125,8 @@ arbComment :: Gen Document
 arbComment = Markdown <$> arbPhraseOf 10 100
 
 data CommentInContext = CommentInContext
-    { _cicIdea :: Idea
-    , _cicComment :: Comment
+    { _cicIdea    :: !Idea
+    , _cicComment :: !Comment
     }
 
 genComment :: [Idea] -> [User] -> forall m . ActionM m => Gen (m CommentInContext)

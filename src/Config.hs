@@ -77,11 +77,11 @@ data PersistenceImpl = AcidStateInMem | AcidStateOnDisk
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON, Enum, Bounded)
 
 data SmtpConfig = SmtpConfig
-    { _senderName       :: String
-    , _senderEmail      :: String
-    , _defaultRecipient :: Maybe String  -- (e.g. for use in demo data.)
-    , _sendmailPath     :: String
-    , _sendmailArgs     :: [String]
+    { _senderName       :: !String
+    , _senderEmail      :: !String
+    , _defaultRecipient :: !(Maybe String)  -- (e.g. for use in demo data.)
+    , _sendmailPath     :: !String
+    , _sendmailArgs     :: ![String]
    -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
@@ -89,32 +89,32 @@ data SmtpConfig = SmtpConfig
 makeLenses ''SmtpConfig
 
 data PersistConfig = PersistConfig
-    { _dbPath           :: String
-    , _persistenceImpl  :: PersistenceImpl
-    , _snapshotInterval :: Timespan
+    { _dbPath           :: !String
+    , _persistenceImpl  :: !PersistenceImpl
+    , _snapshotInterval :: !Timespan
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
 makeLenses ''PersistConfig
 
 data LogConfig = LogConfig
-    { _logLevel     :: LogLevel
-    , _eventLogPath :: FilePath
+    { _logLevel     :: !LogLevel
+    , _eventLogPath :: !FilePath
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
 makeLenses ''LogConfig
 
 data Config = Config
-    { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
-    , _listenerInterface    :: String
-    , _listenerPort         :: Int
-    , _htmlStatic           :: FilePath
-    , _cfgCsrfSecret        :: CsrfSecret
-    , _logging              :: LogConfig
-    , _persistConfig        :: PersistConfig
-    , _smtpConfig           :: SmtpConfig
-    , _timeoutCheckInterval :: Timespan
+    { _exposedUrl           :: !String  -- e.g. https://aula-stage.liqd.net
+    , _listenerInterface    :: !String
+    , _listenerPort         :: !Int
+    , _htmlStatic           :: !FilePath
+    , _cfgCsrfSecret        :: !CsrfSecret
+    , _logging              :: !LogConfig
+    , _persistConfig        :: !PersistConfig
+    , _smtpConfig           :: !SmtpConfig
+    , _timeoutCheckInterval :: !Timespan
     -- ^ Topics which needs to change phase due to a timeout will
     -- be checked at this interval.
     -- * once per day would be the minmum

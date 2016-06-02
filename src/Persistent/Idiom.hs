@@ -49,14 +49,15 @@ getVotersForSpace space = filter hasAccess <$> getActiveUsers
 -- | @_ideaStatsQuorum@ is the number of likes (quorum votes) needed for the quorum to be
 -- reached.
 data IdeaStats = IdeaStats
-    { _ideaStatsIdea       :: Idea
-    , _ideaStatsPhase      :: Phase
-    , _ideaStatsQuorum     :: Int
-    , _ideaStatsNoOfVoters :: Int
+    { _ideaStatsIdea       :: !Idea
+    , _ideaStatsPhase      :: !Phase
+    , _ideaStatsQuorum     :: !Int
+    , _ideaStatsNoOfVoters :: !Int
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 makeLenses ''IdeaStats
+makePrisms ''IdeaStats
 
 instance SOP.Generic IdeaStats
 

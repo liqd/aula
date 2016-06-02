@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE LambdaCase     #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
@@ -14,7 +15,7 @@ module LifeCycle
 
       -- * capabilities
     , Capability(..)
-    , CapCtx(..)
+    , CapCtx(..), _CapCtx, capCtxUser, capCtxIdea, capCtxPhase, capCtxComment
     , capabilities
     )
 where
@@ -40,10 +41,10 @@ thereIsAGod nope = if isThere then [minBound..] else nope
 
 data PhaseChange
     = PhaseTimeout
-    | AllIdeasAreMarked { _phaseChangeTimeout :: Timestamp }
-    | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: Timestamp }
+    | AllIdeasAreMarked { _phaseChangeTimeout :: !Timestamp }
+    | RevertJuryPhaseToRefinement { _phaseChangeTimeout :: !Timestamp }
     | RevertVotingPhaseToJury
-    | RevertResultPhaseToVoting { _phaseChangeTimeout :: Timestamp }
+    | RevertResultPhaseToVoting { _phaseChangeTimeout :: !Timestamp }
   deriving (Eq, Show)
 
 data PhaseAction
@@ -95,7 +96,8 @@ phaseTrans _ _ = Nothing
 -- FIXME: clarify relationship of 'CanEditTopic' with 'CanMoveBetweenLocations' (in the types?)
 data Capability
     -- Idea
-    = CanLike
+    = CanView
+    | CanLike
     | CanVote
     | CanComment
     | CanVoteComment
@@ -112,6 +114,7 @@ data Capability
     -- Topic
     | CanPhaseForwardTopic
     | CanPhaseBackwardTopic
+    | CanViewTopic
     | CanEditTopic
     | CanCreateIdea
     -- User
@@ -121,30 +124,43 @@ data Capability
 
 instance SOP.Generic Capability
 
+-- TODO: the current context does not provide with the IdeaSpace, which seems
+-- required to restrict students to their class.
 data CapCtx = CapCtx
-    { capCtxRole    :: Role
-    , capCtxPhase   :: Maybe Phase
-    , capCtxUser    :: Maybe (AUID User)
-    , capCtxIdea    :: Maybe Idea
-    , capCtxComment :: Maybe Comment
+    { _capCtxUser    :: !User
+    , _capCtxSpace   :: !(Maybe IdeaSpace)
+    , _capCtxPhase   :: !(Maybe Phase)
+    , _capCtxIdea    :: !(Maybe Idea)
+    , _capCtxComment :: !(Maybe Comment)
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+makeLenses ''CapCtx
+makePrisms ''CapCtx
+
 instance SOP.Generic CapCtx
 
-capabilities :: CapCtx -> [Capability]
-capabilities ctx = mconcat $
-       [ userCapabilities r ]
-    <> [ ideaCapabilities u r i p    | u <- l mu, i <- l mi, p <- l mp ]
-    <> [ commentCapabilities u r c p | u <- l mu, c <- l mc, p <- l mp ]
-    <> [ topicCapabilities p r       | p <- l mp ]
-  where
-    r  = capCtxRole    ctx
-    mp = capCtxPhase   ctx
-    mu = capCtxUser    ctx
-    mi = capCtxIdea    ctx
-    mc = capCtxComment ctx
+checkSpace :: Maybe IdeaSpace -> Maybe SchoolClass -> Bool
+-- If we have the context of a particular class and a role tied to a particular class
+-- then they must be equal to be accepted.
+checkSpace (Just (ClassSpace c0)) (Just c1) = c0 == c1
+-- Otherwise there is no restrictions, namely:
+-- * When the context is not restricted to a particular idea space.
+-- * When the role is not tied to a particular school class, then no restrictions.
+-- * When the context is the whole school, then no restrictions.
+checkSpace _ _ = True
 
+capabilities :: CapCtx -> [Capability]
+capabilities (CapCtx u ms mp mi mc)
+    | not . checkSpace ms $ r ^? roleSchoolClass = []
+    | otherwise = mconcat . mconcat $
+    [ [ userCapabilities r ]
+    , [ ideaCapabilities (u ^. _Id) r i p    | i <- l mi, p <- l mp ]
+    , [ commentCapabilities (u ^. _Id) r c p | c <- l mc, p <- l mp ]
+    , [ topicCapabilities p r                | p <- l mp ]
+    ]
+  where
+    r = u ^. userRole
     l = maybeToList
 
 
@@ -164,7 +180,7 @@ userCapabilities = \case
 
 
 ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Capability]
-ideaCapabilities = phaseCap
+ideaCapabilities uid r i p = CanView : phaseCap uid r i p
 
 editCap :: AUID User -> Idea -> [Capability]
 editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
@@ -262,7 +278,7 @@ commentCapabilities uid role comment phase
 -- ** Topic capabilities
 
 topicCapabilities :: Phase -> Role -> [Capability]
-topicCapabilities = \case
+topicCapabilities = (\f r -> CanViewTopic : f r) . \case
     p | isPhaseFrozen p -> const []
     PhaseWildIdea{}     -> topicWildIdeaCaps
     PhaseRefinement{}   -> topicRefinementCaps

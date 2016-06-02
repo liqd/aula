@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,10 +13,11 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Topic
-    ( ViewTopic(..)
+    ( ViewTopic(..), _ViewTopicIdeas, _ViewTopicDelegations
+    , vtNow, vtCtx, vtTab, vtTopic, vtIdeas, vtDelegations
     , ViewTopicTab(..)
-    , CreateTopic(..)
-    , EditTopic(..)
+    , CreateTopic(..), _CreateTopic, ctCtx, ctIdeaSpace, ctIdeas, ctRefPhaseEnd
+    , EditTopic(..), _EditTopic, etCtx, etIdeaSpace, etTopic, etIdeasStats, etIdeas
     , IdeasFilterApi
     , viewTopic
     , createTopic
@@ -31,7 +31,8 @@ import Data.List (sortBy)
 import Data.Time
 import Prelude hiding ((.))
 
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, getCurrentTimestamp)
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
+               spaceCapCtx, topicCapCtx, getCurrentTimestamp)
 import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
@@ -41,14 +42,11 @@ import Persistent
     ( findDelegationsByContext
     , findIdeasByTopic
     , findIdeasByTopicId
-    , findTopic
-    , findTopic
     , findWildIdeasBySpace
     , IdeaStats(..)
     , ideaReachedQuorum
     , ideaStatsIdea
     , getIdeaStats
-    , maybe404
     , phaseEndRefinement
     , ideaAccepted
     )
@@ -63,7 +61,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * types
 
 data ViewTopicTab
-  = TabIdeas { _topicTab :: ListIdeasInTopicTab, viewTopicTabQuery :: IdeasQuery }
+  = TabIdeas { _topicTab :: !ListIdeasInTopicTab, viewTopicTabQuery :: !IdeasQuery }
   | TabDelegation
   deriving (Eq, Ord, Show, Read)
 
@@ -77,28 +75,58 @@ makePrisms ''ViewTopicTab
 -- * 4.4 Topic overview: Result phase
 -- * 4.5 Topic overview: Delegations
 data ViewTopic
-  = ViewTopicIdeas Timestamp RenderContext ViewTopicTab Topic ListItemIdeas
-  | ViewTopicDelegations Timestamp RenderContext Topic [Delegation]
+  = ViewTopicIdeas
+    { _vtNow   :: !Timestamp
+    , _vtCtx   :: !CapCtx
+    , _vtTab   :: !ViewTopicTab
+    , _vtTopic :: !Topic
+    , _vtIdeas :: !ListItemIdeas
+    }
+  | ViewTopicDelegations
+    { _vtNow         :: Timestamp
+    , _vtCtx         :: CapCtx
+    , _vtTopic       :: Topic
+    , _vtDelegations :: [Delegation]
+    }
   deriving (Eq, Show, Read)
 
+makeLenses ''ViewTopic
+makePrisms ''ViewTopic
+
 instance Page ViewTopic where
+    isAuthorized = authNeedCaps [CanViewTopic] vtCtx
     extraBodyClasses _ = ["m-shadow"]
 
 -- | 10.1 Create topic: Create topic
 data CreateTopic = CreateTopic
-    { _createTopicIdeaSpace   :: IdeaSpace
-    , _createTopicIdeas       :: [IdeaStats]
-    , _createTopicRefPhaseEnd :: Timestamp }
+    { _ctCtx         :: !CapCtx
+    , _ctIdeaSpace   :: !IdeaSpace
+    , _ctIdeas       :: ![IdeaStats]
+    , _ctRefPhaseEnd :: !Timestamp }
   deriving (Eq, Show, Read)
 
-instance Page CreateTopic
+makeLenses ''CreateTopic
+makePrisms ''CreateTopic
+
+instance Page CreateTopic where
+    isAuthorized = authNeedCaps [CanCreateTopic] ctCtx
 
 -- | 10.2 Create topic: Move ideas to topic (Edit topic)
 -- FIXME: Edit topic page is used for editing a topic and move ideas to the topic.
-data EditTopic = EditTopic IdeaSpace Topic [IdeaStats] [AUID Idea]
+data EditTopic = EditTopic
+    { _etCtx        :: !CapCtx
+    , _etIdeaSpace  :: !IdeaSpace
+    , _etTopic      :: !Topic
+    , _etIdeasStats :: ![IdeaStats]
+    , _etIdeas      :: ![AUID Idea]
+    }
   deriving (Eq, Show, Read)
 
-instance Page EditTopic
+makeLenses ''EditTopic
+makePrisms ''EditTopic
+
+instance Page EditTopic where
+    isAuthorized = authNeedCaps [CanEditTopic] etCtx
 
 
 -- * templates
@@ -136,16 +164,9 @@ instance ToHtml ViewTopic where
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
-viewTopicHeaderDiv :: Monad m => Timestamp -> RenderContext -> Topic -> ViewTopicTab -> HtmlT m ()
+viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> HtmlT m ()
 viewTopicHeaderDiv now ctx topic tab = do
-    let caps    = capabilities CapCtx
-                      { capCtxRole    = ctx ^. renderContextUser . userRole
-                      , capCtxPhase   = Just phase
-                      , capCtxUser    = Nothing
-                      , capCtxIdea    = Nothing
-                      , capCtxComment = Nothing
-                      }
-
+    let caps    = capabilities ctx
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
         space   = topic ^. topicIdeaSpace
@@ -259,26 +280,24 @@ instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
     type FormPageResult CreateTopic = Topic
 
-    formAction (CreateTopic space _ _) = U.Space space U.CreateTopic
-    redirectOf (CreateTopic _ _ _) topic = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
+    formAction ct = U.Space (ct ^. ctIdeaSpace) U.CreateTopic
+    redirectOf _ topic = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
 
-    makeForm CreateTopic{ _createTopicIdeaSpace
-                        , _createTopicIdeas
-                        , _createTopicRefPhaseEnd } =
+    makeForm ct =
         ProtoTopic
         <$> ("title" .: validateTopicTitle (DF.text nil))
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
-        <*> pure _createTopicIdeaSpace
-        <*> makeFormIdeaSelection [] (_ideaStatsIdea <$> _createTopicIdeas)
-        <*> pure _createTopicRefPhaseEnd
+        <*> pure (ct ^. ctIdeaSpace)
+        <*> makeFormIdeaSelection [] (ct ^.. ctIdeas . each . ideaStatsIdea)
+        <*> pure (ct ^. ctRefPhaseEnd)
 
-    formPage v form p@(CreateTopic _space ideas _timestamp) =
-        semanticDiv p $ do
+    formPage v form ct =
+        semanticDiv ct $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Thema erstellen"
-                    form $ createOrEditTopic v ideas
+                    form . createOrEditTopic v $ ct ^. ctIdeas
 
 createOrEditTopic :: Monad m => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 createOrEditTopic v ideas = do
@@ -305,21 +324,21 @@ instance FormPage EditTopic where
     -- the ideas to be added to the topic.
     type FormPagePayload EditTopic = EditTopicData
 
-    formAction (EditTopic space topic _ _) = U.Space space $ U.EditTopic (topic ^. _Id)
-    redirectOf (EditTopic _ topic _ _) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
+    formAction (EditTopic _ space topic _ _) = U.Space space $ U.EditTopic (topic ^. _Id)
+    redirectOf et _ = U.listIdeasInTopic (et ^. etTopic) ListIdeasInTopicTabAll Nothing
 
-    makeForm (EditTopic _space topic ideas preselected) =
+    makeForm (EditTopic _ctx _space topic ideas preselected) =
         EditTopicData
         <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
         <*> makeFormIdeaSelection preselected (_ideaStatsIdea <$> ideas)
 
-    formPage v form p@(EditTopic _space _topic ideas _preselected) = do
-        semanticDiv p $ do
+    formPage v form et = do
+        semanticDiv et $ do
             div_ [class_ "container-main popup-page"] $ do
                 div_ [class_ "container-narrow"] $ do
                     h1_ [class_ "main-heading"] "Thema bearbeiten"
-                    form $ createOrEditTopic v ideas
+                    form . createOrEditTopic v $ et ^. etIdeasStats
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
@@ -369,16 +388,14 @@ ideaFilterForTab = \case
 viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
 viewTopic tab topicId = do
-    ctx <- renderContext
     now <- getCurrentTimestamp
-    equery (do
-        topic <- maybe404 =<< findTopic topicId
+    (ctx, topic) <- topicCapCtx topicId
+    equery $
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> findDelegationsByContext (DlgCtxTopicId topicId)
-            TabIdeas ideasTab ideasQuery ->
-              do
+            TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
                      <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
@@ -386,15 +403,15 @@ viewTopic tab topicId = do
                 let listItemIdeas =
                         ListItemIdeas ctx (IdeaInViewTopic ideasTab) loc ideasQuery ideas
 
-                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas)
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
 createTopic space =
     formPageHandlerCalcMsg
-        (do
+        (do ctx <- spaceCapCtx space
             now <- getCurrentTimestamp
-            equery $ CreateTopic space
+            equery $ CreateTopic ctx space
                 <$> (mapM getIdeaStats =<< findWildIdeasBySpace space)
                 <*> phaseEndRefinement now)
         Action.createTopic
@@ -403,16 +420,16 @@ createTopic space =
 editTopic :: ActionM m => AUID Topic -> FormPageHandler m EditTopic
 editTopic topicId =
     formPageHandlerWithMsg
-        getPage
+        (getPage =<< topicCapCtx topicId)
         (Action.editTopic topicId)
         "Das Thema wurde gespeichert."
   where
-    getPage = equery $ do
-        topic <- maybe404 =<< findTopic topicId
+    getPage (ctx, topic) = equery $ do
         let space = topic ^. topicIdeaSpace
         wildIdeas <- mapM getIdeaStats =<< findWildIdeasBySpace space
         ideasInTopic <- mapM getIdeaStats =<< findIdeasByTopicId topicId
         pure $ EditTopic
+                ctx
                 space
                 topic
                 (wildIdeas <> ideasInTopic)

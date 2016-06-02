@@ -38,12 +38,11 @@ aulaTesting =
 
   :<|> undefined  -- (intentional)
   :<|> throwError500 "testing error500"
-  :<|> throwServantErr (err303 { errHeaders = ("Location", "/target") : errHeaders err303 })
+  :<|> redirect ("/target" :: String)
 
 data Page404 = Page404
 
-instance Page Page404 where
-    isPrivatePage _ = False
+instance Page Page404 where isAuthorized = publicPage
 
 instance ToHtml Page404 where
     toHtmlRaw = toHtml

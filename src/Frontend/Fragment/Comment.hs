@@ -22,10 +22,9 @@ import qualified Frontend.Path as U
 
 
 data CommentWidget = CommentWidget
-    { _cwRenderContext :: RenderContext
-    , _cwIdeaCaps      :: [Capability]
-    , _cwComment       :: Comment
-    , _cwPhase         :: Phase
+    { _cwCapCtx   :: !CapCtx
+    , _cwIdeaCaps :: ![Capability]
+    , _cwComment  :: !Comment
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -75,18 +74,10 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                     "löschen"
   where
     comment = w ^. cwComment
-    user = w ^. cwRenderContext . renderContextUser
-    comCaps = capabilities CapCtx
-        { capCtxRole    = user ^. userRole
-        , capCtxPhase   = Just $ w ^. cwPhase
-        , capCtxUser    = Just $ user ^. _Id
-        , capCtxIdea    = Nothing  -- FIXME: there is an idea in the context here, and it should be
-                                   -- mentioned for principal reasons.
-        , capCtxComment = Just comment
-        }
+    comCaps = capabilities (w ^. cwCapCtx)
 
 
-data CommentVotesWidget = CommentVotesWidget [Capability] Comment
+data CommentVotesWidget = CommentVotesWidget ![Capability] !Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml

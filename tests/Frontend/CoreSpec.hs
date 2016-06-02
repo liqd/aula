@@ -32,6 +32,7 @@ import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
 import Frontend.Path (relPath)
+import LifeCycle (CapCtx(..))
 import Logger (nullLog)
 import Persistent.Implementation (mkRunPersist)
 import Persistent.Idiom (ideaStatsIdea)
@@ -116,7 +117,8 @@ spec = do
     -- FIXME: test this in all forms, for all validation errors.
     describe "form validation errors" $ do
         let spc = IdeaLocationSpace SchoolSpace
-            page = CreateIdea spc
+            ctx = CapCtx (error "CoreSpec: IMPOSSIBLE") Nothing Nothing Nothing Nothing
+            page = CreateIdea ctx spc
             payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
@@ -413,12 +415,12 @@ class FormPage p => ArbFormPagePayload p where
 
 
 instance ArbFormPagePayload CreateIdea where
-    arbFormPagePayload (CreateIdea location) =
+    arbFormPagePayload (CreateIdea _ location) =
         (set protoIdeaLocation location <$> arbitrary)
         <**> (set protoIdeaDesc <$> arb)
 
 instance ArbFormPagePayload Frontend.Page.EditIdea where
-    arbFormPagePayload (Frontend.Page.EditIdea idea) =
+    arbFormPagePayload (Frontend.Page.EditIdea _ idea) =
         set protoIdeaLocation (idea ^. ideaLocation) <$> arbitrary
 
 instance ArbFormPagePayload CommentOnIdea
@@ -451,14 +453,14 @@ instance ArbFormPagePayload PageHomeWithLoginPrompt where
             (choose (4,12) >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z']))
 
 instance ArbFormPagePayload CreateTopic where
-    arbFormPagePayload (CreateTopic space ideas _timestamp) =
+    arbFormPagePayload (CreateTopic _ctx space ideas _timestamp) =
             set protoTopicIdeaSpace space
-          . set protoTopicIdeas (map (^. ideaStatsIdea . _Id) ideas)
+          . set protoTopicIdeas (ideas ^.. each . ideaStatsIdea . _Id)
         <$> arbitrary
-        <**> (set protoTopicDesc<$> arb)
+        <**> (set protoTopicDesc <$> arb)
 
 instance ArbFormPagePayload Frontend.Page.EditTopic where
-    arbFormPagePayload (Frontend.Page.EditTopic _space _topic ideas _preselected) =
+    arbFormPagePayload (Frontend.Page.EditTopic _ctx _space _topic ideas _preselected) =
         EditTopicData
         <$> arbPhrase
         <*> arbitrary
@@ -490,14 +492,14 @@ instance ArbFormPagePayload CreatorStatement where
     arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
 
 instance ArbFormPagePayload JudgeIdea where
-    arbFormPagePayload (JudgeIdea IdeaFeasible    _ _)
+    arbFormPagePayload (JudgeIdea _ IdeaFeasible    _ _)
         = Feasible <$> frequency [(1, pure Nothing), (10, Just <$> arb)]
-    arbFormPagePayload (JudgeIdea IdeaNotFeasible _ _)
+    arbFormPagePayload (JudgeIdea _ IdeaNotFeasible _ _)
         = NotFeasible <$> arb
 
-    arbFormPageInvalidPayload (JudgeIdea IdeaFeasible _ _)
+    arbFormPageInvalidPayload (JudgeIdea _ IdeaFeasible _ _)
         = pure Nothing
-    arbFormPageInvalidPayload (JudgeIdea IdeaNotFeasible _ _)
+    arbFormPageInvalidPayload (JudgeIdea _ IdeaNotFeasible _ _)
         = pure . Just . NotFeasible $ Markdown ""
 
 instance ArbFormPagePayload ReportComment where
@@ -519,8 +521,8 @@ instance PayloadToEnv UserProfile where
 -- FIXME: Move ideas to wild is not generated
 instance ArbFormPagePayload Frontend.Page.MoveIdea where
     type ArbFormPagePayloadContext Frontend.Page.MoveIdea = [Topic]
-    arbFormPagePayloadCtx (MoveIdea _ideas topics) = pure topics
-    arbFormPagePayload (MoveIdea _ideas topics) =
+    arbFormPagePayloadCtx (MoveIdea _ _ideas topics) = pure topics
+    arbFormPagePayload (MoveIdea _ _ideas topics) =
         MoveIdeaToTopic <$> Test.QuickCheck.elements (view _Id <$> topics)
 
 instance PayloadToEnv Types.MoveIdea where

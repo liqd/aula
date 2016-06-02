@@ -1,15 +1,15 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Overview
-    ( PageOverviewOfSpaces(..)
-    , PageOverviewOfWildIdeas(..)
-    , PageOverviewOfTopics(..)
-    , WhatListPage(..)
+    ( PageOverviewOfSpaces(..), _PageOverviewOfSpaces
+    , PageOverviewOfWildIdeas(..), _PageOverviewOfWildIdeas
+    , PageOverviewOfTopics(..), _PageOverviewOfTopics
     , viewRooms
     , viewIdeas
     , viewTopics
@@ -29,23 +29,28 @@ import qualified Frontend.Path as U
 -- * pages
 
 -- | 1. Rooms overview
-data PageOverviewOfSpaces = PageOverviewOfSpaces [IdeaSpace]
+data PageOverviewOfSpaces = PageOverviewOfSpaces ![IdeaSpace]
   deriving (Eq, Show, Read)
 
 -- | 2. Ideas overview
-data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas RenderContext IdeaSpace ListItemIdeas
+data PageOverviewOfWildIdeas = PageOverviewOfWildIdeas !CapCtx !IdeaSpace !ListItemIdeas
   deriving (Eq, Show, Read)
 
 -- | 3. Ideas in discussion (Topics overview)
-data PageOverviewOfTopics = PageOverviewOfTopics RenderContext IdeaSpace [Topic]
+data PageOverviewOfTopics = PageOverviewOfTopics !CapCtx !IdeaSpace ![Topic]
   deriving (Eq, Show, Read)
 
-data Tabs = Tabs ActiveTab IdeaSpace
+data Tabs = Tabs !ActiveTab !IdeaSpace
   deriving (Eq, Show, Read)
 
 data ActiveTab = WildIdeas | Topics
   deriving (Eq, Show, Read)
 
+makePrisms ''PageOverviewOfSpaces
+makePrisms ''PageOverviewOfWildIdeas
+makePrisms ''PageOverviewOfTopics
+makePrisms ''Tabs
+makePrisms ''ActiveTab
 
 -- * actions
 
@@ -55,13 +60,14 @@ viewRooms = PageOverviewOfSpaces . sort <$> getSpacesForCurrentUser
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
-    ctx <- renderContext
+    ctx <- spaceCapCtx space
     PageOverviewOfWildIdeas ctx space <$> equery (do
         is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
         pure $ ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery is)
 
 viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
-viewTopics space = PageOverviewOfTopics <$> renderContext <*> pure space <*> query (findTopicsBySpace space)
+viewTopics space =
+    PageOverviewOfTopics <$> spaceCapCtx space <*> pure space <*> query (findTopicsBySpace space)
 
 
 -- * templates
@@ -83,7 +89,9 @@ instance ToHtml PageOverviewOfSpaces where
                     span_ [class_ "item-room-image"] nil
                     h2_ [class_ "item-room-title"] $ uilabel ispace
 
-instance Page PageOverviewOfSpaces
+instance Page PageOverviewOfSpaces where
+    -- Any logged in user is authorized since viewRooms is already selecting the right view
+    isAuthorized = userPage
 
 instance ToHtml PageOverviewOfWildIdeas where
     toHtmlRaw = toHtml
@@ -101,6 +109,8 @@ instance ToHtml PageOverviewOfWildIdeas where
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 instance Page PageOverviewOfWildIdeas where
+    -- Any logged in user is authorized since findWildIdeasBySpace is already selecting the right view
+    isAuthorized = userPage
     extraBodyClasses _ = ["m-shadow"]
 
 instance ToHtml PageOverviewOfTopics where
@@ -113,14 +123,7 @@ instance ToHtml PageOverviewOfTopics where
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
-                let userCaps = capabilities CapCtx
-                                   { capCtxRole    = ctx ^. renderContextUser . userRole
-                                   , capCtxPhase   = Nothing
-                                   , capCtxUser    = Nothing
-                                   , capCtxIdea    = Nothing
-                                   , capCtxComment = Nothing
-                                   }
-                when (CanCreateTopic `elem` userCaps) $
+                when (CanCreateTopic `elem` capabilities ctx) $
                     button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta m-large"] "+ Neues Thema"
 
             forM_ topics $ \topic -> do
@@ -148,7 +151,9 @@ instance ToHtml PageOverviewOfTopics where
                                 span_ [class_ "theme-grid-item-link"]
                                     "view topic"
 
-instance Page PageOverviewOfTopics
+instance Page PageOverviewOfTopics where
+    -- Any logged in user is authorized since findTopicsBySpace is already selecting the right view
+    isAuthorized = userPage
 
 instance ToHtml Tabs where
     toHtmlRaw = toHtml

@@ -86,6 +86,14 @@ module Action
       -- * admin
     , resetPassword
 
+      -- * capabilities
+    , currentUserCapCtx
+    , spaceCapCtx
+    , locationCapCtx
+    , topicCapCtx
+    , ideaCapCtx
+    , commentCapCtx
+
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
@@ -157,10 +165,10 @@ type StatusMessage = ST
 
 -- | User representation during an action
 data UserState = UserState
-    { _usSessionToken :: Maybe ThentosSessionToken
-    , _usCsrfToken    :: Maybe CsrfToken
-    , _usUserId       :: Maybe (AUID User)
-    , _usMessages     :: [StatusMessage]
+    { _usSessionToken :: !(Maybe ThentosSessionToken)
+    , _usCsrfToken    :: !(Maybe CsrfToken)
+    , _usUserId       :: !(Maybe (AUID User))
+    , _usMessages     :: ![StatusMessage]
     }
   deriving (Show, Eq)
 
@@ -170,9 +178,9 @@ userLoggedOut :: UserState
 userLoggedOut = UserState Nothing Nothing Nothing []
 
 data ActionEnv = ActionEnv
-    { _envRunPersist :: RunPersist
-    , _envConfig     :: Config
-    , _envLogger     :: SendLogMsg
+    { _envRunPersist :: !RunPersist
+    , _envConfig     :: !Config
+    , _envLogger     :: !SendLogMsg
     }
 
 makeLenses ''ActionEnv
@@ -187,11 +195,11 @@ instance GetConfig ActionEnv where
 --
 -- FIXME: 'ServantErr' should be abstracted away.
 data ActionExcept
-    = ActionExcept { unActionExcept :: ServantErr }
-    | ActionPersistExcept PersistExcept
-    | ActionSendMailExcept SendMailError
-    | ActionEventLogExcept SomeException
-    | ActionIOExcept SomeException
+    = ActionExcept { unActionExcept :: !ServantErr }
+    | ActionPersistExcept !PersistExcept
+    | ActionSendMailExcept !SendMailError
+    | ActionEventLogExcept !SomeException
+    | ActionIOExcept !SomeException
     deriving (Show)
 
 makePrisms ''ActionExcept
@@ -708,10 +716,10 @@ resetPassword = update <..> ResetUserPass
 -- * phase shift
 
 data PhaseShiftResult =
-    PhaseShiftResultOk (AUID Topic) Phase Phase
-  | PhaseShiftResultNoBackwardsFromRefinement (AUID Topic)
-  | PhaseShiftResultNoForwardFromResult (AUID Topic)
-  | PhaseShiftResultNoShiftingWhenFrozen (AUID Topic)
+    PhaseShiftResultOk !(AUID Topic) !Phase !Phase
+  | PhaseShiftResultNoBackwardsFromRefinement !(AUID Topic)
+  | PhaseShiftResultNoForwardFromResult !(AUID Topic)
+  | PhaseShiftResultNoShiftingWhenFrozen !(AUID Topic)
   deriving (Eq, Ord, Show, Read)
 
 instance HasUILabel PhaseShiftResult where
@@ -918,3 +926,54 @@ instance ActionM m => WarmUp' m Idea where
 
 instance ActionM m => WarmUp' m Comment where
     warmUp' k = mquery (findComment k)
+
+currentUserCapCtx :: (ActionPersist m, ActionUserHandler m) => m CapCtx
+currentUserCapCtx = do
+    user <- currentUser
+    pure CapCtx
+        { _capCtxUser    = user
+        , _capCtxSpace   = Nothing
+        , _capCtxPhase   = Nothing
+        , _capCtxIdea    = Nothing
+        , _capCtxComment = Nothing
+        }
+
+spaceCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => IdeaSpace -> m CapCtx
+spaceCapCtx space = do
+    userCtx <- currentUserCapCtx
+    pure $ userCtx & capCtxSpace ?~ space
+
+locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+               => IdeaLocation -> m (CapCtx, Maybe Topic)
+locationCapCtx loc = do
+    mtopic <-
+        case loc ^? ideaLocationTopicId of
+            Just tid -> Just <$> mquery (findTopic tid)
+            Nothing  -> pure Nothing
+    spaceCtx <- spaceCapCtx $ loc ^. ideaLocationSpace
+    let ctx = spaceCtx & capCtxPhase .~ (mtopic ^? _Just . topicPhase)
+    pure (ctx, mtopic)
+
+topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => AUID Topic -> m (CapCtx, Topic)
+topicCapCtx topicId = do
+    userCtx <- currentUserCapCtx
+    topic <- mquery $ findTopic topicId
+    let ctx = userCtx & capCtxSpace ?~ (topic ^. topicIdeaSpace)
+                      & capCtxPhase ?~ (topic ^. topicPhase)
+    pure (ctx, topic)
+
+ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+           => AUID Idea -> m (CapCtx, Maybe Topic, Idea)
+ideaCapCtx iid = do
+    idea <- mquery $ findIdea iid
+    (ctx, mtopic) <- locationCapCtx $ idea ^. ideaLocation
+    pure (ctx & capCtxIdea ?~ idea, mtopic, idea)
+
+commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+              => CommentKey -> m (CapCtx, Maybe Topic, Idea, Comment)
+commentCapCtx ck = do
+    (ctx, mtopic, idea) <- ideaCapCtx $ ck ^. ckIdeaId
+    comment <- mquery $ findComment ck
+    pure (ctx & capCtxComment ?~ comment, mtopic, idea, comment)
