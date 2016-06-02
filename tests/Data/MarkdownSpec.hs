@@ -6,7 +6,7 @@
 module Data.MarkdownSpec where
 
 import Data.Monoid ((<>))
-import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe, pending)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
 import Test.QuickCheck (property)
 
 import Data.Markdown.HtmlWhiteLists as WhiteLists
@@ -32,9 +32,9 @@ spec = do
         it "rejects bad html elems" $ do
             markdown "<script>" `shouldBe` Left ["unsafe html element: script"]
         it "rejects bad html attrs" $ do
-            pending
+            markdown "<img crossorigin=\"\">" `shouldBe` Left ["unsafe html attribute: crossorigin"]
         it "rejects bad css props" $ do
-            pending
+            markdown "<img style=\"orphans:13\">" `shouldBe` Left ["unsafe css property: orphans"]
         it "accepts good html" $ do
             let good = "<div align=\"center\" style=\"padding-top:13;\">"
             (unMarkdown <$> markdown good) `shouldBe` Right good

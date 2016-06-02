@@ -19,6 +19,7 @@
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 
+-- | WARNING: the html scrubbing may be inaccurate and may have security issues!
 module Data.Markdown
   ( Document, markdown, unMarkdown )
 where
@@ -26,14 +27,16 @@ where
 import Data.CaseInsensitive
 import Control.Lens
 import Data.Binary
+import Data.List ((\\))
+import Data.Maybe (catMaybes)
 import Data.SafeCopy (deriveSafeCopy, base)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 
 import qualified Data.Aeson as Aeson
+import qualified Data.CSS.Syntax.Tokens as CSS
 import qualified Data.Markdown.HtmlWhiteLists as WhiteLists
-import qualified Data.Text as ST
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Text.HTML.Parser as HTML
 
@@ -80,11 +83,26 @@ badEl (mk -> el) =
 
 badAttr :: ST -> HTML.Attr -> [ST]
 badAttr (mk -> el) (HTML.Attr (mk -> akey) (mk -> aval)) =
-    ["unsafe html attribute " <> foldedCase akey
+    ["unsafe html attribute: " <> foldedCase akey
         | not $ any (`elem` attrs) [(Nothing, akey), (Just el, akey)]]
+    <> badCssPropsIn akey aval
   where
     WhiteLists.HtmlAttributes attrs = WhiteLists.htmlAttributes
+
+-- | This is a conservative approximation.  Some substrings of the style attribute value that are
+-- never accepted as css properties may be accepted here nevertheless.
+badCssPropsIn :: CI ST -> CI ST -> [ST]
+badCssPropsIn akey aval
+    | akey /= "style" = []
+    | otherwise = case (fmap extractProps . CSS.tokenize . foldedCase $ aval) of
+        Left err -> ["could not parse style attribute: " <> cs err]
+        Right ps -> ("unsafe css property: " <>) . foldedCase <$> (mk <$> ps) \\ props
+  where
     WhiteLists.Css3Properties props = WhiteLists.css3Properties
+    extractProps = catMaybes . fmap f
+      where
+        f (CSS.Ident n) = Just n
+        f _ = Nothing
 
 
 -- | Be careful not to use `mappend` on user input!  The concatenation will be checked by

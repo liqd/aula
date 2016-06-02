@@ -29,6 +29,7 @@ dependencies:
     - cassava >= 0.4.5.0
     - containers
     - cookie
+    - css-syntax
     - digestive-functors
     - digestive-functors-lucid
     - directory

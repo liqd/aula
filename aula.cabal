@@ -38,6 +38,7 @@ library
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -148,6 +149,7 @@ executable aula-html-dummies
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -214,6 +216,7 @@ executable aula-server
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -278,6 +281,7 @@ test-suite spec
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
