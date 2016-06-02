@@ -57,6 +57,7 @@ data IdeaStats = IdeaStats
   deriving (Eq, Ord, Show, Read, Generic)
 
 makeLenses ''IdeaStats
+makePrisms ''IdeaStats
 
 instance SOP.Generic IdeaStats
 

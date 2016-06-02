@@ -13,10 +13,11 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Topic
-    ( ViewTopic(..), vtNow, vtCtx, vtTab, vtTopic, vtIdeas, vtDelegations
+    ( ViewTopic(..), _ViewTopicIdeas, _ViewTopicDelegations
+    , vtNow, vtCtx, vtTab, vtTopic, vtIdeas, vtDelegations
     , ViewTopicTab(..)
-    , CreateTopic(..), ctCtx, ctIdeaSpace, ctIdeas, ctRefPhaseEnd
-    , EditTopic(..), etCtx, etIdeaSpace, etTopic, etIdeasStats, etIdeas
+    , CreateTopic(..), _CreateTopic, ctCtx, ctIdeaSpace, ctIdeas, ctRefPhaseEnd
+    , EditTopic(..), _EditTopic, etCtx, etIdeaSpace, etTopic, etIdeasStats, etIdeas
     , IdeasFilterApi
     , viewTopic
     , createTopic
@@ -90,6 +91,7 @@ data ViewTopic
   deriving (Eq, Show, Read)
 
 makeLenses ''ViewTopic
+makePrisms ''ViewTopic
 
 instance Page ViewTopic where
     isAuthorized = authNeedCaps [CanViewTopic] vtCtx
@@ -104,6 +106,7 @@ data CreateTopic = CreateTopic
   deriving (Eq, Show, Read)
 
 makeLenses ''CreateTopic
+makePrisms ''CreateTopic
 
 instance Page CreateTopic where
     isAuthorized = authNeedCaps [CanCreateTopic] ctCtx
@@ -120,6 +123,7 @@ data EditTopic = EditTopic
   deriving (Eq, Show, Read)
 
 makeLenses ''EditTopic
+makePrisms ''EditTopic
 
 instance Page EditTopic where
     isAuthorized = authNeedCaps [CanEditTopic] etCtx

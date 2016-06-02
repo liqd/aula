@@ -9,16 +9,16 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Idea
-  ( ViewIdea(..), viCtx, viStats
-  , CreateIdea(..), ciCtx, ciLoc
-  , EditIdea(..), eiCtx, eiIdea
-  , MoveIdea(..), miCtx, miIdea, miTopicChoices
-  , ReportIdea(..), riCtx, riIdea
-  , CommentOnIdea(..), coiCtx, coiIdea, coiComment
-  , EditComment(..), ecCtx, ecIdea, ecComment
-  , JudgeIdea(..), jiCtx, jiResult, jiIdea, jiTopic
-  , CreatorStatement(..), csCtx, csIdea
-  , ReportComment(..), rcCtx, rcComment
+  ( ViewIdea(..), _ViewIdea, viCtx, viStats
+  , CreateIdea(..), _CreateIdea, ciCtx, ciLoc
+  , EditIdea(..), _EditIdea, eiCtx, eiIdea
+  , MoveIdea(..), _MoveIdea, miCtx, miIdea, miTopicChoices
+  , ReportIdea(..), _ReportIdea, riCtx, riIdea
+  , CommentOnIdea(..), _CommentOnIdea, coiCtx, coiIdea, coiComment
+  , EditComment(..), _EditComment, ecCtx, ecIdea, ecComment
+  , JudgeIdea(..), _JudgeIdea, jiCtx, jiResult, jiIdea, jiTopic
+  , CreatorStatement(..), _CreatorStatement, csCtx, csIdea
+  , ReportComment(..), _ReportComment, rcCtx, rcComment
   , ReportCommentContent(..)
   , viewIdea
   , createIdea
@@ -95,6 +95,7 @@ data ViewIdea = ViewIdea { _viCtx :: CapCtx, _viStats :: IdeaStats }
 instance SOP.Generic ViewIdea
 
 makeLenses ''ViewIdea
+makePrisms ''ViewIdea
 
 instance Page ViewIdea where
     isAuthorized = authNeedCaps [CanView] viCtx
@@ -109,6 +110,7 @@ data CreateIdea = CreateIdea { _ciCtx :: CapCtx, _ciLoc :: IdeaLocation }
 instance SOP.Generic CreateIdea
 
 makeLenses ''CreateIdea
+makePrisms ''CreateIdea
 
 instance Page CreateIdea where
     isAuthorized = authNeedCaps [CanCreateIdea] ciCtx
@@ -120,6 +122,7 @@ data EditIdea = EditIdea { _eiCtx :: CapCtx, _eiIdea :: Idea }
 instance SOP.Generic EditIdea
 
 makeLenses ''EditIdea
+makePrisms ''EditIdea
 
 instance Page EditIdea where
     isAuthorized = authNeedCaps [CanEditAndDelete] eiCtx
@@ -132,6 +135,7 @@ data MoveIdea = MoveIdea { _miCtx :: CapCtx, _miIdea :: Idea, _miTopicChoices ::
 instance SOP.Generic MoveIdea
 
 makeLenses ''MoveIdea
+makePrisms ''MoveIdea
 
 instance Page MoveIdea where
     isAuthorized = authNeedCaps [CanMoveBetweenLocations] miCtx
@@ -142,6 +146,7 @@ data ReportIdea = ReportIdea { _riCtx :: CapCtx, _riIdea :: Idea }
 instance SOP.Generic ReportIdea
 
 makeLenses ''ReportIdea
+makePrisms ''ReportIdea
 
 instance Page ReportIdea where
     -- You can report as soon as you can view the idea.
@@ -155,6 +160,7 @@ data CommentOnIdea = CommentOnIdea
 instance SOP.Generic CommentOnIdea
 
 makeLenses ''CommentOnIdea
+makePrisms ''CommentOnIdea
 
 instance Page CommentOnIdea where
     isAuthorized = authNeedCaps [CanComment] coiCtx
@@ -172,6 +178,7 @@ data JudgeIdea = JudgeIdea
 instance SOP.Generic JudgeIdea
 
 makeLenses ''JudgeIdea
+makePrisms ''JudgeIdea
 
 instance Page JudgeIdea where
     isAuthorized = authNeedCaps [CanMarkFeasiblity] jiCtx
@@ -182,6 +189,7 @@ data CreatorStatement = CreatorStatement { _csCtx :: CapCtx, _csIdea :: Idea }
 instance SOP.Generic CreatorStatement
 
 makeLenses ''CreatorStatement
+makePrisms ''CreatorStatement
 
 instance Page CreatorStatement where
     isAuthorized = authNeedCaps [CanEditCreatorStatement] csCtx
@@ -192,6 +200,7 @@ data ReportComment = ReportComment { _rcCtx :: CapCtx, _rcComment :: Comment }
 instance SOP.Generic ReportComment
 
 makeLenses ''ReportComment
+makePrisms ''ReportComment
 
 instance Page ReportComment where
     -- You can report as soon as you can view the comment/idea.
@@ -205,6 +214,7 @@ data EditComment
 instance SOP.Generic EditComment
 
 makeLenses ''EditComment
+makePrisms ''EditComment
 
 instance Page EditComment where
     isAuthorized = authNeedCaps [CanEditComment] ecCtx

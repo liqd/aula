@@ -1,15 +1,15 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Overview
-    ( PageOverviewOfSpaces(..)
-    , PageOverviewOfWildIdeas(..)
-    , PageOverviewOfTopics(..)
-    , WhatListPage(..)
+    ( PageOverviewOfSpaces(..), _PageOverviewOfSpaces
+    , PageOverviewOfWildIdeas(..), _PageOverviewOfWildIdeas
+    , PageOverviewOfTopics(..), _PageOverviewOfTopics
     , viewRooms
     , viewIdeas
     , viewTopics
@@ -46,6 +46,11 @@ data Tabs = Tabs ActiveTab IdeaSpace
 data ActiveTab = WildIdeas | Topics
   deriving (Eq, Show, Read)
 
+makePrisms ''PageOverviewOfSpaces
+makePrisms ''PageOverviewOfWildIdeas
+makePrisms ''PageOverviewOfTopics
+makePrisms ''Tabs
+makePrisms ''ActiveTab
 
 -- * actions
 

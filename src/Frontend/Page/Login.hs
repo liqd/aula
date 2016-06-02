@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -41,6 +42,8 @@ data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
 
 data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
+
+makePrisms ''LoginFormData
 
 checkLogin :: (v ~ Html (), ActionM m) => LoginFormData -> m (Result v User)
 checkLogin (LoginFormData uLogin _pass) = do

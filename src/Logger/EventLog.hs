@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
+{-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE ViewPatterns                #-}
 
@@ -36,13 +37,17 @@ import Types
 
 -- * types
 
-data EventLog = EventLog URL [EventLogItemWarm]
+data EventLog = EventLog { _elURL :: URL, _elItems :: [EventLogItemWarm] }
   deriving (Generic)
 
 -- | This type is migration-critial: we may need to support parting old values if we change it in
 -- production.  See 'CSV.ToRecord' instance(s) below.
-data EventLogItem user topic idea comment =
-    EventLogItem IdeaSpace Timestamp user (EventLogItemValue user topic idea comment)
+data EventLogItem user topic idea comment = EventLogItem
+    { _eliSpace :: IdeaSpace
+    , _eliAt    :: Timestamp
+    , _eliBy    :: user
+    , _eliValue :: EventLogItemValue user topic idea comment
+    }
   deriving (Eq, Show, Generic)
 
 data EventLogItemValue user topic idea comment =
@@ -58,10 +63,9 @@ data EventLogItemValue user topic idea comment =
       -- easier.
   | EventLogUserDelegates         DelegationContext user
   | EventLogTopicNewPhase         topic Phase Phase
-  | EventLogIdeaNewLocation          idea (Maybe topic) (Maybe topic)
+  | EventLogIdeaNewLocation       idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea
   deriving (Eq, Show, Generic)
-
 
 type EventLogItemCold = EventLogItem (AUID User) (AUID Topic) (AUID Idea) CommentKey
 type EventLogItemWarm = EventLogItem User Topic Idea Comment
@@ -71,6 +75,14 @@ type EventLogItemValueWarm = EventLogItemValue User Topic Idea Comment
 
 type ContentCold = Either3 (AUID Topic) (AUID Idea) CommentKey
 type ContentWarm = Either3 Topic Idea Comment
+
+makeLenses ''EventLog
+makeLenses ''EventLogItem
+makeLenses ''EventLogItemValue -- FIXME having field names would be nice
+
+makePrisms ''EventLog
+makePrisms ''EventLogItem
+makePrisms ''EventLogItemValue
 
 
 instance SOP.Generic EventLog

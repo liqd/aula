@@ -15,7 +15,7 @@ module LifeCycle
 
       -- * capabilities
     , Capability(..)
-    , CapCtx(..), capCtxUser, capCtxIdea, capCtxPhase, capCtxComment
+    , CapCtx(..), _CapCtx, capCtxUser, capCtxIdea, capCtxPhase, capCtxComment
     , capabilities
     )
 where
@@ -136,6 +136,7 @@ data CapCtx = CapCtx
   deriving (Eq, Ord, Show, Read, Generic)
 
 makeLenses ''CapCtx
+makePrisms ''CapCtx
 
 instance SOP.Generic CapCtx
 

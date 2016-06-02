@@ -25,7 +25,7 @@ module Frontend.Core
     , semanticDiv
     , html
     , FormCS
-    , Beside(..)
+    , Beside(..), _Beside
     , IsTab
     , tabSelected
     , redirect
@@ -578,6 +578,7 @@ makeLenses ''FormPageHandler
 makeLenses ''Frame
 
 makePrisms ''Frame
+makePrisms ''Beside
 
 
 -- * frame rendering

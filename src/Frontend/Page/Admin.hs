@@ -56,12 +56,18 @@ data PageAdminSettingsDurations =
     PageAdminSettingsDurations Durations
   deriving (Eq, Show, Read)
 
+makeLenses ''PageAdminSettingsDurations
+makePrisms ''PageAdminSettingsDurations
+
 instance Page PageAdminSettingsDurations where isAuthorized = adminPage
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
     PageAdminSettingsQuorum Quorums
   deriving (Eq, Show, Read)
+
+makeLenses ''PageAdminSettingsQuorum
+makePrisms ''PageAdminSettingsQuorum
 
 instance Page PageAdminSettingsQuorum where isAuthorized = adminPage
 
@@ -70,46 +76,73 @@ data PageAdminSettingsFreeze =
     PageAdminSettingsFreeze Freeze
   deriving (Eq, Show, Read)
 
+makeLenses ''PageAdminSettingsFreeze
+makePrisms ''PageAdminSettingsFreeze
+
 instance Page PageAdminSettingsFreeze where isAuthorized = adminPage
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data AdminViewUsers = AdminViewUsers UsersQuery [UserView]
   deriving (Eq, Show, Read)
 
+makeLenses ''AdminViewUsers
+makePrisms ''AdminViewUsers
+
 instance Page AdminViewUsers where isAuthorized = adminPage
 
 data AdminCreateUser = AdminCreateUser [SchoolClass]
   deriving (Eq, Show, Read)
+
+makeLenses ''AdminCreateUser
+makePrisms ''AdminCreateUser
 
 instance Page AdminCreateUser where isAuthorized = adminPage
 
 data AdminEditUser = AdminEditUser User [SchoolClass]
   deriving (Eq, Show, Read)
 
+makeLenses ''AdminEditUser
+makePrisms ''AdminEditUser
+
 instance Page AdminEditUser where isAuthorized = adminPage
 
 data AdminDeleteUser = AdminDeleteUser User
   deriving (Eq, Show, Read)
+
+makeLenses ''AdminDeleteUser
+makePrisms ''AdminDeleteUser
 
 instance Page AdminDeleteUser where isAuthorized = adminPage
 
 data AdminViewClasses = AdminViewClasses ClassesFilterQuery [SchoolClass]
   deriving (Eq, Show, Read)
 
+makeLenses ''AdminViewClasses
+makePrisms ''AdminViewClasses
+
 instance Page AdminViewClasses where isAuthorized = adminPage
 
 data AdminCreateClass = AdminCreateClass
   deriving (Eq, Show, Read)
+
+makeLenses ''AdminCreateClass
+makePrisms ''AdminCreateClass
 
 instance Page AdminCreateClass where isAuthorized = adminPage
 
 data AdminEditClass = AdminEditClass SchoolClass [UserView]
   deriving (Eq, Show, Read)
 
+makeLenses ''AdminEditClass
+makePrisms ''AdminEditClass
+
 instance Page AdminEditClass where isAuthorized = adminPage
 
 data AdminPhaseChange = AdminPhaseChange
   deriving (Eq, Show, Read)
+
+makeLenses ''AdminPhaseChange
+makePrisms ''AdminPhaseChange
 
 instance Page AdminPhaseChange where isAuthorized = adminPage
 
@@ -118,11 +151,17 @@ data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
   deriving (Eq, Show, Read)
 
+makeLenses ''PageAdminSettingsEventsProtocol
+makePrisms ''PageAdminSettingsEventsProtocol
+
 instance Page PageAdminSettingsEventsProtocol where isAuthorized = adminPage
 
 data PageAdminResetPassword =
     PageAdminResetPassword User InitialPassword
   deriving (Eq, Show, Read)
+
+makeLenses ''PageAdminResetPassword
+makePrisms ''PageAdminResetPassword
 
 instance Page PageAdminResetPassword where isAuthorized = adminPage
 
@@ -138,6 +177,7 @@ data CreateUserPayload = CreateUserPayload
 instance SOP.Generic CreateUserPayload
 
 makeLenses ''CreateUserPayload
+makePrisms ''CreateUserPayload
 
 
 -- * tabs
@@ -154,6 +194,8 @@ data MenuItem
   deriving (Eq, Show)
 
 instance IsTab MenuItem
+
+makePrisms ''MenuItem
 
 class ToMenuItem t where
     toMenuItem :: proxy t -> MenuItem
@@ -262,6 +304,9 @@ menulink' targetMenuItem =
         -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
     MenuItemPhaseChange
         -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
+
+makeLenses ''MenuLink
+makePrisms ''MenuLink
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
@@ -378,6 +423,40 @@ adminFreeze =
 
 -- ** roles and permisisons
 
+roleSelectionChoices :: (Monoid s, IsString s) => [(RoleSelection, s)]
+roleSelectionChoices = (id &&& uilabel) <$> [minBound..]
+
+roleSelection :: Getter Role RoleSelection
+roleSelection = to $ \case
+    Student{}    -> RoleSelStudent
+    ClassGuest{} -> RoleSelClassGuest
+    SchoolGuest  -> RoleSelSchoolGuest
+    Moderator    -> RoleSelModerator
+    Principal    -> RoleSelPrincipal
+    Admin        -> RoleSelAdmin
+
+chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
+chooseRole mr = DF.choice roleSelectionChoices (mr ^? _Just . roleSelection)
+
+chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
+chooseClass classes = DF.choice classValues
+  where
+    classValues = (id &&& toHtml . view className) <$> classes
+
+fromRoleSelection :: RoleSelection -> SchoolClass -> Role
+fromRoleSelection RoleSelStudent     = Student
+fromRoleSelection RoleSelClassGuest  = ClassGuest
+fromRoleSelection RoleSelSchoolGuest = const SchoolGuest
+fromRoleSelection RoleSelModerator   = const Moderator
+fromRoleSelection RoleSelPrincipal   = const Principal
+fromRoleSelection RoleSelAdmin       = const Admin
+
+roleForm :: Maybe Role -> Maybe SchoolClass -> [SchoolClass] -> DfForm Role
+roleForm mrole mclass classes =
+    fromRoleSelection
+        <$> ("role"  .: chooseRole mrole)
+        <*> ("class" .: chooseClass classes mclass)
+
 instance ToHtml AdminViewUsers where
     toHtml = toHtmlRaw
     toHtmlRaw p@(AdminViewUsers filters (applyFilter filters -> users)) =
@@ -404,7 +483,7 @@ instance ToHtml AdminViewUsers where
                             -- The AllUsers here makes sure there is no 'search' query parameter
                             -- initially. The input field is adding it afterward.
                             let filters' = filters & usersQueryF .~ AllUsers
-                                placehld = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . unSearchUsers)
+                                placehld = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . _SearchUsers)
                             formMethod_ "GET" [class_ "form"]
                                         (U.Admin . U.AdminViewUsers $ Just filters') $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
@@ -492,7 +571,7 @@ instance ToHtml AdminViewClasses where
                             formMethod_ "GET" [class_ "form"]
                                         (U.Admin U.adminViewClasses) $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
-                                        placeholder_ (fromMaybe "Klassensuche" (filters ^? searchClasses . unSearchClasses))]
+                                        placeholder_ (fromMaybe "Klassensuche" (filters ^? searchClasses . _SearchClasses))]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
 
                 tbody_ $ case classes of
@@ -513,6 +592,9 @@ data RoleSelection
     | RoleSelAdmin
   deriving (Eq, Generic, Enum, Bounded, Show)
 
+makeLenses ''RoleSelection
+makePrisms ''RoleSelection
+
 instance SOP.Generic RoleSelection
 
 instance HasUILabel RoleSelection where
@@ -524,36 +606,13 @@ instance HasUILabel RoleSelection where
         RoleSelPrincipal   -> uilabel Principal
         RoleSelAdmin       -> uilabel Admin
 
-roleSelectionChoices :: (Monoid s, IsString s) => [(RoleSelection, s)]
-roleSelectionChoices = (id &&& uilabel) <$> [minBound..]
-
-roleSelection :: Getter Role RoleSelection
-roleSelection = to $ \case
-    Student{}    -> RoleSelStudent
-    ClassGuest{} -> RoleSelClassGuest
-    SchoolGuest  -> RoleSelSchoolGuest
-    Moderator    -> RoleSelModerator
-    Principal    -> RoleSelPrincipal
-    Admin        -> RoleSelAdmin
-
-chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
-chooseRole mr = DF.choice roleSelectionChoices (mr ^? _Just . roleSelection)
-
-chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
-chooseClass classes = DF.choice classValues
-  where
-    classValues = (id &&& toHtml . view className) <$> classes
-
-roleForm :: Maybe Role -> Maybe SchoolClass -> [SchoolClass] -> DfForm Role
-roleForm mrole mclass classes =
-    fromRoleSelection
-        <$> ("role"  .: chooseRole mrole)
-        <*> ("class" .: chooseClass classes mclass)
-
 -- | (the login must always be provided in the posted data, but it is turned into Nothing in the
 -- validator if it has not changed.)
 data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) Role
   deriving (Eq, Show)
+
+makeLenses ''AdminEditUserPayload
+makePrisms ''AdminEditUserPayload
 
 instance FormPage AdminEditUser where
     type FormPagePayload AdminEditUser = AdminEditUserPayload
@@ -655,14 +714,6 @@ adminEditUser uid = formPageHandlerCalcMsg
     (\(AdminEditUserPayload mlogin role) -> update $ SetUserLoginAndRole uid mlogin role)
     (\(AdminEditUser u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
-fromRoleSelection :: RoleSelection -> SchoolClass -> Role
-fromRoleSelection RoleSelStudent     = Student
-fromRoleSelection RoleSelClassGuest  = ClassGuest
-fromRoleSelection RoleSelSchoolGuest = const SchoolGuest
-fromRoleSelection RoleSelModerator   = const Moderator
-fromRoleSelection RoleSelPrincipal   = const Principal
-fromRoleSelection RoleSelAdmin       = const Admin
-
 adminEditClass :: ActionPersist m => SchoolClass -> m AdminEditClass
 adminEditClass clss =
     AdminEditClass clss
@@ -670,6 +721,9 @@ adminEditClass clss =
 
 data AdminDeleteUserPayload = AdminDeleteUserPayload
   deriving (Eq, Show)
+
+makeLenses ''AdminDeleteUserPayload
+makePrisms ''AdminDeleteUserPayload
 
 instance FormPage AdminDeleteUser where
     type FormPagePayload AdminDeleteUser = AdminDeleteUserPayload
@@ -700,6 +754,9 @@ adminDeleteUser uid =
 
 data EventsProtocolFilter = EventsProtocolFilter (Maybe IdeaSpace)
   deriving (Eq, Ord, Show, Read)
+
+makeLenses ''EventsProtocolFilter
+makePrisms ''EventsProtocolFilter
 
 instance FormPage PageAdminSettingsEventsProtocol where
     type FormPagePayload PageAdminSettingsEventsProtocol = EventsProtocolFilter
@@ -896,6 +953,9 @@ instance SOP.Generic CsvUserRecord
 data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
   deriving (Eq, Ord, Show, Read, Generic)
 
+makeLenses ''InitialPasswordsCsv
+makePrisms ''InitialPasswordsCsv
+
 instance SOP.Generic InitialPasswordsCsv
 
 
@@ -963,3 +1023,8 @@ adminInitialPasswordsCsv clss =
               (Just $ u ^. userLogin)
               (Just ps)
         _ -> Nothing
+
+makeLenses ''AdminPhaseChangeForTopicData
+makePrisms ''AdminPhaseChangeForTopicData
+makeLenses ''CsvUserRecord
+makePrisms ''CsvUserRecord

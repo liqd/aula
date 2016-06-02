@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -39,6 +40,9 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 data PageUserSettings = PageUserSettings User
   deriving (Eq, Show, Read)
 
+makeLenses ''PageUserSettings
+makePrisms ''PageUserSettings
+
 instance Page PageUserSettings where
     -- The use settings page always goes to the profile of the current logged in user.
     isAuthorized = userPage
@@ -47,6 +51,9 @@ instance Page PageUserSettings where
 data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
   deriving (Eq, Show, Read)
 
+makeLenses ''PageUserProfileCreatedIdeas
+makePrisms ''PageUserProfileCreatedIdeas
+
 instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
@@ -54,12 +61,18 @@ instance Page PageUserProfileCreatedIdeas where
 data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes CapCtx UserView [Delegation]
   deriving (Eq, Show, Read)
 
+makeLenses ''PageUserProfileDelegatedVotes
+makePrisms ''PageUserProfileDelegatedVotes
+
 instance Page PageUserProfileDelegatedVotes where
     isAuthorized = userPage -- Are profiles public?
 
 -- | 8.X User profile: Editing the public profile
 data EditUserProfile = EditUserProfile CapCtx User
   deriving (Eq, Show, Read)
+
+makeLenses ''EditUserProfile
+makePrisms ''EditUserProfile
 
 instance Page EditUserProfile where
     -- Can the admin edit any profile through that endpoint?
@@ -72,6 +85,9 @@ instance Page EditUserProfile where
 data ReportUserProfile = ReportUserProfile User
   deriving (Eq, Show, Read)
 
+makeLenses ''ReportUserProfile
+makePrisms ''ReportUserProfile
+
 instance Page ReportUserProfile where
     -- If you can view the profile of a user then you can report on it.
     -- Any user who is logged in can view the profile of any other user.
@@ -82,12 +98,15 @@ instance Page ReportUserProfile where
 -- ** User Settings
 
 data UserSettingData = UserSettingData
-    { profileEmail    :: Maybe EmailAddress
-    , profileOldPass  :: Maybe ST
-    , profileNewPass1 :: Maybe ST
-    , profileNewPass2 :: Maybe ST
+    { _usdEmail    :: Maybe EmailAddress
+    , _usdOldPass  :: Maybe ST
+    , _usdNewPass1 :: Maybe ST
+    , _usdNewPass2 :: Maybe ST
     }
     deriving (Eq, Show)
+
+makeLenses ''UserSettingData
+makePrisms ''UserSettingData
 
 checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
 checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
@@ -132,7 +151,7 @@ instance FormPage PageUserSettings where
         checkPwdAllOrNothing _ = DF.Error "Passwort-Felder sind nur teilweise ausgefüllt."
 
         checkNewPassword u
-          | profileNewPass1 u == profileNewPass2 u = pure u
+          | u ^. usdNewPass1 == u ^. usdNewPass2 = pure u
           | otherwise = DF.Error "Die neuen Passwörter passen nicht (Tippfehler?)"
 
     formPage v form p = do
