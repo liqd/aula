@@ -349,6 +349,6 @@ randomVotes students ideas = some $ do
     idea <- genGen $ elements ideas
     user <- genGen $ elements students
     vote <- genGen arbitrary
-    addWithUser_ (AddVoteToIdea $ idea ^. _Id) user vote
+    addWithUser_ (AddVoteToIdea (idea ^. _Id) user) user vote
   where
     some = replicateM_ $ (length ideas * length students * 40) `div` 100

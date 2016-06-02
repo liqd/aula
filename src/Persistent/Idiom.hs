@@ -13,8 +13,10 @@ module Persistent.Idiom
 where
 
 import Control.Lens
-import Control.Monad (unless)
+import Control.Monad (filterM, forM, unless)
 import Data.Functor.Infix ((<$$>))
+import Data.List (find)
+import Data.Maybe (catMaybes, mapMaybe)
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
@@ -199,3 +201,50 @@ ideaVoteSupport = ideaVoteSupportByAbsDiff
 
 ideaVoteSupportByAbsDiff :: Idea -> Support
 ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No idea
+
+
+-- * voting
+
+delegateesOf :: User -> DelegationContext -> EQuery [User]
+delegateesOf u ctx = do
+    hiearchy <- scopeHiearchy ctx
+    vs <- voters hiearchy uid
+    catMaybes <$> forM vs findUser
+  where
+    uid = u ^. _Id
+    voters (path :: [DelegationContext]) (u' :: AUID User) = do
+        -- ASSUMPTION: Only one delegate per topic
+        let supporter x = do
+                delegations <- filter ((x ==) . view delegationFrom) <$> allDelegations
+                pure $ case mapMaybe (\t -> find ((t ==) . view delegationContext) delegations) path of
+                    []    -> False
+                    d : _ -> (d ^. delegationTo) == uid
+
+        ds  <- map (view delegationFrom) <$> scopeDelegatees u' ctx
+        sps <- filterM supporter ds
+        vts <- mconcat <$> forM sps (voters path)
+        pure (u':vts)
+
+scopeDelegatees :: AUID User -> DelegationContext -> Query [Delegation]
+scopeDelegatees uid ctx =
+    filter ((&&) <$> ((uid ==) . view delegationTo)
+                 <*> ((ctx ==) . view delegationContext))
+    <$> allDelegations
+
+-- TODO: Save who voted, and read that back
+getVote :: User -> Idea -> Query (Maybe (User, IdeaVoteValue))
+getVote user idea =
+    pure ((,) user <$> (idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue))
+
+scopeHiearchy :: DelegationContext -> EQuery [DelegationContext]
+scopeHiearchy = \case
+    DlgCtxGlobal           -> pure [DlgCtxGlobal]
+    s@(DlgCtxIdeaSpace {}) -> pure [s, DlgCtxGlobal]
+    t@(DlgCtxTopicId tid)  -> do
+        space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
+        (t:) <$> scopeHiearchy (DlgCtxIdeaSpace space)
+    (DlgCtxIdeaId iid)     -> do
+        loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
+        scopeHiearchy $ case loc of
+            IdeaLocationSpace s    -> DlgCtxIdeaSpace s
+            IdeaLocationTopic _s t -> DlgCtxTopicId   t

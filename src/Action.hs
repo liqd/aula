@@ -57,6 +57,7 @@ module Action
       -- * vote handling
     , likeIdea
     , voteOnIdea
+    , delegateTo
     , voteIdeaComment
     , voteIdeaCommentReply
     , markIdeaInJuryPhase
@@ -510,18 +511,32 @@ likeIdea ideaId = do
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
 voteOnIdea :: AUID Idea -> Create_ IdeaVote
-voteOnIdea ideaId vote = do
-    addWithCurrentUser_ (AddVoteToIdea ideaId) vote
-    (`eventLogUserVotesOnIdea` Just vote) =<< mquery (findIdea ideaId)
+voteOnIdea ideaId voteVal = do
+    voter <- currentUser
+    let topic = DlgCtxIdeaId ideaId
+    voteFor voter
+    equery (delegateesOf voter topic) >>= mapM_ voteFor
+    (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
+  where
+    voteFor :: ActionM m => User -> m ()
+    voteFor toUser = do
+        addWithCurrentUser_ (AddVoteToIdea ideaId toUser) voteVal
+
+delegateTo :: ActionM m => User -> DelegationContext -> User -> m ()
+delegateTo f ctx t = do
+    delegations <- filter ((f ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByContext ctx)
+    forM_ delegations (update . DeleteDelegation . view _Id)
+    addWithCurrentUser_ AddDelegation (ProtoDelegation ctx (f ^. _Id) (t ^. _Id))
+
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
-voteIdeaComment loc ideaId commentId vote = do
+voteIdeaComment loc ideaId commentId voteVal = do
     let ck = CommentKey loc ideaId [] commentId
-    addWithCurrentUser_ (AddCommentVote ck) vote
-    eventLogUserVotesOnComment ck vote
+    addWithCurrentUser_ (AddCommentVote ck) voteVal
+    eventLogUserVotesOnComment ck voteVal
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote

@@ -114,6 +114,8 @@ module Persistent.Pure
     , dbFreeze
     , adminUsernameHack
     , addDelegation
+    , deleteDelegation
+    , allDelegations
     , findDelegationsByContext
     , addIdeaJuryResult
     , removeIdeaJuryResult
@@ -590,6 +592,12 @@ addTopicYieldLocs now pt = do
 addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap
 
+deleteDelegation :: AUID Delegation -> AUpdate ()
+deleteDelegation did = dbDelegationMap . at did .= Nothing
+
+allDelegations :: Query [Delegation]
+allDelegations = Map.elems <$> view dbDelegationMap
+
 findDelegationsByContext :: DelegationContext -> Query [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
     <$> view dbDelegationMap
@@ -641,9 +649,10 @@ mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)
 instance FromProto IdeaVote where
     fromProto = flip IdeaVote
 
--- FIXME: Check also that the given idea exists and is in the right phase.
-addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea :: AUID Idea -> User -> AddDb IdeaVote
+addVoteToIdea iid user =
+    addDb' (const (mkIdeaVoteLikeKey iid user))
+           (dbIdeaMap . at iid . _Just . ideaVotes)
 
 -- Removes the vote of the given user.
 removeVoteFromIdea :: AUID Idea -> AUID User -> AUpdate ()
