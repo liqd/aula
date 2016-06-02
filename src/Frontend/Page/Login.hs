@@ -30,7 +30,7 @@ instance Page PageHomeWithLoginPrompt where
     isAuthorized = \case
         -- Redirect from login if the user is already logged in.
         NotLoggedIn -> accessGranted
-        LoggedIn{}  -> accessDenied "You are already logged in" (Just U.ListSpaces)
+        LoggedIn{}  -> accessRedirected "You are already logged in" U.ListSpaces
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
 data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }

@@ -66,7 +66,7 @@ instance Page EditUserProfile where
     isAuthorized = authNeedPage $ \(EditUserProfile ctx u) ->
         if isOwnProfile ctx u
             then accessGranted
-            else accessDenied "You can only edit your own profile" Nothing
+            else accessDenied "You can only edit your own profile"
 
 -- | 8.X Report user profile
 data ReportUserProfile = ReportUserProfile User

@@ -40,6 +40,7 @@ module Frontend.Core
     , accessGranted
     , accessDeferred
     , accessDenied
+    , accessRedirected
     , publicPage
     , adminPage
     , pageForRole
@@ -274,14 +275,17 @@ class Page p where
 accessGranted :: Applicative m => m AccessResult
 accessGranted = pure AccessGranted
 
-accessDenied :: Applicative m => ST -> Maybe (P.Main 'P.AllowGetPost) -> m AccessResult
-accessDenied m u = pure $ AccessDenied m (absoluteUriPath . relPath <$> u)
+accessDenied :: Applicative m => ST -> m AccessResult
+accessDenied m = pure $ AccessDenied m Nothing
+
+accessRedirected :: Applicative m => ST -> P.Main 'P.AllowGetPost -> m AccessResult
+accessRedirected m = pure . AccessDenied m . Just . absoluteUriPath . relPath
 
 accessDeferred :: Applicative m => m AccessResult
 accessDeferred = pure AccessDeferred
 
 redirectLogin :: Applicative m => m AccessResult
-redirectLogin = accessDenied "Not logged in" $ Just P.Login
+redirectLogin = accessRedirected "Not logged in" P.Login
 
 userPage :: Applicative m => AccessInput any -> m AccessResult
 userPage LoggedIn{}  = accessGranted
@@ -290,7 +294,7 @@ userPage NotLoggedIn = redirectLogin
 pageForRole :: Applicative m => Role -> AccessInput any -> m AccessResult
 pageForRole r (LoggedIn u _)
     | u ^. userRole == r  = accessGranted
-    | otherwise           = accessDenied ("Expecting " <> r ^. uilabeled <> " role.") Nothing
+    | otherwise           = accessDenied $ "Expecting " <> r ^. uilabeled <> " role."
 pageForRole _ NotLoggedIn = redirectLogin
 
 publicPage :: Applicative m => any -> m AccessResult
@@ -314,7 +318,7 @@ authNeedCaps needCaps' capCtx = authNeedPage $ \p ->
     in
     if Set.null diffCaps
         then accessGranted
-        else accessDenied ("Missing capabilities " <> cs (show diffCaps)) Nothing
+        else accessDenied ("Missing capabilities " <> cs (show diffCaps))
 
 isOwnProfile :: CapCtx -> User -> Bool
 isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
