@@ -37,6 +37,7 @@ dependencies:
     - functor-infix
     - generic-aeson
     - generics-sop
+    - html-parse >= 0.1
     - http-client
     - http-media
     - http-types

@@ -46,6 +46,7 @@ library
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -153,6 +154,7 @@ executable aula-html-dummies
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -217,6 +219,7 @@ executable aula-server
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -279,6 +282,7 @@ test-suite spec
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -333,6 +337,7 @@ test-suite spec
       AulaTests.Stories.Tests
       AulaTests.StoriesSpec
       BackendSpec
+      Data.MarkdownSpec
       Frontend.CoreSpec
       Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec

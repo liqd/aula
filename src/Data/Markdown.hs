@@ -25,13 +25,14 @@ where
 
 import Control.Lens
 import Data.Binary
+import Data.SafeCopy (deriveSafeCopy, base)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
-import Data.SafeCopy (deriveSafeCopy, base)
 
 import qualified Data.Aeson as Aeson
 import qualified Generics.Generic.Aeson as Aeson
+import qualified Text.HTML.Parser as HTML
 
 
 newtype Document = Markdown { unMarkdown :: ST }
@@ -56,7 +57,9 @@ instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 -- * validation and construction
 
 markdown :: ST -> Either [ST] Document
-markdown = Right . Markdown  -- TODO: implement!
+markdown raw = case HTML.tagStream raw of
+    []  -> Right $ Markdown raw
+    bad -> Left $ (("illegal html tag: " <>) . cs . show) <$> bad  -- TODO: be more lenient on benevolent html.
 
 -- | Be careful not to use `mappend` on user input!  The concatenation will be checked by
 -- `markdown`, but the failure case will crash hard.
