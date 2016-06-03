@@ -27,7 +27,10 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Action.Implementation
-import Arbitrary (arb, arbPhrase, forAllShrinkDef, schoolClasses, constantSampleTimestamp)
+import Arbitrary
+    ( arb, arbPhrase, forAllShrinkDef, schoolClasses
+    , constantSampleTimestamp, unsafeMarkdown
+    )
 import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
@@ -101,7 +104,7 @@ spec = do
                       (Student (head schoolClasses))
                       (InitialPassword "dummy password")
                       Nothing
-                      (Markdown nil)
+                      nil
           in FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser (shouldBe `on` view userLogin)
 
           -- topic forms
@@ -119,7 +122,7 @@ spec = do
         let spc = IdeaLocationSpace SchoolSpace
             ctx = CapCtx (error "CoreSpec: IMPOSSIBLE") Nothing Nothing Nothing Nothing
             page = CreateIdea ctx spc
-            payload = ProtoIdea "!@" (Markdown "lorem ipsidiorum!") Nothing spc
+            payload = ProtoIdea "!@" (unsafeMarkdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
@@ -184,7 +187,7 @@ payloadToEnv _ _ _ [""]       = pure []
 payloadToEnv c v a ["", path] = payloadToEnvMapping c v a path
 
 instance PayloadToEnv ProtoIdea where
-    payloadToEnvMapping _ _v (ProtoIdea t (Markdown d) c _is) = \case
+    payloadToEnvMapping _ _v (ProtoIdea t (unMarkdown -> d) c _is) = \case
         "title"         -> pure [TextInput t]
         "idea-text"     -> pure [TextInput d]
         "idea-category" -> pure [TextInput $ fromMaybe nil (cs . show . fromEnum <$> c)]
@@ -250,7 +253,7 @@ instance PayloadToEnv Role where
         classes = (id &&& cs . view className) <$> schoolClasses
 
 instance PayloadToEnv CommentContent where
-    payloadToEnvMapping _ _ (CommentContent (Markdown comment)) = \case
+    payloadToEnvMapping _ _ (CommentContent (unMarkdown -> comment)) = \case
         "note-text" -> pure [TextInput comment]
 
 instance PayloadToEnv AdminPhaseChangeForTopicData where
@@ -262,14 +265,14 @@ instance PayloadToEnv AdminPhaseChangeForTopicData where
 
 instance PayloadToEnv IdeaJuryResultValue where
     payloadToEnvMapping _ _ r = \case
-        "note-text" -> pure [TextInput $ r ^. ideaResultReason . _Markdown]
+        "note-text" -> pure [TextInput $ r ^. ideaResultReason . to unMarkdown]
 
 instance PayloadToEnv ReportCommentContent  where
-    payloadToEnvMapping _ _ (ReportCommentContent (Markdown m)) = \case
+    payloadToEnvMapping _ _ (ReportCommentContent (unMarkdown -> m)) = \case
         "note-text" -> pure [TextInput m]
 
 instance PayloadToEnv Document  where
-    payloadToEnvMapping _ _ (Markdown m) = \case
+    payloadToEnvMapping _ _ (unMarkdown -> m) = \case
         "note-text" -> pure [TextInput m]
 
 
@@ -489,7 +492,7 @@ instance PayloadToEnv AdminEditUserPayload where
 instance ArbFormPagePayload AdminPhaseChange
 
 instance ArbFormPagePayload CreatorStatement where
-    arbFormPageInvalidPayload _ = pure . Just $ Markdown ""
+    arbFormPageInvalidPayload _ = pure $ Just nil
 
 instance ArbFormPagePayload JudgeIdea where
     arbFormPagePayload (JudgeIdea _ IdeaFeasible    _ _)
@@ -500,10 +503,10 @@ instance ArbFormPagePayload JudgeIdea where
     arbFormPageInvalidPayload (JudgeIdea _ IdeaFeasible _ _)
         = pure Nothing
     arbFormPageInvalidPayload (JudgeIdea _ IdeaNotFeasible _ _)
-        = pure . Just . NotFeasible $ Markdown ""
+        = pure . Just . NotFeasible $ nil
 
 instance ArbFormPagePayload ReportComment where
-    arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ Markdown ""
+    arbFormPageInvalidPayload _ = pure . Just . ReportCommentContent $ nil
 
 instance ArbFormPagePayload ReportUserProfile
 
@@ -514,7 +517,7 @@ instance ArbFormPagePayload EditUserProfile where
         <*> arb
 
 instance PayloadToEnv UserProfile where
-    payloadToEnvMapping _ _ (UserProfile murl (Markdown desc)) = \case
+    payloadToEnvMapping _ _ (UserProfile murl (unMarkdown -> desc)) = \case
         "avatar" -> pure $ FileInput . cs <$> maybeToList murl
         "desc"   -> pure [TextInput desc]
 

@@ -637,7 +637,7 @@ adminCreateUser = formPageHandlerCalcMsg
             , _protoUserRole      = up ^. createUserRole
             , _protoUserPassword  = pwd
             , _protoUserEmail     = up ^. createUserEmail
-            , _protoUserDesc      = Markdown nil
+            , _protoUserDesc      = nil
             }
     )
     (\_ u _ -> unwords ["Nutzer", createUserFullName u, "wurde angelegt."])
@@ -796,7 +796,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             , _protoUserRole      = role
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
-            , _protoUserDesc      = Markdown nil
+            , _protoUserDesc      = nil
             }
 
     msgOk :: ST

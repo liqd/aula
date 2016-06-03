@@ -122,7 +122,7 @@ genLike ideas students = do
     return $ addWithUser (AddLikeToIdea (idea ^. _Id)) student ()
 
 arbComment :: Gen Document
-arbComment = Markdown <$> arbPhraseOf 10 100
+arbComment = unsafeMarkdown <$> arbPhraseOf 10 100
 
 data CommentInContext = CommentInContext
     { _cicIdea :: Idea
@@ -258,7 +258,7 @@ genInitialTestDb = do
         , _protoUserRole      = Admin
         , _protoUserPassword  = InitialPassword "pssst"
         , _protoUserEmail     = Nothing
-        , _protoUserDesc      = Markdown nil
+        , _protoUserDesc      = nil
         }
 
     user2 <- update $ AddUser (EnvWith user1 now ProtoUser
@@ -268,19 +268,19 @@ genInitialTestDb = do
         , _protoUserRole      = Admin
         , _protoUserPassword  = InitialPassword "geheim"
         , _protoUserEmail     = Nothing
-        , _protoUserDesc      = Markdown nil
+        , _protoUserDesc      = nil
         })
 
     _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
-            , _protoIdeaDesc     = Markdown "wild-idea-desc"
+            , _protoIdeaDesc     = unsafeMarkdown "wild-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
 
     topicIdea <- update $ AddIdea (EnvWith user2 now ProtoIdea
             { _protoIdeaTitle    = "topic-idea-title"
-            , _protoIdeaDesc     = Markdown "topic-idea-desc"
+            , _protoIdeaDesc     = unsafeMarkdown "topic-idea-desc"
             , _protoIdeaCategory = Just CatRules
             , _protoIdeaLocation = IdeaLocationSpace SchoolSpace
             })
