@@ -342,8 +342,8 @@ instance Functor AccessInput where
 accessGranted :: AccessResult'
 accessGranted = pure AccessGranted
 
-accessDenied :: ST -> AccessResult'
-accessDenied m = pure $ AccessDenied m Nothing
+accessDenied :: Maybe ST -> AccessResult'
+accessDenied m = pure $ AccessDenied (fromMaybe "Keine Berechtigung" m) Nothing
 
 accessRedirected :: ST -> P.Main 'P.AllowGetPost -> AccessResult'
 accessRedirected m = pure . AccessDenied m . Just . absoluteUriPath . relPath
@@ -370,7 +370,7 @@ adminPage = rolePage Admin
 rolePage :: Role -> AccessCheck any
 rolePage r (LoggedIn u _)
     | u ^. userRole == r  = accessGranted
-    | otherwise           = accessDenied $ "Expecting " <> r ^. uilabeled <> " role."
+    | otherwise           = accessDenied . Just $ "Rolle " <> r ^. uilabeled <> " benötigt."
 rolePage _ NotLoggedIn = redirectLogin
 
 
@@ -392,10 +392,11 @@ authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
     in
     if Set.null diffCaps
         then accessGranted
-        else accessDenied $ "Missing capabilities " <> cs (show (Set.toList diffCaps))
-                         <> " given capabilities " <> cs (show haveCaps)
-                         <> " given context " <> cs (ppShow capCtx)
-        -- ^ FIXME: In production we can hide this message.
+        else accessDenied Nothing
+            -- FIXME: log something like this:
+            --              "Missing capabilities " <> cs (show (Set.toList diffCaps))
+            --           <> " given capabilities " <> cs (show haveCaps)
+            --           <> " given context " <> cs (ppShow capCtx)
 
 
 -- * misc

@@ -46,7 +46,7 @@ instance Page PageUserSettings where
     isAuthorized = authNeedPage $ \cUser (PageUserSettings u) ->
         if cUser ^. _Id == u ^. _Id
             then accessGranted
-            else accessDenied "You can only edit your own settings"
+            else accessDenied Nothing
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
@@ -71,7 +71,7 @@ instance Page EditUserProfile where
     isAuthorized = authNeedPage $ \_ (EditUserProfile ctx u) ->
         if isOwnProfile ctx u
             then accessGranted
-            else accessDenied "You can only edit your own profile"
+            else accessDenied Nothing
 
 -- | 8.X Report user profile
 data ReportUserProfile = ReportUserProfile User
