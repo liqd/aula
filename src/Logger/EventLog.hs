@@ -115,7 +115,7 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
         objDesc (Left3   t) = "Thema " <> t ^. topicTitle . showed . csi
         objDesc (Middle3 i) = "Idee "  <> i ^. ideaTitle  . showed . csi
         objDesc (Right3  c) =
-            chop $ "Verbesserungsvorschlag " <> (c ^. commentText . _Markdown . csi)
+            chop $ "Verbesserungsvorschlag " <> (c ^. commentText . showed . to (take 30) . csi)
 
         chop :: ST -> ST
         chop s = if ST.length s <= 60 then s else ST.take 57 s <> "..."

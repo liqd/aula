@@ -324,9 +324,9 @@ instance ToHtml ViewIdea where
 feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
     let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
-        explToHtml (Markdown text) = do
+        explToHtml md = do
             p_ "Begründung:"
-            p_ $ toHtml text
+            p_ $ toHtml md
 
     when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
         div_ [class_ "admin-buttons"] $ do
@@ -374,7 +374,7 @@ instance FormPage CreateIdea where
     makeForm (CreateIdea loc) =
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
-        <*> ("idea-text"     .: validate "Idee" markdownV (Markdown <$> DF.text Nothing))
+        <*> ("idea-text"     .: validate "Idee" markdownV (DF.text Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
         <*> pure loc
 
@@ -390,7 +390,7 @@ instance FormPage EditIdea where
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .:
-                validate "Idee" markdownV ((idea ^. ideaDesc) & _Markdown %%~ (DF.text . Just)))
+                validate "Idee" markdownV (DF.text . Just . unMarkdown $ idea ^. ideaDesc))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
 

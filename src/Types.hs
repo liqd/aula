@@ -21,7 +21,9 @@
 
 module Types
     ( module Types
-    , readMaybe)
+    , module Data.Markdown
+    , readMaybe
+    )
 where
 
 import Control.Lens
@@ -40,7 +42,7 @@ import Data.String.Conversions
 import Data.Time
 import Data.UriPath
 import GHC.Generics (Generic)
-import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
+import Lucid (ToHtml, toHtml, toHtmlRaw, div_)
 import Network.HTTP.Media ((//))
 import Network.Mail.Mime (Address(Address))
 import Servant ((:~>)(Nat))
@@ -59,6 +61,8 @@ import qualified Generics.SOP as SOP
 import qualified Text.Email.Validate as Email
 
 import Test.QuickCheck (Gen, Arbitrary, arbitrary)
+
+import Data.Markdown
 
 
 -- * a small prelude
@@ -874,14 +878,6 @@ instance ToHtml PlainDocument where
     toHtmlRaw = div_ . toHtmlRaw . unDescription
     toHtml    = div_ . toHtml    . unDescription
 
--- | Markdown content.
-newtype Document = Markdown { unMarkdown :: ST }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance ToHtml Document where
-    toHtmlRaw = div_ [class_ "markdown"] . toHtmlRaw . unMarkdown
-    toHtml    = div_ [class_ "markdown"] . toHtml    . unMarkdown
-
 -- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
 class HasUILabel a where
     uilabel :: a -> (Monoid s, IsString s) => s
@@ -1038,7 +1034,6 @@ instance Binary EncryptedPassword
 instance Binary PlainDocument
 instance Binary Delegation
 instance Binary DelegationContext
-instance Binary Document
 instance Binary UserPass
 instance Binary Role
 instance Binary Idea
@@ -1076,7 +1071,6 @@ makePrisms ''AUID
 makePrisms ''Category
 makePrisms ''PlainDocument
 makePrisms ''DelegationContext
-makePrisms ''Document
 makePrisms ''EmailAddress
 makePrisms ''IdeaJuryResultValue
 makePrisms ''IdeaLocation
@@ -1107,7 +1101,6 @@ makeLenses ''PlainDocument
 makeLenses ''Delegation
 makeLenses ''DelegationContext
 makeLenses ''DelegationNetwork
-makeLenses ''Document
 makeLenses ''Durations
 makeLenses ''EditTopicData
 makeLenses ''EmailAddress
@@ -1155,7 +1148,6 @@ deriveSafeCopy 0 'base ''PlainDocument
 deriveSafeCopy 0 'base ''Delegation
 deriveSafeCopy 0 'base ''DelegationContext
 deriveSafeCopy 0 'base ''DelegationNetwork
-deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
 deriveSafeCopy 0 'base ''EditTopicData
@@ -1498,7 +1490,6 @@ instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
 instance Aeson.ToJSON Freeze where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
@@ -1525,7 +1516,6 @@ instance Aeson.FromJSON CommentKey where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DelegationContext where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
 instance Aeson.FromJSON Freeze where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON id => Aeson.FromJSON (GMetaInfo a id) where parseJSON = Aeson.gparseJson

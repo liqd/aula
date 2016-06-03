@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.11.2.
+-- This file has been generated from package.yaml by hpack version 0.14.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -29,6 +29,7 @@ library
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -37,6 +38,7 @@ library
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -46,6 +48,7 @@ library
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -85,6 +88,8 @@ library
       Config
       Daemon
       Data.Avatar
+      Data.Markdown
+      Data.Markdown.HtmlWhiteLists
       Data.UriPath
       DemoData
       Frontend
@@ -135,6 +140,7 @@ executable aula-html-dummies
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -143,6 +149,7 @@ executable aula-html-dummies
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -152,6 +159,7 @@ executable aula-html-dummies
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -199,6 +207,7 @@ executable aula-server
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -207,6 +216,7 @@ executable aula-server
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -216,6 +226,7 @@ executable aula-server
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -261,6 +272,7 @@ test-suite spec
     , thentos-core >=0.5.0
     , aeson
     , aeson-pretty
+    , aeson-qq
     , acid-state >=0.14
     , basic-sop
     , binary
@@ -269,6 +281,7 @@ test-suite spec
     , cassava >= 0.4.5.0
     , containers
     , cookie
+    , css-syntax
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -278,6 +291,7 @@ test-suite spec
     , functor-infix
     , generic-aeson
     , generics-sop
+    , html-parse >= 0.1
     , http-client
     , http-media
     , http-types
@@ -332,6 +346,7 @@ test-suite spec
       AulaTests.Stories.Tests
       AulaTests.StoriesSpec
       BackendSpec
+      Data.MarkdownSpec
       Frontend.CoreSpec
       Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec
