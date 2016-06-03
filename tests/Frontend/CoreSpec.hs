@@ -32,7 +32,7 @@ import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
 import Frontend.Path (relPath)
-import LifeCycle (CapCtx(..))
+import Access (CapCtx(..))
 import Logger (nullLog)
 import Persistent.Implementation (mkRunPersist)
 import Persistent.Idiom (ideaStatsIdea)

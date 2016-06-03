@@ -13,6 +13,7 @@ import Lucid hiding (href_)
 import Servant
 import Servant.Missing (throwError500)
 
+import Access (publicPage)
 import Frontend.Core
 import Persistent
 import Types

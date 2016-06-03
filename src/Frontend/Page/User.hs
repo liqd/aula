@@ -12,13 +12,13 @@ where
 
 import System.FilePath
 
+import Access
 import Action
 import Data.Avatar
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
 import Frontend.Prelude hiding ((</>), (<.>))
 import Frontend.Validation
-import LifeCycle
 import Persistent.Api
     ( SetUserEmail(SetUserEmail)
     , SetUserPass(SetUserPass)

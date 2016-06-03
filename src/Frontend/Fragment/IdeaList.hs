@@ -20,8 +20,8 @@ where
 
 import Control.Lens
 
+import Access (CapCtx)
 import Types
-import LifeCycle (CapCtx)
 import Frontend.Prelude
 import Frontend.Fragment.Category
 import Frontend.Fragment.VotesBar

@@ -28,6 +28,7 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
 
+import Access
 import Action
 import Logger.EventLog
 import Persistent.Api

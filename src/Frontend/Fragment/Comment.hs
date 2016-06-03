@@ -15,8 +15,8 @@ where
 
 import qualified Generics.SOP as SOP
 
+import Access
 import Frontend.Prelude
-import LifeCycle
 
 import qualified Frontend.Path as U
 

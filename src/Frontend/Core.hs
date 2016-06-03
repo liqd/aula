@@ -35,20 +35,6 @@ module Frontend.Core
       -- * pages
     , Page(..)
     , PageShow(..)
-    , AccessResult(..)
-    , AccessInput(..)
-    , accessGranted
-    , accessDeferred
-    , accessDenied
-    , accessRedirected
-    , publicPage
-    , adminPage
-    , pageForRole
-    , userPage
-    , redirectLogin
-    , authNeedPage
-    , authNeedCaps
-    , isOwnProfile
 
       -- * forms
     , FormPage
@@ -89,17 +75,16 @@ import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
+import Access
 import Action
 import Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Path (HasPath(..))
-import LifeCycle
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -239,29 +224,6 @@ percentVotes idea numVoters vv = {- assert c -} v
 
 -- * pages
 
-data AccessResult
-  = AccessGranted
-  | AccessDenied { _accessDeniedMsg :: ST, _accessDeniedRedirect :: Maybe URL }
-  | AccessDeferred
-
-instance Monoid AccessResult where
-    mempty = AccessGranted
-    AccessGranted `mappend` x = x
-    x `mappend` AccessGranted = x
-    AccessDeferred `mappend` x = x
-    x `mappend` AccessDeferred = x
-    AccessDenied s0 u0 `mappend` AccessDenied s1 u1 =
-        AccessDenied (s0 <> "\n\n" <> s1) (getFirst (First u0 <> First u1))
-
-data AccessInput a
-  = NotLoggedIn
-  | LoggedIn { _authUser :: User, _authPage :: Maybe a }
-
-instance Functor AccessInput where
-    fmap f = \case
-        NotLoggedIn -> NotLoggedIn
-        LoggedIn u mp -> LoggedIn u (f <$> mp)
-
 -- | Defines some properties for pages
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
@@ -271,61 +233,6 @@ class Page p where
 
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
-
-accessGranted :: Applicative m => m AccessResult
-accessGranted = pure AccessGranted
-
-accessDenied :: Applicative m => ST -> m AccessResult
-accessDenied m = pure $ AccessDenied m Nothing
-
-accessRedirected :: Applicative m => ST -> P.Main 'P.AllowGetPost -> m AccessResult
-accessRedirected m = pure . AccessDenied m . Just . absoluteUriPath . relPath
-
-accessDeferred :: Applicative m => m AccessResult
-accessDeferred = pure AccessDeferred
-
-redirectLogin :: Applicative m => m AccessResult
-redirectLogin = accessRedirected "Not logged in" P.Login
-
-userPage :: Applicative m => AccessInput any -> m AccessResult
-userPage LoggedIn{}  = accessGranted
-userPage NotLoggedIn = redirectLogin
-
-pageForRole :: Applicative m => Role -> AccessInput any -> m AccessResult
-pageForRole r (LoggedIn u _)
-    | u ^. userRole == r  = accessGranted
-    | otherwise           = accessDenied $ "Expecting " <> r ^. uilabeled <> " role."
-pageForRole _ NotLoggedIn = redirectLogin
-
-publicPage :: Applicative m => any -> m AccessResult
-publicPage _ = accessGranted
-
-adminPage :: Applicative m => AccessInput any -> m AccessResult
-adminPage = pageForRole Admin
-
-authNeedPage :: Applicative m => (User -> p -> m AccessResult) -> AccessInput p -> m AccessResult
-authNeedPage k = \case
-    NotLoggedIn         -> redirectLogin
-    LoggedIn _ Nothing  -> accessDeferred
-    LoggedIn u (Just p) -> k u p
-
-authNeedCaps :: [Capability] -> Getter p CapCtx -> Applicative m => AccessInput p -> m AccessResult
-authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
-    let
-        capCtx   = p ^. getCapCtx
-        needCaps = Set.fromList needCaps'
-        haveCaps = Set.fromList $ capabilities capCtx
-        diffCaps = needCaps `Set.difference` haveCaps
-    in
-    if Set.null diffCaps
-        then accessGranted
-        else accessDenied $ "Missing capabilities " <> cs (show (Set.toList diffCaps))
-                         <> " given capabilities " <> cs (show haveCaps)
-                         <> " given context " <> cs (ppShow capCtx)
-        -- ^ FIXME: In production we can hide this message.
-
-isOwnProfile :: CapCtx -> User -> Bool
-isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
 
 instance Page () where isAuthorized = publicPage
 
@@ -540,6 +447,7 @@ runHandler mp = do
                 AccessDeferred -> throwError500 "AccessDeferred should not be used with NotLoggedIn"
   where
     handleDenied s u = throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
+        -- FIXME log these events as INFO, should we do this here or more globally for servant errors.
 
 
 -- * js glue

@@ -153,6 +153,7 @@ import Action.Smtp
 import Config (Config, GetConfig(..), exposedUrl)
 import Data.UriPath (absoluteUriPath)
 import Frontend.Path (relPath)
+import Access
 import LifeCycle
 import Logger
 import Logger.EventLog

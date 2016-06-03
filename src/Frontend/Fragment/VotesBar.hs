@@ -9,9 +9,9 @@ module Frontend.Fragment.VotesBar
     (IdeaVoteLikeBars(..), IdeaVoteLikeBarsMode(..))
 where
 
+import           Access
 import qualified Frontend.Path as U
 import           Frontend.Prelude
-import           LifeCycle
 import           Persistent.Idiom
 
 

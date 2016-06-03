@@ -76,6 +76,7 @@ library
     , warp
     , yaml
   exposed-modules:
+      Access
       Action
       Action.Dummy
       Action.Implementation

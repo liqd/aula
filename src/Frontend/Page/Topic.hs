@@ -30,13 +30,13 @@ import Data.List (sortBy)
 import Data.Time
 import Prelude hiding ((.))
 
+import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
                spaceCapCtx, topicCapCtx, getCurrentTimestamp)
 import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
-import LifeCycle (Capability(..), CapCtx(..), capabilities)
 import Persistent
     ( findDelegationsByContext
     , findIdeasByTopic

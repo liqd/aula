@@ -16,8 +16,8 @@ module Frontend.Page.Overview
     )
 where
 
+import Access
 import Action
-import LifeCycle
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude
 import Persistent (findWildIdeasBySpace, getIdeaStats, findTopicsBySpace)

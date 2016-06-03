@@ -5,6 +5,7 @@
 module Frontend.Page.Static
 where
 
+import Access (publicPage)
 import Frontend.Prelude
 
 

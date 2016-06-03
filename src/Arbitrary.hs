@@ -98,6 +98,7 @@ import qualified Data.Set as Set
 import qualified Data.Graph as Graph
 import qualified Data.Tree as Tree
 
+import Access
 import Action
 import Action.Implementation
 import Config
@@ -108,7 +109,6 @@ import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
 import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
-import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types

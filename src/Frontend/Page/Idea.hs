@@ -36,6 +36,7 @@ module Frontend.Page.Idea
   )
 where
 
+import Access
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , addWithCurrentUser, equery, mquery, update
               , locationCapCtx, ideaCapCtx, ideaCapCtx', commentCapCtx, commentCapCtx'
@@ -46,7 +47,6 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , reportIdea
               )
 import Control.Arrow ((&&&))
-import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Note

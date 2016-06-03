@@ -10,6 +10,7 @@ where
 
 import Text.Digestive as DF hiding (validate)
 
+import Access
 import Action (ActionM, query)
 import qualified Action
 import Persistent
