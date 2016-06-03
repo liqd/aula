@@ -1,22 +1,24 @@
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Idea
-  ( ViewIdea(..)
-  , CreateIdea(..)
-  , EditIdea(..)
-  , MoveIdea(..)
-  , ReportIdea(..)
-  , CommentOnIdea(..)
-  , EditComment(..)
-  , JudgeIdea(..)
-  , CreatorStatement(..)
-  , ReportComment(..)
+  ( ViewIdea(..), viCtx, viStats
+  , CreateIdea(..), ciCtx, ciLoc
+  , EditIdea(..), eiCtx, eiIdea
+  , MoveIdea(..), miCtx, miIdea, miTopicChoices
+  , ReportIdea(..), riCtx, riIdea
+  , CommentOnIdea(..), coiCtx, coiIdea, coiComment
+  , EditComment(..), ecCtx, ecIdea, ecComment
+  , JudgeIdea(..), jiCtx, jiResult, jiIdea, jiTopic
+  , CreatorStatement(..), csCtx, csIdea
+  , ReportComment(..), rcCtx, rcComment
   , ReportCommentContent(..)
   , viewIdea
   , createIdea
@@ -34,8 +36,10 @@ module Frontend.Page.Idea
   )
 where
 
+import Access
 import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , addWithCurrentUser, equery, mquery, update
+              , locationCapCtx, ideaCapCtx, ideaCapCtx', commentCapCtx, commentCapCtx'
               , markIdeaInJuryPhase
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
@@ -43,7 +47,6 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , reportIdea
               )
 import Control.Arrow ((&&&))
-import LifeCycle
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Note
@@ -60,17 +63,15 @@ import Persistent.Idiom
     )
 import Persistent
     ( findComment
-    , findIdea
     , findTopicsBySpace
     , getIdeaStats
     , ideaReachedQuorum
-    , ideaTopic
-    , maybe404
     )
 
 import qualified Action (createIdea, editIdea, moveIdeaToTopic)
 import qualified Data.Map as Map
 import qualified Frontend.Path as U
+import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Types (MoveIdea)
@@ -88,70 +89,125 @@ import qualified Types (MoveIdea)
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea RenderContext IdeaStats
-  deriving (Eq, Show, Read)
+data ViewIdea = ViewIdea { _viCtx :: CapCtx, _viStats :: IdeaStats }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic ViewIdea
+
+makeLenses ''ViewIdea
 
 instance Page ViewIdea where
+    isAuthorized = authNeedCaps [CanView] viCtx
 
 data ViewDeletedIdea = ViewDeletedIdea Idea
   deriving (Eq, Show, Read)
 
-instance Page ViewDeletedIdea where
-
 -- | 6. Create idea
-data CreateIdea = CreateIdea IdeaLocation
-  deriving (Eq, Show, Read)
+data CreateIdea = CreateIdea { _ciCtx :: CapCtx, _ciLoc :: IdeaLocation }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic CreateIdea
+
+makeLenses ''CreateIdea
 
 instance Page CreateIdea where
+    isAuthorized = authNeedCaps [CanCreateIdea] ciCtx
 
 -- | 7. Edit idea
-data EditIdea = EditIdea Idea
-  deriving (Eq, Show, Read)
+data EditIdea = EditIdea { _eiCtx :: CapCtx, _eiIdea :: Idea }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic EditIdea
+
+makeLenses ''EditIdea
 
 instance Page EditIdea where
+    isAuthorized = authNeedCaps [CanEditAndDelete] eiCtx
 
 -- | X. Move idea
 -- Move idea to a topic.
-data MoveIdea = MoveIdea Idea [Topic]
-  deriving (Eq, Show, Read)
+data MoveIdea = MoveIdea { _miCtx :: CapCtx, _miIdea :: Idea, _miTopicChoices :: [Topic] }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic MoveIdea
+
+makeLenses ''MoveIdea
 
 instance Page MoveIdea where
+    isAuthorized = authNeedCaps [CanMoveBetweenLocations] miCtx
 
-data ReportIdea = ReportIdea Idea
-  deriving (Eq, Show, Read)
+data ReportIdea = ReportIdea { _riCtx :: CapCtx, _riIdea :: Idea }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic ReportIdea
+
+makeLenses ''ReportIdea
 
 instance Page ReportIdea where
+    -- You can report iff you can view the idea.
+    isAuthorized = authNeedCaps [CanView] riCtx
 
 -- | X. Comment idea
-data CommentOnIdea = CommentOnIdea Idea (Maybe Comment)
-  deriving (Eq, Show, Read)
+data CommentOnIdea = CommentOnIdea
+    { _coiCtx :: CapCtx, _coiIdea :: Idea, _coiComment :: Maybe Comment }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic CommentOnIdea
+
+makeLenses ''CommentOnIdea
 
 instance Page CommentOnIdea where
+    isAuthorized = authNeedCaps [CanComment] coiCtx
 
 -- | X. Deem idea feasible / not feasible
 -- Assumption: The idea is located in the topic (via 'IdeaLocation').
-data JudgeIdea = JudgeIdea IdeaJuryResultType Idea Topic
-  deriving (Eq, Show, Read)
+data JudgeIdea = JudgeIdea
+    { _jiCtx    :: CapCtx
+    , _jiResult :: IdeaJuryResultType
+    , _jiIdea   :: Idea
+    , _jiTopic  :: Topic
+    }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic JudgeIdea
+
+makeLenses ''JudgeIdea
 
 instance Page JudgeIdea where
+    isAuthorized = authNeedCaps [CanJudge] jiCtx
 
-data CreatorStatement = CreatorStatement Idea
-  deriving (Eq, Show, Read)
+data CreatorStatement = CreatorStatement { _csCtx :: CapCtx, _csIdea :: Idea }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic CreatorStatement
+
+makeLenses ''CreatorStatement
 
 instance Page CreatorStatement where
+    isAuthorized = authNeedCaps [CanEditCreatorStatement] csCtx
 
-data ReportComment = ReportComment Comment
-  deriving (Eq, Show, Read)
+data ReportComment = ReportComment { _rcCtx :: CapCtx, _rcComment :: Comment }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic ReportComment
+
+makeLenses ''ReportComment
 
 instance Page ReportComment where
+    -- You can report iff you can view the comment/idea.
+    isAuthorized = authNeedCaps [CanView] rcCtx
 
+-- We could track wether or not the comment is a reply, but this information is not used yet.
 data EditComment
-    = EditComment Idea Comment
-    | EditReply Idea Comment
-  deriving (Eq, Show, Read)
+    = EditComment { _ecCtx :: CapCtx, _ecIdea :: Idea, _ecComment :: Comment }
+  deriving (Eq, Show, Read, Generic)
+
+instance SOP.Generic EditComment
+
+makeLenses ''EditComment
 
 instance Page EditComment where
-
+    isAuthorized = authNeedCaps [CanEditComment] ecCtx
 
 -- * templates
 
@@ -178,17 +234,8 @@ instance ToHtml ViewIdea where
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
-            uid           = ctx ^. renderContextUser . _Id
-            role          = ctx ^. renderContextUser . userRole
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
-            caps          = capabilities CapCtx
-                                { capCtxRole    = role
-                                , capCtxPhase   = Just phase
-                                , capCtxUser    = Just uid
-                                , capCtxIdea    = Just idea
-                                , capCtxComment = Nothing
-                                }
-
+            caps          = capabilities ctx
             canEdit              = CanEditAndDelete `elem` caps
             canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` caps
             canMoveBetweenTopics = CanMoveBetweenLocations `elem` caps
@@ -318,7 +365,7 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget ctx caps c phase ^. html
+                        CommentWidget ctx caps c ^. html
 
 
 feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
@@ -328,7 +375,7 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
             p_ "Begründung:"
             p_ $ toHtml md
 
-    when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
+    when (renderJuryButtons && CanJudge `elem` caps) $ do
         div_ [class_ "admin-buttons"] $ do
             button_ [ class_ "btn-cta m-valid"
                     , onclick_ $ U.judgeIdea idea IdeaFeasible
@@ -368,33 +415,35 @@ instance FormPage CreateIdea where
     type FormPagePayload CreateIdea = ProtoIdea
     type FormPageResult CreateIdea = Idea
 
-    formAction (CreateIdea loc) = U.createIdea loc
-    redirectOf (CreateIdea _loc) = U.viewIdea
+    formAction ci = U.createIdea $ ci ^. ciLoc
+    redirectOf _ = U.viewIdea
 
-    makeForm (CreateIdea loc) =
+    makeForm ci =
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text Nothing))
         <*> ("idea-text"     .: validate "Idee" markdownV (DF.text Nothing))
         <*> ("idea-category" .: makeFormSelectCategory Nothing)
-        <*> pure loc
+        <*> pure (ci ^. ciLoc)
 
-    formPage v form p@(CreateIdea iloc) = createOrEditIdea (Left iloc) v form p
+    formPage v form ci = createOrEditIdea (Left (ci ^. ciLoc)) v form ci
 
 instance FormPage EditIdea where
     type FormPagePayload EditIdea = ProtoIdea
 
-    formAction (EditIdea idea) = U.editIdea idea
-    redirectOf (EditIdea idea) _ = U.viewIdea idea
+    formAction ei = U.editIdea $ ei ^. eiIdea
+    redirectOf ei _ = U.viewIdea $ ei ^. eiIdea
 
-    makeForm (EditIdea idea) =
+    makeForm ei =
         ProtoIdea
         <$> ("title"         .: validateIdeaTitle (DF.text . Just $ idea ^. ideaTitle))
         <*> ("idea-text"     .:
                 validate "Idee" markdownV (DF.text . Just . unMarkdown $ idea ^. ideaDesc))
         <*> ("idea-category" .: makeFormSelectCategory (idea ^. ideaCategory))
         <*> pure (idea ^. ideaLocation)
+      where
+        idea = ei ^. eiIdea
 
-    formPage v form p@(EditIdea idea)
+    formPage v form p@(EditIdea _ idea)
         | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
         | otherwise           = createOrEditIdea (Right idea) v form p
 
@@ -437,10 +486,10 @@ createOrEditIdea eLocIdea v form p = semanticDiv p $ do
 instance FormPage MoveIdea where
     type FormPagePayload MoveIdea = Types.MoveIdea
 
-    formAction (MoveIdea idea _topics) = U.moveIdea idea
-    redirectOf (MoveIdea idea _topics) _ = U.viewIdea idea
+    formAction mi   = U.moveIdea $ mi ^. miIdea
+    redirectOf mi _ = U.viewIdea $ mi ^. miIdea
 
-    makeForm (MoveIdea idea topics) =
+    makeForm (MoveIdea _ idea topics) =
         maybe MoveIdeaToWild MoveIdeaToTopic
         <$> ("topic-to-move" .: DF.choice topicList (Just currentTopic))
       where
@@ -448,17 +497,15 @@ instance FormPage MoveIdea where
                   : map (Just . view _Id &&& view (topicTitle . html)) topics
         currentTopic = idea ^. ideaLocation ^? ideaLocationTopicId
 
-    formPage v form p@(MoveIdea idea _topics) =
-        semanticDiv p .
-            form $ do
-                h2_ [class_ "sub-header"] "Idee verschieben"
-                div_ [class_ "container-info"] . p_ $ do
-                    "Soll die Idee '" >> idea ^. ideaTitle . html >> "'"
-                    " aus '" >> idea ^. ideaLocation . uilabeledST . html >> "'"
-                    " verschoben werden?"
-                DF.inputSelect "topic-to-move" v
-                DF.inputSubmit "Verschieben"
-                a_ [class_ "btn", href_ $ redirectOf p ()] "Zurück"
+    formPage v form mi = semanticDiv mi . form $ do
+        h2_ [class_ "sub-header"] "Idee verschieben"
+        div_ [class_ "container-info"] . p_ $ do
+            "Soll die Idee '" >> mi ^. miIdea . ideaTitle . html >> "'"
+            " aus '" >> mi ^. miIdea ^. ideaLocation . uilabeledST . html >> "'"
+            " verschoben werden?"
+        DF.inputSelect "topic-to-move" v
+        DF.inputSubmit "Verschieben"
+        a_ [class_ "btn", href_ $ redirectOf mi ()] "Zurück"
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
@@ -473,37 +520,25 @@ instance FormPage CommentOnIdea where
     type FormPageResult CommentOnIdea = Comment
 
     formAction = \case
-        (CommentOnIdea idea Nothing)     -> U.commentOnIdea idea
-        (CommentOnIdea _ (Just comment)) -> U.replyToComment comment
-    redirectOf (CommentOnIdea idea _) = U.viewIdeaAtComment idea . view _Id
+        (CommentOnIdea _ idea Nothing)     -> U.commentOnIdea idea
+        (CommentOnIdea _ _ (Just comment)) -> U.replyToComment comment
+    redirectOf (CommentOnIdea _ idea _) = U.viewIdeaAtComment idea . view _Id
 
     makeForm CommentOnIdea{} =
         CommentContent <$> noteFormInput commentIdeaNote Nothing
 
-    formPage v form p@(CommentOnIdea idea _mcomment) =
-        semanticDiv p $ do
-            noteForm commentIdeaNote v form idea
+    formPage v form coi = semanticDiv coi . noteForm commentIdeaNote v form $ coi ^. coiIdea
 
 instance FormPage EditComment where
     type FormPagePayload EditComment = Document
 
-    formAction (EditComment _idea comment) = U.editComment comment
-    formAction (EditReply   _idea comment) = U.editReply comment
+    formAction ec = U.editComment (ec ^. ecComment)
 
-    redirectOf (EditComment idea comment) _ = U.viewIdeaAtComment idea (comment ^. _Id)
-    redirectOf (EditReply   idea comment) _ = U.viewIdeaAtComment idea (comment ^. _Id)
+    redirectOf (EditComment _ idea comment) _ = U.viewIdeaAtComment idea (comment ^. _Id)
 
-    makeForm (EditComment _idea comment) =
-        noteFormInput commentIdeaNote (Just (comment ^. commentText))
-    makeForm (EditReply _idea comment) =
-        noteFormInput commentIdeaNote (Just (comment ^. commentText))
+    makeForm ec = noteFormInput commentIdeaNote (Just (ec ^. ecComment . commentText))
 
-    formPage v form p@(EditComment idea _comment) =
-        semanticDiv p $ do
-            noteForm commentIdeaNote v form idea
-    formPage v form p@(EditReply idea _comment) =
-        semanticDiv p $ do
-            noteForm commentIdeaNote v form idea
+    formPage v form ec = semanticDiv ec $ noteForm commentIdeaNote v form (ec ^. ecIdea)
 
 judgeIdeaNote :: IdeaJuryResultType -> Note Idea
 judgeIdeaNote juryType = Note
@@ -523,22 +558,22 @@ judgeIdeaNote juryType = Note
 instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue
 
-    formAction (JudgeIdea juryType idea _topic) = U.judgeIdea idea juryType
-    redirectOf (JudgeIdea _ _idea topic) _ = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
+    formAction (JudgeIdea _ juryType idea _topic) = U.judgeIdea idea juryType
+    redirectOf ji _ = U.listIdeasInTopic (ji ^. jiTopic) ListIdeasInTopicTabAll Nothing
         -- FIXME: we would like to say `U.listIdeasInTopic topic </#> U.anchor (idea ^. _Id)` here,
         -- but that requires some refactoring around 'redirectOf'.
 
-    makeForm (JudgeIdea IdeaFeasible idea _) =
+    makeForm (JudgeIdea _ IdeaFeasible idea _) =
         Feasible <$> noteFormOptionalInput (judgeIdeaNote IdeaFeasible) mFeasible
       where
         mFeasible :: Maybe Document = idea ^? ideaJuryResult . _Just . ideaJuryResultValue . _Feasible . _Just
 
-    makeForm (JudgeIdea IdeaNotFeasible idea _) =
+    makeForm (JudgeIdea _ IdeaNotFeasible idea _) =
         NotFeasible <$> noteFormInput (judgeIdeaNote IdeaNotFeasible) mNotFeasible
       where
         mNotFeasible = idea ^? ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
 
-    formPage v form p@(JudgeIdea juryType idea _topic) =
+    formPage v form p@(JudgeIdea _ juryType idea _topic) =
         semanticDiv p $
             noteForm (judgeIdeaNote juryType) v form idea
 
@@ -553,15 +588,10 @@ creatorStatementNote = Note
 instance FormPage CreatorStatement where
     type FormPagePayload CreatorStatement = Document
 
-    formAction (CreatorStatement idea) = U.creatorStatement idea
-    redirectOf (CreatorStatement idea) _ = U.viewIdea idea
-
-    makeForm (CreatorStatement idea) =
-        noteFormInput creatorStatementNote (creatorStatementOfIdea idea)
-
-    formPage v form p@(CreatorStatement idea) =
-        semanticDiv p $ do
-            noteForm creatorStatementNote v form idea
+    formAction      s   = U.creatorStatement $ s ^. csIdea
+    redirectOf      s _ = U.viewIdea $ s ^. csIdea
+    makeForm        s   = noteFormInput creatorStatementNote . creatorStatementOfIdea $ s ^. csIdea
+    formPage v form s   = semanticDiv s . noteForm creatorStatementNote v form $ s ^. csIdea
 
 newtype ReportCommentContent = ReportCommentContent
     { unReportCommentContent :: Document }
@@ -578,8 +608,8 @@ reportCommentNote = Note
 instance FormPage ReportComment where
     type FormPagePayload ReportComment = ReportCommentContent
 
-    formAction (ReportComment comment) = U.reportComment comment
-    redirectOf (ReportComment comment) _ = U.viewIdeaOfComment comment
+    formAction rc = U.reportComment $ rc ^. rcComment
+    redirectOf rc _ = U.viewIdeaOfComment $ rc ^. rcComment
 
     makeForm _ =
         ReportCommentContent <$> noteFormInput reportCommentNote Nothing
@@ -599,14 +629,12 @@ reportIdeaNote = Note
 instance FormPage ReportIdea where
     type FormPagePayload ReportIdea = Document
 
-    formAction (ReportIdea idea) = U.reportIdea idea
-    redirectOf (ReportIdea idea) _ = U.viewIdea idea
+    formAction ri   = U.reportIdea $ ri ^. riIdea
+    redirectOf ri _ = U.viewIdea   $ ri ^. riIdea
 
     makeForm _ = noteFormInput reportIdeaNote Nothing
 
-    formPage v form p@(ReportIdea idea) =
-        semanticDiv p $ do
-            noteForm reportIdeaNote v form idea
+    formPage v form ri = semanticDiv ri . noteForm reportIdeaNote v form $ ri ^. riIdea
 
 
 -- * handlers
@@ -616,13 +644,16 @@ instance FormPage ReportIdea where
 -- on the bright side, it makes shorter uri paths possible.)
 viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
     => AUID Idea -> m ViewIdea
-viewIdea ideaId = ViewIdea <$> renderContext <*> equery (findIdea ideaId >>= maybe404 >>= getIdeaStats)
+viewIdea ideaId = do
+    (ctx, idea) <- ideaCapCtx ideaId
+    stats <- equery $ getIdeaStats idea -- FIXME ideaCapCtx' is giving the phase already
+    pure $ ViewIdea ctx stats
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
 createIdea loc =
     formPageHandlerWithMsg
-        (pure $ CreateIdea loc)
+        (CreateIdea <$> locationCapCtx loc <*> pure loc)
         Action.createIdea
         "Die Idee wurde angelegt."
 
@@ -632,24 +663,23 @@ createIdea loc =
 editIdea :: ActionM m => AUID Idea -> FormPageHandler m EditIdea
 editIdea ideaId =
     formPageHandlerWithMsg
-        (EditIdea <$> mquery (findIdea ideaId))
+        (uncurry EditIdea <$> ideaCapCtx ideaId)
         (Action.editIdea ideaId)
         "Die Änderungen wurden gespeichert."
 
 moveIdea :: ActionM m => AUID Idea -> FormPageHandler m MoveIdea
 moveIdea ideaId =
     formPageHandlerWithMsg
-        (equery $ do
-            idea <- maybe404 =<< findIdea ideaId
-            topics <- findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
-            pure $ MoveIdea idea topics)
+        (do (ctx, idea) <- ideaCapCtx ideaId
+            topics <- equery $ findTopicsBySpace (idea ^. ideaLocation . ideaLocationSpace)
+            pure $ MoveIdea ctx idea topics)
         (Action.moveIdeaToTopic ideaId)
         "The Idee wurde verschoben."
 
 reportIdea :: ActionM m => AUID Idea -> FormPageHandler m ReportIdea
 reportIdea ideaId =
     formPageHandlerWithMsg
-        (ReportIdea <$> mquery (findIdea ideaId))
+        (uncurry ReportIdea <$> ideaCapCtx ideaId)
         (Action.reportIdea ideaId)
         "Die Idee wurde der Moderation gemeldet."
 
@@ -657,7 +687,8 @@ reportIdea ideaId =
 commentOnIdea :: ActionM m => IdeaLocation -> AUID Idea -> FormPageHandler m CommentOnIdea
 commentOnIdea loc ideaId =
     formPageHandlerWithMsg
-        (CommentOnIdea <$> mquery (findIdea ideaId) <*> pure Nothing)
+        (do (ctx, idea) <- ideaCapCtx ideaId
+            pure $ CommentOnIdea ctx idea Nothing)
         (\cc -> do
             comment <- addWithCurrentUser (AddCommentToIdea loc ideaId) cc
             eventLogUserCreatesComment comment
@@ -667,10 +698,8 @@ commentOnIdea loc ideaId =
 editComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m EditComment
 editComment loc iid cid =
     formPageHandlerWithMsg
-        (equery $ do
-            idea <- maybe404 =<< findIdea iid
-            comment <- maybe404 =<< findComment (commentKey loc iid cid)
-            pure $ EditComment idea comment)
+        (do (ctx, _, _, idea, comment) <- commentCapCtx' $ commentKey loc iid cid
+            pure $ EditComment ctx idea comment)
         (\desc -> do
             let ck = commentKey loc iid cid
             update $ SetCommentDesc ck desc
@@ -680,11 +709,8 @@ editComment loc iid cid =
 replyToComment :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> FormPageHandler m CommentOnIdea
 replyToComment loc ideaId commentId =
     formPageHandlerWithMsg
-        (mquery $ do
-            midea <- findIdea ideaId
-            pure $ do idea <- midea
-                      comment <- idea ^. ideaComments . at commentId
-                      pure $ CommentOnIdea idea (Just comment))
+        (do (ctx, idea) <- ideaCapCtx ideaId
+            pure . CommentOnIdea ctx idea $ idea ^. ideaComments . at commentId)
         (\cc -> do
             comment <- addWithCurrentUser (AddReply $ CommentKey loc ideaId [] commentId) cc
             eventLogUserCreatesComment comment
@@ -694,10 +720,8 @@ replyToComment loc ideaId commentId =
 editReply :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> FormPageHandler m EditComment
 editReply loc iid pcid cid =
     formPageHandlerWithMsg
-        (equery $ do
-            idea <- maybe404 =<< findIdea iid
-            comment <- maybe404 =<< findComment (replyKey loc iid pcid cid)
-            pure $ EditReply idea comment)
+        (do (ctx, _, _, idea, comment) <- commentCapCtx' $ replyKey loc iid pcid cid
+            pure $ EditComment ctx idea comment)
         (\desc -> do
             let ck = replyKey loc iid pcid cid
             update $ SetCommentDesc ck desc
@@ -708,10 +732,9 @@ editReply loc iid pcid cid =
 judgeIdea :: ActionM m => AUID Idea -> IdeaJuryResultType -> FormPageHandler m JudgeIdea
 judgeIdea ideaId juryType =
     formPageHandlerWithMsg
-        (equery $ do
-            idea  <- maybe404 =<< findIdea ideaId
-            topic <- maybe404 =<< ideaTopic idea
-            pure $ JudgeIdea juryType idea topic)
+        (do (ctx, mtopic, _, idea) <- ideaCapCtx' ideaId
+            topic <- mquery $ pure mtopic
+            pure $ JudgeIdea ctx juryType idea topic)
         (Action.markIdeaInJuryPhase ideaId)
         ("Die Idee wurde als " <> showJuryResultTypeUI juryType <> " markiert")
 
@@ -721,7 +744,7 @@ creatorStatementOfIdea idea = idea ^? ideaVoteResult . _Just . ideaVoteResultVal
 creatorStatement :: ActionM m => AUID Idea -> FormPageHandler m CreatorStatement
 creatorStatement ideaId =
     formPageHandlerWithMsg
-        (CreatorStatement <$> mquery (findIdea ideaId))
+        (uncurry CreatorStatement <$> ideaCapCtx ideaId)
         (Action.setCreatorStatement ideaId)
         "Das Statement wurde gespeichert."
 
@@ -730,7 +753,7 @@ reportComment
     -> FormPageHandler m ReportComment
 reportComment loc iid cid =
     formPageHandlerWithMsg
-        (ReportComment <$> mquery (findComment $ CommentKey loc iid [] cid))
+        (uncurry ReportComment <$> commentCapCtx (commentKey loc iid cid))
         (Action.reportIdeaComment loc iid cid . unReportCommentContent)
         "Die Meldung wurde abgeschickt."
 
@@ -739,6 +762,6 @@ reportReply
     -> FormPageHandler m ReportComment
 reportReply loc iid pcid cid =
     formPageHandlerWithMsg
-        (ReportComment <$> mquery (findComment $ CommentKey loc iid [pcid] cid))
+        (uncurry ReportComment <$> commentCapCtx (replyKey loc iid pcid cid))
         (Action.reportIdeaCommentReply loc iid pcid cid . unReportCommentContent)
         "Die Meldung wurde abgeschickt."

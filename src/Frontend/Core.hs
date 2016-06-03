@@ -25,16 +25,11 @@ module Frontend.Core
     , semanticDiv
     , html
     , FormCS
-    , Beside(..)
     , IsTab
     , tabSelected
     , redirect
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
     , numLikes, percentLikes, numVotes, percentVotes
-
-      -- * render context
-    , RenderContext(RenderContext), _renderContextUser, renderContextUser
-    , renderContext
 
       -- * pages
     , Page(..)
@@ -43,7 +38,7 @@ module Frontend.Core
       -- * forms
     , FormPage
     , FormPagePayload, FormPageResult
-    , formAction, redirectOf, makeForm, formPage, guardPage
+    , formAction, redirectOf, makeForm, formPage
 
     , FormPageRep(..)
     , FormPageHandler, formGetPage, formProcessor, formStatusMessage
@@ -53,7 +48,7 @@ module Frontend.Core
 
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
-    , makeFrame
+    , runHandler
 
       -- * js glue
     , JsCallback, jsReloadOnClick, jsReloadOnClickAnchor, jsRedirectOnClick
@@ -65,6 +60,7 @@ import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_, when)
+import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
 import GHC.TypeLits (Symbol)
@@ -72,7 +68,7 @@ import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
-import Servant.Missing (FormH, getFormDataEnv)
+import Servant.Missing (FormH, getFormDataEnv, throwError500)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
@@ -82,9 +78,10 @@ import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
+import Access
 import Action
 import Config
-import Data.UriPath (UriPath, absoluteUriPath)
+import Data.UriPath (absoluteUriPath)
 import Frontend.Path (HasPath(..))
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
@@ -162,13 +159,6 @@ type FormCS m r s =
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
 
-data Beside a b = Beside a b
-
-instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
-    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
-    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
-
-
 -- This IsTab constraint is here to prevent non-intented
 -- calls to tabSelected.
 tabSelected :: (IsTab a, Eq a) => a -> a -> ST
@@ -180,9 +170,11 @@ class IsTab a
 instance IsTab ListIdeasInTopicTab
 instance IsTab a => IsTab (Maybe a)
 
+err303With :: ConvertibleStrings uri SBS => uri -> ServantErr
+err303With uri = Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
-redirect uri = throwServantErr $
-    Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders Servant.err303 }
+redirect = throwServantErr . err303With
 
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
@@ -221,25 +213,11 @@ percentVotes idea numVoters vv = {- assert c -} v
           else (numVotes idea vv * 100) `div` numVoters
 
 
--- * render context
-
--- | Contains all the information which is needed to render a user role dependent functionality.
-data RenderContext = RenderContext
-      { _renderContextUser     :: User
-      }
-  deriving (Eq, Read, Show)
-
--- | Calculates the render context for role sensitive page rendering
-renderContext :: (ActionPersist m, ActionUserHandler m) => m RenderContext
-renderContext = RenderContext <$> currentUser
-
-
 -- * pages
 
 -- | Defines some properties for pages
 class Page p where
-    isPrivatePage :: proxy p -> Bool
-    isPrivatePage _ = True
+    isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
     extraPageHeaders  :: p -> Html ()
     extraPageHeaders _ = nil
@@ -247,18 +225,12 @@ class Page p where
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
-instance Page () where
-    isPrivatePage _ = False
+instance Page () where isAuthorized = publicPage
 
-instance Page ST where
-    isPrivatePage _ = True -- safer default, might need to be changed if needed
-
-instance (Page a, Page b) => Page (Beside a b) where
-    isPrivatePage _ = isPrivatePage (Proxy :: Proxy a) || isPrivatePage (Proxy :: Proxy b)
-    extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
+instance Page ST where isAuthorized = adminPage
 
 instance Page p => Page (Frame p) where
-    isPrivatePage  _ = isPrivatePage (Proxy :: Proxy p)
+    isAuthorized a = isAuthorized (_frameBody <$> a)
     extraPageHeaders = extraPageHeaders . _frameBody
 
 
@@ -266,7 +238,8 @@ instance Page p => Page (Frame p) where
 newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
 
-instance Page (PageShow a)
+instance Page (PageShow a) where
+    isAuthorized = adminPage
 
 instance (Show bdy) => MimeRender PlainText (PageShow bdy) where
     mimeRender Proxy = cs . ppShow
@@ -312,20 +285,19 @@ class Page p => FormPage p where
     -- Generates a Html snippet from the given @v@ the view, @f@ the form element, and @p@ the page.
     -- The argument @f@ must be used in-place of @DF.form@.
     formPage :: (Monad m, html ~ HtmlT m ()) => View html -> (html -> html) -> p -> html
-    -- | Guard the form, if the 'guardPage' returns an UriPath the page will
-    -- be redirected.
-    -- FIXME: Use P.Main
-    guardPage :: (ActionM m) => p -> m (Maybe UriPath)
-    guardPage _ = pure Nothing
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
-data FormPageRep p = FormPageRep (View (Html ())) ST p
+data FormPageRep p = FormPageRep
+    { _formPageRepView   :: View (Html ())
+    , _formPageRepAction :: ST
+    , _formPageRepPage   :: p
+    }
 
 instance (Show p) => Show (FormPageRep p) where
     show (FormPageRep _v _a p) = show p
 
 instance Page p => Page (FormPageRep p) where
-    isPrivatePage _ = isPrivatePage (Proxy :: Proxy p)
+    isAuthorized = isAuthorized . fmap _formPageRepPage
     extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
 
 instance FormPage p => ToHtml (FormPageRep p) where
@@ -392,18 +364,14 @@ form formHandler = getH :<|> postH
     processor = _formProcessor formHandler
     formMessage = _formStatusMessage formHandler
 
-    guard page = mapM_ (redirect . absoluteUriPath) =<< guardPage page
-
-    getH = makeFrame $ do
+    getH = runHandler $ do
         page <- getPage
-        guard page
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
-    postH formData = makeFrame $ do
+    postH formData = runHandler $ do
         page <- getPage
-        guard page
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
@@ -430,14 +398,35 @@ data Frame body
     | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
-makeFrame :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-          => m p -> m (Frame p)
-makeFrame mp = do
-  isli <- isLoggedIn
-  let isPrivate = isPrivatePage mp -- Here 'm' is used as the 'proxy'.
-  if | not isli && isPrivate -> redirect . absoluteUriPath $ relPath P.Login
-     | isli     || isPrivate -> Frame <$> currentUser <*> mp <*> flushMessages
-     | otherwise             -> PublicFrame <$> mp <*> flushMessages
+-- Run the given handler, check for authorization and finally add the frame around the page.
+runHandler :: forall m p. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+           => m p -> m (Frame p)
+runHandler mp = do
+    isli <- isLoggedIn
+    if isli
+        then do
+            user <- currentUser
+            access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
+            case access0 of
+                AccessGranted -> Frame user <$> mp <*> flushMessages
+                AccessDenied s u -> handleDenied s u
+                AccessDeferred -> do
+                    p <- mp
+                    access1 <- isAuthorized (LoggedIn user (Just p))
+                    case access1 of
+                        AccessGranted -> Frame user p <$> flushMessages
+                        AccessDenied s u -> handleDenied s u
+                        AccessDeferred ->
+                            throwError500 "AccessDeferred should not be used with LoggedIn"
+        else do
+            access <- isAuthorized (NotLoggedIn :: AccessInput p)
+            case access of
+                AccessGranted -> PublicFrame <$> mp <*> flushMessages
+                AccessDenied s u -> handleDenied s u
+                AccessDeferred -> throwError500 "AccessDeferred should not be used with NotLoggedIn"
+  where
+    handleDenied s u = throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
+        -- FIXME log these events as INFO, should we do this here or more globally for servant errors.
 
 
 -- * js glue
@@ -472,7 +461,6 @@ jsRedirectOnClick = onclickJs . JsRedirectOnClick
 
 -- * lenses
 
-makeLenses ''RenderContext
 makeLenses ''FormPageHandler
 makeLenses ''Frame
 

@@ -28,6 +28,7 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.Types as DF
 
+import Access
 import Action
 import Logger.EventLog
 import Persistent.Api
@@ -56,75 +57,75 @@ data PageAdminSettingsDurations =
     PageAdminSettingsDurations Durations
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsDurations
+instance Page PageAdminSettingsDurations where isAuthorized = adminPage
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
     PageAdminSettingsQuorum Quorums
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsQuorum
+instance Page PageAdminSettingsQuorum where isAuthorized = adminPage
 
 -- | Admin settings: Freeze
 data PageAdminSettingsFreeze =
     PageAdminSettingsFreeze Freeze
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsFreeze
+instance Page PageAdminSettingsFreeze where isAuthorized = adminPage
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data AdminViewUsers = AdminViewUsers UsersQuery [UserView]
   deriving (Eq, Show, Read)
 
-instance Page AdminViewUsers
+instance Page AdminViewUsers where isAuthorized = adminPage
 
 data AdminCreateUser = AdminCreateUser [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page AdminCreateUser
+instance Page AdminCreateUser where isAuthorized = adminPage
 
 data AdminEditUser = AdminEditUser User [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page AdminEditUser
+instance Page AdminEditUser where isAuthorized = adminPage
 
 data AdminDeleteUser = AdminDeleteUser User
   deriving (Eq, Show, Read)
 
-instance Page AdminDeleteUser
+instance Page AdminDeleteUser where isAuthorized = adminPage
 
 data AdminViewClasses = AdminViewClasses ClassesFilterQuery [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page AdminViewClasses
+instance Page AdminViewClasses where isAuthorized = adminPage
 
 data AdminCreateClass = AdminCreateClass
   deriving (Eq, Show, Read)
 
-instance Page AdminCreateClass
+instance Page AdminCreateClass where isAuthorized = adminPage
 
 data AdminEditClass = AdminEditClass SchoolClass [UserView]
   deriving (Eq, Show, Read)
 
-instance Page AdminEditClass
+instance Page AdminEditClass where isAuthorized = adminPage
 
 data AdminPhaseChange = AdminPhaseChange
   deriving (Eq, Show, Read)
 
-instance Page AdminPhaseChange
+instance Page AdminPhaseChange where isAuthorized = adminPage
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsEventsProtocol
+instance Page PageAdminSettingsEventsProtocol where isAuthorized = adminPage
 
 data PageAdminResetPassword =
     PageAdminResetPassword User InitialPassword
   deriving (Eq, Show, Read)
 
-instance Page PageAdminResetPassword
+instance Page PageAdminResetPassword where isAuthorized = adminPage
 
 data CreateUserPayload = CreateUserPayload
     { _createUserFirstName :: UserFirstName

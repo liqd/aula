@@ -9,13 +9,13 @@ module Frontend.Fragment.VotesBar
     (IdeaVoteLikeBars(..), IdeaVoteLikeBarsMode(..))
 where
 
+import           Access
 import qualified Frontend.Path as U
 import           Frontend.Prelude
-import           LifeCycle
 import           Persistent.Idiom
 
 
-data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaVoteLikeBarsMode RenderContext IdeaStats
+data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaVoteLikeBarsMode CapCtx IdeaStats
   deriving (Eq, Show, Read)
 
 data IdeaVoteLikeBarsMode = IdeaVoteLikeBarsPlain | IdeaVoteLikeBarsWithButtons
@@ -36,13 +36,7 @@ minBarSegmentWidth = 5
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars mode ctx (IdeaStats idea phase quo voters)) = semanticDiv p $ do
-        let caps = capabilities CapCtx
-                        { capCtxRole    = ctx ^. renderContextUser . userRole
-                        , capCtxPhase   = Just phase
-                        , capCtxUser    = Just $ ctx ^. renderContextUser . _Id
-                        , capCtxIdea    = Just idea
-                        , capCtxComment = Nothing
-                        }
+        let caps = capabilities ctx
                 \\ case mode of
                     IdeaVoteLikeBarsPlain       -> [CanLike, CanVote]
                     IdeaVoteLikeBarsWithButtons -> []
@@ -61,7 +55,7 @@ instance ToHtml IdeaVoteLikeBars where
             likeButtons :: Html ()
             likeButtons = when (CanLike `elem` caps) .
                 div_ [class_ "voting-buttons"] $ do
-                    if userLikesIdea (ctx ^. renderContextUser) idea
+                    if userLikesIdea (ctx ^. capCtxUser) idea
                         then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
                              -- (ideas can not be un-liked)
                         else do
@@ -105,7 +99,7 @@ instance ToHtml IdeaVoteLikeBars where
                         ShowNotVoted      -> voters
                         DoNotShowNotVoted -> numVotes idea Yes + numVotes idea No
 
-            user = ctx ^. renderContextUser
+            user = ctx ^. capCtxUser
 
             voteButtons :: Html ()
             voteButtons = when (isFeasibleIdea idea && CanVote `elem` caps) .

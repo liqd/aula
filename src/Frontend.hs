@@ -173,7 +173,7 @@ type AulaMain =
 
 aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
-       makeFrame Page.viewRooms
+       runHandler Page.viewRooms
   :<|> aulaSpace
 
   :<|> aulaUser
@@ -181,10 +181,10 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> makeFrame Page.viewDelegationNetwork
+  :<|> runHandler Page.viewDelegationNetwork
 
-  :<|> makeFrame (pure PageStaticImprint)
-  :<|> makeFrame (pure PageStaticTermsOfUse)
+  :<|> runHandler (pure PageStaticImprint)
+  :<|> runHandler (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
   :<|> (logout >> (redirect . absoluteUriPath . U.relPath $ U.Login))
@@ -254,7 +254,7 @@ type IdeaApi
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
-    =  makeFrame . Page.viewIdea
+    =  runHandler . Page.viewIdea
   :<|> form . Page.editIdea
   :<|> form . Page.moveIdea
   :<|> Action.likeIdea
@@ -291,7 +291,7 @@ type TopicApi =
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
-    =  makeFrame (Page.viewTopics space)
+    =  runHandler (Page.viewTopics space)
   :<|> ideaApi . IdeaLocationTopic space
 
   :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabAll)
@@ -300,13 +300,13 @@ topicApi space
   :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabVoting)
   :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabAccepted)
   :<|> viewTopicTab (TabIdeas ListIdeasInTopicTabWinning)
-  :<|> makeFrame . Page.viewTopic TabDelegation
+  :<|> runHandler . Page.viewTopic TabDelegation
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
   :<|> error "api not implemented: topic/:topic/delegation/create"
   where
-    viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
+    viewTopicTab tab tid qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
 type AulaSpace
     =  IdeaApi
@@ -317,7 +317,7 @@ type AulaSpace
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi (IdeaLocationSpace space)
-  :<|> app2 (makeFrame . Page.viewIdeas space) mkIdeasQuery
+  :<|> app2 (runHandler . Page.viewIdeas space) mkIdeasQuery
   :<|> topicApi space
 
 type AulaUser =
@@ -328,8 +328,8 @@ type AulaUser =
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
-       makeFrame (Page.createdIdeas    userId)
-  :<|> makeFrame (Page.delegatedVotes  userId)
+       runHandler (Page.createdIdeas    userId)
+  :<|> runHandler (Page.delegatedVotes  userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
 
@@ -364,13 +364,13 @@ aulaAdmin =
        form Page.adminDurations
   :<|> form Page.adminQuorum
   :<|> form Page.adminFreeze
-  :<|> app2 makeFrame Page.adminViewUsers
+  :<|> app2 runHandler Page.adminViewUsers
   :<|> form Page.adminCreateUser
   :<|> form . Page.adminResetPassword
-  :<|> makeFrame . Page.adminViewClasses
+  :<|> runHandler . Page.adminViewClasses
   :<|> form Page.adminCreateClass
   :<|> form . Page.adminEditUser
-  :<|> makeFrame . Page.adminEditClass
+  :<|> runHandler . Page.adminEditClass
   :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv

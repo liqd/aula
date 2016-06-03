@@ -99,6 +99,7 @@ import qualified Data.Set as Set
 import qualified Data.Graph as Graph
 import qualified Data.Tree as Tree
 
+import Access
 import Action
 import Action.Implementation
 import Config
@@ -109,7 +110,6 @@ import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
 import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
-import LifeCycle
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
@@ -163,6 +163,9 @@ instance ( Generic a, Generic b, Generic c
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary CapCtx where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * pages
 
@@ -217,39 +220,40 @@ instance Arbitrary ViewIdea where
     shrink (ViewIdea ctx ideaList) = ViewIdea <$> shr ctx <*> shr ideaList
 
 instance Arbitrary CreateIdea where
-    arbitrary = CreateIdea <$> arb
-    shrink (CreateIdea x) = CreateIdea <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary EditIdea where
-    arbitrary = EditIdea <$> arb
-    shrink (EditIdea x) = EditIdea <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Frontend.Page.MoveIdea where
-    arbitrary = MoveIdea <$> arb <*> (getNonEmpty <$> arb)
-    shrink (MoveIdea x y) = MoveIdea <$> shr x <*> shr y
+    arbitrary = MoveIdea <$> arb <*> arb <*> (getNonEmpty <$> arb)
+    shrink (MoveIdea x y z) = MoveIdea <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary ReportIdea where
-    arbitrary = ReportIdea <$> arb
-    shrink (ReportIdea x) = ReportIdea <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CommentOnIdea where
-    arbitrary = CommentOnIdea <$> arb <*> arb
-    shrink (CommentOnIdea x y) = CommentOnIdea <$> shr x <*> shr y
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary EditComment where
-    arbitrary = EditComment <$> arb <*> arb
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary JudgeIdea where
-    arbitrary = JudgeIdea <$> arb <*> arb <*> arb
-    shrink (JudgeIdea x y z) = JudgeIdea <$> shr x <*> shr y <*> shr z
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary CreatorStatement where
-    arbitrary = CreatorStatement <$> arb
-    shrink (CreatorStatement x) = CreatorStatement <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary ReportComment where
-    arbitrary = ReportComment <$> arb
-    shrink (ReportComment x) = ReportComment <$> shr x
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary PageUserProfileCreatedIdeas where
     arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas)
@@ -276,12 +280,12 @@ instance Arbitrary ReportUserProfile where
     shrink (ReportUserProfile x) = ReportUserProfile <$> shr x
 
 instance Arbitrary CreateTopic where
-    arbitrary = CreateTopic <$> arb <*> arb <*> arbTopicRefPhaseEnd
-    shrink (CreateTopic x y z) = CreateTopic <$> shr x <*> shr y <*> shr z
+    arbitrary = CreateTopic <$> arb <*> arb <*> arb <*> arbTopicRefPhaseEnd
+    shrink (CreateTopic x y z t) = CreateTopic <$> shr x <*> shr y <*> shr z <*> shr t
 
 instance Arbitrary EditTopic where
-    arbitrary = EditTopic <$> arb <*> arb <*> arb <*> arb
-    shrink (EditTopic x y z w) = EditTopic <$> shr x <*> shr y <*> shr z <*> shr w
+    arbitrary = EditTopic <$> arb <*> arb <*> arb <*> arb <*> arb
+    shrink (EditTopic x y z s t) = EditTopic <$> shr x <*> shr y <*> shr z <*> shr s <*> shr t
 
 instance Arbitrary EditTopicData where
     arbitrary = EditTopicData <$> arbPhrase <*> arb <*> arb
@@ -569,7 +573,7 @@ instance Arbitrary IdeaLocation where
 -- * user
 
 instance Arbitrary User where
-    arbitrary = garbitrary <**> (set userRole <$> garbitrary)
+    arbitrary = garbitrary
     shrink    = gshrink
 
 instance Arbitrary UserView where
@@ -661,10 +665,6 @@ instance Arbitrary UserSettingData where
         <*> arbMaybe arbPhrase
     shrink (UserSettingData x y z w)
         = UserSettingData <$> shr x <*> shr y <*> shr z <*> shr w
-
-instance Arbitrary RenderContext where
-    arbitrary = RenderContext <$> arbitrary
-    shrink (RenderContext x) = RenderContext <$> shr x
 
 
 -- * admin
@@ -870,10 +870,6 @@ instance Arbitrary a => Arbitrary (Frame a) where
     arbitrary = oneof [ Frame <$> arb <*> arb <*> arb, PublicFrame <$> arb <*> arb ]
     shrink (Frame x y z) = Frame <$> shr x <*> shr y <*> shr z
     shrink (PublicFrame x y) = PublicFrame <$> shr x <*> shr y
-
-instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
-    arbitrary = Beside <$> arb <*> arb
-    shrink (Beside x y) = Beside <$> shr x <*> shr y
 
 
 -- * general-purpose helpers
@@ -1216,10 +1212,7 @@ instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
          , Generic u, Generic t, Generic i, Generic c
          )
         => Arbitrary (EventLogItemValue u t i c) where
-    arbitrary = garbitrary >>= repair
-      where
-        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arb <*> pure u
-        repair v = pure v
+    arbitrary = garbitrary
     shrink    = gshrink
 
 {-# NOINLINE sampleEventLog #-}

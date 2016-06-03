@@ -86,6 +86,17 @@ module Action
       -- * admin
     , resetPassword
 
+      -- * capabilities
+    , currentUserCapCtx
+    , spaceCapCtx
+    , locationCapCtx
+    , locationCapCtx'
+    , topicCapCtx
+    , ideaCapCtx
+    , ideaCapCtx'
+    , commentCapCtx
+    , commentCapCtx'
+
       -- * extras
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
@@ -142,6 +153,7 @@ import Action.Smtp
 import Config (Config, GetConfig(..), exposedUrl)
 import Data.UriPath (absoluteUriPath)
 import Frontend.Path (relPath)
+import Access
 import LifeCycle
 import Logger
 import Logger.EventLog
@@ -918,3 +930,74 @@ instance ActionM m => WarmUp' m Idea where
 
 instance ActionM m => WarmUp' m Comment where
     warmUp' k = mquery (findComment k)
+
+currentUserCapCtx :: (ActionPersist m, ActionUserHandler m) => m CapCtx
+currentUserCapCtx = do
+    user <- currentUser
+    pure CapCtx
+        { _capCtxUser    = user
+        , _capCtxSpace   = Nothing
+        , _capCtxPhase   = Nothing
+        , _capCtxIdea    = Nothing
+        , _capCtxComment = Nothing
+        }
+
+spaceCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => IdeaSpace -> m CapCtx
+spaceCapCtx space = do
+    userCtx <- currentUserCapCtx
+    pure $ userCtx & capCtxSpace ?~ space
+
+locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+               => IdeaLocation -> m CapCtx
+locationCapCtx loc = view _1 <$> locationCapCtx' loc
+
+locationCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
+                => IdeaLocation -> m (CapCtx, Maybe Topic, Phase)
+locationCapCtx' loc = do
+    (mtopic, phase) <-
+        case loc ^? ideaLocationTopicId of
+            Just tid -> do
+                topic <- mquery $ findTopic tid
+                pure (Just topic, topic ^. topicPhase)
+            Nothing  -> do
+                phase <- equery currentPhaseWildIdea
+                pure (Nothing, phase)
+    spaceCtx <- spaceCapCtx $ loc ^. ideaLocationSpace
+    let ctx = spaceCtx & capCtxPhase ?~ phase
+    pure (ctx, mtopic, phase)
+
+topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => AUID Topic -> m (CapCtx, Topic)
+topicCapCtx topicId = do
+    userCtx <- currentUserCapCtx
+    topic <- mquery $ findTopic topicId
+    let ctx = userCtx & capCtxSpace ?~ (topic ^. topicIdeaSpace)
+                      & capCtxPhase ?~ (topic ^. topicPhase)
+    pure (ctx, topic)
+
+ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+           => AUID Idea -> m (CapCtx, Idea)
+ideaCapCtx iid = do
+    (ctx, _, _, idea) <- ideaCapCtx' iid
+    pure (ctx, idea)
+
+ideaCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
+            => AUID Idea -> m (CapCtx, Maybe Topic, Phase, Idea)
+ideaCapCtx' iid = do
+    idea <- mquery $ findIdea iid
+    (ctx, mtopic, phase) <- locationCapCtx' $ idea ^. ideaLocation
+    pure (ctx & capCtxIdea ?~ idea, mtopic, phase, idea)
+
+commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+              => CommentKey -> m (CapCtx, Comment)
+commentCapCtx ck = do
+    (ctx, _, _, _, c) <- commentCapCtx' ck
+    pure (ctx, c)
+
+commentCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
+               => CommentKey -> m (CapCtx, Maybe Topic, Phase, Idea, Comment)
+commentCapCtx' ck = do
+    (ctx, mtopic, phase, idea) <- ideaCapCtx' $ ck ^. ckIdeaId
+    comment <- mquery $ findComment ck
+    pure (ctx & capCtxComment ?~ comment, mtopic, phase, idea, comment)
