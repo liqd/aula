@@ -174,7 +174,7 @@ instance SOP.Generic JudgeIdea
 makeLenses ''JudgeIdea
 
 instance Page JudgeIdea where
-    isAuthorized = authNeedCaps [CanMarkFeasiblity] jiCtx
+    isAuthorized = authNeedCaps [CanJudge] jiCtx
 
 data CreatorStatement = CreatorStatement { _csCtx :: CapCtx, _csIdea :: Idea }
   deriving (Eq, Show, Read, Generic)
@@ -375,7 +375,7 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
             p_ "Begründung:"
             p_ $ toHtml md
 
-    when (renderJuryButtons && CanMarkFeasiblity `elem` caps) $ do
+    when (renderJuryButtons && CanJudge `elem` caps) $ do
         div_ [class_ "admin-buttons"] $ do
             button_ [ class_ "btn-cta m-valid"
                     , onclick_ $ U.judgeIdea idea IdeaFeasible

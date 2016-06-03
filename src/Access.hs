@@ -77,7 +77,7 @@ data Capability
     | CanDelegate
     | CanComment
     | CanVoteComment
-    | CanMarkFeasiblity  -- also can add jury statement
+    | CanJudge  -- also can add jury statement
     | CanMarkWinner
     | CanAddCreatorStatement
     | CanEditCreatorStatement
@@ -162,7 +162,7 @@ editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
 
 allowedDuringFreeze :: [Capability]
 allowedDuringFreeze = [ CanComment
-                      , CanMarkFeasiblity
+                      , CanJudge
                       , CanAddCreatorStatement
                       , CanMarkWinner
                       ]
@@ -203,7 +203,7 @@ phaseJuryCap _i = \case
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> []
-    Principal        -> [CanMarkFeasiblity]
+    Principal        -> [CanJudge]
     Admin            -> thereIsAGod []
 
 phaseVotingCap :: Idea -> Role -> [Capability]
