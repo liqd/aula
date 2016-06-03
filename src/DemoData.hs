@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
+import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, view, _Just)
 import Control.Monad (zipWithM_, replicateM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
@@ -172,14 +172,21 @@ setEmailFromConfig puser = do
 
 -- * Universe
 
-mkUniverse :: (GenArbitrary m, ActionM m) => m ()
+mkUniverse :: (GenArbitrary m, ActionM m) => m Universe
 mkUniverse = do
     rnd <- mkQCGen <$> genGen arbitrary
     universe rnd
 
+data Universe = Universe {
+      unStudents   :: [AUID User]
+    , unTopics     :: [AUID Topic]
+    , unIdeas      :: [AUID Idea]
+    , unIdeaSpaces :: [IdeaSpace]
+    }
+
 -- | This type change will generate a lot of transactions.  (Maybe we can find a better trade-off
 -- for transaction granularity here that speeds things up considerably.)
-universe :: QCGen -> forall m . ActionM m => m ()
+universe :: QCGen -> forall m . ActionM m => m Universe
 universe rnd = do
     now <- getCurrentTimestamp
     admin <- addFirstUserWithEmailFromConfig =<< gen rnd genFirstUser
@@ -212,7 +219,11 @@ universe rnd = do
 
     sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
 
-    pure ()
+    pure $ Universe
+            (view _Id <$> students)
+            (view _Id <$> topics)
+            (view _Id <$> ideas)
+            ideaSpaces
 
 assert' :: Monad m => Bool -> m ()
 assert' p = assert p $ return ()

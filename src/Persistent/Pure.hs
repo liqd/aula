@@ -39,6 +39,7 @@ module Persistent.Pure
     , runPersistExcept
     , HasAUpdate
     , liftAQuery
+    , dbSnapshot
 
     , addDb
     , addDb'
@@ -199,6 +200,9 @@ dbUsers = dbUserMap . to Map.elems
 
 dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
+
+dbSnapshot :: AulaGetter AulaData
+dbSnapshot = to id
 
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0

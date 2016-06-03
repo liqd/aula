@@ -14,6 +14,7 @@
 module Persistent.Implementation.AcidState
     ( mkRunPersistOnDisk
     , mkRunPersistInMemory
+    , mkRunPersistInMemoryWithState
     , AcidState
     )
 where
@@ -41,6 +42,20 @@ mkRunPersistGeneric :: String
                     -> IO RunPersist
 mkRunPersistGeneric desc openState closeState = do
     (st, h) <- openState emptyAulaData
+    pure RunPersist { _rpDesc   = desc
+                    , _rpQuery  = query st AskDb
+                    , _rpUpdate = update st
+                    , _rpClose  = closeState st h
+                    }
+
+mkRunPersistGenericWithState
+                    :: String
+                    -> (AulaData -> IO (AcidState AulaData, a))
+                    -> (AcidState AulaData -> a -> IO ())
+                    -> AulaData
+                    -> IO RunPersist
+mkRunPersistGenericWithState desc openState closeState initialState = do
+    (st, h) <- openState initialState
     pure RunPersist { _rpDesc   = desc
                     , _rpQuery  = query st AskDb
                     , _rpUpdate = update st
@@ -76,3 +91,10 @@ mkRunPersistInMemory =
     mkRunPersistGeneric "acid-state (memory)"
         (fmap (, ()) . openMemoryState)
         (\st () -> closeAcidState st)
+
+mkRunPersistInMemoryWithState :: AulaData -> IO RunPersist
+mkRunPersistInMemoryWithState state =
+    mkRunPersistGenericWithState "acid-state (memory)"
+        (fmap (, ()) . openMemoryState)
+        (\st () -> closeAcidState st)
+        state
