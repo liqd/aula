@@ -243,8 +243,8 @@ scopeHiearchy = \case
     t@(DlgCtxTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
         (t:) <$> scopeHiearchy (DlgCtxIdeaSpace space)
-    (DlgCtxIdeaId iid)     -> do
+    i@(DlgCtxIdeaId iid)     -> do
         loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
-        scopeHiearchy $ case loc of
+        (i:) <$> scopeHiearchy (case loc of
             IdeaLocationSpace s    -> DlgCtxIdeaSpace s
-            IdeaLocationTopic _s t -> DlgCtxTopicId   t
+            IdeaLocationTopic _s t -> DlgCtxTopicId   t)

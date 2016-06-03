@@ -522,11 +522,12 @@ voteOnIdea ideaId voteVal = do
     voteFor toUser = do
         addWithCurrentUser_ (AddVoteToIdea ideaId toUser) voteVal
 
-delegateTo :: ActionM m => User -> DelegationContext -> User -> m ()
-delegateTo f ctx t = do
-    delegations <- filter ((f ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByContext ctx)
+delegateTo :: ActionM m => DelegationContext -> AUID User -> m ()
+delegateTo ctx t = do
+    user <- currentUser
+    delegations <- filter ((user ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByContext ctx)
     forM_ delegations (update . DeleteDelegation . view _Id)
-    addWithCurrentUser_ AddDelegation (ProtoDelegation ctx (f ^. _Id) (t ^. _Id))
+    addWithCurrentUser_ AddDelegation (ProtoDelegation ctx (user ^. _Id) t)
 
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
