@@ -158,8 +158,8 @@ instance CSV.ToRecord (WithURL EventLogItemWarm) where
                     Down -> "gegen"
             what = objDesc (Right3 $ fromMaybe comment mcomment)
 
-        f (EventLogUserDelegates ctxDesc toUser) = CSV.toRecord
-            [ "delegiert in " <> show ctxDesc <> " an " <> toUser ^. userLogin . _UserLogin . csi
+        f (EventLogUserDelegates ctxDesc delegatee) = CSV.toRecord
+            [ "delegiert in " <> show ctxDesc <> " an " <> delegatee ^. userLogin . _UserLogin . csi
             , "(kein Link verfügbar)"
             -- FIXME: there should be a link, and 'show ctxDesc' needs to be polished.
             ]

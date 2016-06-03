@@ -843,15 +843,15 @@ eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
 eventLogUserDelegates ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
       => DelegationContext -> User -> m ()
-eventLogUserDelegates ctx toUser = do
-    fromUser <- currentUser
+eventLogUserDelegates ctx delegatee = do
+    delegate <- currentUser
     ispace <- case ctx of
-        DlgCtxGlobal           -> pure . ClassSpace $ fromUser ^?! userRole . roleSchoolClass
+        DlgCtxGlobal           -> pure . ClassSpace $ delegate ^?! userRole . roleSchoolClass
         DlgCtxIdeaSpace ispace -> pure ispace
         DlgCtxTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
                                   <$> mquery (findIdea iid)
-    eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
+    eventLog ispace (delegate ^. _Key) $ EventLogUserDelegates ctx (delegatee ^. _Key)
 
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
