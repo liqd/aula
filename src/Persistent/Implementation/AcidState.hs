@@ -93,8 +93,7 @@ mkRunPersistInMemory =
         (\st () -> closeAcidState st)
 
 mkRunPersistInMemoryWithState :: AulaData -> IO RunPersist
-mkRunPersistInMemoryWithState state =
+mkRunPersistInMemoryWithState =
     mkRunPersistGenericWithState "acid-state (memory)"
         (fmap (, ()) . openMemoryState)
         (\st () -> closeAcidState st)
-        state

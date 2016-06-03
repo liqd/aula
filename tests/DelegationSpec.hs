@@ -30,8 +30,8 @@ spec :: Spec
 spec = {- tag Large . -} do
     runner   <- runIO createActionRunner
     persist  <- runIO Persistent.mkRunPersistInMemory
-    uni      <- runIO $ (unNat (runner persist)) mkUniverse
-    snapshot <- runIO $ (unNat (runner persist)) getDBSnapShot
+    uni      <- runIO $ unNat (runner persist) mkUniverse
+    snapshot <- runIO $ unNat (runner persist) getDBSnapShot
     let programGen = delegationProgram
                         (QC.elements $ unStudents uni)
                         (QC.elements $ unIdeas    uni)
@@ -39,16 +39,16 @@ spec = {- tag Large . -} do
     describe "Delegation simulation" $ do
         it "One delegation, one vote" $ do
                 persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
-                (unNat (runner persist')) . interpretDelegationProgram $ DelegationProgram
+                unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
                     [ SetDelegation (unStudents uni !! 1)
                                     (DlgCtxIdeaId (unIdeas uni !! 1))
                                     (unStudents uni !! 2)
                     , Vote (unStudents uni !! 2) (unIdeas uni !! 1) Yes
                     ]
-        it "Random delegation programs" $ property $ forAllShrinkDef programGen $ \prg -> do
+        it "Random delegation programs" . property . forAllShrinkDef programGen $ \prg -> do
             monadicIO $ do
                 persist' <- run $ Persistent.mkRunPersistInMemoryWithState snapshot
-                run . (unNat (runner persist')) $ interpretDelegationProgram prg
+                run . unNat (runner persist') $ interpretDelegationProgram prg
   where
     getDBSnapShot :: Action.Action Persistent.AulaData
     getDBSnapShot = query (view Persistent.dbSnapshot)
@@ -84,8 +84,8 @@ instance Show DelegationProgram where
 
 delegationStepGen :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DelegationContext -> Gen DelegationDSL
 delegationStepGen voters ideas topics = frequency
-    [ (9, (do v <- voters
-              SetDelegation v <$> topics <*> voters `suchThat` (/=v)))
+    [ (9, do v <- voters
+             SetDelegation v <$> topics <*> voters `suchThat` (/=v))
     , (3, Vote          <$> voters <*> ideas <*> arbitrary)
     ]
 
@@ -97,7 +97,7 @@ instance Arbitrary DelegationDSL where
 
 delegationProgram :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DelegationContext -> Gen DelegationProgram
 delegationProgram voters ideas topics =
-    DelegationProgram <$> (listOf1 $ delegationStepGen voters ideas topics)
+    DelegationProgram <$> listOf1 (delegationStepGen voters ideas topics)
 
 instance Arbitrary DelegationProgram where
     arbitrary = delegationProgram arb arb arb
@@ -109,9 +109,9 @@ getSupporters uid ctx = equery $ do
 
 getVote :: ActionM m => AUID User -> AUID Idea -> m (Maybe (AUID User, IdeaVoteValue))
 getVote uid iid = equery $ do
-    (user, idea) <- ((,) <$> (maybe404 =<< Persistent.findUser uid)
-                         <*> (maybe404 =<< Persistent.findIdea iid))
-    (first (view _Id)) <$$> Persistent.getVote user idea
+    (user, idea) <- (,) <$> (maybe404 =<< Persistent.findUser uid)
+                        <*> (maybe404 =<< Persistent.findIdea iid)
+    first (view _Id) <$$> Persistent.getVote user idea
 
 interpretDelegationProgram :: ActionM m => DelegationProgram -> m ()
 interpretDelegationProgram =
@@ -124,10 +124,10 @@ interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
     Action.delegateTo tp t
     supporters' <- getSupporters t tp
     Action.logout
-    let r = case elem f supporters of
-                    True  -> supporters == supporters'
-                    False -> (elem f supporters') && (length supporters' == 1 + (length supporters))
-    unless r . fail $ show (i, step, elem f supporters, show f, supporters, supporters')
+    let r = if f `elem` supporters
+                then supporters == supporters'
+                else f `elem` supporters' && (length supporters' == 1 + length supporters)
+    unless r . fail $ show (i, step, f `elem` supporters, show f, supporters, supporters')
 interpretDelegationStep (j,step@(Vote v i x)) = do
     Action.login v
     supporters <- (v:) <$> getSupporters v (DlgCtxIdeaId i)
