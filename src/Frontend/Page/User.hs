@@ -41,7 +41,12 @@ data PageUserSettings = PageUserSettings User
 
 instance Page PageUserSettings where
     -- The use settings page always goes to the profile of the current logged in user.
-    isAuthorized = userPage
+    -- However we do not want to rely on that so we check that the current user is the
+    -- same as the edited user.
+    isAuthorized = authNeedPage $ \cUser (PageUserSettings u) ->
+        if cUser ^. _Id == u ^. _Id
+            then accessGranted
+            else accessDenied "You can only edit your own settings"
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
