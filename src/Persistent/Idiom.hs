@@ -206,24 +206,24 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 -- * voting
 
 delegateesOf :: User -> DelegationContext -> EQuery [User]
-delegateesOf u ctx = do
+delegateesOf v ctx = do
     hiearchy <- scopeHiearchy ctx
-    vs <- voters hiearchy uid
+    vs <- voters hiearchy vid
     catMaybes <$> forM vs findUser
   where
-    uid = u ^. _Id
-    voters (path :: [DelegationContext]) (u' :: AUID User) = do
+    vid = v ^. _Id
+    voters (path :: [DelegationContext]) (w :: AUID User) = do
         -- ASSUMPTION: Only one delegate per topic
         let supporter x = do
                 delegations <- filter ((x ==) . view delegationFrom) <$> allDelegations
                 pure $ case mapMaybe (\t -> find ((t ==) . view delegationContext) delegations) path of
                     []    -> False
-                    d : _ -> (d ^. delegationTo) == uid
+                    d : _ -> (d ^. delegationTo) == vid
 
-        ds  <- map (view delegationFrom) <$> scopeDelegatees u' ctx
+        ds  <- map (view delegationFrom) <$> scopeDelegatees w ctx
         sps <- filterM supporter ds
         vts <- mconcat <$> forM sps (voters path)
-        pure (u':vts)
+        pure (w:vts)
 
 scopeDelegatees :: AUID User -> DelegationContext -> Query [Delegation]
 scopeDelegatees uid ctx =
