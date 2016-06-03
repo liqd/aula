@@ -948,6 +948,10 @@ spaceCapCtx space = do
     userCtx <- currentUserCapCtx
     pure $ userCtx & capCtxSpace ?~ space
 
+locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+               => IdeaLocation -> m CapCtx
+locationCapCtx loc = view _1 <$> locationCapCtx' loc
+
 locationCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
                 => IdeaLocation -> m (CapCtx, Maybe Topic, Phase)
 locationCapCtx' loc = do
@@ -963,10 +967,6 @@ locationCapCtx' loc = do
     let ctx = spaceCtx & capCtxPhase ?~ phase
     pure (ctx, mtopic, phase)
 
-locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
-               => IdeaLocation -> m CapCtx
-locationCapCtx loc = view _1 <$> locationCapCtx' loc
-
 topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
             => AUID Topic -> m (CapCtx, Topic)
 topicCapCtx topicId = do
@@ -976,6 +976,12 @@ topicCapCtx topicId = do
                       & capCtxPhase ?~ (topic ^. topicPhase)
     pure (ctx, topic)
 
+ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+           => AUID Idea -> m (CapCtx, Idea)
+ideaCapCtx iid = do
+    (ctx, _, _, idea) <- ideaCapCtx' iid
+    pure (ctx, idea)
+
 ideaCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
             => AUID Idea -> m (CapCtx, Maybe Topic, Phase, Idea)
 ideaCapCtx' iid = do
@@ -983,11 +989,11 @@ ideaCapCtx' iid = do
     (ctx, mtopic, phase) <- locationCapCtx' $ idea ^. ideaLocation
     pure (ctx & capCtxIdea ?~ idea, mtopic, phase, idea)
 
-ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
-           => AUID Idea -> m (CapCtx, Idea)
-ideaCapCtx iid = do
-    (ctx, _, _, idea) <- ideaCapCtx' iid
-    pure (ctx, idea)
+commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+              => CommentKey -> m (CapCtx, Comment)
+commentCapCtx ck = do
+    (ctx, _, _, _, c) <- commentCapCtx' ck
+    pure (ctx, c)
 
 commentCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
                => CommentKey -> m (CapCtx, Maybe Topic, Phase, Idea, Comment)
@@ -995,9 +1001,3 @@ commentCapCtx' ck = do
     (ctx, mtopic, phase, idea) <- ideaCapCtx' $ ck ^. ckIdeaId
     comment <- mquery $ findComment ck
     pure (ctx & capCtxComment ?~ comment, mtopic, phase, idea, comment)
-
-commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
-              => CommentKey -> m (CapCtx, Comment)
-commentCapCtx ck = do
-    (ctx, _, _, _, c) <- commentCapCtx' ck
-    pure (ctx, c)
