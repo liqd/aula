@@ -63,7 +63,7 @@ module Frontend.Core
 
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
-    , makeFrame
+    , runHandler
 
       -- * js glue
     , JsCallback, jsReloadOnClick, jsReloadOnClickAnchor, jsRedirectOnClick
@@ -478,13 +478,13 @@ form formHandler = getH :<|> postH
     processor = _formProcessor formHandler
     formMessage = _formStatusMessage formHandler
 
-    getH = makeFrame $ do
+    getH = runHandler $ do
         page <- getPage
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
-    postH formData = makeFrame $ do
+    postH formData = runHandler $ do
         page <- getPage
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
@@ -512,10 +512,10 @@ data Frame body
     | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
--- TODO rename me
-makeFrame :: forall m p. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-          => m p -> m (Frame p)
-makeFrame mp = do
+-- Run the given handler, check for authorization and finally add the frame around the page.
+runHandler :: forall m p. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+           => m p -> m (Frame p)
+runHandler mp = do
     isli <- isLoggedIn
     if isli
         then do
