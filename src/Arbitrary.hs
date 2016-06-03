@@ -865,10 +865,6 @@ instance Arbitrary a => Arbitrary (Frame a) where
     shrink (Frame x y z) = Frame <$> shr x <*> shr y <*> shr z
     shrink (PublicFrame x y) = PublicFrame <$> shr x <*> shr y
 
-instance (Arbitrary a, Arbitrary b) => Arbitrary (Beside a b) where
-    arbitrary = Beside <$> arb <*> arb
-    shrink (Beside x y) = Beside <$> shr x <*> shr y
-
 
 -- * general-purpose helpers
 

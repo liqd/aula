@@ -25,7 +25,6 @@ module Frontend.Core
     , semanticDiv
     , html
     , FormCS
-    , Beside(..)
     , IsTab
     , tabSelected
     , redirect
@@ -61,7 +60,6 @@ import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_, when)
-import Control.Applicative (liftA2)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
@@ -161,13 +159,6 @@ type FormCS m r s =
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
 
-data Beside a b = Beside a b
-
-instance (ToHtml a, ToHtml b) => ToHtml (Beside a b) where
-    toHtmlRaw (x `Beside` y) = toHtmlRaw x <> toHtmlRaw y
-    toHtml    (x `Beside` y) = toHtml    x <> toHtml    y
-
-
 -- This IsTab constraint is here to prevent non-intented
 -- calls to tabSelected.
 tabSelected :: (IsTab a, Eq a) => a -> a -> ST
@@ -237,18 +228,6 @@ class Page p where
 instance Page () where isAuthorized = publicPage
 
 instance Page ST where isAuthorized = adminPage
-
-instance (Page a, Page b) => Page (Beside a b) where
-    isAuthorized = \case
-        NotLoggedIn ->
-            isAuthorized (NotLoggedIn :: AccessInput a) <<>> isAuthorized (NotLoggedIn :: AccessInput b)
-        LoggedIn u Nothing ->
-            isAuthorized (LoggedIn u Nothing :: AccessInput a) <<>> isAuthorized (LoggedIn u Nothing :: AccessInput b)
-        LoggedIn u (Just (a `Beside` b)) ->
-            isAuthorized (LoggedIn u (Just a)) <<>> isAuthorized (LoggedIn u (Just b))
-      where
-        (<<>>) = liftA2 (<>)
-    extraPageHeaders (Beside a b) = extraPageHeaders a <> extraPageHeaders b
 
 instance Page p => Page (Frame p) where
     isAuthorized a = isAuthorized (_frameBody <$> a)
