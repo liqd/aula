@@ -510,17 +510,18 @@ likeIdea ideaId = do
           pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
-voteOnIdea :: AUID Idea -> Create_ IdeaVote
+voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
     voter <- currentUser
     let topic = DlgCtxIdeaId ideaId
-    voteFor voter
-    equery (delegateesOf voter topic) >>= mapM_ voteFor
+    voteFor voter voter
+    equery (delegateesOf voter topic) >>= mapM_ (voteFor voter)
     (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
   where
-    voteFor :: ActionM m => User -> m ()
-    voteFor toUser = do
-        addWithCurrentUser_ (AddVoteToIdea ideaId toUser) voteVal
+    voteFor :: ActionM m => User -> User -> m ()
+    voteFor voter delegatee = do
+        addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
+                            (ProtoIdeaVote voteVal (voter ^. _Id))
 
 delegateTo :: ActionM m => DelegationContext -> AUID User -> m ()
 delegateTo ctx t = do

@@ -111,9 +111,7 @@ getSupporters uid ctx = equery $ do
 
 getVote :: ActionM m => AUID User -> AUID Idea -> m (Maybe (AUID User, IdeaVoteValue))
 getVote uid iid = equery $ do
-    (user, idea) <- (,) <$> (maybe404 =<< Persistent.findUser uid)
-                        <*> (maybe404 =<< Persistent.findIdea iid)
-    first (view _Id) <$$> Persistent.getVote user idea
+    first (view _Id) <$$> Persistent.getVote uid iid
 
 interpretDelegationProgram :: ActionM m => DelegationProgram -> m ()
 interpretDelegationProgram =

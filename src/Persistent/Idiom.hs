@@ -231,10 +231,15 @@ scopeDelegatees uid ctx =
                  <*> ((ctx ==) . view delegationContext))
     <$> allDelegations
 
--- TODO: Save who voted, and read that back
-getVote :: User -> Idea -> Query (Maybe (User, IdeaVoteValue))
-getVote user idea =
-    pure ((,) user <$> (idea ^? ideaVotes . at (user ^. _Id) . _Just . ideaVoteValue))
+getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
+getVote uid iid = do
+    idea  <- maybe404 =<< findIdea iid
+    let mVoteValue = idea ^? ideaVotes . at uid . _Just
+    case mVoteValue of
+        Nothing -> pure Nothing
+        Just vv -> do
+            voter <- maybe404 =<< findUser (vv ^. ideaVoteVoter)
+            pure $ Just (voter, vv ^. ideaVoteValue)
 
 scopeHiearchy :: DelegationContext -> EQuery [DelegationContext]
 scopeHiearchy = \case

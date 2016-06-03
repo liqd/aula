@@ -402,6 +402,10 @@ instance Arbitrary IdeaVoteValue where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary ProtoIdeaVote where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary IdeaJuryResult where
     arbitrary = garbitrary
     shrink    = gshrink
