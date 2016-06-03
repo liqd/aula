@@ -144,7 +144,7 @@ instance SOP.Generic ReportIdea
 makeLenses ''ReportIdea
 
 instance Page ReportIdea where
-    -- You can report as soon as you can view the idea.
+    -- You can report iff you can view the idea.
     isAuthorized = authNeedCaps [CanView] riCtx
 
 -- | X. Comment idea
@@ -194,7 +194,7 @@ instance SOP.Generic ReportComment
 makeLenses ''ReportComment
 
 instance Page ReportComment where
-    -- You can report as soon as you can view the comment/idea.
+    -- You can report iff you can view the comment/idea.
     isAuthorized = authNeedCaps [CanView] rcCtx
 
 -- We could track wether or not the comment is a reply, but this information is not used yet.

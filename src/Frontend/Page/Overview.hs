@@ -104,7 +104,9 @@ instance ToHtml PageOverviewOfWildIdeas where
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 instance Page PageOverviewOfWildIdeas where
-    -- Any logged in user is authorized since findWildIdeasBySpace is already selecting the right view
+    -- Any logged in user is authorized since findWildIdeasBySpace is already selecting the right
+    -- view.  FIXME: does this mean that we can visit enemy idea spaces, only we can't see any ideas
+    -- in them?
     isAuthorized = userPage
     extraBodyClasses _ = ["m-shadow"]
 
@@ -147,7 +149,9 @@ instance ToHtml PageOverviewOfTopics where
                                     "view topic"
 
 instance Page PageOverviewOfTopics where
-    -- Any logged in user is authorized since findTopicsBySpace is already selecting the right view
+    -- Any logged in user is authorized since findTopicsBySpace is already selecting the right view.
+    -- FIXME: does this mean that we can visit enemy idea spaces, only we can't see any ideas in
+    -- them?
     isAuthorized = userPage
 
 instance ToHtml Tabs where
