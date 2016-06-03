@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE Rank2Types          #-}
 
+{-# OPTIONS_GHC -Werror -Wall    #-}
 
 module DelegationSpec
 where
@@ -25,6 +26,7 @@ import Control.Category ((.))
 import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, suchThat, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)
 import qualified Test.QuickCheck as QC (elements)
+
 
 spec :: Spec
 spec = {- tag Large . -} do
@@ -132,7 +134,6 @@ interpretDelegationStep (j,step@(Vote v i x)) = do
     Action.login v
     supporters <- (v:) <$> getSupporters v (DlgCtxIdeaId i)
     Action.voteOnIdea i x
-    idea <- Action.mquery (Persistent.findIdea i)
     votes <- forM supporters $ \s -> getVote s i
     let rightVotes = all (Just (v, x) ==) votes
     Action.logout
