@@ -176,7 +176,7 @@ data AulaData = AulaData
     , _dbIdeaMap             :: Ideas
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
-    , _dbDelegationMap       :: Delegations
+    , _dbDelegationMap       :: Delegations -- FIXME: Speed up searching for delegatees, delegate, context
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }

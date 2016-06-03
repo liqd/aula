@@ -510,6 +510,7 @@ likeIdea ideaId = do
           pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
+-- TODO: The delegatees who already voted for themselves do not the the voting.
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
     voter <- currentUser
