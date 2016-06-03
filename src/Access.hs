@@ -100,8 +100,10 @@ data Capability
 
 instance SOP.Generic Capability
 
--- TODO: the current context does not provide with the IdeaSpace, which seems
--- required to restrict students to their class.
+-- TODO: the current context does not provide with the IdeaSpace, which seems required to restrict
+-- students to their class.  To reproduce: login as admin; remember two classes; login as student;
+-- enter the only class; change url to the other class.  you should get redirected with an "access
+-- denied" message but in fact you get access to that page.
 data CapCtx = CapCtx
     { _capCtxUser    :: User
     , _capCtxSpace   :: Maybe IdeaSpace
