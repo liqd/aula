@@ -63,7 +63,7 @@ data EditUserProfile = EditUserProfile CapCtx User
 
 instance Page EditUserProfile where
     -- Can the admin edit any profile through that endpoint?
-    isAuthorized = authNeedPage $ \(EditUserProfile ctx u) ->
+    isAuthorized = authNeedPage $ \_ (EditUserProfile ctx u) ->
         if isOwnProfile ctx u
             then accessGranted
             else accessDenied "You can only edit your own profile"
@@ -76,6 +76,7 @@ instance Page ReportUserProfile where
     -- If you can view the profile of a user then you can report on it.
     -- Any user who is logged in can view the profile of any other user.
     isAuthorized = userPage
+
 
 -- * templates
 

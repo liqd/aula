@@ -303,14 +303,14 @@ publicPage _ = accessGranted
 adminPage :: Applicative m => AccessInput any -> m AccessResult
 adminPage = pageForRole Admin
 
-authNeedPage :: Applicative m => (p -> m AccessResult) -> AccessInput p -> m AccessResult
-authNeedPage withPage = \case
+authNeedPage :: Applicative m => (User -> p -> m AccessResult) -> AccessInput p -> m AccessResult
+authNeedPage k = \case
     NotLoggedIn         -> redirectLogin
     LoggedIn _ Nothing  -> accessDeferred
-    LoggedIn _ (Just p) -> withPage p
+    LoggedIn u (Just p) -> k u p
 
 authNeedCaps :: [Capability] -> Getter p CapCtx -> Applicative m => AccessInput p -> m AccessResult
-authNeedCaps needCaps' getCapCtx = authNeedPage $ \p ->
+authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
     let
         capCtx   = p ^. getCapCtx
         needCaps = Set.fromList needCaps'
