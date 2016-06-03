@@ -197,7 +197,7 @@ userHeaderDiv ctx (ActiveUser user) =
                 editProfileBtn
             else do
                 let caps = capabilities ctx
-                when (CanVote `elem` caps) $ do
+                when (CanDelegate `elem` caps) $ do
                     btn U.Broken "Klassenweit beauftragen"
                     btn U.Broken "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"

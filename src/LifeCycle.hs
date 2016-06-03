@@ -99,6 +99,7 @@ data Capability
     = CanView
     | CanLike
     | CanVote
+    | CanDelegate
     | CanComment
     | CanVoteComment
     | CanMarkFeasiblity  -- also can add jury statement
@@ -167,7 +168,7 @@ capabilities (CapCtx u ms mp mi mc)
 
 userCapabilities :: Role -> [Capability]
 userCapabilities = \case
-    Student    _clss -> [CanVote]
+    Student    _clss -> [CanDelegate]
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanCreateTopic, CanEditUser]
