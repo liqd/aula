@@ -52,7 +52,6 @@ import Data.Maybe
 import Data.Monoid
 import Data.String.Conversions
 import GHC.Generics (Generic)
-import Text.Show.Pretty (ppShow)
 
 import qualified Data.Set as Set
 import qualified Generics.SOP as SOP
