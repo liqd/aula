@@ -52,13 +52,16 @@ spec = {- tag Large . -} do
                         (QC.elements $ universeToDelegationContexts uni)
     describe "Delegation simulation" $ do
         it "One delegation, one vote" $ do
-                persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
-                unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
-                    [ SetDelegation (unStudents uni !! 1)
-                                    (DlgCtxIdeaId (unIdeas uni !! 1))
-                                    (unStudents uni !! 2)
-                    , Vote (unStudents uni !! 2) (unIdeas uni !! 1) Yes
-                    ]
+            let student1 = unStudents uni !! 1
+                student2 = unStudents uni !! 2
+                idea     = unIdeas    uni !! 1
+            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
+            unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
+                [ SetDelegation student1
+                                (DlgCtxIdeaId idea)
+                                student2
+                , Vote student1 idea Yes
+                ]
         it "Random delegation programs" . property . forAllShrinkDef programGen $ \prg -> do
             monadicIO $ do
                 persist' <- run $ Persistent.mkRunPersistInMemoryWithState snapshot
