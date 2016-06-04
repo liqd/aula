@@ -62,6 +62,21 @@ spec = {- tag Large . -} do
                                 student2
                 , Vote student1 idea Yes
                 ]
+        it "Circle in delegation" $ do
+            let student1 = unStudents uni !! 1
+                student2 = unStudents uni !! 2
+                idea     = unIdeas    uni !! 1
+            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
+            unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
+                [ SetDelegation student1
+                                (DlgCtxIdeaId idea)
+                                student2
+                , SetDelegation student2
+                                (DlgCtxIdeaId idea)
+                                student1
+                , Vote student1 idea Yes
+                , Vote student2 idea Yes
+                ]
         it "Random delegation programs" . property . forAllShrinkDef programGen $ \prg -> do
             monadicIO $ do
                 persist' <- run $ Persistent.mkRunPersistInMemoryWithState snapshot
