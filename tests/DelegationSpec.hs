@@ -27,12 +27,24 @@ import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, suchThat, l
 import Test.QuickCheck.Monadic (monadicIO, run)
 import qualified Test.QuickCheck as QC (elements)
 
+universeSize :: UniverseSize
+universeSize = UniverseSize
+    { numberOfIdeaSpaces = 10
+    , numberOfStudents = 20
+    , numberOfTopics = 10
+    , numberOfIdeas = 50
+    , numberOfLikes = 0
+    , numberOfComments = 0
+    , numberOfReplies = 0
+    , numberOfCommentVotes = 0
+    }
+
 
 spec :: Spec
 spec = {- tag Large . -} do
     runner   <- runIO createActionRunner
     persist  <- runIO Persistent.mkRunPersistInMemory
-    uni      <- runIO $ unNat (runner persist) mkUniverse
+    uni      <- runIO $ unNat (runner persist) (mkUniverse universeSize)
     snapshot <- runIO $ unNat (runner persist) getDBSnapShot
     let programGen = delegationProgram
                         (QC.elements $ unStudents uni)

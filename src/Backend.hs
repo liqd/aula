@@ -54,6 +54,6 @@ manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        update DangerousResetAulaData
   :<|> genInitialTestDb
-  :<|> void mkUniverse
+  :<|> void (mkUniverse defaultUniverseSize)
   :<|> genVotingPhaseTopic
   :<|> update . DangerousRenameAllLogins
