@@ -289,12 +289,21 @@ type instance Proto IdeaLike = ()
 data IdeaVote = IdeaVote
     { _ideaVoteMeta  :: MetaInfo IdeaVote
     , _ideaVoteValue :: IdeaVoteValue
+    , _ideaVoteVoter :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVote
 
-type instance Proto IdeaVote = IdeaVoteValue
+data ProtoIdeaVote = ProtoIdeaVote
+    { _protoIdeaVoteValue :: IdeaVoteValue
+    , _protoIdeaVoteVoter :: AUID User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoIdeaVote
+
+type instance Proto IdeaVote = ProtoIdeaVote
 
 data IdeaVoteValue = Yes | No
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
@@ -1119,6 +1128,7 @@ makeLenses ''Phase
 makeLenses ''PhaseStatus
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
+makeLenses ''ProtoIdeaVote
 makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
 makeLenses ''Quorums
@@ -1170,6 +1180,7 @@ deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
+deriveSafeCopy 0 'base ''ProtoIdeaVote
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
 deriveSafeCopy 0 'base ''Quorums

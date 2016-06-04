@@ -57,6 +57,7 @@ module Action
       -- * vote handling
     , likeIdea
     , voteOnIdea
+    , delegateTo
     , voteIdeaComment
     , voteIdeaCommentReply
     , markIdeaInJuryPhase
@@ -521,19 +522,36 @@ likeIdea ideaId = do
           pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
 
-voteOnIdea :: AUID Idea -> Create_ IdeaVote
-voteOnIdea ideaId vote = do
-    addWithCurrentUser_ (AddVoteToIdea ideaId) vote
-    (`eventLogUserVotesOnIdea` Just vote) =<< mquery (findIdea ideaId)
+-- TODO: The delegatees who already voted for themselves do not the the voting.
+voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
+voteOnIdea ideaId voteVal = do
+    voter <- currentUser
+    let topic = DlgCtxIdeaId ideaId
+    voteFor voter voter
+    equery (delegateesOf voter topic) >>= mapM_ (voteFor voter)
+    (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
+  where
+    voteFor :: ActionM m => User -> User -> m ()
+    voteFor voter delegatee = do
+        addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
+                            (ProtoIdeaVote voteVal (voter ^. _Id))
+
+delegateTo :: ActionM m => DelegationContext -> AUID User -> m ()
+delegateTo ctx t = do
+    user <- currentUser
+    delegations <- filter ((user ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByContext ctx)
+    forM_ delegations (update . DeleteDelegation . view _Id)
+    addWithCurrentUser_ AddDelegation (ProtoDelegation ctx (user ^. _Id) t)
+
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
-voteIdeaComment loc ideaId commentId vote = do
+voteIdeaComment loc ideaId commentId voteVal = do
     let ck = CommentKey loc ideaId [] commentId
-    addWithCurrentUser_ (AddCommentVote ck) vote
-    eventLogUserVotesOnComment ck vote
+    addWithCurrentUser_ (AddCommentVote ck) voteVal
+    eventLogUserVotesOnComment ck voteVal
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
@@ -838,15 +856,15 @@ eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
 eventLogUserDelegates ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
       => DelegationContext -> User -> m ()
-eventLogUserDelegates ctx toUser = do
-    fromUser <- currentUser
+eventLogUserDelegates ctx delegatee = do
+    delegate <- currentUser
     ispace <- case ctx of
-        DlgCtxGlobal           -> pure . ClassSpace $ fromUser ^?! userRole . roleSchoolClass
+        DlgCtxGlobal           -> pure . ClassSpace $ delegate ^?! userRole . roleSchoolClass
         DlgCtxIdeaSpace ispace -> pure ispace
         DlgCtxTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
                                   <$> mquery (findIdea iid)
-    eventLog ispace (fromUser ^. _Key) $ EventLogUserDelegates ctx (toUser ^. _Key)
+    eventLog ispace (delegate ^. _Key) $ EventLogUserDelegates ctx (delegatee ^. _Key)
 
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =

@@ -39,6 +39,7 @@ module Persistent.Pure
     , runPersistExcept
     , HasAUpdate
     , liftAQuery
+    , dbSnapshot
 
     , addDb
     , addDb'
@@ -114,6 +115,8 @@ module Persistent.Pure
     , dbFreeze
     , adminUsernameHack
     , addDelegation
+    , deleteDelegation
+    , allDelegations
     , findDelegationsByContext
     , addIdeaJuryResult
     , removeIdeaJuryResult
@@ -173,7 +176,7 @@ data AulaData = AulaData
     , _dbIdeaMap             :: Ideas
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
-    , _dbDelegationMap       :: Delegations
+    , _dbDelegationMap       :: Delegations -- FIXME: Speed up searching for delegatees, delegate, context
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
@@ -197,6 +200,9 @@ dbUsers = dbUserMap . to Map.elems
 
 dbTopics :: AulaGetter [Topic]
 dbTopics = dbTopicMap . to Map.elems
+
+dbSnapshot :: AulaGetter AulaData
+dbSnapshot = to id
 
 emptyAulaData :: AulaData
 emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
@@ -590,6 +596,12 @@ addTopicYieldLocs now pt = do
 addDelegation :: AddDb Delegation
 addDelegation = addDb dbDelegationMap
 
+deleteDelegation :: AUID Delegation -> AUpdate ()
+deleteDelegation did = dbDelegationMap . at did .= Nothing
+
+allDelegations :: Query [Delegation]
+allDelegations = Map.elems <$> view dbDelegationMap
+
 findDelegationsByContext :: DelegationContext -> Query [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems
     <$> view dbDelegationMap
@@ -639,11 +651,15 @@ mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
 mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)
 
 instance FromProto IdeaVote where
-    fromProto = flip IdeaVote
+    fromProto p m = IdeaVote { _ideaVoteMeta  = m
+                             , _ideaVoteValue = _protoIdeaVoteValue p
+                             , _ideaVoteVoter = _protoIdeaVoteVoter p
+                             }
 
--- FIXME: Check also that the given idea exists and is in the right phase.
-addVoteToIdea :: AUID Idea -> AddDb IdeaVote
-addVoteToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaVotes)
+addVoteToIdea :: AUID Idea -> User -> AddDb IdeaVote
+addVoteToIdea iid user =
+    addDb' (const (mkIdeaVoteLikeKey iid user))
+           (dbIdeaMap . at iid . _Just . ideaVotes)
 
 -- Removes the vote of the given user.
 removeVoteFromIdea :: AUID Idea -> AUID User -> AUpdate ()
