@@ -50,6 +50,7 @@ module Frontend.Path
     , unmarkIdeaAsWinner
     , creatorStatement
     , deleteIdea
+    , delegateVoteOnIdea
 
     -- * paths to idea lists
     , listIdeas
@@ -234,6 +235,7 @@ data IdeaMode (r :: AllowedMethod) =
     | CreatorStatement (AUID Idea)
     | DeleteIdea (AUID Idea)
     | ReportIdea (AUID Idea)
+    | DelegateVoteOnIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic (IdeaMode r)
@@ -257,6 +259,7 @@ ideaMode (MarkIdeaAsWinner i)   root = root </> "idea" </> uriPart i </> "markwi
 ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"
 ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
 ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
+ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegation"
 
 
 -- ** CommentMode
@@ -422,6 +425,8 @@ creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea
 deleteIdea :: Idea -> Main 'AllowPost
 deleteIdea idea = IdeaPath (idea ^. ideaLocation) $ DeleteIdea (idea ^. _Id)
 
+delegateVoteOnIdea :: Idea -> Main 'AllowGetPost
+delegateVoteOnIdea idea = IdeaPath (idea ^. ideaLocation) $ DelegateVoteOnIdea (idea ^. _Id)
 
 -- * paths to idea lists
 

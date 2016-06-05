@@ -347,7 +347,8 @@ instance Arbitrary AdminPhaseChange where
     arbitrary = pure AdminPhaseChange
 
 instance Arbitrary PageDelegateVote where
-    arbitrary = pure PageDelegateVote
+    arbitrary = PageDelegateVote <$> arb <*> arb
+    shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
 
 instance Arbitrary PageDelegationNetwork where
     arbitrary = pure PageDelegationNetwork
@@ -427,6 +428,10 @@ instance Arbitrary IdeaJuryResultType where
     shrink    = gshrink
 
 instance Arbitrary DelegationContext where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary DelegationContextFull where
     arbitrary = garbitrary
     shrink    = gshrink
 

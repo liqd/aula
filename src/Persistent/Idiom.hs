@@ -214,6 +214,8 @@ delegateesOf v ctx = do
     vid = v ^. _Id
     voters (path :: [DelegationContext]) (w :: AUID User) = do
         -- ASSUMPTION: Only one delegate per topic
+        -- TODO: Write comment
+        -- HINT: I am not my own supporter.
         let supporter x = do
                 delegations <- filter ((x ==) . view delegationFrom) <$> allDelegations
                 pure $ case mapMaybe (\t -> find ((t ==) . view delegationContext) delegations) path of
@@ -253,3 +255,16 @@ scopeHiearchy = \case
         (i:) <$> scopeHiearchy (case loc of
             IdeaLocationSpace s    -> DlgCtxIdeaSpace s
             IdeaLocationTopic _s t -> DlgCtxTopicId   t)
+
+delegationContextFull :: DelegationContext -> EQuery DelegationContextFull
+delegationContextFull = \case
+    DlgCtxGlobal          -> pure DlgCtxGlobalFull
+    DlgCtxIdeaSpace space -> pure $ DlgCtxIdeaSpaceFull space
+    DlgCtxTopicId   tid   -> DlgCtxTopicFull <$> (maybe404 =<< findTopic tid)
+    DlgCtxIdeaId    iid   -> DlgCtxIdeaFull <$> (maybe404 =<< findIdea iid)
+
+-- FIXME: Display only students
+usersForIdeaSpace :: IdeaSpace -> EQuery [User]
+usersForIdeaSpace = \case
+    SchoolSpace       -> getActiveUsers
+    ClassSpace school -> getUsersInClass school

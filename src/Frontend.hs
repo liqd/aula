@@ -251,6 +251,8 @@ type IdeaApi
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
+       -- delegation idea
+  :<|> Idea ::> "delegation" :> FormHandler PageDelegateVote
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
@@ -269,6 +271,7 @@ ideaApi loc
   :<|> Action.revokeWinnerStatusOfIdea
   :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
+  :<|> form . Page.ideaDelegation
 
 type TopicApi =
        -- browse topics in an idea space

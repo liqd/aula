@@ -13,28 +13,63 @@ where
 
 import Prelude
 
+import Control.Arrow ((&&&))
+
+import Action (ActionM, delegateTo, equery)
 import Frontend.Core
 import Frontend.Prelude
+import Persistent
 
 import qualified Frontend.Path as U
-
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote
+data PageDelegateVote = PageDelegateVote DelegationContextFull [User]
   deriving (Eq, Show, Read)
-
-instance ToHtml PageDelegateVote where  -- FIXME: remove bogus instance.
-    toHtmlRaw = toHtml
-    toHtml p = semanticDiv p "PageDelegateVote"
 
 instance Page PageDelegateVote
 
-instance FormPage PageDelegateVote where  -- FIXME
-    type FormPagePayload PageDelegateVote = ()
-    formAction _   = U.Broken
-    redirectOf _ _ = U.Broken
-    makeForm _     = pure ()
-    formPage _ _ _ = pure ()
+newtype PageDelegationVotePayload = PageDelegationVotePayload (AUID User)
+  deriving (Eq, Show, Read)
+
+-- FIXME
+instance FormPage PageDelegateVote where
+    type FormPagePayload PageDelegateVote = PageDelegationVotePayload
+
+    formAction (PageDelegateVote ctx _users) = case ctx of
+        DlgCtxGlobalFull          -> U.Broken
+        DlgCtxIdeaSpaceFull _space -> U.Broken
+        DlgCtxTopicFull     _topic -> U.Broken
+        DlgCtxIdeaFull      idea  -> U.delegateVoteOnIdea idea
+
+    redirectOf (PageDelegateVote ctx _users) _ = case ctx of
+        DlgCtxGlobalFull          -> U.Broken
+        DlgCtxIdeaSpaceFull _space -> U.Broken
+        DlgCtxTopicFull     _topic -> U.Broken
+        DlgCtxIdeaFull      idea  -> U.viewIdea idea
+
+    -- FIXME: Show the existing delegation
+    makeForm (PageDelegateVote _ctx users) =
+        PageDelegationVotePayload
+        <$> "user-to-delegate" .: (DF.choice userList Nothing)
+      where
+        userList = ((view _Id) &&& (view (userLogin . unUserLogin . html))) <$> users
+
+    formPage v f p@(PageDelegateVote _ctx _users) = semanticDiv p . f $ do
+        -- FIXME: Table from users
+        DF.inputSelect "user-to-delegate" v
+        DF.inputSubmit "Save delegation"
+        -- TODO: Cancel button
+
+ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
+ideaDelegation iid = formPageHandlerWithMsg
+    (equery $
+        do idea <- maybe404 =<< findIdea iid
+           users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
+           pure $ PageDelegateVote (DlgCtxIdeaFull idea) users)
+    (\(PageDelegationVotePayload uid) -> Action.delegateTo (DlgCtxIdeaId iid) uid)
+    "Delegation is marked" -- TODO: Translation
 
 -- | 13. Delegation network
 data PageDelegationNetwork = PageDelegationNetwork

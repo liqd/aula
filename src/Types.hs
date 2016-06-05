@@ -749,6 +749,15 @@ data DelegationContext =
 
 instance SOP.Generic DelegationContext
 
+data DelegationContextFull =
+    DlgCtxGlobalFull
+  | DlgCtxIdeaSpaceFull { _delCtxIdeaSpaceFull :: IdeaSpace  }
+  | DlgCtxTopicFull     { _delCtxTopicFull     :: Topic }
+  | DlgCtxIdeaFull      { _delCtxIdeaFull      :: Idea  }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic DelegationContextFull
+
 data DelegationNetwork = DelegationNetwork
     { _networkUsers         :: [User]
     , _networkDelegations   :: [Delegation]

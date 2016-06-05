@@ -69,7 +69,7 @@ instance ToHtml IdeaVoteLikeBars where
                                 [class_ "btn-cta voting-button", jsReloadOnClick]
                                 (U.likeIdea idea)
                                 "Idee Auf den Tisch Bringen"  -- FIXME: #558 button should not be shows in quorum has been reached
-                            a_ [class_ "btn-cta voting-button", href_ U.Broken] $ do
+                            a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
                                 i_ [class_ "icon-bullhorn"] nil
                                 "Stimme beauftragen"
 
