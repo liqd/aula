@@ -47,6 +47,8 @@ module Action
     , getSpacesForCurrentUser
     , deleteUser
     , reportUser
+    , delegateVoteOnSchoolSpace
+    , delegateVoteOnClassSpace
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
@@ -532,6 +534,19 @@ delegateTo ctx t = do
     forM_ delegations (update . DeleteDelegation . view _Id)
     addWithCurrentUser_ AddDelegation (ProtoDelegation ctx (user ^. _Id) t)
 
+-- | Delegates the current user's vote to the given user at school space
+delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
+delegateVoteOnSchoolSpace uid = delegateTo (DlgCtxIdeaSpace SchoolSpace) uid
+
+-- | Delegates the current user's vote for his/her class to the given user.
+-- FIXME: The the users should be in the same class.
+delegateVoteOnClassSpace :: ActionM m => AUID User -> m ()
+delegateVoteOnClassSpace uid = do
+    user <- currentUser
+    let mSchoolClass = user ^? userRole . _Student
+    case mSchoolClass of
+        Nothing -> return () -- FIXME: Throw exception
+        Just sp -> delegateTo (DlgCtxIdeaSpace (ClassSpace sp)) uid
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 

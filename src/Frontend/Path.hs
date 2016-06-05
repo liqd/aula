@@ -80,6 +80,10 @@ module Frontend.Path
     , editUserIdProfile
     , reportUser
 
+    -- * user profile
+    , delegateVoteOnSchoolSpace
+    , delegateVoteOnClassSpace
+
     -- * aux predicates
     , isPostOnly
     , isBroken
@@ -364,17 +368,28 @@ admin (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </>
 data UserMode (r :: AllowedMethod) =
     UserIdeas
   | UserDelegations
+  | UserDelegateVoteOnSchoolSpace
+  | UserDelegateVoteOnClassSpace
   | UserEdit
   | ReportUser
   deriving (Generic, Show)
 
 instance SOP.Generic (UserMode r)
 
+-- TODO: Allign
 user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
+user UserDelegateVoteOnSchoolSpace = (\path -> path </> "delegation" </> "school")
+user UserDelegateVoteOnClassSpace  = (\path -> path </> "delegation" </> "class")
 user UserEdit        = (</> "edit")
 user ReportUser      = (</> "report")
+
+delegateVoteOnSchoolSpace :: User -> Main 'AllowPost
+delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
+
+delegateVoteOnClassSpace :: User -> Main 'AllowPost
+delegateVoteOnClassSpace u = UserProf (u ^. _Id) UserDelegateVoteOnClassSpace
 
 
 -- * paths to ideas
@@ -536,6 +551,11 @@ isPostOnly = \case
           AdminTopicNextPhase _       -> True
           AdminTopicVotingPrevPhase _ -> True
           _                           -> False
+    UserProf _ m ->
+      case m of
+          UserDelegateVoteOnSchoolSpace -> True
+          UserDelegateVoteOnClassSpace  -> True
+          _                             -> False
     -- FIXME[#312] Logout -> True
     _ -> False
 

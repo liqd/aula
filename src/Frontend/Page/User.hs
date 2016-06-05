@@ -192,9 +192,12 @@ userHeaderDiv ctx (ActiveUser user) =
                                , capCtxComment = Nothing
                                }
 
+                -- FIXME: Do not render the buttons for itself
+                -- TODO: Now the buttons look like links
                 when (CanVote `elem` caps) $ do
-                    btn U.Broken "Klassenweit beauftragen"
-                    btn U.Broken "Schulweit beauftragen"
+                    postButton_ [class_ "btn"] (U.delegateVoteOnSchoolSpace user) "Klassenweit beauftragen"
+                    -- FIXME: Render the button if the user is in the same class as the current one
+                    postButton_ [class_ "btn"] (U.delegateVoteOnClassSpace user)  "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
                 when (CanEditUser `elem` caps) editProfileBtn
 
