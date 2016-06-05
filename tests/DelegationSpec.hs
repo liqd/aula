@@ -57,9 +57,7 @@ spec = {- tag Large . -} do
                 idea     = unIdeas    uni !! 1
             persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
             unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
-                [ SetDelegation student1
-                                (DlgCtxIdeaId idea)
-                                student2
+                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , Vote student1 idea Yes
                 ]
         it "Circle in delegation" $ do
@@ -68,13 +66,9 @@ spec = {- tag Large . -} do
                 idea     = unIdeas    uni !! 1
             persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
             unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
-                [ SetDelegation student1
-                                (DlgCtxIdeaId idea)
-                                student2
+                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
-                , SetDelegation student2
-                                (DlgCtxIdeaId idea)
-                                student1
+                , SetDelegation student2 (DlgCtxIdeaId idea) student1
                 , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 2
                 , Vote student1 idea Yes
                 , Vote student2 idea Yes
