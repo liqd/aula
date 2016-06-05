@@ -57,6 +57,10 @@ module Frontend.Path
     , listIdeasInTopic
     , listIdeas'
 
+    -- * paths to topic
+    , delegateVoteOnTopic
+    , viewTopic
+
     -- * paths to comments
     , replyToComment
     , voteOnComment
@@ -204,7 +208,7 @@ space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
 space CreateTopic                 root = root </> "topic" </> "create"
 space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
-space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
+space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation"
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
@@ -212,6 +216,13 @@ topicTab = \case
     ListIdeasInTopicTabVoting   -> (</> "voting")
     ListIdeasInTopicTabAccepted -> (</> "accepted")
     ListIdeasInTopicTabWinning  -> (</> "winning")
+
+delegateVoteOnTopic :: Topic -> Main 'AllowGetPost
+delegateVoteOnTopic topic = Space (topic ^. topicIdeaSpace) (CreateTopicDelegation (topic ^. _Id))
+
+viewTopic :: Topic -> Main 'AllowGetPost
+viewTopic topic =
+    listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) Nothing Nothing
 
 
 -- ** IdeaMode

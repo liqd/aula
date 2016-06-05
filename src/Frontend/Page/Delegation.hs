@@ -30,7 +30,8 @@ data PageDelegateVote = PageDelegateVote DelegationContextFull [User]
 
 instance Page PageDelegateVote
 
-newtype PageDelegationVotePayload = PageDelegationVotePayload (AUID User)
+newtype PageDelegationVotePayload = PageDelegationVotePayload
+    { unPageDelegationVotePayload :: AUID User }
   deriving (Eq, Show, Read)
 
 -- FIXME
@@ -40,13 +41,13 @@ instance FormPage PageDelegateVote where
     formAction (PageDelegateVote ctx _users) = case ctx of
         DlgCtxGlobalFull          -> U.Broken
         DlgCtxIdeaSpaceFull _space -> U.Broken
-        DlgCtxTopicFull     _topic -> U.Broken
+        DlgCtxTopicFull     topic -> U.delegateVoteOnTopic topic
         DlgCtxIdeaFull      idea  -> U.delegateVoteOnIdea idea
 
     redirectOf (PageDelegateVote ctx _users) _ = case ctx of
         DlgCtxGlobalFull          -> U.Broken
         DlgCtxIdeaSpaceFull _space -> U.Broken
-        DlgCtxTopicFull     _topic -> U.Broken
+        DlgCtxTopicFull     topic -> U.viewTopic topic
         DlgCtxIdeaFull      idea  -> U.viewIdea idea
 
     -- FIXME: Show the existing delegation
@@ -68,8 +69,18 @@ ideaDelegation iid = formPageHandlerWithMsg
         do idea <- maybe404 =<< findIdea iid
            users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
            pure $ PageDelegateVote (DlgCtxIdeaFull idea) users)
-    (\(PageDelegationVotePayload uid) -> Action.delegateTo (DlgCtxIdeaId iid) uid)
+    (Action.delegateTo (DlgCtxIdeaId iid) . unPageDelegationVotePayload)
     "Delegation is marked" -- TODO: Translation
+
+topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
+topicDelegation tid = formPageHandlerWithMsg
+    (equery $ do
+        do topic <- maybe404 =<< findTopic tid
+           users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
+           pure $ PageDelegateVote (DlgCtxTopicFull topic) users)
+    (Action.delegateTo (DlgCtxTopicId tid) . unPageDelegationVotePayload)
+    "Delegation is marked"
+
 
 -- | 13. Delegation network
 data PageDelegationNetwork = PageDelegationNetwork

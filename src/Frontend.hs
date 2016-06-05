@@ -290,7 +290,7 @@ type TopicApi =
        -- create new topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
   :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
-  :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
+  :<|> Topic  ::> "delegation" :> FormHandler PageDelegateVote
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
@@ -307,7 +307,7 @@ topicApi space
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
-  :<|> error "api not implemented: topic/:topic/delegation/create"
+  :<|> form . Page.topicDelegation
   where
     viewTopicTab tab tid qf qs = makeFrame $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
