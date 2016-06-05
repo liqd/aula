@@ -74,13 +74,25 @@ ideaDelegation iid = formPageHandlerWithMsg
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
 topicDelegation tid = formPageHandlerWithMsg
-    (equery $ do
+    (equery $
         do topic <- maybe404 =<< findTopic tid
            users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
            pure $ PageDelegateVote (DlgCtxTopicFull topic) users)
     (Action.delegateTo (DlgCtxTopicId tid) . unPageDelegationVotePayload)
-    "Delegation is marked"
+    "Delegation is marked" -- TODO: Translation
 
+ideaSpaceDelegation :: ActionM m => IdeaSpace -> FormPageHandler m PageDelegateVote
+ideaSpaceDelegation ideaSpace = formPageHandlerWithMsg
+    (PageDelegateVote (DlgCtxIdeaSpaceFull ideaSpace)
+        <$> equery (usersForIdeaSpace ideaSpace))
+    (Action.delegateTo (DlgCtxIdeaSpace ideaSpace) . unPageDelegationVotePayload)
+    "Delegation is marked" -- TODO: Translation
+
+fullDelegation :: ActionM m => FormPageHandler m PageDelegateVote
+fullDelegation = formPageHandlerWithMsg
+    (PageDelegateVote DlgCtxGlobalFull <$> equery getActiveUsers)
+    (Action.delegateTo DlgCtxGlobal . unPageDelegationVotePayload)
+    "Delegation is marked" -- TODO: Translation
 
 -- | 13. Delegation network
 -- FIXME: Render all the delegations not just the current user related ones.
