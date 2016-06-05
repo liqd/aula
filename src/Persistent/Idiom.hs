@@ -255,13 +255,6 @@ scopeHiearchy = \case
             IdeaLocationSpace s    -> DlgCtxIdeaSpace s
             IdeaLocationTopic _s t -> DlgCtxTopicId   t)
 
-delegationContextFull :: DelegationContext -> EQuery DelegationContextFull
-delegationContextFull = \case
-    DlgCtxGlobal          -> pure DlgCtxGlobalFull
-    DlgCtxIdeaSpace space -> pure $ DlgCtxIdeaSpaceFull space
-    DlgCtxTopicId   tid   -> DlgCtxTopicFull <$> (maybe404 =<< findTopic tid)
-    DlgCtxIdeaId    iid   -> DlgCtxIdeaFull <$> (maybe404 =<< findIdea iid)
-
 -- FIXME: Display only students
 usersForIdeaSpace :: IdeaSpace -> EQuery [User]
 usersForIdeaSpace = \case
