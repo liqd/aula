@@ -23,7 +23,7 @@ import qualified Persistent.Api as Persistent (RunPersist)
 import qualified Persistent.Implementation.AcidState as Persistent
 
 import Control.Category ((.))
-import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, suchThat, listOf1)
+import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)
 import qualified Test.QuickCheck as QC (elements)
 
@@ -70,6 +70,13 @@ spec = {- tag Large . -} do
                 , Vote student1 idea Yes
                 , Vote student2 idea Yes
                 ]
+        it "Self delegation" $ do
+            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
+            unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
+                [ SetDelegation student1 (DlgCtxIdeaId idea) student1
+                , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 1
+                , Vote student1 idea No
+                ]
         it "Random delegation programs" . property . forAllShrinkDef programGen $ \prg -> do
             monadicIO $ do
                 persist' <- run $ Persistent.mkRunPersistInMemoryWithState snapshot
@@ -110,8 +117,7 @@ instance Show DelegationProgram where
 
 delegationStepGen :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DelegationContext -> Gen DelegationDSL
 delegationStepGen voters ideas topics = frequency
-    [ (9, do v <- voters
-             SetDelegation v <$> topics <*> voters `suchThat` (/=v))
+    [ (9, SetDelegation <$> voters <*> topics <*> voters)
     , (3, Vote <$> voters <*> ideas <*> arbitrary)
     ]
 

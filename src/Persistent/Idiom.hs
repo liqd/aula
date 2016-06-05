@@ -221,7 +221,7 @@ delegateesOf vid ctx = do
                     []    -> False
                     d : _ -> (d ^. delegationTo) == vid
 
-        ds  <- map (view delegationFrom) <$> scopeDelegatees w ctx
+        ds  <- filter (/=w) . map (view delegationFrom) <$> scopeDelegatees w ctx
         sps <- filterM supporter ds
         vts <- mconcat <$> forM sps (voters path)
         pure (w:vts)
