@@ -71,9 +71,11 @@ spec = {- tag Large . -} do
                 [ SetDelegation student1
                                 (DlgCtxIdeaId idea)
                                 student2
+                , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
                 , SetDelegation student2
                                 (DlgCtxIdeaId idea)
                                 student1
+                , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 2
                 , Vote student1 idea Yes
                 , Vote student2 idea Yes
                 ]
@@ -103,8 +105,9 @@ spec = {- tag Large . -} do
 -- * delegation program
 
 data DelegationDSL where
-    SetDelegation :: AUID User -> DelegationContext -> AUID User -> DelegationDSL
-    Vote          :: AUID User -> AUID Idea         -> IdeaVoteValue  -> DelegationDSL
+    SetDelegation       :: AUID User -> DelegationContext -> AUID User      -> DelegationDSL
+    Vote                :: AUID User -> AUID Idea         -> IdeaVoteValue  -> DelegationDSL
+    CheckNoOfDelegatees :: AUID User -> DelegationContext -> Int -> DelegationDSL
 
 deriving instance Show DelegationDSL
 
@@ -147,22 +150,30 @@ interpretDelegationProgram :: ActionM m => DelegationProgram -> m ()
 interpretDelegationProgram =
     mapM_ interpretDelegationStep . zip [1..] . unDelegationProgram
 
+getDelegateesOf :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
+getDelegateesOf t tp = nub <$> ((view _Id) <$$> equery (Persistent.delegateesOf t tp))
+
 interpretDelegationStep :: ActionM m => (Int, DelegationDSL) -> m ()
 interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
     Action.login f
-    supporters <- getSupporters t tp
+    delegatees <- getDelegateesOf t tp
     Action.delegateTo tp t
-    supporters' <- getSupporters t tp
+    delegatees' <- getDelegateesOf t tp
     Action.logout
-    let r = if f `elem` supporters
-                then supporters == supporters'
-                else f `elem` supporters' && (length supporters' == 1 + length supporters)
-    unless r . fail $ show (i, step, f `elem` supporters, show f, supporters, supporters')
+    let r = if f `elem` delegatees
+                then delegatees == delegatees'
+                else f `elem` delegatees' && (length delegatees' == 1 + length delegatees)
+    unless r . fail $ show (i, step, f `elem` delegatees, show f, delegatees, delegatees')
 interpretDelegationStep (j,step@(Vote v i x)) = do
     Action.login v
-    supporters <- (v:) <$> getSupporters v (DlgCtxIdeaId i)
+    delegatees <- getDelegateesOf v (DlgCtxIdeaId i)
     Action.voteOnIdea i x
-    votes <- forM supporters $ \s -> getVote s i
+    votes <- forM delegatees $ \s -> getVote s i
     let rightVotes = all (Just (v, x) ==) votes
     Action.logout
-    unless rightVotes . fail $ show (j, step, supporters, votes)
+    unless rightVotes . fail $ show (j, step, delegatees, votes)
+interpretDelegationStep (i,step@(CheckNoOfDelegatees v ctx n)) = do
+    Action.login v
+    delegatees <- getDelegateesOf v ctx
+    Action.logout
+    unless (length delegatees == n) . fail $ show (i, step, length delegatees, delegatees)
