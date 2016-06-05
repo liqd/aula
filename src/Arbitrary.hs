@@ -351,7 +351,7 @@ instance Arbitrary PageDelegateVote where
     shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
 
 instance Arbitrary PageDelegationNetwork where
-    arbitrary = pure PageDelegationNetwork
+    arbitrary = PageDelegationNetwork <$> arb
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint

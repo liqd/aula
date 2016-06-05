@@ -118,6 +118,7 @@ module Persistent.Pure
     , deleteDelegation
     , allDelegations
     , findDelegationsByContext
+    , findDelegationsByDelegatee
     , addIdeaJuryResult
     , removeIdeaJuryResult
     , setCreatorStatement
@@ -601,6 +602,10 @@ deleteDelegation did = dbDelegationMap . at did .= Nothing
 
 allDelegations :: Query [Delegation]
 allDelegations = Map.elems <$> view dbDelegationMap
+
+findDelegationsByDelegatee :: AUID User -> Query [Delegation]
+findDelegationsByDelegatee uid =
+    filter ((uid ==) . view delegationFrom) <$> allDelegations
 
 findDelegationsByContext :: DelegationContext -> Query [Delegation]
 findDelegationsByContext ctx = filter ((== ctx) . view delegationContext) . Map.elems

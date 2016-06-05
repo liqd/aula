@@ -15,7 +15,7 @@ import Prelude
 
 import Control.Arrow ((&&&))
 
-import Action (ActionM, delegateTo, equery)
+import Action (ActionM, currentUser, delegateTo, equery)
 import Frontend.Core
 import Frontend.Prelude
 import Persistent
@@ -83,7 +83,8 @@ topicDelegation tid = formPageHandlerWithMsg
 
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork
+-- FIXME: Render all the delegations not just the current user related ones.
+data PageDelegationNetwork = PageDelegationNetwork [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageDelegationNetwork where
@@ -94,7 +95,8 @@ instance Page PageDelegationNetwork where
 
 instance ToHtml PageDelegationNetwork where
     toHtmlRaw = toHtml
-    toHtml p@PageDelegationNetwork = semanticDiv p $ do
+    toHtml p@(PageDelegationNetwork delegations) = semanticDiv p $ do
+        p_ . toHtml $ show delegations
         img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
 {-
         let bigHr = do
@@ -153,5 +155,7 @@ instance ToHtml PageDelegationNetwork where
         bigHr
 -}
 
-viewDelegationNetwork :: Applicative m => m PageDelegationNetwork
-viewDelegationNetwork = pure PageDelegationNetwork
+viewDelegationNetwork :: ActionM m => m PageDelegationNetwork
+viewDelegationNetwork = do
+    user <- currentUser
+    PageDelegationNetwork <$> equery (findDelegationsByDelegatee (user ^. _Id))
