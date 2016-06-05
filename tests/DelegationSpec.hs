@@ -145,7 +145,7 @@ interpretDelegationProgram =
     mapM_ interpretDelegationStep . zip [1..] . unDelegationProgram
 
 getDelegateesOf :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
-getDelegateesOf t tp = nub <$> ((view _Id) <$$> equery (Persistent.delegateesOf t tp))
+getDelegateesOf t tp = sort . nub <$> ((view _Id) <$$> equery (Persistent.delegateesOf t tp))
 
 interpretDelegationStep :: ActionM m => (Int, DelegationDSL) -> m ()
 interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
