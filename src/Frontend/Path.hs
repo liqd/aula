@@ -380,8 +380,8 @@ instance SOP.Generic (UserMode r)
 user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
 user UserDelegations = (</> "delegations")
-user UserDelegateVoteOnSchoolSpace = (\path -> path </> "delegation" </> "school")
-user UserDelegateVoteOnClassSpace  = (\path -> path </> "delegation" </> "class")
+user UserDelegateVoteOnSchoolSpace = \path -> path </> "delegation" </> "school"
+user UserDelegateVoteOnClassSpace  = \path -> path </> "delegation" </> "class"
 user UserEdit        = (</> "edit")
 user ReportUser      = (</> "report")
 

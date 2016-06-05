@@ -53,9 +53,9 @@ instance FormPage PageDelegateVote where
     -- FIXME: Show the existing delegation
     makeForm (PageDelegateVote _ctx users) =
         PageDelegationVotePayload
-        <$> "user-to-delegate" .: (DF.choice userList Nothing)
+        <$> "user-to-delegate" .: DF.choice userList Nothing
       where
-        userList = ((view _Id) &&& (view (userLogin . unUserLogin . html))) <$> users
+        userList = (view _Id &&& view (userLogin . unUserLogin . html)) <$> users
 
     formPage v f p@(PageDelegateVote _ctx _users) = semanticDiv p . f $ do
         -- FIXME: Table from users

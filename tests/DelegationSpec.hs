@@ -50,20 +50,17 @@ spec = {- tag Large . -} do
                         (QC.elements $ unStudents uni)
                         (QC.elements $ unIdeas    uni)
                         (QC.elements $ universeToDelegationContexts uni)
+    let student1 = unStudents uni !! 1
+        student2 = unStudents uni !! 2
+        idea     = unIdeas    uni !! 1
     describe "Delegation simulation" $ do
         it "One delegation, one vote" $ do
-            let student1 = unStudents uni !! 1
-                student2 = unStudents uni !! 2
-                idea     = unIdeas    uni !! 1
             persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
             unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , Vote student1 idea Yes
                 ]
         it "Circle in delegation" $ do
-            let student1 = unStudents uni !! 1
-                student2 = unStudents uni !! 2
-                idea     = unIdeas    uni !! 1
             persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
             unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student2
@@ -115,7 +112,7 @@ delegationStepGen :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DelegationContext
 delegationStepGen voters ideas topics = frequency
     [ (9, do v <- voters
              SetDelegation v <$> topics <*> voters `suchThat` (/=v))
-    , (3, Vote          <$> voters <*> ideas <*> arbitrary)
+    , (3, Vote <$> voters <*> ideas <*> arbitrary)
     ]
 
 dsGen :: Gen DelegationProgram
@@ -145,7 +142,7 @@ interpretDelegationProgram =
     mapM_ interpretDelegationStep . zip [1..] . unDelegationProgram
 
 getDelegateesOf :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
-getDelegateesOf t tp = sort . nub <$> ((view _Id) <$$> equery (Persistent.delegateesOf t tp))
+getDelegateesOf t tp = sort . nub <$> (view _Id <$$> equery (Persistent.delegateesOf t tp))
 
 interpretDelegationStep :: ActionM m => (Int, DelegationDSL) -> m ()
 interpretDelegationStep (i,step@(SetDelegation f tp t)) = do

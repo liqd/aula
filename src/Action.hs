@@ -536,7 +536,7 @@ delegateTo ctx t = do
 
 -- | Delegates the current user's vote to the given user at school space
 delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
-delegateVoteOnSchoolSpace uid = delegateTo (DlgCtxIdeaSpace SchoolSpace) uid
+delegateVoteOnSchoolSpace = delegateTo (DlgCtxIdeaSpace SchoolSpace)
 
 -- | Delegates the current user's vote for his/her class to the given user.
 -- FIXME: The the users should be in the same class.
