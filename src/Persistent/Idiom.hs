@@ -205,13 +205,12 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 
 -- * voting
 
-delegateesOf :: User -> DelegationContext -> EQuery [User]
-delegateesOf v ctx = do
+delegateesOf :: AUID User -> DelegationContext -> EQuery [User]
+delegateesOf vid ctx = do
     hiearchy <- scopeHiearchy ctx
     vs <- voters hiearchy vid
     catMaybes <$> forM vs findUser
   where
-    vid = v ^. _Id
     voters (path :: [DelegationContext]) (w :: AUID User) = do
         -- ASSUMPTION: Only one delegate per topic
         -- TODO: Write comment
