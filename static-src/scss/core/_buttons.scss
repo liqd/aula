@@ -126,3 +126,9 @@ $btn-settings-size: 35px;
         text-decoration: none;
     }
 }
+
+.m-input-action {
+    @include rem(margin-top, -40px);
+    @include rem(margin-bottom, 20px);
+    color: $color-positive;
+}

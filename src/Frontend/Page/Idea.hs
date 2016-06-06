@@ -75,6 +75,7 @@ import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Types (MoveIdea)
+import qualified Lucid
 
 
 -- * types
@@ -462,8 +463,11 @@ createOrEditIdea eLocIdea v form p = semanticDiv p $ do
                         "title" v
                 label_ $ do
                     span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                    inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                    inputTextArea_ [id_ "markdown1",
+                                    placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
                         Nothing Nothing "idea-text" v
+                    button_ [class_ "btn m-input-action", Lucid.onclick_ "showPreview('markdown1.idea-text'); return false"] "Toggle preview window"
+                div_ [id_ "markdown1.idea-text-preview", class_ "markdown-preview m-closed"] $ nil
                 formPageSelectCategory v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Idee veröffentlichen"
