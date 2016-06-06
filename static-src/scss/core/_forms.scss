@@ -20,6 +20,10 @@ textarea {
 
     &.m-small {
         @extend .col-6-12;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            width: 100%;
+        }
     }
 
     &.input-number {
