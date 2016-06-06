@@ -13,15 +13,16 @@ module Persistent.Idiom
 where
 
 import Control.Lens
-import Control.Monad (filterM, forM, unless)
+import Control.Monad (forM, unless)
 import Data.Functor.Infix ((<$$>))
-import Data.List (find)
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (catMaybes)
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map
 import qualified Data.Monoid
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Generics.SOP as SOP
 
 import LifeCycle
@@ -205,26 +206,21 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 
 -- * voting
 
-delegateesOf :: AUID User -> DelegationContext -> EQuery [User]
-delegateesOf vid ctx = do
+votingPower :: AUID User -> DelegationContext -> EQuery [User]
+votingPower vid ctx = do
     hiearchy <- scopeHiearchy ctx
-    vs <- voters hiearchy vid
+    vs <- Set.toList <$> voters hiearchy (Set.singleton vid) vid
     catMaybes <$> forM vs findUser
   where
-    voters (path :: [DelegationContext]) (w :: AUID User) = do
-        -- ASSUMPTION: Only one delegate per topic
-        -- TODO: Write comment
-        -- HINT: I am not my own supporter.
-        let supporter x = do
-                delegations <- filter ((x ==) . view delegationFrom) <$> allDelegations
-                pure $ case mapMaybe (\t -> find ((t ==) . view delegationContext) delegations) path of
-                    []    -> False
-                    d : _ -> (d ^. delegationTo) == vid
-
-        ds  <- filter (/=w) . map (view delegationFrom) <$> scopeDelegatees w ctx
-        sps <- filterM supporter ds
-        vts <- mconcat <$> forM sps (voters path)
-        pure (w:vts)
+    voters (path :: [DelegationContext]) (discovered :: Set (AUID User)) (user :: AUID User) = do
+        -- Set.fromList O(n*log n) is better than nub O(n^2)
+        oneStepNewDelegatees
+            <- (`Set.difference` discovered) . Set.fromList . fmap _delegationFrom . concat
+                <$> forM path (scopeDelegatees user)
+        allNewDelegatees <- Set.unions
+            <$> forM (Set.toList oneStepNewDelegatees)
+                     (voters path (oneStepNewDelegatees `Set.union` discovered))
+        pure (discovered `Set.union` allNewDelegatees)
 
 scopeDelegatees :: AUID User -> DelegationContext -> Query [Delegation]
 scopeDelegatees uid ctx =

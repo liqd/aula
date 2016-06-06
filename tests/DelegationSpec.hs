@@ -74,28 +74,28 @@ spec = do
         it "Self delegation" $ do
             runDelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student1
-                , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 1
+                , VotingPower student1 (DlgCtxIdeaId idea) 1
                 , Vote student1 idea No
                 ]
         it "Delegation on topic" $ do
             runDelegationProgram
                 [ SetDelegation student1 (DlgCtxTopicId topic) student2
-                , CheckNoOfDelegatees student2 (DlgCtxTopicId topic) 2
+                , VotingPower student2 (DlgCtxTopicId topic) 2
                 ]
         it "Delegation on ideaspace" $ do
             runDelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaSpace ideaspace) student2
-                , CheckNoOfDelegatees student2 (DlgCtxIdeaSpace ideaspace) 2
+                , VotingPower student2 (DlgCtxIdeaSpace ideaspace) 2
                 ]
         it "Delegation on schoolspace" $ do
             runDelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaSpace SchoolSpace) student2
-                , CheckNoOfDelegatees student2 (DlgCtxIdeaSpace SchoolSpace) 2
+                , VotingPower student2 (DlgCtxIdeaSpace SchoolSpace) 2
                 ]
         it "Delegation on global" $ do
             runDelegationProgram
                 [ SetDelegation student1 DlgCtxGlobal student2
-                , CheckNoOfDelegatees student2 DlgCtxGlobal 2
+                , VotingPower student2 DlgCtxGlobal 2
                 ]
         it "I change my mind before" $ do
             runDelegationProgram
@@ -130,10 +130,10 @@ spec = do
                 pendingWith "Student2 should not change student1's vote."
                 runDelegationProgram
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
+                    , VotingPower student2 (DlgCtxIdeaId idea) 2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student1
-                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 2
-                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
+                    , VotingPower student1 (DlgCtxIdeaId idea) 2
+                    , VotingPower student2 (DlgCtxIdeaId idea) 2
                     , Vote student1 idea Yes
                     , Vote student2 idea No
                     ]
@@ -143,9 +143,9 @@ spec = do
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student3
                     , SetDelegation student3 (DlgCtxIdeaId idea) student1
-                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 3
+                    , VotingPower student1 (DlgCtxIdeaId idea) 3
+                    , VotingPower student2 (DlgCtxIdeaId idea) 3
+                    , VotingPower student3 (DlgCtxIdeaId idea) 3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
@@ -156,15 +156,15 @@ spec = do
                     [ SetDelegation student1 (DlgCtxIdeaId idea)   student2
                     , SetDelegation student2 (DlgCtxTopicId topic) student3
                     , SetDelegation student3 DlgCtxGlobal student1
-                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student1 (DlgCtxTopicId topic) 2
-                    , CheckNoOfDelegatees student2 (DlgCtxTopicId topic) 0
-                    , CheckNoOfDelegatees student3 (DlgCtxTopicId topic) 1
-                    , CheckNoOfDelegatees student1 DlgCtxGlobal 1
-                    , CheckNoOfDelegatees student2 DlgCtxGlobal 0
-                    , CheckNoOfDelegatees student3 DlgCtxGlobal 0
+                    , VotingPower student1 (DlgCtxIdeaId idea) 3
+                    , VotingPower student2 (DlgCtxIdeaId idea) 3
+                    , VotingPower student3 (DlgCtxIdeaId idea) 3
+                    , VotingPower student1 (DlgCtxTopicId topic) 2
+                    , VotingPower student2 (DlgCtxTopicId topic) 0
+                    , VotingPower student3 (DlgCtxTopicId topic) 1
+                    , VotingPower student1 DlgCtxGlobal 1
+                    , VotingPower student2 DlgCtxGlobal 0
+                    , VotingPower student3 DlgCtxGlobal 0
                     ]
             it "Breaking Cycles" $ do
                 pendingWith "ISSUE: no of delegatees are computed wrongly."
@@ -172,14 +172,14 @@ spec = do
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student3
                     , SetDelegation student3 (DlgCtxIdeaId idea) student1
-                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 3
+                    , VotingPower student1 (DlgCtxIdeaId idea) 3
+                    , VotingPower student2 (DlgCtxIdeaId idea) 3
+                    , VotingPower student3 (DlgCtxIdeaId idea) 3
                     , SetDelegation student1 (DlgCtxIdeaId idea) student4
-                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
-                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 1
-                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 2
-                    , CheckNoOfDelegatees student4 (DlgCtxIdeaId idea) 4
+                    , VotingPower student1 (DlgCtxIdeaId idea) 3
+                    , VotingPower student2 (DlgCtxIdeaId idea) 1
+                    , VotingPower student3 (DlgCtxIdeaId idea) 2
+                    , VotingPower student4 (DlgCtxIdeaId idea) 4
                     ]
         tag Large . it "Random delegation programs" . property . forAllShrinkDef programGen
             $ \(DelegationProgram program) -> monadicIO . run $ runDelegationProgram program
@@ -207,7 +207,7 @@ spec = do
 data DelegationDSL where
     SetDelegation       :: AUID User -> DelegationContext -> AUID User      -> DelegationDSL
     Vote                :: AUID User -> AUID Idea         -> IdeaVoteValue  -> DelegationDSL
-    CheckNoOfDelegatees :: AUID User -> DelegationContext -> Int -> DelegationDSL
+    VotingPower :: AUID User -> DelegationContext -> Int -> DelegationDSL
 
 deriving instance Show DelegationDSL
 
@@ -249,8 +249,8 @@ interpretDelegationProgram :: ActionM m => DelegationProgram -> m ()
 interpretDelegationProgram =
     mapM_ interpretDelegationStep . zip [1..] . unDelegationProgram
 
-getDelegateesOf :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
-getDelegateesOf t tp = sort . nub <$> (view _Id <$$> equery (Persistent.delegateesOf t tp))
+getVotingPower :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
+getVotingPower u ctx = sort . nub <$> (view _Id <$$> equery (Persistent.votingPower u ctx))
 
 interpretDelegationStep :: ActionM m => (Int, DelegationDSL) -> m ()
 interpretDelegationStep (i,step@(SetDelegation f tp t)) = do

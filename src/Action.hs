@@ -519,7 +519,7 @@ voteOnIdea ideaId voteVal = do
     voter <- currentUser
     let topic = DlgCtxIdeaId ideaId
     voteFor voter voter
-    equery (delegateesOf (voter ^. _Id) topic) >>= mapM_ (voteFor voter)
+    equery (votingPower (voter ^. _Id) topic) >>= mapM_ (voteFor voter)
     (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
   where
     voteFor :: ActionM m => User -> User -> m ()
