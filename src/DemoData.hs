@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, view, _Just)
+import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
 import Control.Monad (zipWithM_, replicateM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
@@ -177,9 +177,9 @@ mkUniverse size = do
     universe rnd size
 
 data Universe = Universe {
-      unStudents   :: [AUID User]
-    , unTopics     :: [AUID Topic]
-    , unIdeas      :: [AUID Idea]
+      unStudents   :: [User]
+    , unTopics     :: [Topic]
+    , unIdeas      :: [Idea]
     , unIdeaSpaces :: [IdeaSpace]
     }
 
@@ -218,11 +218,7 @@ universe rnd size = do
 
     sequence_ =<< generate (numberOfCommentVotes size) rnd (genCommentVote (comments <> replies) students)
 
-    pure $ Universe
-            (view _Id <$> students)
-            (view _Id <$> topics)
-            (view _Id <$> ideas)
-            ideaSpaces
+    pure $ Universe students topics ideas ideaSpaces
 
 assert' :: Monad m => Bool -> m ()
 assert' p = assert p $ return ()

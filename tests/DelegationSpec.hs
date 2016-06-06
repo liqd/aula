@@ -47,19 +47,23 @@ spec = do
     uni      <- runIO $ unNat (runner persist) (mkUniverse universeSize)
     snapshot <- runIO $ unNat (runner persist) getDBSnapShot
     let programGen = delegationProgram
-                        (QC.elements $ unStudents uni)
-                        (QC.elements $ unIdeas    uni)
+                        (QC.elements $ (view _Id) <$> unStudents uni)
+                        (QC.elements $ (view _Id) <$> unIdeas    uni)
                         (QC.elements $ universeToDelegationContexts uni)
     let runDelegationProgram program = do
             persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
             unNat (runner persist') . interpretDelegationProgram
                 $ DelegationProgram program
-    let student1  = unStudents uni !! 1
-        student2  = unStudents uni !! 2
-        student3  = unStudents uni !! 3
-        student4  = unStudents uni !! 4
-        idea      = unIdeas    uni !! 1
-        topic     = unTopics   uni !! 1
+    let isIdeaWithTopic = has (ideaLocation . _IdeaLocationTopic . _2)
+    let student1  = (unStudents uni !! 1) ^. _Id
+        student2  = (unStudents uni !! 2) ^. _Id
+        student3  = (unStudents uni !! 3) ^. _Id
+        student4  = (unStudents uni !! 4) ^. _Id
+        idea      = (unIdeas    uni !! 1) ^. _Id
+        topic     = (unTopics   uni !! 1) ^. _Id
+        (idea2, topic2) = case find isIdeaWithTopic (unIdeas uni) of
+            Nothing -> error "No idea with topic is found."
+            Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
         Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
     describe "Delegation simulation" $ do
         it "One delegation, one vote" $ do
@@ -195,8 +199,8 @@ spec = do
     universeToDelegationContexts u = DlgCtxGlobal:(spaces <> topics <> ideas)
       where
         spaces = DlgCtxIdeaSpace <$> unIdeaSpaces u
-        topics = DlgCtxTopicId   <$> unTopics     u
-        ideas  = DlgCtxIdeaId    <$> unIdeas      u
+        topics = DlgCtxTopicId   . view _Id <$> unTopics     u
+        ideas  = DlgCtxIdeaId    . view _Id <$> unIdeas      u
 
 -- * delegation program
 
