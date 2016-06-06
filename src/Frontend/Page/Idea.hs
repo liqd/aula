@@ -466,7 +466,10 @@ createOrEditIdea eLocIdea v form p = semanticDiv p $ do
                     inputTextArea_ [id_ "markdown1",
                                     placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
                         Nothing Nothing "idea-text" v
-                    button_ [class_ "btn m-input-action", Lucid.onclick_ "showPreview('markdown1.idea-text'); return false"] "Toggle preview window"
+                    a_ [ class_ "btn m-input-action"
+                       , Lucid.onclick_ "showPreview('markdown1')"
+                       ]
+                       "bearbeiten <> ansehen"
                 div_ [id_ "markdown1.idea-text-preview", class_ "markdown-preview m-closed"] nil
                 formPageSelectCategory v
                 footer_ [class_ "form-footer"] $ do
