@@ -153,23 +153,21 @@ spec = do
                     , Vote student1 idea No
                     ]
             it "Transitive delegation paths work accross different hierarchy levels" $ do
-                pendingWith "Idea needs to be in topic"
                 runDelegationProgram
-                    [ SetDelegation student1 (DlgCtxIdeaId idea)   student2
-                    , SetDelegation student2 (DlgCtxTopicId topic) student3
+                    [ SetDelegation student1 (DlgCtxIdeaId idea2)   student2
+                    , SetDelegation student2 (DlgCtxTopicId topic2) student3
                     , SetDelegation student3 DlgCtxGlobal student1
-                    , VotingPower student1 (DlgCtxIdeaId idea) 3
-                    , VotingPower student2 (DlgCtxIdeaId idea) 3
-                    , VotingPower student3 (DlgCtxIdeaId idea) 3
-                    , VotingPower student1 (DlgCtxTopicId topic) 2
-                    , VotingPower student2 (DlgCtxTopicId topic) 0
-                    , VotingPower student3 (DlgCtxTopicId topic) 1
-                    , VotingPower student1 DlgCtxGlobal 1
-                    , VotingPower student2 DlgCtxGlobal 0
-                    , VotingPower student3 DlgCtxGlobal 0
+                    , VotingPower student1 (DlgCtxIdeaId idea2) 3
+                    , VotingPower student2 (DlgCtxIdeaId idea2) 3
+                    , VotingPower student3 (DlgCtxIdeaId idea2) 3
+                    , VotingPower student1 (DlgCtxTopicId topic2) 3
+                    , VotingPower student2 (DlgCtxTopicId topic2) 1
+                    , VotingPower student3 (DlgCtxTopicId topic2) 2
+                    , VotingPower student1 DlgCtxGlobal 2
+                    , VotingPower student2 DlgCtxGlobal 1
+                    , VotingPower student3 DlgCtxGlobal 1
                     ]
             it "Breaking Cycles" $ do
-                pendingWith "ISSUE: no of delegatees are computed wrongly."
                 runDelegationProgram
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student3
