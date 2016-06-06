@@ -88,6 +88,13 @@ $author-image-size: 37px;
         }
     }
 
+    .comment-vote-up,
+    .comment-vote-down, & i {
+        @media screen and (max-width: $mobile-breakpoint) {
+            @include rem(font-size, 20px);
+        }
+    }
+
     .comment-vote-up {
         @include rem(margin-right, 15px);
 
