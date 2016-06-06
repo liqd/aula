@@ -740,9 +740,26 @@ data ProtoDelegation = ProtoDelegation
 
 instance SOP.Generic ProtoDelegation
 
-data DelegationContext =
+-- | Node type for the delegation scope hierarchy DAG.  The four levels are 'Idea', 'Topic',
+-- 'SchoolClass', and global.
+--
+-- There 'SchoolClass' level could reference an 'IdeaSpace' instead, but there is a subtle
+-- difference between delegation in school space and globally that we would like to avoid having to
+-- explain to our users, so we do not allow delegation in school space, and collapse 'school' and
+-- 'global' liberally in the UI.  We enforce this collapse in this type.
+--
+-- Example to demonstrate the difference: If idea @A@ lives in class @C@, and user @X@ votes yes on
+-- @A@, consider the two cases: If I delegate to user @X@ on school space level, @A@ is not covered,
+-- because it lives in a different space, so user @X@ does *not* cast my vote.  If I delegate to
+-- user @X@ *globally*, @A@ *is* covered, and @X@ *does* cast my vote.
+--
+-- The reason for this confusion is related to idea space membership, which is different for school:
+-- every user is implicitly a member of the idea space "school", whereas membership in all other
+-- idea spaces is explicit in the role.  However, this does not necessarily (although
+-- coincidentally) constitute a subset relationship between class spaces and school space.
+data DelegationContext =  -- FIXME: rename to 'DScope'.
     DlgCtxGlobal
-  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
+  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }  -- FIXME: should be 'SchoolClass'
   | DlgCtxTopicId   { _delCtxTopicId   :: AUID Topic }
   | DlgCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
