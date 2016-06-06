@@ -95,9 +95,9 @@ for(i in mdEls) {
 
 // Show Markdown Preview
 
-function showPreview(el) {
-    var textEl = document.getElementById(el);
-    var previewEl = document.getElementById(el + "-preview");
+function showPreview(textId, previewId) {
+    var textEl = document.getElementById(textId);
+    var previewEl = document.getElementById(previewId);
     updateMarkdownPreview(textEl, previewEl);
     toggleClass(previewEl, "m-closed");
     textEl.onkeyup = function() {
@@ -109,7 +109,7 @@ function showPreview(el) {
 
 function updateMarkdownPreview(textEl, previewEl) {
     if (textEl.value.trim() == "") {
-        previewEl.innerHTML = "[Text field is empty]";
+        previewEl.innerHTML = "[kein Text]";
     } else {
         previewEl.innerHTML = converter.makeHtml(textEl.value);
     }
