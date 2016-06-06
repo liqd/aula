@@ -205,9 +205,9 @@ spec = do
 -- * delegation program
 
 data DelegationDSL where
-    SetDelegation       :: AUID User -> DelegationContext -> AUID User      -> DelegationDSL
-    Vote                :: AUID User -> AUID Idea         -> IdeaVoteValue  -> DelegationDSL
-    VotingPower :: AUID User -> DelegationContext -> Int -> DelegationDSL
+    SetDelegation :: AUID User -> DelegationContext -> AUID User      -> DelegationDSL
+    Vote          :: AUID User -> AUID Idea         -> IdeaVoteValue  -> DelegationDSL
+    VotingPower   :: AUID User -> DelegationContext -> Int            -> DelegationDSL
 
 deriving instance Show DelegationDSL
 
