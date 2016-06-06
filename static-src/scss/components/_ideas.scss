@@ -15,10 +15,19 @@
     @include rem(margin-right, 27px);
     float: left;
     width: $thumbnail-size;
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        @include rem(margin-bottom, 20px);
+        float: none;
+    }
 }
 
 .ideas-list-text-container {
     @include rem(margin-left, $thumbnail-size + 27px);
+
+    @media screen and (max-width: $mobile-breakpoint) {
+         margin-left: 0;
+    }
 }
 
 .ideas-list-item {
@@ -68,6 +77,10 @@
     .ideas-list-author {
         display: block;
         font-size: $font-size-normal;
+    }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+         @include rem(font-size, $font-size-normal);
     }
 }
 
