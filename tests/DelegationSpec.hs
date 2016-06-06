@@ -41,7 +41,7 @@ universeSize = UniverseSize
 
 
 spec :: Spec
-spec = {- tag Large . -} do
+spec = do
     runner   <- runIO createActionRunner
     persist  <- runIO Persistent.mkRunPersistInMemory
     uni      <- runIO $ unNat (runner persist) (mkUniverse universeSize)
@@ -50,37 +50,135 @@ spec = {- tag Large . -} do
                         (QC.elements $ unStudents uni)
                         (QC.elements $ unIdeas    uni)
                         (QC.elements $ universeToDelegationContexts uni)
-    let student1 = unStudents uni !! 1
-        student2 = unStudents uni !! 2
-        idea     = unIdeas    uni !! 1
+    let runDelegationProgram program = do
+            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
+            unNat (runner persist') . interpretDelegationProgram
+                $ DelegationProgram program
+    let student1  = unStudents uni !! 1
+        student2  = unStudents uni !! 2
+        student3  = unStudents uni !! 3
+        student4  = unStudents uni !! 4
+        idea      = unIdeas    uni !! 1
+        topic     = unTopics   uni !! 1
+        Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
     describe "Delegation simulation" $ do
         it "One delegation, one vote" $ do
-            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
-            unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
+            runDelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , Vote student1 idea Yes
-                ]
-        it "Circle in delegation" $ do
-            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
-            unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
-                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
-                , SetDelegation student2 (DlgCtxIdeaId idea) student1
-                , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 2
-                , Vote student1 idea Yes
-                , Vote student2 idea Yes
                 ]
         it "Self delegation" $ do
-            persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
-            unNat (runner persist') . interpretDelegationProgram $ DelegationProgram
+            runDelegationProgram
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student1
                 , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 1
                 , Vote student1 idea No
                 ]
-        it "Random delegation programs" . property . forAllShrinkDef programGen $ \prg -> do
-            monadicIO $ do
-                persist' <- run $ Persistent.mkRunPersistInMemoryWithState snapshot
-                run . unNat (runner persist') $ interpretDelegationProgram prg
+        it "Delegation on topic" $ do
+            runDelegationProgram
+                [ SetDelegation student1 (DlgCtxTopicId topic) student2
+                , CheckNoOfDelegatees student2 (DlgCtxTopicId topic) 2
+                ]
+        it "Delegation on ideaspace" $ do
+            runDelegationProgram
+                [ SetDelegation student1 (DlgCtxIdeaSpace ideaspace) student2
+                , CheckNoOfDelegatees student2 (DlgCtxIdeaSpace ideaspace) 2
+                ]
+        it "Delegation on schoolspace" $ do
+            runDelegationProgram
+                [ SetDelegation student1 (DlgCtxIdeaSpace SchoolSpace) student2
+                , CheckNoOfDelegatees student2 (DlgCtxIdeaSpace SchoolSpace) 2
+                ]
+        it "Delegation on global" $ do
+            runDelegationProgram
+                [ SetDelegation student1 DlgCtxGlobal student2
+                , CheckNoOfDelegatees student2 DlgCtxGlobal 2
+                ]
+        it "I change my mind before" $ do
+            runDelegationProgram
+                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                , Vote student1 idea No
+                , Vote student2 idea Yes
+                ]
+        it "I change my mind after" $ do
+            runDelegationProgram
+                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                , Vote student2 idea Yes
+                , Vote student1 idea No
+                ]
+        describe "No cyclical delegation" $ do
+            it "I change my mind works on my delegatees" $ do
+                runDelegationProgram
+                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                    , SetDelegation student2 (DlgCtxIdeaId idea) student3
+                    , Vote student3 idea No
+                    , Vote student2 idea Yes
+                    , Vote student1 idea No
+                    ]
+            it "Transitive delegation paths work accross different hierarchy levels" $ do
+                pendingWith "Idea needs to be in topic"
+                runDelegationProgram
+                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                    , SetDelegation student2 (DlgCtxTopicId topic) student3
+                    , CheckNoOfDelegatees student3 (DlgCtxTopicId topic) 3
+                    ]
+        describe "Cyclical delegation" $ do
+            it "Cycle in delegation" $ do
+                pendingWith "Student2 should not change student1's vote."
+                runDelegationProgram
+                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
+                    , SetDelegation student2 (DlgCtxIdeaId idea) student1
+                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 2
+                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 2
+                    , Vote student1 idea Yes
+                    , Vote student2 idea No
+                    ]
+            it "I change my mind only works for me not my delegatees" $ do
+                pendingWith "Postcondition check does not express this"
+                runDelegationProgram
+                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                    , SetDelegation student2 (DlgCtxIdeaId idea) student3
+                    , SetDelegation student3 (DlgCtxIdeaId idea) student1
+                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 3
+                    , Vote student3 idea No
+                    , Vote student2 idea Yes
+                    , Vote student1 idea No
+                    ]
+            it "Transitive delegation paths work accross different hierarchy levels" $ do
+                pendingWith "Idea needs to be in topic"
+                runDelegationProgram
+                    [ SetDelegation student1 (DlgCtxIdeaId idea)   student2
+                    , SetDelegation student2 (DlgCtxTopicId topic) student3
+                    , SetDelegation student3 DlgCtxGlobal student1
+                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student1 (DlgCtxTopicId topic) 2
+                    , CheckNoOfDelegatees student2 (DlgCtxTopicId topic) 0
+                    , CheckNoOfDelegatees student3 (DlgCtxTopicId topic) 1
+                    , CheckNoOfDelegatees student1 DlgCtxGlobal 1
+                    , CheckNoOfDelegatees student2 DlgCtxGlobal 0
+                    , CheckNoOfDelegatees student3 DlgCtxGlobal 0
+                    ]
+            it "Breaking Cycles" $ do
+                pendingWith "ISSUE: no of delegatees are computed wrongly."
+                runDelegationProgram
+                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                    , SetDelegation student2 (DlgCtxIdeaId idea) student3
+                    , SetDelegation student3 (DlgCtxIdeaId idea) student1
+                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 3
+                    , SetDelegation student1 (DlgCtxIdeaId idea) student4
+                    , CheckNoOfDelegatees student1 (DlgCtxIdeaId idea) 3
+                    , CheckNoOfDelegatees student2 (DlgCtxIdeaId idea) 1
+                    , CheckNoOfDelegatees student3 (DlgCtxIdeaId idea) 2
+                    , CheckNoOfDelegatees student4 (DlgCtxIdeaId idea) 4
+                    ]
+        tag Large . it "Random delegation programs" . property . forAllShrinkDef programGen
+            $ \(DelegationProgram program) -> monadicIO . run $ runDelegationProgram program
   where
     getDBSnapShot :: Action.Action Persistent.AulaData
     getDBSnapShot = query (view Persistent.dbSnapshot)
