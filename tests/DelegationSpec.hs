@@ -119,11 +119,13 @@ spec = do
                     , Vote student1 idea No
                     ]
             it "Transitive delegation paths work accross different hierarchy levels" $ do
-                pendingWith "Idea needs to be in topic"
                 runDelegationProgram
-                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                    , SetDelegation student2 (DlgCtxTopicId topic) student3
-                    , CheckNoOfDelegatees student3 (DlgCtxTopicId topic) 3
+                    [ SetDelegation student1 (DlgCtxIdeaId idea2) student2
+                    , SetDelegation student2 (DlgCtxTopicId topic2) student3
+                    , VotingPower student1 (DlgCtxIdeaId idea2) 1
+                    , VotingPower student2 (DlgCtxIdeaId idea2) 2
+                    , VotingPower student3 (DlgCtxIdeaId idea2) 3
+                    , VotingPower student3 (DlgCtxTopicId topic2) 2
                     ]
         describe "Cyclical delegation" $ do
             it "Cycle in delegation" $ do
@@ -253,26 +255,33 @@ getVotingPower :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
 getVotingPower u ctx = sort . nub <$> (view _Id <$$> equery (Persistent.votingPower u ctx))
 
 interpretDelegationStep :: ActionM m => (Int, DelegationDSL) -> m ()
-interpretDelegationStep (i,step@(SetDelegation f tp t)) = do
+interpretDelegationStep (i,step@(SetDelegation f ctx t)) = do
     Action.login f
-    delegatees <- getDelegateesOf t tp
-    Action.delegateTo tp t
-    delegatees' <- getDelegateesOf t tp
+    delegateesTo   <- getVotingPower t ctx
+    delegateesFrom <- getVotingPower f ctx
+    Action.delegateTo ctx t
+    delegatees' <- getVotingPower t ctx
     Action.logout
-    let r = if f `elem` delegatees
-                then delegatees == delegatees'
-                else f `elem` delegatees' && (length delegatees' == 1 + length delegatees)
-    unless r . fail $ show (i, step, f `elem` delegatees, show f, delegatees, delegatees')
+    let ds1 = sort delegatees'
+        ds2 = sort (nub (delegateesFrom <> delegateesTo))
+    let holds = if f `elem` delegateesTo
+                    then delegateesTo == delegatees'
+                    else f `elem` delegatees' && (ds1 == ds2)
+    unless holds . fail $ show (
+        if f `elem` delegateesTo
+            then "The delegatees list has changed."
+            else "The delegatees are not the sum of from and to",
+        i, step, f `elem` delegateesTo, ds1, ds2)
 interpretDelegationStep (j,step@(Vote v i x)) = do
     Action.login v
-    delegatees <- getDelegateesOf v (DlgCtxIdeaId i)
+    delegatees <- getVotingPower v (DlgCtxIdeaId i)
     Action.voteOnIdea i x
     votes <- forM delegatees $ \s -> getVote s i
     let rightVotes = all (Just (v, x) ==) votes
     Action.logout
-    unless rightVotes . fail $ show (j, step, delegatees, votes)
-interpretDelegationStep (i,step@(CheckNoOfDelegatees v ctx n)) = do
+    unless rightVotes . fail $ show ("Not all the votes have right voter or vote.", j, step, delegatees, votes)
+interpretDelegationStep (i,step@(VotingPower v ctx n)) = do
     Action.login v
-    delegatees <- getDelegateesOf v ctx
+    delegatees <- getVotingPower v ctx
     Action.logout
-    unless (length delegatees == n) . fail $ show (i, step, length delegatees, delegatees)
+    unless (length delegatees == n) . fail $ show ("Number of delegatees was different.", i, step, length delegatees, delegatees)
