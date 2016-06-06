@@ -23,9 +23,11 @@ import qualified Persistent.Api as Persistent (RunPersist)
 import qualified Persistent.Implementation.AcidState as Persistent
 
 import Control.Category ((.))
+import Test.Hspec.QuickCheck (modifyMaxSuccess)
 import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)
 import qualified Test.QuickCheck as QC (elements)
+
 
 universeSize :: UniverseSize
 universeSize = UniverseSize
@@ -65,61 +67,63 @@ spec = do
             Nothing -> error "No idea with topic is found."
             Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
         Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
+    let noChecks (VotingPower{}) = False
+        noChecks _               = True
+    let observableBehaviour program =
+            forAllShrinkDef programGen $ \(DelegationProgram prefix) ->
+            forAllShrinkDef programGen $ \(DelegationProgram postfix) ->
+                monadicIO . run $ runDelegationProgram
+                $ prefix <> filter noChecks program <> postfix
+    let delegationTest description program = do
+            describe description $ do
+                it "with empty context" $ runDelegationProgram program
+                modifyMaxSuccess (round . (sqrt :: Double -> Double) . fromIntegral) .
+                    tag Large . it "with random contexts" $ observableBehaviour program
     describe "Delegation simulation" $ do
-        it "One delegation, one vote" $ do
-            runDelegationProgram
+        delegationTest "One delegation, one vote"
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , Vote student1 idea Yes
                 ]
-        it "Self delegation" $ do
-            runDelegationProgram
+        delegationTest "Self delegation"
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student1
                 , VotingPower student1 (DlgCtxIdeaId idea) 1
                 , Vote student1 idea No
                 ]
-        it "Delegation on topic" $ do
-            runDelegationProgram
+        delegationTest "Delegation on topic"
                 [ SetDelegation student1 (DlgCtxTopicId topic) student2
                 , VotingPower student2 (DlgCtxTopicId topic) 2
                 ]
-        it "Delegation on ideaspace" $ do
-            runDelegationProgram
+        delegationTest "Delegation on ideaspace"
                 [ SetDelegation student1 (DlgCtxIdeaSpace ideaspace) student2
                 , VotingPower student2 (DlgCtxIdeaSpace ideaspace) 2
                 ]
-        it "Delegation on schoolspace" $ do
-            runDelegationProgram
+        delegationTest "Delegation on schoolspace"
                 [ SetDelegation student1 (DlgCtxIdeaSpace SchoolSpace) student2
                 , VotingPower student2 (DlgCtxIdeaSpace SchoolSpace) 2
                 ]
-        it "Delegation on global" $ do
-            runDelegationProgram
+        delegationTest "Delegation on global"
                 [ SetDelegation student1 DlgCtxGlobal student2
                 , VotingPower student2 DlgCtxGlobal 2
                 ]
-        it "I change my mind before" $ do
-            runDelegationProgram
+        delegationTest "I change my mind before"
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , Vote student1 idea No
                 , Vote student2 idea Yes
                 ]
-        it "I change my mind after" $ do
-            runDelegationProgram
+        delegationTest "I change my mind after"
                 [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                 , Vote student2 idea Yes
                 , Vote student1 idea No
                 ]
         describe "No cyclical delegation" $ do
-            it "I change my mind works on my delegatees" $ do
-                runDelegationProgram
+            delegationTest "I change my mind works on my delegatees"
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
-            it "Transitive delegation paths work accross different hierarchy levels" $ do
-                runDelegationProgram
+            delegationTest "Transitive delegation paths work accross different hierarchy levels"
                     [ SetDelegation student1 (DlgCtxIdeaId idea2) student2
                     , SetDelegation student2 (DlgCtxTopicId topic2) student3
                     , VotingPower student1 (DlgCtxIdeaId idea2) 1
@@ -152,8 +156,7 @@ spec = do
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
-            it "Transitive delegation paths work accross different hierarchy levels" $ do
-                runDelegationProgram
+            delegationTest "Transitive delegation paths work accross different hierarchy levels"
                     [ SetDelegation student1 (DlgCtxIdeaId idea2)   student2
                     , SetDelegation student2 (DlgCtxTopicId topic2) student3
                     , SetDelegation student3 DlgCtxGlobal student1
@@ -167,8 +170,7 @@ spec = do
                     , VotingPower student2 DlgCtxGlobal 1
                     , VotingPower student3 DlgCtxGlobal 1
                     ]
-            it "Breaking Cycles" $ do
-                runDelegationProgram
+            delegationTest "Breaking Cycles"
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student3
                     , SetDelegation student3 (DlgCtxIdeaId idea) student1
@@ -210,7 +212,6 @@ data DelegationDSL where
     VotingPower   :: AUID User -> DelegationContext -> Int            -> DelegationDSL
 
 deriving instance Show DelegationDSL
-
 
 newtype DelegationProgram = DelegationProgram { unDelegationProgram :: [DelegationDSL] }
 
