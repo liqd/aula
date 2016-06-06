@@ -38,6 +38,10 @@
         @include rem(padding-left, 40px);
         overflow: hidden;
         width: 100%;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            @include rem(padding-left, 20px);
+        }
     }
 
     .comment-reply {
