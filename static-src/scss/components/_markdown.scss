@@ -51,3 +51,17 @@
         @include rem(margin-bottom, 1rem);
     }
 }
+
+.markdown-preview {
+    @include rem(padding, 15px);
+    @extend .markdown;
+    border: 1px solid $color-grey-light;
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.5s, display 0.5s;
+
+    &.m-closed {
+        max-height: 0;
+        display: none;
+    }
+}

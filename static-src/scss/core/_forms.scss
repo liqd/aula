@@ -10,6 +10,7 @@ textarea {
     @include rem(margin-bottom, 45px);
     @include rem(padding, 0 25px);
     border: 0;
+    border-radius: 0;
     box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
     color: $color-text;
     display: block;
@@ -20,6 +21,10 @@ textarea {
 
     &.m-small {
         @extend .col-6-12;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            width: 100%;
+        }
     }
 
     &.input-number {
@@ -27,6 +32,17 @@ textarea {
         @include rem(width, 50px);
         text-align: center;
     }
+}
+
+input[type="text"],
+input[type="url"],
+input[type="password"],
+input[type="email"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+textarea {
+    -webkit-appearance: none;
 }
 
 textarea {

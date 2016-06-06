@@ -93,6 +93,28 @@ for(i in mdEls) {
     }
 }
 
+// Show Markdown Preview
+
+function showPreview(textId, previewId) {
+    var textEl = document.getElementById(textId);
+    var previewEl = document.getElementById(previewId);
+    updateMarkdownPreview(textEl, previewEl);
+    toggleClass(previewEl, "m-closed");
+    textEl.onkeyup = function() {
+        if(!hasClass(previewEl, "m-closed")) {
+            updateMarkdownPreview(textEl, previewEl);
+        }
+    };
+}
+
+function updateMarkdownPreview(textEl, previewEl) {
+    if (textEl.value.trim() == "") {
+        previewEl.innerHTML = "[kein Text]";
+    } else {
+        previewEl.innerHTML = converter.makeHtml(textEl.value);
+    }
+}
+
 // helpers
 
 function getElementByClassName(el, parent) {
@@ -109,6 +131,10 @@ function removeClass(el, cl) {
 
 function addClass(el, cl) {
     if(el) el.className = el.className + " " + cl;
+}
+
+function hasClass(el, cl) {
+    if(el) return (el.className.indexOf(cl) > -1);
 }
 
 function toggleClass(el, cl) {

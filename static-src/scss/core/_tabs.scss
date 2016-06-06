@@ -19,6 +19,12 @@
             font-weight: bold;
             line-height: $tab-height;
             text-align: center;
+
+            @media screen and (max-width: $mobile-breakpoint) {
+                @include rem(padding, 10px 0);
+                line-height: 1;
+                min-height: 52px;
+            }
         }
 
         &.m-active a {

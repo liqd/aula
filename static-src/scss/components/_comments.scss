@@ -8,6 +8,10 @@
         border: 1px solid $color-grey-light;
         border-width: 1px 0;
         overflow: hidden;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            text-align: center;
+        }
     }
 
     .comments-header-heading {
@@ -19,6 +23,13 @@
 
     .comments-header-button {
         float: right;
+    }
+
+    .comments-header-heading,
+    .comments-header-button {
+        @media screen and (max-width: $mobile-breakpoint) {
+            float: none;
+        }
     }
 
     .comment {
@@ -38,6 +49,10 @@
         @include rem(padding-left, 40px);
         overflow: hidden;
         width: 100%;
+
+        @media screen and (max-width: $mobile-breakpoint) {
+            @include rem(padding-left, 20px);
+        }
     }
 
     .comment-reply {
@@ -85,6 +100,13 @@ $author-image-size: 37px;
             &:hover, &:focus {
                 color: $color-text;
             }
+        }
+    }
+
+    .comment-vote-up,
+    .comment-vote-down, & i {
+        @media screen and (max-width: $mobile-breakpoint) {
+            @include rem(font-size, 20px);
         }
     }
 

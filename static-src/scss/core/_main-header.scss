@@ -150,4 +150,9 @@
     .detail-header-menu {
         float: right;
     }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        padding-left: 0;
+        padding-right: 0;
+    }
 }

@@ -1,5 +1,9 @@
 .themes-header {
     @include rem(padding, 54px 0 46px);
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        @include rem(padding, 20px 0 10px);
+    }
 }
 
 .theme-grid-item {

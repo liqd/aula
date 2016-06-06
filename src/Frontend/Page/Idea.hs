@@ -73,8 +73,10 @@ import qualified Data.Map as Map
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.View as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Types (MoveIdea)
+import qualified Lucid
 
 
 -- * types
@@ -460,10 +462,17 @@ createOrEditIdea eLocIdea v form p = semanticDiv p $ do
                     span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
                     inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
                         "title" v
+                let editDomId    :: ST = DF.viewName v <> ".idea-text"
+                    previewDomId :: ST = editDomId <> "-preview"
                 label_ $ do
                     span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
                     inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
                         Nothing Nothing "idea-text" v
+                    a_ [ class_ "btn m-input-action"
+                       , Lucid.onclick_ $ "showPreview('" <> editDomId <> "', '" <> previewDomId <> "')"
+                       ]
+                       "bearbeiten <> ansehen"
+                div_ [id_ previewDomId, class_ "markdown-preview m-closed"] nil
                 formPageSelectCategory v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Idee veröffentlichen"
