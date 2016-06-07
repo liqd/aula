@@ -120,7 +120,7 @@ where
 import Codec.Picture (DynamicImage)
 import Control.Exception (SomeException, assert)
 import Control.Lens
-import Control.Monad ((>=>), void, when)
+import Control.Monad ((>=>), filterM, void, when)
 import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
@@ -519,9 +519,19 @@ voteOnIdea ideaId voteVal = do
     voter <- currentUser
     let topic = DlgCtxIdeaId ideaId
     voteFor voter voter
-    equery (votingPower (voter ^. _Id) topic) >>= mapM_ (voteFor voter)
+    equery (votingPower (voter ^. _Id) topic)
+        >>= filterM canVoteMadeFor
+        >>= mapM_ (voteFor voter)
     (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
   where
+    canVoteMadeFor :: ActionM m => User -> m Bool
+    canVoteMadeFor voter = do
+        let voterId = voter ^. _Id
+        mvote <- equery $ getVote voterId ideaId
+        pure $ case mvote of
+            Nothing                -> True
+            Just (voter', _vote) -> voterId /= (voter' ^. _Id)
+
     voteFor :: ActionM m => User -> User -> m ()
     voteFor voter delegatee = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
