@@ -206,9 +206,9 @@ userHeaderDiv ctx (ActiveUser user) =
                 -- FIXME: Do not render the buttons for itself
                 -- FIXME: Styling
                 when (CanVote `elem` caps) $ do
-                    postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Klassenweit beauftragen"
+                    postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
                     -- FIXME: Render the button if the user is in the same class as the current one
-                    postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Schulweit beauftragen"
+                    postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
                 btn (U.reportUser user) "melden"
                 when (CanEditUser `elem` caps) editProfileBtn
 
