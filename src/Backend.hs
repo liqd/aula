@@ -8,6 +8,8 @@
 module Backend
 where
 
+import Control.Monad (void)
+
 import Action
 import Arbitrary
 import Data.String.Conversions (ST)
@@ -52,6 +54,6 @@ manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        update DangerousResetAulaData
   :<|> genInitialTestDb
-  :<|> mkUniverse
+  :<|> void (mkUniverse defaultUniverseSize)
   :<|> genVotingPhaseTopic
   :<|> update . DangerousRenameAllLogins

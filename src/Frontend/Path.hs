@@ -50,11 +50,16 @@ module Frontend.Path
     , unmarkIdeaAsWinner
     , creatorStatement
     , deleteIdea
+    , delegateVoteOnIdea
 
     -- * paths to idea lists
     , listIdeas
     , listIdeasInTopic
     , listIdeas'
+
+    -- * paths to topic
+    , delegateVoteOnTopic
+    , viewTopic
 
     -- * paths to comments
     , replyToComment
@@ -74,6 +79,10 @@ module Frontend.Path
     , editUserProfile
     , editUserIdProfile
     , reportUser
+
+    -- * user profile
+    , delegateVoteOnSchoolSpace
+    , delegateVoteOnClassSpace
 
     -- * aux predicates
     , isPostOnly
@@ -203,7 +212,7 @@ space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
 space CreateTopic                 root = root </> "topic" </> "create"
 space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
-space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation" </> "create"
+space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegate"
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
@@ -211,6 +220,13 @@ topicTab = \case
     ListIdeasInTopicTabVoting   -> (</> "voting")
     ListIdeasInTopicTabAccepted -> (</> "accepted")
     ListIdeasInTopicTabWinning  -> (</> "winning")
+
+delegateVoteOnTopic :: Topic -> Main 'AllowGetPost
+delegateVoteOnTopic topic = Space (topic ^. topicIdeaSpace) (CreateTopicDelegation (topic ^. _Id))
+
+viewTopic :: Topic -> Main 'AllowGetPost
+viewTopic topic =
+    listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) Nothing Nothing
 
 
 -- ** IdeaMode
@@ -234,6 +250,7 @@ data IdeaMode (r :: AllowedMethod) =
     | CreatorStatement (AUID Idea)
     | DeleteIdea (AUID Idea)
     | ReportIdea (AUID Idea)
+    | DelegateVoteOnIdea (AUID Idea)
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic (IdeaMode r)
@@ -257,6 +274,7 @@ ideaMode (MarkIdeaAsWinner i)   root = root </> "idea" </> uriPart i </> "markwi
 ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"
 ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
 ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
+ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegate"
 
 
 -- ** CommentMode
@@ -350,6 +368,8 @@ admin (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </>
 data UserMode (r :: AllowedMethod) =
     UserIdeas
   | UserDelegations
+  | UserDelegateVoteOnSchoolSpace
+  | UserDelegateVoteOnClassSpace
   | UserEdit
   | ReportUser
   deriving (Generic, Show)
@@ -357,10 +377,18 @@ data UserMode (r :: AllowedMethod) =
 instance SOP.Generic (UserMode r)
 
 user :: UserMode r -> UriPath -> UriPath
-user UserIdeas       = (</> "ideas")
-user UserDelegations = (</> "delegations")
-user UserEdit        = (</> "edit")
-user ReportUser      = (</> "report")
+user UserIdeas                     = (</> "ideas")
+user UserDelegations               = (</> "delegations")
+user UserDelegateVoteOnSchoolSpace = \path -> path </> "delegate" </> "school"
+user UserDelegateVoteOnClassSpace  = \path -> path </> "delegate" </> "class"
+user UserEdit                      = (</> "edit")
+user ReportUser                    = (</> "report")
+
+delegateVoteOnSchoolSpace :: User -> Main 'AllowPost
+delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
+
+delegateVoteOnClassSpace :: User -> Main 'AllowPost
+delegateVoteOnClassSpace u = UserProf (u ^. _Id) UserDelegateVoteOnClassSpace
 
 
 -- * paths to ideas
@@ -422,6 +450,8 @@ creatorStatement idea = IdeaPath (idea ^. ideaLocation) $ CreatorStatement (idea
 deleteIdea :: Idea -> Main 'AllowPost
 deleteIdea idea = IdeaPath (idea ^. ideaLocation) $ DeleteIdea (idea ^. _Id)
 
+delegateVoteOnIdea :: Idea -> Main 'AllowGetPost
+delegateVoteOnIdea idea = IdeaPath (idea ^. ideaLocation) $ DelegateVoteOnIdea (idea ^. _Id)
 
 -- * paths to idea lists
 
@@ -520,6 +550,11 @@ isPostOnly = \case
           AdminTopicNextPhase _       -> True
           AdminTopicVotingPrevPhase _ -> True
           _                           -> False
+    UserProf _ m ->
+      case m of
+          UserDelegateVoteOnSchoolSpace -> True
+          UserDelegateVoteOnClassSpace  -> True
+          _                             -> False
     -- FIXME[#312] Logout -> True
     _ -> False
 

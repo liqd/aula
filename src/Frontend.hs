@@ -251,6 +251,8 @@ type IdeaApi
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
+       -- delegate idea
+  :<|> Idea ::> "delegate" :> FormHandler PageDelegateVote
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
@@ -269,6 +271,7 @@ ideaApi loc
   :<|> Action.revokeWinnerStatusOfIdea
   :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
+  :<|> form . Page.ideaDelegation
 
 type TopicApi =
        -- browse topics in an idea space
@@ -284,10 +287,10 @@ type TopicApi =
   :<|> Topic ::> "ideas" :> "winning"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
   :<|> Topic ::> "delegations"         :> GetH (Frame ViewTopic)
 
-       -- create new topic
+       -- create, edit, delegate topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
   :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
-  :<|> Topic  ::> "delegation" :> "create" :> FormHandler PageDelegateVote
+  :<|> Topic  ::> "delegate"   :> FormHandler PageDelegateVote
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
@@ -304,7 +307,7 @@ topicApi space
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
-  :<|> error "api not implemented: topic/:topic/delegation/create"
+  :<|> form . Page.topicDelegation
   where
     viewTopicTab tab tid qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
@@ -325,6 +328,8 @@ type AulaUser =
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
+  :<|> "delegate"    :> "school" :> PostH
+  :<|> "delegate"    :> "class"  :> PostH
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
@@ -332,6 +337,8 @@ aulaUser userId =
   :<|> runHandler (Page.delegatedVotes  userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
+  :<|> Action.delegateVoteOnSchoolSpace userId
+  :<|> Action.delegateVoteOnClassSpace  userId
 
 
 type AulaAdmin =

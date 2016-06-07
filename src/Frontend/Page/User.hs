@@ -198,16 +198,19 @@ userHeaderDiv ctx (ActiveUser user) =
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
             editProfileBtn = btn (U.editUserProfile user) "+ Profil bearbeiten"
 
-        div_ [class_ "heroic-btn-group"] $ if isOwnProfile ctx user
-            then do
+        div_ [class_ "heroic-btn-group"] $ do
+            let caps = capabilities ctx
+            -- NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
+            -- philosophical, but it doesn't really matter: users can delegate to themselves
+            -- just like to anybody else, and the graph will look different if they do.
+            -- FIXME: Styling
+            when (CanVote `elem` caps && isSameSchoolClass ctx user) $ do
+                postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
+            when (CanVote `elem` caps) $ do
+                postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
+            btn (U.reportUser user) "melden"
+            when (CanEditUser `elem` caps) $ do
                 editProfileBtn
-            else do
-                let caps = capabilities ctx
-                when (CanDelegate `elem` caps) $ do
-                    btn U.Broken "Klassenweit beauftragen"
-                    btn U.Broken "Schulweit beauftragen"
-                btn (U.reportUser user) "melden"
-                when (CanEditUser `elem` caps) editProfileBtn
 
 
 -- ** User Profile: Created Ideas
