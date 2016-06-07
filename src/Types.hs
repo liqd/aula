@@ -29,6 +29,7 @@ where
 import Control.Lens
 import Control.Monad
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Crypto.Scrypt
 import Data.Binary
 import Data.Char
 import Data.Function (on)
@@ -687,6 +688,12 @@ data UserPass =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserPass
+
+verifyUserPass :: ST -> UserPass -> Bool
+verifyUserPass pwd = \case
+    UserPassInitial (InitialPassword p)           -> p == pwd
+    UserPassEncrypted (ScryptEncryptedPassword p) -> verifyPass' (Pass (cs pwd)) (EncryptedPass p)
+    UserPassDeactivated                           -> False
 
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)

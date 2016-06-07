@@ -10,7 +10,6 @@
 module Frontend.Page.User
 where
 
-import Crypto.Scrypt
 import System.FilePath
 
 import Access
@@ -94,12 +93,6 @@ data UserSettingData = UserSettingData
     , profileNewPass2 :: Maybe ST
     }
     deriving (Eq, Show)
-
-verifyUserPass :: ST -> UserPass -> Bool
-verifyUserPass pwd = \case
-    UserPassInitial (InitialPassword p)             -> p == pwd
-    UserPassEncrypted (ScryptEncryptedPassword p)   -> verifyPass' (Pass (cs pwd)) (EncryptedPass p)
-    UserPassDeactivated                             -> False
 
 -- This function checks that IF provided the password must be correct.
 -- See checkPwdAllOrNothing which checks that the three passwords are present at once.
