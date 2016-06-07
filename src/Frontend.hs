@@ -251,8 +251,8 @@ type IdeaApi
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
-       -- delegation idea
-  :<|> Idea ::> "delegation" :> FormHandler PageDelegateVote
+       -- delegate idea
+  :<|> Idea ::> "delegate" :> FormHandler PageDelegateVote
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
@@ -287,10 +287,10 @@ type TopicApi =
   :<|> Topic ::> "ideas" :> "winning"  :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame ViewTopic)
   :<|> Topic ::> "delegations"         :> GetH (Frame ViewTopic)
 
-       -- create new topic
+       -- create, edit, delegate topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
   :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
-  :<|> Topic  ::> "delegation" :> FormHandler PageDelegateVote
+  :<|> Topic  ::> "delegate"   :> FormHandler PageDelegateVote
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space

@@ -212,7 +212,7 @@ space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
 space CreateTopic                 root = root </> "topic" </> "create"
 space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
-space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegation"
+space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegate"
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
@@ -274,7 +274,7 @@ ideaMode (MarkIdeaAsWinner i)   root = root </> "idea" </> uriPart i </> "markwi
 ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revokewinner"
 ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
 ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
-ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegation"
+ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegate"
 
 
 -- ** CommentMode
