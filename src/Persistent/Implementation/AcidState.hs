@@ -39,22 +39,9 @@ import Persistent.Pure
 mkRunPersistGeneric :: String
                     -> (AulaData -> IO (AcidState AulaData, a))
                     -> (AcidState AulaData -> a -> IO ())
-                    -> IO RunPersist
-mkRunPersistGeneric desc openState closeState = do
-    (st, h) <- openState emptyAulaData
-    pure RunPersist { _rpDesc   = desc
-                    , _rpQuery  = query st AskDb
-                    , _rpUpdate = update st
-                    , _rpClose  = closeState st h
-                    }
-
-mkRunPersistGenericWithState
-                    :: String
-                    -> (AulaData -> IO (AcidState AulaData, a))
-                    -> (AcidState AulaData -> a -> IO ())
                     -> AulaData
                     -> IO RunPersist
-mkRunPersistGenericWithState desc openState closeState initialState = do
+mkRunPersistGeneric desc openState closeState initialState = do
     (st, h) <- openState initialState
     pure RunPersist { _rpDesc   = desc
                     , _rpQuery  = query st AskDb
@@ -64,7 +51,7 @@ mkRunPersistGenericWithState desc openState closeState initialState = do
 
 mkRunPersistOnDisk :: SendLogMsg -> Config -> IO RunPersist
 mkRunPersistOnDisk logger cfg =
-    mkRunPersistGeneric "acid-state (disk)" opn cls
+    mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
     opn aulaData = do
         st <- explainException $ openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
@@ -91,9 +78,10 @@ mkRunPersistInMemory =
     mkRunPersistGeneric "acid-state (memory)"
         (fmap (, ()) . openMemoryState)
         (\st () -> closeAcidState st)
+        emptyAulaData
 
 mkRunPersistInMemoryWithState :: AulaData -> IO RunPersist
 mkRunPersistInMemoryWithState =
-    mkRunPersistGenericWithState "acid-state (memory)"
+    mkRunPersistGeneric "acid-state (memory)"
         (fmap (, ()) . openMemoryState)
         (\st () -> closeAcidState st)
