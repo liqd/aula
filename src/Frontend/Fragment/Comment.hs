@@ -35,9 +35,9 @@ makeLenses ''CommentWidget
 instance ToHtml CommentWidget where
     toHtmlRaw = toHtml
     toHtml w = semanticDiv' [class_ "comment"] w $ do
-            commentToHtml w
-            div_ [class_ "comment-replies"] . for_ (w ^. cwComment . commentReplies) $ \reply ->
-                div_ [class_ "comment-reply"] . commentToHtml $ w & cwComment .~ reply
+        commentToHtml w
+        div_ [class_ "comment-replies"] . for_ (w ^. cwComment . commentReplies) $ \reply ->
+            div_ [class_ "comment-reply"] . commentToHtml $ w & cwComment .~ reply
 
 commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
 commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do

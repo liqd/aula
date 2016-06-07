@@ -143,27 +143,27 @@ instance FormPage PageUserSettings where
 
     formPage v form p = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-                    h1_ [class_ "main-heading"] "Einstellungen"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "E-mailadresse (optional)"
-                            inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
-                                "email" v
-                        h2_ [class_ "label-header"] "Passwort ändern"
-                        label_ $ do
-                            span_ [class_ "label-text"] "aktualles Passwort"
-                            inputPassword_ [class_ "m-small"]
-                                "old-password" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "neues Passwort"
-                            inputPassword_ [class_ "m-small"]
-                                "new-password1" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "neues Passwort bestätigen"
-                            inputPassword_ [class_ "m-small"]
-                                "new-password2" v
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Änderungen speichern"
+            h1_ [class_ "main-heading"] "Einstellungen"
+            form $ do
+                label_ $ do
+                    span_ [class_ "label-text"] "E-mailadresse (optional)"
+                    inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
+                        "email" v
+                h2_ [class_ "label-header"] "Passwort ändern"
+                label_ $ do
+                    span_ [class_ "label-text"] "aktualles Passwort"
+                    inputPassword_ [class_ "m-small"]
+                        "old-password" v
+                label_ $ do
+                    span_ [class_ "label-text"] "neues Passwort"
+                    inputPassword_ [class_ "m-small"]
+                        "new-password1" v
+                label_ $ do
+                    span_ [class_ "label-text"] "neues Passwort bestätigen"
+                    inputPassword_ [class_ "m-small"]
+                        "new-password2" v
+                footer_ [class_ "form-footer"] $ do
+                    DF.inputSubmit "Änderungen speichern"
 
 
 userSettings :: forall m . ActionM m => FormPageHandler m PageUserSettings
@@ -312,19 +312,19 @@ instance FormPage EditUserProfile where
 
     formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-                    h1_ [class_ "main-heading"] .
-                        toHtml $ if isOwnProfile ctx user
-                            then "Eigenes Nutzerprofil bearbeiten"
-                            else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Avatar"
-                            DF.inputFile "avatar" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Beschreibung"
-                            inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Änderungen speichern"
+            h1_ [class_ "main-heading"] .
+                toHtml $ if isOwnProfile ctx user
+                    then "Eigenes Nutzerprofil bearbeiten"
+                    else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
+            form $ do
+                label_ $ do
+                    span_ [class_ "label-text"] "Avatar"
+                    DF.inputFile "avatar" v
+                label_ $ do
+                    span_ [class_ "label-text"] "Beschreibung"
+                    inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
+                footer_ [class_ "form-footer"] $ do
+                    DF.inputSubmit "Änderungen speichern"
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
