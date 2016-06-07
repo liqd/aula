@@ -99,7 +99,7 @@ instance ToHtml LoginDemoHints where
                     th_ "klasse"
                     th_ "email"
                     th_ "password"
-                (\u -> tr_ $ do
+                forM_ users $ \u -> tr_ $ do
                     td_ $ u ^. userLogin . unUserLogin . html
                     td_ $ u ^. userRole . uilabeledST . html
                     td_ $ case u ^. userRole of
@@ -110,12 +110,11 @@ instance ToHtml LoginDemoHints where
                               Principal     -> nil
                               Admin         -> nil
                     td_ . toHtml $ (u ^. userEmailAddress :: ST)
-                    td_ . toHtml .
-                        (\case (UserPassInitial (InitialPassword s))         -> s
-                               (UserPassEncrypted (FakeEncryptedPassword s)) -> cs s
-                               s -> cs $ show s
-                        ) $ u ^. userPassword)
-                  `mapM_` users
+                    td_ . toHtml $
+                        case u ^. userPassword of
+                            UserPassInitial (InitialPassword s) -> s
+                            UserPassEncrypted{}                 -> "<hashed-password>"
+                            UserPassDeactivated                 -> "<deactivated-password>"
 
 
 -- * handlers
