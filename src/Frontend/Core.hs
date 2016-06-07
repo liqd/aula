@@ -495,7 +495,7 @@ pageFrame frame = do
         div_ [class_ "page-wrapper"] $ do
             div_ [class_ "main-grid-container"] $ do
                 div_ [class_ "grid main-grid"] $ do
-                    renderStatusMessages `mapM_` (frame ^? frameMessages)  -- FIXME: styling
+                    renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
         footerMarkup
 
