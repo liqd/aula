@@ -560,14 +560,13 @@ delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
 delegateVoteOnSchoolSpace = delegateTo (DScopeIdeaSpace SchoolSpace)
 
 -- | Delegates the current user's vote for his/her class to the given user.
--- FIXME: The the users should be in the same class.
 delegateVoteOnClassSpace :: ActionM m => AUID User -> m ()
-delegateVoteOnClassSpace uid = do
-    user <- currentUser
-    let mSchoolClass = user ^? userRole . _Student
-    case mSchoolClass of
-        Nothing -> return () -- FIXME: Throw exception
-        Just sp -> delegateTo (DScopeIdeaSpace (ClassSpace sp)) uid
+delegateVoteOnClassSpace delegateId = do
+    delegatee <- currentUser
+    delegate  <- mquery $ findUser delegateId
+    case isSameSchoolClass' delegatee delegate of
+        Nothing -> throwError500 "authorization check should have caught this!"
+        Just cl -> delegateTo (DScopeIdeaSpace (ClassSpace cl)) delegateId
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
