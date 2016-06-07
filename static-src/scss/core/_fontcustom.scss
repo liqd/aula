@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_42cd88b0372ad5113ad72973ae8d7a73.eot");
-  src: url("../icons/fontcustom_42cd88b0372ad5113ad72973ae8d7a73.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_42cd88b0372ad5113ad72973ae8d7a73.woff") format("woff"),
-       url("../icons/fontcustom_42cd88b0372ad5113ad72973ae8d7a73.ttf") format("truetype"),
-       url("../icons/fontcustom_42cd88b0372ad5113ad72973ae8d7a73.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_0b1e86fbad48b1e11ab58d155c8f4cf0.eot");
+  src: url("../icons/fontcustom_0b1e86fbad48b1e11ab58d155c8f4cf0.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_0b1e86fbad48b1e11ab58d155c8f4cf0.woff") format("woff"),
+       url("../icons/fontcustom_0b1e86fbad48b1e11ab58d155c8f4cf0.ttf") format("truetype"),
+       url("../icons/fontcustom_0b1e86fbad48b1e11ab58d155c8f4cf0.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,7 +16,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_42cd88b0372ad5113ad72973ae8d7a73.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_0b1e86fbad48b1e11ab58d155c8f4cf0.svg#fontcustom") format("svg");
   }
 }
 
@@ -45,6 +45,7 @@
 .icon-thumbs-o-up:before,
 .icon-times:before,
 .icon-trash-o:before,
+.icon-trophy:before,
 .icon-voting:before {
   display: inline-block;
   font-family: "fontcustom";
@@ -60,50 +61,52 @@
   font-smoothing: antialiased;
 }
 
-.icon-bars:before { content: "\f118"; }
-.icon-bolt:before { content: "\f102"; }
-.icon-bullhorn:before { content: "\f112"; }
-.icon-camera:before { content: "\f110"; }
-.icon-check:before { content: "\f114"; }
-.icon-cogs:before { content: "\f113"; }
-.icon-comment-o:before { content: "\f107"; }
-.icon-ellipsis-h:before { content: "\f10b"; }
-.icon-eye:before { content: "\f103"; }
-.icon-flag:before { content: "\f10e"; }
-.icon-pencil:before { content: "\f109"; }
-.icon-power-off:before { content: "\f104"; }
-.icon-reply:before { content: "\f10f"; }
-.icon-search:before { content: "\f111"; }
-.icon-sign-out:before { content: "\f10a"; }
-.icon-sort:before { content: "\f116"; }
-.icon-step-forward:before { content: "\f119"; }
-.icon-sun-o:before { content: "\f105"; }
-.icon-thumbs-o-down:before { content: "\f10c"; }
-.icon-thumbs-o-up:before { content: "\f10d"; }
-.icon-times:before { content: "\f115"; }
-.icon-trash-o:before { content: "\f117"; }
-.icon-voting:before { content: "\f108"; }
+.icon-bars:before { content: "\f100"; }
+.icon-bolt:before { content: "\f101"; }
+.icon-bullhorn:before { content: "\f102"; }
+.icon-camera:before { content: "\f103"; }
+.icon-check:before { content: "\f104"; }
+.icon-cogs:before { content: "\f105"; }
+.icon-comment-o:before { content: "\f106"; }
+.icon-ellipsis-h:before { content: "\f107"; }
+.icon-eye:before { content: "\f108"; }
+.icon-flag:before { content: "\f109"; }
+.icon-pencil:before { content: "\f10a"; }
+.icon-power-off:before { content: "\f10b"; }
+.icon-reply:before { content: "\f10c"; }
+.icon-search:before { content: "\f10d"; }
+.icon-sign-out:before { content: "\f10e"; }
+.icon-sort:before { content: "\f10f"; }
+.icon-step-forward:before { content: "\f110"; }
+.icon-sun-o:before { content: "\f111"; }
+.icon-thumbs-o-down:before { content: "\f112"; }
+.icon-thumbs-o-up:before { content: "\f113"; }
+.icon-times:before { content: "\f114"; }
+.icon-trash-o:before { content: "\f115"; }
+.icon-trophy:before { content: "\f116"; }
+.icon-voting:before { content: "\f117"; }
 
-$font-fontcustom-bars: "\f118";
-$font-fontcustom-bolt: "\f102";
-$font-fontcustom-bullhorn: "\f112";
-$font-fontcustom-camera: "\f110";
-$font-fontcustom-check: "\f114";
-$font-fontcustom-cogs: "\f113";
-$font-fontcustom-comment-o: "\f107";
-$font-fontcustom-ellipsis-h: "\f10b";
-$font-fontcustom-eye: "\f103";
-$font-fontcustom-flag: "\f10e";
-$font-fontcustom-pencil: "\f109";
-$font-fontcustom-power-off: "\f104";
-$font-fontcustom-reply: "\f10f";
-$font-fontcustom-search: "\f111";
-$font-fontcustom-sign-out: "\f10a";
-$font-fontcustom-sort: "\f116";
-$font-fontcustom-step-forward: "\f119";
-$font-fontcustom-sun-o: "\f105";
-$font-fontcustom-thumbs-o-down: "\f10c";
-$font-fontcustom-thumbs-o-up: "\f10d";
-$font-fontcustom-times: "\f115";
-$font-fontcustom-trash-o: "\f117";
-$font-fontcustom-voting: "\f108";
+$font-fontcustom-bars: "\f100";
+$font-fontcustom-bolt: "\f101";
+$font-fontcustom-bullhorn: "\f102";
+$font-fontcustom-camera: "\f103";
+$font-fontcustom-check: "\f104";
+$font-fontcustom-cogs: "\f105";
+$font-fontcustom-comment-o: "\f106";
+$font-fontcustom-ellipsis-h: "\f107";
+$font-fontcustom-eye: "\f108";
+$font-fontcustom-flag: "\f109";
+$font-fontcustom-pencil: "\f10a";
+$font-fontcustom-power-off: "\f10b";
+$font-fontcustom-reply: "\f10c";
+$font-fontcustom-search: "\f10d";
+$font-fontcustom-sign-out: "\f10e";
+$font-fontcustom-sort: "\f10f";
+$font-fontcustom-step-forward: "\f110";
+$font-fontcustom-sun-o: "\f111";
+$font-fontcustom-thumbs-o-down: "\f112";
+$font-fontcustom-thumbs-o-up: "\f113";
+$font-fontcustom-times: "\f114";
+$font-fontcustom-trash-o: "\f115";
+$font-fontcustom-trophy: "\f116";
+$font-fontcustom-voting: "\f117";
