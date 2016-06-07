@@ -22,7 +22,7 @@ module Frontend.Core
     , GetH, PostH, FormHandler
 
       -- * helpers for handlers
-    , semanticDiv
+    , semanticDiv, semanticDiv'
     , html
     , FormCS
     , IsTab
@@ -147,10 +147,11 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 --       combinator
 --     * Later on when we write selenium suite, the semantic tags helps up to parse, identify and test
 --       elements on the page.
---
--- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
-semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
+semanticDiv = semanticDiv' []
+
+semanticDiv' :: forall m a. (Monad m, Typeable a) => [Attribute] -> a -> HtmlT m () -> HtmlT m ()
+semanticDiv' attrs t = div_ $ makeAttribute "data-aula-type" (cs . show . typeOf $ t) : attrs
 
 type FormCS m r s =
     (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
@@ -484,14 +485,19 @@ pageFrame frame = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
-        meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+
+        -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
+        case frame ^? frameUser . userRole of
+            Just Admin -> meta_ [name_ "viewport", content_ "width=1024"]
+            _          -> meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
         div_ [class_ "page-wrapper"] $ do
             div_ [class_ "main-grid-container"] $ do
                 div_ [class_ "grid main-grid"] $ do
-                    renderStatusMessages `mapM_` (frame ^? frameMessages)  -- FIXME: styling
+                    renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
         footerMarkup
 

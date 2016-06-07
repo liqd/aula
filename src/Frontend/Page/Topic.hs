@@ -289,11 +289,9 @@ instance FormPage CreateTopic where
         <*> pure (ct ^. ctRefPhaseEnd)
 
     formPage v form ct =
-        semanticDiv ct $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Thema erstellen"
-                    form . createOrEditTopic v $ ct ^. ctIdeas
+        semanticDiv' [class_ "container-main container-narrow popup-page"] ct $ do
+            h1_ [class_ "main-heading"] "Thema erstellen"
+            form . createOrEditTopic v $ ct ^. ctIdeas
 
 createOrEditTopic :: Monad m => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 createOrEditTopic v ideas = do
@@ -330,11 +328,9 @@ instance FormPage EditTopic where
         <*> makeFormIdeaSelection preselected (_ideaStatsIdea <$> ideas)
 
     formPage v form et = do
-        semanticDiv et $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Thema bearbeiten"
-                    form . createOrEditTopic v $ et ^. etIdeasStats
+        semanticDiv' [class_ "container-main container-narrow popup-page"] et $ do
+            h1_ [class_ "main-heading"] "Thema bearbeiten"
+            form . createOrEditTopic v $ et ^. etIdeasStats
 
 ideaToFormField :: Idea -> ST
 ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi

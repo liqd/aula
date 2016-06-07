@@ -147,6 +147,10 @@ $arrow-width: 6px;
             font-weight: bold;
         }
     }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        @include rem(font-size, $font-size-large);
+    }
 }
 
 .pop-menu-list-icon {

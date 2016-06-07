@@ -34,11 +34,10 @@ makeLenses ''CommentWidget
 
 instance ToHtml CommentWidget where
     toHtmlRaw = toHtml
-    toHtml w = semanticDiv w $ do
-        div_ [class_ "comment"] $ do
-            commentToHtml w
-            div_ [class_ "comment-replies"] . for_ (w ^. cwComment . commentReplies) $ \reply ->
-                div_ [class_ "comment-reply"] . commentToHtml $ w & cwComment .~ reply
+    toHtml w = semanticDiv' [class_ "comment"] w $ do
+        commentToHtml w
+        div_ [class_ "comment-replies"] . for_ (w ^. cwComment . commentReplies) $ \reply ->
+            div_ [class_ "comment-reply"] . commentToHtml $ w & cwComment .~ reply
 
 commentToHtml :: Monad m => CommentWidget -> HtmlT m ()
 commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
@@ -81,8 +80,8 @@ data CommentVotesWidget = CommentVotesWidget [Capability] Comment
 
 instance ToHtml CommentVotesWidget where
     toHtmlRaw = toHtml
-    toHtml p@(CommentVotesWidget caps comment) = semanticDiv p $ do
-        unless (comment ^. commentDeleted) . div_ [class_ "comment-votes"] $ do
+    toHtml p@(CommentVotesWidget caps comment) = semanticDiv' [class_ "comment-votes"] p .
+        unless (comment ^. commentDeleted) $ do
             voteButton Up
             voteButton Down
       where

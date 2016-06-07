@@ -98,6 +98,10 @@ $btn-settings-size: 35px;
     &:hover, &:focus {
         background-color: $button-cta-hover-color;
     }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        margin: 0;
+    }
 }
 
 .filter-toggles {

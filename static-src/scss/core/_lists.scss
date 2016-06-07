@@ -106,6 +106,17 @@
             &:last-child {
                 margin-right: 0;
             }
+
+            @media screen and (max-width: $mobile-breakpoint) {
+                @include rem(min-width, 43px);
+                @include rem(margin-right, 15px);
+                @include rem(margin-bottom, 10px);
+                background-size: inherit;
+
+                > a, > span {
+                    @include rem(padding-top, 45px);
+                }
+            }
         }
     }
 }

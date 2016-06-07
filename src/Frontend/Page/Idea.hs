@@ -404,11 +404,10 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
 
 instance ToHtml ViewDeletedIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewDeletedIdea idea) = semanticDiv p $ do
-            div_ [class_ "hero-unit narrow-container"] $ do
-                header_ [class_ "detail-header"] $ do
-                    linkToIdeaLocation idea
-                div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
+    toHtml p@(ViewDeletedIdea idea) = semanticDiv' [class_ "hero-unit narrow-container"] p $ do
+        header_ [class_ "detail-header"] $ do
+            linkToIdeaLocation idea
+        div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
 
 validateIdeaTitle :: FormCS m r s
 validateIdeaTitle = validate "Titel der Idee" titleV
@@ -452,45 +451,44 @@ instance FormPage EditIdea where
 createOrEditIdea :: (Monad m, Typeable page, Page page) =>
     Either IdeaLocation Idea ->
     View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditIdea eLocIdea v form p = semanticDiv p $ do
-    let cancelUrl = either id (view ideaLocation) eLocIdea
-    div_ [class_ "container-main popup-page"] $ do
-        div_ [class_ "container-narrow"] $ do
-            h1_ [class_ "main-heading"] "Deine Idee"
-            form $ do
-                label_ $ do
-                    span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
-                    inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
-                        "title" v
-                let editDomId    :: ST = DF.viewName v <> ".idea-text"
-                    previewDomId :: ST = editDomId <> "-preview"
-                label_ $ do
-                    span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
-                    inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
-                        Nothing Nothing "idea-text" v
-                    a_ [ class_ "btn m-input-action"
-                       , Lucid.onclick_ $ "showPreview('" <> editDomId <> "', '" <> previewDomId <> "')"
-                       ]
-                       "bearbeiten <> ansehen"
-                div_ [id_ previewDomId, class_ "markdown-preview m-closed"] nil
-                formPageSelectCategory v
+createOrEditIdea eLocIdea v form p =
+    semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
+        let cancelUrl = either id (view ideaLocation) eLocIdea
+        h1_ [class_ "main-heading"] "Deine Idee"
+        form $ do
+            label_ $ do
+                span_ [class_ "label-text"] "Wie soll deine Idee heißen?"
+                inputText_ [class_ "m-small", placeholder_ "z.B. bessere Ausstattung im Computerraum"]
+                    "title" v
+            let editDomId    :: ST = DF.viewName v <> ".idea-text"
+                previewDomId :: ST = editDomId <> "-preview"
+            label_ $ do
+                span_ [class_ "label-text"] "Was möchtest du vorschlagen?"
+                inputTextArea_ [placeholder_ "Hier kannst du deine Idee so ausführlich wie möglich beschreiben..."]
+                    Nothing Nothing "idea-text" v
+                a_ [ class_ "btn m-input-action"
+                   , Lucid.onclick_ $ "showPreview('" <> editDomId <> "', '" <> previewDomId <> "')"
+                   ]
+                   "bearbeiten <> ansehen"
+            div_ [id_ previewDomId, class_ "markdown-preview m-closed"] nil
+            formPageSelectCategory v
+            footer_ [class_ "form-footer"] $ do
+                DF.inputSubmit "Idee veröffentlichen"
+                a_ [class_ "btn", href_ $ U.listIdeas cancelUrl] $ do
+                    -- FIXME: "are you sure?" dialog.
+                    "abbrechen"
+        case eLocIdea of
+            Left _ -> nil
+            Right idea ->
                 footer_ [class_ "form-footer"] $ do
-                    DF.inputSubmit "Idee veröffentlichen"
-                    a_ [class_ "btn", href_ $ U.listIdeas cancelUrl] $ do
-                        -- FIXME: "are you sure?" dialog.
-                        "abbrechen"
-            case eLocIdea of
-                Left _ -> nil
-                Right idea ->
-                    footer_ [class_ "form-footer"] $ do
-                        postButtonConfirm_
-                            (Just "Idee wirklich löschen?")
-                            [ class_ "btn-cta"
-                            , jsRedirectOnClick
-                                (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
-                            ]
-                            (U.deleteIdea idea)
-                            "Idee löschen"
+                    postButtonConfirm_
+                        (Just "Idee wirklich löschen?")
+                        [ class_ "btn-cta"
+                        , jsRedirectOnClick
+                            (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
+                        ]
+                        (U.deleteIdea idea)
+                        "Idee löschen"
 
 instance FormPage MoveIdea where
     type FormPagePayload MoveIdea = Types.MoveIdea
