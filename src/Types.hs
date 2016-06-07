@@ -29,6 +29,7 @@ where
 import Control.Lens
 import Control.Monad
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Crypto.Scrypt
 import Data.Binary
 import Data.Char
 import Data.Function (on)
@@ -684,8 +685,7 @@ newtype InitialPassword = InitialPassword { _unInitialPassword :: ST }
 
 instance SOP.Generic InitialPassword
 
--- FIXME: use "Crypto.Scrypt.EncryptedPass"
-newtype EncryptedPassword = FakeEncryptedPassword { _unEncryptedPassword :: SBS }
+newtype EncryptedPassword = ScryptEncryptedPassword { _unScryptEncryptedPassword :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic EncryptedPassword
@@ -698,13 +698,11 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
--- | General eliminator for the 'UserPass' type.
--- It is similar to the 'maybe' function.
-userPassElim :: (InitialPassword -> t) -> (EncryptedPassword -> t) -> t -> UserPass -> t
-userPassElim initial encrypted deactivated = \case
-    UserPassInitial x   -> initial     x
-    UserPassEncrypted x -> encrypted   x
-    UserPassDeactivated -> deactivated
+verifyUserPass :: ST -> UserPass -> Bool
+verifyUserPass pwd = \case
+    UserPassInitial (InitialPassword p)           -> p == pwd
+    UserPassEncrypted (ScryptEncryptedPassword p) -> verifyPass' (Pass (cs pwd)) (EncryptedPass p)
+    UserPassDeactivated                           -> False
 
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)

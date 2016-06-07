@@ -52,6 +52,9 @@ instance Monad m => ActionPersist (DummyT ActionExcept m) where
     queryDb = notImplemented "ActionPersist" "queryDb"
     update _ = notImplemented "ActionPersist" "update"
 
+instance Monad m => ActionEncryptPassword (DummyT ActionExcept m) where
+    encryptPassword _ = notImplemented "ActionEncryptPassword" "encryptPassword"
+
 instance Monad m => ActionRandomPassword (DummyT ActionExcept m) where
     mkRandomPassword = notImplemented "ActionRandomPassword" "mkRandomPassword"
 

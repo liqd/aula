@@ -11,10 +11,10 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
-import Control.Monad (zipWithM_, replicateM_, (>=>))
+import Control.Monad (zipWithM_, replicateM, replicateM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
-import Data.String.Conversions ((<>))
+import Data.String.Conversions ((<>), cs)
 
 import Arbitrary hiding (generate)
 import Persistent
@@ -57,11 +57,16 @@ defaultUniverseSize = UniverseSize
 
 -- * Generators
 
+genInitialPassword :: Gen InitialPassword
+genInitialPassword = mk <$> arbWord <*> replicateM 2 (elements ['0' .. '9'])
+  where
+    mk w ns = InitialPassword $ w <> cs ns
+
 genFirstUser :: Gen ProtoUser
 genFirstUser =
     arbitrary
     <**> (set protoUserLogin . Just <$> arbitrary)
-    <**> (set protoUserPassword <$> arbitrary)
+    <**> (set protoUserPassword <$> genInitialPassword)
 
 genStudent :: [SchoolClass] -> Gen ProtoUser
 genStudent classes = genUser $ elements (map Student classes)
@@ -73,6 +78,7 @@ genUser genRole =
     <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
     <**> (set protoUserRole <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
+    <**> (set protoUserPassword <$> genInitialPassword)
 
 genAvatar :: Gen URL
 genAvatar = elements fishAvatars
