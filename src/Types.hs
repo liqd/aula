@@ -763,18 +763,22 @@ instance SOP.Generic ProtoDelegation
 -- coincidentally) constitute a subset relationship between class spaces and school space.
 data DScope =
     DScopeGlobal
-  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }  -- FIXME: should be 'SchoolClass'
+  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }  -- TODO: should be 'SchoolClass'
   | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
   | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DScope
 
+-- | 'DScope', but with the references resolved.  (We could do a more general type @DScope a@ and
+-- introduce two synonyms for @DScope AUID@ and @DScope Identity@, but it won't make things any
+-- easier.)
+--
+-- (NOTE: since this is only used for the delegate selection page, and that page is only displayed
+-- for dscopes on topic level and below, we do not carry the higher-level constructors at all.)
 data DScopeFull =
-    DScopeGlobalFull
-  | DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace  }
-  | DScopeTopicFull     { _dScopeTopicFull     :: Topic }
-  | DScopeIdeaFull      { _dScopeIdeaFull     :: Idea  }
+    DScopeTopicFull { _dScopeTopicFull :: Topic }
+  | DScopeIdeaFull  { _dScopeIdeaFull  :: Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DScopeFull
