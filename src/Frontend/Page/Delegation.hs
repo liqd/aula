@@ -30,24 +30,29 @@ import qualified Frontend.Path as U
 data PageDelegateVote = PageDelegateVote DScopeFull [User]
   deriving (Eq, Show, Read)
 
-instance Page PageDelegateVote where isAuthorized = adminPage -- FIXME who needs to see this
+instance Page PageDelegateVote where isAuthorized = userPage
 
 newtype PageDelegationVotePayload = PageDelegationVotePayload
     { unPageDelegationVotePayload :: AUID User }
   deriving (Eq, Show, Read)
 
+pageDelegateVoteDScopeNotImplemented :: a
+pageDelegateVoteDScopeNotImplemented =
+    error $ "this page is only available for topic and idea dscopes.  "
+         <> "to delegate higher up, visit the user profile."
+
 instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
     formAction (PageDelegateVote scope _users) = case scope of
-        DScopeGlobalFull           -> U.Broken
-        DScopeIdeaSpaceFull _space -> U.Broken
+        DScopeGlobalFull           -> pageDelegateVoteDScopeNotImplemented
+        DScopeIdeaSpaceFull _space -> pageDelegateVoteDScopeNotImplemented
         DScopeTopicFull     topic  -> U.delegateVoteOnTopic topic
         DScopeIdeaFull      idea   -> U.delegateVoteOnIdea idea
 
     redirectOf (PageDelegateVote scope _users) _ = case scope of
-        DScopeGlobalFull           -> U.Broken
-        DScopeIdeaSpaceFull _space -> U.Broken
+        DScopeGlobalFull           -> pageDelegateVoteDScopeNotImplemented
+        DScopeIdeaSpaceFull _space -> pageDelegateVoteDScopeNotImplemented
         DScopeTopicFull     topic  -> U.viewTopic topic
         DScopeIdeaFull      idea   -> U.viewIdea idea
 
