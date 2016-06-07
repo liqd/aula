@@ -96,9 +96,9 @@ data UserSettingData = UserSettingData
 
 -- This function checks that IF provided the password must be correct.
 -- See checkPwdAllOrNothing which checks that the three passwords are present at once.
-checkUserPassword :: ActionM m => Maybe ST -> m Bool
-checkUserPassword Nothing    = pure True
-checkUserPassword (Just pwd) = verifyUserPass pwd . view userPassword <$> currentUser
+verifyUserPassIfExists :: ActionM m => Maybe ST -> m Bool
+verifyUserPassIfExists Nothing    = pure True
+verifyUserPassIfExists (Just pwd) = verifyUserPass pwd . view userPassword <$> currentUser
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
@@ -115,7 +115,8 @@ instance FormPage PageUserSettings where
             <*> ("old-password"  .:
                     -- while we need to check that the old password is the correct
                     -- one, we do not need to validate it against the rules for new passwords.
-                    DF.checkM "Das alte Passwort ist nicht korrekt" checkUserPassword
+                    -- TODO: why can't the user provide a Nothing here to circumvent the check?
+                    DF.checkM "Das alte Passwort ist nicht korrekt" verifyUserPassIfExists
                     (DF.optionalText Nothing))
             <*> ("new-password1" .:
                     validateOptional "neues Passwort" passwordV (DF.optionalText Nothing))
