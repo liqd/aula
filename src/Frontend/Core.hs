@@ -485,10 +485,12 @@ pageFrame frame = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
-        -- FIXME if not admin
-        meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-        -- FIXME if admin
-        -- meta_ [name_ "viewport", content_ "width=1024"]
+
+        -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
+        case frame ^? frameUser . userRole of
+            Just Admin -> meta_ [name_ "viewport", content_ "width=1024"]
+            _          -> meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
