@@ -174,8 +174,7 @@ userSettings =
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
-        forM_ mnewPass1 $ \pass ->
-            update . SetUserPass uid =<< encryptPassword pass
+        forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
 userHeaderDiv :: (Monad m) => CapCtx -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =
