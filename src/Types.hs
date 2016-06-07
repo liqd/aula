@@ -723,10 +723,10 @@ instance SafeCopy EmailAddress where
 
 -- | "Beauftragung"
 data Delegation = Delegation
-    { _delegationMeta    :: MetaInfo Delegation  -- TODO: realign
+    { _delegationMeta  :: MetaInfo Delegation
     , _delegationScope :: DScope
-    , _delegationFrom    :: AUID User
-    , _delegationTo      :: AUID User
+    , _delegationFrom  :: AUID User
+    , _delegationTo    :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -737,8 +737,8 @@ type instance Proto Delegation = ProtoDelegation
 -- | "Beauftragung"
 data ProtoDelegation = ProtoDelegation
     { _protoDelegationScope :: DScope
-    , _protoDelegationFrom    :: AUID User  -- TODO: realign
-    , _protoDelegationTo      :: AUID User
+    , _protoDelegationFrom  :: AUID User
+    , _protoDelegationTo    :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

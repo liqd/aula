@@ -40,16 +40,16 @@ instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
     formAction (PageDelegateVote scope _users) = case scope of
-        DScopeGlobalFull          -> U.Broken  -- TODO: realign
+        DScopeGlobalFull           -> U.Broken
         DScopeIdeaSpaceFull _space -> U.Broken
-        DScopeTopicFull     topic -> U.delegateVoteOnTopic topic
-        DScopeIdeaFull      idea  -> U.delegateVoteOnIdea idea
+        DScopeTopicFull     topic  -> U.delegateVoteOnTopic topic
+        DScopeIdeaFull      idea   -> U.delegateVoteOnIdea idea
 
     redirectOf (PageDelegateVote scope _users) _ = case scope of
-        DScopeGlobalFull          -> U.Broken  -- TODO: realign
+        DScopeGlobalFull           -> U.Broken
         DScopeIdeaSpaceFull _space -> U.Broken
-        DScopeTopicFull     topic -> U.viewTopic topic
-        DScopeIdeaFull      idea  -> U.viewIdea idea
+        DScopeTopicFull     topic  -> U.viewTopic topic
+        DScopeIdeaFull      idea   -> U.viewIdea idea
 
     -- TODO: Show the existing delegation
     makeForm (PageDelegateVote _scope users) =
