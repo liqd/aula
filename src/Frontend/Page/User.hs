@@ -10,6 +10,7 @@
 module Frontend.Page.User
 where
 
+import Crypto.Scrypt
 import System.FilePath
 
 import Access
@@ -109,9 +110,9 @@ checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
       | p == pwd  = pure u
       | otherwise = passwordError
 
-    checkEncryptedPwd (FakeEncryptedPassword p)
-      | p == cs pwd = pure u
-      | otherwise   = passwordError
+    checkEncryptedPwd (ScryptEncryptedPassword p)
+      | verifyPass' (Pass (cs pwd)) (EncryptedPass p) = pure u
+      | otherwise                                     = passwordError
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
@@ -180,7 +181,8 @@ userSettings =
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
-        (update . SetUserPass uid . FakeEncryptedPassword . cs) `mapM_` mnewPass1
+        forM_ mnewPass1 $ \pass ->
+            update . SetUserPass uid =<< encryptPassword pass
 
 userHeaderDiv :: (Monad m) => CapCtx -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =

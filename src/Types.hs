@@ -675,8 +675,7 @@ newtype InitialPassword = InitialPassword { _unInitialPassword :: ST }
 
 instance SOP.Generic InitialPassword
 
--- FIXME: use "Crypto.Scrypt.EncryptedPass"
-newtype EncryptedPassword = FakeEncryptedPassword { _unEncryptedPassword :: SBS }
+newtype EncryptedPassword = ScryptEncryptedPassword { _unScryptEncryptedPassword :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic EncryptedPassword

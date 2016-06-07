@@ -71,6 +71,7 @@ import Control.Applicative ((<**>))
 import Control.Exception (ErrorCall(ErrorCall), throwIO)
 import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
+import Crypto.Scrypt
 import Data.Functor.Infix ((<$$>))
 import Data.Aeson as Aeson
 import Data.Char
@@ -638,8 +639,9 @@ instance Arbitrary InitialPassword where
     shrink = gshrink
 
 instance Arbitrary EncryptedPassword where
-    arbitrary = garbitrary
-    shrink    = gshrink
+    arbitrary = mk <$> arb <*> arb
+      where
+        mk salt pass = ScryptEncryptedPassword . getEncryptedPass $ encryptPass' (Salt salt) (Pass pass)
 
 instance Arbitrary UserPass where
     arbitrary = UserPassInitial <$> arb
