@@ -66,7 +66,7 @@ instance FormPage PageDelegateVote where
     formPage v f p@(PageDelegateVote _scope _users) = semanticDiv p . f $ do
         -- TODO: Table from users
         DF.inputSelect "user-to-delegate" v
-        DF.inputSubmit "Save delegation"
+        DF.inputSubmit "beauftragen"
         -- TODO: Cancel button
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
