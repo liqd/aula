@@ -656,9 +656,9 @@ mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
 mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)
 
 instance FromProto IdeaVote where
-    fromProto p m = IdeaVote { _ideaVoteMeta  = m
-                             , _ideaVoteValue = _protoIdeaVoteValue p
-                             , _ideaVoteVoter = _protoIdeaVoteVoter p
+    fromProto p m = IdeaVote { _ideaVoteMeta     = m
+                             , _ideaVoteValue    = _protoIdeaVoteValue p
+                             , _ideaVoteDelegate = _protoIdeaVoteDelegate p
                              }
 
 addVoteToIdea :: AUID Idea -> User -> AddDb IdeaVote

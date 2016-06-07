@@ -283,17 +283,17 @@ type instance Proto IdeaLike = ()
 
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote'.
 data IdeaVote = IdeaVote
-    { _ideaVoteMeta  :: MetaInfo IdeaVote
-    , _ideaVoteValue :: IdeaVoteValue
-    , _ideaVoteVoter :: AUID User
+    { _ideaVoteMeta     :: MetaInfo IdeaVote
+    , _ideaVoteValue    :: IdeaVoteValue
+    , _ideaVoteDelegate :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVote
 
 data ProtoIdeaVote = ProtoIdeaVote
-    { _protoIdeaVoteValue :: IdeaVoteValue
-    , _protoIdeaVoteVoter :: AUID User
+    { _protoIdeaVoteValue    :: IdeaVoteValue
+    , _protoIdeaVoteDelegate :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

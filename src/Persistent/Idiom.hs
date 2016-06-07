@@ -235,7 +235,7 @@ getVote uid iid = do
     case mVoteValue of
         Nothing -> pure Nothing
         Just vv -> do
-            voter <- maybe404 =<< findUser (vv ^. ideaVoteVoter)
+            voter <- maybe404 =<< findUser (vv ^. ideaVoteDelegate)
             pure $ Just (voter, vv ^. ideaVoteValue)
 
 scopeHiearchy :: DelegationContext -> EQuery [DelegationContext]
