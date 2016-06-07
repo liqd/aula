@@ -536,9 +536,9 @@ voteOnIdea ideaId voteVal = do
     (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
   where
     hasNotVotedExplicitly :: ActionM m => User -> m Bool
-    hasNotVotedExplicitly delegatee = do
+    hasNotVotedExplicitly delegatee = equery $ do
         let delegateeId = delegatee ^. _Id
-        mvote <- equery $ getVote delegateeId ideaId
+        mvote <- getVote delegateeId ideaId
         pure $ case mvote of
             Nothing              -> True
             Just (voter', _vote) -> delegateeId /= (voter' ^. _Id)
