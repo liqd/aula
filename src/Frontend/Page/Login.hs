@@ -44,14 +44,11 @@ data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
 checkLogin :: (v ~ Html (), ActionM m) => LoginFormData -> m (Result v User)
-checkLogin (LoginFormData uLogin _pass) = do
+checkLogin (LoginFormData uLogin pass) = do
     muser <- query $ findUserByLogin (UserLogin uLogin)
     pure $ case muser of
-        Nothing ->
-            Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
-        Just user -> do
-            -- FIXME check password
-            pure user
+        Just user | verifyUserPass pass (user ^. userPassword) -> pure user
+        _ -> Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
 
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
