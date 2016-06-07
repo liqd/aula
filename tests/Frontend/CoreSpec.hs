@@ -105,7 +105,8 @@ spec = do
                       (InitialPassword "dummy password")
                       Nothing
                       nil
-          in FormTest (arb :: Gen PageHomeWithLoginPrompt) createUser (shouldBe `on` view userLogin)
+          in FormTest (pure $ PageHomeWithLoginPrompt (LoginDemoHints []))
+                      createUser (shouldBe `on` view userLogin)
 
           -- topic forms
         , formTest (arb :: Gen CreateTopic)
