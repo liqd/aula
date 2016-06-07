@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.VotesBar
-    (IdeaVoteLikeBars(..), IdeaVoteLikeBarsMode(..))
+    (IdeaVoteLikeBars(..), ideaVoteLikeButtons)
 where
 
 import           Access
@@ -15,10 +15,7 @@ import           Frontend.Prelude
 import           Persistent.Idiom
 
 
-data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaVoteLikeBarsMode CapCtx IdeaStats
-  deriving (Eq, Show, Read)
-
-data IdeaVoteLikeBarsMode = IdeaVoteLikeBarsPlain | IdeaVoteLikeBarsWithButtons
+data IdeaVoteLikeBars = IdeaVoteLikeBars IdeaStats
   deriving (Eq, Show, Read)
 
 -- | The issue has been debated for some time now whether we should show three segments (yes, no,
@@ -35,14 +32,9 @@ minBarSegmentWidth = 5
 
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
-    toHtml p@(IdeaVoteLikeBars mode ctx (IdeaStats idea phase quo voters)) = semanticDiv p $ do
-        let caps = capabilities ctx
-                \\ case mode of
-                    IdeaVoteLikeBarsPlain       -> [CanLike, CanVote]
-                    IdeaVoteLikeBarsWithButtons -> []
-
-            likeBar :: Html () -> Html ()
-            likeBar bs = div_ $ do
+    toHtml p@(IdeaVoteLikeBars (IdeaStats idea phase quo voters)) = semanticDiv p $ do
+        let likeBar :: Html ()
+            likeBar = div_ $ do
                 span_ [class_ "progress-bar"] $ do
                     span_ [ class_ "progress-bar-progress"
                           , style_ ("width: " <> (cs . show $ percentLikes idea quo) <> "%")
@@ -50,25 +42,9 @@ instance ToHtml IdeaVoteLikeBars where
                         nil
                 span_ [class_ "like-bar"] $ do
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
-                bs
 
-            likeButtons :: Html ()
-            likeButtons = when (CanLike `elem` caps) .
-                div_ [class_ "voting-buttons"] $ do
-                    if userLikesIdea (ctx ^. capCtxUser) idea
-                        then span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
-                             -- (ideas can not be un-liked)
-                        else do
-                            postButton_
-                                [class_ "btn-cta voting-button", jsReloadOnClick]
-                                (U.likeIdea idea)
-                                "Idee Auf den Tisch Bringen"  -- FIXME: #558 button should not be shows in quorum has been reached
-                            a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
-                                i_ [class_ "icon-bullhorn"] nil
-                                "Stimme beauftragen"
-
-            voteBar :: Html () -> Html ()
-            voteBar bs = div_ [class_ "voting-widget"] $ do
+            voteBar :: Html ()
+            voteBar = div_ [class_ "voting-widget"] $ do
                 span_ [class_ "progress-bar m-show-abstain"] $ do
                     span_ [class_ "progress-bar-row"] $ do
                         span_ [ class_ "progress-bar-progress progress-bar-progress-for"
@@ -87,7 +63,6 @@ instance ToHtml IdeaVoteLikeBars where
                             span_ [ class_ "progress-bar-progress progress-bar-progress-abstain"] $ do
                                       -- FIXME: change class name above: abstain /= not-voted
                                 span_ [class_ "votes"] $ voters ^. showed . html
-                bs
               where
                 cnt :: IdeaVoteValue -> Html ()
                 cnt v = numVotes idea v ^. showed . html
@@ -99,17 +74,46 @@ instance ToHtml IdeaVoteLikeBars where
                         ShowNotVoted      -> voters
                         DoNotShowNotVoted -> numVotes idea Yes + numVotes idea No
 
+        div_ [class_ "sub-heading"] $ case phase of
+            PhaseWildIdea{}   -> toHtml likeBar
+            PhaseRefinement{} -> nil
+            PhaseJury         -> nil
+            PhaseVoting{}     -> toHtml voteBar
+            PhaseResult       -> toHtml voteBar
+
+
+ideaVoteLikeButtons :: CapCtx -> IdeaStats -> Html ()
+ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
+        let caps = capabilities ctx
             user = ctx ^. capCtxUser
 
+            likeButtons :: Html ()
+            likeButtons
+                | CanLike `notElem` caps
+                    = nil
+                | userLikesIdea user idea
+                    = span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
+                      -- FIXME: make this a button and allow un-liking!
+                | otherwise
+                    = do
+                        postButton_
+                                [class_ "btn-cta voting-button", jsReloadOnClick]
+                                (U.likeIdea idea)
+                                "Idee Auf den Tisch Bringen"  -- FIXME: #558 button should not be shows in quorum has been reached
+                        a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
+                                i_ [class_ "icon-bullhorn"] nil
+                                "Stimme beauftragen"
+
             voteButtons :: Html ()
-            voteButtons = when (isFeasibleIdea idea && CanVote `elem` caps) .
-                div_ [class_ "voting-buttons"] $ do
-                    voteButton vote Yes "dafür"
-                    voteButton vote No  "dagegen"
+            voteButtons
+                | not (isFeasibleIdea idea) || CanVote `notElem` caps
+                    = nil
+                | otherwise
+                    = voteButton vote Yes "dafür" >> voteButton vote No  "dagegen"
               where
                 vote = userVotedOnIdea user idea
 
-                -- FIXME: The button for the selected vote value is white.
+                -- FIXME@cc: The button for the selected vote value is white.
                 -- Should it be in other color?
                 voteButton (Just w) v | w == v =
                     postButton_ [ class_ "btn-cta m-large voting-button m-selected"
@@ -123,8 +127,8 @@ instance ToHtml IdeaVoteLikeBars where
                                 (U.voteOnIdea idea v)
 
         case phase of
-            PhaseWildIdea{}   -> toHtml $ likeBar likeButtons
+            PhaseWildIdea{}   -> likeButtons
             PhaseRefinement{} -> nil
             PhaseJury         -> nil
-            PhaseVoting{}     -> toHtml $ voteBar voteButtons
-            PhaseResult       -> toHtml $ voteBar nil
+            PhaseVoting{}     -> voteButtons
+            PhaseResult       -> nil

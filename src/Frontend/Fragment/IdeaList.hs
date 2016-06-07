@@ -67,7 +67,7 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx _whatListPage stats@(IdeaStats idea _phase _quo _voters)) =
+    toHtml p@(ListItemIdea _ctx _whatListPage stats@(IdeaStats idea _phase _quo _voters)) =
         semanticDiv' [class_ "ideas-list-item"] p $ do
             a_ [href_ $ U.viewIdea idea] $ do
                 div_ [class_ "col-5-12"] $ do
@@ -110,7 +110,7 @@ instance ToHtml ListItemIdea where
                             s ^. showed . html
                             if s == 1 then " Verbesserungsvorschlag" else " Verbesserungsvorschläge"
 
-                    toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsPlain ctx stats
+                    toHtml $ IdeaVoteLikeBars stats
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
