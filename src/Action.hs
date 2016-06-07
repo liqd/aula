@@ -531,17 +531,17 @@ voteOnIdea ideaId voteVal = do
     let topic = DScopeIdeaId ideaId
     voteFor voter voter
     equery (votingPower (voter ^. _Id) topic)
-        >>= filterM canVoteMadeFor
+        >>= filterM hasNotVotedExplicitly
         >>= mapM_ (voteFor voter)
     (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
   where
-    canVoteMadeFor :: ActionM m => User -> m Bool
-    canVoteMadeFor voter = do
-        let voterId = voter ^. _Id
-        mvote <- equery $ getVote voterId ideaId
+    hasNotVotedExplicitly :: ActionM m => User -> m Bool
+    hasNotVotedExplicitly delegatee = do
+        let delegateeId = delegatee ^. _Id
+        mvote <- equery $ getVote delegateeId ideaId
         pure $ case mvote of
-            Nothing                -> True
-            Just (voter', _vote) -> voterId /= (voter' ^. _Id)
+            Nothing              -> True
+            Just (voter', _vote) -> delegateeId /= (voter' ^. _Id)
 
     voteFor :: ActionM m => User -> User -> m ()
     voteFor voter delegatee = do
