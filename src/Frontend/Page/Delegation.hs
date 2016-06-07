@@ -71,7 +71,7 @@ ideaDelegation iid = formPageHandlerWithMsg
            users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
            pure $ PageDelegateVote (DScopeIdeaFull idea) users)
     (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
-    "Delegation is marked" -- TODO: Translation
+    "Beauftragung erfolgt"
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
 topicDelegation tid = formPageHandlerWithMsg
@@ -80,20 +80,20 @@ topicDelegation tid = formPageHandlerWithMsg
            users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
            pure $ PageDelegateVote (DScopeTopicFull topic) users)
     (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
-    "Delegation is marked" -- TODO: Translation
+    "Beauftragung erfolgt"
 
 ideaSpaceDelegation :: ActionM m => IdeaSpace -> FormPageHandler m PageDelegateVote
 ideaSpaceDelegation ideaSpace = formPageHandlerWithMsg
     (PageDelegateVote (DScopeIdeaSpaceFull ideaSpace)
         <$> equery (usersForIdeaSpace ideaSpace))
     (Action.delegateTo (DScopeIdeaSpace ideaSpace) . unPageDelegationVotePayload)
-    "Delegation is marked" -- TODO: Translation
+    "Beauftragung erfolgt"
 
 fullDelegation :: ActionM m => FormPageHandler m PageDelegateVote
 fullDelegation = formPageHandlerWithMsg
     (PageDelegateVote DScopeGlobalFull <$> equery getActiveUsers)
     (Action.delegateTo DScopeGlobal . unPageDelegationVotePayload)
-    "Delegation is marked" -- TODO: Translation
+    "Beauftragung erfolgt"
 
 -- | 13. Delegation network
 -- FIXME: Render all the delegations not just the current user related ones.
