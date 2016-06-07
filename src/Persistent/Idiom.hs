@@ -228,7 +228,7 @@ votingPower vid scope = do
 scopeDelegatees :: AUID User -> DScope -> Query [Delegation]
 scopeDelegatees uid scope =
     filter ((&&) <$> ((uid ==) . view delegationTo)
-                 <*> ((scope ==) . view delegationContext))
+                 <*> ((scope ==) . view delegationScope))
     <$> allDelegations
 
 getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
@@ -254,7 +254,7 @@ scopeHiearchy = \case
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
--- FIXME: Display only students
+-- TODO: Display only students
 usersForIdeaSpace :: IdeaSpace -> EQuery [User]
 usersForIdeaSpace = \case
     SchoolSpace       -> getActiveUsers

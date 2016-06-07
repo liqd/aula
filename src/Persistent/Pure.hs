@@ -177,7 +177,7 @@ data AulaData = AulaData
     , _dbIdeaMap             :: Ideas
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
-    , _dbDelegationMap       :: Delegations -- FIXME: Speed up searching for delegatees, delegate, context
+    , _dbDelegationMap       :: Delegations  -- FIXME: Speed up searching for delegatees, delegates, scopes
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
@@ -608,7 +608,7 @@ findDelegationsByDelegatee uid =
     filter ((uid ==) . view delegationFrom) <$> allDelegations
 
 findDelegationsByScope :: DScope -> Query [Delegation]
-findDelegationsByScope scope = filter ((== scope) . view delegationContext) . Map.elems
+findDelegationsByScope scope = filter ((== scope) . view delegationScope) . Map.elems
     <$> view dbDelegationMap
 
 findUserByLogin :: UserLogin -> MQuery User

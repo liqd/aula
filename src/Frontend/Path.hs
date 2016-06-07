@@ -379,9 +379,9 @@ instance SOP.Generic (UserMode r)
 -- TODO: Allign
 user :: UserMode r -> UriPath -> UriPath
 user UserIdeas       = (</> "ideas")
-user UserDelegations = (</> "delegations")
-user UserDelegateVoteOnSchoolSpace = \path -> path </> "delegation" </> "school"
-user UserDelegateVoteOnClassSpace  = \path -> path </> "delegation" </> "class"
+user UserDelegations = (</> "delegations")  -- TODO: re-align.
+user UserDelegateVoteOnSchoolSpace = \path -> path </> "delegate" </> "school"
+user UserDelegateVoteOnClassSpace  = \path -> path </> "delegate" </> "class"
 user UserEdit        = (</> "edit")
 user ReportUser      = (</> "report")
 

@@ -12,18 +12,19 @@ module Frontend.Page.Delegation
 where
 
 import Prelude
-
-import Access
 import Control.Arrow ((&&&))
 
+import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Lucid.Html5 as DF
+
+import Access
 import Action (ActionM, currentUser, delegateTo, equery)
 import Frontend.Core
 import Frontend.Prelude
 import Persistent
 
 import qualified Frontend.Path as U
-import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.Lucid.Html5 as DF
+
 
 -- | 12. Delegate vote
 data PageDelegateVote = PageDelegateVote DScopeFull [User]
@@ -39,18 +40,18 @@ instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
     formAction (PageDelegateVote scope _users) = case scope of
-        DScopeGlobalFull          -> U.Broken
+        DScopeGlobalFull          -> U.Broken  -- TODO: realign
         DScopeIdeaSpaceFull _space -> U.Broken
         DScopeTopicFull     topic -> U.delegateVoteOnTopic topic
         DScopeIdeaFull      idea  -> U.delegateVoteOnIdea idea
 
     redirectOf (PageDelegateVote scope _users) _ = case scope of
-        DScopeGlobalFull          -> U.Broken
+        DScopeGlobalFull          -> U.Broken  -- TODO: realign
         DScopeIdeaSpaceFull _space -> U.Broken
         DScopeTopicFull     topic -> U.viewTopic topic
         DScopeIdeaFull      idea  -> U.viewIdea idea
 
-    -- FIXME: Show the existing delegation
+    -- TODO: Show the existing delegation
     makeForm (PageDelegateVote _scope users) =
         PageDelegationVotePayload
         <$> "user-to-delegate" .: DF.choice userList Nothing
@@ -58,10 +59,10 @@ instance FormPage PageDelegateVote where
         userList = (view _Id &&& view (userLogin . unUserLogin . html)) <$> users
 
     formPage v f p@(PageDelegateVote _scope _users) = semanticDiv p . f $ do
-        -- FIXME: Table from users
+        -- TODO: Table from users
         DF.inputSelect "user-to-delegate" v
         DF.inputSubmit "Save delegation"
-        -- FIXME: Cancel button
+        -- TODO: Cancel button
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerWithMsg

@@ -328,8 +328,8 @@ type AulaUser =
   :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
-  :<|> "delegation"  :> "school" :> PostH
-  :<|> "delegation"  :> "class"  :> PostH
+  :<|> "delegate"    :> "school" :> PostH
+  :<|> "delegate"    :> "class"  :> PostH
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
