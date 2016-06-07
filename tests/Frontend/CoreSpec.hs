@@ -29,7 +29,7 @@ import Action
 import Action.Implementation
 import Arbitrary
     ( arb, arbPhrase, forAllShrinkDef, schoolClasses
-    , constantSampleTimestamp, unsafeMarkdown
+    , constantSampleTimestamp, unsafeMarkdown, someOf
     )
 import Frontend.Core
 import Frontend.Fragment.Comment
@@ -95,14 +95,13 @@ spec = do
         , formTest (arb :: Gen ReportIdea)
 
           -- login forms
-        , let createUser (PageHomeWithLoginPrompt _) user =
-                  void . update $ AddFirstUser constantSampleTimestamp (pu (user ^. userLogin))
+        , let createUser _ = void . update . AddFirstUser constantSampleTimestamp . pu
               pu u = ProtoUser
-                      (Just u)
+                      (Just (u ^. userLogin))
                       (UserFirstName "first")
                       (UserLastName "last")
                       (Student (head schoolClasses))
-                      (InitialPassword "dummy password")
+                      (u ^?! userPassword . _UserPassInitial)
                       Nothing
                       nil
           in FormTest (pure $ PageHomeWithLoginPrompt (LoginDemoHints []))
@@ -196,7 +195,7 @@ instance PayloadToEnv ProtoIdea where
 instance PayloadToEnv User where
     payloadToEnvMapping _ _ u = \case
         "user" -> pure [TextInput $ u ^. userLogin . unUserLogin]
-        "pass" -> pure []
+        "pass" -> pure [TextInput $ u ^?! userPassword . _UserPassInitial . unInitialPassword]
 
 ideaCheckboxValue iids path =
     if path `elem` (("idea-" <>) . show <$> iids)
@@ -451,10 +450,12 @@ instance ArbFormPagePayload PageUserSettings
 
 instance ArbFormPagePayload PageHomeWithLoginPrompt where
     arbFormPagePayload _ = arb <**> (set userLogin <$> validUserLogin)
+                               <**> (set userPassword <$> validUserPass)
       where
         validUserLogin =
             UserLogin . cs <$>
             (choose (4,12) >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z']))
+        validUserPass = UserPassInitial . InitialPassword . cs <$> someOf 4 12 (arb :: Gen Char)
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic _ctx space ideas _timestamp) =
