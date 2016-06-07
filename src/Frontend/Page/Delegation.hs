@@ -25,7 +25,7 @@ import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote DelegationContextFull [User]
+data PageDelegateVote = PageDelegateVote DScopeFull [User]
   deriving (Eq, Show, Read)
 
 instance Page PageDelegateVote
@@ -38,26 +38,26 @@ newtype PageDelegationVotePayload = PageDelegationVotePayload
 instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
-    formAction (PageDelegateVote ctx _users) = case ctx of
-        DlgCtxGlobalFull          -> U.Broken
-        DlgCtxIdeaSpaceFull _space -> U.Broken
-        DlgCtxTopicFull     topic -> U.delegateVoteOnTopic topic
-        DlgCtxIdeaFull      idea  -> U.delegateVoteOnIdea idea
+    formAction (PageDelegateVote scope _users) = case scope of
+        DScopeGlobalFull          -> U.Broken
+        DScopeIdeaSpaceFull _space -> U.Broken
+        DScopeTopicFull     topic -> U.delegateVoteOnTopic topic
+        DScopeIdeaFull      idea  -> U.delegateVoteOnIdea idea
 
-    redirectOf (PageDelegateVote ctx _users) _ = case ctx of
-        DlgCtxGlobalFull          -> U.Broken
-        DlgCtxIdeaSpaceFull _space -> U.Broken
-        DlgCtxTopicFull     topic -> U.viewTopic topic
-        DlgCtxIdeaFull      idea  -> U.viewIdea idea
+    redirectOf (PageDelegateVote scope _users) _ = case scope of
+        DScopeGlobalFull          -> U.Broken
+        DScopeIdeaSpaceFull _space -> U.Broken
+        DScopeTopicFull     topic -> U.viewTopic topic
+        DScopeIdeaFull      idea  -> U.viewIdea idea
 
     -- FIXME: Show the existing delegation
-    makeForm (PageDelegateVote _ctx users) =
+    makeForm (PageDelegateVote _scope users) =
         PageDelegationVotePayload
         <$> "user-to-delegate" .: DF.choice userList Nothing
       where
         userList = (view _Id &&& view (userLogin . unUserLogin . html)) <$> users
 
-    formPage v f p@(PageDelegateVote _ctx _users) = semanticDiv p . f $ do
+    formPage v f p@(PageDelegateVote _scope _users) = semanticDiv p . f $ do
         -- FIXME: Table from users
         DF.inputSelect "user-to-delegate" v
         DF.inputSubmit "Save delegation"
@@ -68,8 +68,8 @@ ideaDelegation iid = formPageHandlerWithMsg
     (equery $
         do idea <- maybe404 =<< findIdea iid
            users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-           pure $ PageDelegateVote (DlgCtxIdeaFull idea) users)
-    (Action.delegateTo (DlgCtxIdeaId iid) . unPageDelegationVotePayload)
+           pure $ PageDelegateVote (DScopeIdeaFull idea) users)
+    (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
     "Delegation is marked" -- TODO: Translation
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
@@ -77,21 +77,21 @@ topicDelegation tid = formPageHandlerWithMsg
     (equery $
         do topic <- maybe404 =<< findTopic tid
            users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
-           pure $ PageDelegateVote (DlgCtxTopicFull topic) users)
-    (Action.delegateTo (DlgCtxTopicId tid) . unPageDelegationVotePayload)
+           pure $ PageDelegateVote (DScopeTopicFull topic) users)
+    (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
     "Delegation is marked" -- TODO: Translation
 
 ideaSpaceDelegation :: ActionM m => IdeaSpace -> FormPageHandler m PageDelegateVote
 ideaSpaceDelegation ideaSpace = formPageHandlerWithMsg
-    (PageDelegateVote (DlgCtxIdeaSpaceFull ideaSpace)
+    (PageDelegateVote (DScopeIdeaSpaceFull ideaSpace)
         <$> equery (usersForIdeaSpace ideaSpace))
-    (Action.delegateTo (DlgCtxIdeaSpace ideaSpace) . unPageDelegationVotePayload)
+    (Action.delegateTo (DScopeIdeaSpace ideaSpace) . unPageDelegationVotePayload)
     "Delegation is marked" -- TODO: Translation
 
 fullDelegation :: ActionM m => FormPageHandler m PageDelegateVote
 fullDelegation = formPageHandlerWithMsg
-    (PageDelegateVote DlgCtxGlobalFull <$> equery getActiveUsers)
-    (Action.delegateTo DlgCtxGlobal . unPageDelegationVotePayload)
+    (PageDelegateVote DScopeGlobalFull <$> equery getActiveUsers)
+    (Action.delegateTo DScopeGlobal . unPageDelegationVotePayload)
     "Delegation is marked" -- TODO: Translation
 
 -- | 13. Delegation network

@@ -720,7 +720,7 @@ instance SafeCopy EmailAddress where
 -- | "Beauftragung"
 data Delegation = Delegation
     { _delegationMeta    :: MetaInfo Delegation
-    , _delegationContext :: DelegationContext
+    , _delegationContext :: DScope
     , _delegationFrom    :: AUID User
     , _delegationTo      :: AUID User
     }
@@ -732,7 +732,7 @@ type instance Proto Delegation = ProtoDelegation
 
 -- | "Beauftragung"
 data ProtoDelegation = ProtoDelegation
-    { _protoDelegationContext :: DelegationContext
+    { _protoDelegationContext :: DScope
     , _protoDelegationFrom    :: AUID User
     , _protoDelegationTo      :: AUID User
     }
@@ -757,23 +757,23 @@ instance SOP.Generic ProtoDelegation
 -- every user is implicitly a member of the idea space "school", whereas membership in all other
 -- idea spaces is explicit in the role.  However, this does not necessarily (although
 -- coincidentally) constitute a subset relationship between class spaces and school space.
-data DelegationContext =  -- FIXME: rename to 'DScope'.
-    DlgCtxGlobal
-  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }  -- FIXME: should be 'SchoolClass'
-  | DlgCtxTopicId   { _delCtxTopicId   :: AUID Topic }
-  | DlgCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
+data DScope =
+    DScopeGlobal
+  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }  -- FIXME: should be 'SchoolClass'
+  | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
+  | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic DelegationContext
+instance SOP.Generic DScope
 
-data DelegationContextFull =
-    DlgCtxGlobalFull
-  | DlgCtxIdeaSpaceFull { _delCtxIdeaSpaceFull :: IdeaSpace  }
-  | DlgCtxTopicFull     { _delCtxTopicFull     :: Topic }
-  | DlgCtxIdeaFull      { _delCtxIdeaFull      :: Idea  }
+data DScopeFull =
+    DScopeGlobalFull
+  | DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace  }
+  | DScopeTopicFull     { _dScopeTopicFull     :: Topic }
+  | DScopeIdeaFull      { _dScopeIdeaFull     :: Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic DelegationContextFull
+instance SOP.Generic  DScopeFull
 
 data DelegationNetwork = DelegationNetwork
     { _networkUsers         :: [User]
@@ -1072,7 +1072,7 @@ instance Binary CommentContent
 instance Binary EncryptedPassword
 instance Binary PlainDocument
 instance Binary Delegation
-instance Binary DelegationContext
+instance Binary DScope
 instance Binary Document
 instance Binary UserPass
 instance Binary Role
@@ -1110,7 +1110,7 @@ instance Binary Settings
 makePrisms ''AUID
 makePrisms ''Category
 makePrisms ''PlainDocument
-makePrisms ''DelegationContext
+makePrisms ''DScope
 makePrisms ''Document
 makePrisms ''EmailAddress
 makePrisms ''IdeaJuryResultValue
@@ -1140,7 +1140,7 @@ makeLenses ''CommentVoteKey
 makeLenses ''EncryptedPassword
 makeLenses ''PlainDocument
 makeLenses ''Delegation
-makeLenses ''DelegationContext
+makeLenses ''DScope
 makeLenses ''DelegationNetwork
 makeLenses ''Document
 makeLenses ''Durations
@@ -1189,7 +1189,7 @@ deriveSafeCopy 0 'base ''CommentVoteKey
 deriveSafeCopy 0 'base ''EncryptedPassword
 deriveSafeCopy 0 'base ''PlainDocument
 deriveSafeCopy 0 'base ''Delegation
-deriveSafeCopy 0 'base ''DelegationContext
+deriveSafeCopy 0 'base ''DScope
 deriveSafeCopy 0 'base ''DelegationNetwork
 deriveSafeCopy 0 'base ''Document
 deriveSafeCopy 0 'base ''DurationDays
@@ -1532,7 +1532,7 @@ instance (Aeson.FromJSON a, Aeson.FromJSON b, Aeson.FromJSON c) => Aeson.FromJSO
 
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON DScope where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Document where toJSON = Aeson.gtoJson
@@ -1559,7 +1559,7 @@ instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
 
 instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON CommentKey where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON DelegationContext where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON DScope where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Document where parseJSON = Aeson.gparseJson

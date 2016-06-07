@@ -517,7 +517,7 @@ likeIdea ideaId = do
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
     voter <- currentUser
-    let topic = DlgCtxIdeaId ideaId
+    let topic = DScopeIdeaId ideaId
     voteFor voter voter
     equery (votingPower (voter ^. _Id) topic)
         >>= filterM canVoteMadeFor
@@ -537,16 +537,16 @@ voteOnIdea ideaId voteVal = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
                             (ProtoIdeaVote voteVal (voter ^. _Id))
 
-delegateTo :: ActionM m => DelegationContext -> AUID User -> m ()
-delegateTo ctx t = do
+delegateTo :: ActionM m => DScope -> AUID User -> m ()
+delegateTo scope t = do
     user <- currentUser
-    delegations <- filter ((user ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByContext ctx)
+    delegations <- filter ((user ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByScope scope)
     forM_ delegations (update . DeleteDelegation . view _Id)
-    addWithCurrentUser_ AddDelegation (ProtoDelegation ctx (user ^. _Id) t)
+    addWithCurrentUser_ AddDelegation (ProtoDelegation scope (user ^. _Id) t)
 
 -- | Delegates the current user's vote to the given user at school space
 delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
-delegateVoteOnSchoolSpace = delegateTo (DlgCtxIdeaSpace SchoolSpace)
+delegateVoteOnSchoolSpace = delegateTo (DScopeIdeaSpace SchoolSpace)
 
 -- | Delegates the current user's vote for his/her class to the given user.
 -- FIXME: The the users should be in the same class.
@@ -556,7 +556,7 @@ delegateVoteOnClassSpace uid = do
     let mSchoolClass = user ^? userRole . _Student
     case mSchoolClass of
         Nothing -> return () -- FIXME: Throw exception
-        Just sp -> delegateTo (DlgCtxIdeaSpace (ClassSpace sp)) uid
+        Just sp -> delegateTo (DScopeIdeaSpace (ClassSpace sp)) uid
 
 -- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
 
@@ -869,16 +869,16 @@ eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
 -- FIXME: throw this in all applicable situations.
 eventLogUserDelegates ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
-      => DelegationContext -> User -> m ()
-eventLogUserDelegates ctx delegate = do
+      => DScope -> User -> m ()
+eventLogUserDelegates scope delegate = do
     delegatee <- currentUser
-    ispace <- case ctx of
-        DlgCtxGlobal           -> pure . ClassSpace $ delegatee ^?! userRole . roleSchoolClass
-        DlgCtxIdeaSpace ispace -> pure ispace
-        DlgCtxTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
-        DlgCtxIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
+    ispace <- case scope of
+        DScopeGlobal           -> pure . ClassSpace $ delegatee ^?! userRole . roleSchoolClass
+        DScopeIdeaSpace ispace -> pure ispace
+        DScopeTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
+        DScopeIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
                                   <$> mquery (findIdea iid)
-    eventLog ispace (delegatee ^. _Key) $ EventLogUserDelegates ctx (delegate ^. _Key)
+    eventLog ispace (delegatee ^. _Key) $ EventLogUserDelegates scope (delegate ^. _Key)
 
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =

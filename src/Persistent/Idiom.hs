@@ -206,13 +206,13 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 
 -- * voting
 
-votingPower :: AUID User -> DelegationContext -> EQuery [User]
-votingPower vid ctx = do
-    hiearchy <- scopeHiearchy ctx
+votingPower :: AUID User -> DScope -> EQuery [User]
+votingPower vid scope = do
+    hiearchy <- scopeHiearchy scope
     vs <- Set.toList <$> voters hiearchy (Set.singleton vid) vid
     catMaybes <$> forM vs findUser
   where
-    voters (path :: [DelegationContext]) (discovered :: Set (AUID User)) (user :: AUID User) = do
+    voters (path :: [DScope]) (discovered :: Set (AUID User)) (user :: AUID User) = do
         -- Set.fromList O(n*log n) is better than nub O(n^2)
         oneStepNewDelegatees
             <- (`Set.difference` discovered) . Set.fromList . fmap _delegationFrom . concat
@@ -222,10 +222,10 @@ votingPower vid ctx = do
                      (voters path (oneStepNewDelegatees `Set.union` discovered))
         pure (discovered `Set.union` allNewDelegatees)
 
-scopeDelegatees :: AUID User -> DelegationContext -> Query [Delegation]
-scopeDelegatees uid ctx =
+scopeDelegatees :: AUID User -> DScope -> Query [Delegation]
+scopeDelegatees uid scope =
     filter ((&&) <$> ((uid ==) . view delegationTo)
-                 <*> ((ctx ==) . view delegationContext))
+                 <*> ((scope ==) . view delegationContext))
     <$> allDelegations
 
 getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
@@ -238,18 +238,18 @@ getVote uid iid = do
             voter <- maybe404 =<< findUser (vv ^. ideaVoteDelegate)
             pure $ Just (voter, vv ^. ideaVoteValue)
 
-scopeHiearchy :: DelegationContext -> EQuery [DelegationContext]
+scopeHiearchy :: DScope -> EQuery [DScope]
 scopeHiearchy = \case
-    DlgCtxGlobal           -> pure [DlgCtxGlobal]
-    s@(DlgCtxIdeaSpace {}) -> pure [s, DlgCtxGlobal]
-    t@(DlgCtxTopicId tid)  -> do
+    DScopeGlobal           -> pure [DScopeGlobal]
+    s@(DScopeIdeaSpace {}) -> pure [s, DScopeGlobal]
+    t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
-        (t:) <$> scopeHiearchy (DlgCtxIdeaSpace space)
-    i@(DlgCtxIdeaId iid)     -> do
+        (t:) <$> scopeHiearchy (DScopeIdeaSpace space)
+    i@(DScopeIdeaId iid)     -> do
         loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
         (i:) <$> scopeHiearchy (case loc of
-            IdeaLocationSpace s    -> DlgCtxIdeaSpace s
-            IdeaLocationTopic _s t -> DlgCtxTopicId   t)
+            IdeaLocationSpace s    -> DScopeIdeaSpace s
+            IdeaLocationTopic _s t -> DScopeTopicId   t)
 
 -- FIXME: Display only students
 usersForIdeaSpace :: IdeaSpace -> EQuery [User]

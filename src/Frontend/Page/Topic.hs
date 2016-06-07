@@ -38,7 +38,7 @@ import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import LifeCycle (Capability(..), CapCtx(..), capabilities)
 import Persistent
-    ( findDelegationsByContext
+    ( findDelegationsByScope
     , findIdeasByTopic
     , findIdeasByTopicId
     , findTopic
@@ -124,15 +124,15 @@ tabLink topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
-    toHtml p@(ViewTopicDelegations now ctx topic delegations) = semanticDiv p $ do
-        viewTopicHeaderDiv now ctx topic TabDelegation
+    toHtml p@(ViewTopicDelegations now scope topic delegations) = semanticDiv p $ do
+        viewTopicHeaderDiv now scope topic TabDelegation
         -- related: Frontend.Page.User.renderDelegations
         -- FIXME: implement!
         pre_ $ topic ^. showed . html
         pre_ $ delegations ^. showed . html
 
-    toHtml p@(ViewTopicIdeas now ctx tab topic ideasAndNumVoters) = semanticDiv p $ do
-        assert (tab /= TabDelegation) $ viewTopicHeaderDiv now ctx topic tab
+    toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters) = semanticDiv p $ do
+        assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
@@ -376,7 +376,7 @@ viewTopic tab topicId = do
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
-                    <$> findDelegationsByContext (DlgCtxTopicId topicId)
+                    <$> findDelegationsByScope (DScopeTopicId topicId)
             TabIdeas ideasTab ideasQuery ->
               do
                 let loc = topicIdeaLocation topic

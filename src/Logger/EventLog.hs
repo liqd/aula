@@ -56,7 +56,7 @@ data EventLogItemValue user topic idea comment =
       -- nice: the first comment is either the target (if a top-level comment) or the parent of the
       -- target; the second is either absent (for top-level comments) or the target.  this could be
       -- easier.
-  | EventLogUserDelegates         DelegationContext user
+  | EventLogUserDelegates         DScope user
   | EventLogTopicNewPhase         topic Phase Phase
   | EventLogIdeaNewLocation          idea (Maybe topic) (Maybe topic)
   | EventLogIdeaReachesQuorum     idea

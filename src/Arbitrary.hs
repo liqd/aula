@@ -427,11 +427,11 @@ instance Arbitrary IdeaJuryResultType where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary DelegationContext where
+instance Arbitrary DScope where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary DelegationContextFull where
+instance Arbitrary DScopeFull where
     arbitrary = garbitrary
     shrink    = gshrink
 
@@ -706,8 +706,6 @@ instance Arbitrary CsvUserRecord where
     shrink    = gshrink
 
 -- FIXME: instance Arbitrary Delegation
-
--- FIXME: instance Arbitrary DelegationContext
 
 instance Arbitrary PhaseChangeDir where
     arbitrary = garbitrary
@@ -1105,11 +1103,11 @@ fishDelegationNetworkAction mSchoolClass = do
         -- - no cycles  -- FIXME: not implemented!
         mkdel :: (GenArbitrary m, ActionM m) => m [Delegation]
         mkdel = do
-            ctx :: DelegationContext
-                <- DlgCtxIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
-            let fltr u = ctx == DlgCtxIdeaSpace SchoolSpace
+            scope :: DScope
+                <- DScopeIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
+            let fltr u = scope == DScopeIdeaSpace SchoolSpace
                       || case u ^. userRole of
-                             Student cl -> ctx == DlgCtxIdeaSpace (ClassSpace cl)
+                             Student cl -> scope == DScopeIdeaSpace (ClassSpace cl)
                              _          -> False
 
                 users' = List.filter fltr users
@@ -1119,7 +1117,7 @@ fishDelegationNetworkAction mSchoolClass = do
                 else do
                     u1  <- genGen $ elements users'
                     u2  <- genGen $ elements users'
-                    (:[]) <$> addWithCurrentUser AddDelegation (ProtoDelegation ctx (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> addWithCurrentUser AddDelegation (ProtoDelegation scope (u1 ^. _Id) (u2 ^. _Id))
 
     DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel
 
@@ -1174,7 +1172,7 @@ instance Aeson.ToJSON D3DN where
             , "context" .= toJSON (renderCtx d)
             ]
 
-        renderCtx (Delegation _ (DlgCtxIdeaSpace s) _ _) = showIdeaSpace s
+        renderCtx (Delegation _ (DScopeIdeaSpace s) _ _) = showIdeaSpace s
         renderCtx _ = error "instance Aeson.ToJSON D3DN where: context type not implemented."
 
 
@@ -1221,7 +1219,7 @@ instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
         => Arbitrary (EventLogItemValue u t i c) where
     arbitrary = garbitrary >>= repair
       where
-        repair (EventLogUserDelegates _ctx u) = EventLogUserDelegates <$> arb <*> pure u
+        repair (EventLogUserDelegates _scope u) = EventLogUserDelegates <$> arb <*> pure u
         repair v = pure v
     shrink    = gshrink
 

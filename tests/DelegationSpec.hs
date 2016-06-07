@@ -52,7 +52,7 @@ spec = do
     let programGen = delegationProgram
                         (QC.elements $ (view _Id) <$> unStudents uni)
                         (QC.elements $ (view _Id) <$> unIdeas    uni)
-                        (QC.elements $ universeToDelegationContexts uni)
+                        (QC.elements $ universeToDScopes uni)
     let runDelegationProgram program = do
             persist' <- Persistent.mkRunPersistInMemoryWithState snapshot
             unNat (runner persist') . interpretDelegationProgram
@@ -82,103 +82,103 @@ spec = do
                     tag Large . it "with random contexts" $ observableBehaviour program
     describe "Delegation simulation" $ do
         delegationTest "One delegation, one vote"
-                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                [ SetDelegation student1 (DScopeIdeaId idea) student2
                 , Vote student1 idea Yes
                 ]
         delegationTest "Self delegation"
-                [ SetDelegation student1 (DlgCtxIdeaId idea) student1
-                , VotingPower student1 (DlgCtxIdeaId idea) 1
+                [ SetDelegation student1 (DScopeIdeaId idea) student1
+                , VotingPower student1 (DScopeIdeaId idea) 1
                 , Vote student1 idea No
                 ]
         delegationTest "Delegation on topic"
-                [ SetDelegation student1 (DlgCtxTopicId topic) student2
-                , VotingPower student2 (DlgCtxTopicId topic) 2
+                [ SetDelegation student1 (DScopeTopicId topic) student2
+                , VotingPower student2 (DScopeTopicId topic) 2
                 ]
         delegationTest "Delegation on ideaspace"
-                [ SetDelegation student1 (DlgCtxIdeaSpace ideaspace) student2
-                , VotingPower student2 (DlgCtxIdeaSpace ideaspace) 2
+                [ SetDelegation student1 (DScopeIdeaSpace ideaspace) student2
+                , VotingPower student2 (DScopeIdeaSpace ideaspace) 2
                 ]
         delegationTest "Delegation on schoolspace"
-                [ SetDelegation student1 (DlgCtxIdeaSpace SchoolSpace) student2
-                , VotingPower student2 (DlgCtxIdeaSpace SchoolSpace) 2
+                [ SetDelegation student1 (DScopeIdeaSpace SchoolSpace) student2
+                , VotingPower student2 (DScopeIdeaSpace SchoolSpace) 2
                 ]
         delegationTest "Delegation on global"
-                [ SetDelegation student1 DlgCtxGlobal student2
-                , VotingPower student2 DlgCtxGlobal 2
+                [ SetDelegation student1 DScopeGlobal student2
+                , VotingPower student2 DScopeGlobal 2
                 ]
         delegationTest "I change my mind before"
-                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                [ SetDelegation student1 (DScopeIdeaId idea) student2
                 , Vote student1 idea No
                 , Vote student2 idea Yes
                 ]
         delegationTest "I change my mind after"
-                [ SetDelegation student1 (DlgCtxIdeaId idea) student2
+                [ SetDelegation student1 (DScopeIdeaId idea) student2
                 , Vote student2 idea Yes
                 , Vote student1 idea No
                 ]
         describe "No cyclical delegation" $ do
             delegationTest "I change my mind works on my delegatees"
-                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                    , SetDelegation student2 (DlgCtxIdeaId idea) student3
+                    [ SetDelegation student1 (DScopeIdeaId idea) student2
+                    , SetDelegation student2 (DScopeIdeaId idea) student3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
-                    [ SetDelegation student1 (DlgCtxIdeaId idea2) student2
-                    , SetDelegation student2 (DlgCtxTopicId topic2) student3
-                    , VotingPower student1 (DlgCtxIdeaId idea2) 1
-                    , VotingPower student2 (DlgCtxIdeaId idea2) 2
-                    , VotingPower student3 (DlgCtxIdeaId idea2) 3
-                    , VotingPower student3 (DlgCtxTopicId topic2) 2
+                    [ SetDelegation student1 (DScopeIdeaId idea2) student2
+                    , SetDelegation student2 (DScopeTopicId topic2) student3
+                    , VotingPower student1 (DScopeIdeaId idea2) 1
+                    , VotingPower student2 (DScopeIdeaId idea2) 2
+                    , VotingPower student3 (DScopeIdeaId idea2) 3
+                    , VotingPower student3 (DScopeTopicId topic2) 2
                     ]
         describe "Cyclical delegation" $ do
             delegationTest "Cycle in delegation"
-                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                    , VotingPower student2 (DlgCtxIdeaId idea) 2
-                    , SetDelegation student2 (DlgCtxIdeaId idea) student1
-                    , VotingPower student1 (DlgCtxIdeaId idea) 2
-                    , VotingPower student2 (DlgCtxIdeaId idea) 2
+                    [ SetDelegation student1 (DScopeIdeaId idea) student2
+                    , VotingPower student2 (DScopeIdeaId idea) 2
+                    , SetDelegation student2 (DScopeIdeaId idea) student1
+                    , VotingPower student1 (DScopeIdeaId idea) 2
+                    , VotingPower student2 (DScopeIdeaId idea) 2
                     , Vote student1 idea Yes
                     , Vote student2 idea No
                     ]
             delegationTest "I change my mind only works for me not my delegatees"
-                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                    , SetDelegation student2 (DlgCtxIdeaId idea) student3
-                    , SetDelegation student3 (DlgCtxIdeaId idea) student1
-                    , VotingPower student1 (DlgCtxIdeaId idea) 3
-                    , VotingPower student2 (DlgCtxIdeaId idea) 3
-                    , VotingPower student3 (DlgCtxIdeaId idea) 3
+                    [ SetDelegation student1 (DScopeIdeaId idea) student2
+                    , SetDelegation student2 (DScopeIdeaId idea) student3
+                    , SetDelegation student3 (DScopeIdeaId idea) student1
+                    , VotingPower student1 (DScopeIdeaId idea) 3
+                    , VotingPower student2 (DScopeIdeaId idea) 3
+                    , VotingPower student3 (DScopeIdeaId idea) 3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
-                    [ SetDelegation student1 (DlgCtxIdeaId idea2)   student2
-                    , SetDelegation student2 (DlgCtxTopicId topic2) student3
-                    , SetDelegation student3 DlgCtxGlobal student1
-                    , VotingPower student1 (DlgCtxIdeaId idea2) 3
-                    , VotingPower student2 (DlgCtxIdeaId idea2) 3
-                    , VotingPower student3 (DlgCtxIdeaId idea2) 3
-                    , VotingPower student1 (DlgCtxTopicId topic2) 3
-                    , VotingPower student2 (DlgCtxTopicId topic2) 1
-                    , VotingPower student3 (DlgCtxTopicId topic2) 2
-                    , VotingPower student1 DlgCtxGlobal 2
-                    , VotingPower student2 DlgCtxGlobal 1
-                    , VotingPower student3 DlgCtxGlobal 1
+                    [ SetDelegation student1 (DScopeIdeaId idea2)   student2
+                    , SetDelegation student2 (DScopeTopicId topic2) student3
+                    , SetDelegation student3 DScopeGlobal student1
+                    , VotingPower student1 (DScopeIdeaId idea2) 3
+                    , VotingPower student2 (DScopeIdeaId idea2) 3
+                    , VotingPower student3 (DScopeIdeaId idea2) 3
+                    , VotingPower student1 (DScopeTopicId topic2) 3
+                    , VotingPower student2 (DScopeTopicId topic2) 1
+                    , VotingPower student3 (DScopeTopicId topic2) 2
+                    , VotingPower student1 DScopeGlobal 2
+                    , VotingPower student2 DScopeGlobal 1
+                    , VotingPower student3 DScopeGlobal 1
                     ]
             delegationTest "Breaking Cycles"
-                    [ SetDelegation student1 (DlgCtxIdeaId idea) student2
-                    , SetDelegation student2 (DlgCtxIdeaId idea) student3
-                    , SetDelegation student3 (DlgCtxIdeaId idea) student1
-                    , VotingPower student1 (DlgCtxIdeaId idea) 3
-                    , VotingPower student2 (DlgCtxIdeaId idea) 3
-                    , VotingPower student3 (DlgCtxIdeaId idea) 3
-                    , SetDelegation student1 (DlgCtxIdeaId idea) student4
-                    , VotingPower student1 (DlgCtxIdeaId idea) 3
-                    , VotingPower student2 (DlgCtxIdeaId idea) 1
-                    , VotingPower student3 (DlgCtxIdeaId idea) 2
-                    , VotingPower student4 (DlgCtxIdeaId idea) 4
+                    [ SetDelegation student1 (DScopeIdeaId idea) student2
+                    , SetDelegation student2 (DScopeIdeaId idea) student3
+                    , SetDelegation student3 (DScopeIdeaId idea) student1
+                    , VotingPower student1 (DScopeIdeaId idea) 3
+                    , VotingPower student2 (DScopeIdeaId idea) 3
+                    , VotingPower student3 (DScopeIdeaId idea) 3
+                    , SetDelegation student1 (DScopeIdeaId idea) student4
+                    , VotingPower student1 (DScopeIdeaId idea) 3
+                    , VotingPower student2 (DScopeIdeaId idea) 1
+                    , VotingPower student3 (DScopeIdeaId idea) 2
+                    , VotingPower student4 (DScopeIdeaId idea) 4
                     ]
         tag Large . it "Random delegation programs" . property . forAllShrinkDef programGen
             $ \(DelegationProgram program) -> monadicIO . run $ runDelegationProgram program
@@ -194,19 +194,19 @@ spec = do
 
         return runAction
 
-    universeToDelegationContexts :: Universe -> [DelegationContext]
-    universeToDelegationContexts u = DlgCtxGlobal:(spaces <> topics <> ideas)
+    universeToDScopes :: Universe -> [DScope]
+    universeToDScopes u = DScopeGlobal:(spaces <> topics <> ideas)
       where
-        spaces = DlgCtxIdeaSpace <$> unIdeaSpaces u
-        topics = DlgCtxTopicId   . view _Id <$> unTopics     u
-        ideas  = DlgCtxIdeaId    . view _Id <$> unIdeas      u
+        spaces = DScopeIdeaSpace <$> unIdeaSpaces u
+        topics = DScopeTopicId   . view _Id <$> unTopics     u
+        ideas  = DScopeIdeaId    . view _Id <$> unIdeas      u
 
 -- * delegation program
 
 data DelegationDSL where
-    SetDelegation :: AUID User -> DelegationContext -> AUID User      -> DelegationDSL
+    SetDelegation :: AUID User -> DScope -> AUID User      -> DelegationDSL
     Vote          :: AUID User -> AUID Idea         -> IdeaVoteValue  -> DelegationDSL
-    VotingPower   :: AUID User -> DelegationContext -> Int            -> DelegationDSL
+    VotingPower   :: AUID User -> DScope -> Int            -> DelegationDSL
 
 deriving instance Show DelegationDSL
 
@@ -215,7 +215,7 @@ newtype DelegationProgram = DelegationProgram { unDelegationProgram :: [Delegati
 instance Show DelegationProgram where
     show (DelegationProgram instr) = unlines . map (\(n, i) -> unwords [show (n :: Int), "\t", show i]) $ zip [1..] instr
 
-delegationStepGen :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DelegationContext -> Gen DelegationDSL
+delegationStepGen :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DScope -> Gen DelegationDSL
 delegationStepGen voters ideas topics = frequency
     [ (9, SetDelegation <$> voters <*> topics <*> voters)
     , (3, Vote <$> voters <*> ideas <*> arbitrary)
@@ -227,7 +227,7 @@ dsGen = arbitrary
 instance Arbitrary DelegationDSL where
     arbitrary = delegationStepGen arb arb arb
 
-delegationProgram :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DelegationContext -> Gen DelegationProgram
+delegationProgram :: Gen (AUID User) -> Gen (AUID Idea) -> Gen DScope -> Gen DelegationProgram
 delegationProgram voters ideas topics =
     DelegationProgram <$> listOf1 (delegationStepGen voters ideas topics)
 
@@ -235,9 +235,9 @@ instance Arbitrary DelegationProgram where
     arbitrary = delegationProgram arb arb arb
     shrink (DelegationProgram x) = DelegationProgram <$> shrink x
 
-getSupporters :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
-getSupporters uid ctx = equery $ do
-    _delegationFrom <$$> Persistent.scopeDelegatees uid ctx
+getSupporters :: ActionM m => AUID User -> DScope -> m [AUID User]
+getSupporters uid scope = equery $ do
+    _delegationFrom <$$> Persistent.scopeDelegatees uid scope
 
 getVote :: ActionM m => AUID User -> AUID Idea -> m (Maybe (AUID User, IdeaVoteValue))
 getVote uid iid = equery $ do
@@ -247,16 +247,16 @@ interpretDelegationProgram :: ActionM m => DelegationProgram -> m ()
 interpretDelegationProgram =
     mapM_ interpretDelegationStep . zip [1..] . unDelegationProgram
 
-getVotingPower :: ActionM m => AUID User -> DelegationContext -> m [AUID User]
-getVotingPower u ctx = sort . nub <$> (view _Id <$$> equery (Persistent.votingPower u ctx))
+getVotingPower :: ActionM m => AUID User -> DScope -> m [AUID User]
+getVotingPower u scope = sort . nub <$> (view _Id <$$> equery (Persistent.votingPower u scope))
 
 interpretDelegationStep :: ActionM m => (Int, DelegationDSL) -> m ()
-interpretDelegationStep (i,step@(SetDelegation f ctx t)) = do
+interpretDelegationStep (i,step@(SetDelegation f scope t)) = do
     Action.login f
-    delegateesTo   <- getVotingPower t ctx
-    delegateesFrom <- getVotingPower f ctx
-    Action.delegateTo ctx t
-    delegatees' <- getVotingPower t ctx
+    delegateesTo   <- getVotingPower t scope
+    delegateesFrom <- getVotingPower f scope
+    Action.delegateTo scope t
+    delegatees' <- getVotingPower t scope
     Action.logout
     let ds1 = sort delegatees'
         ds2 = sort (nub (delegateesFrom <> delegateesTo))
@@ -269,22 +269,22 @@ interpretDelegationStep (i,step@(SetDelegation f ctx t)) = do
             else "The delegatees are not the sum of from and to",
         i, step, f `elem` delegateesTo, ds1, ds2)
 interpretDelegationStep (j,step@(Vote v i x)) = do
+    -- For the delegates who are already voted for themselves the
+    -- vote should not be changed, expect for the `v` voter who
+    -- can always change his/her vote.
     let getVote' d = (,) d <$> getVote d i
     Action.login v
-    delegatees <- getVotingPower v (DlgCtxIdeaId i)
+    delegatees <- getVotingPower v (DScopeIdeaId i)
     votedForThemselves <- Map.fromList . filter (\(d,dv) -> Just True == (((d ==) . fst) <$> dv))
                             <$> forM (delegatees \\ [v]) getVote'
     Action.voteOnIdea i x
     votes <- forM delegatees getVote'
-    -- For the delegates who are already voted for themselves the
-    -- votes should not be changed, except for the `v` voter who
-    -- can allways change his/her vote.
     let checkVote (d, dv) = dv == (fromMaybe (Just (v,x)) $ Map.lookup d votedForThemselves)
     let rightVotes = all checkVote votes
     Action.logout
     unless rightVotes . fail $ show ("Not all the votes have right voter or vote.", j, step, delegatees, votes)
-interpretDelegationStep (i,step@(VotingPower v ctx n)) = do
+interpretDelegationStep (i,step@(VotingPower v scope n)) = do
     Action.login v
-    delegatees <- getVotingPower v ctx
+    delegatees <- getVotingPower v scope
     Action.logout
     unless (length delegatees == n) . fail $ show ("Number of delegatees was different.", i, step, length delegatees, delegatees)
