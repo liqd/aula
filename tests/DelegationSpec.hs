@@ -26,6 +26,7 @@ import Control.Category ((.))
 import Test.Hspec.QuickCheck (modifyMaxSuccess)
 import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)
+import qualified Data.Map as Map
 import qualified Test.QuickCheck as QC (elements)
 
 
@@ -132,9 +133,7 @@ spec = do
                     , VotingPower student3 (DlgCtxTopicId topic2) 2
                     ]
         describe "Cyclical delegation" $ do
-            it "Cycle in delegation" $ do
-                pendingWith "Student2 should not change student1's vote."
-                runDelegationProgram
+            delegationTest "Cycle in delegation"
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , VotingPower student2 (DlgCtxIdeaId idea) 2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student1
@@ -143,9 +142,7 @@ spec = do
                     , Vote student1 idea Yes
                     , Vote student2 idea No
                     ]
-            it "I change my mind only works for me not my delegatees" $ do
-                pendingWith "Postcondition check does not express this"
-                runDelegationProgram
+            delegationTest "I change my mind only works for me not my delegatees"
                     [ SetDelegation student1 (DlgCtxIdeaId idea) student2
                     , SetDelegation student2 (DlgCtxIdeaId idea) student3
                     , SetDelegation student3 (DlgCtxIdeaId idea) student1
@@ -272,11 +269,18 @@ interpretDelegationStep (i,step@(SetDelegation f ctx t)) = do
             else "The delegatees are not the sum of from and to",
         i, step, f `elem` delegateesTo, ds1, ds2)
 interpretDelegationStep (j,step@(Vote v i x)) = do
+    let getVote' d = (,) d <$> getVote d i
     Action.login v
     delegatees <- getVotingPower v (DlgCtxIdeaId i)
+    votedForThemselves <- Map.fromList . filter (\(d,dv) -> Just True == (((d ==) . fst) <$> dv))
+                            <$> forM (delegatees \\ [v]) getVote'
     Action.voteOnIdea i x
-    votes <- forM delegatees $ \s -> getVote s i
-    let rightVotes = all (Just (v, x) ==) votes
+    votes <- forM delegatees getVote'
+    -- For the delegates who are already voted for themselves the
+    -- votes should not be changed, except for the `v` voter who
+    -- can allways change his/her vote.
+    let checkVote (d, dv) = dv == (fromMaybe (Just (v,x)) $ Map.lookup d votedForThemselves)
+    let rightVotes = all checkVote votes
     Action.logout
     unless rightVotes . fail $ show ("Not all the votes have right voter or vote.", j, step, delegatees, votes)
 interpretDelegationStep (i,step@(VotingPower v ctx n)) = do
