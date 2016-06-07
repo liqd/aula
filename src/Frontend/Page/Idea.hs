@@ -404,8 +404,7 @@ feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. 
 
 instance ToHtml ViewDeletedIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ViewDeletedIdea idea) = semanticDiv p $ do
-            div_ [class_ "hero-unit narrow-container"] $ do
+    toHtml p@(ViewDeletedIdea idea) = semanticDiv' [class_ "hero-unit narrow-container"] p $ do
                 header_ [class_ "detail-header"] $ do
                     linkToIdeaLocation idea
                 div_ [class_ "container-not-found"] "Diese Idee wurde gelöscht."
@@ -452,10 +451,9 @@ instance FormPage EditIdea where
 createOrEditIdea :: (Monad m, Typeable page, Page page) =>
     Either IdeaLocation Idea ->
     View (HtmlT m ()) -> (HtmlT m () -> HtmlT m ()) -> page -> HtmlT m ()
-createOrEditIdea eLocIdea v form p = semanticDiv p $ do
-    let cancelUrl = either id (view ideaLocation) eLocIdea
-    div_ [class_ "container-main popup-page"] $ do
-        div_ [class_ "container-narrow"] $ do
+createOrEditIdea eLocIdea v form p =
+    semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
+            let cancelUrl = either id (view ideaLocation) eLocIdea
             h1_ [class_ "main-heading"] "Deine Idee"
             form $ do
                 label_ $ do

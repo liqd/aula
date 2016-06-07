@@ -142,9 +142,7 @@ instance FormPage PageUserSettings where
           | otherwise = DF.Error "Die neuen Passwörter passen nicht (Tippfehler?)"
 
     formPage v form p = do
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
+        semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
                     h1_ [class_ "main-heading"] "Einstellungen"
                     form $ do
                         label_ $ do
@@ -313,9 +311,7 @@ instance FormPage EditUserProfile where
         <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
+        semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
                     h1_ [class_ "main-heading"] .
                         toHtml $ if isOwnProfile ctx user
                             then "Eigenes Nutzerprofil bearbeiten"

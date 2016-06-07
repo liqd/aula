@@ -67,8 +67,8 @@ instance SOP.Generic ListItemIdeas
 
 instance ToHtml ListItemIdea where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdea ctx _whatListPage stats@(IdeaStats idea _phase _quo _voters)) = semanticDiv p $ do
-        div_ [class_ "ideas-list-item"] $ do
+    toHtml p@(ListItemIdea ctx _whatListPage stats@(IdeaStats idea _phase _quo _voters)) =
+        semanticDiv' [class_ "ideas-list-item"] p $ do
             a_ [href_ $ U.viewIdea idea] $ do
                 div_ [class_ "col-5-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea

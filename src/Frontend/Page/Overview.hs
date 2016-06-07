@@ -69,9 +69,7 @@ viewTopics space =
 
 instance ToHtml PageOverviewOfSpaces where
     toHtmlRaw = toHtml
-    toHtml p@(PageOverviewOfSpaces spaces) = semanticDiv p $ do
-        div_ [class_ "container-main"] $ do
-            f spaces
+    toHtml p@(PageOverviewOfSpaces spaces) = semanticDiv' [class_ "container-main"] p $ f spaces
       where
         f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
         f []       = p_ "Keine Ideenräume"

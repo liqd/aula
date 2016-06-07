@@ -22,7 +22,7 @@ module Frontend.Core
     , GetH, PostH, FormHandler
 
       -- * helpers for handlers
-    , semanticDiv
+    , semanticDiv, semanticDiv'
     , html
     , FormCS
     , IsTab
@@ -147,10 +147,11 @@ type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageR
 --       combinator
 --     * Later on when we write selenium suite, the semantic tags helps up to parse, identify and test
 --       elements on the page.
---
--- FIXME: allow attribute list.
 semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m ()
-semanticDiv t = div_ [makeAttribute "data-aula-type" (cs . show . typeOf $ t)]
+semanticDiv = semanticDiv' []
+
+semanticDiv' :: forall m a. (Monad m, Typeable a) => [Attribute] -> a -> HtmlT m () -> HtmlT m ()
+semanticDiv' attrs t = div_ $ makeAttribute "data-aula-type" (cs . show . typeOf $ t) : attrs
 
 type FormCS m r s =
     (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
