@@ -203,7 +203,9 @@ userHeaderDiv ctx (ActiveUser user) =
                 editProfileBtn
             else do
                 let caps = capabilities ctx
-                -- FIXME: Do not render the buttons for itself
+                -- NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
+                -- philosophical, but it doesn't really matter: users can delegate to themselves
+                -- just like to anybody else, and the graph will look different if they do.
                 -- FIXME: Styling
                 when (CanVote `elem` caps) $ do
                     postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
