@@ -25,8 +25,12 @@ import Persistent.Api
     , SetUserProfileDesc(SetUserProfileDesc)
     , SetUserProfile(SetUserProfile)
     )
-import Persistent (findUser, findIdeasByUserId, getIdeaStats)
-
+import Persistent
+    ( findUser
+    , findIdeasByUserId
+    , getIdeaStats
+    , scopeDelegatees
+    )
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -54,8 +58,11 @@ data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView L
 instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
+type DelegationInfo = [(User, [User])]
+
 -- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes = PageUserProfileDelegatedVotes CapCtx UserView [Delegation]
+data PageUserProfileDelegatedVotes =
+        PageUserProfileDelegatedVotes CapCtx UserView DelegationInfo
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
@@ -213,7 +220,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (U.UserProf (user ^. _Id) U.UserDelegations)]
+                a_ [class_ "heroic-tab-item", href_ (U.userGlobalDelegations user)]
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
@@ -252,40 +259,61 @@ instance ToHtml PageUserProfileDelegatedVotes where
                 div_ [class_ "container-narrow"] $ do
                     -- School / Class select buttons: FIXME mechanics!
                     div_ [class_ "filter-toggles"] $ do
-                        button_ [class_ "filter-toggle-btn", value_ ""] "Schulweit"
-                        button_ [class_ "filter-toggle-btn m-active", value_ ""] "Klassenweit"
+                        a_ [class_ "filter-toggle-btn", href_ (U.userGlobalDelegations user)] "Schulweit"
+                        a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
                     renderDelegations delegations
 
-renderDelegations :: forall m. Monad m => [Delegation] -> HtmlT m ()
-renderDelegations _ = do
+renderDelegations :: forall m. Monad m => DelegationInfo -> HtmlT m ()
+renderDelegations delegations = do
     h2_ $ "Insgesamt " <> total ^. showed . html
-    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` [undefined, undefined, undefined]  -- FIXME
+    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
-    total :: Int
-    total = 20
+    total = sum $ map ((1 +) . length . snd) delegations
 
-    renderLi :: Delegation -> HtmlT m ()  -- FIXME
-    renderLi _ = do
+    renderLi :: (User, [User]) -> HtmlT m ()
+    renderLi (delegatee, secondDelegatees) = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
                 div_ [class_ "small-avatar-list-image"] $ do
                     nil -- FIXME Make a real image a child here (avatarImgFromHasMeta)
             div_ [class_ "col-11-12"] $ do
-                h3_ "UserName"
+                h3_ $ a_ [href_ $ U.viewUserProfile delegatee] (delegatee ^. userLogin . unUserLogin  . html)
                 p_ $ do
-                    "5 Stimmen von "
-                    strong_ $ do
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName, "
-                        a_ [href_ U.Broken] "UserName"
+                    toHtml $ show (length secondDelegatees) <> " Stimmen von "
+                    strong_ . forM_ secondDelegatees $ \delegatee' ->
+                        a_ [href_ $ U.viewUserProfile delegatee'] (delegatee' ^. userLogin . unUserLogin  . html)
+
+delegatedVotesGlobal :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileDelegatedVotes
+delegatedVotesGlobal userId = delegatedVotes userId DScopeGlobal
+
+delegatedVotesClass :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileDelegatedVotes
+delegatedVotesClass userId = do
+    user <- mquery (findUser userId)
+    case user ^? userRole . _Student of
+        -- TODO: Translation
+        Nothing -> throwError500 "User is not a student"
+        Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileDelegatedVotes
-delegatedVotes userId = do
-    PageUserProfileDelegatedVotes
-    <$> currentUserCapCtx
-    <*> (makeUserView <$> mquery (findUser userId))
-    <*> pure [] -- FIXME
+      => AUID User -> DScope -> m PageUserProfileDelegatedVotes
+delegatedVotes userId scope = do
+    ctx <- currentUserCapCtx
+    PageUserProfileDelegatedVotes ctx
+        <$> (makeUserView <$> mquery (findUser userId))
+        <*> delegationInfo (ctx ^. capCtxUser . _Id) scope
+
+delegationInfo :: ActionPersist m => AUID User -> DScope -> m DelegationInfo
+delegationInfo uid scope = equery $ do
+    let findDelegatees uid' = do
+            scopeDelegatees uid' scope
+            >>= mapM (findUser . view delegationFrom)
+            >>= pure . catMaybes
+
+    firstLevelDelegatees <- findDelegatees uid
+    forM firstLevelDelegatees $ \user ->
+        (,) user <$> findDelegatees (user ^. _Id)
 
 
 -- ** User Profile: Edit profile

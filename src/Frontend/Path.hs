@@ -83,6 +83,8 @@ module Frontend.Path
     -- * user profile
     , delegateVoteOnSchoolSpace
     , delegateVoteOnClassSpace
+    , userGlobalDelegations
+    , userClassDelegations
 
     -- * aux predicates
     , isPostOnly
@@ -367,7 +369,8 @@ admin (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </>
 
 data UserMode (r :: AllowedMethod) =
     UserIdeas
-  | UserDelegations
+  | UserGlobalDelegations
+  | UserClassDelegations
   | UserDelegateVoteOnSchoolSpace
   | UserDelegateVoteOnClassSpace
   | UserEdit
@@ -377,12 +380,13 @@ data UserMode (r :: AllowedMethod) =
 instance SOP.Generic (UserMode r)
 
 user :: UserMode r -> UriPath -> UriPath
-user UserIdeas                     = (</> "ideas")
-user UserDelegations               = (</> "delegations")
-user UserDelegateVoteOnSchoolSpace = \path -> path </> "delegate" </> "school"
-user UserDelegateVoteOnClassSpace  = \path -> path </> "delegate" </> "class"
-user UserEdit                      = (</> "edit")
-user ReportUser                    = (</> "report")
+user UserIdeas                     path = path </> "ideas"
+user UserGlobalDelegations         path = path </> "delegations" </> "global"
+user UserClassDelegations          path = path </> "delegations" </> "class"
+user UserDelegateVoteOnSchoolSpace path = path </> "delegation" </> "school"
+user UserDelegateVoteOnClassSpace  path = path </> "delegation" </> "class"
+user UserEdit                      path = path </> "edit"
+user ReportUser                    path = path </> "report"
 
 delegateVoteOnSchoolSpace :: User -> Main 'AllowPost
 delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
@@ -390,6 +394,11 @@ delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
 delegateVoteOnClassSpace :: User -> Main 'AllowPost
 delegateVoteOnClassSpace u = UserProf (u ^. _Id) UserDelegateVoteOnClassSpace
 
+userGlobalDelegations :: User -> Main 'AllowGetPost
+userGlobalDelegations u = UserProf (u ^. _Id) UserGlobalDelegations
+
+userClassDelegations :: User -> Main 'AllowGetPost
+userClassDelegations u = UserProf (u ^. _Id) UserClassDelegations
 
 -- * paths to ideas
 

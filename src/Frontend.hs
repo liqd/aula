@@ -325,7 +325,8 @@ aulaSpace space
 
 type AulaUser =
        "ideas"       :> GetH (Frame PageUserProfileCreatedIdeas)
-  :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
+  :<|> "delegations" :> "global" :> GetH (Frame PageUserProfileDelegatedVotes)
+  :<|> "delegations" :> "class"  :> GetH (Frame PageUserProfileDelegatedVotes)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
   :<|> "delegate"    :> "school" :> PostH
@@ -334,7 +335,8 @@ type AulaUser =
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
        runHandler (Page.createdIdeas    userId)
-  :<|> runHandler (Page.delegatedVotes  userId)
+  :<|> runHandler (Page.delegatedVotesGlobal userId)
+  :<|> runHandler (Page.delegatedVotesClass  userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
   :<|> Action.delegateVoteOnSchoolSpace userId
