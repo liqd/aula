@@ -138,12 +138,19 @@ $btn-settings-size: 35px;
 }
 
 .button-group {
-    .button-group-item {
-        @include rem(margin-right, 15px);
-        display: inline-block;
+    overflow: hidden;
+}
 
-        &:last-child {
-            margin-right: 0;
-        }
+.button-group-item {
+    @include rem(margin, 0 15px 7px 0);
+    display: inline-block;
+    vertical-align: top;
+
+    .button-group-item {
+        margin: 0;
+    }
+
+    &:last-child {
+        margin-right: 0;
     }
 }

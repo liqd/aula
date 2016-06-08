@@ -314,7 +314,7 @@ instance ToHtml ViewIdea where
 
                 when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
                     div_ [class_ "creator-statement-button"] $ do
-                        button_ [ class_ "btn-cta m-valid"
+                        button_ [ class_ "button-group-item btn-cta m-valid"
                                 , onclick_ $ U.creatorStatement idea
                                 ] $ do
                             i_ [class_ "icon-check"] nil
@@ -398,12 +398,12 @@ feasibilityVerdict idea = do
 feasibilityButtons :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityButtons renderJuryButtons idea caps =
     when (renderJuryButtons && CanJudge `elem` caps) $ do
-            button_ [ class_ "btn-cta m-valid"
+            button_ [ class_ "button-group-item btn-cta m-valid"
                     , onclick_ $ U.judgeIdea idea IdeaFeasible
                     ] $ do
                 i_ [class_ "icon-check"] nil
                 "durchführbar"
-            button_ [ class_ "btn-cta m-invalid"
+            button_ [ class_ "button-group-item btn-cta m-invalid"
                     , onclick_ $ U.judgeIdea idea IdeaNotFeasible
                     ] $ do
                 i_ [class_ "icon-times"] nil
