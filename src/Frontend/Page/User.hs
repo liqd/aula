@@ -178,7 +178,8 @@ userHeaderDiv ctx (ActiveUser user) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
+        forM_ (user ^.. userSchoolClasses . to showSchoolClass . html) $ \cl ->
+            span_ [class_ "post-title"] cl
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]

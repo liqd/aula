@@ -23,6 +23,7 @@ import Text.Digestive.Types
 import Text.Digestive.View
 
 import qualified Data.Text.Lazy as LT
+import qualified Data.Set as Set
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
@@ -99,7 +100,7 @@ spec = do
                       (Just (u ^. userLogin))
                       (UserFirstName "first")
                       (UserLastName "last")
-                      (Student (head schoolClasses))
+                      (Set.singleton (Student (head schoolClasses)))
                       (u ^?! userPassword . _UserPassInitial)
                       Nothing
                       nil
@@ -476,17 +477,17 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
 
 instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload (AdminEditUser _ classes) =
-        AdminEditUserPayload <$> els logins <*> els roles
+        AdminEditUserPayload <$> els logins <*> (Set.singleton <$> els roles)
       where
         els    = Test.QuickCheck.elements
         logins = Nothing : (Just . UserLogin . ("frsh!!" <>) . cs . show <$> [(0 :: Int)..8])
         roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
 
 instance PayloadToEnv AdminEditUserPayload where
-    payloadToEnvMapping _ v (AdminEditUserPayload mlogin role) = \case
+    payloadToEnvMapping _ v (AdminEditUserPayload mlogin roles) = \case
         "login" -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
-        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (role ^. roleSelection)]
-        "class" -> pure $ TextInput . selectValue "class" v classValues <$> maybeToList (role ^? roleSchoolClass)
+        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (roles ^?! folded . roleSelection)] -- TODO: supports only one role
+        "class" -> pure $ TextInput . selectValue "class" v classValues <$> maybeToList (roles ^? folded . roleSchoolClass) -- TODO: supports only one role
       where
         classValues = (id &&& cs . view className) <$> schoolClasses
 

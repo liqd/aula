@@ -34,6 +34,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
+import Data.Set as Set (Set, fromList, member)
 import Data.Map as Map (Map, fromList)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
@@ -629,7 +630,7 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userRole      :: Role
+    , _userRoleSet   :: Set Role
     , _userProfile   :: UserProfile
     , _userSettings  :: UserSettings
     }
@@ -658,7 +659,7 @@ data ProtoUser = ProtoUser
     { _protoUserLogin     :: Maybe UserLogin
     , _protoUserFirstName :: UserFirstName
     , _protoUserLastName  :: UserLastName
-    , _protoUserRole      :: Role
+    , _protoUserRoleSet   :: Set Role
     , _protoUserPassword  :: InitialPassword
     , _protoUserEmail     :: Maybe EmailAddress
     , _protoUserDesc      :: Document
@@ -679,6 +680,19 @@ data Role =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Role
+
+data RoleScope
+  = ClassesScope (Set SchoolClass)
+  | SchoolScope
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic RoleScope
+
+instance Monoid RoleScope where
+    mempty = ClassesScope mempty
+    SchoolScope `mappend` _ = SchoolScope
+    _ `mappend` SchoolScope = SchoolScope
+    ClassesScope xs `mappend` ClassesScope ys = ClassesScope $ xs `mappend` ys
 
 newtype InitialPassword = InitialPassword { _unInitialPassword :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -1299,8 +1313,26 @@ unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddres
 userEmailAddress :: CSI' s SBS => Fold User s
 userEmailAddress = userEmail . _Just . re emailAddress
 
-userSchoolClass :: Getter User (Maybe SchoolClass)
-userSchoolClass = pre $ userRole . roleSchoolClass
+userRoles :: Fold User Role
+userRoles = userRoleSet . folded
+
+userSchoolClasses :: Fold User SchoolClass
+userSchoolClasses = userRoles . roleSchoolClass
+
+hasRole :: User -> Role -> Bool
+hasRole user role = role `Set.member` (user ^. userRoleSet)
+
+isAdmin :: User -> Bool
+isAdmin = (`hasRole` Admin)
+
+roleScope :: Getter Role RoleScope
+roleScope = to $ \r ->
+    case r ^? roleSchoolClass of
+        Nothing -> SchoolScope
+        Just cl -> ClassesScope $ Set.fromList [cl]
+
+rolesScope :: Fold (Set Role) RoleScope
+rolesScope = folded . roleScope
 
 onActiveUser :: a -> (User -> a) -> User -> a
 onActiveUser x f u
@@ -1365,6 +1397,7 @@ showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
 showIdeaSpace (ClassSpace c) = showSchoolClass c
 
+-- FIXME HasUILabel: there is already an instance for SchoolClass.
 showSchoolClass :: SchoolClass -> String
 showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
@@ -1477,7 +1510,7 @@ instance HasUILabel Role where
         Admin          -> "Administrator"
 
 aMapFromList :: HasMetaInfo a => [a] -> AMap a
-aMapFromList = fromList . map (\x -> (x ^. _Id, x))
+aMapFromList = Map.fromList . map (\x -> (x ^. _Id, x))
 
 foldComment :: Fold Comment Comment
 foldComment = cosmosOf (commentReplies . each)

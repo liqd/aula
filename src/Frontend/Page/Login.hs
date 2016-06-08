@@ -17,6 +17,7 @@ import Persistent
 import Frontend.Prelude
 import Frontend.Validation
 
+import qualified Data.Text as ST
 import qualified Frontend.Path as U
 import qualified Lucid
 
@@ -98,14 +99,10 @@ instance ToHtml LoginDemoHints where
                     th_ "password"
                 forM_ users $ \u -> tr_ $ do
                     td_ $ u ^. userLogin . unUserLogin . html
-                    td_ $ u ^. userRole . uilabeledST . html
-                    td_ $ case u ^. userRole of
-                              Student     c -> toHtml $ showSchoolClass c
-                              ClassGuest  c -> toHtml $ showSchoolClass c
-                              SchoolGuest   -> nil
-                              Moderator     -> nil
-                              Principal     -> nil
-                              Admin         -> nil
+                    td_ . toHtml $ ST.intercalate ","
+                                    (u ^.. userRoles . uilabeled)
+                    td_ . toHtml $ ST.intercalate ","
+                                    (u ^.. userSchoolClasses . to showSchoolClass . csi)
                     td_ . toHtml $ (u ^. userEmailAddress :: ST)
                     td_ . toHtml $
                         case u ^. userPassword of

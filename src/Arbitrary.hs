@@ -110,7 +110,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), over, (.~), (%~), (&), ppShow, view, join)
+import Frontend.Prelude (set, (^.), (^?), over, (.~), (%~), (&), ppShow, view, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
@@ -682,7 +682,7 @@ instance Arbitrary UserSettingData where
 
 userForClass :: SchoolClass -> Gen User
 userForClass clss =
-    arb <**> (set userRole <$> guestOrStudent clss)
+    arb <**> (set userRoleSet . Set.singleton <$> guestOrStudent clss)
 
 instance Arbitrary Durations where
     arbitrary = garbitrary
@@ -1065,7 +1065,7 @@ mkFishUser mSchoolClass avatarPath = do
                       , UserLastName  $ ST.drop (i+1) first_last
                       )
     role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam role (InitialPassword "dummy password") Nothing nil
+    let pu = ProtoUser Nothing fnam lnam (Set.singleton role) (InitialPassword "dummy password") Nothing nil
     user <- addWithCurrentUser AddUser pu
     update $ SetUserAvatar (user ^. _Id) avatarPath
     return user
@@ -1084,7 +1084,7 @@ fishDelegationNetworkIO = do
             now <- getCurrentTimestamp
             admin <- update . AddFirstUser now $ ProtoUser
                 (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                Admin (InitialPassword "admin") Nothing nil
+                (Set.singleton Admin) (InitialPassword "admin") Nothing nil
             Action.loginByUser admin
             fishDelegationNetworkAction Nothing
 
@@ -1110,9 +1110,9 @@ fishDelegationNetworkAction mSchoolClass = do
             scope :: DScope
                 <- DScopeIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
             let fltr u = scope == DScopeIdeaSpace SchoolSpace
-                      || case u ^. userRole of
-                             Student cl -> scope == DScopeIdeaSpace (ClassSpace cl)
-                             _          -> False
+                      || case u ^? userRoles . _Student of -- TODO: this is selecting only the first class
+                             Just cl -> scope == DScopeIdeaSpace (ClassSpace cl)
+                             _       -> False
 
                 users' = List.filter fltr users
 

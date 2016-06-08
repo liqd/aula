@@ -21,6 +21,7 @@ import System.Process (system)
 import Test.Hspec.Wai (WaiExpectation)
 import Test.QuickCheck (Gen, frequency, choose)
 
+import qualified Data.Set as Set
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
 
@@ -146,7 +147,7 @@ someTestUser = user
         , _userLogin     = "VorNam"
         , _userFirstName = "Vorname"
         , _userLastName  = "Name"
-        , _userRole      = Admin
+        , _userRoleSet   = Set.singleton Admin
         , _userProfile   = UserProfile
             { _profileAvatar = Nothing
             , _profileDesc   = nil

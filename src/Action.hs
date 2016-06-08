@@ -361,7 +361,7 @@ getSpacesForCurrentUser = do
     b <- isLoggedIn
     if b then do
         user <- currentUser
-        query $ getSpacesForRole (user ^. userRole)
+        query $ getSpacesForRoles (user ^. userRoleSet)
     else
         pure []
 
@@ -888,7 +888,7 @@ eventLogUserDelegates ::
 eventLogUserDelegates scope delegate = do
     delegatee <- currentUser
     ispace <- case scope of
-        DScopeGlobal           -> pure . ClassSpace $ delegatee ^?! userRole . roleSchoolClass
+        DScopeGlobal           -> pure . ClassSpace $ delegatee ^?! userSchoolClasses -- TODO: only returns the first class
         DScopeIdeaSpace ispace -> pure ispace
         DScopeTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DScopeIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)

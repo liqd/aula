@@ -186,12 +186,12 @@ instance Filter   SortUsersBy where
         SortUsersByClass -> byClass . byTime
         SortUsersByRole  -> byRole  . byTime
       where
-        by :: Ord a => Getter User a -> [UserView] -> [UserView]
-        by g    = sortOn (pre $ activeUser . g)
+        by :: Ord a => Fold User a -> [UserView] -> [UserView]
+        by f    = sortOn (pre $ activeUser . to (sort . toListOf f))
         byTime  = by $ createdAt . to Data.Ord.Down
         byName  = by userLogin
-        byClass = by userSchoolClass
-        byRole  = by $ userRole . uilabeledST
+        byClass = by userSchoolClasses
+        byRole  = by $ userRoles . uilabeledST
 
     renderFilter = renderQueryParam
 
@@ -214,12 +214,11 @@ instance SOP.Generic SearchUsers
 instance Filter SearchUsers where
     type Filtered SearchUsers = UserView
 
-    applyFilter (SearchUsers t) = filter $ anyOf (activeUser . searchee) (t `ST.isInfixOf`)
+    applyFilter (SearchUsers t) = filter $ anyOf (activeUser . to searchee) (t `ST.isInfixOf`)
       where
-        searchee :: Monoid r => Getting r User ST
-        searchee = userLogin . _UserLogin <>
-                   like " " <>
-                   userSchoolClass . _Just . to showSchoolClass . csi
+        searchee :: User -> ST
+        searchee u =
+            ST.unwords $ u ^. userLogin . _UserLogin : u ^.. userSchoolClasses . to showSchoolClass . csi
 
     renderFilter = renderQueryParam
 

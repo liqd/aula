@@ -19,9 +19,12 @@ module Frontend.Page.Admin
 where
 
 import Control.Arrow ((&&&))
+import Data.Set (Set)
+import Data.Set.Lens (setOf)
 import Servant
 
 import qualified Data.Csv as Csv
+import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
@@ -37,7 +40,7 @@ import Persistent.Api
     , SaveAndEnactFreeze(SaveAndEnactFreeze)
     , AddIdeaSpaceIfNotExists(AddIdeaSpaceIfNotExists)
     , AddUser(AddUser)
-    , SetUserLoginAndRole(SetUserLoginAndRole)
+    , SetUserLoginAndRoles(SetUserLoginAndRoles)
     )
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
@@ -132,7 +135,7 @@ data CreateUserPayload = CreateUserPayload
     , _createUserLastName  :: UserLastName
     , _createUserLogin     :: Maybe UserLogin
     , _createUserEmail     :: Maybe EmailAddress
-    , _createUserRole      :: Role
+    , _createUserRoleSet   :: Set Role
     }
   deriving (Eq, Generic, Show)
 
@@ -414,8 +417,8 @@ instance ToHtml AdminViewUsers where
                 let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserInfoRow user = do
                         td_ $ user ^. userLogin . unUserLogin . html
-                        td_ $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
-                        td_ $ user ^. userRole . uilabeled
+                        td_ . toHtml $ ST.intercalate "," (user ^.. userSchoolClasses . to showSchoolClass . csi)
+                        td_ . toHtml $ ST.intercalate "," (user ^.. userRoles . uilabeled)
                         td_ $ toHtmlRaw nbsp
 
                 let renderUserRow :: forall m. (Monad m) => UserView -> HtmlT m ()
@@ -446,7 +449,7 @@ instance FormPage AdminCreateUser where
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
             <*> emailField "Email" Nothing
-            <*> roleForm Nothing Nothing classes
+            <*> roleSetForm nil nil classes
         where
             -- FIXME: Users with more than one name?
             firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben"))
@@ -550,9 +553,14 @@ roleForm mrole mclass classes =
         <$> ("role"  .: chooseRole mrole)
         <*> ("class" .: chooseClass classes mclass)
 
+-- TODO this only supports one role
+roleSetForm :: Set Role -> Set SchoolClass -> [SchoolClass] -> DfForm (Set Role)
+roleSetForm currentRoles currentClasses classes =
+    Set.singleton <$> roleForm (currentRoles ^? folded) (currentClasses ^? folded) classes
+
 -- | (the login must always be provided in the posted data, but it is turned into Nothing in the
 -- validator if it has not changed.)
-data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) Role
+data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) (Set Role)
   deriving (Eq, Show)
 
 instance FormPage AdminEditUser where
@@ -564,7 +572,7 @@ instance FormPage AdminEditUser where
     makeForm (AdminEditUser user classes) =
         AdminEditUserPayload
         <$> ("login" .: validateUserLogin)
-        <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+        <*> roleSetForm (user ^. userRoleSet) (setOf userSchoolClasses user) classes
       where
         validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
         validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
@@ -626,14 +634,14 @@ adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
-        forM_ (up ^? createUserRole . roleSchoolClass) $
+        forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         pwd <- mkRandomPassword
         addWithCurrentUser_ AddUser ProtoUser
             { _protoUserLogin     = up ^. createUserLogin
             , _protoUserFirstName = up ^. createUserFirstName
             , _protoUserLastName  = up ^. createUserLastName
-            , _protoUserRole      = up ^. createUserRole
+            , _protoUserRoleSet   = up ^. createUserRoleSet
             , _protoUserPassword  = pwd
             , _protoUserEmail     = up ^. createUserEmail
             , _protoUserDesc      = nil
@@ -652,7 +660,7 @@ adminViewClasses qf = AdminViewClasses (mkClassesQuery qf) <$> query getSchoolCl
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = formPageHandlerCalcMsg
     (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
-    (\(AdminEditUserPayload mlogin role) -> update $ SetUserLoginAndRole uid mlogin role)
+    (\(AdminEditUserPayload mlogin roles) -> update $ SetUserLoginAndRoles uid mlogin roles)
     (\(AdminEditUser u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
@@ -779,19 +787,19 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             Right records -> do
                 let schoolcl = SchoolClass theOnlySchoolYearHack clname
                 update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-                forM_ records . p $ Student schoolcl
+                forM_ records . p . Set.singleton $ Student schoolcl
 
-    p :: Role -> CsvUserRecord -> m ()
-    p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
+    p :: Set Role -> CsvUserRecord -> m ()
+    p _     (CsvUserRecord _ _ _ _                          (Just _)) = do
         throwError500 "upload FAILED: internal error!"
-    p role (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+    p roles (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
         pwd <- mkRandomPassword
         addWithCurrentUser AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
-            , _protoUserRole      = role
+            , _protoUserRoleSet   = roles
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = nil

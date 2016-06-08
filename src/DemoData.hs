@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
+import Control.Lens ((^.), (^?), (.~), (&), set, re, _Just, elemOf, Fold)
 import Control.Monad (zipWithM_, replicateM, replicateM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
@@ -25,6 +25,7 @@ import Types
 import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
 
+import qualified Data.Set as Set
 import qualified Test.QuickCheck.Gen as QC
 import qualified Config
 
@@ -76,7 +77,7 @@ genUser :: Gen Role -> Gen ProtoUser
 genUser genRole =
     arbitrary
     <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
-    <**> (set protoUserRole <$> genRole)
+    <**> (set protoUserRoleSet . Set.singleton <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
     <**> (set protoUserPassword <$> genInitialPassword)
 
@@ -110,7 +111,7 @@ relatedStudents idea students = case filter sameSpace students of
   where
     sameSpace student
       | location == IdeaLocationSpace SchoolSpace = True
-      | otherwise = Just location == student ^. userIdeaLocation
+      | otherwise = elemOf userIdeaLocations location student
       where
         location = idea ^. ideaLocation
 
@@ -243,8 +244,8 @@ generate :: forall a . Int -> QCGen -> Gen a -> forall m . Monad m => m [a]
 generate n rnd g =
     gen rnd (sequence [ resize n' g | n' <- take n $ cycle [0,2..20] ])
 
-userIdeaLocation :: Getter User (Maybe IdeaLocation)
-userIdeaLocation = pre $ userRole . _Student . re _ClassSpace . re _IdeaLocationSpace
+userIdeaLocations :: Fold User IdeaLocation
+userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpace
 
 
 -- * initial DB state
@@ -267,7 +268,7 @@ genInitialTestDb = do
         { _protoUserLogin     = Just "admin"
         , _protoUserFirstName = "A."
         , _protoUserLastName  = "Admin"
-        , _protoUserRole      = Admin
+        , _protoUserRoleSet   = Set.singleton Admin
         , _protoUserPassword  = InitialPassword "pssst"
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
@@ -277,7 +278,7 @@ genInitialTestDb = do
         { _protoUserLogin     = Just "godmin"
         , _protoUserFirstName = "G."
         , _protoUserLastName  = "Godmin"
-        , _protoUserRole      = Admin
+        , _protoUserRoleSet   = Set.singleton Admin
         , _protoUserPassword  = InitialPassword "geheim"
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
