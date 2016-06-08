@@ -303,7 +303,7 @@ instance ToHtml ViewIdea where
             -- buttons
             toHtml $ ideaVoteLikeButtons ctx stats
 
-            when (has _PhaseWildIdea phase && ideaReachedQuorum stats && canCreateTopic) $ do
+            when (has _PhaseWildIdea phase && canCreateTopic) $ do
                 div_ [class_ "table-actions m-no-hover"] $ do
                     button_ [ class_ "btn-cta m-valid"
                             , onclick_ $ U.Space spc U.CreateTopic
