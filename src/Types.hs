@@ -29,6 +29,7 @@ where
 import Control.Lens
 import Control.Monad
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Crypto.Scrypt
 import Data.Binary
 import Data.Char
 import Data.Function (on)
@@ -287,14 +288,23 @@ type instance Proto IdeaLike = ()
 
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote'.
 data IdeaVote = IdeaVote
-    { _ideaVoteMeta  :: MetaInfo IdeaVote
-    , _ideaVoteValue :: IdeaVoteValue
+    { _ideaVoteMeta     :: MetaInfo IdeaVote
+    , _ideaVoteValue    :: IdeaVoteValue
+    , _ideaVoteDelegate :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaVote
 
-type instance Proto IdeaVote = IdeaVoteValue
+data ProtoIdeaVote = ProtoIdeaVote
+    { _protoIdeaVoteValue    :: IdeaVoteValue
+    , _protoIdeaVoteDelegate :: AUID User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic ProtoIdeaVote
+
+type instance Proto IdeaVote = ProtoIdeaVote
 
 data IdeaVoteValue = Yes | No
   deriving (Eq, Ord, Enum, Bounded, Show, Read, Generic)
@@ -675,8 +685,7 @@ newtype InitialPassword = InitialPassword { _unInitialPassword :: ST }
 
 instance SOP.Generic InitialPassword
 
--- FIXME: use "Crypto.Scrypt.EncryptedPass"
-newtype EncryptedPassword = FakeEncryptedPassword { _unEncryptedPassword :: SBS }
+newtype EncryptedPassword = ScryptEncryptedPassword { _unScryptEncryptedPassword :: SBS }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic EncryptedPassword
@@ -689,13 +698,11 @@ data UserPass =
 
 instance SOP.Generic UserPass
 
--- | General eliminator for the 'UserPass' type.
--- It is similar to the 'maybe' function.
-userPassElim :: (InitialPassword -> t) -> (EncryptedPassword -> t) -> t -> UserPass -> t
-userPassElim initial encrypted deactivated = \case
-    UserPassInitial x   -> initial     x
-    UserPassEncrypted x -> encrypted   x
-    UserPassDeactivated -> deactivated
+verifyUserPass :: ST -> UserPass -> Bool
+verifyUserPass pwd = \case
+    UserPassInitial (InitialPassword p)           -> p == pwd
+    UserPassEncrypted (ScryptEncryptedPassword p) -> verifyPass' (Pass (cs pwd)) (EncryptedPass p)
+    UserPassDeactivated                           -> False
 
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)
@@ -714,10 +721,10 @@ instance SafeCopy EmailAddress where
 
 -- | "Beauftragung"
 data Delegation = Delegation
-    { _delegationMeta    :: MetaInfo Delegation
-    , _delegationContext :: DelegationContext
-    , _delegationFrom    :: AUID User
-    , _delegationTo      :: AUID User
+    { _delegationMeta  :: MetaInfo Delegation
+    , _delegationScope :: DScope
+    , _delegationFrom  :: AUID User
+    , _delegationTo    :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -727,22 +734,52 @@ type instance Proto Delegation = ProtoDelegation
 
 -- | "Beauftragung"
 data ProtoDelegation = ProtoDelegation
-    { _protoDelegationContext :: DelegationContext
-    , _protoDelegationFrom    :: AUID User
-    , _protoDelegationTo      :: AUID User
+    { _protoDelegationScope :: DScope
+    , _protoDelegationFrom  :: AUID User
+    , _protoDelegationTo    :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic ProtoDelegation
 
-data DelegationContext =
-    DlgCtxGlobal
-  | DlgCtxIdeaSpace { _delCtxIdeaSpace :: IdeaSpace  }
-  | DlgCtxTopicId   { _delCtxTopicId   :: AUID Topic }
-  | DlgCtxIdeaId    { _delCtxIdeaId    :: AUID Idea  }
+-- | Node type for the delegation scope hierarchy DAG.  The four levels are 'Idea', 'Topic',
+-- 'SchoolClass', and global.
+--
+-- There 'SchoolClass' level could reference an 'IdeaSpace' instead, but there is a subtle
+-- difference between delegation in school space and globally that we would like to avoid having to
+-- explain to our users, so we do not allow delegation in school space, and collapse 'school' and
+-- 'global' liberally in the UI.  We enforce this collapse in this type.
+--
+-- Example to demonstrate the difference: If idea @A@ lives in class @C@, and user @X@ votes yes on
+-- @A@, consider the two cases: If I delegate to user @X@ on school space level, @A@ is not covered,
+-- because it lives in a different space, so user @X@ does *not* cast my vote.  If I delegate to
+-- user @X@ *globally*, @A@ *is* covered, and @X@ *does* cast my vote.
+--
+-- The reason for this confusion is related to idea space membership, which is different for school:
+-- every user is implicitly a member of the idea space "school", whereas membership in all other
+-- idea spaces is explicit in the role.  However, this does not necessarily (although
+-- coincidentally) constitute a subset relationship between class spaces and school space.
+data DScope =
+    DScopeGlobal
+  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }  -- TODO: should be 'SchoolClass'
+  | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
+  | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic DelegationContext
+instance SOP.Generic DScope
+
+-- | 'DScope', but with the references resolved.  (We could do a more general type @DScope a@ and
+-- introduce two synonyms for @DScope AUID@ and @DScope Identity@, but it won't make things any
+-- easier.)
+--
+-- (NOTE: since this is only used for the delegate selection page, and that page is only displayed
+-- for dscopes on topic level and below, we do not carry the higher-level constructors at all.)
+data DScopeFull =
+    DScopeTopicFull { _dScopeTopicFull :: Topic }
+  | DScopeIdeaFull  { _dScopeIdeaFull  :: Idea  }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic DScopeFull
 
 data DelegationNetwork = DelegationNetwork
     { _networkUsers         :: [User]
@@ -1033,7 +1070,7 @@ instance Binary CommentContent
 instance Binary EncryptedPassword
 instance Binary PlainDocument
 instance Binary Delegation
-instance Binary DelegationContext
+instance Binary DScope
 instance Binary UserPass
 instance Binary Role
 instance Binary Idea
@@ -1070,7 +1107,8 @@ instance Binary Settings
 makePrisms ''AUID
 makePrisms ''Category
 makePrisms ''PlainDocument
-makePrisms ''DelegationContext
+makePrisms ''DScope
+makePrisms ''Document
 makePrisms ''EmailAddress
 makePrisms ''IdeaJuryResultValue
 makePrisms ''IdeaLocation
@@ -1099,7 +1137,7 @@ makeLenses ''CommentVoteKey
 makeLenses ''EncryptedPassword
 makeLenses ''PlainDocument
 makeLenses ''Delegation
-makeLenses ''DelegationContext
+makeLenses ''DScope
 makeLenses ''DelegationNetwork
 makeLenses ''Durations
 makeLenses ''EditTopicData
@@ -1119,6 +1157,7 @@ makeLenses ''Phase
 makeLenses ''PhaseStatus
 makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
+makeLenses ''ProtoIdeaVote
 makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
 makeLenses ''Quorums
@@ -1146,7 +1185,7 @@ deriveSafeCopy 0 'base ''CommentVoteKey
 deriveSafeCopy 0 'base ''EncryptedPassword
 deriveSafeCopy 0 'base ''PlainDocument
 deriveSafeCopy 0 'base ''Delegation
-deriveSafeCopy 0 'base ''DelegationContext
+deriveSafeCopy 0 'base ''DScope
 deriveSafeCopy 0 'base ''DelegationNetwork
 deriveSafeCopy 0 'base ''DurationDays
 deriveSafeCopy 0 'base ''Durations
@@ -1170,6 +1209,7 @@ deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
+deriveSafeCopy 0 'base ''ProtoIdeaVote
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
 deriveSafeCopy 0 'base ''Quorums
@@ -1487,7 +1527,7 @@ instance (Aeson.FromJSON a, Aeson.FromJSON b, Aeson.FromJSON c) => Aeson.FromJSO
 
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON DelegationContext where toJSON = Aeson.gtoJson
+instance Aeson.ToJSON DScope where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
@@ -1513,7 +1553,7 @@ instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
 
 instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON CommentKey where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON DelegationContext where parseJSON = Aeson.gparseJson
+instance Aeson.FromJSON DScope where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)

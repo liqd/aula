@@ -1,6 +1,11 @@
 .main-footer {
     @extend %main-menu-container;
     background: $color-grey-light;
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        @include rem(padding, 10px 0);
+        height: auto;
+    }
 }
 
 .main-footer-menu {
@@ -10,4 +15,14 @@
 .main-footer-blurb {
     float: right;
     line-height: $main-menu-height;
+}
+
+.main-footer-blurb,
+.main-footer-menu {
+     @media screen and (max-width: $mobile-breakpoint) {
+        float: none;
+        >li a, & {
+            line-height: 1.2;
+        }
+    }
 }

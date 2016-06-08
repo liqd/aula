@@ -11,10 +11,10 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
-import Control.Monad (zipWithM_, replicateM_, (>=>))
+import Control.Monad (zipWithM_, replicateM, replicateM_, (>=>))
 import Data.List (nub)
 import Data.Maybe (mapMaybe)
-import Data.String.Conversions ((<>))
+import Data.String.Conversions ((<>), cs)
 
 import Arbitrary hiding (generate)
 import Persistent
@@ -31,38 +31,42 @@ import qualified Config
 
 -- * Constants
 
-numberOfIdeaSpaces :: Int
-numberOfIdeaSpaces = 15
+data UniverseSize = UniverseSize
+    { numberOfIdeaSpaces :: Int
+    , numberOfStudents :: Int
+    , numberOfTopics :: Int
+    , numberOfIdeas :: Int
+    , numberOfLikes :: Int
+    , numberOfComments :: Int
+    , numberOfReplies :: Int
+    , numberOfCommentVotes :: Int
+    }
 
-numberOfStudents :: Int
-numberOfStudents = 130
-
-numberOfTopics :: Int
-numberOfTopics = 20
-
-numberOfIdeas :: Int
-numberOfIdeas = 300
-
-numberOfLikes :: Int
-numberOfLikes = 500
-
-numberOfComments :: Int
-numberOfComments = 500
-
-numberOfReplies :: Int
-numberOfReplies = 2000
-
-numberOfCommentVotes :: Int
-numberOfCommentVotes = 5000
+defaultUniverseSize :: UniverseSize
+defaultUniverseSize = UniverseSize
+    { numberOfIdeaSpaces = 15
+    , numberOfStudents = 130
+    , numberOfTopics = 20
+    , numberOfIdeas = 300
+    , numberOfLikes = 500
+    , numberOfComments = 500
+    , numberOfReplies = 2000
+    , numberOfCommentVotes = 5000
+    }
 
 
 -- * Generators
+
+genInitialPassword :: Gen InitialPassword
+genInitialPassword = mk <$> arbWord <*> replicateM 2 (elements ['0' .. '9'])
+  where
+    mk w ns = InitialPassword $ w <> cs ns
 
 genFirstUser :: Gen ProtoUser
 genFirstUser =
     arbitrary
     <**> (set protoUserLogin . Just <$> arbitrary)
-    <**> (set protoUserPassword <$> arbitrary)
+    <**> (set protoUserPassword <$> genInitialPassword)
 
 genStudent :: [SchoolClass] -> Gen ProtoUser
 genStudent classes = genUser $ elements (map Student classes)
@@ -74,6 +78,7 @@ genUser genRole =
     <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
     <**> (set protoUserRole <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
+    <**> (set protoUserPassword <$> genInitialPassword)
 
 genAvatar :: Gen URL
 genAvatar = elements fishAvatars
@@ -172,15 +177,22 @@ setEmailFromConfig puser = do
 
 -- * Universe
 
-mkUniverse :: (GenArbitrary m, ActionM m) => m ()
-mkUniverse = do
+mkUniverse :: (GenArbitrary m, ActionM m) => UniverseSize -> m Universe
+mkUniverse size = do
     rnd <- mkQCGen <$> genGen arbitrary
-    universe rnd
+    universe rnd size
+
+data Universe = Universe {
+      unStudents   :: [User]
+    , unTopics     :: [Topic]
+    , unIdeas      :: [Idea]
+    , unIdeaSpaces :: [IdeaSpace]
+    }
 
 -- | This type change will generate a lot of transactions.  (Maybe we can find a better trade-off
 -- for transaction granularity here that speeds things up considerably.)
-universe :: QCGen -> forall m . ActionM m => m ()
-universe rnd = do
+universe :: QCGen -> UniverseSize -> forall m . ActionM m => m Universe
+universe rnd size = do
     now <- getCurrentTimestamp
     admin <- addFirstUserWithEmailFromConfig =<< gen rnd genFirstUser
     loginByUser admin
@@ -188,31 +200,31 @@ universe rnd = do
     generate 3 rnd (genUser (pure Principal)) >>= mapM_ addUserWithEmailFromConfig
     generate 8 rnd (genUser (pure Moderator)) >>= mapM_ addUserWithEmailFromConfig
 
-    ideaSpaces <- nub <$> generate numberOfIdeaSpaces rnd arbitrary
+    ideaSpaces <- nub <$> generate (numberOfIdeaSpaces size) rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
     let classes = mapMaybe ideaSpaceToSchoolClass ideaSpaces
     assert' (not $ null classes)
 
-    students' <- generate numberOfStudents rnd (genStudent classes)
+    students' <- generate (numberOfStudents size) rnd (genStudent classes)
     students  <- mapM addUserWithEmailFromConfig students'
-    avatars   <- generate numberOfStudents rnd genAvatar
+    avatars   <- generate (numberOfStudents size) rnd genAvatar
     zipWithM_ updateAvatar students avatars
 
     topics <- mapM (addWithCurrentUser (AddTopic now))
-                =<< generate numberOfTopics rnd (genTopic now ideaSpaces)
+                =<< generate (numberOfTopics size) rnd (genTopic now ideaSpaces)
 
     ideas <- mapM (addWithCurrentUser AddIdea)
-                =<< generate numberOfIdeas rnd (genIdea ideaSpaces topics)
+                =<< generate (numberOfIdeas size) rnd (genIdea ideaSpaces topics)
 
-    sequence_ =<< generate numberOfLikes rnd (genLike ideas students)
+    sequence_ =<< generate (numberOfLikes size) rnd (genLike ideas students)
 
-    comments <- sequence =<< generate numberOfComments rnd (genComment ideas students)
+    comments <- sequence =<< generate (numberOfComments size) rnd (genComment ideas students)
 
-    replies <- sequence =<< generate numberOfReplies rnd (genReply comments students)
+    replies <- sequence =<< generate (numberOfReplies size) rnd (genReply comments students)
 
-    sequence_ =<< generate numberOfCommentVotes rnd (genCommentVote (comments <> replies) students)
+    sequence_ =<< generate (numberOfCommentVotes size) rnd (genCommentVote (comments <> replies) students)
 
-    pure ()
+    pure $ Universe students topics ideas ideaSpaces
 
 assert' :: Monad m => Bool -> m ()
 assert' p = assert p $ return ()
@@ -349,6 +361,6 @@ randomVotes students ideas = some $ do
     idea <- genGen $ elements ideas
     user <- genGen $ elements students
     vote <- genGen arbitrary
-    addWithUser_ (AddVoteToIdea $ idea ^. _Id) user vote
+    addWithUser_ (AddVoteToIdea (idea ^. _Id) user) user vote
   where
     some = replicateM_ $ (length ideas * length students * 40) `div` 100

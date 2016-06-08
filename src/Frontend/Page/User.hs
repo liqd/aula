@@ -29,7 +29,6 @@ import Persistent (findUser, findIdeasByUserId, getIdeaStats)
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 
@@ -95,23 +94,11 @@ data UserSettingData = UserSettingData
     }
     deriving (Eq, Show)
 
-checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
-checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
-checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
-    userPassElim checkInitialPwd checkEncryptedPwd passwordError
-        . _userSettingsPassword
-        . _userSettings
-    <$> currentUser
-  where
-    passwordError = DF.Error "Das alte Passwort ist nicht korrekt"
-
-    checkInitialPwd (InitialPassword p)
-      | p == pwd  = pure u
-      | otherwise = passwordError
-
-    checkEncryptedPwd (FakeEncryptedPassword p)
-      | p == cs pwd = pure u
-      | otherwise   = passwordError
+-- This function checks that IF provided the password must be correct.
+-- See checkPwdAllOrNothing which checks that the three passwords are present at once.
+verifyUserPassIfExists :: ActionM m => Maybe ST -> m Bool
+verifyUserPassIfExists Nothing    = pure True
+verifyUserPassIfExists (Just pwd) = verifyUserPass pwd . view userPassword <$> currentUser
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
@@ -120,52 +107,51 @@ instance FormPage PageUserSettings where
     redirectOf _ _ = U.UserSettings
 
     makeForm (PageUserSettings user) =
-          DF.validateM checkUserPassword
-        . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
+          DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
+        . DF.check "Passwort-Felder sind nur teilweise ausgefüllt."  checkPwdAllOrNothing
         $ UserSettingData
             <$> ("email"         .:
                     emailField "Email" (user ^. userEmail))
             <*> ("old-password"  .:
-                    -- no need to validate the current password
-                    DF.optionalText Nothing)
+                    -- while we need to check that the old password is the correct
+                    -- one, we do not need to validate it against the rules for new passwords.
+                    -- TODO: why can't the user provide a Nothing here to circumvent the check?
+                    DF.checkM "Das alte Passwort ist nicht korrekt" verifyUserPassIfExists
+                    (DF.optionalText Nothing))
             <*> ("new-password1" .:
                     validateOptional "neues Passwort" passwordV (DF.optionalText Nothing))
             <*> ("new-password2" .:
                     validateOptional "neues Passwort (Wiederholung)" passwordV (DF.optionalText Nothing))
       where
-        checkPwdAllOrNothing u@(UserSettingData _ Nothing  Nothing  Nothing)  = pure u
-        checkPwdAllOrNothing u@(UserSettingData _ (Just _) (Just _) (Just _)) = pure u
-        checkPwdAllOrNothing _ = DF.Error "Passwort-Felder sind nur teilweise ausgefüllt."
+        checkPwdAllOrNothing (UserSettingData _ Nothing  Nothing  Nothing)  = True
+        checkPwdAllOrNothing (UserSettingData _ (Just _) (Just _) (Just _)) = True
+        checkPwdAllOrNothing _                                              = False
 
-        checkNewPassword u
-          | profileNewPass1 u == profileNewPass2 u = pure u
-          | otherwise = DF.Error "Die neuen Passwörter passen nicht (Tippfehler?)"
+        checkNewPassword u = profileNewPass1 u == profileNewPass2 u
 
     formPage v form p = do
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] "Einstellungen"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "E-mailadresse (optional)"
-                            inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
-                                "email" v
-                        h2_ [class_ "label-header"] "Passwort ändern"
-                        label_ $ do
-                            span_ [class_ "label-text"] "aktualles Passwort"
-                            inputPassword_ [class_ "m-small"]
-                                "old-password" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "neues Passwort"
-                            inputPassword_ [class_ "m-small"]
-                                "new-password1" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "neues Passwort bestätigen"
-                            inputPassword_ [class_ "m-small"]
-                                "new-password2" v
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Änderungen speichern"
+        semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
+            h1_ [class_ "main-heading"] "Einstellungen"
+            form $ do
+                label_ $ do
+                    span_ [class_ "label-text"] "E-mailadresse (optional)"
+                    inputText_ [class_ "m-small"] -- FIXME should be inputEmail_
+                        "email" v
+                h2_ [class_ "label-header"] "Passwort ändern"
+                label_ $ do
+                    span_ [class_ "label-text"] "aktualles Passwort"
+                    inputPassword_ [class_ "m-small"]
+                        "old-password" v
+                label_ $ do
+                    span_ [class_ "label-text"] "neues Passwort"
+                    inputPassword_ [class_ "m-small"]
+                        "new-password1" v
+                label_ $ do
+                    span_ [class_ "label-text"] "neues Passwort bestätigen"
+                    inputPassword_ [class_ "m-small"]
+                        "new-password2" v
+                footer_ [class_ "form-footer"] $ do
+                    DF.inputSubmit "Änderungen speichern"
 
 
 userSettings :: forall m . ActionM m => FormPageHandler m PageUserSettings
@@ -180,7 +166,7 @@ userSettings =
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
-        (update . SetUserPass uid . FakeEncryptedPassword . cs) `mapM_` mnewPass1
+        forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
 userHeaderDiv :: (Monad m) => CapCtx -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =
@@ -198,16 +184,19 @@ userHeaderDiv ctx (ActiveUser user) =
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
             editProfileBtn = btn (U.editUserProfile user) "+ Profil bearbeiten"
 
-        div_ [class_ "heroic-btn-group"] $ if isOwnProfile ctx user
-            then do
+        div_ [class_ "heroic-btn-group"] $ do
+            let caps = capabilities ctx
+            -- NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
+            -- philosophical, but it doesn't really matter: users can delegate to themselves
+            -- just like to anybody else, and the graph will look different if they do.
+            -- FIXME: Styling
+            when (CanVote `elem` caps && isSameSchoolClass ctx user) $ do
+                postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
+            when (CanVote `elem` caps) $ do
+                postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
+            btn (U.reportUser user) "melden"
+            when (CanEditUser `elem` caps) $ do
                 editProfileBtn
-            else do
-                let caps = capabilities ctx
-                when (CanDelegate `elem` caps) $ do
-                    btn U.Broken "Klassenweit beauftragen"
-                    btn U.Broken "Schulweit beauftragen"
-                btn (U.reportUser user) "melden"
-                when (CanEditUser `elem` caps) editProfileBtn
 
 
 -- ** User Profile: Created Ideas
@@ -313,22 +302,20 @@ instance FormPage EditUserProfile where
         <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
-        semanticDiv p $ do
-            div_ [class_ "container-main popup-page"] $ do
-                div_ [class_ "container-narrow"] $ do
-                    h1_ [class_ "main-heading"] .
-                        toHtml $ if isOwnProfile ctx user
-                            then "Eigenes Nutzerprofil bearbeiten"
-                            else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
-                    form $ do
-                        label_ $ do
-                            span_ [class_ "label-text"] "Avatar"
-                            DF.inputFile "avatar" v
-                        label_ $ do
-                            span_ [class_ "label-text"] "Beschreibung"
-                            inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
-                        footer_ [class_ "form-footer"] $ do
-                            DF.inputSubmit "Änderungen speichern"
+        semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
+            h1_ [class_ "main-heading"] .
+                toHtml $ if isOwnProfile ctx user
+                    then "Eigenes Nutzerprofil bearbeiten"
+                    else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
+            form $ do
+                label_ $ do
+                    span_ [class_ "label-text"] "Avatar"
+                    DF.inputFile "avatar" v
+                label_ $ do
+                    span_ [class_ "label-text"] "Beschreibung"
+                    inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
+                footer_ [class_ "form-footer"] $ do
+                    DF.inputSubmit "Änderungen speichern"
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg

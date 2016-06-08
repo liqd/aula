@@ -383,16 +383,15 @@ instance ToHtml AdminViewUsers where
     toHtml = toHtmlRaw
     toHtmlRaw p@(AdminViewUsers filters (applyFilter filters -> users)) =
         adminFrame p . semanticDiv p $ do
-            div_ [class_ "clearfix"] $ do
-                div_ [class_ "btn-settings pop-menu"] $ do
-                    i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
-                    ul_ [class_ "pop-menu-list"] $ do
-                        sequence_
-                            [ li_ [class_ "pop-menu-list-item"] $
-                                a_ [href_ . U.Admin . U.AdminViewUsers . Just $
-                                        filters & usersQueryS .~ by]
-                                    (uilabel by)
-                            | by <- [minBound..] ]
+            div_ [class_ "clearfix btn-settings pop-menu"] $ do
+                i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
+                ul_ [class_ "pop-menu-list"] $ do
+                    sequence_
+                        [ li_ [class_ "pop-menu-list-item"] $
+                            a_ [href_ . U.Admin . U.AdminViewUsers . Just $
+                                    filters & usersQueryS .~ by]
+                                (uilabel by)
+                        | by <- [minBound..] ]
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
                     th_ nil
@@ -581,7 +580,7 @@ instance FormPage AdminEditUser where
 
 
     formPage v form p@(AdminEditUser user _classes) =
-        adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
+        adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     span_ [class_ "label-text"] "Login"
@@ -681,13 +680,12 @@ instance FormPage AdminDeleteUser where
     makeForm _ = pure AdminDeleteUserPayload
 
     formPage _v form p@(AdminDeleteUser user) =
-        adminFrame p . semanticDiv p . form $ do
-            div_ [class_ "container-confirm"] $ do
-                h1_ "Nutzer löschen"
-                p_ $ "Wollen Sie " >> toHtml (dangerousUserLongName user) >> " wirklich loschen?"
-                div_ [class_ "admin-buttons"] $ do
-                    DF.inputSubmit "Nutzer löschen"
-                    a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
+        adminFrame p . semanticDiv' [class_ "container-confirm"] p . form $ do
+            h1_ "Nutzer löschen"
+            p_ $ "Wollen Sie " >> toHtml (dangerousUserLongName user) >> " wirklich loschen?"
+            div_ [class_ "admin-buttons"] $ do
+                DF.inputSubmit "Nutzer löschen"
+                a_ [href_ . U.Admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
 
 adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
 adminDeleteUser uid =

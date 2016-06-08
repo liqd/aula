@@ -14,6 +14,8 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ViewPatterns          #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 module Access
     ( -- * capabilities
       Capability(..)
@@ -44,6 +46,8 @@ module Access
 
       -- * misc
     , isOwnProfile
+    , isSameSchoolClass
+    , isSameSchoolClass'
     )
     where
 
@@ -404,6 +408,15 @@ authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
 
 isOwnProfile :: CapCtx -> User -> Bool
 isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
+
+isSameSchoolClass :: CapCtx -> User -> Bool
+isSameSchoolClass ctx = isJust . isSameSchoolClass' (ctx ^. capCtxUser)
+
+isSameSchoolClass' :: User -> User -> Maybe SchoolClass
+isSameSchoolClass' user user' = if c == c' then c else Nothing
+  where
+    c  = user  ^? userRole . roleSchoolClass
+    c' = user' ^? userRole . roleSchoolClass
 
 -- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
 -- or can only do things that 'Admin's need to do (@isThere == False@).

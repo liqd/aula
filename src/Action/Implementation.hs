@@ -23,6 +23,7 @@ import Control.Monad.Except (MonadError, throwError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
+import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
 import Data.String.Conversions (LBS, cs)
 import Data.Time.Clock (getCurrentTime)
@@ -113,6 +114,10 @@ instance MonadRandom Action where
 
 instance ActionRandomPassword Action where
     mkRandomPassword = actionIO $ InitialPassword . cs . unwords <$> mkPassword `mapM` [4,3,5]
+
+instance ActionEncryptPassword Action where
+    encryptPassword =
+        actionIO . fmap (ScryptEncryptedPassword . getEncryptedPass) . encryptPassIO' . Pass . cs
 
 instance ActionCurrentTimestamp Action where
     getCurrentTimestamp = actionIO $ Timestamp <$> getCurrentTime
