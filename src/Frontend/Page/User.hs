@@ -58,7 +58,8 @@ data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView L
 instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
-type DelegationInfo = [(User, [User])]
+newtype DelegationInfo = DelegationInfo [(User, [User])]
+  deriving (Eq, Show, Read)
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes =
@@ -264,7 +265,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
                     renderDelegations delegations
 
 renderDelegations :: forall m. Monad m => DelegationInfo -> HtmlT m ()
-renderDelegations delegations = do
+renderDelegations (DelegationInfo delegations) = do
     h2_ $ "Insgesamt " <> total ^. showed . html
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
@@ -293,7 +294,7 @@ delegatedVotesClass userId = do
     user <- mquery (findUser userId)
     case user ^? userRole . _Student of
         -- TODO: Translation
-        Nothing -> throwError500 "User is not a student"
+        Nothing -> throwError500 "Nutzer ist kein Schüler."
         Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
@@ -312,8 +313,8 @@ delegationInfo uid scope = equery $ do
             >>= pure . catMaybes
 
     firstLevelDelegatees <- findDelegatees uid
-    forM firstLevelDelegatees $ \user ->
-        (,) user <$> findDelegatees (user ^. _Id)
+    DelegationInfo <$> (forM firstLevelDelegatees $ \user ->
+        (,) user <$> findDelegatees (user ^. _Id))
 
 
 -- ** User Profile: Edit profile

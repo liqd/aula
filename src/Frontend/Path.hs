@@ -383,8 +383,8 @@ user :: UserMode r -> UriPath -> UriPath
 user UserIdeas                     path = path </> "ideas"
 user UserGlobalDelegations         path = path </> "delegations" </> "global"
 user UserClassDelegations          path = path </> "delegations" </> "class"
-user UserDelegateVoteOnSchoolSpace path = path </> "delegation" </> "school"
-user UserDelegateVoteOnClassSpace  path = path </> "delegation" </> "class"
+user UserDelegateVoteOnSchoolSpace path = path </> "delegate" </> "school"
+user UserDelegateVoteOnClassSpace  path = path </> "delegate" </> "class"
 user UserEdit                      path = path </> "edit"
 user ReportUser                    path = path </> "report"
 
