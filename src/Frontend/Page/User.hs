@@ -29,7 +29,6 @@ import Persistent (findUser, findIdeasByUserId, getIdeaStats)
 
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
-import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 
@@ -95,23 +94,11 @@ data UserSettingData = UserSettingData
     }
     deriving (Eq, Show)
 
-checkUserPassword :: (ActionM m) => UserSettingData -> m (DF.Result (Html ()) UserSettingData)
-checkUserPassword u@(UserSettingData _      Nothing    _        _       ) = pure (pure u)
-checkUserPassword u@(UserSettingData _email (Just pwd) _newpwd1 _newpwd2) =
-    userPassElim checkInitialPwd checkEncryptedPwd passwordError
-        . _userSettingsPassword
-        . _userSettings
-    <$> currentUser
-  where
-    passwordError = DF.Error "Das alte Passwort ist nicht korrekt"
-
-    checkInitialPwd (InitialPassword p)
-      | p == pwd  = pure u
-      | otherwise = passwordError
-
-    checkEncryptedPwd (FakeEncryptedPassword p)
-      | p == cs pwd = pure u
-      | otherwise   = passwordError
+-- This function checks that IF provided the password must be correct.
+-- See checkPwdAllOrNothing which checks that the three passwords are present at once.
+verifyUserPassIfExists :: ActionM m => Maybe ST -> m Bool
+verifyUserPassIfExists Nothing    = pure True
+verifyUserPassIfExists (Just pwd) = verifyUserPass pwd . view userPassword <$> currentUser
 
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
@@ -120,26 +107,27 @@ instance FormPage PageUserSettings where
     redirectOf _ _ = U.UserSettings
 
     makeForm (PageUserSettings user) =
-          DF.validateM checkUserPassword
-        . DF.validate (checkPwdAllOrNothing <=< checkNewPassword)
+          DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
+        . DF.check "Passwort-Felder sind nur teilweise ausgefüllt."  checkPwdAllOrNothing
         $ UserSettingData
             <$> ("email"         .:
                     emailField "Email" (user ^. userEmail))
             <*> ("old-password"  .:
-                    -- no need to validate the current password
-                    DF.optionalText Nothing)
+                    -- while we need to check that the old password is the correct
+                    -- one, we do not need to validate it against the rules for new passwords.
+                    -- TODO: why can't the user provide a Nothing here to circumvent the check?
+                    DF.checkM "Das alte Passwort ist nicht korrekt" verifyUserPassIfExists
+                    (DF.optionalText Nothing))
             <*> ("new-password1" .:
                     validateOptional "neues Passwort" passwordV (DF.optionalText Nothing))
             <*> ("new-password2" .:
                     validateOptional "neues Passwort (Wiederholung)" passwordV (DF.optionalText Nothing))
       where
-        checkPwdAllOrNothing u@(UserSettingData _ Nothing  Nothing  Nothing)  = pure u
-        checkPwdAllOrNothing u@(UserSettingData _ (Just _) (Just _) (Just _)) = pure u
-        checkPwdAllOrNothing _ = DF.Error "Passwort-Felder sind nur teilweise ausgefüllt."
+        checkPwdAllOrNothing (UserSettingData _ Nothing  Nothing  Nothing)  = True
+        checkPwdAllOrNothing (UserSettingData _ (Just _) (Just _) (Just _)) = True
+        checkPwdAllOrNothing _                                              = False
 
-        checkNewPassword u
-          | profileNewPass1 u == profileNewPass2 u = pure u
-          | otherwise = DF.Error "Die neuen Passwörter passen nicht (Tippfehler?)"
+        checkNewPassword u = profileNewPass1 u == profileNewPass2 u
 
     formPage v form p = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
@@ -178,7 +166,7 @@ userSettings =
         uid <- currentUserId
         (update . SetUserEmail uid) `mapM_` memail
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
-        (update . SetUserPass uid . FakeEncryptedPassword . cs) `mapM_` mnewPass1
+        forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
 userHeaderDiv :: (Monad m) => CapCtx -> UserView -> HtmlT m ()
 userHeaderDiv _   (DeletedUser user) =

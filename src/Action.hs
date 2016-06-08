@@ -23,6 +23,7 @@ module Action
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
     , ActionRandomPassword(mkRandomPassword)
+    , ActionEncryptPassword(encryptPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
     , ActionAddDb
@@ -227,6 +228,7 @@ type ActionM m =
       , ActionAvatar m
       , CleanupTempFiles m
       , ActionRandomPassword m
+      , ActionEncryptPassword m
       , ActionCurrentTimestamp m
       , ActionSendMail m
       )
@@ -256,6 +258,9 @@ class (MonadError ActionExcept m) => ActionPersist m where
 
 class ActionRandomPassword m where
     mkRandomPassword :: m InitialPassword
+
+class ActionEncryptPassword m where
+    encryptPassword :: ST -> m EncryptedPassword
 
 class ActionCurrentTimestamp m where
     getCurrentTimestamp :: m Timestamp

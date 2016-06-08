@@ -44,14 +44,11 @@ data LoginFormData = LoginFormData ST ST
   deriving (Eq, Ord, Show)
 
 checkLogin :: (v ~ Html (), ActionM m) => LoginFormData -> m (Result v User)
-checkLogin (LoginFormData uLogin _pass) = do
+checkLogin (LoginFormData uLogin pass) = do
     muser <- query $ findUserByLogin (UserLogin uLogin)
     pure $ case muser of
-        Nothing ->
-            Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
-        Just user -> do
-            -- FIXME check password
-            pure user
+        Just user | verifyUserPass pass (user ^. userPassword) -> pure user
+        _ -> Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."
 
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
@@ -99,7 +96,7 @@ instance ToHtml LoginDemoHints where
                     th_ "klasse"
                     th_ "email"
                     th_ "password"
-                (\u -> tr_ $ do
+                forM_ users $ \u -> tr_ $ do
                     td_ $ u ^. userLogin . unUserLogin . html
                     td_ $ u ^. userRole . uilabeledST . html
                     td_ $ case u ^. userRole of
@@ -110,12 +107,11 @@ instance ToHtml LoginDemoHints where
                               Principal     -> nil
                               Admin         -> nil
                     td_ . toHtml $ (u ^. userEmailAddress :: ST)
-                    td_ . toHtml .
-                        (\case (UserPassInitial (InitialPassword s))         -> s
-                               (UserPassEncrypted (FakeEncryptedPassword s)) -> cs s
-                               s -> cs $ show s
-                        ) $ u ^. userPassword)
-                  `mapM_` users
+                    td_ . toHtml $
+                        case u ^. userPassword of
+                            UserPassInitial (InitialPassword s) -> s
+                            UserPassEncrypted{}                 -> "<hashed-password>"
+                            UserPassDeactivated                 -> "<deactivated-password>"
 
 
 -- * handlers
