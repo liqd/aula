@@ -293,8 +293,7 @@ instance ToHtml ViewIdea where
             -- indicators
             div_ [class_ "table-actions m-no-hover"] $ do
                 div_ [class_ "icon-list m-inline"] . ul_ $ do
-                    when (True) $ do
-                    -- when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
+                    when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                         feasibilityIndicator idea
 
