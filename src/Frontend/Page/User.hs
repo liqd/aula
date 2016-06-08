@@ -115,7 +115,7 @@ instance FormPage PageUserSettings where
             <*> ("old-password"  .:
                     -- while we need to check that the old password is the correct
                     -- one, we do not need to validate it against the rules for new passwords.
-                    -- TODO: why can't the user provide a Nothing here to circumvent the check?
+                    -- (the user could provide nothing, but 'checkPwdAllOrNothing' will catch that.)
                     DF.checkM "Das alte Passwort ist nicht korrekt" verifyUserPassIfExists
                     (DF.optionalText Nothing))
             <*> ("new-password1" .:
