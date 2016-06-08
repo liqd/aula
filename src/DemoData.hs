@@ -10,10 +10,9 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^?), (.~), (&), set, re, pre, _Just)
+import Control.Lens (Getter, (^.), (^..), (^?), (.~), (&), each, set, re, pre, _Just)
 import Control.Monad (zipWithM_, replicateM, replicateM_, (>=>))
 import Data.List (nub)
-import Data.Maybe (mapMaybe)
 import Data.String.Conversions ((<>), cs)
 
 import Arbitrary hiding (generate)
@@ -202,7 +201,7 @@ universe rnd size = do
 
     ideaSpaces <- nub <$> generate (numberOfIdeaSpaces size) rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
-    let classes = mapMaybe ideaSpaceToSchoolClass ideaSpaces
+    let classes = ideaSpaces ^.. each . _ClassSpace
     assert' (not $ null classes)
 
     students' <- generate (numberOfStudents size) rnd (genStudent classes)
