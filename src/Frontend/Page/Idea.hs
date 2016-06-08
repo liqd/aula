@@ -296,7 +296,10 @@ instance ToHtml ViewIdea where
                     when (True) $ do
                     -- when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
-                        feasibilityVerdict idea
+                        feasibilityIndicator idea
+
+            -- explanation by the dean why the idea is feasible or not (if available)
+            feasibilityVerdict idea
 
             -- buttons
             toHtml $ ideaVoteLikeButtons ctx stats
@@ -379,21 +382,27 @@ instance ToHtml ViewIdea where
                         CommentWidget ctx caps c ^. html
 
 
-feasibilityVerdict :: Monad m => Idea -> HtmlT m ()
-feasibilityVerdict idea = do
-    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
-        explToHtml md = do
-            p_ "Begründung:"
-            p_ $ toHtml md
-
+feasibilityIndicator :: Monad m => Idea -> HtmlT m ()
+feasibilityIndicator idea = do
     case _ideaJuryResult idea of
         Nothing -> nil
-        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
+        Just (IdeaJuryResult _ (Feasible _)) -> do
             li_ [class_ "icon-feasible"] $ span_ "durchführbar"
-            maybeExpl ^. _Just . to explToHtml
-        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
+        Just (IdeaJuryResult _ (NotFeasible _)) -> do
             li_ [class_ "icon-not-feasible"] $ span_ "nicht durchführbar"
-            explToHtml expl
+
+feasibilityVerdict :: Monad m => Idea -> HtmlT m ()
+feasibilityVerdict idea =
+    case _ideaJuryResult idea of
+        Nothing                                        -> nil
+        Just (IdeaJuryResult _ (Feasible Nothing))     -> nil
+        Just (IdeaJuryResult _ (Feasible (Just expl))) -> explToHtml expl
+        Just (IdeaJuryResult _ (NotFeasible expl))     -> explToHtml expl
+  where
+    explToHtml :: forall m. Monad m => Document -> HtmlT m ()
+    explToHtml md = do
+        p_ "Begründung:"
+        p_ $ toHtml md
 
 feasibilityButtons :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityButtons renderJuryButtons idea caps =
