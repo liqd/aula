@@ -202,7 +202,7 @@ universe rnd size = do
 
     ideaSpaces <- nub <$> generate (numberOfIdeaSpaces size) rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
-    let classes = mapMaybe ideaSpaceToSchoolClass ideaSpaces
+    let classes = ideaSpaces ^.. each . _ClassSpace
     assert' (not $ null classes)
 
     students' <- generate (numberOfStudents size) rnd (genStudent classes)

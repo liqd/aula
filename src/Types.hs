@@ -506,10 +506,6 @@ instance Ord IdeaSpace where
 
 instance SOP.Generic IdeaSpace
 
-ideaSpaceToSchoolClass :: IdeaSpace -> Maybe SchoolClass
-ideaSpaceToSchoolClass (ClassSpace clss) = Just clss
-ideaSpaceToSchoolClass _                 = Nothing
-
 -- | "Klasse".  (The school year is necessary as the class name is used for a fresh set of students
 -- every school year.)
 data SchoolClass = SchoolClass
