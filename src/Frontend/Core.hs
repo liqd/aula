@@ -27,7 +27,7 @@ module Frontend.Core
     , FormCS
     , IsTab
     , tabSelected
-    , redirect
+    , redirect, redirectPath
     , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
     , numLikes, percentLikes, numVotes, percentVotes
 
@@ -176,6 +176,9 @@ err303With uri = Servant.err303 { errHeaders = ("Location", cs uri) : errHeaders
 
 redirect :: (MonadServantErr err m, ConvertibleStrings uri SBS) => uri -> m a
 redirect = throwServantErr . err303With
+
+redirectPath :: (MonadServantErr err m, HasPath p) => p 'P.AllowGetPost -> m a
+redirectPath = redirect . absoluteUriPath . relPath
 
 avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
 avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
@@ -377,9 +380,9 @@ form formHandler = getH :<|> postH
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
         (case mpayload of
-            Just payload -> do (redirectPath, msg) <- processor2 page payload
+            Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
-                               redirect redirectPath
+                               redirectPath newPath
             Nothing      -> pure $ FormPageRep v fa page)
             `finally` cleanupTempFiles formData
 
@@ -387,8 +390,7 @@ form formHandler = getH :<|> postH
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
     processor1 = makeForm
     processor2 page result =
-        ((absoluteUriPath . relPath . redirectOf page) &&& formMessage page result)
-        <$> processor result
+        (redirectOf page &&& formMessage page result) <$> processor result
 
 
 -- * frame creation
