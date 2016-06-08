@@ -401,8 +401,9 @@ feasibilityVerdict idea =
   where
     explToHtml :: forall m. Monad m => Document -> HtmlT m ()
     explToHtml md = do
-        p_ "Begründung:"
-        p_ $ toHtml md
+        div_ [class_ "info-text"] $ do
+            "Begründung:"
+            toHtml md
 
 feasibilityButtons :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityButtons renderJuryButtons idea caps =

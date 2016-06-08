@@ -165,4 +165,8 @@
 
 .table-actions {
     @include rem(margin-top, 25px);
+
+    + .info-text {
+        @include rem(margin-top, 25px);
+    }
 }
