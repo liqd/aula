@@ -170,8 +170,12 @@ countVotes v = length . filter (has v) . map (view ideaVoteValue) . Map.elems . 
 
 -- | If an idea is accepted, it has a chance at getting implemented.  The distinction between
 -- "accepted" (automatically determined) and "winning" (decided by moderator) is necessary because
--- two accepted ideas may be contradictory.  Identifying such contradictions requires language
--- skills beyond those of the aula system.
+-- two accepted ideas may be contradictory.  Identifying such contradictions requires AI and natural
+-- language skills beyond those of the aula system.
+--
+-- We have discussed two alternative quorum rules, and both are implemented in the code for the
+-- record (one dead, one live).  The live one checks that there are more yesses than nos, and that
+-- the sum of both has reached the quorum percentage.
 ideaAccepted :: IdeaStats -> Bool
 ideaAccepted (IdeaStats idea _ _ numVoters) = _ideaAcceptedByMajority
   where
