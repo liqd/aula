@@ -126,6 +126,7 @@
 .main-header-menu,
 .main-header-user {
     @extend %main-menu;
+    clear: left;
 }
 
 .user-avatar {
