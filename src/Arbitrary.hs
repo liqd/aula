@@ -441,6 +441,10 @@ instance Arbitrary DScopeFull where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary RoleScope where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary ReportCommentContent where
     arbitrary = ReportCommentContent <$> arbitrary
     shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
