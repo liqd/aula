@@ -172,7 +172,7 @@ type AulaMain =
 
 aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
-       runHandler Page.viewRooms
+       forceChangeInitialPassword (runHandler Page.viewRooms)
   :<|> aulaSpace
 
   :<|> aulaUser
@@ -180,7 +180,7 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> runHandler Page.viewDelegationNetwork
+  :<|> forceChangeInitialPassword (runHandler Page.viewDelegationNetwork)
 
   :<|> runHandler (pure PageStaticImprint)
   :<|> runHandler (pure PageStaticTermsOfUse)
