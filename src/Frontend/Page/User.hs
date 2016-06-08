@@ -224,11 +224,18 @@ createdIdeas :: (ActionPersist m, ActionUserHandler m)
     => AUID User -> m PageUserProfileCreatedIdeas
 createdIdeas userId = do
     ctx <- currentUserCapCtx
+    let visibleByCurrentUser idea =
+            case idea ^. ideaLocation . ideaLocationSpace of
+                SchoolSpace  -> True
+                ClassSpace c ->
+                    case ctx ^? capCtxUser . userRole . roleSchoolClass of
+                        Nothing -> True -- the role is not tied to a class
+                        Just c' -> c == c'
     equery (do
         user  <- makeUserView <$> (maybe404 =<< findUser userId)
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
-              <$> (findIdeasByUserId userId >>= mapM getIdeaStats)
+              <$> (mapM getIdeaStats =<< filter visibleByCurrentUser <$> findIdeasByUserId userId)
         pure $ PageUserProfileCreatedIdeas ctx user ideas)
 
 
