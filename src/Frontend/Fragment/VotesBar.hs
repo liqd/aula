@@ -84,18 +84,19 @@ instance ToHtml IdeaVoteLikeBars where
 
 ideaVoteLikeButtons :: CapCtx -> IdeaStats -> Html ()
 ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
-        let caps = capabilities ctx
-            user = ctx ^. capCtxUser
+    let caps = capabilities ctx
+        user = ctx ^. capCtxUser
 
-            likeButtons :: Html ()
-            likeButtons
-                | CanLike `notElem` caps
-                    = nil
-                | userLikesIdea user idea
-                    = span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
-                      -- FIXME: make this a button and allow un-liking!
-                | otherwise
-                    = do
+        likeButtons :: Html ()
+        likeButtons
+            | CanLike `notElem` caps
+                = nil
+            | userLikesIdea user idea
+                = span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
+                  -- FIXME: make this a button and allow un-liking!
+            | otherwise
+                = do
+                    div_ [class_ "voting-buttons"] $ do
                         postButton_
                                 [class_ "btn-cta voting-button", jsReloadOnClick]
                                 (U.likeIdea idea)
@@ -104,31 +105,31 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                                 i_ [class_ "icon-bullhorn"] nil
                                 "Stimme beauftragen"
 
-            voteButtons :: Html ()
-            voteButtons
-                | not (isFeasibleIdea idea) || CanVote `notElem` caps
-                    = nil
-                | otherwise
-                    = voteButton vote Yes "dafür" >> voteButton vote No  "dagegen"
-              where
-                vote = userVotedOnIdea user idea
+        voteButtons :: Html ()
+        voteButtons
+            | not (isFeasibleIdea idea) || CanVote `notElem` caps
+                = nil
+            | otherwise
+                = voteButton vote Yes "dafür" >> voteButton vote No  "dagegen"
+          where
+            vote = userVotedOnIdea user idea
 
-                -- FIXME@cc: The button for the selected vote value is white.
-                -- Should it be in other color?
-                voteButton (Just w) v | w == v =
-                    postButton_ [ class_ "btn-cta m-large voting-button m-selected"
-                                , jsReloadOnClick
-                                ]
-                                (U.unvoteOnIdea idea user)
-                voteButton _        v =
-                    postButton_ [ class_ "btn-cta m-large voting-button m-not-selected"
-                                , jsReloadOnClick
-                                ]
-                                (U.voteOnIdea idea v)
+            -- FIXME@cc: The button for the selected vote value is white.
+            -- Should it be in other color?
+            voteButton (Just w) v | w == v =
+                postButton_ [ class_ "btn-cta m-large voting-button m-selected"
+                            , jsReloadOnClick
+                            ]
+                            (U.unvoteOnIdea idea user)
+            voteButton _        v =
+                postButton_ [ class_ "btn-cta m-large voting-button m-not-selected"
+                            , jsReloadOnClick
+                            ]
+                            (U.voteOnIdea idea v)
 
-        case phase of
-            PhaseWildIdea{}   -> likeButtons
-            PhaseRefinement{} -> nil
-            PhaseJury         -> nil
-            PhaseVoting{}     -> voteButtons
-            PhaseResult       -> nil
+    case phase of
+        PhaseWildIdea{}   -> likeButtons
+        PhaseRefinement{} -> nil
+        PhaseJury         -> nil
+        PhaseVoting{}     -> voteButtons
+        PhaseResult       -> nil

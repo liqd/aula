@@ -291,26 +291,25 @@ instance ToHtml ViewIdea where
             toHtml $ IdeaVoteLikeBars stats
 
             -- indicators
-            div_ $ do
-                when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
-                    div_ [class_ "table-actions m-no-hover"] $ do
-                        div_ [class_ "icon-list m-inline"] . ul_ $ do
-                            li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
-
-                feasibilityVerdict idea
+            div_ [class_ "table-actions m-no-hover"] $ do
+                div_ [class_ "icon-list m-inline"] . ul_ $ do
+                    when (True) $ do
+                    -- when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
+                        li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
+                        feasibilityVerdict idea
 
             -- buttons
-            div_ $ do
-                toHtml $ ideaVoteLikeButtons ctx stats
+            toHtml $ ideaVoteLikeButtons ctx stats
 
-                when (has _PhaseWildIdea phase && ideaReachedQuorum stats && canCreateTopic) $ do
-                    div_ [class_ "table-actions m-no-hover"] $ do
-                        button_ [ class_ "btn-cta m-valid"
-                                , onclick_ $ U.Space spc U.CreateTopic
-                                ] $ do
-                            i_ [class_ "icon-check"] nil
-                            "Thema anlegen"
+            when (has _PhaseWildIdea phase && ideaReachedQuorum stats && canCreateTopic) $ do
+                div_ [class_ "table-actions m-no-hover"] $ do
+                    button_ [ class_ "btn-cta m-valid"
+                            , onclick_ $ U.Space spc U.CreateTopic
+                            ] $ do
+                        i_ [class_ "icon-check"] nil
+                        "Thema anlegen"
 
+            div_ [class_ "button-group"] $ do
                 feasibilityButtons True idea caps
 
                 when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
@@ -390,13 +389,11 @@ feasibilityVerdict idea = do
     case _ideaJuryResult idea of
         Nothing -> nil
         Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-            div_ [class_ "icon-list m-display-only m-inline"] . ul_ $ do
-                li_ [class_ "icon-feasible"] $ span_ "durchführbar"
-                maybeExpl ^. _Just . to explToHtml
+            li_ [class_ "icon-feasible"] $ span_ "durchführbar"
+            maybeExpl ^. _Just . to explToHtml
         Just (IdeaJuryResult _ (NotFeasible expl)) -> do
-            div_ [class_ "info-text m-unrealised"] $ do
-                h3_ [class_ "info-text-header"] "nicht durchführbar"
-                explToHtml expl
+            li_ [class_ "icon-not-feasible"] $ span_ "nicht durchführbar"
+            explToHtml expl
 
 feasibilityButtons :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
 feasibilityButtons renderJuryButtons idea caps =
