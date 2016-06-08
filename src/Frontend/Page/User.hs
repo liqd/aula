@@ -190,9 +190,9 @@ userHeaderDiv ctx (ActiveUser user) =
             -- philosophical, but it doesn't really matter: users can delegate to themselves
             -- just like to anybody else, and the graph will look different if they do.
             -- FIXME: Styling
-            when (CanVote `elem` caps && isSameSchoolClass ctx user) $ do
+            when (CanDelegate `elem` caps && isSameSchoolClass ctx user) $ do
                 postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
-            when (CanVote `elem` caps) $ do
+            when (CanDelegate `elem` caps) $ do
                 postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
             btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
