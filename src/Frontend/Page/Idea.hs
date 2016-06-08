@@ -252,7 +252,7 @@ instance ToHtml ViewIdea where
                             when canEdit . a_ [href_ $ U.editIdea idea] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
-                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                            when canCreateTopic . a_ [href_ $ U.createTopic spc] $ do
                                 i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
                                 "Thema erstellen"
@@ -306,7 +306,7 @@ instance ToHtml ViewIdea where
             when (has _PhaseWildIdea phase && canCreateTopic) $ do
                 div_ [class_ "table-actions m-no-hover"] $ do
                     button_ [ class_ "btn-cta m-valid"
-                            , onclick_ $ U.Space spc U.CreateTopic
+                            , onclick_ $ U.createTopic spc
                             ] $ do
                         i_ [class_ "icon-check"] nil
                         "Thema anlegen"
