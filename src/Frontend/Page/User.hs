@@ -313,8 +313,8 @@ delegationInfo uid scope = equery $ do
             >>= pure . catMaybes
 
     firstLevelDelegatees <- findDelegatees uid
-    DelegationInfo <$> (forM firstLevelDelegatees $ \user ->
-        (,) user <$> findDelegatees (user ^. _Id))
+    DelegationInfo <$> forM firstLevelDelegatees (\user ->
+                            (,) user <$> findDelegatees (user ^. _Id))
 
 
 -- ** User Profile: Edit profile
