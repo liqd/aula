@@ -41,7 +41,6 @@ module Frontend.Path
     , logout
     , terms
     , imprint
-    , userProf
     , completeRegistration
     , broken
 
@@ -235,10 +234,6 @@ imprint = Imprint
 -- TODO: Remove
 admin :: AdminMode r -> Main r
 admin = Admin
-
--- TODO: Remove
-userProf :: AUID User -> UserMode r -> Main r
-userProf = UserProf
 
 broken :: Main 'AllowGetPost
 broken = Broken
