@@ -84,6 +84,10 @@ module Frontend.Path
     , delegateVoteOnSchoolSpace
     , delegateVoteOnClassSpace
 
+    -- * paths to root pages
+    , forgottenPassword
+    , setForgottenPassword
+
     -- * aux predicates
     , isPostOnly
     , isBroken
@@ -110,6 +114,7 @@ import Types
     , IdeaVoteValue, UpDown
     , IdeaJuryResultType(..)
     , ListIdeasInTopicTab(..)
+    , PassForgottenToken
     )
 
 
@@ -158,6 +163,8 @@ data Main (r :: AllowedMethod) =
   | Imprint
   | Terms
   | Login
+  | ForgottenPassword
+  | SetForgottenPassword (AUID User) ST
   | Logout
   | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
   deriving (Generic, Show)
@@ -166,6 +173,7 @@ instance SOP.Generic (Main r)
 
 instance HasPath Main where relPath p = main p nil
 
+-- TODO: Align
 main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
@@ -178,6 +186,8 @@ main DelegationView   root = root </> "delegation" </> "view"
 main Imprint          root = root </> "imprint"
 main Terms            root = root </> "terms"
 main Login            root = root </> "login"
+main ForgottenPassword              root = root </> "forgottenpwd"
+main (SetForgottenPassword uid tkn) root = root </> "setforgottenpwd" </> uriPart uid </> uriPart tkn
 main Logout           root = root </> "logout"
 main Broken           root = root </> "bröken"
 
@@ -189,6 +199,11 @@ ideaPath loc mode root =
   where
     rootSpace isp = root </> "space" </> uriPart isp
 
+forgottenPassword :: Main 'AllowGetPost
+forgottenPassword = ForgottenPassword
+
+setForgottenPassword :: User -> PassForgottenToken -> Main 'AllowGetPost
+setForgottenPassword u tkn = SetForgottenPassword (u ^. _Id) tkn
 
 -- ** Space
 

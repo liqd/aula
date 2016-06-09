@@ -22,7 +22,7 @@ module Action
     , ActionLog(log, readEventLog)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
-    , ActionRandomPassword(mkRandomPassword)
+    , ActionRandomPassword(mkRandomPassword, mkForgottenPassToken)
     , ActionEncryptPassword(encryptPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
@@ -53,6 +53,7 @@ module Action
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
+    , forgottenPassword
 
       -- * idea handling
     , reportIdea
@@ -257,7 +258,8 @@ class (MonadError ActionExcept m) => ActionPersist m where
         either (throwError . ActionPersistExcept) pure $ runExcept (runReaderT q db)
 
 class ActionRandomPassword m where
-    mkRandomPassword :: m InitialPassword
+    mkRandomPassword     :: m InitialPassword
+    mkForgottenPassToken :: m PassForgottenToken
 
 class ActionEncryptPassword m where
     encryptPassword :: ST -> m EncryptedPassword
@@ -368,6 +370,24 @@ getSpacesForCurrentUser = do
 -- FIXME: Authorization
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
+
+-- TODO: Translate
+forgottenPassword :: ActionM m => UserLogin -> m ()
+forgottenPassword l = do
+    muser <- query $ findUserByLogin l
+    addMessage "An email has sent to your email address."
+    case muser of
+        Nothing -> pure ()
+        Just user -> do
+            token <- mkForgottenPassToken
+            update $ SetUserPassForgotten (user ^. _Id) token
+            -- TODO
+            sendMailToUser [IgnoreMissingEmails] user EmailMessage
+                { _msgSubjectLabel = ForgottenPassword
+                , _msgSubjectText  = "Password reset"
+                , _msgBody    = "Path to reset password"
+                , _msgHtml    = Nothing -- Not supported yet
+                }
 
 
 -- * Phase Transitions

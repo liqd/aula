@@ -170,6 +170,9 @@ type AulaMain =
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
+  :<|> "forgottenpwd" :> FormHandler ForgottenPassword
+  :<|> "setforgottenpwd" :> User ::> Capture "token" ST :> FormHandler SetForgottenPassword
+
 
 aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
@@ -188,6 +191,8 @@ aulaMain =
 
   :<|> form Page.login
   :<|> (logout >> (redirect . absoluteUriPath . U.relPath $ U.Login))
+  :<|> form Page.forgottenPassword
+  :<|> form <..> Page.setForgottenPassword
 
 type CommentApi
        -- reply on a comment

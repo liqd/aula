@@ -114,6 +114,7 @@ instance MonadRandom Action where
 
 instance ActionRandomPassword Action where
     mkRandomPassword = actionIO $ InitialPassword . cs . unwords <$> mkPassword `mapM` [4,3,5]
+    mkForgottenPassToken = pure "PWDTOKEN" -- TODO
 
 instance ActionEncryptPassword Action where
     encryptPassword =

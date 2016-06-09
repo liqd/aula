@@ -91,6 +91,7 @@ module Persistent.Pure
     , setUserProfileDesc
     , setUserEmail
     , setUserPass
+    , setUserPassForgotten
     , setUserLoginAndRole
     , setUserAvatar
     , resetUserPass
@@ -481,6 +482,10 @@ resetUserPass uid userPass = withUser uid . userSettings . userSettingsPassword 
 setUserPass :: AUID User -> EncryptedPassword -> AUpdate ()
 setUserPass uid pass =
     withUser uid . userSettings . userSettingsPassword .= UserPassEncrypted pass
+
+setUserPassForgotten :: AUID User -> PassForgottenToken -> AUpdate ()
+setUserPassForgotten uid token =
+    withUser uid . userSettings . userSettingsPassword .= UserPassForgotten token
 
 setUserLoginAndRole :: AUID User -> Maybe UserLogin -> Role -> AUpdate ()
 setUserLoginAndRole uid mlogin role = do
