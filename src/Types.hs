@@ -677,6 +677,17 @@ data Role =
 
 instance SOP.Generic Role
 
+guestRole :: IdeaSpace -> Role
+guestRole = \case
+    SchoolSpace  -> SchoolGuest
+    ClassSpace c -> ClassGuest c
+
+_GuestRole :: Prism' Role IdeaSpace
+_GuestRole = prism guestRole $ \case
+    SchoolGuest  -> Right $ SchoolSpace
+    ClassGuest c -> Right $ ClassSpace c
+    r            -> Left r
+
 data RoleScope
   = ClassesScope (Set SchoolClass)
   | SchoolScope
