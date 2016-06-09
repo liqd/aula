@@ -41,7 +41,6 @@ module Frontend.Path
     , logout
     , terms
     , imprint
-    , space
     , userProf
     , completeRegistration
     , broken
@@ -236,10 +235,6 @@ imprint = Imprint
 -- TODO: Remove
 admin :: AdminMode r -> Main r
 admin = Admin
-
--- TODO: Remove
-space :: IdeaSpace -> Space r -> Main r
-space = Space
 
 -- TODO: Remove
 userProf :: AUID User -> UserMode r -> Main r
