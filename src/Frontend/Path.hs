@@ -28,7 +28,7 @@ module Frontend.Path
     , Main
     , Space
     , IdeaMode(..)
-    , CommentMode(..)
+    , CommentMode
     , AdminMode(..)
     , UserMode(..)
 
@@ -113,6 +113,8 @@ module Frontend.Path
 
     -- * aux (misc)
     , anchor
+    , pruneCommentReplyPath
+    , pruneCommentKey
     )
 where
 
@@ -354,6 +356,18 @@ ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revoke
 ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
 ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
 ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegate"
+
+-- FIXME: This is only needed for valid test data generation
+pruneCommentReplyPath :: IdeaMode r -> IdeaMode r
+pruneCommentReplyPath (OnComment ck ReplyToComment) = OnComment (pruneCommentKey ck) ReplyToComment
+pruneCommentReplyPath m = m
+
+-- FIXME: This is only needed for valid test data generation
+-- | replies to sub-comments are turned into replies to the parent comment.
+pruneCommentKey :: CommentKey -> CommentKey
+pruneCommentKey = \case
+    ck@(CommentKey _ _ [] _) -> ck
+    (CommentKey loc idea (c:_) c') -> CommentKey loc idea [c] c'
 
 
 -- ** CommentMode
