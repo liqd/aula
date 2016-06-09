@@ -649,7 +649,7 @@ newtype UserLastName  = UserLastName  { _unUserLastName  :: ST }
 
 type instance Proto User = ProtoUser
 
--- FIXME: Reduce the information which stored in the 'DeleteUser' constructor.
+-- FIXME: Reduce the information stored in the 'DeleteUser' constructor.
 data UserView
     = ActiveUser  { _activeUser  :: User }
     | DeletedUser { _deletedUser :: User }
@@ -804,7 +804,8 @@ data DelegationNetwork = DelegationNetwork
 instance SOP.Generic DelegationNetwork
 
 -- | Elaboration and Voting phase durations
--- FIXME: elaboration and refinement are the same thing.  pick one term!
+-- FIXME: 'elaboration' and 'refinement' are the same thing.  pick one term!
+-- ('elaboration' is my preference ~~fisx)
 data Durations = Durations
     { _elaborationPhase :: DurationDays
     , _votingPhase      :: DurationDays
@@ -910,7 +911,7 @@ instance HasUriPart (AUID a) where
 data GMetaInfo a k = MetaInfo
     { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
-    , _metaCreatedByLogin  :: UserLogin -- FIXME: If the user is deleted it still contains the user information
+    , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: Maybe URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
@@ -929,7 +930,9 @@ instance ToHtml PlainDocument where
     toHtmlRaw = div_ . toHtmlRaw . unDescription
     toHtml    = div_ . toHtml    . unDescription
 
--- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
+-- | Transform values into strings suitable for presenting to the user.  These strings are not
+-- machine-readable in general.  (alternative names that lost in a long bikeshedding session:
+-- @HasUIString@, @HasUIText@, ...)
 class HasUILabel a where
     uilabel :: a -> (Monoid s, IsString s) => s
 
