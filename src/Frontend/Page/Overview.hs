@@ -119,7 +119,7 @@ instance ToHtml PageOverviewOfTopics where
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
                 when (CanCreateTopic `elem` capabilities ctx) $
-                    button_ [onclick_ (U.Space space U.CreateTopic), class_ "btn-cta m-large"] "+ Neues Thema"
+                    button_ [onclick_ (U.createTopic space), class_ "btn-cta m-large"] "+ Neues Thema"
 
             forM_ topics $ \topic -> do
                 div_ [class_ "col-1-3 theme-grid-col"] $ do
