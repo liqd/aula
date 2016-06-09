@@ -30,7 +30,7 @@ module Frontend.Path
     , IdeaMode
     , CommentMode
     , AdminMode(..)
-    , UserMode(..)
+    , UserMode
 
     -- * top level paths
     , login
@@ -106,6 +106,8 @@ module Frontend.Path
     , delegateVoteOnClassSpace
     , userGlobalDelegations
     , userClassDelegations
+    , userIdeas
+--    , userDelegations
 
     -- * aux predicates
     , isPostOnly
@@ -494,6 +496,10 @@ userGlobalDelegations u = UserProf (u ^. _Id) UserGlobalDelegations
 
 userClassDelegations :: User -> Main 'AllowGetPost
 userClassDelegations u = UserProf (u ^. _Id) UserClassDelegations
+
+userIdeas :: AUID User -> Main 'AllowGetPost
+userIdeas uid = UserProf uid UserIdeas
+
 
 -- * paths to ideas
 
