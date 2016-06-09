@@ -113,8 +113,8 @@ verifyUserPassIfExists (Just pwd) = verifyUserPass pwd . view userPassword <$> c
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
-    formAction _ = U.UserSettings
-    redirectOf _ _ = U.UserSettings
+    formAction _ = U.userSettings
+    redirectOf _ _ = U.userSettings
 
     makeForm (PageUserSettings user) =
           DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
@@ -293,6 +293,7 @@ renderDelegations (DelegationInfo delegations) = do
                     toHtml $ show (length secondDelegatees) <> " Stimmen von "
                     strong_ . forM_ secondDelegatees $ \delegatee' ->
                         a_ [href_ $ U.viewUserProfile delegatee'] (delegatee' ^. userLogin . unUserLogin  . html)
+
 
 delegatedVotesGlobal :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes

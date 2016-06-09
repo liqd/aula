@@ -355,7 +355,7 @@ accessDeferred :: AccessResult'
 accessDeferred = pure AccessDeferred
 
 redirectLogin :: AccessResult'
-redirectLogin = accessRedirected "Not logged in" P.Login
+redirectLogin = accessRedirected "Not logged in" P.login
 
 userPage :: AccessCheck any
 userPage LoggedIn{}  = accessGranted
