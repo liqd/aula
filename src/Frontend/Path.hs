@@ -575,6 +575,7 @@ isPostOnly = \case
       case m of
           AdminTopicNextPhase _       -> True
           AdminTopicVotingPrevPhase _ -> True
+          AdminRemRole{}              -> True
           _                           -> False
     UserProf _ m ->
       case m of
