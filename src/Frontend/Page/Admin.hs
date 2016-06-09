@@ -687,11 +687,11 @@ adminViewClasses qf = AdminViewClasses (mkClassesQuery qf) <$> query getSchoolCl
 adminAddRole :: ActionM m => AUID User -> FormPageHandler m AdminAddRole
 adminAddRole uid = formPageHandlerCalcMsg
     (equery $ AdminAddRole <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
-    (\role -> update $ AddUserRole uid role)
+    (update . AddUserRole uid)
     (\(AdminAddRole u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."]) -- TODO: potentially a different text
 
 adminRemRole :: ActionM m => AUID User -> Role -> m ()
-adminRemRole uid role = update $ RemUserRole uid role
+adminRemRole uid = update . RemUserRole uid
 
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = formPageHandlerCalcMsg

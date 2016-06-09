@@ -684,8 +684,8 @@ guestRole = \case
 
 _GuestRole :: Prism' Role IdeaSpace
 _GuestRole = prism guestRole $ \case
-    SchoolGuest  -> Right $ SchoolSpace
-    ClassGuest c -> Right $ ClassSpace c
+    SchoolGuest  -> pure SchoolSpace
+    ClassGuest c -> pure $ ClassSpace c
     r            -> Left r
 
 data RoleScope
