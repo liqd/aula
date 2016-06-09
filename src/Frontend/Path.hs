@@ -60,6 +60,7 @@ module Frontend.Path
     -- * paths to topic
     , delegateVoteOnTopic
     , viewTopic
+    , createTopic
 
     -- * paths to comments
     , replyToComment
@@ -227,6 +228,9 @@ delegateVoteOnTopic topic = Space (topic ^. topicIdeaSpace) (CreateTopicDelegati
 viewTopic :: Topic -> Main 'AllowGetPost
 viewTopic topic =
     listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) Nothing Nothing
+
+createTopic :: IdeaSpace -> Main 'AllowGetPost
+createTopic spc = Space spc CreateTopic
 
 
 -- ** IdeaMode
@@ -452,6 +456,7 @@ deleteIdea idea = IdeaPath (idea ^. ideaLocation) $ DeleteIdea (idea ^. _Id)
 
 delegateVoteOnIdea :: Idea -> Main 'AllowGetPost
 delegateVoteOnIdea idea = IdeaPath (idea ^. ideaLocation) $ DelegateVoteOnIdea (idea ^. _Id)
+
 
 -- * paths to idea lists
 
