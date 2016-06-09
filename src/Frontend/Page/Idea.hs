@@ -238,9 +238,6 @@ instance ToHtml ViewIdea where
             totalComments = idea ^. ideaComments . commentsCount
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = capabilities ctx
-            canEdit              = CanEditAndDelete `elem` caps
-            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` caps
-            canMoveBetweenTopics = CanMoveBetweenLocations `elem` caps
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -249,17 +246,19 @@ instance ToHtml ViewIdea where
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            when canEdit . a_ [href_ $ U.editIdea idea] $ do
+                            when (CanEditAndDelete `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
-                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                i_ [class_ "icon-pencil"] nil
+                            when (ideaReachedQuorum stats && CanCreateTopic `elem` caps) .
+                                a_ [href_ $ U.Space spc U.CreateTopic] $ do
+                                    i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Thema erstellen"
-                            when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
+                                    "Thema erstellen"
+                            when (CanMoveBetweenLocations `elem` caps) .
+                                a_ [href_ $ U.moveIdea idea] $ do
+                                    i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Idee verschieben"
+                                    "Idee verschieben"
                             a_ [href_ (U.reportIdea idea)] $ do
                                 i_ [class_ "icon-flag"] nil
                                 "melden"
@@ -303,7 +302,9 @@ instance ToHtml ViewIdea where
             -- buttons
             toHtml $ ideaVoteLikeButtons ctx stats
 
-            when (has _PhaseWildIdea phase && ideaReachedQuorum stats && canCreateTopic) $ do
+            when (has _PhaseWildIdea phase &&
+                  ideaReachedQuorum stats &&
+                  CanCreateTopic `elem` caps) $ do
                 div_ [class_ "table-actions m-no-hover"] $ do
                     button_ [ class_ "btn-cta m-valid"
                             , onclick_ $ U.Space spc U.CreateTopic
