@@ -1418,13 +1418,13 @@ showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
 showIdeaSpaceCategory (ClassSpace _) = "class"
 
-parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
-parseIdeaSpace s
-    | s == "school" = Right SchoolSpace
-    | otherwise     = ClassSpace <$> parseSchoolClass s
+parseIdeaSpace :: (IsString err, Monoid err) => [ST] -> Either err IdeaSpace
+parseIdeaSpace = \case
+    ["school"] -> pure SchoolSpace
+    xs         -> ClassSpace <$> parseSchoolClass xs
 
-parseSchoolClass :: (IsString err, Monoid err) => ST -> Either err SchoolClass
-parseSchoolClass s = case ST.splitOn "-" s of
+parseSchoolClass :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
+parseSchoolClass = \case
     [year, name] -> (`schoolClass` name) <$> readYear year
     _:_:_:_      -> err "Too many parts (two parts expected)"
     _            -> err "Too few parts (two parts expected)"
@@ -1432,14 +1432,26 @@ parseSchoolClass s = case ST.splitOn "-" s of
     err msg = Left $ "Ill-formed school class: " <> msg
     readYear = maybe (err "Year should be only digits") Right . readMaybe . cs
 
+parseRole :: (IsString err, Monoid err) => [ST] -> Either err Role
+parseRole = \case
+    ["admin"]      -> pure Admin
+    ["principal"]  -> pure Principal
+    ["moderator"]  -> pure Moderator
+    ("student":xs) -> Student <$> parseSchoolClass xs
+    ("guest":xs)   -> guestRole <$> parseIdeaSpace xs
+    _              -> Left "Ill-formed role"
+
+instance FromHttpApiData Role where
+    parseUrlPiece = parseRole . ST.splitOn "-"
+
 instance FromHttpApiData IdeaSpace where
-    parseUrlPiece = parseIdeaSpace
+    parseUrlPiece = parseIdeaSpace . ST.splitOn "-"
 
 instance ToHttpApiData IdeaSpace where
     toUrlPiece = cs . showIdeaSpace
 
 instance FromHttpApiData SchoolClass where
-    parseUrlPiece = parseSchoolClass
+    parseUrlPiece = parseSchoolClass . ST.splitOn "-"
 
 instance FromHttpApiData IdeaVoteValue where
     parseUrlPiece = \case
@@ -1512,6 +1524,15 @@ userLikesIdea user idea =
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
+
+instance HasUriPart Role where
+    uriPart = \case
+        (Student c)    -> "student-" <> uriPart c
+        (ClassGuest c) -> "guest-" <> uriPart c
+        SchoolGuest    -> "guest-school"
+        Moderator      -> "moderator"
+        Principal      -> "principal"
+        Admin          -> "admin"
 
 instance HasUILabel Role where
     uilabel = \case

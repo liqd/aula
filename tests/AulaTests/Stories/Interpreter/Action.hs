@@ -25,6 +25,7 @@ import Data.Functor.Infix ((<$$>))
 import Data.List (find)
 import qualified Data.Map as Map (elems, size)
 import Data.String.Conversions
+import Servant.API (parseUrlPiece)
 
 import Action
 import Arbitrary
@@ -82,7 +83,7 @@ runClient (Free (Logout k)) = do
     runClient k
 
 runClient (Free (SelectIdeaSpace s k)) = do
-    let (Right i :: Either String IdeaSpace) = parseIdeaSpace s
+    let (Right i :: Either ST IdeaSpace) = parseUrlPiece s
     found <- fmap (elem i) . lift $ query getSpaces
     unless found . error $ "No idea space is found" <> cs s
     csIdeaSpace .= Just i
