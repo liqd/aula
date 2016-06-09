@@ -232,6 +232,7 @@ viewTopic topic =
 createTopic :: IdeaSpace -> Main 'AllowGetPost
 createTopic spc = Space spc CreateTopic
 
+
 -- ** IdeaMode
 
 data IdeaMode (r :: AllowedMethod) =
