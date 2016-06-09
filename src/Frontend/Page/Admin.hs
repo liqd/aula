@@ -266,11 +266,11 @@ menulink' targetMenuItem =
     MenuItemFreeze
         -> MenuLink "tab-freeze" U.adminFreeze "Ferienmodus"
     MenuItemUsers
-        -> MenuLink "tab-groups-perms-user"  (U.admin U.adminViewUsers) "Nutzer"
+        -> MenuLink "tab-groups-perms-user"  U.adminViewUsers "Nutzer"
     MenuItemClasses
-        -> MenuLink "tab-groups-perms-class" (U.admin U.adminViewClasses) "Klasse"
+        -> MenuLink "tab-groups-perms-class" U.adminViewClasses "Klasse"
     MenuItemClassesAndUsers
-        -> MenuLink "tab-groups-perms"       (U.admin U.adminViewUsers) "Gruppen & Nutzer"
+        -> MenuLink "tab-groups-perms"       U.adminViewUsers "Gruppen & Nutzer"
     MenuItemEventsProtocol
         -> MenuLink "tab-events"             U.adminEvent "Protokolle"
     MenuItemPhaseChange
@@ -400,7 +400,7 @@ instance ToHtml AdminViewUsers where
                 ul_ [class_ "pop-menu-list"] $ do
                     sequence_
                         [ li_ [class_ "pop-menu-list-item"] $
-                            a_ [href_ . U.admin . U.adminViewUsers' . Just $
+                            a_ [href_ . U.adminViewUsers' . Just $
                                     filters & usersQueryS .~ by]
                                 (uilabel by)
                         | by <- [minBound..] ]
@@ -418,7 +418,7 @@ instance ToHtml AdminViewUsers where
                             let filters' = filters & usersQueryF .~ AllUsers
                                 placehld = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . unSearchUsers)
                             formMethod_ "GET" [class_ "form"]
-                                        (U.admin . U.adminViewUsers' $ Just filters') $ do
+                                        (U.adminViewUsers' $ Just filters') $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
                                         placeholder_ placehld]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
@@ -449,7 +449,7 @@ instance FormPage AdminCreateUser where
     type FormPagePayload AdminCreateUser = CreateUserPayload
 
     formAction _   = U.adminCreateUser
-    redirectOf _ _ = U.admin U.adminViewUsers
+    redirectOf _ _ = U.adminViewUsers
 
     -- FIXME: Show the user's role and class as default in the selections.
     makeForm (AdminCreateUser classes) =
@@ -502,7 +502,7 @@ instance ToHtml AdminViewClasses where
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do  -- see also: ToHtml instance of AdminViewUser
                             formMethod_ "GET" [class_ "form"]
-                                        (U.admin U.adminViewClasses) $ do
+                                        U.adminViewClasses $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
                                         placeholder_ (fromMaybe "Klassensuche" (filters ^? searchClasses . unSearchClasses))]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
@@ -565,7 +565,7 @@ roleForm mrole mclass classes =
 instance FormPage AdminAddRole where
     type FormPagePayload AdminAddRole = Role
 
-    formAction (AdminAddRole user _classes)   = U.admin $ U.adminAddRole user
+    formAction (AdminAddRole user _classes)   = U.adminAddRole user
     redirectOf (AdminAddRole user _classes) _ = U.adminEditUser user
 
     makeForm (AdminAddRole _user classes) = roleForm Nothing Nothing classes
@@ -596,7 +596,7 @@ instance FormPage AdminEditUser where
     type FormPagePayload AdminEditUser = Maybe UserLogin
 
     formAction (AdminEditUser user) = U.adminEditUser user
-    redirectOf _ _ = U.admin U.adminViewUsers
+    redirectOf _ _ = U.adminViewUsers
 
     makeForm (AdminEditUser user) = "login" .: validateUserLogin
       where
@@ -630,11 +630,11 @@ instance FormPage AdminEditUser where
                         td_ $ postButtonConfirm_
                                 (Just "Soll diese Rolle wirklich entfernt werden?")
                                 [class_ "btn-cta", jsReloadOnClick]
-                                (U.admin $ U.adminRemRole user role) "Rolle löschen"
+                                (U.adminRemRole user role) "Rolle löschen"
                 div_ [class_ "admin-buttons"] $ do
-                    a_ [href_ . U.admin $ U.adminAddRole user, class_ "btn-cta"] "Rolle hinzufügen"
+                    a_ [href_ $ U.adminAddRole user, class_ "btn-cta"] "Rolle hinzufügen"
                     br_ []
-                    a_ [href_ . U.admin $ U.adminResetPassword user, class_ "btn-cta"] "Passwort zurücksetzen"
+                    a_ [href_ $ U.adminResetPassword user, class_ "btn-cta"] "Passwort zurücksetzen"
                     br_ []
                     a_ [href_ $ U.adminDeleteUser user, class_ "btn-cta"] "Nutzer löschen"
                     br_ []
@@ -724,7 +724,7 @@ instance FormPage AdminDeleteUser where
     type FormPagePayload AdminDeleteUser = AdminDeleteUserPayload
 
     formAction (AdminDeleteUser user) = U.adminDeleteUser user
-    redirectOf _ _ = U.admin U.adminViewUsers
+    redirectOf _ _ = U.adminViewUsers
 
     makeForm _ = pure AdminDeleteUserPayload
 
@@ -791,7 +791,7 @@ instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
     formAction _   = U.adminCreateClass
-    redirectOf _ _ = U.admin U.adminViewClasses
+    redirectOf _ _ = U.adminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
         <$> ("classname" .: classname (DF.string Nothing))
@@ -898,7 +898,7 @@ instance FormPage AdminPhaseChange where
 instance FormPage PageAdminResetPassword where
     type FormPagePayload PageAdminResetPassword = InitialPassword
 
-    formAction (PageAdminResetPassword u _p) = U.admin $ U.adminResetPassword u
+    formAction (PageAdminResetPassword u _p) = U.adminResetPassword u
     redirectOf (PageAdminResetPassword u _p) _ = U.adminEditUser u
 
     makeForm (PageAdminResetPassword _u p) =

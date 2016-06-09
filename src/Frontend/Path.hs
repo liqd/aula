@@ -37,7 +37,6 @@ module Frontend.Path
     , listSpaces
     , delegationView
     , userSettings
-    , admin
     , logout
     , terms
     , imprint
@@ -230,10 +229,6 @@ terms = Terms
 
 imprint :: Main 'AllowGetPost
 imprint = Imprint
-
--- TODO: Remove
-admin :: AdminMode r -> Main r
-admin = Admin
 
 broken :: Main 'AllowGetPost
 broken = Broken
@@ -662,23 +657,23 @@ editReply comment = onComment comment EditReply
 
 -- * paths to admin pages, user profile, user setting
 
-adminViewUsers :: AdminMode 'AllowGetPost
-adminViewUsers = AdminViewUsers Nothing
+adminViewUsers :: Main 'AllowGetPost
+adminViewUsers = Admin $ AdminViewUsers Nothing
 
-adminViewUsers' :: Maybe UsersQuery -> AdminMode 'AllowGetPost
-adminViewUsers' = AdminViewUsers
+adminViewUsers' :: Maybe UsersQuery -> Main 'AllowGetPost
+adminViewUsers' = Admin . AdminViewUsers
 
-adminViewClasses :: AdminMode 'AllowGetPost
-adminViewClasses = AdminViewClasses Nothing
+adminViewClasses :: Main 'AllowGetPost
+adminViewClasses = Admin $ AdminViewClasses Nothing
 
-adminAddRole :: User -> AdminMode 'AllowGetPost
-adminAddRole u = AdminAddRole (u ^. _Id)
+adminAddRole :: User -> Main 'AllowGetPost
+adminAddRole u = Admin $ AdminAddRole (u ^. _Id)
 
-adminRemRole :: User -> Role -> AdminMode 'AllowPost
-adminRemRole u = AdminRemRole (u ^. _Id)
+adminRemRole :: User -> Role -> Main 'AllowPost
+adminRemRole u = Admin . AdminRemRole (u ^. _Id)
 
-adminResetPassword :: User -> AdminMode 'AllowGetPost
-adminResetPassword u = AdminResetPassword (u ^. _Id)
+adminResetPassword :: User -> Main 'AllowGetPost
+adminResetPassword u = Admin $ AdminResetPassword (u ^. _Id)
 
 viewUserProfile :: User -> Main 'AllowGetPost
 viewUserProfile = viewUserIdProfile . view _Id
