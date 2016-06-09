@@ -276,7 +276,7 @@ instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic
     type FormPageResult CreateTopic = Topic
 
-    formAction ct = U.Space (ct ^. ctIdeaSpace) U.CreateTopic
+    formAction ct = U.createTopic (ct ^. ctIdeaSpace)
     redirectOf _ topic = U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
 
     makeForm ct =

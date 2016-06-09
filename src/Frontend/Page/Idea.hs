@@ -238,9 +238,6 @@ instance ToHtml ViewIdea where
             totalComments = idea ^. ideaComments . commentsCount
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = capabilities ctx
-            canEdit              = CanEditAndDelete `elem` caps
-            canCreateTopic       = ideaReachedQuorum stats && CanCreateTopic `elem` caps
-            canMoveBetweenTopics = CanMoveBetweenLocations `elem` caps
 
         div_ [class_ "hero-unit narrow-container"] $ do
             header_ [class_ "detail-header"] $ do
@@ -249,17 +246,19 @@ instance ToHtml ViewIdea where
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            when canEdit . a_ [href_ $ U.editIdea idea] $ do
+                            when (CanEditAndDelete `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
-                            when canCreateTopic . a_ [href_ $ U.Space spc U.CreateTopic] $ do
-                                i_ [class_ "icon-pencil"] nil
+                            when (ideaReachedQuorum stats && CanCreateTopic `elem` caps) .
+                                a_ [href_ $ U.createTopic spc] $ do
+                                    i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Thema erstellen"
-                            when canMoveBetweenTopics . a_ [href_ $ U.moveIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
+                                    "Thema erstellen"
+                            when (CanMoveBetweenLocations `elem` caps) .
+                                a_ [href_ $ U.moveIdea idea] $ do
+                                    i_ [class_ "icon-pencil"] nil
                                         -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                "Idee verschieben"
+                                    "Idee verschieben"
                             a_ [href_ (U.reportIdea idea)] $ do
                                 i_ [class_ "icon-flag"] nil
                                 "melden"
@@ -287,33 +286,46 @@ instance ToHtml ViewIdea where
                     PhaseVoting{}     -> v >> c
                     PhaseResult       -> v >> c
 
-            div_ [class_ "sub-heading"] $ do
-                toHtml $ IdeaVoteLikeBars IdeaVoteLikeBarsWithButtons ctx stats
+            -- bars
+            toHtml $ IdeaVoteLikeBars stats
 
-            when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
-                div_ [class_ "table-actions m-no-hover"] $ do
-                    div_ [class_ "icon-list m-inline"] . ul_ $ do
+            -- indicators
+            div_ [class_ "table-actions m-no-hover"] $ do
+                div_ [class_ "icon-list m-inline"] . ul_ $ do
+                    when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
-                    when canCreateTopic $ do
-                        button_ [ class_ "btn-cta m-valid"
-                                , onclick_ $ U.Space spc U.CreateTopic
-                                ] $ do
-                            i_ [class_ "icon-check"] nil
-                            "Thema anlegen"
+                        feasibilityIndicator idea
 
-            feasibilityVerdict True idea caps
+            -- explanation by the dean why the idea is feasible or not (if available)
+            feasibilityVerdict idea
 
-            -- creator statement
-            when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
-                div_ [class_ "creator-statement-button"] $ do
+            -- buttons
+            toHtml $ ideaVoteLikeButtons ctx stats
+
+            when (has _PhaseWildIdea phase &&
+                  ideaReachedQuorum stats &&
+                  CanCreateTopic `elem` caps) $ do
+                div_ [class_ "table-actions m-no-hover"] $ do
                     button_ [ class_ "btn-cta m-valid"
-                            , onclick_ $ U.creatorStatement idea
+                            , onclick_ $ U.createTopic spc
                             ] $ do
                         i_ [class_ "icon-check"] nil
-                        if isNothing $ creatorStatementOfIdea idea
-                            then "Statement abgeben"
-                            else "Statement ändern"
+                        "Thema anlegen"
 
+            div_ [class_ "button-group"] $ do
+                feasibilityButtons True idea caps
+
+                when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
+                    div_ [class_ "creator-statement-button"] $ do
+                        button_ [ class_ "button-group-item btn-cta m-valid"
+                                , onclick_ $ U.creatorStatement idea
+                                ] $ do
+                            i_ [class_ "icon-check"] nil
+                            if isNothing $ creatorStatementOfIdea idea
+                                then "Statement abgeben"
+                                else "Statement ändern"
+
+            -- creator statement
             mapM_
                 (div_ [class_ "creator-statement"] . view html)
                 (creatorStatementOfIdea idea)
@@ -370,36 +382,42 @@ instance ToHtml ViewIdea where
                         CommentWidget ctx caps c ^. html
 
 
-feasibilityVerdict :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
-feasibilityVerdict renderJuryButtons idea caps = div_ [id_ . U.anchor $ idea ^. _Id] $ do
-    let explToHtml :: forall m. Monad m => Document -> HtmlT m ()
-        explToHtml md = do
-            p_ "Begründung:"
-            p_ $ toHtml md
+feasibilityIndicator :: Monad m => Idea -> HtmlT m ()
+feasibilityIndicator idea = do
+    case _ideaJuryResult idea of
+        Nothing -> nil
+        Just (IdeaJuryResult _ (Feasible _)) -> do
+            li_ [class_ "icon-feasible"] $ span_ "durchführbar"
+        Just (IdeaJuryResult _ (NotFeasible _)) -> do
+            li_ [class_ "icon-not-feasible"] $ span_ "nicht durchführbar"
 
+feasibilityVerdict :: Monad m => Idea -> HtmlT m ()
+feasibilityVerdict idea =
+    case _ideaJuryResult idea of
+        Nothing                                        -> nil
+        Just (IdeaJuryResult _ (Feasible Nothing))     -> nil
+        Just (IdeaJuryResult _ (Feasible (Just expl))) -> explToHtml expl
+        Just (IdeaJuryResult _ (NotFeasible expl))     -> explToHtml expl
+  where
+    explToHtml :: forall m. Monad m => Document -> HtmlT m ()
+    explToHtml md = do
+        div_ [class_ "info-text"] $ do
+            "Begründung:"
+            toHtml md
+
+feasibilityButtons :: Monad m => Bool -> Idea -> [Capability] -> HtmlT m ()
+feasibilityButtons renderJuryButtons idea caps =
     when (renderJuryButtons && CanJudge `elem` caps) $ do
-        div_ [class_ "admin-buttons"] $ do
-            button_ [ class_ "btn-cta m-valid"
+            button_ [ class_ "button-group-item btn-cta m-valid"
                     , onclick_ $ U.judgeIdea idea IdeaFeasible
                     ] $ do
                 i_ [class_ "icon-check"] nil
                 "durchführbar"
-            button_ [ class_ "btn-cta m-invalid"
+            button_ [ class_ "button-group-item btn-cta m-invalid"
                     , onclick_ $ U.judgeIdea idea IdeaNotFeasible
                     ] $ do
                 i_ [class_ "icon-times"] nil
                 "nicht durchführbar"
-
-    case _ideaJuryResult idea of
-        Nothing -> nil
-        Just (IdeaJuryResult _ (Feasible maybeExpl)) -> do
-            div_ [class_ "icon-list m-display-only m-inline"] . ul_ $ do
-                li_ [class_ "icon-feasible"] $ span_ "durchführbar"
-                maybeExpl ^. _Just . to explToHtml
-        Just (IdeaJuryResult _ (NotFeasible expl)) -> do
-            div_ [class_ "info-text m-unrealised"] $ do
-                h3_ [class_ "info-text-header"] "nicht durchführbar"
-                explToHtml expl
 
 
 instance ToHtml ViewDeletedIdea where
