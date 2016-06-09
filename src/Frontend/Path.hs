@@ -27,7 +27,7 @@ module Frontend.Path
     , AllowedMethod(..)
     , Main
     , Space
-    , IdeaMode(..)
+    , IdeaMode
     , CommentMode
     , AdminMode(..)
     , UserMode(..)
