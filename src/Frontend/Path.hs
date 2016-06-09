@@ -26,7 +26,7 @@ module Frontend.Path
     , Top(..)
     , AllowedMethod(..)
     , Main
-    , Space(..)
+    , Space
     , IdeaMode(..)
     , CommentMode(..)
     , AdminMode(..)
@@ -75,6 +75,10 @@ module Frontend.Path
     , delegateVoteOnTopic
     , viewTopic
     , createTopic
+    , listTopics
+    , editTopic
+    , createTopicDelegation
+    , viewTopicDelegations
 
     -- * paths to comments
     , replyToComment
@@ -264,6 +268,21 @@ data Space (r :: AllowedMethod) =
 
 instance SOP.Generic (Space r)
 
+createTopic :: IdeaSpace -> Main 'AllowGetPost
+createTopic spc = Space spc CreateTopic
+
+listTopics :: IdeaSpace -> Main 'AllowGetPost
+listTopics spc = Space spc ListTopics
+
+editTopic :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+editTopic spc = Space spc . EditTopic
+
+createTopicDelegation :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+createTopicDelegation spc = Space spc . CreateTopicDelegation
+
+viewTopicDelegations :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+viewTopicDelegations spc = Space spc . ViewTopicDelegations
+
 spacePath :: Space r -> UriPath -> UriPath
 spacePath ListTopics                  root = root </> "topic"
 spacePath (ListIdeasInSpace mq)       root = renderFilter mq $ root </> "ideas"
@@ -287,9 +306,6 @@ delegateVoteOnTopic topic = Space (topic ^. topicIdeaSpace) (CreateTopicDelegati
 viewTopic :: Topic -> Main 'AllowGetPost
 viewTopic topic =
     listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) Nothing Nothing
-
-createTopic :: IdeaSpace -> Main 'AllowGetPost
-createTopic spc = Space spc CreateTopic
 
 
 -- ** IdeaMode

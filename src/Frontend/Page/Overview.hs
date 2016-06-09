@@ -161,7 +161,7 @@ instance ToHtml Tabs where
                 "Wilde Ideen " >> toHtml (spaceDesc space)
         li_ [class_ . ST.unwords $
              "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
-            a_ [href_ $ U.space space U.ListTopics] $ do
+            a_ [href_ $ U.listTopics space] $ do
                 "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc ispace = "der " <> uilabelST ispace

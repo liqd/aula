@@ -137,7 +137,7 @@ tabLink topic curTab targetTab =
     TabDelegation                          -> delegLnk "tab-delegations" "Beauftrage Stimmen"
   where
     ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
-    delegLnk = lnk (U.space (topic ^. topicIdeaSpace) . U.ViewTopicDelegations $ (topic ^. _Id))
+    delegLnk = lnk (U.viewTopicDelegations (topic ^. topicIdeaSpace) (topic ^. _Id))
 
     lnk url ident =
         a_ [ id_ ident
@@ -169,7 +169,7 @@ viewTopicHeaderDiv now ctx topic tab = do
 
     div_ [class_ $ "topic-header phase-" <> cs (show phase)] $ do
         header_ [class_ "detail-header"] $ do
-            a_ [class_ "btn m-back detail-header-back", href_ $ U.space space U.ListTopics] "Zu Allen Themen"
+            a_ [class_ "btn m-back detail-header-back", href_ $ U.listTopics space] "Zu Allen Themen"
             let canEditTopic          = CanEditTopic          `elem` caps
                 canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
@@ -180,7 +180,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                         -- FIXME: There is no EditTopic path defined.
                         when canEditTopic .
                             li_ [class_ "pop-menu-list-item"] $ do
-                                a_ [id_ "edit-topic",  href_ . U.space space $ U.EditTopic topicId] $ do
+                                a_ [id_ "edit-topic",  href_ $ U.editTopic space topicId] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "Thema bearbeiten"
                         when canPhaseForwardTopic .
@@ -215,7 +215,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                       "+ Neue Idee"
                 delegateVoteButton = when (CanDelegate `elem` caps) .
                     a_  [ class_ "btn-cta heroic-cta"
-                        , href_ . U.space space $ U.CreateTopicDelegation topicId
+                        , href_ $ U.createTopicDelegation space topicId
                         ] $ do
                       i_ [class_ "icon-bullhorn"] nil
                       "Stimme beauftragen"
@@ -318,7 +318,7 @@ instance FormPage EditTopic where
     -- the ideas to be added to the topic.
     type FormPagePayload EditTopic = EditTopicData
 
-    formAction (EditTopic _ space topic _ _) = U.space space $ U.EditTopic (topic ^. _Id)
+    formAction (EditTopic _ space topic _ _) = U.editTopic space (topic ^. _Id)
     redirectOf et _ = U.listIdeasInTopic (et ^. etTopic) ListIdeasInTopicTabAll Nothing
 
     makeForm (EditTopic _ctx _space topic ideas preselected) =
