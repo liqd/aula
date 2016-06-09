@@ -27,6 +27,7 @@ import Persistent.Api
     )
 import Persistent (findUser, findIdeasByUserId, getIdeaStats)
 
+import qualified Data.Set as Set
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -229,9 +230,9 @@ createdIdeas userId = do
             case idea ^. ideaLocation . ideaLocationSpace of
                 SchoolSpace  -> True
                 ClassSpace c ->
-                    case ctx ^? capCtxUser . userRole . roleSchoolClass of
-                        Nothing -> True -- the role is not tied to a class
-                        Just c' -> c == c'
+                    case ctx ^. capCtxUser . userRoleScope of
+                        SchoolScope      -> True
+                        ClassesScope cls -> c `Set.member` cls
     equery (do
         user  <- makeUserView <$> (maybe404 =<< findUser userId)
         ideas <- ListItemIdeas ctx IdeaInUserProfile

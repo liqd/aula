@@ -10,7 +10,7 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens (Getter, (^.), (^..), (^?), (.~), (&), each, set, re, pre, _Just, elemOf, Fold)
+import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold)
 import Control.Monad (zipWithM_, replicateM, replicateM_, (>=>))
 import Data.List (nub)
 import Data.String.Conversions ((<>), cs)

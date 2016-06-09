@@ -1333,6 +1333,9 @@ roleScope = to $ \r ->
 rolesScope :: Fold (Set Role) RoleScope
 rolesScope = folded . roleScope
 
+userRoleScope :: Fold User RoleScope
+userRoleScope = userRoles . roleScope
+
 onActiveUser :: a -> (User -> a) -> User -> a
 onActiveUser x f u
     | isActiveUser u = f u
