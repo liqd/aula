@@ -485,7 +485,7 @@ instance ArbFormPagePayload AdminEditUser where
     arbFormPagePayload (AdminEditUser _) = els logins
       where
         els    = Test.QuickCheck.elements
-        logins = Nothing : (Just . UserLogin . ("frsh!!" <>) . cs . show <$> [(0 :: Int)..8])
+        logins = Nothing : (Just . UserLogin . ("frsh" <>) . fromString . pure <$> ['A' .. 'Z'])
 
 instance PayloadToEnv (Maybe UserLogin) where
     payloadToEnvMapping _ _ mlogin = \case

@@ -599,7 +599,7 @@ instance FormPage AdminEditUser where
     makeForm (AdminEditUser user) = "login" .: validateUserLogin
       where
         validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
-        validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
+        validateUserLogin = DF.validateM go . validate "Login" usernameV' $ dfTextField user userLogin _UserLogin
 
         go :: forall m. ActionM m => UserLogin -> m (DF.Result (Html ()) (Maybe UserLogin))
         go "" = pure $ DF.Error "login darf nicht leer sein"
