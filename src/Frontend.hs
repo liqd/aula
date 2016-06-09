@@ -354,6 +354,8 @@ type AulaAdmin =
   :<|> User ::> "reset-pwd" :> FormHandler PageAdminResetPassword
   :<|> "classes" :> ClassesFilterApi :> GetH (Frame AdminViewClasses)
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
+  :<|> User ::> "role" :> "add" :> FormHandler AdminAddRole
+  :<|> User ::> Role ::> "delete" :> PostH
   :<|> User ::> "edit" :> FormHandler AdminEditUser
   :<|> SchoolClass ::> "edit" :> GetH (Frame AdminEditClass)
   :<|> User ::> "delete" :> FormHandler AdminDeleteUser
@@ -376,6 +378,8 @@ aulaAdmin =
   :<|> form . Page.adminResetPassword
   :<|> runHandler . Page.adminViewClasses
   :<|> form Page.adminCreateClass
+  :<|> form . Page.adminAddRole
+  :<|> Page.adminRemRole
   :<|> form . Page.adminEditUser
   :<|> runHandler . Page.adminEditClass
   :<|> form . Page.adminDeleteUser

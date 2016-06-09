@@ -91,7 +91,9 @@ module Persistent.Pure
     , setUserProfileDesc
     , setUserEmail
     , setUserPass
-    , setUserLoginAndRoles
+    , setUserLogin
+    , addUserRole
+    , remUserRole
     , setUserAvatar
     , resetUserPass
     , getTopics
@@ -483,17 +485,18 @@ setUserPass :: AUID User -> EncryptedPassword -> AUpdate ()
 setUserPass uid pass =
     withUser uid . userSettings . userSettingsPassword .= UserPassEncrypted pass
 
-setUserLoginAndRoles :: AUID User -> Maybe UserLogin -> Set Role -> AUpdate ()
-setUserLoginAndRoles uid mlogin roles = do
+setUserLogin :: AUID User -> UserLogin -> AUpdate ()
+setUserLogin uid login = do
+    checkLoginIsAvailable login
     user <- maybe404 =<< liftAQuery (findUser uid)
-    case mlogin of
-        Nothing -> do
-            withUser uid %= (userRoleSet .~ roles)
-        Just login -> do
-            checkLoginIsAvailable login
-            aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
-            withUser uid %= (userLogin .~ login)
-                          . (userRoleSet .~ roles)
+    aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
+    withUser uid . userLogin .= login
+
+addUserRole :: AUID User -> Role -> AUpdate ()
+addUserRole uid role = withUser uid . userRoleSet %= Set.insert role
+
+remUserRole :: AUID User -> Role -> AUpdate ()
+remUserRole uid role = withUser uid . userRoleSet %= Set.delete role
 
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid url = withUser uid . userAvatar ?= url

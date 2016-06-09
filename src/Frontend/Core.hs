@@ -110,6 +110,7 @@ type instance Singular Topic              = "topic"
 type instance Singular UpDown             = "vote"
 type instance Singular User               = "user"
 type instance Singular IdeaJuryResultType = "jury"
+type instance Singular Role               = "role"
 
 type instance CaptureData Comment            = AUID Comment
 type instance CaptureData Idea               = AUID Idea
@@ -121,6 +122,7 @@ type instance CaptureData Topic              = AUID Topic
 type instance CaptureData UpDown             = UpDown
 type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
+type instance CaptureData Role               = Role
 
 -- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
 -- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The

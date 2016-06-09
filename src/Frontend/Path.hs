@@ -74,6 +74,8 @@ module Frontend.Path
     -- * paths to admin pages, user profile, user setting
     , adminViewUsers
     , adminViewClasses
+    , adminAddRole
+    , adminRemRole
     , adminResetPassword
     , viewUserProfile
     , viewUserIdProfile
@@ -103,7 +105,7 @@ import Data.UriPath
 import Frontend.Filter
 import Types
     ( nil
-    , AUID(AUID), _Id, _Key
+    , AUID(AUID), _Id, _Key, Role
     , IdeaLocation(..), IdeaSpace, SchoolClass
     , ideaLocation, ideaLocationSpace, ideaLocationTopicId
     , Topic, User, Idea, topicIdeaSpace
@@ -329,6 +331,8 @@ data AdminMode (r :: AllowedMethod) =
   | AdminQuorum
   | AdminFreeze
   | AdminCreateUser
+  | AdminAddRole (AUID User)
+  | AdminRemRole (AUID User) Role
   | AdminEditUser (AUID User)
   | AdminDeleteUser (AUID User)
   | AdminViewUsers (Maybe UsersQuery)
@@ -352,6 +356,8 @@ admin AdminQuorum           path = path </> "quorum"
 admin AdminFreeze           path = path </> "freeze"
 admin (AdminViewUsers mq)   path = renderFilter mq $ path </> "users"
 admin AdminCreateUser       path = path </> "user" </> "create"
+admin (AdminAddRole uid)    path = path </> "user" </> uriPart uid </> "role" </> "add"
+admin (AdminRemRole uid r)  path = path </> "user" </> uriPart uid </> "role" </> uriPart r </> "delete"
 admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
 admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
 admin (AdminViewClasses mq) path = renderFilter mq $ path </> "classes"
@@ -512,6 +518,12 @@ adminViewUsers = AdminViewUsers Nothing
 
 adminViewClasses :: AdminMode 'AllowGetPost
 adminViewClasses = AdminViewClasses Nothing
+
+adminAddRole :: User -> AdminMode 'AllowGetPost
+adminAddRole u = AdminAddRole (u ^. _Id)
+
+adminRemRole :: User -> Role -> AdminMode 'AllowPost
+adminRemRole u = AdminRemRole (u ^. _Id)
 
 adminResetPassword :: User -> AdminMode 'AllowGetPost
 adminResetPassword u = AdminResetPassword (u ^. _Id)

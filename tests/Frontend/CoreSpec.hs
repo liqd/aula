@@ -76,7 +76,8 @@ spec = do
         , formTest (arb :: Gen PageAdminSettingsQuorum)
         , formTest (arb :: Gen PageAdminSettingsFreeze)
         , formTest (arb :: Gen PageAdminSettingsEventsProtocol)
-        , formTest (AdminEditUser <$> arb <*> pure schoolClasses)
+        , formTest (AdminAddRole <$> arb <*> pure schoolClasses)
+        , formTest (arb :: Gen AdminEditUser)
         , formTest (arb :: Gen AdminDeleteUser)
 --        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , formTest (arb :: Gen AdminCreateClass)
@@ -247,8 +248,7 @@ instance PayloadToEnv Freeze where
 instance PayloadToEnv Role where
     payloadToEnvMapping _ v r = \case
         "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
-        -- FIXME: Selection does not work for composite types like school class.
-        "class" -> pure [TextInput $ selectValue "class" v classes (r ^?! roleSchoolClass)]
+        "class" -> pure $ TextInput . selectValue "class" v classes <$> r ^.. roleSchoolClass
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
@@ -475,21 +475,21 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <*> pure (view (ideaStatsIdea . _Id) <$> ideas)
         <**> (set editTopicDesc <$> arb)
 
+instance ArbFormPagePayload AdminAddRole where
+    arbFormPagePayload (AdminAddRole _ classes) = els roles
+      where
+        els    = Test.QuickCheck.elements
+        roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
+
 instance ArbFormPagePayload AdminEditUser where
-    arbFormPagePayload (AdminEditUser _ classes) =
-        AdminEditUserPayload <$> els logins <*> (Set.singleton <$> els roles)
+    arbFormPagePayload (AdminEditUser _) = els logins
       where
         els    = Test.QuickCheck.elements
         logins = Nothing : (Just . UserLogin . ("frsh!!" <>) . cs . show <$> [(0 :: Int)..8])
-        roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
 
-instance PayloadToEnv AdminEditUserPayload where
-    payloadToEnvMapping _ v (AdminEditUserPayload mlogin roles) = \case
+instance PayloadToEnv (Maybe UserLogin) where
+    payloadToEnvMapping _ _ mlogin = \case
         "login" -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
-        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (roles ^?! folded . roleSelection)] -- TODO: supports only one role
-        "class" -> pure $ TextInput . selectValue "class" v classValues <$> maybeToList (roles ^? folded . roleSchoolClass) -- TODO: supports only one role
-      where
-        classValues = (id &&& cs . view className) <$> schoolClasses
 
 instance ArbFormPagePayload AdminPhaseChange
 

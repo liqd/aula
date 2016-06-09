@@ -308,9 +308,13 @@ instance Arbitrary AdminViewUsers where
     arbitrary = AdminViewUsers <$> arb <*> arb
     shrink (AdminViewUsers x y) = AdminViewUsers <$> shr x <*> shr y
 
+instance Arbitrary AdminAddRole where
+    arbitrary = AdminAddRole <$> arb <*> arb
+    shrink (AdminAddRole x y) = AdminAddRole <$> shr x <*> shr y
+
 instance Arbitrary AdminEditUser where
-    arbitrary = AdminEditUser <$> arb <*> arb
-    shrink (AdminEditUser x y) = AdminEditUser <$> shr x <*> shr y
+    arbitrary = AdminEditUser <$> arb
+    shrink (AdminEditUser x) = AdminEditUser <$> shr x
 
 instance Arbitrary AdminDeleteUser where
     arbitrary = AdminDeleteUser <$> arb
@@ -732,10 +736,6 @@ instance Arbitrary BatchCreateUsersFormData where
 
 instance Arbitrary AdminDeleteUserPayload where
     arbitrary = pure AdminDeleteUserPayload
-
-instance Arbitrary AdminEditUserPayload where
-    arbitrary = AdminEditUserPayload <$> arb <*> arb
-    shrink (AdminEditUserPayload x y) = AdminEditUserPayload <$> shr x <*> shr y
 
 -- * aula-specific helpers
 
