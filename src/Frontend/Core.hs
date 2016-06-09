@@ -545,7 +545,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                                 "Einstellungen"
                             when (isAdmin usr) .
                                 li_ [class_ "pop-menu-list-item"]
-                                    . a_ [href_ $ P.admin P.AdminDuration] $ do
+                                    . a_ [href_ $ P.adminDuration] $ do
                                     i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                     "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"]

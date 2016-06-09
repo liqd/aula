@@ -29,7 +29,7 @@ module Frontend.Path
     , Space
     , IdeaMode
     , CommentMode
-    , AdminMode(..)
+    , AdminMode
     , UserMode
 
     -- * top level paths
@@ -91,6 +91,7 @@ module Frontend.Path
 
     -- * paths to admin pages, user profile, user setting
     , adminViewUsers
+    , adminViewUsers'
     , adminViewClasses
     , adminAddRole
     , adminRemRole
@@ -108,6 +109,22 @@ module Frontend.Path
     , userClassDelegations
     , userIdeas
 --    , userDelegations
+
+    -- * admin paths
+    , adminDuration
+    , adminEditUser
+    , adminChangePhase
+    , adminCreateClass
+    , adminDlEvents
+    , adminQuorum
+    , adminFreeze
+    , adminEvent
+    , adminCreateUser
+    , adminEditClass
+    , adminDeleteUser
+    , adminDlPass
+    , adminTopicNextPhase
+    , adminTopicVotingPrevPhase
 
     -- * aux predicates
     , isPostOnly
@@ -439,6 +456,48 @@ data AdminMode (r :: AllowedMethod) =
 
 instance SOP.Generic (AdminMode r)
 
+adminTopicNextPhase :: AUID Topic -> Main 'AllowPost
+adminTopicNextPhase = Admin . AdminTopicNextPhase
+
+adminTopicVotingPrevPhase :: AUID Topic -> Main 'AllowPost
+adminTopicVotingPrevPhase = Admin . AdminTopicVotingPrevPhase
+
+adminEditClass :: SchoolClass -> Main 'AllowGetPost
+adminEditClass = Admin . AdminEditClass
+
+adminDeleteUser :: User -> Main 'AllowGetPost
+adminDeleteUser = Admin . AdminDeleteUser . view _Id
+
+adminDlPass :: SchoolClass -> Main 'AllowGetPost
+adminDlPass = Admin . AdminDlPass
+
+adminDuration :: Main 'AllowGetPost
+adminDuration = Admin AdminDuration
+
+adminEditUser :: User -> Main 'AllowGetPost
+adminEditUser = Admin . AdminEditUser . view _Id
+
+adminChangePhase :: Main 'AllowGetPost
+adminChangePhase = Admin AdminChangePhase
+
+adminCreateClass :: Main 'AllowGetPost
+adminCreateClass = Admin AdminCreateClass
+
+adminDlEvents :: Maybe IdeaSpace -> Main 'AllowGetPost
+adminDlEvents = Admin . AdminDlEvents
+
+adminQuorum :: Main 'AllowGetPost
+adminQuorum = Admin AdminQuorum
+
+adminFreeze :: Main 'AllowGetPost
+adminFreeze = Admin AdminFreeze
+
+adminEvent :: Main 'AllowGetPost
+adminEvent = Admin AdminEvent
+
+adminCreateUser :: Main 'AllowGetPost
+adminCreateUser = Admin AdminCreateUser
+
 adminMode :: AdminMode r -> UriPath -> UriPath
 adminMode AdminDuration         path = path </> "duration"
 adminMode AdminQuorum           path = path </> "quorum"
@@ -615,6 +674,9 @@ editReply comment = onComment comment EditReply
 
 adminViewUsers :: AdminMode 'AllowGetPost
 adminViewUsers = AdminViewUsers Nothing
+
+adminViewUsers' :: Maybe UsersQuery -> AdminMode 'AllowGetPost
+adminViewUsers' = AdminViewUsers
 
 adminViewClasses :: AdminMode 'AllowGetPost
 adminViewClasses = AdminViewClasses Nothing

@@ -189,7 +189,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                                     i_ [class_ "icon-step-forward"] nil
                                     postLink_
                                         [class_ "btn-plain", jsReloadOnClick]
-                                        (U.admin $ U.AdminTopicNextPhase topicId)
+                                        (U.adminTopicNextPhase topicId)
                                         "Nächste Phase"
                         when canPhaseBackwardTopic .
                             li_ [class_ "pop-menu-list-item m-form"] .
@@ -197,7 +197,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                                     i_ [class_ "icon-step-backward"] nil
                                     postLink_
                                         [class_ "btn-plain", jsReloadOnClick]
-                                        (U.admin $ U.AdminTopicVotingPrevPhase topicId)
+                                        (U.adminTopicVotingPrevPhase topicId)
                                         "Vorherige Phase"
 
         h1_ [class_ "main-heading"] $ do

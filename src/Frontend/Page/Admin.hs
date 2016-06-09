@@ -244,14 +244,14 @@ adminFrame t bdy = do
   where
     tab = toMenuItem [t]
 
-data MenuLink = MenuLink ST (U.AdminMode 'U.AllowGetPost) ST
+data MenuLink = MenuLink ST (U.Main 'U.AllowGetPost) ST
   deriving (Show)
 
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
 menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of
-    MenuLink ident uri body ->
+    MenuLink ident path body ->
         a_ [ id_ ident
-           , href_ $ U.admin uri
+           , href_ path
            , class_ $ tabSelected curMenuItem targetMenuItem
            ]
           $ toHtml body
@@ -260,27 +260,27 @@ menulink' :: MenuItem -> MenuLink
 menulink' targetMenuItem =
   case targetMenuItem of
     MenuItemDurations
-        -> MenuLink "tab-duration" U.AdminDuration "Dauer der Phasen"
+        -> MenuLink "tab-duration" U.adminDuration "Dauer der Phasen"
     MenuItemQuorum
-        -> MenuLink "tab-qourum" U.AdminQuorum "Quorum"
+        -> MenuLink "tab-qourum" U.adminQuorum "Quorum"
     MenuItemFreeze
-        -> MenuLink "tab-freeze" U.AdminFreeze "Ferienmodus"
+        -> MenuLink "tab-freeze" U.adminFreeze "Ferienmodus"
     MenuItemUsers
-        -> MenuLink "tab-groups-perms-user"  U.adminViewUsers "Nutzer"
+        -> MenuLink "tab-groups-perms-user"  (U.admin U.adminViewUsers) "Nutzer"
     MenuItemClasses
-        -> MenuLink "tab-groups-perms-class" U.adminViewClasses "Klasse"
+        -> MenuLink "tab-groups-perms-class" (U.admin U.adminViewClasses) "Klasse"
     MenuItemClassesAndUsers
-        -> MenuLink "tab-groups-perms"       U.adminViewUsers "Gruppen & Nutzer"
+        -> MenuLink "tab-groups-perms"       (U.admin U.adminViewUsers) "Gruppen & Nutzer"
     MenuItemEventsProtocol
-        -> MenuLink "tab-events"             U.AdminEvent "Protokolle"
+        -> MenuLink "tab-events"             U.adminEvent "Protokolle"
     MenuItemPhaseChange
-        -> MenuLink "tab-phase-change" U.AdminChangePhase "Phasen verschieben"
+        -> MenuLink "tab-phase-change" U.adminChangePhase "Phasen verschieben"
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
 
-    formAction _ = U.admin U.AdminDuration
-    redirectOf _ _ = U.admin U.AdminDuration
+    formAction _ = U.adminDuration
+    redirectOf _ _ = U.adminDuration
 
     makeForm (PageAdminSettingsDurations dur) =
         Durations <$> ("elab-duration" .: period (pNam PhaseRefinement) elaborationPhase)
@@ -316,8 +316,8 @@ adminDurations =
 instance FormPage PageAdminSettingsQuorum where
     type FormPagePayload PageAdminSettingsQuorum = Quorums
 
-    formAction _   = U.admin U.AdminQuorum
-    redirectOf _ _ = U.admin U.AdminQuorum
+    formAction _   = U.adminQuorum
+    redirectOf _ _ = U.adminQuorum
 
     makeForm (PageAdminSettingsQuorum q) =
         Quorums
@@ -353,8 +353,8 @@ adminQuorum =
 instance FormPage PageAdminSettingsFreeze where
     type FormPagePayload PageAdminSettingsFreeze = Freeze
 
-    formAction _   = U.admin U.AdminFreeze
-    redirectOf _ _ = U.admin U.AdminFreeze
+    formAction _   = U.adminFreeze
+    redirectOf _ _ = U.adminFreeze
 
     makeForm (PageAdminSettingsFreeze current) =
         "freeze" .: DF.choice ((id &&& showOption) <$> [minBound..]) (Just current)
@@ -400,7 +400,7 @@ instance ToHtml AdminViewUsers where
                 ul_ [class_ "pop-menu-list"] $ do
                     sequence_
                         [ li_ [class_ "pop-menu-list-item"] $
-                            a_ [href_ . U.admin . U.AdminViewUsers . Just $
+                            a_ [href_ . U.admin . U.adminViewUsers' . Just $
                                     filters & usersQueryS .~ by]
                                 (uilabel by)
                         | by <- [minBound..] ]
@@ -410,7 +410,7 @@ instance ToHtml AdminViewUsers where
                     th_ "Name"
                     th_ "Klasse"
                     th_ "Rolle"
-                    th_ $ button_ [class_ "btn-cta", onclick_ $ U.admin U.AdminCreateUser] "Nutzer anlegen"
+                    th_ $ button_ [class_ "btn-cta", onclick_ $ U.adminCreateUser] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             -- The AllUsers here makes sure there is no 'search' query parameter
@@ -418,7 +418,7 @@ instance ToHtml AdminViewUsers where
                             let filters' = filters & usersQueryF .~ AllUsers
                                 placehld = fromMaybe "Nutzersuche" (filters ^? usersQueryF . searchUsers . unSearchUsers)
                             formMethod_ "GET" [class_ "form"]
-                                        (U.admin . U.AdminViewUsers $ Just filters') $ do
+                                        (U.admin . U.adminViewUsers' $ Just filters') $ do
                                 input_ [name_ "search", type_ "text", class_ "inline-search-input",
                                         placeholder_ placehld]
                                 button_ [type_ "submit", class_ "inline-search-button"] $ i_ [class_ "icon-search"] nil
@@ -439,7 +439,7 @@ instance ToHtml AdminViewUsers where
                     renderUserRow (ActiveUser user) = tr_ $ do
                         td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                         renderUserInfoRow user
-                        td_ $ a_ [href_ . U.admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
+                        td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
 
                 tbody_ $ case users of
                     []  -> tr_ $ td_ [class_ "container-not-found"] "(Keine Einträge.)"
@@ -448,7 +448,7 @@ instance ToHtml AdminViewUsers where
 instance FormPage AdminCreateUser where
     type FormPagePayload AdminCreateUser = CreateUserPayload
 
-    formAction _   = U.admin U.AdminCreateUser
+    formAction _   = U.adminCreateUser
     redirectOf _ _ = U.admin U.adminViewUsers
 
     -- FIXME: Show the user's role and class as default in the selections.
@@ -496,7 +496,7 @@ instance ToHtml AdminViewClasses where
                     th_ "Klasse"
                     th_ $ button_
                             [ class_ "btn-cta"
-                            , onclick_ $ U.admin U.AdminCreateClass
+                            , onclick_ $ U.adminCreateClass
                             ]
                             "Klasse anlegen"
                     th_ $ do
@@ -512,7 +512,7 @@ instance ToHtml AdminViewClasses where
                     _:_ -> forM_ classes $ \clss -> tr_ $ do
                         td_ $ clss ^. className . html
                         td_ $ toHtmlRaw nbsp
-                        td_ $ a_ [href_ . U.admin $ U.AdminEditClass clss] "bearbeiten"
+                        td_ $ a_ [href_ $ U.adminEditClass clss] "bearbeiten"
 
 -- | FIXME: re-visit application logic.  we should really be able to change everybody into every
 -- role, and the class field should be hidden / displayed as appropriate.  see issue #197.
@@ -566,7 +566,7 @@ instance FormPage AdminAddRole where
     type FormPagePayload AdminAddRole = Role
 
     formAction (AdminAddRole user _classes)   = U.admin $ U.adminAddRole user
-    redirectOf (AdminAddRole user _classes) _ = U.admin . U.AdminEditUser $ user ^. _Id
+    redirectOf (AdminAddRole user _classes) _ = U.adminEditUser user
 
     makeForm (AdminAddRole _user classes) = roleForm Nothing Nothing classes
 
@@ -595,7 +595,7 @@ instance FormPage AdminEditUser where
     -- validator if it has not changed.)
     type FormPagePayload AdminEditUser = Maybe UserLogin
 
-    formAction (AdminEditUser user) = U.admin . U.AdminEditUser $ user ^. _Id
+    formAction (AdminEditUser user) = U.adminEditUser user
     redirectOf _ _ = U.admin U.adminViewUsers
 
     makeForm (AdminEditUser user) = "login" .: validateUserLogin
@@ -636,7 +636,7 @@ instance FormPage AdminEditUser where
                     br_ []
                     a_ [href_ . U.admin $ U.adminResetPassword user, class_ "btn-cta"] "Passwort zurücksetzen"
                     br_ []
-                    a_ [href_ . U.admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
+                    a_ [href_ $ U.adminDeleteUser user, class_ "btn-cta"] "Nutzer löschen"
                     br_ []
                     DF.inputSubmit "Änderungen speichern"
 
@@ -645,7 +645,7 @@ instance ToHtml AdminEditClass where
     toHtmlRaw p@(AdminEditClass schoolClss users) =
         adminFrame p . semanticDiv p $ do
             div_ . h1_ [class_ "admin-main-heading"] $ schoolClss ^. className . html
-            div_ $ a_ [class_ "admin-buttons", href_ . U.admin . U.AdminDlPass $ schoolClss]
+            div_ $ a_ [class_ "admin-buttons", href_ . U.adminDlPass $ schoolClss]
                 "Passwort-Liste"
             table_ [class_ "admin-table"] $ do
                 thead_ . tr_ $ do
@@ -655,7 +655,7 @@ instance ToHtml AdminEditClass where
                 tbody_ . forM_ (activeUsers users) $ \user -> tr_ $ do
                     td_ . span_ [class_ "img-container"] $ avatarImgFromMaybeURL (user ^. userAvatar)
                     td_ $ user ^. userLogin . unUserLogin . html
-                    td_ $ a_ [href_ . U.admin . U.AdminEditUser $ user ^. _Id] "bearbeiten"
+                    td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
 
 
 adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m AdminViewUsers
@@ -723,7 +723,7 @@ data AdminDeleteUserPayload = AdminDeleteUserPayload
 instance FormPage AdminDeleteUser where
     type FormPagePayload AdminDeleteUser = AdminDeleteUserPayload
 
-    formAction (AdminDeleteUser user) = U.admin $ U.AdminDeleteUser (user ^. _Id)
+    formAction (AdminDeleteUser user) = U.adminDeleteUser user
     redirectOf _ _ = U.admin U.adminViewUsers
 
     makeForm _ = pure AdminDeleteUserPayload
@@ -734,7 +734,7 @@ instance FormPage AdminDeleteUser where
             p_ $ "Wollen Sie " >> toHtml (dangerousUserLongName user) >> " wirklich loschen?"
             div_ [class_ "admin-buttons"] $ do
                 DF.inputSubmit "Nutzer löschen"
-                a_ [href_ . U.admin $ U.AdminEditUser (user ^. _Id), class_ "btn-cta"] "Zurück"
+                a_ [href_ $ U.adminEditUser user, class_ "btn-cta"] "Zurück"
 
 adminDeleteUser :: ActionM m => AUID User -> FormPageHandler m AdminDeleteUser
 adminDeleteUser uid =
@@ -753,8 +753,8 @@ instance FormPage PageAdminSettingsEventsProtocol where
     type FormPagePayload PageAdminSettingsEventsProtocol = EventsProtocolFilter
     type FormPageResult PageAdminSettingsEventsProtocol = EventsProtocolFilter
 
-    formAction (PageAdminSettingsEventsProtocol _) = U.admin U.AdminEvent
-    redirectOf _ (EventsProtocolFilter mspace)     = U.admin (U.AdminDlEvents mspace)
+    formAction (PageAdminSettingsEventsProtocol _) = U.adminEvent
+    redirectOf _ (EventsProtocolFilter mspace)     = U.adminDlEvents mspace
 
     makeForm (PageAdminSettingsEventsProtocol spaces) = EventsProtocolFilter <$> ("space" .: DF.choice vs Nothing)
       where
@@ -790,7 +790,7 @@ instance SOP.Generic BatchCreateUsersFormData
 instance FormPage AdminCreateClass where
     type FormPagePayload AdminCreateClass = BatchCreateUsersFormData
 
-    formAction _   = U.admin U.AdminCreateClass
+    formAction _   = U.adminCreateClass
     redirectOf _ _ = U.admin U.adminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
@@ -864,8 +864,8 @@ data AdminPhaseChangeForTopicData = AdminPhaseChangeForTopicData (AUID Topic) Ph
 instance FormPage AdminPhaseChange where
     type FormPagePayload AdminPhaseChange = AdminPhaseChangeForTopicData
 
-    formAction _   = U.admin U.AdminChangePhase
-    redirectOf _ _ = U.admin U.AdminChangePhase
+    formAction _   = U.adminChangePhase
+    redirectOf _ _ = U.adminChangePhase
 
     -- | Generates a Html view from the given page
     makeForm _ =
@@ -899,7 +899,7 @@ instance FormPage PageAdminResetPassword where
     type FormPagePayload PageAdminResetPassword = InitialPassword
 
     formAction (PageAdminResetPassword u _p) = U.admin $ U.adminResetPassword u
-    redirectOf (PageAdminResetPassword u _p) _ = U.admin . U.AdminEditUser $ u ^. _Id
+    redirectOf (PageAdminResetPassword u _p) _ = U.adminEditUser u
 
     makeForm (PageAdminResetPassword _u p) =
         InitialPassword <$> ("new-pwd" .: DF.text (p ^. unInitialPassword . to Just))
