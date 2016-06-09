@@ -29,6 +29,10 @@ instance IsString UriPart where
         | '/' `elem` s = error $ "UriPart.fromString: unexpected literal '/' in URI part: " <> s
         | otherwise    = SlashFreeUriPart . cs $ s
 
+instance Monoid UriPart where
+    mempty = SlashFreeUriPart ""
+    SlashFreeUriPart p `mappend` SlashFreeUriPart q = SlashFreeUriPart (p <> q)
+
 instance ConvertibleStrings UriPart ST where
     convertString = unUriPart
 
