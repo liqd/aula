@@ -30,7 +30,8 @@ import Action
 import Action.Implementation
 import Arbitrary
     ( arb, arbPhrase, forAllShrinkDef, schoolClasses
-    , constantSampleTimestamp, unsafeMarkdown, someOf
+    , constantSampleTimestamp, unsafeMarkdown
+    , arbValidUserLogin, arbValidUserPass, arbMaybe
     )
 import Frontend.Core
 import Frontend.Fragment.Comment
@@ -449,13 +450,8 @@ instance ArbFormPagePayload PageAdminSettingsDurations where
 instance ArbFormPagePayload PageUserSettings
 
 instance ArbFormPagePayload PageHomeWithLoginPrompt where
-    arbFormPagePayload _ = arb <**> (set userLogin <$> validUserLogin)
-                               <**> (set userPassword <$> validUserPass)
-      where
-        validUserLogin =
-            UserLogin . cs <$>
-            (choose (4,12) >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z']))
-        validUserPass = UserPassInitial . InitialPassword . cs <$> someOf 4 12 (arb :: Gen Char)
+    arbFormPagePayload _ = arb <**> (set userLogin <$> arbValidUserLogin)
+                               <**> (set userPassword <$> arbValidUserPass)
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic _ctx space ideas _timestamp) =
@@ -482,10 +478,7 @@ instance ArbFormPagePayload AdminAddRole where
         roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
 
 instance ArbFormPagePayload AdminEditUser where
-    arbFormPagePayload (AdminEditUser _) = els logins
-      where
-        els    = Test.QuickCheck.elements
-        logins = Nothing : (Just . UserLogin . ("frsh" <>) . fromString . pure <$> ['A' .. 'Z'])
+    arbFormPagePayload (AdminEditUser _) = arbMaybe arbValidUserLogin
 
 instance PayloadToEnv (Maybe UserLogin) where
     payloadToEnvMapping _ _ mlogin = \case

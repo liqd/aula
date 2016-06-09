@@ -52,8 +52,12 @@ module Arbitrary
     , arbWord
     , arbPhrase
     , arbPhraseOf
+    , arbValidUserLogin
+    , arbValidInitialPassword
+    , arbValidUserPass
     , unsafeMarkdown
     , arbMarkdown
+    , arbMaybe
     , someOf
     , arbName
     , schoolClasses
@@ -88,7 +92,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
     ( Arbitrary(..), Gen, Property, Testable
     , elements, oneof, vectorOf, frequency, scale, generate, arbitrary, listOf, suchThat
-    , forAllShrink
+    , forAllShrink, choose
     )
 import Test.QuickCheck.Modifiers
 import Test.QuickCheck.Instances ()
@@ -615,9 +619,20 @@ instance Arbitrary ProtoUser where
     arbitrary = garbitrary
     shrink    = gshrink
 
+arbValidUserLogin :: Gen UserLogin
+arbValidUserLogin =
+    UserLogin . cs <$> (choose (4,12) >>= flip replicateM (elements ['a' .. 'z']))
+
+arbValidInitialPassword :: Gen InitialPassword
+arbValidInitialPassword = InitialPassword . cs <$> someOf 4 12 (arb :: Gen Char)
+
+arbValidUserPass :: Gen UserPass
+arbValidUserPass = UserPassInitial <$> arbValidInitialPassword
+
 instance Arbitrary UserLogin where
-    arbitrary = UserLogin <$> arbWord
-    shrink (UserLogin x) = UserLogin <$> shr x
+    arbitrary = arbValidUserLogin
+    -- ^ FIXME: one might want to generate noise here instead of valid username,
+    -- however to to that we need to cover the cases where we expect valid usernames.
 
 instance Arbitrary UserFirstName where
     arbitrary = UserFirstName <$> arbWord
