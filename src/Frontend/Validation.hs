@@ -197,9 +197,15 @@ dfTextField s l p = s ^. l & p %%~ DF.text . Just
 type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
                                          => FieldValidator r s
 
+-- See `usernameV`
 usernameV' :: FieldValidator' UserLogin
 usernameV' = dimap (view _UserLogin) UserLogin usernameV
 
+-- WARNING: we also apply the validation rules on the login page.
+-- As long as we do not change the validation rules this is not a problem.
+-- One reason one might want to validate logins everywhere is to avoid potential
+-- security issues such as https://labs.spotify.com/2013/06/18/creative-usernames/
+-- The issue above does not apply here for various reasons but still we can be cautious.
 usernameV :: StringFieldValidator
 usernameV = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
 
