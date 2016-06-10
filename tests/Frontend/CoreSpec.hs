@@ -482,7 +482,7 @@ instance ArbFormPagePayload AdminEditUser where
 
 instance PayloadToEnv (Maybe UserLogin) where
     payloadToEnvMapping _ _ mlogin = \case
-        "login" -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
+        "login" -> pure $ mlogin ^.. _Just . _UserLogin . to TextInput
 
 instance ArbFormPagePayload AdminPhaseChange
 
