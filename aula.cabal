@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.14.0
+version:        0.15.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -348,6 +348,7 @@ test-suite spec
       AulaTests.StoriesSpec
       BackendSpec
       Data.MarkdownSpec
+      DelegationSpec
       Frontend.CoreSpec
       Frontend.Page.AdminSpec
       Frontend.Page.FileUploadSpec
