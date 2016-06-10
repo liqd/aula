@@ -46,14 +46,16 @@ module Access
 
       -- * misc
     , isOwnProfile
-    , isSameSchoolClass
-    , isSameSchoolClass'
+    , haveCommonSchoolClass
+    , commonSchoolClasses
     )
     where
 
 import Control.Lens
 import Data.Maybe
 import Data.Monoid
+import Data.Set (Set)
+import Data.Set.Lens (setOf)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 
@@ -405,14 +407,13 @@ authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
 isOwnProfile :: CapCtx -> User -> Bool
 isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
 
-isSameSchoolClass :: CapCtx -> User -> Bool
-isSameSchoolClass ctx = isJust . isSameSchoolClass' (ctx ^. capCtxUser)
+haveCommonSchoolClass :: CapCtx -> User -> Bool
+haveCommonSchoolClass ctx = not . Set.null . commonSchoolClasses (ctx ^. capCtxUser)
 
-isSameSchoolClass' :: User -> User -> Maybe SchoolClass
-isSameSchoolClass' user user' = if c == c' then c else Nothing
-  where
-    c  = user  ^? userSchoolClasses -- TODO: only the first class is selected
-    c' = user' ^? userSchoolClasses -- TODO: only the first class is selected
+commonSchoolClasses :: User -> User -> Set SchoolClass
+commonSchoolClasses user user' =
+    Set.intersection (setOf userSchoolClasses user)
+                     (setOf userSchoolClasses user')
 
 -- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
 -- or can only do things that 'Admin's need to do (@isThere == False@).
