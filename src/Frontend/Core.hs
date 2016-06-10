@@ -490,7 +490,7 @@ pageFrame frame = do
 
         -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
         let viewport_content
-                | allOf frameUser isAdmin frame = "width=1024"
+                | anyOf frameUser isAdmin frame = "width=1024"
                 | otherwise                     = "width=device-width, initial-scale=1"
         meta_ [name_ "viewport", content_ viewport_content]
 

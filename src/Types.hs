@@ -34,7 +34,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
-import Data.Set as Set (Set, fromList, member)
+import Data.Set as Set (Set, singleton, member)
 import Data.Map as Map (Map, fromList)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
@@ -688,6 +688,21 @@ _GuestRole = prism guestRole $ \case
     ClassGuest c -> pure $ ClassSpace c
     r            -> Left r
 
+-- | RoleScope is a summary about roles. It summarizes the visibility of a given role
+-- or set of roles. The RoleScope tells whether the user is limited to a set of classes
+-- or if the user has access to all classes. Roles such as Moderator, Principal and Admin
+-- have access to all classes and thus are assigned the SchoolScope.
+-- RoleScope is a monoid, the unit (mempty) corresponds to having no roles whatsoever and
+-- thus being limited to the empty set of classes. When a user has multiple roles, the
+-- scope makes the union of the sets of classes to which the user is limited to.
+-- Finally when a user has both SchoolScope role and ClassesScope then the SchoolScope
+-- wins over. SchoolScope is annihilating we say.
+--
+-- Now consider that the class 'c' is not a member of 'user ^.. userRoles . roleSchoolClass',
+-- the user might still be allowed to access the class 'c' if this included a role such as Admin.
+--
+-- Instead using 'user ^.. userRoles . roleScope' with a case is much more explicit, 'SchoolScope'
+-- would authorize access to all the classes and 'ClassesScope' would limit it to this set.
 data RoleScope
   = ClassesScope (Set SchoolClass)
   | SchoolScope
@@ -1143,6 +1158,7 @@ makePrisms ''Freeze
 makePrisms ''PhaseStatus
 makePrisms ''Phase
 makePrisms ''Role
+makePrisms ''RoleScope
 makePrisms ''Timestamp
 makePrisms ''UpDown
 makePrisms ''UserFirstName
@@ -1186,6 +1202,7 @@ makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
 makeLenses ''Quorums
 makeLenses ''Role
+makeLenses ''RoleScope
 makeLenses ''SchoolClass
 makeLenses ''Settings
 makeLenses ''Topic
@@ -1339,7 +1356,7 @@ roleScope :: Getter Role RoleScope
 roleScope = to $ \r ->
     case r ^? roleSchoolClass of
         Nothing -> SchoolScope
-        Just cl -> ClassesScope $ Set.fromList [cl]
+        Just cl -> ClassesScope $ Set.singleton cl
 
 rolesScope :: Fold (Set Role) RoleScope
 rolesScope = folded . roleScope
