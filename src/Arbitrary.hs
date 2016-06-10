@@ -502,6 +502,13 @@ instance Arbitrary Capability where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary (NeedCap cap) where
+    arbitrary = NeedCap <$> arbitrary
+    shrink = _NeedCap shrink
+
+instance Arbitrary (PostResult a) where
+    arbitrary = pure UnsafePostResult
+
 instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary
     shrink    = gshrink

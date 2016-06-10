@@ -62,7 +62,6 @@ module Action
     , voteOnIdea
     , delegateTo
     , voteIdeaComment
-    , voteIdeaCommentReply
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
     , unvoteOnIdea
@@ -72,7 +71,6 @@ module Action
 
       -- * reporting and deleting comments
     , deleteIdeaComment
-    , deleteIdeaCommentReply
     , reportIdeaComment
     , reportIdeaCommentReply
 
@@ -573,23 +571,16 @@ delegateVoteOnClassSpace delegateId = do
     forM_ (commonSchoolClasses delegatee delegate) $ \cl ->
         delegateTo (DScopeIdeaSpace (ClassSpace cl)) delegateId
 
--- FIXME: make 'voteIdeaComment' and 'voteIdeaCommentReply' one function that takes a 'CommentKey'.
-
 -- ASSUMPTION: Idea is in the given idea location.
-voteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> Create_ CommentVote
-voteIdeaComment loc ideaId commentId voteVal = do
-    let ck = CommentKey loc ideaId [] commentId
+voteIdeaComment :: CommentKey -> Create_ CommentVote
+voteIdeaComment ck voteVal = do
     addWithCurrentUser_ (AddCommentVote ck) voteVal
     eventLogUserVotesOnComment ck voteVal
 
--- ASSUMPTION: Idea is in the given idea location.
-voteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment -> Create_ CommentVote
-voteIdeaCommentReply loc ideaId commentId =
-    addWithCurrentUser_ . AddCommentVote . CommentKey loc ideaId [commentId]
-
 -- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
-unvoteOnIdea :: (ActionM m) => AUID Idea -> AUID User -> m ()
-unvoteOnIdea ideaId user = do
+unvoteOnIdea :: (ActionM m) => AUID Idea -> m ()
+unvoteOnIdea ideaId = do
+    user <- currentUserId
     update $ RemoveVoteFromIdea ideaId user
     (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
 
@@ -600,14 +591,8 @@ deleteIdea = update . DeleteIdea
 -- * Reporting and deleting comments
 
 -- ASSUMPTION: Idea is in the given idea location.
-deleteIdeaComment :: IdeaLocation -> AUID Idea -> AUID Comment -> ActionPersist m => m ()
-deleteIdeaComment loc ideaId = update . DeleteComment . CommentKey loc ideaId []
-
--- ASSUMPTION: Idea is in the given idea location.
-deleteIdeaCommentReply :: IdeaLocation -> AUID Idea -> AUID Comment -> AUID Comment ->
-                          ActionPersist m => m ()
-deleteIdeaCommentReply loc ideaId commentId =
-    update . DeleteComment . CommentKey loc ideaId [commentId]
+deleteIdeaComment :: CommentKey -> ActionPersist m => m ()
+deleteIdeaComment = update . DeleteComment
 
 reportIdea :: AUID Idea -> Document -> ActionM m => m ()
 reportIdea ideaId doc = do

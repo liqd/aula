@@ -26,6 +26,9 @@ module Access
     , AccessCheck
     , AccessInput(..)
     , AccessResult(..)
+    , NeedAdmin(..)
+    , DelegateTo(..), _DelegateTo, delegateToCapCtx, delegateToUser
+    , NeedCap(..), _NeedCap, needCapCtx
 
       -- * basic policy results (AccessResult')
     , accessGranted
@@ -38,11 +41,13 @@ module Access
     , publicPage
     , adminPage
     , userPage
+    , authNeedCaps'
 
       -- * policy makers
     , rolePage
     , authNeedPage
     , authNeedCaps
+    , needCap
 
       -- * misc
     , isOwnProfile
@@ -115,6 +120,7 @@ data CapCtx = CapCtx
   deriving (Eq, Ord, Show, Read, Generic)
 
 makeLenses ''CapCtx
+makePrisms ''CapCtx
 
 instance SOP.Generic CapCtx
 
@@ -140,6 +146,13 @@ capabilities (CapCtx u ms mp mi mc)
   where
     rs = u ^.. userRoles
     l  = maybeToList
+
+-- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
+-- or can only do things that 'Admin's need to do (@isThere == False@).
+thereIsAGod :: (Bounded a, Enum a) => [a] -> [a]
+thereIsAGod nope = if isThere then [minBound..] else nope
+  where
+    isThere = True
 
 
 -- ** User capabilities
@@ -339,6 +352,13 @@ instance Functor AccessInput where
         NotLoggedIn -> NotLoggedIn
         LoggedIn u mp -> LoggedIn u (f <$> mp)
 
+data NeedCap (cap :: Capability) = NeedCap { _needCapCtx :: CapCtx }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+data NeedAdmin = NeedAdmin
+
+data DelegateTo = DelegateTo { _delegateToCapCtx :: CapCtx, _delegateToUser :: User }
+  deriving (Eq, Ord, Show, Read, Generic)
 
 -- * basic policy results (AccessResult')
 
@@ -376,19 +396,9 @@ rolePage r (LoggedIn u _)
     | otherwise     = accessDenied . Just $ "Rolle " <> r ^. uilabeled <> " benötigt."
 rolePage _ NotLoggedIn = redirectLogin
 
-
--- * policy makers
-
-authNeedPage :: Applicative m => (User -> p -> m AccessResult) -> AccessInput p -> m AccessResult
-authNeedPage k = \case
-    NotLoggedIn         -> redirectLogin
-    LoggedIn _ Nothing  -> accessDeferred
-    LoggedIn u (Just p) -> k u p
-
-authNeedCaps :: [Capability] -> Getter p CapCtx -> AccessCheck p
-authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
+authNeedCaps' :: [Capability] -> CapCtx -> AccessResult'
+authNeedCaps' needCaps' capCtx =
     let
-        capCtx   = p ^. getCapCtx
         needCaps = Set.fromList needCaps'
         haveCaps = Set.fromList $ capabilities capCtx
         diffCaps = needCaps `Set.difference` haveCaps
@@ -400,6 +410,28 @@ authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
             --              "Missing capabilities " <> cs (show (Set.toList diffCaps))
             --           <> " given capabilities " <> cs (show haveCaps)
             --           <> " given context " <> cs (ppShow capCtx)
+
+
+-- * policy makers
+
+authNeedPage :: Applicative m => (User -> p -> m AccessResult) -> AccessInput p -> m AccessResult
+authNeedPage k = \case
+    NotLoggedIn         -> redirectLogin
+    LoggedIn _ Nothing  -> accessDeferred
+    LoggedIn u (Just p) -> k u p
+
+authNeedCaps :: [Capability] -> Getter p CapCtx -> AccessCheck p
+authNeedCaps needCaps getCapCtx = authNeedPage $ \_ p -> authNeedCaps' needCaps (p ^. getCapCtx)
+
+makeLenses ''NeedCap
+makePrisms ''NeedCap
+
+makeLenses ''DelegateTo
+makePrisms ''DelegateTo
+
+-- FIXME: dependent types needed here
+needCap :: {-cap :: -}Capability -> AccessCheck (NeedCap cap)
+needCap cap = authNeedCaps [cap] needCapCtx
 
 
 -- * misc
@@ -414,10 +446,3 @@ commonSchoolClasses :: User -> User -> Set SchoolClass
 commonSchoolClasses user user' =
     Set.intersection (setOf userSchoolClasses user)
                      (setOf userSchoolClasses user')
-
--- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
--- or can only do things that 'Admin's need to do (@isThere == False@).
-thereIsAGod :: (Bounded a, Enum a) => [a] -> [a]
-thereIsAGod nope = if isThere then [minBound..] else nope
-  where
-    isThere = True

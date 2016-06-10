@@ -946,6 +946,8 @@ data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
 
 instance SOP.Generic InitialPasswordsCsv
 
+instance Page InitialPasswordsCsv where isAuthorized = adminPage
+
 
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
 -- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)

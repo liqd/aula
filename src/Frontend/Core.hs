@@ -18,7 +18,7 @@
 
 module Frontend.Core
     ( -- * helpers for routing tables
-      Singular, CaptureData, (::>), Reply
+      Singular, CaptureData, (::>), Reply, PostResult(..)
     , GetH, PostH, FormHandler
 
       -- * helpers for handlers
@@ -48,7 +48,9 @@ module Frontend.Core
 
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
+    , runHandler'
     , runHandler
+    , runPostHandler
     , completeRegistration
 
       -- * js glue
@@ -56,6 +58,7 @@ module Frontend.Core
     )
   where
 
+import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
@@ -64,12 +67,12 @@ import Control.Monad (replicateM_, when)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
-import GHC.TypeLits (Symbol)
+import GHC.TypeLits (Symbol, KnownSymbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
-import Servant.Missing (FormH, getFormDataEnv, throwError500)
+import Servant.Missing (FormH, getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
@@ -84,6 +87,7 @@ import Action
 import Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Path (HasPath(..))
+import Logger.EventLog (EventLog)
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -125,6 +129,8 @@ type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 type instance CaptureData Role               = Role
 
+data PostResult a = UnsafePostResult
+
 -- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
 -- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
 -- plaintext version of any page can be requested using curl on the resp. URL with @-H"content-type:
@@ -134,7 +140,7 @@ type instance CaptureData Role               = Role
 -- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
 -- for more details).
 type GetH = Get '[HTML, PlainText]
-type PostH = Post '[HTML] ()
+type PostH p = Post '[HTML] (PostResult p)
 type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageResult p)
 
 
@@ -240,6 +246,42 @@ instance Page p => Page (Frame p) where
     isAuthorized a = isAuthorized (_frameBody <$> a)
     extraPageHeaders = extraPageHeaders . _frameBody
 
+instance (Page a, Page b) => Page (a :<|> b) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance (KnownSymbol s, Page a) => Page (s :> a) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance (KnownSymbol s, Page a) => Page (Capture s c :> a) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance Page a => Page (Headers h a) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance Page a => Page (FormReqBody :> a) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance Page a => Page (Get c a) where
+    isAuthorized = error "IMPOSSIBLE"
+
+instance Page a => Page (Post c a) where -- TODO
+    isAuthorized = error "IMPOSSIBLE"
+
+instance Page a => Page (PostResult a) where -- TODO
+    isAuthorized = error "IMPOSSIBLE"
+
+instance Page EventLog where
+    isAuthorized = error "TODO: isAuthorized Page EventLog"
+
+instance Page DelegationNetwork where
+    isAuthorized = error "TODO: isAuthorized Page DelegationNetwork"
+
+instance ToHtml (PostResult a) where
+    toHtmlRaw = toHtml
+    toHtml = nil
 
 -- | Debugging page, uses the 'Show' instance of the underlying type.
 newtype PageShow a = PageShow { _unPageShow :: a }
@@ -318,6 +360,27 @@ data FormPageHandler m p = FormPageHandler
     , _formProcessor     :: FormPagePayload p -> m (FormPageResult p)
     , _formStatusMessage :: p -> FormPagePayload p -> FormPageResult p -> m (Maybe StatusMessage)
     }
+
+instance Page (NeedCap 'CanVoteComment)         where isAuthorized = needCap CanVoteComment
+instance Page (NeedCap 'CanDeleteComment)       where isAuthorized = needCap CanDeleteComment
+instance Page (NeedCap 'CanLike)                where isAuthorized = needCap CanLike
+instance Page (NeedCap 'CanEditAndDelete)       where isAuthorized = needCap CanEditAndDelete
+instance Page (NeedCap 'CanVote)                where isAuthorized = needCap CanVote
+instance Page (NeedCap 'CanMarkWinner)          where isAuthorized = needCap CanMarkWinner
+instance Page (NeedCap 'CanDelegate)            where isAuthorized = needCap CanDelegate
+instance Page (NeedCap 'CanPhaseForwardTopic)   where isAuthorized = needCap CanPhaseForwardTopic
+instance Page (NeedCap 'CanPhaseBackwardTopic)  where isAuthorized = needCap CanPhaseBackwardTopic
+
+instance Page NeedAdmin where isAuthorized = adminPage
+
+instance Page DelegateTo where
+    isAuthorized = authNeedPage $ \_ (DelegateTo ctx user) ->
+        authNeedCaps' [CanDelegate] ctx <<>>
+        if haveCommonSchoolClass ctx user
+            then accessGranted
+            else accessDenied Nothing
+      where
+        (<<>>) = liftA2 (<>)
 
 formPageHandler
     :: Applicative m
@@ -401,33 +464,36 @@ form formHandler = getH :<|> postH
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
-    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
+    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] } -- TODO remove messages
   deriving (Show, Read, Functor)
 
--- Run the given handler, check for authorization and finally add the frame around the page.
-runHandler :: forall m p. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-           => m p -> m (Frame p)
-runHandler mp = do
+-- The first function 'mp' computes the page from the current logged in user.
+-- WARNING, 'mp' CAN be run before authorization, this 'mp' SHOULD NOT modify the state.
+-- The second function 'mr' computes the result and performs the necessary action on the
+-- state.
+runHandler' :: forall m p r. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+            => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
+runHandler' mp mr = do
     isli <- isLoggedIn
     if isli
         then do
             user <- currentUser
             access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
             case access0 of
-                AccessGranted -> Frame user <$> mp <*> flushMessages
+                AccessGranted -> mr (Just user) =<< mp (Just user)
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> do
-                    p <- mp
+                    p <- mp (Just user)
                     access1 <- isAuthorized (LoggedIn user (Just p))
                     case access1 of
-                        AccessGranted -> Frame user p <$> flushMessages
+                        AccessGranted -> mr (Just user) p
                         AccessDenied s u -> handleDenied s u
                         AccessDeferred ->
                             throwError500 "AccessDeferred should not be used with LoggedIn"
         else do
             access <- isAuthorized (NotLoggedIn :: AccessInput p)
             case access of
-                AccessGranted -> PublicFrame <$> mp <*> flushMessages
+                AccessGranted -> mr Nothing =<< mp Nothing
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> throwError500 "AccessDeferred should not be used with NotLoggedIn"
   where
@@ -441,6 +507,16 @@ completeRegistration = do
         then do addMessage "Bitte ändere dein Passwort, damit niemand in deinem Namen Unsinn machen kann."
                 redirectPath P.UserSettings
         else redirectPath P.ListSpaces
+
+-- Run the given handler, check for authorization and finally add the frame around the page.
+runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+           => m p -> m (Frame p)
+runHandler mp = runHandler' (const mp) (\mu p -> maybe PublicFrame Frame mu p <$> flushMessages)
+
+-- Run the given handler, check for authorization and finally add the frame around the page.
+runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+               => m p -> m () -> m (PostResult p)
+runPostHandler mp mr = runHandler' (const mp) $ \_ _ -> UnsafePostResult <$ mr
 
 
 -- * js glue

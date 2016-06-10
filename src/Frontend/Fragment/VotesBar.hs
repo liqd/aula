@@ -120,7 +120,7 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                 postButton_ [ class_ "btn-cta m-large voting-button m-selected"
                             , jsReloadOnClick
                             ]
-                            (U.unvoteOnIdea idea user)
+                            (U.unvoteOnIdea idea)
             voteButton _        v =
                 postButton_ [ class_ "btn-cta m-large voting-button m-not-selected"
                             , jsReloadOnClick

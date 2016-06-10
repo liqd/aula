@@ -71,6 +71,7 @@ spec = do
 
                 case s of
                     204 -> wpasses
+                    201 -> wpasses
                     200 -> wpasses
                     _   -> error (msg <> show (uri, s, b))
 
