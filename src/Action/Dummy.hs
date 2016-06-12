@@ -57,6 +57,7 @@ instance Monad m => ActionEncryptPassword (DummyT ActionExcept m) where
 
 instance Monad m => ActionRandomPassword (DummyT ActionExcept m) where
     mkRandomPassword = notImplemented "ActionRandomPassword" "mkRandomPassword"
+    mkForgottenPassToken = notImplemented "ActionRandomPassword" "mkForgottenPassToken"
 
 instance Monad m => ActionCurrentTimestamp (DummyT ActionExcept m) where
     getCurrentTimestamp = notImplemented "ActionCurrentTimestamp" "getCurrentTimestamp"

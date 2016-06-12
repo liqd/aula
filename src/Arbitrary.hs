@@ -378,6 +378,13 @@ instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
     shrink (LoginFormData x y) = LoginFormData <$> shr x <*> shr y
 
+instance Arbitrary Frontend.Page.ForgottenPassword where
+    arbitrary = pure Frontend.Page.ForgottenPassword
+
+instance Arbitrary Frontend.Page.SetForgottenPassword where
+    arbitrary = Frontend.Page.SetForgottenPassword <$> arb <*> arb
+    shrink (Frontend.Page.SetForgottenPassword x y) =
+        Frontend.Page.SetForgottenPassword <$> shr x <*> shr y
 
 -- * idea
 

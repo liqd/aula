@@ -686,10 +686,14 @@ newtype EncryptedPassword = ScryptEncryptedPassword { _unScryptEncryptedPassword
 
 instance SOP.Generic EncryptedPassword
 
+-- FIXME: Could hold expiration date.
+type PassForgottenToken = ST
+
 data UserPass =
     UserPassInitial   { _userPassInitial   :: InitialPassword }
   | UserPassEncrypted { _userPassEncrypted :: EncryptedPassword }
   | UserPassDeactivated
+  | UserPassForgotten { _userPassForgotten :: PassForgottenToken }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic UserPass
@@ -699,6 +703,7 @@ verifyUserPass pwd = \case
     UserPassInitial (InitialPassword p)           -> p == pwd
     UserPassEncrypted (ScryptEncryptedPassword p) -> verifyPass' (Pass (cs pwd)) (EncryptedPass p)
     UserPassDeactivated                           -> False
+    UserPassForgotten _                           -> False
 
 newtype EmailAddress = InternalEmailAddress { internalEmailAddress :: Email.EmailAddress }
     deriving (Eq, Ord, Show, Read, Generic)

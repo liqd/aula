@@ -55,6 +55,7 @@ type MonadSendMailError e m = (MonadError e m, ThrowSendMailError e)
 data EmailSubjectLabel
     = IdeaSpaceSubject IdeaSpace
     | UserLoginSubject UserLogin
+    | ForgottenPassword
   deriving (Eq, Ord, Show, Read, Generic)
 
 data EmailMessage = EmailMessage

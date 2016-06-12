@@ -84,6 +84,7 @@ $(makeAcidic ''AulaData
     , 'setUserAvatar
     , 'setUserEmail
     , 'setUserPass
+    , 'setUserPassForgotten
     , 'setUserLoginAndRole
     , 'setUserProfile
     , 'setUserProfileDesc
