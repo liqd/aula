@@ -25,7 +25,7 @@ spec = describe "logging in" $ do
       context "if initial password is correct" $ do
         it "will indeed log you in (yeay)" $ \wreq -> do
             checkLogin wreq "admin" "pssst" 303 []
-            checkLoggedIn wreq 303
+            checkLoggedIn wreq 200
 
   where
     checkLogin wreq user pass code checks = do

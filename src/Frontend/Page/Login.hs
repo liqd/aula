@@ -54,7 +54,7 @@ instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
 
     formAction _   = U.Login
-    redirectOf _ _ = U.ListSpaces
+    redirectOf _ _ = U.CompleteRegistration
 
     makeForm _ = validateM checkLogin $
         LoginFormData

@@ -167,12 +167,13 @@ type AulaMain =
 
        -- login / logout
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
+  :<|> "completeregistration" :> GetH (Frame ())  -- TODO: introduce dedicated page type
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
 aulaMain :: ActionM m => ServerT AulaMain m
 aulaMain =
-       forceChangeInitialPassword (runHandler Page.viewRooms)
+       runHandler Page.viewRooms
   :<|> aulaSpace
 
   :<|> aulaUser
@@ -180,12 +181,13 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> forceChangeInitialPassword (runHandler Page.viewDelegationNetwork)
+  :<|> runHandler Page.viewDelegationNetwork
 
   :<|> runHandler (pure PageStaticImprint)
   :<|> runHandler (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
+  :<|> completeRegistration
   :<|> (logout >> redirectPath U.Login)
 
 type CommentApi

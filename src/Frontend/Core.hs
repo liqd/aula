@@ -49,7 +49,7 @@ module Frontend.Core
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
     , runHandler
-    , forceChangeInitialPassword
+    , completeRegistration
 
       -- * js glue
     , JsCallback, jsReloadOnClick, jsReloadOnClickAnchor, jsRedirectOnClick
@@ -432,14 +432,13 @@ runHandler mp = do
     handleDenied s u = throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
         -- FIXME log these events as INFO, should we do this here or more globally for servant errors.
 
-forceChangeInitialPassword :: ActionM m => m a -> m a
-forceChangeInitialPassword handler = do
-    x <- handler
+completeRegistration :: ActionM m => m a
+completeRegistration = do
     user <- currentUser
     if has (userSettings . userSettingsPassword . _UserPassInitial) user
-        then do addMessage "Please change your password." -- TODO: Translation
+        then do addMessage "Bitte ändere dein Passwort, damit niemand in deinem Namen Unsinn machen kann."
                 redirectPath P.UserSettings
-        else pure x
+        else redirectPath P.ListSpaces
 
 
 -- * js glue
