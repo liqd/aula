@@ -105,7 +105,6 @@ module Frontend.Path
     , userGlobalDelegations
     , userClassDelegations
     , userIdeas
---    , userDelegations
 
     -- * admin paths
     , adminDuration
