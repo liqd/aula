@@ -432,7 +432,6 @@ runHandler mp = do
     handleDenied s u = throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
         -- FIXME log these events as INFO, should we do this here or more globally for servant errors.
 
--- ASSUMPTION: The user is logged in.
 forceChangeInitialPassword :: ActionM m => m a -> m a
 forceChangeInitialPassword handler = do
     x <- handler
