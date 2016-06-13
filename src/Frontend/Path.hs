@@ -163,6 +163,7 @@ data Main (r :: AllowedMethod) =
   | Imprint
   | Terms
   | Login
+  | CompleteRegistration
   | Logout
   | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
   deriving (Generic, Show)
@@ -182,7 +183,8 @@ main DelegationEdit   root = root </> "delegation" </> "edit"
 main DelegationView   root = root </> "delegation" </> "view"
 main Imprint          root = root </> "imprint"
 main Terms            root = root </> "terms"
-main Login            root = root </> "login"
+main Login            root = root </> "login"  -- TODO: align
+main CompleteRegistration root = root </> "completeregistration"
 main Logout           root = root </> "logout"
 main Broken           root = root </> "bröken"
 

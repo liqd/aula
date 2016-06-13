@@ -22,7 +22,7 @@ spec = describe "logging in" $ do
         it "will not log you in and will display something" $ \_wreq -> do
           pendingWith "this prototype doesn't do this yet."
 
-      context "if password is correct" $ do
+      context "if initial password is correct" $ do
         it "will indeed log you in (yeay)" $ \wreq -> do
             checkLogin wreq "admin" "pssst" 303 []
             checkLoggedIn wreq 200

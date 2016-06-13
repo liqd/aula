@@ -41,7 +41,6 @@ import Thentos.Frontend.State (serveFAction)
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction)
 import Config
-import Data.UriPath
 import Daemon
 import Logger.EventLog
 import Frontend.Core
@@ -110,7 +109,7 @@ aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
-  :<|> (redirect . absoluteUriPath . U.relPath $ U.ListSpaces)
+  :<|> redirectPath U.ListSpaces
   :<|> app
   where
     waiServeDirectory :: FilePath -> Application
@@ -168,6 +167,7 @@ type AulaMain =
 
        -- login / logout
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
+  :<|> "completeregistration" :> GetH (Frame ())  -- TODO: introduce dedicated page type
   :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
 
 
@@ -187,7 +187,8 @@ aulaMain =
   :<|> runHandler (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
-  :<|> (logout >> (redirect . absoluteUriPath . U.relPath $ U.Login))
+  :<|> completeRegistration
+  :<|> (logout >> redirectPath U.Login)
 
 type CommentApi
        -- reply on a comment
