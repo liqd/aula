@@ -25,12 +25,23 @@ module Frontend.Path
     ( HasPath(..)
     , Top(..)
     , AllowedMethod(..)
-    , Main(..)
-    , Space(..)
-    , IdeaMode(..)
-    , CommentMode(..)
-    , AdminMode(..)
-    , UserMode(..)
+    , Main
+    , Space
+    , IdeaMode
+    , CommentMode
+    , AdminMode
+    , UserMode
+
+    -- * top level paths
+    , login
+    , listSpaces
+    , delegationView
+    , userSettings
+    , logout
+    , terms
+    , imprint
+    , completeRegistration
+    , broken
 
     -- * paths to ideas
     , viewIdea
@@ -61,6 +72,10 @@ module Frontend.Path
     , delegateVoteOnTopic
     , viewTopic
     , createTopic
+    , listTopics
+    , editTopic
+    , createTopicDelegation
+    , viewTopicDelegations
 
     -- * paths to comments
     , replyToComment
@@ -73,6 +88,7 @@ module Frontend.Path
 
     -- * paths to admin pages, user profile, user setting
     , adminViewUsers
+    , adminViewUsers'
     , adminViewClasses
     , adminAddRole
     , adminRemRole
@@ -88,6 +104,23 @@ module Frontend.Path
     , delegateVoteOnClassSpace
     , userGlobalDelegations
     , userClassDelegations
+    , userIdeas
+
+    -- * admin paths
+    , adminDuration
+    , adminEditUser
+    , adminChangePhase
+    , adminCreateClass
+    , adminDlEvents
+    , adminQuorum
+    , adminFreeze
+    , adminEvent
+    , adminCreateUser
+    , adminEditClass
+    , adminDeleteUser
+    , adminDlPass
+    , adminTopicNextPhase
+    , adminTopicVotingPrevPhase
 
     -- * aux predicates
     , isPostOnly
@@ -95,6 +128,8 @@ module Frontend.Path
 
     -- * aux (misc)
     , anchor
+    , pruneCommentReplyPath
+    , pruneCommentKey
     )
 where
 
@@ -170,15 +205,42 @@ data Main (r :: AllowedMethod) =
 
 instance SOP.Generic (Main r)
 
+login :: Main 'AllowGetPost
+login = Login
+
+completeRegistration :: Main 'AllowGetPost
+completeRegistration = CompleteRegistration
+
+listSpaces :: Main 'AllowGetPost
+listSpaces = ListSpaces
+
+delegationView :: Main 'AllowGetPost
+delegationView = DelegationView
+
+userSettings :: Main 'AllowGetPost
+userSettings = UserSettings
+
+logout :: Main 'AllowGetPost
+logout = Logout
+
+terms :: Main 'AllowGetPost
+terms = Terms
+
+imprint :: Main 'AllowGetPost
+imprint = Imprint
+
+broken :: Main 'AllowGetPost
+broken = Broken
+
 instance HasPath Main where relPath p = main p nil
 
 main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
-main (Space sid p)    root = space p (root </> "space" </> uriPart sid)
+main (Space sid p)    root = spacePath p (root </> "space" </> uriPart sid)
 main (IdeaPath l m)   root = ideaPath l m root
 main (UserProf uid p) root = user  p (root </> "user" </> uriPart uid)
 main UserSettings     root = root </> "user" </> "settings"
-main (Admin p)        root = admin p (root </> "admin")
+main (Admin p)        root = adminMode p (root </> "admin")
 main DelegationEdit   root = root </> "delegation" </> "edit"
 main DelegationView   root = root </> "delegation" </> "view"
 main Imprint          root = root </> "imprint"
@@ -211,15 +273,30 @@ data Space (r :: AllowedMethod) =
 
 instance SOP.Generic (Space r)
 
-space :: Space r -> UriPath -> UriPath
-space ListTopics                  root = root </> "topic"
-space (ListIdeasInSpace mq)       root = renderFilter mq $ root </> "ideas"
-space (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
-                                       $ root </> "topic" </> uriPart t </> "ideas"
-space CreateTopic                 root = root </> "topic" </> "create"
-space (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
-space (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
-space (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegate"
+createTopic :: IdeaSpace -> Main 'AllowGetPost
+createTopic spc = Space spc CreateTopic
+
+listTopics :: IdeaSpace -> Main 'AllowGetPost
+listTopics spc = Space spc ListTopics
+
+editTopic :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+editTopic spc = Space spc . EditTopic
+
+createTopicDelegation :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+createTopicDelegation spc = Space spc . CreateTopicDelegation
+
+viewTopicDelegations :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
+viewTopicDelegations spc = Space spc . ViewTopicDelegations
+
+spacePath :: Space r -> UriPath -> UriPath
+spacePath ListTopics                  root = root </> "topic"
+spacePath (ListIdeasInSpace mq)       root = renderFilter mq $ root </> "ideas"
+spacePath (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
+                                           $ root </> "topic" </> uriPart t </> "ideas"
+spacePath CreateTopic                 root = root </> "topic" </> "create"
+spacePath (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
+spacePath (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
+spacePath (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegate"
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
@@ -234,9 +311,6 @@ delegateVoteOnTopic topic = Space (topic ^. topicIdeaSpace) (CreateTopicDelegati
 viewTopic :: Topic -> Main 'AllowGetPost
 viewTopic topic =
     listIdeas' (IdeaLocationTopic (topic ^. topicIdeaSpace) (topic ^. _Id)) Nothing Nothing
-
-createTopic :: IdeaSpace -> Main 'AllowGetPost
-createTopic spc = Space spc CreateTopic
 
 
 -- ** IdeaMode
@@ -285,6 +359,18 @@ ideaMode (UnmarkIdeaAsWinner i) root = root </> "idea" </> uriPart i </> "revoke
 ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete"
 ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
 ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegate"
+
+-- | Call 'pruneCommentKey' on comment keys.  (Only needed for 'Arbitrary' instances.)
+pruneCommentReplyPath :: IdeaMode r -> IdeaMode r
+pruneCommentReplyPath (OnComment ck ReplyToComment) = OnComment (pruneCommentKey ck) ReplyToComment
+pruneCommentReplyPath m = m
+
+-- | replies to sub-comments are turned into replies to the parent comment.  (Only needed for
+-- 'Arbitrary' instances, but defined here because we need access to abstract path types.)
+pruneCommentKey :: CommentKey -> CommentKey
+pruneCommentKey = \case
+    ck@(CommentKey _ _ [] _) -> ck
+    (CommentKey loc idea (c:_) c') -> CommentKey loc idea [c] c'
 
 
 -- ** CommentMode
@@ -354,27 +440,69 @@ data AdminMode (r :: AllowedMethod) =
 
 instance SOP.Generic (AdminMode r)
 
-admin :: AdminMode r -> UriPath -> UriPath
-admin AdminDuration         path = path </> "duration"
-admin AdminQuorum           path = path </> "quorum"
-admin AdminFreeze           path = path </> "freeze"
-admin (AdminViewUsers mq)   path = renderFilter mq $ path </> "users"
-admin AdminCreateUser       path = path </> "user" </> "create"
-admin (AdminAddRole uid)    path = path </> "user" </> uriPart uid </> "role" </> "add"
-admin (AdminRemRole uid r)  path = path </> "user" </> uriPart uid </> "role" </> uriPart r </> "delete"
-admin (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
-admin (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
-admin (AdminViewClasses mq) path = renderFilter mq $ path </> "classes"
-admin AdminCreateClass      path = path </> "class" </> "create"
-admin (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
-admin AdminEvent            path = path </> "event"
-admin (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
-admin (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
-                                   </?> ("space", cs . toUrlPiece <$> mspc)
-admin (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> "next-phase"
-admin (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
-admin AdminChangePhase                path = path </> "change-phase"
-admin (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </> "reset-pwd"
+adminTopicNextPhase :: AUID Topic -> Main 'AllowPost
+adminTopicNextPhase = Admin . AdminTopicNextPhase
+
+adminTopicVotingPrevPhase :: AUID Topic -> Main 'AllowPost
+adminTopicVotingPrevPhase = Admin . AdminTopicVotingPrevPhase
+
+adminEditClass :: SchoolClass -> Main 'AllowGetPost
+adminEditClass = Admin . AdminEditClass
+
+adminDeleteUser :: User -> Main 'AllowGetPost
+adminDeleteUser = Admin . AdminDeleteUser . view _Id
+
+adminDlPass :: SchoolClass -> Main 'AllowGetPost
+adminDlPass = Admin . AdminDlPass
+
+adminDuration :: Main 'AllowGetPost
+adminDuration = Admin AdminDuration
+
+adminEditUser :: User -> Main 'AllowGetPost
+adminEditUser = Admin . AdminEditUser . view _Id
+
+adminChangePhase :: Main 'AllowGetPost
+adminChangePhase = Admin AdminChangePhase
+
+adminCreateClass :: Main 'AllowGetPost
+adminCreateClass = Admin AdminCreateClass
+
+adminDlEvents :: Maybe IdeaSpace -> Main 'AllowGetPost
+adminDlEvents = Admin . AdminDlEvents
+
+adminQuorum :: Main 'AllowGetPost
+adminQuorum = Admin AdminQuorum
+
+adminFreeze :: Main 'AllowGetPost
+adminFreeze = Admin AdminFreeze
+
+adminEvent :: Main 'AllowGetPost
+adminEvent = Admin AdminEvent
+
+adminCreateUser :: Main 'AllowGetPost
+adminCreateUser = Admin AdminCreateUser
+
+adminMode :: AdminMode r -> UriPath -> UriPath
+adminMode AdminDuration         path = path </> "duration"
+adminMode AdminQuorum           path = path </> "quorum"
+adminMode AdminFreeze           path = path </> "freeze"
+adminMode (AdminViewUsers mq)   path = renderFilter mq $ path </> "users"
+adminMode AdminCreateUser       path = path </> "user" </> "create"
+adminMode (AdminAddRole uid)    path = path </> "user" </> uriPart uid </> "role" </> "add"
+adminMode (AdminRemRole uid r)  path = path </> "user" </> uriPart uid </> "role" </> uriPart r </> "delete"
+adminMode (AdminEditUser uid)   path = path </> "user" </> uriPart uid </> "edit"
+adminMode (AdminDeleteUser uid) path = path </> "user" </> uriPart uid </> "delete"
+adminMode (AdminViewClasses mq) path = renderFilter mq $ path </> "classes"
+adminMode AdminCreateClass      path = path </> "class" </> "create"
+adminMode (AdminEditClass clss) path = path </> "class" </> uriPart clss </> "edit"
+adminMode AdminEvent            path = path </> "event"
+adminMode (AdminDlPass clss)    path = path </> "downloads" </> "passwords" </> uriPart clss
+adminMode (AdminDlEvents mspc)  path = path </> "downloads" </> "events"
+                                       </?> ("space", cs . toUrlPiece <$> mspc)
+adminMode (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> "next-phase"
+adminMode (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
+adminMode AdminChangePhase                path = path </> "change-phase"
+adminMode (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </> "reset-pwd"
 
 
 -- ** UserMode
@@ -411,6 +539,10 @@ userGlobalDelegations u = UserProf (u ^. _Id) UserGlobalDelegations
 
 userClassDelegations :: User -> Main 'AllowGetPost
 userClassDelegations u = UserProf (u ^. _Id) UserClassDelegations
+
+userIdeas :: AUID User -> Main 'AllowGetPost
+userIdeas uid = UserProf uid UserIdeas
+
 
 -- * paths to ideas
 
@@ -524,20 +656,23 @@ editReply comment = onComment comment EditReply
 
 -- * paths to admin pages, user profile, user setting
 
-adminViewUsers :: AdminMode 'AllowGetPost
-adminViewUsers = AdminViewUsers Nothing
+adminViewUsers :: Main 'AllowGetPost
+adminViewUsers = Admin $ AdminViewUsers Nothing
 
-adminViewClasses :: AdminMode 'AllowGetPost
-adminViewClasses = AdminViewClasses Nothing
+adminViewUsers' :: Maybe UsersQuery -> Main 'AllowGetPost
+adminViewUsers' = Admin . AdminViewUsers
 
-adminAddRole :: User -> AdminMode 'AllowGetPost
-adminAddRole u = AdminAddRole (u ^. _Id)
+adminViewClasses :: Main 'AllowGetPost
+adminViewClasses = Admin $ AdminViewClasses Nothing
 
-adminRemRole :: User -> Role -> AdminMode 'AllowPost
-adminRemRole u = AdminRemRole (u ^. _Id)
+adminAddRole :: User -> Main 'AllowGetPost
+adminAddRole u = Admin $ AdminAddRole (u ^. _Id)
 
-adminResetPassword :: User -> AdminMode 'AllowGetPost
-adminResetPassword u = AdminResetPassword (u ^. _Id)
+adminRemRole :: User -> Role -> Main 'AllowPost
+adminRemRole u = Admin . AdminRemRole (u ^. _Id)
+
+adminResetPassword :: User -> Main 'AllowGetPost
+adminResetPassword u = Admin $ AdminResetPassword (u ^. _Id)
 
 viewUserProfile :: User -> Main 'AllowGetPost
 viewUserProfile = viewUserIdProfile . view _Id

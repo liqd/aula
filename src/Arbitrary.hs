@@ -546,7 +546,7 @@ instance Arbitrary CommentContext where
     shrink    = gshrink
 
 instance Arbitrary CommentWidget where
-    arbitrary = over (cwComment . _Key) pruneCommentKey <$> garbitrary
+    arbitrary = over (cwComment . _Key) P.pruneCommentKey <$> garbitrary
     shrink    = gshrink
 
 
@@ -863,17 +863,8 @@ instance Arbitrary (P.Main r) where
     shrink    = gshrink
 
 instance Arbitrary (P.IdeaMode r) where
-    arbitrary = prune <$> garbitrary
-      where
-        prune (P.OnComment ck P.ReplyToComment) = P.OnComment (pruneCommentKey ck) P.ReplyToComment
-        prune m = m
+    arbitrary = P.pruneCommentReplyPath <$> garbitrary
     shrink    = gshrink
-
--- | replies to sub-comments are turned into replies to the parent comment.
-pruneCommentKey :: CommentKey -> CommentKey
-pruneCommentKey = \case
-    ck@(CommentKey _ _ [] _) -> ck
-    (CommentKey loc idea (c:_) c') -> CommentKey loc idea [c] c'
 
 instance Arbitrary (P.CommentMode r) where
     arbitrary = garbitrary

@@ -32,7 +32,7 @@ instance Page PageHomeWithLoginPrompt where
     isAuthorized = \case
         -- Redirect from login if the user is already logged in.
         NotLoggedIn -> accessGranted
-        LoggedIn{}  -> accessRedirected "You are already logged in" U.ListSpaces
+        LoggedIn{}  -> accessRedirected "You are already logged in" U.listSpaces
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
 data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
@@ -54,8 +54,8 @@ checkLogin (LoginFormData uLogin pass) = do
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
 
-    formAction _   = U.Login
-    redirectOf _ _ = U.CompleteRegistration
+    formAction _   = U.login
+    redirectOf _ _ = U.completeRegistration
 
     makeForm _ = validateM checkLogin $
         LoginFormData

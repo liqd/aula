@@ -439,8 +439,8 @@ completeRegistration = do
     user <- currentUser
     if has (userSettings . userSettingsPassword . _UserPassInitial) user
         then do addMessage "Bitte ändere dein Passwort, damit niemand in deinem Namen Unsinn machen kann."
-                redirectPath P.UserSettings
-        else redirectPath P.ListSpaces
+                redirectPath P.userSettings
+        else redirectPath P.listSpaces
 
 
 -- * js glue
@@ -525,8 +525,8 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
             Nothing -> nil
             Just usr -> do
                 ul_ [class_ "main-header-menu"] $ do
-                    li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
-                    li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+                    li_ $ a_ [href_ P.listSpaces] "Ideenräume"
+                    li_ $ a_ [href_ P.delegationView] "Beauftragungsnetzwerk"
 
                 div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu"] $ do
@@ -540,16 +540,16 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.UserSettings] $ do
+                                . a_ [href_ P.userSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
                             when (isAdmin usr) .
                                 li_ [class_ "pop-menu-list-item"]
-                                    . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                                    . a_ [href_ P.adminDuration] $ do
                                     i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                     "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.Logout] $ do
+                                . a_ [href_ P.logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
                                 "Logout"
 
@@ -570,8 +570,8 @@ footerMarkup = do
     footer_ [class_ "main-footer"] $ do
         div_ [class_ "grid"] $ do
             ul_ [class_ "main-footer-menu"] $ do
-                li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-                li_ $ a_ [href_ P.Imprint] "Impressum"
+                li_ $ a_ [href_ P.terms] "Nutzungsbedingungen"
+                li_ $ a_ [href_ P.imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
                 replicateM_ 5 $ toHtmlRaw nbsp

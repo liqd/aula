@@ -113,8 +113,8 @@ verifyUserPassIfExists (Just pwd) = verifyUserPass pwd . view userPassword <$> c
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
-    formAction _ = U.UserSettings
-    redirectOf _ _ = U.UserSettings
+    formAction _ = U.userSettings
+    redirectOf _ _ = U.userSettings
 
     makeForm (PageUserSettings user) =
           DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
@@ -294,6 +294,7 @@ renderDelegations (DelegationInfo delegations) = do
                     strong_ . forM_ secondDelegatees $ \delegatee' ->
                         a_ [href_ $ U.viewUserProfile delegatee'] (delegatee' ^. userLogin . unUserLogin  . html)
 
+
 delegatedVotesGlobal :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
 delegatedVotesGlobal userId = delegatedVotes userId DScopeGlobal
@@ -303,7 +304,6 @@ delegatedVotesClass :: (ActionPersist m, ActionUserHandler m)
 delegatedVotesClass userId = do
     user <- mquery (findUser userId)
     case user ^? userRoles . _Student of -- TODO: only the first student role...
-        -- TODO: Translation
         Nothing -> throwError500 "Nutzer ist kein Schüler."
         Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))
 

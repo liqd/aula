@@ -109,7 +109,7 @@ aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
-  :<|> redirectPath U.ListSpaces
+  :<|> redirectPath U.listSpaces
   :<|> app
   where
     waiServeDirectory :: FilePath -> Application
@@ -188,7 +188,7 @@ aulaMain =
 
   :<|> form Page.login
   :<|> completeRegistration
-  :<|> (logout >> redirectPath U.Login)
+  :<|> (logout >> redirectPath U.login)
 
 type CommentApi
        -- reply on a comment
