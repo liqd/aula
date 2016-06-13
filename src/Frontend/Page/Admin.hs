@@ -628,12 +628,12 @@ instance FormPage AdminEditUser where
                         td_ $ role ^. uilabeledST . html
                         td_ $ role ^. roleSchoolClass . uilabeledST . html
                         -- TODO: combine confirm-on-click and reload-on-click
-                        td_ $ postButtonConfirm_ (Just "Soll diese Rolle wirklich entfernt werden?") []
-                                                 (U.Admin $ U.adminRemRole user role) "Rolle löschen"
+                        td_ $ postButtonConfirm_ (Just "Soll diese Rolle wirklich entfernt werden?") [class_ "btn-cta"]
+f                                                 (U.Admin $ U.adminRemRole user role) "Rolle löschen"
                 div_ [class_ "admin-buttons"] $ do
-                    a_ [href_ . U.Admin $ U.adminAddRole user, class_ "btn add-role"] "Rolle hinzufügen"
+                    a_ [href_ . U.Admin $ U.adminAddRole user, class_ "btn-cta"] "Rolle hinzufügen"
                     br_ []
-                    a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                    a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn-cta"] "Passwort zurücksetzen"
                     br_ []
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     br_ []
