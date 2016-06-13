@@ -304,7 +304,6 @@ delegatedVotesClass :: (ActionPersist m, ActionUserHandler m)
 delegatedVotesClass userId = do
     user <- mquery (findUser userId)
     case user ^? userRoles . _Student of -- TODO: only the first student role...
-        -- TODO: Translation
         Nothing -> throwError500 "Nutzer ist kein Schüler."
         Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))
 
