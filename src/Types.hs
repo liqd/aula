@@ -34,6 +34,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List (sortBy)
+import Data.Set as Set (Set, singleton, member)
 import Data.Map as Map (Map, fromList)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
@@ -625,7 +626,7 @@ data User = User
     , _userLogin     :: UserLogin
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
-    , _userRole      :: Role
+    , _userRoleSet   :: Set Role
     , _userProfile   :: UserProfile
     , _userSettings  :: UserSettings
     }
@@ -644,7 +645,7 @@ newtype UserLastName  = UserLastName  { _unUserLastName  :: ST }
 
 type instance Proto User = ProtoUser
 
--- FIXME: Reduce the information which stored in the 'DeleteUser' constructor.
+-- FIXME: Reduce the information stored in the 'DeleteUser' constructor.
 data UserView
     = ActiveUser  { _activeUser  :: User }
     | DeletedUser { _deletedUser :: User }
@@ -654,7 +655,7 @@ data ProtoUser = ProtoUser
     { _protoUserLogin     :: Maybe UserLogin
     , _protoUserFirstName :: UserFirstName
     , _protoUserLastName  :: UserLastName
-    , _protoUserRole      :: Role
+    , _protoUserRoleSet   :: Set Role
     , _protoUserPassword  :: InitialPassword
     , _protoUserEmail     :: Maybe EmailAddress
     , _protoUserDesc      :: Document
@@ -675,6 +676,45 @@ data Role =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic Role
+
+guestRole :: IdeaSpace -> Role
+guestRole = \case
+    SchoolSpace  -> SchoolGuest
+    ClassSpace c -> ClassGuest c
+
+_GuestRole :: Prism' Role IdeaSpace
+_GuestRole = prism guestRole $ \case
+    SchoolGuest  -> pure SchoolSpace
+    ClassGuest c -> pure $ ClassSpace c
+    r            -> Left r
+
+-- | RoleScope is a summary about roles. It summarizes the visibility of a given role
+-- or set of roles. The RoleScope tells whether the user is limited to a set of classes
+-- or if the user has access to all classes. Roles such as Moderator, Principal and Admin
+-- have access to all classes and thus are assigned the SchoolScope.
+-- RoleScope is a monoid, the unit (mempty) corresponds to having no roles whatsoever and
+-- thus being limited to the empty set of classes. When a user has multiple roles, the
+-- scope makes the union of the sets of classes to which the user is limited to.
+-- Finally when a user has both SchoolScope role and ClassesScope then the SchoolScope
+-- wins over. SchoolScope is annihilating we say.
+--
+-- Now consider that the class 'c' is not a member of 'user ^.. userRoles . roleSchoolClass',
+-- the user might still be allowed to access the class 'c' if this included a role such as Admin.
+--
+-- Instead using 'user ^.. userRoles . roleScope' with a case is much more explicit, 'SchoolScope'
+-- would authorize access to all the classes and 'ClassesScope' would limit it to this set.
+data RoleScope
+  = ClassesScope (Set SchoolClass)
+  | SchoolScope
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic RoleScope
+
+instance Monoid RoleScope where
+    mempty = ClassesScope mempty
+    SchoolScope `mappend` _ = SchoolScope
+    _ `mappend` SchoolScope = SchoolScope
+    ClassesScope xs `mappend` ClassesScope ys = ClassesScope $ xs `mappend` ys
 
 newtype InitialPassword = InitialPassword { _unInitialPassword :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -786,7 +826,8 @@ data DelegationNetwork = DelegationNetwork
 instance SOP.Generic DelegationNetwork
 
 -- | Elaboration and Voting phase durations
--- FIXME: elaboration and refinement are the same thing.  pick one term!
+-- FIXME: 'elaboration' and 'refinement' are the same thing.  pick one term!
+-- ('elaboration' is my preference ~~fisx)
 data Durations = Durations
     { _elaborationPhase :: DurationDays
     , _votingPhase      :: DurationDays
@@ -892,7 +933,7 @@ instance HasUriPart (AUID a) where
 data GMetaInfo a k = MetaInfo
     { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
-    , _metaCreatedByLogin  :: UserLogin -- FIXME: If the user is deleted it still contains the user information
+    , _metaCreatedByLogin  :: UserLogin
     , _metaCreatedByAvatar :: Maybe URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
@@ -911,7 +952,9 @@ instance ToHtml PlainDocument where
     toHtmlRaw = div_ . toHtmlRaw . unDescription
     toHtml    = div_ . toHtml    . unDescription
 
--- | (alternative names that lost in a long bikeshedding session: @HasUIString@, @HasUIText@, ...)
+-- | Transform values into strings suitable for presenting to the user.  These strings are not
+-- machine-readable in general.  (alternative names that lost in a long bikeshedding session:
+-- @HasUIString@, @HasUIText@, ...)
 class HasUILabel a where
     uilabel :: a -> (Monoid s, IsString s) => s
 
@@ -1115,6 +1158,7 @@ makePrisms ''Freeze
 makePrisms ''PhaseStatus
 makePrisms ''Phase
 makePrisms ''Role
+makePrisms ''RoleScope
 makePrisms ''Timestamp
 makePrisms ''UpDown
 makePrisms ''UserFirstName
@@ -1158,6 +1202,7 @@ makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
 makeLenses ''Quorums
 makeLenses ''Role
+makeLenses ''RoleScope
 makeLenses ''SchoolClass
 makeLenses ''Settings
 makeLenses ''Topic
@@ -1295,8 +1340,29 @@ unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddres
 userEmailAddress :: CSI' s SBS => Fold User s
 userEmailAddress = userEmail . _Just . re emailAddress
 
-userSchoolClass :: Getter User (Maybe SchoolClass)
-userSchoolClass = pre $ userRole . roleSchoolClass
+userRoles :: Fold User Role
+userRoles = userRoleSet . folded
+
+userSchoolClasses :: Fold User SchoolClass
+userSchoolClasses = userRoles . roleSchoolClass
+
+hasRole :: User -> Role -> Bool
+hasRole user role = role `Set.member` (user ^. userRoleSet)
+
+isAdmin :: User -> Bool
+isAdmin = (`hasRole` Admin)
+
+roleScope :: Getter Role RoleScope
+roleScope = to $ \r ->
+    case r ^? roleSchoolClass of
+        Nothing -> SchoolScope
+        Just cl -> ClassesScope $ Set.singleton cl
+
+rolesScope :: Fold (Set Role) RoleScope
+rolesScope = folded . roleScope
+
+userRoleScope :: Fold User RoleScope
+userRoleScope = userRoles . roleScope
 
 onActiveUser :: a -> (User -> a) -> User -> a
 onActiveUser x f u
@@ -1361,6 +1427,7 @@ showIdeaSpace :: IdeaSpace -> String
 showIdeaSpace SchoolSpace    = "school"
 showIdeaSpace (ClassSpace c) = showSchoolClass c
 
+-- FIXME HasUILabel: there is already an instance for SchoolClass.
 showSchoolClass :: SchoolClass -> String
 showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
@@ -1368,13 +1435,13 @@ showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
 showIdeaSpaceCategory (ClassSpace _) = "class"
 
-parseIdeaSpace :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
-parseIdeaSpace s
-    | s == "school" = Right SchoolSpace
-    | otherwise     = ClassSpace <$> parseSchoolClass s
+parseIdeaSpace :: (IsString err, Monoid err) => [ST] -> Either err IdeaSpace
+parseIdeaSpace = \case
+    ["school"] -> pure SchoolSpace
+    xs         -> ClassSpace <$> parseSchoolClass xs
 
-parseSchoolClass :: (IsString err, Monoid err) => ST -> Either err SchoolClass
-parseSchoolClass s = case ST.splitOn "-" s of
+parseSchoolClass :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
+parseSchoolClass = \case
     [year, name] -> (`schoolClass` name) <$> readYear year
     _:_:_:_      -> err "Too many parts (two parts expected)"
     _            -> err "Too few parts (two parts expected)"
@@ -1382,14 +1449,26 @@ parseSchoolClass s = case ST.splitOn "-" s of
     err msg = Left $ "Ill-formed school class: " <> msg
     readYear = maybe (err "Year should be only digits") Right . readMaybe . cs
 
+parseRole :: (IsString err, Monoid err) => [ST] -> Either err Role
+parseRole = \case
+    ["admin"]      -> pure Admin
+    ["principal"]  -> pure Principal
+    ["moderator"]  -> pure Moderator
+    ("student":xs) -> Student <$> parseSchoolClass xs
+    ("guest":xs)   -> guestRole <$> parseIdeaSpace xs
+    _              -> Left "Ill-formed role"
+
+instance FromHttpApiData Role where
+    parseUrlPiece = parseRole . ST.splitOn "-"
+
 instance FromHttpApiData IdeaSpace where
-    parseUrlPiece = parseIdeaSpace
+    parseUrlPiece = parseIdeaSpace . ST.splitOn "-"
 
 instance ToHttpApiData IdeaSpace where
     toUrlPiece = cs . showIdeaSpace
 
 instance FromHttpApiData SchoolClass where
-    parseUrlPiece = parseSchoolClass
+    parseUrlPiece = parseSchoolClass . ST.splitOn "-"
 
 instance FromHttpApiData IdeaVoteValue where
     parseUrlPiece = \case
@@ -1463,6 +1542,15 @@ userLikesIdea user idea =
 topicIdeaLocation :: Topic -> IdeaLocation
 topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
+instance HasUriPart Role where
+    uriPart = \case
+        (Student c)    -> "student-" <> uriPart c
+        (ClassGuest c) -> "guest-" <> uriPart c
+        SchoolGuest    -> "guest-school"
+        Moderator      -> "moderator"
+        Principal      -> "principal"
+        Admin          -> "admin"
+
 instance HasUILabel Role where
     uilabel = \case
         (Student _)    -> "Schüler"
@@ -1473,7 +1561,7 @@ instance HasUILabel Role where
         Admin          -> "Administrator"
 
 aMapFromList :: HasMetaInfo a => [a] -> AMap a
-aMapFromList = fromList . map (\x -> (x ^. _Id, x))
+aMapFromList = Map.fromList . map (\x -> (x ^. _Id, x))
 
 foldComment :: Fold Comment Comment
 foldComment = cosmosOf (commentReplies . each)

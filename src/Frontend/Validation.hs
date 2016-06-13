@@ -24,6 +24,7 @@ module Frontend.Validation
     , DfTextField
     , dfTextField
     , StringFieldValidator
+    , usernameV'
     , usernameV
     , passwordV
     , titleV
@@ -60,8 +61,13 @@ type FieldParser a = Parsec String () a
 
 newtype FieldValidator a b = FieldValidator { unFieldValidator :: a -> DF.Result [ST] b }
 
+type FieldValidator' a = FieldValidator a a
+
 instance Functor (FieldValidator a) where
     fmap g (FieldValidator f) = FieldValidator (fmap g . f)
+
+instance Profunctor FieldValidator where
+    dimap g h (FieldValidator f) = FieldValidator (fmap h . f . g)
 
 instance Cat.Category FieldValidator where
     id    = FieldValidator DF.Success
@@ -163,13 +169,13 @@ inRangeV mn mx = fieldParser
   where
     isBetween n = mn <= n && n <= mx
 
-nonEmptyV :: (Eq m, Monoid m) => FieldValidator m m
+nonEmptyV :: (Eq m, Monoid m) => FieldValidator' m
 nonEmptyV = FieldValidator $ \xs ->
     if xs == mempty
         then DF.Error ["darf nicht leer sein"]
         else DF.Success xs
 
-maxLengthV :: Int -> FieldValidator ST ST
+maxLengthV :: Int -> FieldValidator' ST
 maxLengthV mx = FieldValidator $ \xs ->
     if ST.length xs > mx
         then DF.Error ["max." <> cs (show mx) <> " Zeichen"]
@@ -191,6 +197,15 @@ dfTextField s l p = s ^. l & p %%~ DF.text . Just
 type StringFieldValidator = forall r s . (ConvertibleStrings r String, ConvertibleStrings String s)
                                          => FieldValidator r s
 
+-- See `usernameV`
+usernameV' :: FieldValidator' UserLogin
+usernameV' = dimap (view _UserLogin) UserLogin usernameV
+
+-- WARNING: we also apply the validation rules on the login page.
+-- As long as we do not change the validation rules this is not a problem.
+-- One reason one might want to validate logins everywhere is to avoid potential
+-- security issues such as https://labs.spotify.com/2013/06/18/creative-usernames/
+-- The issue above does not apply here for various reasons but still we can be cautious.
 usernameV :: StringFieldValidator
 usernameV = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
 

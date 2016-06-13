@@ -23,13 +23,15 @@ import Text.Digestive.Types
 import Text.Digestive.View
 
 import qualified Data.Text.Lazy as LT
+import qualified Data.Set as Set
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Action
 import Action.Implementation
 import Arbitrary
     ( arb, arbPhrase, forAllShrinkDef, schoolClasses
-    , constantSampleTimestamp, unsafeMarkdown, someOf
+    , constantSampleTimestamp, unsafeMarkdown
+    , arbValidUserLogin, arbValidUserPass, arbMaybe
     )
 import Frontend.Core
 import Frontend.Fragment.Comment
@@ -75,7 +77,8 @@ spec = do
         , formTest (arb :: Gen PageAdminSettingsQuorum)
         , formTest (arb :: Gen PageAdminSettingsFreeze)
         , formTest (arb :: Gen PageAdminSettingsEventsProtocol)
-        , formTest (AdminEditUser <$> arb <*> pure schoolClasses)
+        , formTest (AdminAddRole <$> arb <*> pure schoolClasses)
+        , formTest (arb :: Gen AdminEditUser)
         , formTest (arb :: Gen AdminDeleteUser)
 --        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
         , formTest (arb :: Gen AdminCreateClass)
@@ -99,7 +102,7 @@ spec = do
                       (Just (u ^. userLogin))
                       (UserFirstName "first")
                       (UserLastName "last")
-                      (Student (head schoolClasses))
+                      (Set.singleton (Student (head schoolClasses)))
                       (u ^?! userPassword . _UserPassInitial)
                       Nothing
                       nil
@@ -246,8 +249,7 @@ instance PayloadToEnv Freeze where
 instance PayloadToEnv Role where
     payloadToEnvMapping _ v r = \case
         "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (r ^. roleSelection)]
-        -- FIXME: Selection does not work for composite types like school class.
-        "class" -> pure [TextInput $ selectValue "class" v classes (r ^?! roleSchoolClass)]
+        "class" -> pure $ TextInput . selectValue "class" v classes <$> r ^.. roleSchoolClass
       where
         classes = (id &&& cs . view className) <$> schoolClasses
 
@@ -448,13 +450,8 @@ instance ArbFormPagePayload PageAdminSettingsDurations where
 instance ArbFormPagePayload PageUserSettings
 
 instance ArbFormPagePayload PageHomeWithLoginPrompt where
-    arbFormPagePayload _ = arb <**> (set userLogin <$> validUserLogin)
-                               <**> (set userPassword <$> validUserPass)
-      where
-        validUserLogin =
-            UserLogin . cs <$>
-            (choose (4,12) >>= flip replicateM (Test.QuickCheck.elements ['a' .. 'z']))
-        validUserPass = UserPassInitial . InitialPassword . cs <$> someOf 4 12 (arb :: Gen Char)
+    arbFormPagePayload _ = arb <**> (set userLogin <$> arbValidUserLogin)
+                               <**> (set userPassword <$> arbValidUserPass)
 
 instance ArbFormPagePayload CreateTopic where
     arbFormPagePayload (CreateTopic _ctx space ideas _timestamp) =
@@ -474,21 +471,18 @@ instance ArbFormPagePayload Frontend.Page.EditTopic where
         <*> pure (view (ideaStatsIdea . _Id) <$> ideas)
         <**> (set editTopicDesc <$> arb)
 
-instance ArbFormPagePayload AdminEditUser where
-    arbFormPagePayload (AdminEditUser _ classes) =
-        AdminEditUserPayload <$> els logins <*> els roles
+instance ArbFormPagePayload AdminAddRole where
+    arbFormPagePayload (AdminAddRole _ classes) = els roles
       where
         els    = Test.QuickCheck.elements
-        logins = Nothing : (Just . UserLogin . ("frsh!!" <>) . cs . show <$> [(0 :: Int)..8])
         roles  = ([Student, ClassGuest] <*> classes) <> [SchoolGuest, Moderator, Principal, Admin]
 
-instance PayloadToEnv AdminEditUserPayload where
-    payloadToEnvMapping _ v (AdminEditUserPayload mlogin role) = \case
-        "login" -> pure $ view (unUserLogin . to TextInput) <$> maybeToList mlogin
-        "role"  -> pure [TextInput $ selectValue "role" v roleSelectionChoices (role ^. roleSelection)]
-        "class" -> pure $ TextInput . selectValue "class" v classValues <$> maybeToList (role ^? roleSchoolClass)
-      where
-        classValues = (id &&& cs . view className) <$> schoolClasses
+instance ArbFormPagePayload AdminEditUser where
+    arbFormPagePayload (AdminEditUser _) = arbMaybe arbValidUserLogin
+
+instance PayloadToEnv (Maybe UserLogin) where
+    payloadToEnvMapping _ _ mlogin = \case
+        "login" -> pure $ mlogin ^.. _Just . _UserLogin . to TextInput
 
 instance ArbFormPagePayload AdminPhaseChange
 

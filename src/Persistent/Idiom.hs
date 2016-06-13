@@ -38,15 +38,9 @@ getVotersForIdea = getVotersForSpace . view (ideaLocation . ideaLocationSpace)
 getVotersForSpace :: IdeaSpace -> Query [User]
 getVotersForSpace space = filter hasAccess <$> getActiveUsers
   where
-    hasAccess u = case space of
-        SchoolSpace   -> isStudent u
-        ClassSpace cl -> u `isStudentInClass` cl
-
-    isStudent (view userRole -> (Student _)) = True
-    isStudent _                              = False
-
-    isStudentInClass (view userRole -> (Student cl')) cl = cl' == cl
-    isStudentInClass _ _ = False
+    hasAccess = case space of
+        SchoolSpace   -> has $ userRoles . _Student
+        ClassSpace cl -> cl & elemOf userSchoolClasses
 
 
 -- | @_ideaStatsQuorum@ is the number of likes (quorum votes) needed for the quorum to be

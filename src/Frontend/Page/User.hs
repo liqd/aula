@@ -31,6 +31,8 @@ import Persistent
     , getIdeaStats
     , scopeDelegatees
     )
+
+import qualified Data.Set as Set
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -186,7 +188,8 @@ userHeaderDiv ctx (ActiveUser user) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        span_ [class_ "post-title"] $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
+        forM_ (user ^.. userSchoolClasses . to showSchoolClass . html) $ \cl ->
+            span_ [class_ "post-title"] cl
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
@@ -198,7 +201,7 @@ userHeaderDiv ctx (ActiveUser user) =
             -- philosophical, but it doesn't really matter: users can delegate to themselves
             -- just like to anybody else, and the graph will look different if they do.
             -- FIXME: Styling
-            when (CanDelegate `elem` caps && isSameSchoolClass ctx user) $ do
+            when (CanDelegate `elem` caps && haveCommonSchoolClass ctx user) $ do
                 postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
             when (CanDelegate `elem` caps) $ do
                 postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
@@ -236,9 +239,9 @@ createdIdeas userId = do
             case idea ^. ideaLocation . ideaLocationSpace of
                 SchoolSpace  -> True
                 ClassSpace c ->
-                    case ctx ^? capCtxUser . userRole . roleSchoolClass of
-                        Nothing -> True -- the role is not tied to a class
-                        Just c' -> c == c'
+                    case ctx ^. capCtxUser . userRoleScope of
+                        SchoolScope      -> True
+                        ClassesScope cls -> c `Set.member` cls
     equery (do
         user  <- makeUserView <$> (maybe404 =<< findUser userId)
         ideas <- ListItemIdeas ctx IdeaInUserProfile
@@ -299,7 +302,7 @@ delegatedVotesClass :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
 delegatedVotesClass userId = do
     user <- mquery (findUser userId)
-    case user ^? userRole . _Student of
+    case user ^? userRoles . _Student of -- TODO: only the first student role...
         -- TODO: Translation
         Nothing -> throwError500 "Nutzer ist kein Schüler."
         Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))

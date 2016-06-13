@@ -110,6 +110,7 @@ type instance Singular Topic              = "topic"
 type instance Singular UpDown             = "vote"
 type instance Singular User               = "user"
 type instance Singular IdeaJuryResultType = "jury"
+type instance Singular Role               = "role"
 
 type instance CaptureData Comment            = AUID Comment
 type instance CaptureData Idea               = AUID Idea
@@ -121,6 +122,7 @@ type instance CaptureData Topic              = AUID Topic
 type instance CaptureData UpDown             = UpDown
 type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
+type instance CaptureData Role               = Role
 
 -- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
 -- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
@@ -487,9 +489,10 @@ pageFrame frame = do
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
 
         -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
-        case frame ^? frameUser . userRole of
-            Just Admin -> meta_ [name_ "viewport", content_ "width=1024"]
-            _          -> meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+        let viewport_content
+                | anyOf frameUser isAdmin frame = "width=1024"
+                | otherwise                     = "width=device-width, initial-scale=1"
+        meta_ [name_ "viewport", content_ viewport_content]
 
         toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
@@ -529,7 +532,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                                 . a_ [href_ P.UserSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
-                            when (usr ^. userRole == Admin) .
+                            when (isAdmin usr) .
                                 li_ [class_ "pop-menu-list-item"]
                                     . a_ [href_ $ P.Admin P.AdminDuration] $ do
                                     i_ [class_ "pop-menu-list-icon icon-bolt"] nil

@@ -51,7 +51,8 @@ module Persistent.Pure
     , maybe404
 
     , getSpaces
-    , getSpacesForRole
+    , getSpacesForScope
+    , getSpacesForRoles
     , getIdeas
     , getWildIdeas
     , getIdeasWithTopic
@@ -79,7 +80,6 @@ module Persistent.Pure
     , getActiveUsers
     , getAllUsers
     , getUsersInClass
-    , isClassInRole
     , getSchoolClasses
     , loginIsAvailable
     , addUser
@@ -91,7 +91,9 @@ module Persistent.Pure
     , setUserProfileDesc
     , setUserEmail
     , setUserPass
-    , setUserLoginAndRole
+    , setUserLogin
+    , addUserRole
+    , remUserRole
     , setUserAvatar
     , resetUserPass
     , getTopics
@@ -174,6 +176,7 @@ import LifeCycle (freezePhase)
 
 data AulaData = AulaData
     { _dbSpaceSet            :: Set IdeaSpace
+    -- ^ FIXME: Assuming SchoolSpace is always present, a 'Set SchoolClass' would be enough.
     , _dbIdeaMap             :: Ideas
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
@@ -482,17 +485,18 @@ setUserPass :: AUID User -> EncryptedPassword -> AUpdate ()
 setUserPass uid pass =
     withUser uid . userSettings . userSettingsPassword .= UserPassEncrypted pass
 
-setUserLoginAndRole :: AUID User -> Maybe UserLogin -> Role -> AUpdate ()
-setUserLoginAndRole uid mlogin role = do
+setUserLogin :: AUID User -> UserLogin -> AUpdate ()
+setUserLogin uid login = do
+    checkLoginIsAvailable login
     user <- maybe404 =<< liftAQuery (findUser uid)
-    case mlogin of
-        Nothing -> do
-            withUser uid %= (userRole  .~ role)
-        Just login -> do
-            checkLoginIsAvailable login
-            aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
-            withUser uid %= (userLogin .~ login)
-                          . (userRole  .~ role)
+    aulaMetas metaCreatedByLogin %= \old -> if old == user ^. userLogin then login else old
+    withUser uid . userLogin .= login
+
+addUserRole :: AUID User -> Role -> AUpdate ()
+addUserRole uid role = withUser uid . userRoleSet %= Set.insert role
+
+remUserRole :: AUID User -> Role -> AUpdate ()
+remUserRole uid role = withUser uid . userRoleSet %= Set.delete role
 
 setUserAvatar :: AUID User -> URL -> AUpdate ()
 setUserAvatar uid url = withUser uid . userAvatar ?= url
@@ -519,10 +523,9 @@ getAllUsers :: Query [User]
 getAllUsers = view dbUsers
 
 getUsersInClass :: SchoolClass -> Query [User]
-getUsersInClass clss = filter (isClassInRole clss . view userRole) <$> getActiveUsers
-
-isClassInRole :: SchoolClass -> Role -> Bool
-isClassInRole clss role = role ^? roleSchoolClass == Just clss
+getUsersInClass clss = filter userInClass <$> getActiveUsers
+  where
+    userInClass u = clss `elem` u ^.. userSchoolClasses
 
 getSchoolClasses :: Query [SchoolClass]
 getSchoolClasses = mapMaybe toClass <$> getSpaces
@@ -530,11 +533,14 @@ getSchoolClasses = mapMaybe toClass <$> getSpaces
     toClass (ClassSpace clss) = Just clss
     toClass SchoolSpace       = Nothing
 
-getSpacesForRole :: Role -> Query [IdeaSpace]
-getSpacesForRole role =
-    case role ^? roleSchoolClass of
-        Just clss -> findAllIn dbSpaces (`elem` [SchoolSpace, ClassSpace clss])
-        Nothing   -> getSpaces
+getSpacesForRoles :: Set Role -> Query [IdeaSpace]
+getSpacesForRoles roles = getSpacesForScope $ roles ^. rolesScope
+
+getSpacesForScope :: RoleScope -> Query [IdeaSpace]
+getSpacesForScope = \case
+    ClassesScope classes -> let spaces = Set.map ClassSpace classes in
+                            (SchoolSpace :) <$> findAllIn dbSpaces (`Set.member` spaces)
+    SchoolScope          -> getSpaces
 
 getTopics :: Query [Topic]
 getTopics = view dbTopics
@@ -615,7 +621,7 @@ findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
 
 findUsersByRole :: Role -> Query [User]
-findUsersByRole = fmap (filter isActiveUser) . findAllInBy dbUsers userRole
+findUsersByRole r = filter isActiveUser <$> findAllIn dbUsers (`hasRole` r)
 
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap
@@ -759,7 +765,7 @@ userFromProto metainfo uLogin uPassword proto = User
     , _userLogin     = uLogin
     , _userFirstName = proto ^. protoUserFirstName
     , _userLastName  = proto ^. protoUserLastName
-    , _userRole      = proto ^. protoUserRole
+    , _userRoleSet   = proto ^. protoUserRoleSet
     , _userSettings  = UserSettings
         { _userSettingsPassword = UserPassInitial uPassword
         , _userSettingsEmail    = proto ^. protoUserEmail

@@ -46,14 +46,16 @@ module Access
 
       -- * misc
     , isOwnProfile
-    , isSameSchoolClass
-    , isSameSchoolClass'
+    , haveCommonSchoolClass
+    , commonSchoolClasses
     )
     where
 
 import Control.Lens
 import Data.Maybe
 import Data.Monoid
+import Data.Set (Set)
+import Data.Set.Lens (setOf)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 
@@ -103,10 +105,6 @@ data Capability
 
 instance SOP.Generic Capability
 
--- TODO: the current context does not provide with the IdeaSpace, which seems required to restrict
--- students to their class.  To reproduce: login as admin; remember two classes; login as student;
--- enter the only class; change url to the other class.  you should get redirected with an "access
--- denied" message but in fact you get access to that page.
 data CapCtx = CapCtx
     { _capCtxUser    :: User
     , _capCtxSpace   :: Maybe IdeaSpace
@@ -120,10 +118,10 @@ makeLenses ''CapCtx
 
 instance SOP.Generic CapCtx
 
-checkSpace :: Maybe IdeaSpace -> Maybe SchoolClass -> Bool
+checkSpace :: Maybe IdeaSpace -> RoleScope -> Bool
 -- If we have the context of a particular class and a role tied to a particular class
 -- then they must be equal to be accepted.
-checkSpace (Just (ClassSpace c0)) (Just c1) = c0 == c1
+checkSpace (Just (ClassSpace c)) (ClassesScope cls) = c `Set.member` cls
 -- Otherwise there is no restrictions, namely:
 -- * When the context is not restricted to a particular idea space.
 -- * When the role is not tied to a particular school class, then no restrictions.
@@ -132,16 +130,16 @@ checkSpace _ _ = True
 
 capabilities :: CapCtx -> [Capability]
 capabilities (CapCtx u ms mp mi mc)
-    | not . checkSpace ms $ r ^? roleSchoolClass = []
+    | not . checkSpace ms $ rs ^. each . roleScope = []
     | otherwise = mconcat . mconcat $
-    [ [ userCapabilities r ]
-    , [ ideaCapabilities (u ^. _Id) r i p    | i <- l mi, p <- l mp ]
-    , [ commentCapabilities (u ^. _Id) r c p | c <- l mc, p <- l mp ]
-    , [ topicCapabilities p r                | p <- l mp ]
+    [ [ userCapabilities r                   | r <- rs ]
+    , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
+    , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
+    , [ topicCapabilities p r                | r <- rs, p <- l mp ]
     ]
   where
-    r = u ^. userRole
-    l = maybeToList
+    rs = u ^.. userRoles
+    l  = maybeToList
 
 
 -- ** User capabilities
@@ -374,8 +372,8 @@ adminPage = rolePage Admin
 
 rolePage :: Role -> AccessCheck any
 rolePage r (LoggedIn u _)
-    | u ^. userRole == r  = accessGranted
-    | otherwise           = accessDenied . Just $ "Rolle " <> r ^. uilabeled <> " benötigt."
+    | u `hasRole` r = accessGranted
+    | otherwise     = accessDenied . Just $ "Rolle " <> r ^. uilabeled <> " benötigt."
 rolePage _ NotLoggedIn = redirectLogin
 
 
@@ -409,14 +407,13 @@ authNeedCaps needCaps' getCapCtx = authNeedPage $ \_ p ->
 isOwnProfile :: CapCtx -> User -> Bool
 isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
 
-isSameSchoolClass :: CapCtx -> User -> Bool
-isSameSchoolClass ctx = isJust . isSameSchoolClass' (ctx ^. capCtxUser)
+haveCommonSchoolClass :: CapCtx -> User -> Bool
+haveCommonSchoolClass ctx = not . Set.null . commonSchoolClasses (ctx ^. capCtxUser)
 
-isSameSchoolClass' :: User -> User -> Maybe SchoolClass
-isSameSchoolClass' user user' = if c == c' then c else Nothing
-  where
-    c  = user  ^? userRole . roleSchoolClass
-    c' = user' ^? userRole . roleSchoolClass
+commonSchoolClasses :: User -> User -> Set SchoolClass
+commonSchoolClasses user user' =
+    Set.intersection (setOf userSchoolClasses user)
+                     (setOf userSchoolClasses user')
 
 -- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
 -- or can only do things that 'Admin's need to do (@isThere == False@).

@@ -19,9 +19,11 @@ module Frontend.Page.Admin
 where
 
 import Control.Arrow ((&&&))
+import Data.Set (Set)
 import Servant
 
 import qualified Data.Csv as Csv
+import qualified Data.Set as Set
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Text.Digestive.Form as DF
@@ -37,7 +39,9 @@ import Persistent.Api
     , SaveAndEnactFreeze(SaveAndEnactFreeze)
     , AddIdeaSpaceIfNotExists(AddIdeaSpaceIfNotExists)
     , AddUser(AddUser)
-    , SetUserLoginAndRole(SetUserLoginAndRole)
+    , SetUserLogin(SetUserLogin)
+    , AddUserRole(AddUserRole)
+    , RemUserRole(RemUserRole)
     )
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
@@ -84,7 +88,12 @@ data AdminCreateUser = AdminCreateUser [SchoolClass]
 
 instance Page AdminCreateUser where isAuthorized = adminPage
 
-data AdminEditUser = AdminEditUser User [SchoolClass]
+data AdminAddRole = AdminAddRole User [SchoolClass]
+  deriving (Eq, Show, Read)
+
+instance Page AdminAddRole where isAuthorized = adminPage
+
+data AdminEditUser = AdminEditUser User
   deriving (Eq, Show, Read)
 
 instance Page AdminEditUser where isAuthorized = adminPage
@@ -132,7 +141,7 @@ data CreateUserPayload = CreateUserPayload
     , _createUserLastName  :: UserLastName
     , _createUserLogin     :: Maybe UserLogin
     , _createUserEmail     :: Maybe EmailAddress
-    , _createUserRole      :: Role
+    , _createUserRoleSet   :: Set Role
     }
   deriving (Eq, Generic, Show)
 
@@ -179,6 +188,9 @@ instance ToMenuItem AdminCreateUser where
     toMenuItem _ = MenuItemUsers
 
 instance ToMenuItem AdminEditUser where
+    toMenuItem _ = MenuItemUsers
+
+instance ToMenuItem AdminAddRole where
     toMenuItem _ = MenuItemUsers
 
 instance ToMenuItem AdminDeleteUser where
@@ -414,8 +426,8 @@ instance ToHtml AdminViewUsers where
                 let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserInfoRow user = do
                         td_ $ user ^. userLogin . unUserLogin . html
-                        td_ $ user ^. userRole . roleSchoolClass . to showSchoolClass . html
-                        td_ $ user ^. userRole . uilabeled
+                        td_ . toHtml $ ST.intercalate "," (user ^.. userSchoolClasses . to showSchoolClass . csi)
+                        td_ . toHtml $ ST.intercalate "," (user ^.. userRoles . uilabeled)
                         td_ $ toHtmlRaw nbsp
 
                 let renderUserRow :: forall m. (Monad m) => UserView -> HtmlT m ()
@@ -446,7 +458,7 @@ instance FormPage AdminCreateUser where
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
             <*> emailField "Email" Nothing
-            <*> roleForm Nothing Nothing classes
+            <*> (Set.singleton <$> roleForm Nothing Nothing classes)
         where
             -- FIXME: Users with more than one name?
             firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben"))
@@ -550,24 +562,46 @@ roleForm mrole mclass classes =
         <$> ("role"  .: chooseRole mrole)
         <*> ("class" .: chooseClass classes mclass)
 
--- | (the login must always be provided in the posted data, but it is turned into Nothing in the
--- validator if it has not changed.)
-data AdminEditUserPayload = AdminEditUserPayload (Maybe UserLogin) Role
-  deriving (Eq, Show)
+instance FormPage AdminAddRole where
+    type FormPagePayload AdminAddRole = Role
 
+    formAction (AdminAddRole user _classes)   = U.Admin $ U.adminAddRole user
+    redirectOf (AdminAddRole user _classes) _ = U.Admin . U.AdminEditUser $ user ^. _Id
+
+    makeForm (AdminAddRole _user classes) = roleForm Nothing Nothing classes
+
+    formPage v form p@(AdminAddRole user _classes) =
+        adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
+            div_ [class_ "col-9-12"] $ do
+                h1_ [class_ "admin-main-heading"] $ toHtml (userFullName user :: ST)
+                label_ [class_ "col-6-12"] $ do
+                    span_ [class_ "label-text"] "Nutzerrolle"
+                    inputSelect_ [class_ "m-stretch"] "role" v
+                label_ [class_ "col-6-12"] $ do  -- FIXME: we need a js hook that checks the value
+                                                 -- of the role field, and if that's not one of the
+                                                 -- first two, the "school class" field here should
+                                                 -- be hidden.  (nothing needs to be done to the
+                                                 -- form logic, this is a pure UI task.)
+                    span_ [class_ "label-text"] "Klasse"
+                    inputSelect_ [class_ "m-stretch"]  "class" v
+                div_ [class_ "admin-buttons"] $ do
+                    DF.inputSubmit "Rolle hinzufügen"
+
+
+-- | This was refactored in 1acd4961b2 to not allow editing of roles any more.  You can only add and
+-- remove roles from users.
 instance FormPage AdminEditUser where
-    type FormPagePayload AdminEditUser = AdminEditUserPayload
+    -- | (the login must always be provided in the posted data, but it is turned into Nothing in the
+    -- validator if it has not changed.)
+    type FormPagePayload AdminEditUser = Maybe UserLogin
 
-    formAction (AdminEditUser user _classes) = U.Admin . U.AdminEditUser $ user ^. _Id
+    formAction (AdminEditUser user) = U.Admin . U.AdminEditUser $ user ^. _Id
     redirectOf _ _ = U.Admin U.adminViewUsers
 
-    makeForm (AdminEditUser user classes) =
-        AdminEditUserPayload
-        <$> ("login" .: validateUserLogin)
-        <*> roleForm (user ^? userRole) (user ^? userRole . roleSchoolClass) classes
+    makeForm (AdminEditUser user) = "login" .: validateUserLogin
       where
         validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
-        validateUserLogin = DF.validateM go $ dfTextField user userLogin _UserLogin
+        validateUserLogin = DF.validateM go . validate "Login" usernameV' $ dfTextField user userLogin _UserLogin
 
         go :: forall m. ActionM m => UserLogin -> m (DF.Result (Html ()) (Maybe UserLogin))
         go "" = pure $ DF.Error "login darf nicht leer sein"
@@ -579,25 +613,31 @@ instance FormPage AdminEditUser where
                        else pure . DF.Error   $ "login ist bereits vergeben"
 
 
-    formPage v form p@(AdminEditUser user _classes) =
+    formPage v form p@(AdminEditUser user) =
         adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     span_ [class_ "label-text"] "Login"
                     inputText_ [class_ "m-stretch"] "login" v
-                label_ [class_ "col-6-12"] $ do
-                    span_ [class_ "label-text"] "Nutzerrolle"
-                    inputSelect_ [class_ "m-stretch"] "role" v
-                label_ [class_ "col-6-12"] $ do  -- FIXME: we need a js hook that checks the value
-                                                 -- of the role field, and if that's not one of the
-                                                 -- first two, the "school class" field here should
-                                                 -- be hidden.  (nothing needs to be done to the
-                                                 -- form logic, this is a pure UI task.)
-                    span_ [class_ "label-text"] "Klasse"
-                    inputSelect_ [class_ "m-stretch"]  "class" v
-                a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn forgotten-password"] "Passwort zurücksetzen"
+                table_ [class_ "admin-roles"] $ do
+                    thead_ . tr_ $ do
+                        th_ "Nutzerrolle"
+                        th_ "Klasse"
+                        th_ nil
+                    tbody_ . forM_ (user ^.. userRoles) $ \role -> tr_ $ do
+                        td_ $ role ^. uilabeledST . html
+                        td_ $ role ^. roleSchoolClass . uilabeledST . html
+                        td_ $ postButtonConfirm_
+                                (Just "Soll diese Rolle wirklich entfernt werden?")
+                                [class_ "btn-cta", jsReloadOnClick]
+                                (U.Admin $ U.adminRemRole user role) "Rolle löschen"
                 div_ [class_ "admin-buttons"] $ do
+                    a_ [href_ . U.Admin $ U.adminAddRole user, class_ "btn-cta"] "Rolle hinzufügen"
+                    br_ []
+                    a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn-cta"] "Passwort zurücksetzen"
+                    br_ []
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
+                    br_ []
                     DF.inputSubmit "Änderungen speichern"
 
 instance ToHtml AdminEditClass where
@@ -626,14 +666,14 @@ adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
-        forM_ (up ^? createUserRole . roleSchoolClass) $
+        forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         pwd <- mkRandomPassword
         addWithCurrentUser_ AddUser ProtoUser
             { _protoUserLogin     = up ^. createUserLogin
             , _protoUserFirstName = up ^. createUserFirstName
             , _protoUserLastName  = up ^. createUserLastName
-            , _protoUserRole      = up ^. createUserRole
+            , _protoUserRoleSet   = up ^. createUserRoleSet
             , _protoUserPassword  = pwd
             , _protoUserEmail     = up ^. createUserEmail
             , _protoUserDesc      = nil
@@ -649,11 +689,20 @@ adminCreateUser = formPageHandlerCalcMsg
 adminViewClasses :: ActionPersist m => Maybe SearchClasses -> m AdminViewClasses
 adminViewClasses qf = AdminViewClasses (mkClassesQuery qf) <$> query getSchoolClasses
 
+adminAddRole :: ActionM m => AUID User -> FormPageHandler m AdminAddRole
+adminAddRole uid = formPageHandlerCalcMsg
+    (equery $ AdminAddRole <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
+    (update . AddUserRole uid)
+    (\(AdminAddRole u _) _ _ -> unwords ["Rolle wurde Nutzer", userFullName u, "zugewiesen."])
+
+adminRemRole :: ActionM m => AUID User -> Role -> m ()
+adminRemRole uid = update . RemUserRole uid
+
 adminEditUser :: ActionM m => AUID User -> FormPageHandler m AdminEditUser
 adminEditUser uid = formPageHandlerCalcMsg
-    (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
-    (\(AdminEditUserPayload mlogin role) -> update $ SetUserLoginAndRole uid mlogin role)
-    (\(AdminEditUser u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
+    (equery $ AdminEditUser <$> (maybe404 =<< findActiveUser uid))
+    (mapM_ $ update . SetUserLogin uid)
+    (\(AdminEditUser u) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."])
 
 fromRoleSelection :: RoleSelection -> SchoolClass -> Role
 fromRoleSelection RoleSelStudent     = Student
@@ -779,19 +828,19 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             Right records -> do
                 let schoolcl = SchoolClass theOnlySchoolYearHack clname
                 update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-                forM_ records . p $ Student schoolcl
+                forM_ records . p . Set.singleton $ Student schoolcl
 
-    p :: Role -> CsvUserRecord -> m ()
-    p _        (CsvUserRecord _ _ _ _                          (Just _)) = do
+    p :: Set Role -> CsvUserRecord -> m ()
+    p _     (CsvUserRecord _ _ _ _                          (Just _)) = do
         throwError500 "upload FAILED: internal error!"
-    p role (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+    p roles (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
         pwd <- mkRandomPassword
         addWithCurrentUser AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
-            , _protoUserRole      = role
+            , _protoUserRoleSet   = roles
             , _protoUserPassword  = pwd
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = nil
