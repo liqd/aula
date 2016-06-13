@@ -442,6 +442,7 @@ forceChangeInitialPassword handler = do
                 redirectPath P.UserSettings
         else pure x
 
+
 -- * js glue
 
 data JsCallback
