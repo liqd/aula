@@ -410,7 +410,7 @@ instance ToHtml AdminViewUsers where
                     th_ "Name"
                     th_ "Klasse"
                     th_ "Rolle"
-                    th_ $ button_ [class_ "btn-cta", onclick_ $ U.adminCreateUser] "Nutzer anlegen"
+                    th_ $ button_ [class_ "btn-cta", onclick_ U.adminCreateUser] "Nutzer anlegen"
                     th_ $ do
                         div_ [class_ "inline-search-container"] $ do
                             -- The AllUsers here makes sure there is no 'search' query parameter
@@ -496,7 +496,7 @@ instance ToHtml AdminViewClasses where
                     th_ "Klasse"
                     th_ $ button_
                             [ class_ "btn-cta"
-                            , onclick_ $ U.adminCreateClass
+                            , onclick_ U.adminCreateClass
                             ]
                             "Klasse anlegen"
                     th_ $ do
