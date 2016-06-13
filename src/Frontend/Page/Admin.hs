@@ -622,9 +622,11 @@ instance FormPage AdminEditUser where
                 table_ [class_ "admin-roles"] $ do
                     thead_ . tr_ $ do
                         th_ "Nutzerrolle"
+                        th_ "Klasse"
                         th_ nil
                     tbody_ . forM_ (user ^.. userRoles) $ \role -> tr_ $ do
                         td_ $ role ^. uilabeledST . html
+                        td_ $ role ^. roleSchoolClass . uilabeledST . html
                         -- TODO: combine confirm-on-click and reload-on-click
                         td_ $ postButtonConfirm_ (Just "Soll diese Rolle wirklich entfernt werden?") []
                                                  (U.Admin $ U.adminRemRole user role) "Rolle löschen"
