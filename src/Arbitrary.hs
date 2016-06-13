@@ -157,7 +157,7 @@ gshrink = List.map to . shrinkSOP . from
     mkFn f = Fn (f . unI)
 
 
--- * arbitrary instances
+-- * types
 
 instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
@@ -172,6 +172,7 @@ instance ( Generic a, Generic b, Generic c
 instance Arbitrary CapCtx where
     arbitrary = garbitrary
     shrink    = gshrink
+
 
 -- * pages
 

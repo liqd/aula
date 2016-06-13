@@ -1,7 +1,7 @@
-{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
