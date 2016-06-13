@@ -585,7 +585,7 @@ instance FormPage AdminAddRole where
                     span_ [class_ "label-text"] "Klasse"
                     inputSelect_ [class_ "m-stretch"]  "class" v
                 div_ [class_ "admin-buttons"] $ do
-                    DF.inputSubmit "Änderungen speichern"
+                    DF.inputSubmit "Rolle hinzufügen"
 
 
 -- | This was refactored in 1acd4961b2 to not allow editing of roles any more.  You can only add and
