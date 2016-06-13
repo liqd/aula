@@ -108,6 +108,7 @@ import Access
 import Action
 import Action.Implementation
 import Config
+import Data.UriPath
 import Logger.EventLog
 import Frontend.Core
 import Frontend.Filter
@@ -894,6 +895,9 @@ instance Arbitrary ClassesFilterQuery where
 
 instance Arbitrary SearchClasses where
     arbitrary = garbitrary
+
+instance Arbitrary UriPart where
+    arbitrary = fromString . List.filter (/= '/') <$> garbitrary
 
 
 -- * servant-mock

@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE OverloadedStrings    #-}
 
@@ -10,6 +11,8 @@ where
 import Data.Typeable
 import Test.QuickCheck (Arbitrary, Gen, property)
 
+import Data.UriPath
+
 import Arbitrary (arb, forAllShrinkDef)
 import AulaTests
 
@@ -19,8 +22,18 @@ spec = tag Large $ do
     mapM_ monoidSpec
         [ M (arb :: Gen Document)
 --        , Proxy :: Proxy UriPath -- FIXME
+        , M (arb :: Gen UriPart')
         , M (arb :: Gen RoleScope)
         ]
+
+newtype UriPart' = UriPart' UriPart
+  deriving (Monoid, Arbitrary)
+
+instance Show UriPart' where
+    show (UriPart' x) = cs x
+
+instance Eq UriPart' where
+    (UriPart' x) == (UriPart' y) = (cs x :: String) == cs y
 
 data MonoidProxy where
     M :: (Arbitrary m, Eq m, Monoid m, Show m, Typeable m)
