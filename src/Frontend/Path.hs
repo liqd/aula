@@ -361,13 +361,13 @@ ideaMode (DeleteIdea i)         root = root </> "idea" </> uriPart i </> "delete
 ideaMode (ReportIdea i)         root = root </> "idea" </> uriPart i </> "report"
 ideaMode (DelegateVoteOnIdea i) root = root </> "idea" </> uriPart i </> "delegate"
 
--- FIXME: This is only needed for valid test data generation
+-- | Call 'pruneCommentKey' on comment keys.  (Only needed for 'Arbitrary' instances.)
 pruneCommentReplyPath :: IdeaMode r -> IdeaMode r
 pruneCommentReplyPath (OnComment ck ReplyToComment) = OnComment (pruneCommentKey ck) ReplyToComment
 pruneCommentReplyPath m = m
 
--- FIXME: This is only needed for valid test data generation
--- | replies to sub-comments are turned into replies to the parent comment.
+-- | replies to sub-comments are turned into replies to the parent comment.  (Only needed for
+-- 'Arbitrary' instances, but defined here because we need access to abstract path types.)
 pruneCommentKey :: CommentKey -> CommentKey
 pruneCommentKey = \case
     ck@(CommentKey _ _ [] _) -> ck
