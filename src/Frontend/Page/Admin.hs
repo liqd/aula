@@ -588,6 +588,8 @@ instance FormPage AdminAddRole where
                     DF.inputSubmit "Änderungen speichern"
 
 
+-- | This was refactored in 1acd4961b2 to not allow editing of roles any more.  You can only add and
+-- remove roles from users.
 instance FormPage AdminEditUser where
     -- | (the login must always be provided in the posted data, but it is turned into Nothing in the
     -- validator if it has not changed.)
