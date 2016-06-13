@@ -624,12 +624,12 @@ instance FormPage AdminEditUser where
                     tbody_ . forM_ (user ^.. userRoles) $ \role -> tr_ $ do
                         td_ $ role ^. uilabeledST . html
                         -- TODO: combine confirm-on-click and reload-on-click
-                        td_ $ postButtonConfirm_ (Just "Are you sure to remove this role?") [] -- TODO translate
-                                                 (U.Admin $ U.adminRemRole user role) "Delete Role" -- TODO translate; use a button not a link
+                        td_ $ postButtonConfirm_ (Just "Soll diese Rolle wirklich entfernt werden?") []
+                                                 (U.Admin $ U.adminRemRole user role) "Rolle löschen"
                 div_ [class_ "admin-buttons"] $ do
-                    a_ [href_ . U.Admin $ U.adminAddRole user, class_ "btn add-role"] "Add Role" -- TODO translate; use a button not a link
+                    a_ [href_ . U.Admin $ U.adminAddRole user, class_ "btn add-role"] "Rolle hinzufügen"
                     br_ []
-                    a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn TODOforgotten-password"] "Passwort zurücksetzen"
+                    a_ [href_ . U.Admin $ U.adminResetPassword user, class_ "btn forgotten-password"] "Passwort zurücksetzen"
                     br_ []
                     a_ [href_ . U.Admin $ U.AdminDeleteUser (user ^. _Id), class_ "btn-cta"] "Nutzer löschen"
                     br_ []
@@ -688,7 +688,7 @@ adminAddRole :: ActionM m => AUID User -> FormPageHandler m AdminAddRole
 adminAddRole uid = formPageHandlerCalcMsg
     (equery $ AdminAddRole <$> (maybe404 =<< findActiveUser uid) <*> getSchoolClasses)
     (update . AddUserRole uid)
-    (\(AdminAddRole u _) _ _ -> unwords ["Nutzer", userFullName u, "wurde geändert."]) -- TODO: potentially a different text
+    (\(AdminAddRole u _) _ _ -> unwords ["Rolle wurde Nutzer", userFullName u, "zugewiesen."])
 
 adminRemRole :: ActionM m => AUID User -> Role -> m ()
 adminRemRole uid = update . RemUserRole uid
