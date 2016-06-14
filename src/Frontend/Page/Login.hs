@@ -14,6 +14,7 @@ import Access
 import Action (ActionM, query)
 import qualified Action
 import Persistent
+import Frontend.Constant (initialDemoPassword)
 import Frontend.Prelude
 import Frontend.Validation
 
@@ -89,6 +90,10 @@ instance ToHtml LoginDemoHints where
             br_ []
             br_ []
             "LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"
+            br_ []
+            "(Das voreingestellte Passwort bei Nutzern mit \"<hashed-password>\" ist "
+            initialDemoPassword ^. showed . html <> ".  "
+            "Initiale Passwörter, die noch geändert werden müssen, werden angezeigt.)"
             br_ []
             table_ [class_ "admin-table", style_ "padding: 30px"] $ do
                 tr_ $ do
