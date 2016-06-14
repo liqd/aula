@@ -373,6 +373,7 @@ instance Page (NeedCap 'CanPhaseBackwardTopic)  where isAuthorized = needCap Can
 
 instance Page NeedAdmin where isAuthorized = adminPage
 
+-- FIXME: move this to the rest of the delegation logic?  (where's that?)
 instance Page DelegateTo where
     isAuthorized = authNeedPage $ \_ (DelegateTo ctx user) ->
         authNeedCaps' [CanDelegate] ctx <<>>
@@ -467,10 +468,11 @@ data Frame body
     | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] } -- TODO remove messages
   deriving (Show, Read, Functor)
 
--- The first function 'mp' computes the page from the current logged in user.
--- WARNING, 'mp' CAN be run before authorization, this 'mp' SHOULD NOT modify the state.
--- The second function 'mr' computes the result and performs the necessary action on the
--- state.
+-- | Check authorization of a page action and wrap the page in a 'Frame'.  Returns a new action.
+--
+-- The first function 'mp' computes the page from the current logged in user.  WARNING, 'mp' CAN be
+-- run before authorization, this 'mp' SHOULD NOT modify the state.  The second function 'mr'
+-- computes the result and performs the necessary action on the state.
 runHandler' :: forall m p r. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
             => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
 runHandler' mp mr = do
@@ -508,12 +510,14 @@ completeRegistration = do
                 redirectPath P.UserSettings
         else redirectPath P.ListSpaces
 
--- Run the given handler, check for authorization and finally add the frame around the page.
+-- | Call 'runHandler'' on a handler that has no effect on the database state.
 runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
            => m p -> m (Frame p)
 runHandler mp = runHandler' (const mp) (\mu p -> maybe PublicFrame Frame mu p <$> flushMessages)
 
--- Run the given handler, check for authorization and finally add the frame around the page.
+-- | Call 'runHandler'' on a post handler.  In contrast to 'runHandler', this case requires
+-- distinguishing between the action that promises not to modify the database state and the action
+-- that is supposed to do just that.
 runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
                => m p -> m () -> m (PostResult p)
 runPostHandler mp mr = runHandler' (const mp) $ \_ _ -> UnsafePostResult <$ mr

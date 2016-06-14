@@ -353,6 +353,14 @@ instance Functor AccessInput where
         NotLoggedIn -> NotLoggedIn
         LoggedIn u mp -> LoggedIn u (f <$> mp)
 
+-- | Body type for supporting authorization on non-page end-points (like post-only handlers for
+-- buttons or rest apis.  An instance could look like this:
+--
+-- >>> instance Page (NeedCap 'CanVoteComment) where isAuthorized = needCap CanVoteComment
+--
+-- The end-point can then be defined like this:
+--
+-- >>>   :<|> UpDown ::> PostH (NeedCap 'CanVoteComment)
 data NeedCap (cap :: Capability) = NeedCap { _needCapCtx :: CapCtx }
   deriving (Eq, Ord, Show, Read, Generic)
 
