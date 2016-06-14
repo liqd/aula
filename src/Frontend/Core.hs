@@ -463,9 +463,14 @@ form formHandler = getH :<|> postH
 -- * frame creation
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
+--
+-- The status messages in 'PublicFrame' are intentional.  We use this for a status message "thanks
+-- for playing" that is presented after logout.  (This is methodically sound: a session extends over
+-- the entire sequence of requests the client presents the same cookie, not only over those
+-- sub-sequences where the user is logged-in.)
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
-    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] } -- TODO remove messages
+    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
 -- | Check authorization of a page action and wrap the page in a 'Frame'.  Returns a new action.
