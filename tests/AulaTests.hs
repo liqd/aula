@@ -6,6 +6,8 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 module AulaTests
     ( module AulaTests
     , module X
@@ -14,10 +16,12 @@ module AulaTests
 import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
 import Control.Exception (bracket)
+import Data.String.Conversions
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (system)
+import Test.HUnit.Lang (HUnitFailure(HUnitFailure))
 import Test.Hspec.Wai (WaiExpectation)
 import Test.QuickCheck (Gen, frequency, choose)
 
@@ -81,8 +85,22 @@ bodyShouldContain :: String -> Response LBS -> Expectation
 bodyShouldContain body l = l ^. responseBody . csi `shouldContain` body
 
 -- FIXME: error location should be of the caller
-shouldRespond :: IO (Response body) -> [Response body -> Expectation] -> IO ()
-shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher
+shouldRespond :: forall body. (Show body, ConvertibleStrings body String) => IO (Response body) -> [Response body -> Expectation] -> IO ()
+shouldRespond action matcher = action >>= \r -> mapM_ ($r) matcher `catch` appendResp r
+  where
+    appendResp :: Response body -> HUnitFailure -> IO ()
+    appendResp r (HUnitFailure mloc msg) = throwIO $ HUnitFailure mloc (unlines $ msg:extraInfo)
+      where
+        extraInfo =
+            [ "\n*** body:"
+            , show (cs (r ^. responseBody) :: String)
+            , "\n*** status:"
+            , ppShow (r ^. responseStatus)
+            , "\n*** headers:"
+            , ppShow (r ^. responseHeaders)
+            , "\n*** full request:"
+            , ppShow r
+            ]
 
 -- FIXME: error location should be of the caller
 bodyShouldSatisfy :: (Show body, Eq body) => (body -> Bool) -> Response body -> Expectation
