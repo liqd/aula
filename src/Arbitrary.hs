@@ -623,10 +623,18 @@ instance Arbitrary ProtoUser where
 
 arbValidUserLogin :: Gen UserLogin
 arbValidUserLogin =
-    UserLogin . cs <$> (choose (4,12) >>= flip replicateM (elements ['a' .. 'z']))
+    UserLogin . cs <$>
+        (choose ( Frontend.Constant.minUsernameLength
+                , Frontend.Constant.maxUsernameLength)
+            >>= flip replicateM (elements ['a' .. 'z']))
 
 arbValidInitialPassword :: Gen InitialPassword
-arbValidInitialPassword = InitialPassword . cs <$> someOf 4 12 (arb :: Gen Char)
+arbValidInitialPassword =
+    InitialPassword . cs
+    <$> someOf
+            Frontend.Constant.minPasswordLength
+            Frontend.Constant.maxPasswordLength
+            (arb :: Gen Char)
 
 arbValidUserPass :: Gen UserPass
 arbValidUserPass = UserPassInitial <$> arbValidInitialPassword
