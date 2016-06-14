@@ -244,10 +244,6 @@ class Page p where
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
-instance Page () where isAuthorized = publicPage
-
-instance Page ST where isAuthorized = adminPage
-
 instance Page p => Page (Frame p) where
     isAuthorized a = isAuthorized (_frameBody <$> a)
     extraPageHeaders = extraPageHeaders . _frameBody
