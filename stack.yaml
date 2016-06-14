@@ -51,6 +51,7 @@ extra-deps:
 - basic-sop-0.2.0.0
 - generics-sop-0.2.1.0
 - acid-state-0.14.0
+- temporary-1.2.0.3
 
 # Override default flag values for local packages and extra-deps
 flags: {}

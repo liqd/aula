@@ -20,7 +20,6 @@ import Data.String.Conversions
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
-import System.Process (system)
 import Test.HUnit.Lang (HUnitFailure(HUnitFailure))
 import Test.Hspec.Wai (WaiExpectation)
 import Test.QuickCheck (Gen, frequency, choose)
@@ -116,12 +115,6 @@ doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
 withServer :: (WreqQuery -> IO a) -> IO a
 withServer action = (`withServer'` action) =<< testConfig
-
-withServerWithEventLog :: (WreqQuery -> IO a) -> IO a
-withServerWithEventLog action = do
-    let elpath = "/tmp/aula-test-events.json"
-    _ <- system $ "rm -f " <> show elpath
-    (`withServer'` action) . (logging . eventLogPath .~ elpath) =<< testConfig
 
 withServer' :: Config -> (WreqQuery -> IO a) -> IO a
 withServer' cfg action = do

@@ -11,7 +11,11 @@
 module Frontend.Page.AdminSpec
 where
 
+import System.IO (hClose)
+import System.IO.Temp (withSystemTempFile)
+
 import Logger.EventLog
+import Config
 import AulaTests
 
 
@@ -46,3 +50,10 @@ spec = do
                 `shouldRespond` [codeShouldBe 200, shouldHaveHeaders]
 
         -- missing test: test empty event log.
+
+
+withServerWithEventLog :: (WreqQuery -> IO a) -> IO a
+withServerWithEventLog action = withSystemTempFile "aula-test-events" $ \elpath h -> do
+    hClose h
+    cfg <- (logging . eventLogPath .~ elpath) <$> testConfig
+    withServer' cfg action
