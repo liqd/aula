@@ -11,11 +11,12 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold)
-import Control.Monad (zipWithM_, replicateM, replicateM_, (>=>))
+import Control.Monad (zipWithM_, replicateM, replicateM_)
 import Data.List (nub)
 import Data.String.Conversions ((<>), cs)
 
 import Arbitrary hiding (generate)
+import Frontend.Constant (initialDemoPassword)
 import Persistent
 import Persistent.Api
 import Action
@@ -78,7 +79,7 @@ genUser genRole =
     <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
     <**> (set protoUserRoleSet . Set.singleton <$> genRole)
     <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
-    <**> (set protoUserPassword <$> genInitialPassword)
+    <**> pure (set protoUserPassword (InitialPassword initialDemoPassword))
 
 genAvatar :: Gen URL
 genAvatar = elements fishAvatars
@@ -160,8 +161,11 @@ updateAvatar :: User -> URL -> forall m . ActionM m => m ()
 updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
 
 addUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
-addUserWithEmailFromConfig =
-    setEmailFromConfig >=> addWithCurrentUser AddUser
+addUserWithEmailFromConfig protoUser = do
+    user <- setEmailFromConfig protoUser >>= addWithCurrentUser AddUser
+    encryptPassword (protoUser ^. protoUserPassword . unInitialPassword)
+        >>= update . SetUserPass (user ^. _Id)
+    pure user
 
 addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
 addFirstUserWithEmailFromConfig pu = do

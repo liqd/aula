@@ -14,6 +14,7 @@ import Access
 import Action (ActionM, query)
 import qualified Action
 import Persistent
+import Frontend.Constant (initialDemoPassword)
 import Frontend.Prelude
 import Frontend.Validation
 
@@ -89,6 +90,9 @@ instance ToHtml LoginDemoHints where
             br_ []
             br_ []
             "LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"
+            br_ []
+            -- TODO: Translate
+            toHtml $ "The initial password for users is " <> initialDemoPassword
             br_ []
             table_ [class_ "admin-table", style_ "padding: 30px"] $ do
                 tr_ $ do

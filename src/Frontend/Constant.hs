@@ -1,5 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Frontend.Constant
 where
+
+import Data.String.Conversions (ST)
 
 -- FIXME: Search for global constants
 
@@ -23,3 +26,6 @@ minPasswordLength = 4
 
 maxPasswordLength :: Int
 maxPasswordLength = 120
+
+initialDemoPassword :: ST
+initialDemoPassword = "1234"
