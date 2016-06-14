@@ -73,6 +73,7 @@ import Types
 
 import qualified Frontend.Path as P
 
+
 -- * Capabilities
 
 -- | What a user can do with an idea/topic/comment/user.
@@ -360,6 +361,7 @@ data NeedAdmin = NeedAdmin
 data DelegateTo = DelegateTo { _delegateToCapCtx :: CapCtx, _delegateToUser :: User }
   deriving (Eq, Ord, Show, Read, Generic)
 
+
 -- * basic policy results (AccessResult')
 
 accessGranted :: AccessResult'
@@ -429,8 +431,8 @@ makePrisms ''NeedCap
 makeLenses ''DelegateTo
 makePrisms ''DelegateTo
 
--- FIXME: dependent types needed here
-needCap :: {-cap :: -}Capability -> AccessCheck (NeedCap cap)
+-- (the type signature would be more interesting with dependent types.)
+needCap :: {- cap :: -} Capability -> AccessCheck (NeedCap cap)
 needCap cap = authNeedCaps [cap] needCapCtx
 
 
