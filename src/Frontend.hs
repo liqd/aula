@@ -59,8 +59,11 @@ import qualified Frontend.Path as U
 
 -- * driver
 
+-- FIXME: not implemented.  i'm also not sure what this was supposed to do any more.  perhaps this
+-- has been obsoleted by the 'isAuthorized' code and can be removed?  or is it intended to renew the
+-- session so it won't time out unless the user is inactive for the timeout period?
 extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
-extendClearanceOnSessionToken _ = pure () -- FIXME
+extendClearanceOnSessionToken _ = pure ()
 
 -- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()

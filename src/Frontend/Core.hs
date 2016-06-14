@@ -232,6 +232,9 @@ percentVotes idea numVoters vv = {- assert c -} v
 -- * pages
 
 -- | Defines some properties for pages
+--
+-- FIXME: factor out 'isAuthorized' into its own type class.  (Page should always want a Frame, i
+-- think.)
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
@@ -476,7 +479,7 @@ data Frame body
     | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
--- | Check authorization of a page action and wrap the page in a 'Frame'.  Returns a new action.
+-- | Check authorization of a page action.  Returns a new action.
 --
 -- The first function 'mp' computes the page from the current logged in user.  WARNING, 'mp' CAN be
 -- run before authorization, this 'mp' SHOULD NOT modify the state.  The second function 'mr'
@@ -518,14 +521,14 @@ completeRegistration = do
                 redirectPath P.UserSettings
         else redirectPath P.ListSpaces
 
--- | Call 'runHandler'' on a handler that has no effect on the database state.
+-- | Call 'runHandler'' on a handler that has no effect on the database state, and 'Frame' the result.
 runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
            => m p -> m (Frame p)
 runHandler mp = runHandler' (const mp) (\mu p -> maybe PublicFrame Frame mu p <$> flushMessages)
 
--- | Call 'runHandler'' on a post handler.  In contrast to 'runHandler', this case requires
--- distinguishing between the action that promises not to modify the database state and the action
--- that is supposed to do just that.
+-- | Call 'runHandler'' on a post handler, and 'Frame' the result.  In contrast to 'runHandler',
+-- this case requires distinguishing between the action that promises not to modify the database
+-- state and the action that is supposed to do just that.
 runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
                => m p -> m () -> m (PostResult p)
 runPostHandler mp mr = runHandler' (const mp) $ \_ _ -> UnsafePostResult <$ mr
