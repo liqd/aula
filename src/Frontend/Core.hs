@@ -253,31 +253,34 @@ instance Page p => Page (Frame p) where
     extraPageHeaders = extraPageHeaders . _frameBody
 
 instance (Page a, Page b) => Page (a :<|> b) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance (Page a, Page b) => Page (a :<|> b)"
 
 instance (KnownSymbol s, Page a) => Page (s :> a) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (s :> a)"
 
 instance (KnownSymbol s, Page a) => Page (Capture s c :> a) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (Capture s c :> a)"
 
 instance Page a => Page (Headers h a) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Headers h a)"
 
 instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a)"
 
 instance Page a => Page (FormReqBody :> a) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (FormReqBody :> a)"
 
 instance Page a => Page (Get c a) where
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Get c a)"
 
-instance Page a => Page (Post c a) where -- TODO
-    isAuthorized = error "IMPOSSIBLE"
+instance Page a => Page (Post c a) where -- TODO: we should probably not have this instance, then we
+                                         -- won't be able to accidentally sneak in an unprotected
+                                         -- 'Post' handler.  ame with 'Get' above and 'PostResult'
+                                         -- below.
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Post c a)"
 
 instance Page a => Page (PostResult a) where -- TODO
-    isAuthorized = error "IMPOSSIBLE"
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (PostResult a)"
 
 instance Page EventLog where
     isAuthorized = error "TODO: isAuthorized Page EventLog"
