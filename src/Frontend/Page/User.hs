@@ -60,12 +60,13 @@ data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView L
 instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
-newtype DelegationInfo = DelegationInfo [(User, [User])]
+-- Represents two step long delegation paths from a user.
+newtype DelegationPath = DelegationPath [(User, [User])]
   deriving (Eq, Show, Read)
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegationInfo
+        PageUserProfileDelegatedVotes CapCtx UserView DelegationPath
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
@@ -276,8 +277,8 @@ instance ToHtml PageUserProfileDelegatedVotes where
                         a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
                     renderDelegations delegations
 
-renderDelegations :: forall m. Monad m => DelegationInfo -> HtmlT m ()
-renderDelegations (DelegationInfo delegations) = do
+renderDelegations :: forall m. Monad m => DelegationPath -> HtmlT m ()
+renderDelegations (DelegationPath delegations) = do
     h2_ $ "Insgesamt " <> total ^. showed . html
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
@@ -315,17 +316,17 @@ delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
     PageUserProfileDelegatedVotes ctx
         <$> (makeUserView <$> mquery (findUser userId))
-        <*> delegationInfo (ctx ^. capCtxUser . _Id) scope
+        <*> delegationPath (ctx ^. capCtxUser . _Id) scope
 
-delegationInfo :: ActionPersist m => AUID User -> DScope -> m DelegationInfo
-delegationInfo uid scope = equery $ do
+delegationPath :: ActionPersist m => AUID User -> DScope -> m DelegationPath
+delegationPath uid scope = equery $ do
     let findDelegatees uid' = do
             scopeDelegatees uid' scope
             >>= mapM (findUser . view delegationFrom)
             >>= pure . catMaybes
 
     firstLevelDelegatees <- findDelegatees uid
-    DelegationInfo <$> forM firstLevelDelegatees (\user ->
+    DelegationPath <$> forM firstLevelDelegatees (\user ->
                             (,) user <$> findDelegatees (user ^. _Id))
 
 
