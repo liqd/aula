@@ -46,7 +46,8 @@ import Types
 
 -- * filter (also does sort)
 
--- | The associated type decides the values that are filtered / sorted.
+-- | The associated type decides the values that are filtered / sorted.  See the
+-- 'ClassesFilterQuery' instance below for a reasonably accessible example use case.
 class Filter a where
     type Filtered a
     applyFilter  :: a -> [Filtered a] -> [Filtered a]
