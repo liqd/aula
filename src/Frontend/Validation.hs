@@ -216,7 +216,8 @@ usernameV = fieldParser
 passwordV :: StringFieldValidator
 passwordV = fieldParser
     (cs <$> manyNM minPasswordLength maxPasswordLength anyChar
-            <??> (show minPasswordLength <> "+ Zeichen"))
+            <??> concat [ show minPasswordLength, "-"
+                        , show maxPasswordLength, " Zeichen"])
 
 titleV :: StringFieldValidator
 titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
