@@ -114,7 +114,9 @@ instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
     formAction _ = U.userSettings
-    redirectOf _ _ = U.userSettings
+    redirectOf (PageUserSettings u) _
+        | has (Frontend.Prelude.userSettings . userSettingsPassword . _UserPassInitial) u = U.listSpaces
+        | otherwise = U.userSettings
 
     makeForm (PageUserSettings user) =
           DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
