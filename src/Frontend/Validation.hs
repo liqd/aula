@@ -48,9 +48,10 @@ import Text.Email.Validate as Email
 import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
 
+import Frontend.Constant
 import Frontend.Prelude as Frontend hiding ((<|>))
 
-import qualified Data.Text as ST 
+import qualified Data.Text as ST
 
 
 type FieldName = String
@@ -207,10 +208,16 @@ usernameV' = dimap (view _UserLogin) UserLogin usernameV
 -- security issues such as https://labs.spotify.com/2013/06/18/creative-usernames/
 -- The issue above does not apply here for various reasons but still we can be cautious.
 usernameV :: StringFieldValidator
-usernameV = fieldParser (cs <$> manyNM 4 12 letter <??> "4-12 Buchstaben")
+usernameV = fieldParser
+    (cs <$> manyNM minUsernameLength maxUsernameLength letter
+            <??> concat [ show minUsernameLength, "-"
+                        , show maxUsernameLength, " Buchstaben"])
 
 passwordV :: StringFieldValidator
-passwordV = fieldParser (cs <$> manyNM 4 12 anyChar <??> "4-12 Zeichen")
+passwordV = fieldParser
+    (cs <$> manyNM minPasswordLength maxPasswordLength anyChar
+            <??> concat [ show minPasswordLength, "-"
+                        , show maxPasswordLength, " Zeichen"])
 
 titleV :: StringFieldValidator
 titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")

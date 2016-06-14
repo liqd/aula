@@ -2,6 +2,7 @@
 module Frontend.Page.LoginSpec where
 
 import AulaTests
+import Frontend.Constant (minPasswordLength)
 
 spec :: Spec
 spec = describe "logging in" $ do
@@ -12,7 +13,7 @@ spec = describe "logging in" $ do
     context "if user does not exist" $ do
       it "will not log you in and will redirect" $ \wreq -> do
         -- FIXME: Figure out what went wrong.
-        pendingWith "Quote is in the username... Login : unerwartet &quot; &quot;erwartet 4-12 Buchstaben"
+        pendingWith $ "Quote is in the username... Login : unerwartet &quot; &quot;erwartet " <> show minPasswordLength <> "+ Zeichen"
         -- FIXME is 201 the right code here, since we got some validation errors?
         checkLogin wreq "not the admin" "foobar" 201 [bodyShouldContain "Falscher Nutzername und/oder falsches Passwort."]
         checkLoggedIn wreq 303
