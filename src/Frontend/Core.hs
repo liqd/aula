@@ -129,6 +129,9 @@ type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 type instance CaptureData Role               = Role
 
+-- | A unit type that carries authorization info on the type level.  (The constructor should only be
+-- used in 'runPostHandler', where the authorization check happens before the request has any effect
+-- on the database state.)
 data PostResult a = UnsafePostResult
 
 -- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
