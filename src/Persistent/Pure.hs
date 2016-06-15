@@ -608,29 +608,29 @@ addDelegation = addDb dbDelegationMap
 deleteDelegation :: AUID Delegation -> AUpdate ()
 deleteDelegation did = dbDelegationMap . at did .= Nothing
 
-delegationScopeTree :: User -> Query (Tree DScope)
-delegationScopeTree user = unfoldTreeM discover DScopeGlobal
+delegationScopeTree :: User -> Query (Tree DScopeFull)
+delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
   where
-    discover :: DScope -> Query (DScope, [DScope])
-    discover DScopeGlobal = do
-        schoolIdeas <- DScopeIdeaId . view _Id <$$> findWildIdeasBySpace SchoolSpace
-        let ideaSpaces = DScopeIdeaSpace . ClassSpace <$> (user ^.. userSchoolClasses)
-        pure (DScopeGlobal, schoolIdeas <> ideaSpaces)
+    discover :: DScopeFull -> Query (DScopeFull, [DScopeFull])
+    discover DScopeGlobalFull = do
+        schoolIdeas <- DScopeIdeaFull <$$> findWildIdeasBySpace SchoolSpace
+        let ideaSpaces = DScopeIdeaSpaceFull . ClassSpace <$> (user ^.. userSchoolClasses)
+        pure (DScopeGlobalFull, schoolIdeas <> ideaSpaces)
 
     -- FIXME: Impossible: As the Global is the School space
-    discover s@(DScopeIdeaSpace SchoolSpace) = do
+    discover s@(DScopeIdeaSpaceFull SchoolSpace) = do
         pure (s, [])
 
-    discover s@(DScopeIdeaSpace cspace@(ClassSpace{})) = do
-        classIdeas  <- DScopeIdeaId . view _Id  <$$> findWildIdeasBySpace cspace
-        classTopics <- DScopeTopicId . view _Id <$$> findTopicsBySpace cspace
+    discover s@(DScopeIdeaSpaceFull cspace@(ClassSpace{})) = do
+        classIdeas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace cspace
+        classTopics <- DScopeTopicFull <$$> findTopicsBySpace cspace
         pure (s, classIdeas <> classTopics)
 
-    discover s@(DScopeTopicId topicId) = do
-        topicIdeas <- DScopeIdeaId . view _Id <$$> findIdeasByTopicId topicId
+    discover s@(DScopeTopicFull topic) = do
+        topicIdeas <- DScopeIdeaFull <$$> findIdeasByTopic topic
         pure (s, topicIdeas)
 
-    discover s@(DScopeIdeaId{}) =
+    discover s@(DScopeIdeaFull{}) =
         pure (s, [])
 
 allDelegations :: Query [Delegation]

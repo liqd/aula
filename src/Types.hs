@@ -837,8 +837,10 @@ instance ToHttpApiData DScope where
 -- (NOTE: since this is only used for the delegate selection page, and that page is only displayed
 -- for dscopes on topic level and below, we do not carry the higher-level constructors at all.)
 data DScopeFull =
-    DScopeTopicFull { _dScopeTopicFull :: Topic }
-  | DScopeIdeaFull  { _dScopeIdeaFull  :: Idea  }
+    DScopeGlobalFull
+  | DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace }
+  | DScopeTopicFull     { _dScopeTopicFull     :: Topic     }
+  | DScopeIdeaFull      { _dScopeIdeaFull      :: Idea      }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DScopeFull
@@ -1630,6 +1632,21 @@ userPassword = userSettings . userSettingsPassword
 
 userEmail :: Lens' User (Maybe EmailAddress)
 userEmail = userSettings . userSettingsEmail
+
+fullDScopeToDScope :: DScopeFull -> DScope
+fullDScopeToDScope = \case
+    DScopeGlobalFull       -> DScopeGlobal
+    DScopeIdeaSpaceFull is -> DScopeIdeaSpace is
+    DScopeTopicFull t      -> DScopeTopicId (t ^. _Id)
+    DScopeIdeaFull i       -> DScopeIdeaId (i ^. _Id)
+
+-- TODO: Translate
+instance HasUILabel DScopeFull where
+    uilabel = \case
+        DScopeGlobalFull       -> "DScopeGlobal"
+        DScopeIdeaSpaceFull is -> "IdeaSpace " <> uilabel is
+        DScopeTopicFull t      -> "Topic " <> t ^. topicTitle . csi . to fromString
+        DScopeIdeaFull i       -> "Idea " <> i ^. ideaTitle  . csi . to fromString
 
 
 instance (Aeson.ToJSON a, Aeson.ToJSON b, Aeson.ToJSON c) => Aeson.ToJSON (Either3 a b c) where toJSON = Aeson.gtoJson

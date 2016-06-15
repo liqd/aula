@@ -84,7 +84,7 @@ topicDelegation tid = formPageHandlerWithMsg
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScope) [DelegationInfo]
+data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) [DelegationInfo]
   deriving (Eq, Show, Read)
 
 data PageDelegationNetworkPayload = PageDelegationNetworkPayload DScope
@@ -166,14 +166,13 @@ instance FormPage PageDelegationNetwork where
         <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
       where
         -- TODO: Better visual instead of show
-        delegationScopeList = (id &&& toHtml . show) <$> (Tree.flatten dscopes)
+        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> (Tree.flatten dscopes)
 
-    formPage v form p@(PageDelegationNetwork _ scopeTree delegations) = semanticDiv p $ do
+    formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
         form $ do
             inputSelect_ [] "scope" v
             DF.inputSubmit "Show delegations!"
             p_ . toHtml $ show delegations
-            p_ . toHtml $ ppShow scopeTree
             img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
