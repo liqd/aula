@@ -87,6 +87,10 @@
                 @include svg(icon_umgebung);
             }
 
+            &.icon-all-cats {
+                @include svg(icon_all_cats);
+            }
+
             &.icon-feasible {
                 @include svg(yay);
             }
