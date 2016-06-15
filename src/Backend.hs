@@ -44,12 +44,24 @@ type DelegationsApi = GetJ DelegationNetwork
 delegationsApi :: (GenArbitrary m, ActionM m) => ServerT DelegationsApi m
 delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction Nothing
 
+data NeedEmptyUserMap = NeedEmptyUserMap
+
+instance Page NeedEmptyUserMap where
+    isAuthorized = publicPage
+{-
+    FIXME: since we don't have access to the db here.
+    isAuthorized _ = do
+        noUsers <- query $ views dbUserMap Map.null
+        if noUsers
+            then accessGranted
+            else accessDenied $ Just "Can only be used when there are no users!"
+-}
 
 -- * persistent state management (for demo operation)
 
 type ManageStateApi =
        "wipe"        :> PostJ NeedAdmin ()
-  :<|> "create-init" :> PostJ NeedAdmin ()
+  :<|> "create-init" :> PostJ NeedEmptyUserMap ()
   :<|> "create-demo" :> PostJ NeedAdmin ()
   :<|> "create-votes" :> PostJ NeedAdmin ()
   :<|> "rename-logins" :> Capture "suffix" ST :> PostJ NeedAdmin ()
@@ -57,7 +69,7 @@ type ManageStateApi =
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        runPostHandler (pure NeedAdmin) (update DangerousResetAulaData)
-  :<|> runPostHandler (pure NeedAdmin) genInitialTestDb
+  :<|> runPostHandler (pure NeedEmptyUserMap) genInitialTestDb
   :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse defaultUniverseSize))
   :<|> runPostHandler (pure NeedAdmin) genVotingPhaseTopic
   :<|> runPostHandler (pure NeedAdmin) . update . DangerousRenameAllLogins
