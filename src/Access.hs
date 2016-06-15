@@ -64,9 +64,7 @@ import Data.Set.Lens (setOf)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 
-import qualified Data.Aeson as Aeson
 import qualified Data.Set as Set
-import qualified Generics.Generic.Aeson as Aeson
 import qualified Generics.SOP as SOP
 
 import Data.UriPath (absoluteUriPath)
@@ -366,11 +364,7 @@ instance Functor AccessInput where
 data NeedCap (cap :: Capability) = NeedCap { _needCapCtx :: CapCtx }
   deriving (Eq, Ord, Show, Read, Generic)
 
-data NeedAdmin = NeedAdmin  -- TODO: should constructors 'NeedAdmin', 'NeedCap', ... be renamed 'unsafe*'?
-  deriving (Generic)
-
-instance SOP.Generic NeedAdmin
-instance Aeson.ToJSON NeedAdmin where toJSON = Aeson.gtoJson
+data NeedAdmin = NeedAdmin
 
 data DelegateTo = DelegateTo { _delegateToCapCtx :: CapCtx, _delegateToUser :: User }
   deriving (Eq, Ord, Show, Read, Generic)
