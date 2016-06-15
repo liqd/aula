@@ -376,14 +376,15 @@ instance Arbitrary PageDelegationNetwork where
     shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
     arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> arbDScopeFullTree <*> arb
       where
-        -- Trees with max 4 height.
+        -- Trees with a small max height.  (Note that the arbitrary structure allows arbitrary
+        -- scopes to be contained in arbitrary other ones, so this could potentially get much deeper
+        -- than "global-space-topic-idea".)
         arbDScopeFullTree :: Gen (Tree DScopeFull)
-        arbDScopeFullTree = Tree.unfoldTreeM genTree 4
+        arbDScopeFullTree = Tree.unfoldTreeM genTree 3
           where
             genTree :: Int -> Gen (DScopeFull, [Int])
-            genTree n
-                | n == 0    = (,) <$> arb <*> pure []
-                | otherwise = (,) <$> arb <*> listOf (choose (0,n-1))
+            genTree 0 = (,) <$> arb <*> pure []
+            genTree n = (,) <$> arb <*> listOf (choose (0, n-1))
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
