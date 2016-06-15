@@ -84,6 +84,7 @@ import Data.Maybe (catMaybes)
 import Data.String (fromString)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
+import Data.Tree as Tree (Tree)
 import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
@@ -269,9 +270,9 @@ instance Arbitrary PageUserProfileCreatedIdeas where
     shrink (PageUserProfileCreatedIdeas x y z) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
-instance Arbitrary DelegationInfo where
-    arbitrary = DelegationInfo <$> arb
-    shrink (DelegationInfo x) = DelegationInfo <$> shr x
+instance Arbitrary DelegationTree where
+    arbitrary = DelegationTree <$> arb
+    shrink (DelegationTree x) = DelegationTree <$> shr x
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
@@ -370,8 +371,23 @@ instance Arbitrary PageDelegateVote where
     arbitrary = PageDelegateVote <$> arb <*> arb
     shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
 
+instance Arbitrary PageDelegationNetworkPayload where
+    arbitrary = PageDelegationNetworkPayload <$> arb
+    shrink (PageDelegationNetworkPayload x) = PageDelegationNetworkPayload <$> shr x
+
+-- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
-    arbitrary = PageDelegationNetwork <$> arb
+    shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
+    arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> arbDScopeFullTree <*> arb
+      where
+        -- Trees with max 4 height.
+        arbDScopeFullTree :: Gen (Tree DScopeFull)
+        arbDScopeFullTree = Tree.unfoldTreeM genTree 4
+          where
+            genTree :: Int -> Gen (DScopeFull, [Int])
+            genTree n
+                | n == 0    = (,) <$> arb <*> pure []
+                | otherwise = (,) <$> arb <*> listOf (choose (0,n-1))
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
@@ -462,6 +478,10 @@ instance Arbitrary RoleScope where
 instance Arbitrary ReportCommentContent where
     arbitrary = ReportCommentContent <$> arbitrary
     shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
+
+instance Arbitrary DelegationInfo where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Delegation where
     arbitrary = garbitrary

@@ -17,6 +17,7 @@ import Control.Category ((.))
 import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
+import Data.Tree as Tree (flatten)
 import Test.QuickCheck
 import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)
 import Text.Digestive.Types
@@ -65,7 +66,6 @@ spec = do
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen AdminViewUsers)
         , H (arb :: Gen AdminViewClasses)
-        , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen AdminEditClass)
@@ -117,6 +117,7 @@ spec = do
 --        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
         , formTest (arb :: Gen EditUserProfile)
         , formTest (arb :: Gen ReportUserProfile)
+        , formTest (arb :: Gen PageDelegationNetwork)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -174,6 +175,11 @@ class PayloadToEnv a where
     default payloadDefaultContext :: Proxy a -> EmptyPayloadContext
     payloadDefaultContext _ = EmptyPayloadContext
 
+    -- | Fills out a form view with the combined information coming form the
+    -- 'PayloadToEnvContext a' and 'a'.
+    --
+    -- Example for the 'PayloadToEnvContext a'. It is needed for selections, where we enumerate
+    -- all the possible choices (which are usually generated randomly)
     payloadToEnvMapping   :: PayloadToEnvContext a -> View (Html ()) -> a -> ST -> Action [FormInput]
 
 -- | When context dependent data is constructed via forms with the 'pure' combinator
@@ -405,6 +411,8 @@ class FormPage p => ArbFormPagePayload p where
     type ArbFormPagePayloadContext p :: *
     type ArbFormPagePayloadContext p = EmptyPayloadContext
 
+    -- | Extracts information from a randomly generated FormPage p value, which
+    -- information can be used to fill out the values in forms.
     arbFormPagePayloadCtx :: p -> Gen (ArbFormPagePayloadContext p)
     default arbFormPagePayloadCtx :: p -> Gen EmptyPayloadContext
     arbFormPagePayloadCtx _ = pure EmptyPayloadContext
@@ -561,6 +569,22 @@ instance PayloadToEnv AdminDeleteUserPayload where
         _ -> pure [TextInput ""]
 
 instance ArbFormPagePayload AdminCreateUser
+
+instance PayloadToEnv PageDelegationNetworkPayload where
+    type PayloadToEnvContext PageDelegationNetworkPayload = [DScopeFull]
+    payloadDefaultContext _ = [DScopeGlobalFull]
+    payloadToEnvMapping ds v (PageDelegationNetworkPayload dscope) = \case
+        "scope" -> pure [TextInput $ selectValue "scope" v vs dscope]
+      where
+        vs = (fullDScopeToDScope &&& uilabel) <$> ds
+
+instance ArbFormPagePayload PageDelegationNetwork where
+    type ArbFormPagePayloadContext PageDelegationNetwork = [DScopeFull]
+    arbFormPagePayloadCtx (PageDelegationNetwork _dscope scopeTree _delegationInfos)
+        = pure $ Tree.flatten scopeTree
+    arbFormPagePayload (PageDelegationNetwork _dscope scopeTree _delegationInfos)
+        = PageDelegationNetworkPayload . fullDScopeToDScope
+          <$> Test.QuickCheck.elements (Tree.flatten scopeTree)
 
 {- TODO
   1) Frontend.Core.PageFormView Gen AdminCreateUser (process valid forms)
