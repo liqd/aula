@@ -118,7 +118,7 @@ module Persistent.Pure
     , adminUsernameHack
     , addDelegation
     , deleteDelegation
-    , delegationScopes
+    , delegationScopeTree
     , allDelegations
     , findDelegationsByScope
     , findDelegationsByDelegatee
@@ -160,6 +160,7 @@ import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
+import Data.Tree
 import Data.Typeable (Typeable, typeRep)
 import Servant
 import Servant.Missing (ThrowError500(..))
@@ -607,17 +608,30 @@ addDelegation = addDb dbDelegationMap
 deleteDelegation :: AUID Delegation -> AUpdate ()
 deleteDelegation did = dbDelegationMap . at did .= Nothing
 
--- | Computes the delegation scopes related to the user
--- FIXME: It returns everyting now
-delegationScopes :: AUID User -> Query [DScope]
-delegationScopes _ = do
-    ideas  <- getIdeas
-    topics <- getTopics
-    spaces <- getSpaces
-    pure $ DScopeGlobal
-            : (DScopeIdeaSpace <$> spaces)
-            <> (DScopeTopicId . view _Id <$> topics)
-            <> (DScopeIdeaId  . view _Id <$> ideas)
+delegationScopeTree :: User -> Query (Tree DScope)
+delegationScopeTree user = unfoldTreeM discover DScopeGlobal
+  where
+    discover :: DScope -> Query (DScope, [DScope])
+    discover DScopeGlobal = do
+        schoolIdeas <- DScopeIdeaId . view _Id <$$> findWildIdeasBySpace SchoolSpace
+        let ideaSpaces = DScopeIdeaSpace . ClassSpace <$> (user ^.. userSchoolClasses)
+        pure (DScopeGlobal, schoolIdeas <> ideaSpaces)
+
+    -- FIXME: Impossible: As the Global is the School space
+    discover s@(DScopeIdeaSpace SchoolSpace) = do
+        pure (s, [])
+
+    discover s@(DScopeIdeaSpace cspace@(ClassSpace{})) = do
+        classIdeas  <- DScopeIdeaId . view _Id  <$$> findWildIdeasBySpace cspace
+        classTopics <- DScopeTopicId . view _Id <$$> findTopicsBySpace cspace
+        pure (s, classIdeas <> classTopics)
+
+    discover s@(DScopeTopicId topicId) = do
+        topicIdeas <- DScopeIdeaId . view _Id <$$> findIdeasByTopicId topicId
+        pure (s, topicIdeas)
+
+    discover s@(DScopeIdeaId{}) =
+        pure (s, [])
 
 allDelegations :: Query [Delegation]
 allDelegations = Map.elems <$> view dbDelegationMap
