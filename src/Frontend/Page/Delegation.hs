@@ -32,7 +32,7 @@ import           Data.Tree (Tree)
 import qualified Data.Tree as Tree (flatten)
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote DScopeFull [User]
+data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User]
   deriving (Eq, Show, Read)
 
 instance Page PageDelegateVote where isAuthorized = userPage
@@ -45,12 +45,12 @@ instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
     formAction (PageDelegateVote scope _users) = case scope of
-        DScopeTopicFull     topic  -> U.delegateVoteOnTopic topic
-        DScopeIdeaFull      idea   -> U.delegateVoteOnIdea idea
+        Left  topic  -> U.delegateVoteOnTopic topic
+        Right idea   -> U.delegateVoteOnIdea idea
 
     redirectOf (PageDelegateVote scope _users) _ = case scope of
-        DScopeTopicFull     topic  -> U.viewTopic topic
-        DScopeIdeaFull      idea   -> U.viewIdea idea
+        Left  topic  -> U.viewTopic topic
+        Right idea   -> U.viewIdea idea
 
     -- TODO: Show the existing delegation
     makeForm (PageDelegateVote _scope users) =
@@ -70,7 +70,7 @@ ideaDelegation iid = formPageHandlerWithMsg
     (equery $
         do idea <- maybe404 =<< findIdea iid
            users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-           pure $ PageDelegateVote (DScopeIdeaFull idea) users)
+           pure $ PageDelegateVote (Right idea) users)
     (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
@@ -79,7 +79,7 @@ topicDelegation tid = formPageHandlerWithMsg
     (equery $
         do topic <- maybe404 =<< findTopic tid
            users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
-           pure $ PageDelegateVote (DScopeTopicFull topic) users)
+           pure $ PageDelegateVote (Left topic) users)
     (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
