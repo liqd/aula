@@ -163,8 +163,11 @@ mockAulaMain = do
     return $ serve (Proxy :: Proxy AulaMain) (mock (Proxy :: Proxy AulaMain))
 
 instance (Show a, FormPage a, Page a, Arbitrary a)
-        => HasMock (FormReqBody :> Post '[Servant.HTML.Lucid.HTML, PlainText] (Frame (FormPageRep a))) where
-    mock _ _ = mock (Proxy :: Proxy (Post '[Servant.HTML.Lucid.HTML, PlainText] (Frame (FormPageRep a))))
+        => HasMock (FormReqBody :>
+                        Post '[HTML, PlainText]
+                            (PostResult (Frame (FormPageRep a)) (Frame (FormPageRep a)))) where
+    mock _ _ = mock (Proxy :: Proxy (Post '[HTML, PlainText]
+                                        (PostResult' (Frame (FormPageRep a)))))
 
 
 -- * UriPath and FromHttpApiData correspondence

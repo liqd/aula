@@ -31,10 +31,12 @@ api :: (Page Api, GenArbitrary m, ActionM m) => ServerT Api m
 api =  delegationsApi
   :<|> manageStateApi
 
+type GetJ p = Get '[JSON] (GetResult p)
+type PostJ p r = Post '[JSON] (PostResult p r)
 
 -- * delegations
 
-type DelegationsApi = Get '[JSON] DelegationNetwork
+type DelegationsApi = GetJ DelegationNetwork
 
 -- | FIXME: This is all a bit silly: the new end-point logs in admin implicitly; the returned
 -- delegation networks are generated on top of the existing data; testing doesn't really test
@@ -46,11 +48,11 @@ delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction Nothi
 -- * persistent state management (for demo operation)
 
 type ManageStateApi =
-       "wipe"        :> Post '[JSON] (PostResult NeedAdmin)
-  :<|> "create-init" :> Post '[JSON] (PostResult NeedAdmin)
-  :<|> "create-demo" :> Post '[JSON] (PostResult NeedAdmin)
-  :<|> "create-votes" :> Post '[JSON] (PostResult NeedAdmin)
-  :<|> "rename-logins" :> Capture "suffix" ST :> Post '[JSON] (PostResult NeedAdmin)
+       "wipe"        :> PostJ NeedAdmin ()
+  :<|> "create-init" :> PostJ NeedAdmin ()
+  :<|> "create-demo" :> PostJ NeedAdmin ()
+  :<|> "create-votes" :> PostJ NeedAdmin ()
+  :<|> "rename-logins" :> Capture "suffix" ST :> PostJ NeedAdmin ()
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =

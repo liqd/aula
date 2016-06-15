@@ -506,8 +506,13 @@ instance Arbitrary (NeedCap cap) where
     arbitrary = NeedCap <$> arbitrary
     shrink = _NeedCap shrink
 
-instance Arbitrary (PostResult a) where
-    arbitrary = pure UnsafePostResult
+instance Arbitrary p => Arbitrary (GetResult p) where
+    arbitrary = UnsafeGetResult <$> arb
+    shrink    = gshrink
+
+instance Arbitrary r => Arbitrary (PostResult p r) where
+    arbitrary = UnsafePostResult <$> arb
+    shrink    = gshrink
 
 instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary

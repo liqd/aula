@@ -229,7 +229,7 @@ commentApi loc iid cid
     ck = commentKey loc iid cid
     rk = replyKey   loc iid cid
     commentHandler :: forall cap. Page (NeedCap cap)
-                   => CommentKey -> m () -> m (PostResult (NeedCap cap))
+                   => CommentKey -> m () -> m (PostResult (NeedCap cap) ())
     commentHandler = runPostHandler . fmap (NeedCap . fst) . Action.commentCapCtx
 
 
@@ -382,8 +382,8 @@ type AulaAdmin =
   :<|> User ::> "delete" :> FormHandler AdminDeleteUser
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
-  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
-  :<|> "downloads" :> "events" :> QueryParam "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
+  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> GetCSV InitialPasswordsCsv
+  :<|> "downloads" :> "events" :> QueryParam "space" IdeaSpace :> GetCSV EventLog
   :<|> Topic ::> "next-phase" :> PostH (NeedCap 'CanPhaseForwardTopic)
   :<|> Topic ::> "voting-prev-phase" :> PostH (NeedCap 'CanPhaseBackwardTopic)
   :<|> "change-phase" :> FormHandler AdminPhaseChange
@@ -405,8 +405,8 @@ aulaAdmin =
   :<|> runHandler . Page.adminEditClass
   :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
-  :<|> Page.adminInitialPasswordsCsv
-  :<|> (runSimpleHandler . adminEventLogCsv)
+  :<|> runGetHandler . Page.adminInitialPasswordsCsv
+  :<|> runGetHandler . adminEventLogCsv
   :<|> postWithTopic (Action.topicForcePhaseChange Forward)
   :<|> postWithTopic (Action.topicForcePhaseChange Backward)
   :<|> form Page.adminPhaseChange
