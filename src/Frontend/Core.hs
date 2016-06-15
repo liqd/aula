@@ -499,8 +499,7 @@ form formHandler = getH :<|> postH
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
-    postH formData = runHandler $ do
-        page <- getPage
+    postH formData = coreRunHandler (const getPage) $ \mu page -> do
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
@@ -508,7 +507,7 @@ form formHandler = getH :<|> postH
             Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
                                redirectPath newPath
-            Nothing      -> pure $ FormPageRep v fa page)
+            Nothing      -> UnsafePostResult <$> makeFrame mu (FormPageRep v fa page))
             `finally` cleanupTempFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
