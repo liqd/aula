@@ -578,7 +578,6 @@ instance PayloadToEnv PageDelegationNetworkPayload where
       where
         vs = (fullDScopeToDScope &&& uilabel) <$> ds
 
--- FIXME: Smaller scopeTree generation
 instance ArbFormPagePayload PageDelegationNetwork where
     type ArbFormPagePayloadContext PageDelegationNetwork = [DScopeFull]
     arbFormPagePayloadCtx (PageDelegationNetwork _dscope scopeTree _delegationInfos)
