@@ -118,6 +118,7 @@ module Persistent.Pure
     , adminUsernameHack
     , addDelegation
     , deleteDelegation
+    , delegationScopes
     , allDelegations
     , findDelegationsByScope
     , findDelegationsByDelegatee
@@ -605,6 +606,18 @@ addDelegation = addDb dbDelegationMap
 
 deleteDelegation :: AUID Delegation -> AUpdate ()
 deleteDelegation did = dbDelegationMap . at did .= Nothing
+
+-- | Computes the delegation scopes related to the user
+-- FIXME: It returns everyting now
+delegationScopes :: AUID User -> Query [DScope]
+delegationScopes _ = do
+    ideas  <- getIdeas
+    topics <- getTopics
+    spaces <- getSpaces
+    pure $ DScopeGlobal
+            : (DScopeIdeaSpace <$> spaces)
+            <> (DScopeTopicId . view _Id <$> topics)
+            <> (DScopeIdeaId  . view _Id <$> ideas)
 
 allDelegations :: Query [Delegation]
 allDelegations = Map.elems <$> view dbDelegationMap

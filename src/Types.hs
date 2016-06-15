@@ -52,7 +52,7 @@ import Servant.API
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece)
     , Accept, MimeRender, Headers(..), Header, contentType, mimeRender, addHeader
     )
-import Text.Read (readMaybe)
+import Text.Read (readMaybe, readEither)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
@@ -755,6 +755,14 @@ instance SafeCopy EmailAddress where
     getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
     putCopy = contain . safePut . Email.toByteString . internalEmailAddress
 
+data DelegationInfo = DelegationInfo
+    { _delegationInfoFrom :: User
+    , _delegationInfoTo   :: User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic DelegationInfo
+
 -- | "Beauftragung"
 data Delegation = Delegation
     { _delegationMeta  :: MetaInfo Delegation
@@ -803,6 +811,24 @@ data DScope =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DScope
+
+readEitherCS :: (ConvertibleStrings String c, Read a) => String -> Either c a
+readEitherCS = either (Left . cs) Right . readEither
+
+instance FromHttpApiData DScope where
+    parseUrlPiece scope = case cs scope of
+        "global" -> Right DScopeGlobal
+        'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
+        't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
+        'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
+        _ -> Left "no parse"
+
+instance ToHttpApiData DScope where
+    toUrlPiece = (cs :: String -> ST). \case
+        DScopeGlobal -> "global"
+        (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
+        (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
+        (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
 
 -- | 'DScope', but with the references resolved.  (We could do a more general type @DScope a@ and
 -- introduce two synonyms for @DScope AUID@ and @DScope Identity@, but it won't make things any

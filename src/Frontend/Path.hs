@@ -36,6 +36,7 @@ module Frontend.Path
     , login
     , listSpaces
     , delegationView
+    , delegationViewScope
     , userSettings
     , logout
     , terms
@@ -143,6 +144,7 @@ import Frontend.Filter
 import Types
     ( nil
     , AUID(AUID), _Id, _Key, Role
+    , DScope(..)
     , IdeaLocation(..), IdeaSpace, SchoolClass
     , ideaLocation, ideaLocationSpace, ideaLocationTopicId
     , Topic, User, Idea, topicIdeaSpace
@@ -194,7 +196,7 @@ data Main (r :: AllowedMethod) =
   | UserSettings
   | Admin (AdminMode r)
   | DelegationEdit
-  | DelegationView
+  | DelegationView (Maybe DScope)
   | Imprint
   | Terms
   | Login
@@ -215,7 +217,10 @@ listSpaces :: Main 'AllowGetPost
 listSpaces = ListSpaces
 
 delegationView :: Main 'AllowGetPost
-delegationView = DelegationView
+delegationView = DelegationView (Just (DScopeIdeaId (AUID 1)))
+
+delegationViewScope :: DScope -> Main 'AllowGetPost
+delegationViewScope = DelegationView . Just
 
 userSettings :: Main 'AllowGetPost
 userSettings = UserSettings
@@ -234,6 +239,7 @@ broken = Broken
 
 instance HasPath Main where relPath p = main p nil
 
+-- TODO: Align
 main :: Main r -> UriPath -> UriPath
 main ListSpaces       root = root </> "space"
 main (Space sid p)    root = spacePath p (root </> "space" </> uriPart sid)
@@ -242,7 +248,8 @@ main (UserProf uid p) root = user  p (root </> "user" </> uriPart uid)
 main UserSettings     root = root </> "user" </> "settings"
 main (Admin p)        root = adminMode p (root </> "admin")
 main DelegationEdit   root = root </> "delegation" </> "edit"
-main DelegationView   root = root </> "delegation" </> "view"
+main (DelegationView ms) root = root </> "delegation" </> "view"
+                                     </?> ("scope", cs . toUrlPiece <$> ms)
 main Imprint          root = root </> "imprint"
 main Terms            root = root </> "terms"
 main Login            root = root </> "login"  -- TODO: align

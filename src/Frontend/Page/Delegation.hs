@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 
@@ -19,12 +20,14 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
 import Action (ActionM, currentUser, delegateTo, equery)
-import Frontend.Core
+import Frontend.Core hiding (form)
 import Frontend.Prelude
 import Persistent
 
 import qualified Frontend.Path as U
 
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- | 12. Delegate vote
 data PageDelegateVote = PageDelegateVote DScopeFull [User]
@@ -80,8 +83,11 @@ topicDelegation tid = formPageHandlerWithMsg
 
 -- | 13. Delegation network
 -- FIXME: Render all the delegations not just the current user related ones.
-data PageDelegationNetwork = PageDelegationNetwork [Delegation]
+data PageDelegationNetwork = PageDelegationNetwork DScope [DScope] [DelegationInfo]
   deriving (Eq, Show, Read)
+
+data PageDelegationNetworkPayload = PageDelegationNetworkPayload DScope
+  deriving (Eq, Show)
 
 instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
@@ -90,11 +96,6 @@ instance Page PageDelegationNetwork where
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
-instance ToHtml PageDelegationNetwork where
-    toHtmlRaw = toHtml
-    toHtml p@(PageDelegationNetwork delegations) = semanticDiv p $ do
-        p_ . toHtml $ show delegations
-        img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
 {-
         let bigHr = do
               hr_ []
@@ -152,7 +153,43 @@ instance ToHtml PageDelegationNetwork where
         bigHr
 -}
 
-viewDelegationNetwork :: ActionM m => m PageDelegationNetwork
-viewDelegationNetwork = do
-    user <- currentUser
-    PageDelegationNetwork <$> equery (findDelegationsByDelegatee (user ^. _Id))
+instance FormPage PageDelegationNetwork where
+    type FormPagePayload PageDelegationNetwork = PageDelegationNetworkPayload
+    type FormPageResult  PageDelegationNetwork = PageDelegationNetworkPayload
+
+    formAction (PageDelegationNetwork scope _ _)      = U.delegationViewScope scope
+    redirectOf _ (PageDelegationNetworkPayload scope) = U.delegationViewScope scope
+
+    makeForm (PageDelegationNetwork actualDScope dscopes _delegations) =
+        PageDelegationNetworkPayload
+        <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
+      where
+        -- TODO: Better visual instead of show
+        delegationScopeList = (id &&& toHtml . show) <$> dscopes
+
+    formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
+        form $ do
+            inputSelect_ [] "scope" v
+            DF.inputSubmit "Show delegations!"
+            p_ . toHtml $ show delegations
+            img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
+
+viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
+viewDelegationNetwork mscope = formPageHandler
+    (do user <- currentUser
+        let scope = fromMaybe DScopeGlobal mscope
+        equery $ PageDelegationNetwork scope
+                    <$> delegationScopes (user ^. _Id)
+                    <*> delegationInfos scope)
+    pure
+
+delegationInfos :: DScope -> EQuery [DelegationInfo]
+delegationInfos scope = do
+    delegations <- findDelegationsByScope scope
+    let users = Set.toList . Set.fromList
+                $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
+    userMap <- Map.fromList . catMaybes
+               <$> forM users (\userId -> (,) userId <$$> findUser userId)
+    (pure . catMaybes). flip map delegations $ \d ->
+            DelegationInfo <$> Map.lookup (d ^. delegationFrom) userMap
+                           <*> Map.lookup (d ^. delegationTo)   userMap

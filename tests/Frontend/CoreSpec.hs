@@ -65,7 +65,6 @@ spec = do
         , H (arb :: Gen PageUserProfileDelegatedVotes)
         , H (arb :: Gen AdminViewUsers)
         , H (arb :: Gen AdminViewClasses)
-        , H (arb :: Gen PageDelegationNetwork)
         , H (arb :: Gen PageStaticImprint)
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen AdminEditClass)
@@ -117,6 +116,7 @@ spec = do
 --        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
         , formTest (arb :: Gen EditUserProfile)
         , formTest (arb :: Gen ReportUserProfile)
+--        , formTest (arb :: Gen PageDelegationNetwork) -- TODO
         ]
 
     -- FIXME: test this in all forms, for all validation errors.

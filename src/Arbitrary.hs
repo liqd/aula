@@ -370,8 +370,13 @@ instance Arbitrary PageDelegateVote where
     arbitrary = PageDelegateVote <$> arb <*> arb
     shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
 
+instance Arbitrary PageDelegationNetworkPayload where
+    arbitrary = PageDelegationNetworkPayload <$> arb
+    shrink (PageDelegationNetworkPayload x) = PageDelegationNetworkPayload <$> shr x
+
 instance Arbitrary PageDelegationNetwork where
-    arbitrary = PageDelegationNetwork <$> arb
+    arbitrary = PageDelegationNetwork <$> arb <*> arb <*> arb
+    shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
@@ -462,6 +467,10 @@ instance Arbitrary RoleScope where
 instance Arbitrary ReportCommentContent where
     arbitrary = ReportCommentContent <$> arbitrary
     shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
+
+instance Arbitrary DelegationInfo where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Delegation where
     arbitrary = garbitrary
