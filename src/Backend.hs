@@ -38,11 +38,11 @@ type PostJ p r = Post '[JSON] (PostResult p r)
 
 type DelegationsApi = GetJ DelegationNetwork
 
--- | FIXME: This is all a bit silly: the new end-point logs in admin implicitly; the returned
+-- | FIXME: This is all a bit silly: the returned
 -- delegation networks are generated on top of the existing data; testing doesn't really test
 -- anything.  But it is self-contained and a good basis to continue from.
 delegationsApi :: (GenArbitrary m, ActionM m) => ServerT DelegationsApi m
-delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction Nothing
+delegationsApi = runGetHandler $ fishDelegationNetworkAction Nothing
 
 data NeedEmptyUserMap = NeedEmptyUserMap
 
