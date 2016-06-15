@@ -336,7 +336,7 @@ instance Page a => Page (Post c (Frame a)) where
     isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Post c (Frame a))"
 
 instance Page EventLog where
-    isAuthorized = adminIsAuthorized
+    isAuthorized = adminPage
 
 instance Page DelegationNetwork where
     isAuthorized = userPage
