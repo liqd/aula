@@ -35,6 +35,7 @@ import AulaTests (wpasses, TestSuite(..), tag)
 import Data.UriPath
 import Frontend
 import Frontend.Core
+import Frontend.Filter
 import Frontend.Page
 import Frontend.Path
 import Types
@@ -55,6 +56,16 @@ spec = do
             , U (arb :: Gen IdeaVoteValue)
             , U (arb :: Gen IdeaJuryResultType)
             , U (arb :: Gen UpDown)
+            ]
+
+    describe "FromHttpApiData <-> ToHttpApiData" $ do
+        mapM_ fromAndToHttpApiDataAreInverses
+            [ H (arb :: Gen IdeaSpace)
+            , H (arb :: Gen IdeaJuryResultType)
+            , H (arb :: Gen DScope)
+            , H (arb :: Gen Category)
+            , H (arb :: Gen SortIdeasBy)
+            , H (arb :: Gen SortUsersBy)
             ]
 
     let checkPathHandler gen app = property . forAllShrinkDef gen $ \path ->
@@ -138,6 +149,7 @@ spec = do
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen EditUserProfile)
         , F (arb :: Gen ReportUserProfile)
+        , F (arb :: Gen PageDelegationNetwork)
         ]
 
 -- FIXME: Unify the Form Arbitrary GADTs and generate the form
@@ -180,3 +192,12 @@ uriPartAndHttpApiDataAreInverses :: UriPartGen -> Spec
 uriPartAndHttpApiDataAreInverses (U g) =
     it (show $ typeOf g) . property . forAllShrinkDef g $ \uriPartData ->
         (Right uriPartData ==) . parseUrlPiece . cs $ uriPart uriPartData
+
+data HttpApiGen where
+    H :: (Show d, Eq d, Typeable d, Arbitrary d, FromHttpApiData d, ToHttpApiData d)
+      => Gen d -> HttpApiGen
+
+fromAndToHttpApiDataAreInverses :: HttpApiGen -> Spec
+fromAndToHttpApiDataAreInverses (H g) =
+    it (show $ typeOf g) . property . forAllShrinkDef g $ \httpApiData ->
+        (Right httpApiData ==) . parseUrlPiece . cs $ toUrlPiece httpApiData

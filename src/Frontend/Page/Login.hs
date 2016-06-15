@@ -14,6 +14,7 @@ import Access
 import Action (ActionM, query)
 import qualified Action
 import Persistent
+import Frontend.Constant (initialDemoPassword)
 import Frontend.Prelude
 import Frontend.Validation
 
@@ -32,7 +33,7 @@ instance Page PageHomeWithLoginPrompt where
     isAuthorized = \case
         -- Redirect from login if the user is already logged in.
         NotLoggedIn -> accessGranted
-        LoggedIn{}  -> accessRedirected "You are already logged in" U.ListSpaces
+        LoggedIn{}  -> accessRedirected "You are already logged in" U.listSpaces
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
 data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
@@ -54,8 +55,8 @@ checkLogin (LoginFormData uLogin pass) = do
 instance FormPage PageHomeWithLoginPrompt where
     type FormPagePayload PageHomeWithLoginPrompt = User
 
-    formAction _   = U.Login
-    redirectOf _ _ = U.CompleteRegistration
+    formAction _   = U.login
+    redirectOf _ _ = U.completeRegistration
 
     makeForm _ = validateM checkLogin $
         LoginFormData
@@ -89,6 +90,10 @@ instance ToHtml LoginDemoHints where
             br_ []
             br_ []
             "LOGIN IST MIT FOLGENDEN NUTZERN MÖGLICH:"
+            br_ []
+            "(Das voreingestellte Passwort bei Nutzern mit \"<hashed-password>\" ist "
+            initialDemoPassword ^. showed . html <> ".  "
+            "Initiale Passwörter, die noch geändert werden müssen, werden angezeigt.)"
             br_ []
             table_ [class_ "admin-table", style_ "padding: 30px"] $ do
                 tr_ $ do

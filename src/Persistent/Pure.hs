@@ -119,6 +119,7 @@ module Persistent.Pure
     , adminUsernameHack
     , addDelegation
     , deleteDelegation
+    , delegationScopeTree
     , allDelegations
     , findDelegationsByScope
     , findDelegationsByDelegatee
@@ -160,6 +161,7 @@ import Data.Maybe
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Set (Set)
 import Data.String.Conversions (ST, cs, (<>))
+import Data.Tree
 import Data.Typeable (Typeable, typeRep)
 import Servant
 import Servant.Missing (ThrowError500(..))
@@ -606,6 +608,26 @@ addDelegation = addDb dbDelegationMap
 
 deleteDelegation :: AUID Delegation -> AUpdate ()
 deleteDelegation did = dbDelegationMap . at did .= Nothing
+
+delegationScopeTree :: User -> Query (Tree DScopeFull)
+delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
+  where
+    discover :: DScopeFull -> Query (DScopeFull, [DScopeFull])
+    discover DScopeGlobalFull = do
+        ideaSpaces <- DScopeIdeaSpaceFull <$$> getSpacesForRoles (user ^. userRoleSet)
+        pure (DScopeGlobalFull, ideaSpaces)
+
+    discover s@(DScopeIdeaSpaceFull cspace) = do
+        classIdeas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace cspace
+        classTopics <- DScopeTopicFull <$$> findTopicsBySpace cspace
+        pure (s, classIdeas <> classTopics)
+
+    discover s@(DScopeTopicFull topic) = do
+        topicIdeas <- DScopeIdeaFull <$$> findIdeasByTopic topic
+        pure (s, topicIdeas)
+
+    discover s@(DScopeIdeaFull{}) =
+        pure (s, [])
 
 allDelegations :: Query [Delegation]
 allDelegations = Map.elems <$> view dbDelegationMap

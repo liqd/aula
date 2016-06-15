@@ -290,15 +290,15 @@ percentVotes idea numVoters vv = {- assert c -} v
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
-    extraPageHeaders  :: p -> Html ()
-    extraPageHeaders _ = nil
+    extraFooterElems  :: p -> Html ()
+    extraFooterElems _ = nil
 
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
 instance Page p => Page (Frame p) where
     isAuthorized a = isAuthorized (_frameBody <$> a)
-    extraPageHeaders = extraPageHeaders . _frameBody
+    extraFooterElems = extraFooterElems . _frameBody
 
 instance (Page a, Page b) => Page (a :<|> b) where
     isAuthorized = error "IMPOSSIBLE: instance (Page a, Page b) => Page (a :<|> b)"
@@ -311,7 +311,7 @@ instance (KnownSymbol s, Page a) => Page (Capture s c :> a) where
 
 instance Page a => Page (Headers h a) where
     isAuthorized = isAuthorized . fmap getResponse
-    extraPageHeaders = extraPageHeaders . getResponse
+    extraFooterElems = extraFooterElems . getResponse
 
 instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a) where
     isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a)"
@@ -405,7 +405,7 @@ instance (Show p) => Show (FormPageRep p) where
 
 instance Page p => Page (FormPageRep p) where
     isAuthorized = isAuthorized . fmap _formPageRepPage
-    extraPageHeaders (FormPageRep _v _a p) = extraPageHeaders p
+    extraFooterElems (FormPageRep _v _a p) = extraFooterElems p
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
@@ -569,8 +569,8 @@ completeRegistration = do
     user <- currentUser
     if has (userSettings . userSettingsPassword . _UserPassInitial) user
         then do addMessage "Bitte ändere dein Passwort, damit niemand in deinem Namen Unsinn machen kann."
-                redirectPath P.UserSettings
-        else redirectPath P.ListSpaces
+                redirectPath P.userSettings
+        else redirectPath P.listSpaces
 
 makeFrame :: ActionUserHandler m => Maybe User -> p -> m (Frame p)
 makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages
@@ -643,7 +643,6 @@ instance (Show bdy, Page bdy) => MimeRender PlainText (Frame bdy) where
 pageFrame :: (Monad m, Page p, ToHtml p) => Frame p -> HtmlT m ()
 pageFrame frame = do
     let p = frame ^. frameBody
-        hdrs = extraPageHeaders p
         bodyClasses = extraBodyClasses p
     head_ $ do
         title_ "AuLA"
@@ -654,8 +653,6 @@ pageFrame frame = do
                 | anyOf frameUser isAdmin frame = "width=1024"
                 | otherwise                     = "width=device-width, initial-scale=1"
         meta_ [name_ "viewport", content_ viewport_content]
-
-        toHtml hdrs
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
         div_ [class_ "page-wrapper"] $ do
@@ -663,7 +660,7 @@ pageFrame frame = do
                 div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
-        footerMarkup
+        footerMarkup (toHtml $ extraFooterElems p)
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
@@ -675,8 +672,8 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
             Nothing -> nil
             Just usr -> do
                 ul_ [class_ "main-header-menu"] $ do
-                    li_ $ a_ [href_ P.ListSpaces] "Ideenräume"
-                    li_ $ a_ [href_ P.DelegationView] "Beauftragungsnetzwerk"
+                    li_ $ a_ [href_ P.listSpaces] "Ideenräume"
+                    li_ $ a_ [href_ P.delegationView] "Beauftragungsnetzwerk"
 
                 div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu"] $ do
@@ -690,16 +687,16 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                                 i_ [class_ "pop-menu-list-icon icon-eye"] nil
                                 "Profil anzeigen"
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.UserSettings] $ do
+                                . a_ [href_ P.userSettings] $ do
                                 i_ [class_ "pop-menu-list-icon icon-sun-o"] nil
                                 "Einstellungen"
                             when (isAdmin usr) .
                                 li_ [class_ "pop-menu-list-item"]
-                                    . a_ [href_ $ P.Admin P.AdminDuration] $ do
+                                    . a_ [href_ P.adminDuration] $ do
                                     i_ [class_ "pop-menu-list-icon icon-bolt"] nil
                                     "Prozessverwaltung"
                             li_ [class_ "pop-menu-list-item"]
-                                . a_ [href_ P.Logout] $ do
+                                . a_ [href_ P.logout] $ do
                                 i_ [class_ "pop-menu-list-icon icon-power-off"] nil
                                 "Logout"
 
@@ -715,13 +712,13 @@ renderStatusMessage msg = do
     li_ (msg ^. html)
 
 
-footerMarkup :: (Monad m) => HtmlT m ()
-footerMarkup = do
+footerMarkup :: (Monad m) => HtmlT m () -> HtmlT m ()
+footerMarkup extra = do
     footer_ [class_ "main-footer"] $ do
         div_ [class_ "grid"] $ do
             ul_ [class_ "main-footer-menu"] $ do
-                li_ $ a_ [href_ P.Terms] "Nutzungsbedingungen"
-                li_ $ a_ [href_ P.Imprint] "Impressum"
+                li_ $ a_ [href_ P.terms] "Nutzungsbedingungen"
+                li_ $ a_ [href_ P.imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
                 replicateM_ 5 $ toHtmlRaw nbsp
@@ -732,3 +729,4 @@ footerMarkup = do
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "third-party/showdown/dist/showdown.min.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]
+    extra

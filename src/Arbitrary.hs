@@ -84,6 +84,7 @@ import Data.Maybe (catMaybes)
 import Data.String (fromString)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
+import Data.Tree as Tree (Tree)
 import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
@@ -269,9 +270,9 @@ instance Arbitrary PageUserProfileCreatedIdeas where
     shrink (PageUserProfileCreatedIdeas x y z) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
-instance Arbitrary DelegationInfo where
-    arbitrary = DelegationInfo <$> arb
-    shrink (DelegationInfo x) = DelegationInfo <$> shr x
+instance Arbitrary DelegationTree where
+    arbitrary = DelegationTree <$> arb
+    shrink (DelegationTree x) = DelegationTree <$> shr x
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
@@ -370,8 +371,23 @@ instance Arbitrary PageDelegateVote where
     arbitrary = PageDelegateVote <$> arb <*> arb
     shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
 
+instance Arbitrary PageDelegationNetworkPayload where
+    arbitrary = PageDelegationNetworkPayload <$> arb
+    shrink (PageDelegationNetworkPayload x) = PageDelegationNetworkPayload <$> shr x
+
+-- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
-    arbitrary = PageDelegationNetwork <$> arb
+    shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
+    arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> arbDScopeFullTree <*> arb
+      where
+        -- Trees with max 4 height.
+        arbDScopeFullTree :: Gen (Tree DScopeFull)
+        arbDScopeFullTree = Tree.unfoldTreeM genTree 4
+          where
+            genTree :: Int -> Gen (DScopeFull, [Int])
+            genTree n
+                | n == 0    = (,) <$> arb <*> pure []
+                | otherwise = (,) <$> arb <*> listOf (choose (0,n-1))
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
@@ -462,6 +478,10 @@ instance Arbitrary RoleScope where
 instance Arbitrary ReportCommentContent where
     arbitrary = ReportCommentContent <$> arbitrary
     shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
+
+instance Arbitrary DelegationInfo where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 instance Arbitrary Delegation where
     arbitrary = garbitrary
@@ -558,7 +578,7 @@ instance Arbitrary CommentContext where
     shrink    = gshrink
 
 instance Arbitrary CommentWidget where
-    arbitrary = over (cwComment . _Key) pruneCommentKey <$> garbitrary
+    arbitrary = over (cwComment . _Key) P.pruneCommentKey <$> garbitrary
     shrink    = gshrink
 
 
@@ -635,10 +655,18 @@ instance Arbitrary ProtoUser where
 
 arbValidUserLogin :: Gen UserLogin
 arbValidUserLogin =
-    UserLogin . cs <$> (choose (4,12) >>= flip replicateM (elements ['a' .. 'z']))
+    UserLogin . cs <$>
+        (choose ( Frontend.Constant.minUsernameLength
+                , Frontend.Constant.maxUsernameLength)
+            >>= flip replicateM (elements ['a' .. 'z']))
 
 arbValidInitialPassword :: Gen InitialPassword
-arbValidInitialPassword = InitialPassword . cs <$> someOf 4 12 (arb :: Gen Char)
+arbValidInitialPassword =
+    InitialPassword . cs
+    <$> someOf
+            Frontend.Constant.minPasswordLength
+            Frontend.Constant.maxPasswordLength
+            (arb :: Gen Char)
 
 arbValidUserPass :: Gen UserPass
 arbValidUserPass = UserPassInitial <$> arbValidInitialPassword
@@ -875,17 +903,8 @@ instance Arbitrary (P.Main r) where
     shrink    = gshrink
 
 instance Arbitrary (P.IdeaMode r) where
-    arbitrary = prune <$> garbitrary
-      where
-        prune (P.OnComment ck P.ReplyToComment) = P.OnComment (pruneCommentKey ck) P.ReplyToComment
-        prune m = m
+    arbitrary = P.pruneCommentReplyPath <$> garbitrary
     shrink    = gshrink
-
--- | replies to sub-comments are turned into replies to the parent comment.
-pruneCommentKey :: CommentKey -> CommentKey
-pruneCommentKey = \case
-    ck@(CommentKey _ _ [] _) -> ck
-    (CommentKey loc idea (c:_) c') -> CommentKey loc idea [c] c'
 
 instance Arbitrary (P.CommentMode r) where
     arbitrary = garbitrary

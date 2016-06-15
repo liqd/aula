@@ -113,7 +113,7 @@ aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
-  :<|> redirectPath U.ListSpaces
+  :<|> redirectPath U.listSpaces
   :<|> app
   where
     waiServeDirectory :: FilePath -> Application
@@ -163,7 +163,7 @@ type AulaMain =
 
        -- delegation network
   :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote
-  :<|> "delegation" :> "view" :> GetH (Frame PageDelegationNetwork)
+  :<|> "delegation" :> "view" :> QueryParam "scope" DScope :> FormHandler PageDelegationNetwork
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
@@ -185,14 +185,14 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> runHandler Page.viewDelegationNetwork
+  :<|> form . Page.viewDelegationNetwork
 
   :<|> runHandler (pure PageStaticImprint)
   :<|> runHandler (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
   :<|> completeRegistration
-  :<|> (logout >> redirectPath U.Login)
+  :<|> (logout >> redirectPath U.login)
 
 type CommentApi
        -- reply on a comment

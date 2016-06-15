@@ -59,7 +59,6 @@ pagesPlain f =
     [ f (Proxy :: Proxy AdminEditClass)
     , f (Proxy :: Proxy AdminViewClasses)
     , f (Proxy :: Proxy AdminViewUsers)
-    , f (Proxy :: Proxy PageDelegationNetwork)
     , f (Proxy :: Proxy PageOverviewOfTopics)
     , f (Proxy :: Proxy PageOverviewOfWildIdeas)
     , f (Proxy :: Proxy PageOverviewOfSpaces)
@@ -91,6 +90,7 @@ pagesForm f =
     , f (Proxy :: Proxy PageUserSettings)
     , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     , f (Proxy :: Proxy PageDelegateVote)
+    , f (Proxy :: Proxy PageDelegationNetwork)
     ]
 
 

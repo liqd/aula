@@ -52,7 +52,7 @@ import Servant.API
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece)
     , Accept, MimeRender, Headers(..), Header, contentType, mimeRender, addHeader
     )
-import Text.Read (readMaybe)
+import Text.Read (readMaybe, readEither)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
@@ -93,6 +93,9 @@ toEnumMay :: forall a. (Enum a, Bounded a) => Int -> Maybe a
 toEnumMay i = if i >= 0 && i <= fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
+
+readEitherCS :: (ConvertibleStrings String c, Read a) => String -> Either c a
+readEitherCS = either (Left . cs) Right . readEither
 
 type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
 type CSI' s a = CSI s s a a
@@ -755,6 +758,14 @@ instance SafeCopy EmailAddress where
     getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
     putCopy = contain . safePut . Email.toByteString . internalEmailAddress
 
+data DelegationInfo = DelegationInfo
+    { _delegationInfoFrom :: User
+    , _delegationInfoTo   :: User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+instance SOP.Generic DelegationInfo
+
 -- | "Beauftragung"
 data Delegation = Delegation
     { _delegationMeta  :: MetaInfo Delegation
@@ -804,15 +815,29 @@ data DScope =
 
 instance SOP.Generic DScope
 
+instance FromHttpApiData DScope where
+    parseUrlPiece scope = case cs scope of
+        "global" -> Right DScopeGlobal
+        'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
+        't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
+        'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
+        _ -> Left "no parse"
+
+instance ToHttpApiData DScope where
+    toUrlPiece = (cs :: String -> ST). \case
+        DScopeGlobal -> "global"
+        (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
+        (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
+        (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
+
 -- | 'DScope', but with the references resolved.  (We could do a more general type @DScope a@ and
 -- introduce two synonyms for @DScope AUID@ and @DScope Identity@, but it won't make things any
 -- easier.)
---
--- (NOTE: since this is only used for the delegate selection page, and that page is only displayed
--- for dscopes on topic level and below, we do not carry the higher-level constructors at all.)
 data DScopeFull =
-    DScopeTopicFull { _dScopeTopicFull :: Topic }
-  | DScopeIdeaFull  { _dScopeIdeaFull  :: Idea  }
+    DScopeGlobalFull
+  | DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace }
+  | DScopeTopicFull     { _dScopeTopicFull     :: Topic     }
+  | DScopeIdeaFull      { _dScopeIdeaFull      :: Idea      }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DScopeFull
@@ -1604,6 +1629,20 @@ userPassword = userSettings . userSettingsPassword
 
 userEmail :: Lens' User (Maybe EmailAddress)
 userEmail = userSettings . userSettingsEmail
+
+fullDScopeToDScope :: DScopeFull -> DScope
+fullDScopeToDScope = \case
+    DScopeGlobalFull       -> DScopeGlobal
+    DScopeIdeaSpaceFull is -> DScopeIdeaSpace is
+    DScopeTopicFull t      -> DScopeTopicId (t ^. _Id)
+    DScopeIdeaFull i       -> DScopeIdeaId (i ^. _Id)
+
+instance HasUILabel DScopeFull where
+    uilabel = \case
+        DScopeGlobalFull       -> "Schule"
+        DScopeIdeaSpaceFull is -> "Ideenraum " <> is ^. uilabeledST . csi . to fromString
+        DScopeTopicFull t      -> "Thema "     <> t  ^. topicTitle  . csi . to fromString
+        DScopeIdeaFull i       -> "Idee "      <> i  ^. ideaTitle   . csi . to fromString
 
 
 instance (Aeson.ToJSON a, Aeson.ToJSON b, Aeson.ToJSON c) => Aeson.ToJSON (Either3 a b c) where toJSON = Aeson.gtoJson

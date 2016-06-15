@@ -60,12 +60,13 @@ data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView L
 instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
-newtype DelegationInfo = DelegationInfo [(User, [User])]
+-- Represents two step long delegation paths from a user.
+newtype DelegationTree = DelegationTree [(User, [User])]
   deriving (Eq, Show, Read)
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegationInfo
+        PageUserProfileDelegatedVotes CapCtx UserView DelegationTree
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
@@ -113,8 +114,10 @@ verifyUserPassIfExists (Just pwd) = verifyUserPass pwd . view userPassword <$> c
 instance FormPage PageUserSettings where
     type FormPagePayload PageUserSettings = UserSettingData
 
-    formAction _ = U.UserSettings
-    redirectOf _ _ = U.UserSettings
+    formAction _ = U.userSettings
+    redirectOf (PageUserSettings u) _
+        | has (Frontend.Prelude.userSettings . userSettingsPassword . _UserPassInitial) u = U.listSpaces
+        | otherwise = U.userSettings
 
     makeForm (PageUserSettings user) =
           DF.check "Die neuen Passwörter passen nicht (Tippfehler?)" checkNewPassword
@@ -274,8 +277,8 @@ instance ToHtml PageUserProfileDelegatedVotes where
                         a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
                     renderDelegations delegations
 
-renderDelegations :: forall m. Monad m => DelegationInfo -> HtmlT m ()
-renderDelegations (DelegationInfo delegations) = do
+renderDelegations :: forall m. Monad m => DelegationTree -> HtmlT m ()
+renderDelegations (DelegationTree delegations) = do
     h2_ $ "Insgesamt " <> total ^. showed . html
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
@@ -294,6 +297,7 @@ renderDelegations (DelegationInfo delegations) = do
                     strong_ . forM_ secondDelegatees $ \delegatee' ->
                         a_ [href_ $ U.viewUserProfile delegatee'] (delegatee' ^. userLogin . unUserLogin  . html)
 
+
 delegatedVotesGlobal :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
 delegatedVotesGlobal userId = delegatedVotes userId DScopeGlobal
@@ -303,7 +307,6 @@ delegatedVotesClass :: (ActionPersist m, ActionUserHandler m)
 delegatedVotesClass userId = do
     user <- mquery (findUser userId)
     case user ^? userRoles . _Student of -- TODO: only the first student role...
-        -- TODO: Translation
         Nothing -> throwError500 "Nutzer ist kein Schüler."
         Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))
 
@@ -313,17 +316,17 @@ delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
     PageUserProfileDelegatedVotes ctx
         <$> (makeUserView <$> mquery (findUser userId))
-        <*> delegationInfo (ctx ^. capCtxUser . _Id) scope
+        <*> delegationTree (ctx ^. capCtxUser . _Id) scope
 
-delegationInfo :: ActionPersist m => AUID User -> DScope -> m DelegationInfo
-delegationInfo uid scope = equery $ do
+delegationTree :: ActionPersist m => AUID User -> DScope -> m DelegationTree
+delegationTree uid scope = equery $ do
     let findDelegatees uid' = do
             scopeDelegatees uid' scope
             >>= mapM (findUser . view delegationFrom)
             >>= pure . catMaybes
 
     firstLevelDelegatees <- findDelegatees uid
-    DelegationInfo <$> forM firstLevelDelegatees (\user ->
+    DelegationTree <$> forM firstLevelDelegatees (\user ->
                             (,) user <$> findDelegatees (user ^. _Id))
 
 
