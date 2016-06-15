@@ -90,7 +90,7 @@ pagesForm f =
     , f (Proxy :: Proxy PageUserSettings)
     , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     , f (Proxy :: Proxy PageDelegateVote)
---    , f (Proxy :: Proxy PageDelegationNetwork) -- FIXME
+    , f (Proxy :: Proxy PageDelegationNetwork)
     ]
 
 

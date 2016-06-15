@@ -159,7 +159,7 @@ type AulaMain =
 
        -- delegation network
   :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote
-  :<|> "delegation" :> "view" :> QueryParam "score" DScope :> FormHandler PageDelegationNetwork
+  :<|> "delegation" :> "view" :> QueryParam "scope" DScope :> FormHandler PageDelegationNetwork
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
