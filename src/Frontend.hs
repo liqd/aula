@@ -105,7 +105,7 @@ runFrontend' cfg log rp = do
 type AulaTop
     =  "samples" :> Raw
   :<|> "static"  :> Raw
-  :<|> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
+  :<|> GetH Redirect
   :<|> Raw
 
 aulaTop :: Config -> Application -> Server AulaTop
@@ -171,8 +171,8 @@ type AulaMain =
 
        -- login / logout
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
-  :<|> "completeregistration" :> GetH (Frame ())  -- TODO: introduce dedicated page type
-  :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
+  :<|> "completeregistration" :> GetH Redirect
+  :<|> "logout" :> GetH Redirect
 
 
 aulaMain :: ActionM m => ServerT AulaMain m

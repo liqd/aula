@@ -907,6 +907,10 @@ instance Arbitrary SearchClasses where
 instance Arbitrary UriPart where
     arbitrary = fromString . List.filter (/= '/') <$> garbitrary
 
+instance Arbitrary Redirect where
+    arbitrary = pure $ error "instance Arbitrary Redirect"
+    shrink _ = error "instance Arbitrary Redirect"
+
 
 -- * servant-mock
 

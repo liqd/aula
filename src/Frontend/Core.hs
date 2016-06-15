@@ -19,7 +19,7 @@
 module Frontend.Core
     ( -- * helpers for routing tables
       Singular, CaptureData, (::>), Reply, PostResult(..)
-    , GetH, PostH, FormHandler
+    , GetH, PostH, FormHandler, Redirect
 
       -- * helpers for handlers
     , semanticDiv, semanticDiv'
@@ -153,6 +153,22 @@ instance Aeson.ToJSON (PostResult a) where toJSON = Aeson.gtoJson
 type GetH = Get '[HTML, PlainText]
 type PostH p = Post '[HTML] (PostResult p)
 type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageResult p)
+
+-- | A void type for end-points that respond with 303 and thus never return any values.
+data Redirect
+
+instance Show Redirect where
+    show _ = error "instance Show Redirect"
+
+instance ToHtml Redirect where
+    toHtmlRaw _ = error "instance ToHtml Redirect"
+    toHtml _ = error "instance ToHtml Redirect"
+
+instance MimeRender PlainText Redirect where
+    mimeRender _ = error "instance MimeRender PlainText Redirect"
+
+instance Page Redirect where
+    isAuthorized _ = error "instance Page Redirect"
 
 
 -- * helpers for handlers
