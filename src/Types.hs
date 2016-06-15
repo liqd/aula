@@ -1640,13 +1640,12 @@ fullDScopeToDScope = \case
     DScopeTopicFull t      -> DScopeTopicId (t ^. _Id)
     DScopeIdeaFull i       -> DScopeIdeaId (i ^. _Id)
 
--- TODO: Translate
 instance HasUILabel DScopeFull where
     uilabel = \case
-        DScopeGlobalFull       -> "DScopeGlobal"
-        DScopeIdeaSpaceFull is -> "IdeaSpace " <> uilabel is
-        DScopeTopicFull t      -> "Topic " <> t ^. topicTitle . csi . to fromString
-        DScopeIdeaFull i       -> "Idea " <> i ^. ideaTitle  . csi . to fromString
+        DScopeGlobalFull       -> "Schule"
+        DScopeIdeaSpaceFull is -> "Ideenraum " <> uilabel is     ^. showed . to fromString
+        DScopeTopicFull t      -> "Thema "     <> t ^. topicTitle . showed . to fromString
+        DScopeIdeaFull i       -> "Idee "      <> i ^. ideaTitle  . showed . to fromString
 
 
 instance (Aeson.ToJSON a, Aeson.ToJSON b, Aeson.ToJSON c) => Aeson.ToJSON (Either3 a b c) where toJSON = Aeson.gtoJson
