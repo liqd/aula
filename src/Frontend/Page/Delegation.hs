@@ -85,7 +85,7 @@ topicDelegation tid = formPageHandlerWithMsg
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) [DelegationInfo]
+data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) DelegationNetwork
   deriving (Eq, Show, Read)
 
 data PageDelegationNetworkPayload = PageDelegationNetworkPayload DScope
@@ -186,13 +186,11 @@ viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
                     <*> delegationInfos scope)
     pure
 
-delegationInfos :: DScope -> EQuery [DelegationInfo]
+delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
     delegations <- findDelegationsByScope scope
     let users = Set.toList . Set.fromList
                 $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
     userMap <- Map.fromList . catMaybes
                <$> forM users (\userId -> (,) userId <$$> findUser userId)
-    (pure . catMaybes). flip map delegations $ \d ->
-            DelegationInfo <$> Map.lookup (d ^. delegationFrom) userMap
-                           <*> Map.lookup (d ^. delegationTo)   userMap
+    pure $ DelegationNetwork (Map.elems userMap) delegations

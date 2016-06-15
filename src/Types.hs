@@ -33,9 +33,9 @@ import Crypto.Scrypt
 import Data.Binary
 import Data.Char
 import Data.Function (on)
-import Data.List (sortBy)
+import Data.List as List (sortBy, zipWith, length, filter)
 import Data.Set as Set (Set, singleton, member)
-import Data.Map as Map (Map, fromList)
+import Data.Map as Map (Map, fromList, lookup, unions, singleton)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
@@ -58,6 +58,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
 import qualified Data.Ord (Down(Down))
 import qualified Data.Text as ST
+import qualified Data.Vector as Vector
 import qualified Generics.Generic.Aeson as Aeson
 import qualified Generics.SOP as SOP
 import qualified Text.Email.Validate as Email
@@ -757,15 +758,6 @@ instance SafeCopy EmailAddress where
     kind = base
     getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
     putCopy = contain . safePut . Email.toByteString . internalEmailAddress
-
-data DelegationInfo = DelegationInfo
-    { _delegationInfoFrom :: User
-    , _delegationInfoTo   :: User
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic DelegationInfo
-instance Aeson.ToJSON DelegationInfo where toJSON = Aeson.gtoJson
 
 -- | "Beauftragung"
 data Delegation = Delegation
@@ -1652,7 +1644,6 @@ instance (Aeson.FromJSON a, Aeson.FromJSON b, Aeson.FromJSON c) => Aeson.FromJSO
 instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON DScope where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON DelegationNetwork where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
 instance Aeson.ToJSON Freeze where toJSON = Aeson.gtoJson
@@ -1675,10 +1666,50 @@ instance Aeson.ToJSON UserProfile where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
 
+
+instance Aeson.ToJSON DelegationNetwork where
+    toJSON (DelegationNetwork nodes links) = result
+      where
+        result = Aeson.object
+            [ "nodes" Aeson..= array (renderNode <$> nodes)
+            , "links" Aeson..= array (renderLink <$> links)
+            ]
+
+        -- FIXME: It shouldn't be rendered for deleted users.
+        renderNode n = Aeson.object
+            [ "name"   Aeson..= (n ^. userLogin . unUserLogin)
+            , "avatar" Aeson..= (n ^. userAvatar)
+            , "power"  Aeson..= getPower n links
+            ]
+
+        renderLink (Delegation _ _ u1 u2) = Aeson.object
+            [ "source"  Aeson..= nodeId u1
+            , "target"  Aeson..= nodeId u2
+            ]
+
+        -- the d3 edges refer to nodes by list position, not name.  this function gives the list
+        -- position.
+        nodeId :: AUID User -> Aeson.Value
+        nodeId uid = Aeson.toJSON . (\(Just pos) -> pos) $ Map.lookup uid m
+          where
+            m :: Map.Map (AUID User) Int
+            m = Map.unions $ List.zipWith f nodes [0..]
+
+            f :: User -> Int -> Map.Map (AUID User) Int
+            f u = Map.singleton (u ^. _Id)
+
+        array :: Aeson.ToJSON v => [v] -> Aeson.Value
+        array = Aeson.Array . Vector.fromList . fmap Aeson.toJSON
+
+        getPower :: User -> [Delegation] -> Aeson.Value
+        getPower u = Aeson.toJSON . List.length
+                   . List.filter (== (u ^. _Id))
+                   . fmap (view delegationTo)
+
+
 instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON CommentKey where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON DScope where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON DelegationNetwork where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
 instance Aeson.FromJSON Freeze where parseJSON = Aeson.gparseJson

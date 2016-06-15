@@ -110,7 +110,7 @@ spec = do
     when doGenerateDelegationNetworksHack $ do
         describe "render sample delegation graph" . it "works" . run $
             fishDelegationNetworkIO >>=
-                LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty . D3DN
+                LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty
 
 
 -- | set locale, target directory.  create target directory if missing.
