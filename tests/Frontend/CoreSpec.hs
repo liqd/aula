@@ -174,6 +174,11 @@ class PayloadToEnv a where
     default payloadDefaultContext :: Proxy a -> EmptyPayloadContext
     payloadDefaultContext _ = EmptyPayloadContext
 
+    -- | Fills out a form view with the combined information coming form the
+    -- 'PayloadToEnvContext a' and 'a'.
+    --
+    -- Example for the 'PayloadToEnvContext a'. It is needed for selections, where we enumerate
+    -- all the possible choices (which are usually generated randomly)
     payloadToEnvMapping   :: PayloadToEnvContext a -> View (Html ()) -> a -> ST -> Action [FormInput]
 
 -- | When context dependent data is constructed via forms with the 'pure' combinator
@@ -405,6 +410,8 @@ class FormPage p => ArbFormPagePayload p where
     type ArbFormPagePayloadContext p :: *
     type ArbFormPagePayloadContext p = EmptyPayloadContext
 
+    -- | Extracts information from a randomly generated FormPage p value, which
+    -- information can be used to fill out the values in forms.
     arbFormPagePayloadCtx :: p -> Gen (ArbFormPagePayloadContext p)
     default arbFormPagePayloadCtx :: p -> Gen EmptyPayloadContext
     arbFormPagePayloadCtx _ = pure EmptyPayloadContext
