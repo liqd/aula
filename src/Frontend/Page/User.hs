@@ -61,12 +61,12 @@ instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
 -- Represents two step long delegation paths from a user.
-newtype DelegationPath = DelegationPath [(User, [User])]
+newtype DelegationTree = DelegationTree [(User, [User])]
   deriving (Eq, Show, Read)
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegationPath
+        PageUserProfileDelegatedVotes CapCtx UserView DelegationTree
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
@@ -277,8 +277,8 @@ instance ToHtml PageUserProfileDelegatedVotes where
                         a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
                     renderDelegations delegations
 
-renderDelegations :: forall m. Monad m => DelegationPath -> HtmlT m ()
-renderDelegations (DelegationPath delegations) = do
+renderDelegations :: forall m. Monad m => DelegationTree -> HtmlT m ()
+renderDelegations (DelegationTree delegations) = do
     h2_ $ "Insgesamt " <> total ^. showed . html
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
@@ -316,17 +316,17 @@ delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
     PageUserProfileDelegatedVotes ctx
         <$> (makeUserView <$> mquery (findUser userId))
-        <*> delegationPath (ctx ^. capCtxUser . _Id) scope
+        <*> delegationTree (ctx ^. capCtxUser . _Id) scope
 
-delegationPath :: ActionPersist m => AUID User -> DScope -> m DelegationPath
-delegationPath uid scope = equery $ do
+delegationTree :: ActionPersist m => AUID User -> DScope -> m DelegationTree
+delegationTree uid scope = equery $ do
     let findDelegatees uid' = do
             scopeDelegatees uid' scope
             >>= mapM (findUser . view delegationFrom)
             >>= pure . catMaybes
 
     firstLevelDelegatees <- findDelegatees uid
-    DelegationPath <$> forM firstLevelDelegatees (\user ->
+    DelegationTree <$> forM firstLevelDelegatees (\user ->
                             (,) user <$> findDelegatees (user ^. _Id))
 
 

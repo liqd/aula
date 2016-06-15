@@ -269,9 +269,9 @@ instance Arbitrary PageUserProfileCreatedIdeas where
     shrink (PageUserProfileCreatedIdeas x y z) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
 
-instance Arbitrary DelegationPath where
-    arbitrary = DelegationPath <$> arb
-    shrink (DelegationPath x) = DelegationPath <$> shr x
+instance Arbitrary DelegationTree where
+    arbitrary = DelegationTree <$> arb
+    shrink (DelegationTree x) = DelegationTree <$> shr x
 
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
