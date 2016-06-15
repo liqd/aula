@@ -138,13 +138,13 @@ aulaTop cfg app =
 type AulaActions =
        AulaMain
   :<|> "api" :> Backend.Api
-  :<|> "testing" :> AulaTesting
+--  :<|> "testing" :> AulaTesting  -- FIXME: take this back in?  or move it to test suite?
 
 aulaActions :: (Page AulaActions, GenArbitrary m, ActionM m) => ServerT AulaActions m
 aulaActions =
        aulaMain
   :<|> Backend.api
-  :<|> aulaTesting
+--  :<|> aulaTesting
 
 
 type AulaMain =
