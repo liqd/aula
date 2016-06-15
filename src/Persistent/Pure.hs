@@ -613,15 +613,10 @@ delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
   where
     discover :: DScopeFull -> Query (DScopeFull, [DScopeFull])
     discover DScopeGlobalFull = do
-        schoolIdeas <- DScopeIdeaFull <$$> findWildIdeasBySpace SchoolSpace
-        let ideaSpaces = DScopeIdeaSpaceFull . ClassSpace <$> (user ^.. userSchoolClasses)
-        pure (DScopeGlobalFull, schoolIdeas <> ideaSpaces)
+        ideaSpaces <- DScopeIdeaSpaceFull <$$> getSpacesForRoles (user ^. userRoleSet)
+        pure (DScopeGlobalFull, ideaSpaces)
 
-    -- FIXME: Impossible: As the Global is the School space
-    discover s@(DScopeIdeaSpaceFull SchoolSpace) = do
-        pure (s, [])
-
-    discover s@(DScopeIdeaSpaceFull cspace@(ClassSpace{})) = do
+    discover s@(DScopeIdeaSpaceFull cspace) = do
         classIdeas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace cspace
         classTopics <- DScopeTopicFull <$$> findTopicsBySpace cspace
         pure (s, classIdeas <> classTopics)
