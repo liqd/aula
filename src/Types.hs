@@ -94,6 +94,9 @@ toEnumMay i = if i >= 0 && i <= fromEnum (maxBound :: a)
     then Just $ toEnum i
     else Nothing
 
+readEitherCS :: (ConvertibleStrings String c, Read a) => String -> Either c a
+readEitherCS = either (Left . cs) Right . readEither
+
 type CSI s t a b = (ConvertibleStrings s a, ConvertibleStrings b t)
 type CSI' s a = CSI s s a a
 
@@ -811,9 +814,6 @@ data DScope =
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DScope
-
-readEitherCS :: (ConvertibleStrings String c, Read a) => String -> Either c a
-readEitherCS = either (Left . cs) Right . readEither
 
 instance FromHttpApiData DScope where
     parseUrlPiece scope = case cs scope of
