@@ -167,7 +167,7 @@ instance FormPage PageDelegationNetwork where
         <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
       where
         -- TODO: Better visual instead of show
-        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> (Tree.flatten dscopes)
+        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> Tree.flatten dscopes
 
     formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
         form $ do
