@@ -253,7 +253,12 @@ scopeHiearchy = \case
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
 -- TODO: Display only students
+-- TODO: Rename to `studentsInIdeaSpace`
 usersForIdeaSpace :: IdeaSpace -> EQuery [User]
 usersForIdeaSpace = \case
     SchoolSpace       -> getActiveUsers
     ClassSpace school -> getUsersInClass school
+
+-- TODO: Implement!
+studentsInDScope :: DScope -> EQuery [User]
+studentsInDScope = undefined

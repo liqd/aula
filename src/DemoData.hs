@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-incomplete-patterns #-}
 
@@ -376,3 +377,20 @@ randomVotes students ideas = some $ do
     addWithUser_ (AddVoteToIdea (idea ^. _Id) user) user vote
   where
     some = replicateM_ $ (length ideas * length students * 40) `div` 100
+
+
+-- | See also: 'Arbitrary.fishDelegationNetworkAction'.
+randomDelegations :: (GenArbitrary m, ActionM m) => m ()
+randomDelegations = mapM_ randomDelegations' =<< query allDelegationScopes
+
+randomDelegations' :: DScope -> (GenArbitrary m, ActionM m) => m ()
+randomDelegations' dscope = do
+    users :: [User] <- equery $ studentsInDScope dscope
+    unless (null users) $ do
+        numDelegs :: Int <- genGen $ choose (length users `div` 2, length users)
+        replicateM_ numDelegs $ do
+            u1 <- genGen $ elements users
+            u2 <- genGen $ elements users
+            loginByUser u1
+            delegateTo dscope (u2 ^. _Id)
+            logout
