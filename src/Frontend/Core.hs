@@ -67,6 +67,7 @@ import Control.Monad (replicateM_, when)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
+import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol, KnownSymbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
@@ -76,8 +77,11 @@ import Servant.Missing (FormH, getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Generics.Generic.Aeson as Aeson
+import qualified Generics.SOP as SOP
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -133,6 +137,10 @@ type instance CaptureData Role               = Role
 -- used in 'runPostHandler', where the authorization check happens before the request has any effect
 -- on the database state.)
 data PostResult a = UnsafePostResult
+  deriving (Generic)
+
+instance SOP.Generic (PostResult a)
+instance Aeson.ToJSON (PostResult a) where toJSON = Aeson.gtoJson
 
 -- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
 -- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The

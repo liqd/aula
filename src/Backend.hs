@@ -9,13 +9,15 @@ module Backend
 where
 
 import Control.Monad (void)
+import Data.String.Conversions (ST)
+import Servant
 
+import Access
 import Action
 import Arbitrary
-import Data.String.Conversions (ST)
 import DemoData
+import Frontend.Core
 import Persistent.Api
-import Servant
 import Types
 
 
@@ -25,7 +27,7 @@ type Api =
        "delegations" :> DelegationsApi
   :<|> "manage-state" :> ManageStateApi
 
-api :: (GenArbitrary m, ActionM m) => ServerT Api m
+api :: (Page Api, GenArbitrary m, ActionM m) => ServerT Api m
 api =  delegationsApi
   :<|> manageStateApi
 
@@ -44,16 +46,16 @@ delegationsApi = Action.loginByName "admin" >> fishDelegationNetworkAction Nothi
 -- * persistent state management (for demo operation)
 
 type ManageStateApi =
-       "wipe"        :> Post '[JSON] ()
-  :<|> "create-init" :> Post '[JSON] ()
-  :<|> "create-demo" :> Post '[JSON] ()
-  :<|> "create-votes" :> Post '[JSON] ()
-  :<|> "rename-logins" :> Capture "suffix" ST :> Post '[JSON] ()
+       "wipe"        :> Post '[JSON] (PostResult NeedAdmin)
+  :<|> "create-init" :> Post '[JSON] (PostResult NeedAdmin)
+  :<|> "create-demo" :> Post '[JSON] (PostResult NeedAdmin)
+  :<|> "create-votes" :> Post '[JSON] (PostResult NeedAdmin)
+  :<|> "rename-logins" :> Capture "suffix" ST :> Post '[JSON] (PostResult NeedAdmin)
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
-       update DangerousResetAulaData
-  :<|> genInitialTestDb
-  :<|> void (mkUniverse defaultUniverseSize)
-  :<|> genVotingPhaseTopic
-  :<|> update . DangerousRenameAllLogins
+       runPostHandler (pure NeedAdmin) (update DangerousResetAulaData)
+  :<|> runPostHandler (pure NeedAdmin) genInitialTestDb
+  :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse defaultUniverseSize))
+  :<|> runPostHandler (pure NeedAdmin) genVotingPhaseTopic
+  :<|> runPostHandler (pure NeedAdmin) . update . DangerousRenameAllLogins
