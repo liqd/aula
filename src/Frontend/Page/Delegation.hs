@@ -6,6 +6,7 @@
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -176,9 +177,8 @@ instance FormPage PageDelegationNetwork where
             img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
-viewDelegationNetwork mscope = formPageHandler
+viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
     (do user <- currentUser
-        let scope = fromMaybe DScopeGlobal mscope
         equery $ PageDelegationNetwork scope
                     <$> delegationScopeTree user
                     <*> delegationInfos scope)
