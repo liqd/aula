@@ -217,7 +217,7 @@ listSpaces :: Main 'AllowGetPost
 listSpaces = ListSpaces
 
 delegationView :: Main 'AllowGetPost
-delegationView = DelegationView (Just (DScopeIdeaId (AUID 1)))
+delegationView = DelegationView Nothing
 
 delegationViewScope :: DScope -> Main 'AllowGetPost
 delegationViewScope = DelegationView . Just
