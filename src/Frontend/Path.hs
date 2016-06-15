@@ -239,23 +239,22 @@ broken = Broken
 
 instance HasPath Main where relPath p = main p nil
 
--- TODO: Align
 main :: Main r -> UriPath -> UriPath
-main ListSpaces       root = root </> "space"
-main (Space sid p)    root = spacePath p (root </> "space" </> uriPart sid)
-main (IdeaPath l m)   root = ideaPath l m root
-main (UserProf uid p) root = user  p (root </> "user" </> uriPart uid)
-main UserSettings     root = root </> "user" </> "settings"
-main (Admin p)        root = adminMode p (root </> "admin")
-main DelegationEdit   root = root </> "delegation" </> "edit"
+main ListSpaces          root = root </> "space"
+main (Space sid p)       root = spacePath p (root </> "space" </> uriPart sid)
+main (IdeaPath l m)      root = ideaPath l m root
+main (UserProf uid p)    root = user  p (root </> "user" </> uriPart uid)
+main UserSettings        root = root </> "user" </> "settings"
+main (Admin p)           root = adminMode p (root </> "admin")
+main DelegationEdit      root = root </> "delegation" </> "edit"
 main (DelegationView ms) root = root </> "delegation" </> "view"
                                      </?> ("scope", cs . toUrlPiece <$> ms)
-main Imprint          root = root </> "imprint"
-main Terms            root = root </> "terms"
-main Login            root = root </> "login"  -- TODO: align
+main Imprint              root = root </> "imprint"
+main Terms                root = root </> "terms"
+main Login                root = root </> "login"  -- TODO: align
 main CompleteRegistration root = root </> "completeregistration"
-main Logout           root = root </> "logout"
-main Broken           root = root </> "bröken"
+main Logout               root = root </> "logout"
+main Broken               root = root </> "bröken"
 
 ideaPath :: IdeaLocation -> IdeaMode r -> UriPath -> UriPath
 ideaPath loc mode root =
