@@ -84,6 +84,7 @@ import Data.Maybe (catMaybes)
 import Data.String (fromString)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
+import Data.Tree as Tree (Tree)
 import Generics.SOP
 import Servant
 import System.FilePath (takeBaseName)
@@ -374,9 +375,19 @@ instance Arbitrary PageDelegationNetworkPayload where
     arbitrary = PageDelegationNetworkPayload <$> arb
     shrink (PageDelegationNetworkPayload x) = PageDelegationNetworkPayload <$> shr x
 
+-- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
-    arbitrary = PageDelegationNetwork <$> arb <*> arb <*> arb
     shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
+    arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> arbDScopeFullTree <*> arb
+      where
+        -- Trees with max 4 height.
+        arbDScopeFullTree :: Gen (Tree DScopeFull)
+        arbDScopeFullTree = Tree.unfoldTreeM genTree 4
+          where
+            genTree :: Int -> Gen (DScopeFull, [Int])
+            genTree n
+                | n == 0    = (,) <$> arb <*> pure []
+                | otherwise = (,) <$> arb <*> listOf (choose (0,n-1))
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
