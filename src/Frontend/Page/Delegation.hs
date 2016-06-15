@@ -13,9 +13,13 @@
 module Frontend.Page.Delegation
 where
 
-import Prelude
-import Control.Arrow ((&&&))
-
+import           Control.Arrow ((&&&))
+import           Data.Tree (Tree)
+import qualified Data.Aeson as Aeson
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Tree as Tree (flatten)
+import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -27,10 +31,6 @@ import Persistent
 
 import qualified Frontend.Path as U
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import           Data.Tree (Tree)
-import qualified Data.Tree as Tree (flatten)
 
 -- | 12. Delegate vote
 data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User]
@@ -174,6 +174,9 @@ instance FormPage PageDelegationNetwork where
             DF.inputSubmit "Show delegations!"
             p_ . toHtml $ show delegations
             img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
+
+        Lucid.script_ $ do
+            "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler

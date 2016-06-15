@@ -765,6 +765,7 @@ data DelegationInfo = DelegationInfo
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic DelegationInfo
+instance Aeson.ToJSON DelegationInfo where toJSON = Aeson.gtoJson
 
 -- | "Beauftragung"
 data Delegation = Delegation
