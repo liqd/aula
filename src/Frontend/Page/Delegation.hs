@@ -70,7 +70,7 @@ ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerWithMsg
     (equery $
         do idea <- maybe404 =<< findIdea iid
-           users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
+           users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
            pure $ PageDelegateVote (Right idea) users)
     (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
@@ -79,7 +79,7 @@ topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
 topicDelegation tid = formPageHandlerWithMsg
     (equery $
         do topic <- maybe404 =<< findTopic tid
-           users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
+           users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
            pure $ PageDelegateVote (Left topic) users)
     (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
