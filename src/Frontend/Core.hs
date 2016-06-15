@@ -303,7 +303,7 @@ instance Page a => Page (PostResult a) where -- TODO
     isAuthorized = error "IMPOSSIBLE: instance Page a => Page (PostResult a)"
 
 instance Page EventLog where
-    isAuthorized = error "TODO: isAuthorized Page EventLog"
+    isAuthorized = adminIsAuthorized
 
 instance Page DelegationNetwork where
     isAuthorized = error "TODO: isAuthorized Page DelegationNetwork"
@@ -548,6 +548,11 @@ completeRegistration = do
 runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
            => m p -> m (Frame p)
 runHandler mp = runHandler' (const mp) (\mu p -> maybe PublicFrame Frame mu p <$> flushMessages)
+
+-- | Like 'runHandler', but do not 'Frame' the result.
+runSimpleHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+                 => m p -> m p
+runSimpleHandler action = runHandler' (\_ -> action) (\_ -> pure)
 
 -- | Call 'runHandler'' on a post handler, and 'Frame' the result.  In contrast to 'runHandler',
 -- this case requires distinguishing between the action that promises not to modify the database

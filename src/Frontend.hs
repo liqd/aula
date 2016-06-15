@@ -406,7 +406,7 @@ aulaAdmin =
   :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
   :<|> Page.adminInitialPasswordsCsv
-  :<|> adminEventLogCsv
+  :<|> (runSimpleHandler . adminEventLogCsv)
   :<|> postWithTopic (Action.topicForcePhaseChange Forward)
   :<|> postWithTopic (Action.topicForcePhaseChange Backward)
   :<|> form Page.adminPhaseChange

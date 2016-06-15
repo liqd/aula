@@ -26,7 +26,7 @@ module Access
     , AccessCheck
     , AccessInput(..)
     , AccessResult(..)
-    , NeedAdmin(..)
+    , NeedAdmin(..), adminIsAuthorized
     , DelegateTo(..), _DelegateTo, delegateToCapCtx, delegateToUser
     , NeedCap(..), _NeedCap, needCapCtx
 
@@ -368,6 +368,11 @@ data NeedCap (cap :: Capability) = NeedCap { _needCapCtx :: CapCtx }
 
 data NeedAdmin = NeedAdmin  -- TODO: should constructors 'NeedAdmin', 'NeedCap', ... be renamed 'unsafe*'?
   deriving (Generic)
+
+-- | TODO: should this go elsewhere?  is it a function we want to have around?  is it implemented right?
+adminIsAuthorized :: Applicative m => AccessInput p -> m AccessResult
+adminIsAuthorized (LoggedIn u _) | u `hasRole` Admin = accessGranted
+adminIsAuthorized _                                  = accessDenied Nothing
 
 instance SOP.Generic NeedAdmin
 instance Aeson.ToJSON NeedAdmin where toJSON = Aeson.gtoJson
