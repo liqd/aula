@@ -85,7 +85,7 @@ data PageDelegationNetwork = PageDelegationNetwork [Delegation]
 
 instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
-    extraPageHeaders _ = do
+    extraFooterElems _ = do
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
