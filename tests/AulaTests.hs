@@ -113,6 +113,12 @@ data WreqQuery = WreqQuery
 doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
+logAsAdmin :: WreqQuery -> IO ()
+logAsAdmin wreq =
+    post wreq "/login"
+        [partString "/login.user" "admin", partString "/login.pass" "pssst"]
+        `shouldRespond` [codeShouldBe 303]
+
 withServer :: (WreqQuery -> IO a) -> IO a
 withServer action = (`withServer'` action) =<< testConfig
 
@@ -123,9 +129,7 @@ withServer' cfg action = do
         wreqQuery sess = WreqQuery (Sess.postWith opts sess . mkServerUri cfg)
                                    (Sess.getWith opts sess . mkServerUri cfg)
         initialize q = do
-            resp
-               <- post q "/api/manage-state/create-init"
-                    [partString "/login.user" "admin", partString "/login.pass" "adminPass"]
+            resp <- post q "/api/manage-state/create-init" ([] :: [Part])
             case resp of
                 (view (responseStatus . statusCode) -> 204) -> pure ()
                 _ -> error $ "withServer: init failed: " <> show resp
@@ -136,6 +140,13 @@ withServer' cfg action = do
         (const . Sess.withSession $ \sess -> do
             initialize $ wreqQuery sess
             action     $ wreqQuery sess)
+
+withServerAsAdmin :: (WreqQuery -> IO a) -> IO a
+withServerAsAdmin action = withServer $ \wreq -> do
+    putStrLn "logging in as admin"
+    logAsAdmin wreq
+    putStrLn "logged in as admin"
+    action wreq
 
 mkServerUri :: Config -> String -> String
 mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
