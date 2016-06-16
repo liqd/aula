@@ -11,7 +11,7 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
-import Control.Monad (zipWithM_, replicateM, replicateM_, when)
+import Control.Monad (zipWithM_, replicateM, replicateM_, unless)
 import Data.List (nub)
 import Data.String.Conversions ((<>), cs)
 import Servant.Missing
@@ -266,7 +266,7 @@ userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpac
 genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
     noUsers <- query $ views dbUserMap Map.null
-    when (not noUsers) $
+    unless noUsers $
         throwError500 "create-init (genInitialTestDb) can only be used when there are no users!"
     now <- getCurrentTimestamp
 
