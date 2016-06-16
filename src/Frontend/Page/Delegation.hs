@@ -13,9 +13,13 @@
 module Frontend.Page.Delegation
 where
 
-import Prelude
-import Control.Arrow ((&&&))
-
+import           Control.Arrow ((&&&))
+import           Data.Tree (Tree)
+import qualified Data.Aeson as Aeson
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Tree as Tree (flatten)
+import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -27,10 +31,6 @@ import Persistent
 
 import qualified Frontend.Path as U
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import           Data.Tree (Tree)
-import qualified Data.Tree as Tree (flatten)
 
 -- | 12. Delegate vote
 data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User]
@@ -70,7 +70,7 @@ ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerWithMsg
     (equery $
         do idea <- maybe404 =<< findIdea iid
-           users <- usersForIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
+           users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
            pure $ PageDelegateVote (Right idea) users)
     (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
@@ -79,13 +79,13 @@ topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
 topicDelegation tid = formPageHandlerWithMsg
     (equery $
         do topic <- maybe404 =<< findTopic tid
-           users <- usersForIdeaSpace (topic ^. topicIdeaSpace)
+           users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
            pure $ PageDelegateVote (Left topic) users)
     (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) [DelegationInfo]
+data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) DelegationNetwork
   deriving (Eq, Show, Read)
 
 data PageDelegationNetworkPayload = PageDelegationNetworkPayload DScope
@@ -95,6 +95,7 @@ instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
     extraFooterElems _ = do
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+        -- FIXME: move the following two under static-src and sass control, resp.?
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
@@ -169,11 +170,21 @@ instance FormPage PageDelegationNetwork where
         delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> Tree.flatten dscopes
 
     formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
+        let dummy = True  -- FIXME: remove this as soon as the non-dummy version is more interesting.
+        if dummy
+            then runDummy
+            else runReally
+      where
+       runDummy = do
+        img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
+
+       runReally = do
         form $ do
             inputSelect_ [] "scope" v
-            DF.inputSubmit "Show delegations!"
-            p_ . toHtml $ show delegations
-            img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
+            DF.inputSubmit "neu anzeigen"
+        Lucid.script_ $ do
+            "var aulaDelegationData = " <> cs (Aeson.encode delegations)
+        div_ [class_ "d3_aula"] nil
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
@@ -183,13 +194,11 @@ viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
                     <*> delegationInfos scope)
     pure
 
-delegationInfos :: DScope -> EQuery [DelegationInfo]
+delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
     delegations <- findDelegationsByScope scope
     let users = Set.toList . Set.fromList
                 $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
     userMap <- Map.fromList . catMaybes
                <$> forM users (\userId -> (,) userId <$$> findUser userId)
-    (pure . catMaybes). flip map delegations $ \d ->
-            DelegationInfo <$> Map.lookup (d ^. delegationFrom) userMap
-                           <*> Map.lookup (d ^. delegationTo)   userMap
+    pure $ DelegationNetwork (Map.elems userMap) delegations

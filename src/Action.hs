@@ -557,6 +557,7 @@ delegateTo scope t = do
     delegations <- filter ((user ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByScope scope)
     forM_ delegations (update . DeleteDelegation . view _Id)
     addWithCurrentUser_ AddDelegation (ProtoDelegation scope (user ^. _Id) t)
+    eventLogUserDelegates scope t
 
 -- | Delegates the current user's vote to the given user at school space
 delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
@@ -866,11 +867,11 @@ eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
 
--- FIXME: throw this in all applicable situations.
 eventLogUserDelegates ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
-      => DScope -> User -> m ()
-eventLogUserDelegates scope delegate = do
+      => DScope -> AUID User -> m ()
+eventLogUserDelegates scope delegateId = do
+    delegate <- mquery $ findUser delegateId
     delegatee <- currentUser
     ispace <- case scope of
         DScopeGlobal           -> pure SchoolSpace

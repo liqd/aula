@@ -78,6 +78,9 @@ content:
 	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-votes
 	rm cookie-jar
 
+content-deleg:
+	curl -XPOST http://localhost:8080/api/manage-state/create-delegations
+
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/
 

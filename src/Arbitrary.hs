@@ -63,7 +63,6 @@ module Arbitrary
     , schoolClasses
     , fishDelegationNetworkIO
     , fishDelegationNetworkAction
-    , D3DN(..)
     , breakCycles
     , fishAvatarsPath
     , fishAvatars
@@ -77,7 +76,6 @@ import Control.Monad (replicateM)
 import Control.Monad.Trans.Except (runExceptT)
 import Crypto.Scrypt
 import Data.Functor.Infix ((<$$>))
-import Data.Aeson as Aeson
 import Data.Char
 import Data.List as List
 import Data.Maybe (catMaybes)
@@ -99,8 +97,6 @@ import Test.QuickCheck.Modifiers
 import Test.QuickCheck.Instances ()
 import Text.Email.Validate as Email (localPart, domainPart, emailAddress, toByteString, unsafeEmailAddress)
 
-import qualified Data.Vector as V
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Graph as Graph
 import qualified Data.Tree as Tree
@@ -116,7 +112,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (^?), over, (.~), (%~), (&), ppShow, view, join)
+import Frontend.Prelude (set, (^.), (^?), over, (.~), (%~), (&), ppShow, join)
 import Persistent.Api hiding (EditTopic(..), EditIdea(..))
 import Persistent
 import Types
@@ -380,14 +376,15 @@ instance Arbitrary PageDelegationNetwork where
     shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
     arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> arbDScopeFullTree <*> arb
       where
-        -- Trees with max 4 height.
+        -- Trees with a small max height.  (Note that the arbitrary structure allows arbitrary
+        -- scopes to be contained in arbitrary other ones, so this could potentially get much deeper
+        -- than "global-space-topic-idea".)
         arbDScopeFullTree :: Gen (Tree DScopeFull)
-        arbDScopeFullTree = Tree.unfoldTreeM genTree 4
+        arbDScopeFullTree = Tree.unfoldTreeM genTree 3
           where
             genTree :: Int -> Gen (DScopeFull, [Int])
-            genTree n
-                | n == 0    = (,) <$> arb <*> pure []
-                | otherwise = (,) <$> arb <*> listOf (choose (0,n-1))
+            genTree 0 = (,) <$> arb <*> pure []
+            genTree n = (,) <$> arb <*> listOf (choose (0, n-1))
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
@@ -478,10 +475,6 @@ instance Arbitrary RoleScope where
 instance Arbitrary ReportCommentContent where
     arbitrary = ReportCommentContent <$> arbitrary
     shrink (ReportCommentContent x) = ReportCommentContent <$> shr x
-
-instance Arbitrary DelegationInfo where
-    arbitrary = garbitrary
-    shrink    = gshrink
 
 instance Arbitrary Delegation where
     arbitrary = garbitrary
@@ -1215,54 +1208,6 @@ breakCycles ds = List.filter good ds
     good :: Delegation -> Bool
     good = (`Set.member` Set.fromList es') . mkEdge
 
-newtype D3DN = D3DN DelegationNetwork
-
-instance Aeson.ToJSON D3DN where
-    toJSON (D3DN (DelegationNetwork nodes links)) = result
-      where
-        result = object
-            [ "nodes" .= array (renderNode <$> nodes)
-            , "links" .= array (renderLink <$> links)
-            , "ctxs"  .= array (List.sort . nub $ renderCtx <$> links)
-            ]
-
-        -- FIXME: It shouldn't be rendered for deleted users.
-        renderNode n = object
-            [ "name"   .= (n ^. userLogin . unUserLogin)
-            , "avatar" .= (n ^. userAvatar)
-            , "power"  .= getPower n links
-            ]
-
-        renderLink d@(Delegation _ _ u1 u2) = object
-            [ "source"  .= nodeId u1
-            , "target"  .= nodeId u2
-            , "context" .= toJSON (renderCtx d)
-            ]
-
-        renderCtx (Delegation _ (DScopeIdeaSpace s) _ _) = showIdeaSpace s
-        renderCtx _ = error "instance Aeson.ToJSON D3DN where: context type not implemented."
-
-
-        -- (there is weirdly much app logic going on in here.  move elsewhere?  do we care?)
-
-        -- the d3 edges refer to nodes by list position, not name.  this function gives you the list
-        -- position.
-        nodeId :: AUID User -> Aeson.Value
-        nodeId uid = toJSON . (\(Just pos) -> pos) $ Map.lookup uid m
-          where
-            m :: Map.Map (AUID User) Int
-            m = Map.unions $ List.zipWith f nodes [0..]
-
-            f :: User -> Int -> Map.Map (AUID User) Int
-            f u = Map.singleton (u ^. _Id)
-
-        array :: ToJSON v => [v] -> Aeson.Value
-        array = Array . V.fromList . fmap toJSON
-
-        getPower :: User -> [Delegation] -> Aeson.Value
-        getPower u = toJSON . List.length
-                   . List.filter (== (u ^. _Id))
-                   . fmap (view delegationTo)
 
 
 -- * event log

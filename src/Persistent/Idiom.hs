@@ -252,8 +252,25 @@ scopeHiearchy = \case
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
--- TODO: Display only students
-usersForIdeaSpace :: IdeaSpace -> EQuery [User]
-usersForIdeaSpace = \case
-    SchoolSpace       -> getActiveUsers
-    ClassSpace school -> getUsersInClass school
+studentsInIdeaSpace :: IdeaSpace -> EQuery [User]
+studentsInIdeaSpace spc = fltr <$> cllct spc
+  where
+    fltr :: [User] -> [User]
+    fltr = filter (has $ userRoles . _Student)
+
+    cllct :: IdeaSpace -> EQuery [User]
+    cllct = \case
+        SchoolSpace    -> getActiveUsers
+        ClassSpace cls -> getUsersInClass cls
+
+studentsInDScope :: DScope -> EQuery [User]
+studentsInDScope DScopeGlobal
+    = studentsInIdeaSpace SchoolSpace
+studentsInDScope (DScopeIdeaSpace spc)
+    = studentsInIdeaSpace spc
+studentsInDScope (DScopeTopicId tid)
+    = findTopic tid >>= maybe404 >>=
+      studentsInIdeaSpace . view topicIdeaSpace
+studentsInDScope (DScopeIdeaId iid)
+    = findIdea iid >>= maybe404 >>=
+      studentsInIdeaSpace . view (ideaLocation . ideaLocationSpace)

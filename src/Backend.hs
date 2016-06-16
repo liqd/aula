@@ -68,6 +68,7 @@ type ManageStateApi =
   :<|> "create-init" :> PostJ NeedEmptyUserMap ()
   :<|> "create-demo" :> PostJ NeedAdmin ()
   :<|> "create-votes" :> PostJ NeedAdmin ()
+  :<|> "create-delegations" :> PostJ NeedAdmin ()
   :<|> "rename-logins" :> Capture "suffix" ST :> PostJ NeedAdmin ()
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
@@ -76,4 +77,5 @@ manageStateApi =
   :<|> runPostHandler (pure NeedEmptyUserMap) genInitialTestDb
   :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse defaultUniverseSize))
   :<|> runPostHandler (pure NeedAdmin) genVotingPhaseTopic
+  :<|> runPostHandler (pure NeedAdmin) randomDelegations
   :<|> runPostHandler (pure NeedAdmin) . update . DangerousRenameAllLogins

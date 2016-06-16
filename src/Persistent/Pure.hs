@@ -121,6 +121,7 @@ module Persistent.Pure
     , deleteDelegation
     , delegationScopeTree
     , allDelegations
+    , allDelegationScopes
     , findDelegationsByScope
     , findDelegationsByDelegatee
     , addIdeaJuryResult
@@ -631,6 +632,16 @@ delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
 
 allDelegations :: Query [Delegation]
 allDelegations = Map.elems <$> view dbDelegationMap
+
+allDelegationScopes :: Query [DScope]
+allDelegationScopes = do
+    ideas  <- getIdeas
+    topics <- getTopics
+    spaces <- getSpaces
+    pure $ DScopeGlobal
+            : (DScopeIdeaSpace <$> spaces)
+            <> (DScopeTopicId . view _Id <$> topics)
+            <> (DScopeIdeaId  . view _Id <$> ideas)
 
 findDelegationsByDelegatee :: AUID User -> Query [Delegation]
 findDelegationsByDelegatee uid =
