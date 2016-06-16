@@ -150,15 +150,28 @@ function toggleClass(el, cl) {
     }
 }
 
-var reloadDelayMs = 250;
+function httpReqAsync(method, url, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4) {
+            if (xmlHttp.status >= 200 && xmlHttp.status < 300) {
+                callback(xmlHttp);
+            } else {
+                console.log("http error: dumping xml object.");
+                console.log(xmlHttp);
+                throw "http error.";
+            }
+        }
+    }
+    xmlHttp.open(method, url, true);
+    xmlHttp.send(null);
+}
 
 function reloadOnClick(target) {
     // NOTE: it would be nice to avoid reload, but this is not a hard
     // requirement any more.
-    // FIXME: this is a race condition: if we wait for 0 ms, the page
-    // will usually be reloaded before the POST request updating the
-    // score can be processed.
-    setTimeout(function() {
+    var successHandler = function() {
         if (target && target.hash) {
             document.location.hash = target.hash;
         }
@@ -166,7 +179,13 @@ function reloadOnClick(target) {
             document.location.href = target.href;
         }
         document.location.reload(true);
-    }, reloadDelayMs);
+    };
+
+    httpReqAsync("POST", event.currentTarget.parentElement.action, successHandler);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    event.stopPropagation();
+    return false;
 }
 
 function createPageSample() {
