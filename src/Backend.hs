@@ -55,6 +55,10 @@ instance Page NeedEmptyUserMap where
         if noUsers
             then accessGranted
             else accessDenied $ Just "Can only be used when there are no users!"
+
+(In thentos, we have a credential *is coming from localhost*.  I like this better because it doesn't
+require any additional work to avoid having to race attackers after deployment.  So perhaps we
+should write a capability 'ComeFromLocalhost' instead?)
 -}
 
 -- * persistent state management (for demo operation)
