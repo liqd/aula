@@ -167,10 +167,10 @@ instance FormPage PageDelegationNetwork where
         PageDelegationNetworkPayload
         <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
       where
-        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> Tree.flatten dscopes
+        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> sort (Tree.flatten dscopes)
 
     formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
-        let dummy = True  -- FIXME: remove this as soon as the non-dummy version is more interesting.
+        let dummy = False  -- FIXME: remove this as soon as the non-dummy version is more interesting.
         if dummy
             then runDummy
             else runReally
