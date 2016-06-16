@@ -170,11 +170,15 @@ instance FormPage PageDelegationNetwork where
         delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> Tree.flatten dscopes
 
     formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
-      let dummy = True  -- FIXME: remove this as soon as the non-dummy version is more interesting.
-      case dummy of
-       True -> do
+        let dummy = True  -- FIXME: remove this as soon as the non-dummy version is more interesting.
+        if dummy
+            then runDummy
+            else runReally
+      where
+       runDummy = do
         img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
-       False -> do
+
+       runReally = do
         form $ do
             inputSelect_ [] "scope" v
             DF.inputSubmit "neu anzeigen"
