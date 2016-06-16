@@ -271,16 +271,16 @@ validateTopicTitle
 validateTopicTitle ideaSpace mTopic =
     DF.validateM checkUniqness . validate "Title des Themas" titleV
   where
-    noTopicUnderEdit topic =
+    -- Says 'False' on current topic, 'True' to all others (based on 'AUID').
+    otherAUID topic =
         maybe True
               (\actTopic -> (actTopic ^. _Id) /= (topic ^. _Id))
               mTopic
 
     checkUniqness title = equery $ do
-        topicTitles <- view topicTitle <$$> filter noTopicUnderEdit <$> findTopicsBySpace ideaSpace
+        topicTitles <- view topicTitle <$$> filter otherAUID <$> findTopicsBySpace ideaSpace
         pure $ if title `elem` topicTitles
-                -- TODO: Translation.
-                then DF.Error "Another topic has the same title in the ideaspace."
+                then DF.Error "Es gibt in diesem Ideenraum schon ein Thema mit diesem Namen."
                 else DF.Success title
 
 validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m PlainDocument
