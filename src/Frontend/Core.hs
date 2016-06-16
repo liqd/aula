@@ -600,6 +600,7 @@ runPostHandler mp mr = coreRunHandler (const mp) $ \_ _ -> UnsafePostResult <$> 
 
 -- * js glue
 
+-- | FUTUREWORK: this entire DSL should be moved into the internal mechanics of @postButton*_@.
 data JsCallback
     = JsReloadOnClick
     | JsReloadOnClickAnchor ST
@@ -613,7 +614,7 @@ onclickJs = \case
     (JsRedirectOnClick href)     -> hdl $ target "href" href
   where
     hdl :: ST -> Attribute
-    hdl = Lucid.onclick_ . ("reloadOnClick(" <>) . (<> ")")
+    hdl = Lucid.onclick_ . ("simplePost(" <>) . (<> ")")
 
     target :: ST -> ST -> ST
     target key val = "{" <> key <> ": " <> cs (show val) <> "}"

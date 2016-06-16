@@ -168,15 +168,15 @@ function httpReqAsync(method, url, callback)
     xmlHttp.send(null);
 }
 
-function reloadOnClick(target) {
+function simplePost(whereToAfter) {
     // NOTE: it would be nice to avoid reload, but this is not a hard
     // requirement any more.
     var successHandler = function() {
-        if (target && target.hash) {
-            document.location.hash = target.hash;
+        if (whereToAfter && whereToAfter.hash) {
+            document.location.hash = whereToAfter.hash;
         }
-        if (target && target.href) {
-            document.location.href = target.href;
+        if (whereToAfter && whereToAfter.href) {
+            document.location.href = whereToAfter.href;
         }
         document.location.reload(true);
     };
