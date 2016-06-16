@@ -1,68 +1,90 @@
-var main = function() {
+var aulaDelegationMain = function(graph) {
+    var width = 960;
+    var height = 500;
 
-var width = 960;
-var height = 500;
+    var tick = function() {
+        link.attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
 
-var color = d3.scale.category20();
+        node.attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
 
-var force = d3.layout.force()
-    .charge(-120)
-    .linkDistance(30)
-    .size([width, height]);
+        text.attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; });
+    };
 
-var svg = d3.select("#d3").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+    // http://bl.ocks.org/mbostock/1153292  -- next step: steal this, and get it to work 1:1.  then mutate that.
 
-d3.json("/static/d3-aula-sample-data2.json", function(error, graph) {
-  if (error) throw error;
+    function linkArc(d) {
+        var dx = d.target.x - d.source.x;
+        var dy = d.target.y - d.source.y;
+        var dr = Math.sqrt(dx * dx + dy * dy);
+        return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+    };
 
-  force
-      .nodes(graph.nodes)
-      .links(graph.links)
-      .start();
+    var force = d3.layout.force()
+        .charge(-120)
+        .linkDistance(30)
+        .size([width, height])
+        .on("tick", tick);
 
-  var link = svg.selectAll(".link")
-      .data(graph.links)
-    .enter().append("line")
-      .attr("class", "link");
+    force
+        .nodes(graph.nodes)
+        .links(graph.links)
+        .start();
 
-  var node = svg.selectAll(".node")
-      .data(graph.nodes)
-    .enter().append("circle")
-      .attr("class", "node")
-      .attr("r", function(d) { return (20 + 3 * d.power); })
-      .call(force.drag);
+    var svg = d3.select(".d3_aula").append("svg")
+        .attr("width", width)
+        .attr("height", height);
 
-  node.append("title")
-      .text(function(d) { return d.name; });
+    var link = svg
+        .selectAll(".link")
+        .data(graph.links)
+        .enter()
+        .append("line")
+        .attr("class", "link");
 
-  node.append("text")
-      .attr("dy", ".3em")
-      .style("text-anchor", "middle")
-      .text(function(d) { return d.name; });
+    var node = svg.append("g")
+        .selectAll(".node")
+        .data(graph.nodes)
+        .enter()
+        .append("circle")
+        .attr("class", "node")
+        .attr("r", function(d) { return (20 + 3 * d.power); })
+        .call(force.drag);
+
+// texts are visible, but in the upper left corner!
+    var text = svg.append("g")
+        .selectAll("text")
+        .data(graph.nodes)
+        .enter()
+        .append("text")
+        .attr("dx", ".10em")
+        .attr("dy", ".10em")
+        .text(function(d) { return "d.name"; });
 
 /*
-  node.append("svg:image")
-        .attr("xlink:href",
-                function(d) { return "http://zierfischverzeichnis.de/klassen/pisces/perciformes/percoidei/thumbnails/gymnocephalus_cernuus.gif"; });
+    node.append("title")
+        .text(function(d) { return d.name; });
+
+    node.append("text")
+        .attr("dy", ".3em")
+        .style("text-anchor", "middle")
+        .text(function(d) { return d.name; });
+
+    node.append("svg:image")
+        .attr("xlink:href", function(d) {
+            return "http://zierfischverzeichnis.de/klassen/pisces/perciformes/percoidei/thumbnails/gymnocephalus_cernuus.gif";
+        });
 */
 
 
-  force.on("tick", function() {
-    link.attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
-
-    node.attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; });
-  });
-});
 
 };
 
-window.onload = main;
+window.onload = function() { aulaDelegationMain(aulaDelegationData); };
 
 
 /*
@@ -84,5 +106,9 @@ window.onload = main;
 -- FIXME: double click on node: remove from graph
 -- FIXME: only list with hidden nodes, no list ofr shown nodes.  double-click there to show
 -- FIXME: show all / hide all
+
+-- more FIXMEs:
+- what you click moves to top (covers other nodes)
+- make bounds strong (no nodes may escape)
 
 */

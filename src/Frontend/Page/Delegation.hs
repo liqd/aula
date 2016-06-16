@@ -95,6 +95,7 @@ instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
     extraFooterElems _ = do
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+        -- FIXME: move the following two under static-src and sass control, resp.?
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
@@ -169,14 +170,17 @@ instance FormPage PageDelegationNetwork where
         delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> Tree.flatten dscopes
 
     formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
+      let dummy = True  -- FIXME: remove this as soon as the non-dummy version is more interesting.
+      case dummy of
+       True -> do
+        img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
+       False -> do
         form $ do
             inputSelect_ [] "scope" v
-            DF.inputSubmit "Show delegations!"
-            p_ . toHtml $ show delegations
-            img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
-
+            DF.inputSubmit "neu anzeigen"
         Lucid.script_ $ do
             "var aulaDelegationData = " <> cs (Aeson.encode delegations)
+        div_ [class_ "d3_aula"] nil
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler

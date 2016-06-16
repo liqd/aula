@@ -1,14 +1,17 @@
 .node {
-  fill: lightgreen;
+  fill: yellow;
   stroke: black;
+  stroke-opacity: .9;
   stroke-width: 1.5px;
 }
 
 .link {
-  stroke: #999;
-  stroke-opacity: .6;
+  stroke: black;
+  stroke-width: 3.5px;
 }
 
 text {
   font: 10px sans-serif;
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
 }
