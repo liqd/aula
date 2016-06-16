@@ -56,7 +56,12 @@ module Frontend.Core
     , completeRegistration
 
       -- * js glue
-    , JsCallback, jsReloadOnClick, jsReloadOnClickAnchor, jsRedirectOnClick
+    , jsReloadOnClick
+    , jsReloadOnClickConfirm
+    , jsReloadOnClickAnchor
+    , jsReloadOnClickAnchorConfirm
+    , jsRedirectOnClick
+    , jsRedirectOnClickConfirm
     )
   where
 
@@ -67,6 +72,7 @@ import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_, when)
 import Data.Aeson (ToJSON)
+import Data.Maybe (maybeToList)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
@@ -80,6 +86,7 @@ import Servant.Missing (getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
@@ -600,33 +607,53 @@ runPostHandler mp mr = coreRunHandler (const mp) $ \_ _ -> UnsafePostResult <$> 
 
 -- * js glue
 
--- | FUTUREWORK: this entire DSL should be moved into the internal mechanics of @postButton*_@.
-data JsCallback
-    = JsReloadOnClick
-    | JsReloadOnClickAnchor ST
-    | JsRedirectOnClick ST
+-- | FUTUREWORK: this entire DSL should be moved into the internal mechanics of @postButton*_@.  The
+-- form action path should also move into this DSL.  What we do there now, namely passing the post
+-- action path as an argument to 'postButton_', finding the @form@ element from the javascript
+-- callback and extracting it from the form, and finally constructing the http request in javascript
+-- and blocking propagation of the event to the form, is just silly.
+data JsSimplePost = JsSimplePost
+    { _fsSimplePostTarget     :: JsSimplePostTarget
+    , _fsSimplePostAskConfirm :: Maybe ST
+    }
   deriving (Eq, Ord, Show, Read)
 
-onclickJs :: JsCallback -> Attribute
-onclickJs = \case
-    JsReloadOnClick              -> hdl "{}"
-    (JsReloadOnClickAnchor hash) -> hdl $ target "hash" hash
-    (JsRedirectOnClick href)     -> hdl $ target "href" href
-  where
-    hdl :: ST -> Attribute
-    hdl = Lucid.onclick_ . ("simplePost(" <>) . (<> ")")
+data JsSimplePostTarget =
+      JsSimplePostHere
+    | JsSimplePostAnchor ST
+    | JsSimplePostHref ST
+  deriving (Eq, Ord, Show, Read)
 
-    target :: ST -> ST -> ST
-    target key val = "{" <> key <> ": " <> cs (show val) <> "}"
+instance ToJSON JsSimplePost where
+    toJSON (JsSimplePost target mAskConfirm) = Aeson.object $ mconcat [trgt, conf]
+      where
+        trgt = case target of
+            JsSimplePostHere        -> []
+            JsSimplePostAnchor hash -> ["hash" Aeson..= hash]
+            JsSimplePostHref href   -> ["href" Aeson..= href]
+
+        conf = maybeToList $ ("askConfirm" Aeson..=) <$> mAskConfirm
+
+onclickJs :: JsSimplePost -> Attribute
+onclickJs = Lucid.onclick_ . ("simplePost(" <>) . (<> ")") . cs . Aeson.encode
 
 jsReloadOnClick :: Attribute
-jsReloadOnClick = onclickJs JsReloadOnClick
+jsReloadOnClick = onclickJs $ JsSimplePost JsSimplePostHere Nothing
+
+jsReloadOnClickConfirm :: ST -> Attribute
+jsReloadOnClickConfirm = onclickJs . JsSimplePost JsSimplePostHere . Just
 
 jsReloadOnClickAnchor :: ST -> Attribute
-jsReloadOnClickAnchor = onclickJs . JsReloadOnClickAnchor
+jsReloadOnClickAnchor hash = onclickJs $ JsSimplePost (JsSimplePostAnchor hash) Nothing
+
+jsReloadOnClickAnchorConfirm :: ST -> ST -> Attribute
+jsReloadOnClickAnchorConfirm confmsg hash = onclickJs $ JsSimplePost (JsSimplePostAnchor hash) (Just confmsg)
 
 jsRedirectOnClick :: ST -> Attribute
-jsRedirectOnClick = onclickJs . JsRedirectOnClick
+jsRedirectOnClick href = onclickJs $ JsSimplePost (JsSimplePostHref href) Nothing
+
+jsRedirectOnClickConfirm :: ST -> ST -> Attribute
+jsRedirectOnClickConfirm confmsg href = onclickJs $ JsSimplePost (JsSimplePostHref href) (Just confmsg)
 
 
 -- * lenses

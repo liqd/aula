@@ -499,10 +499,9 @@ createOrEditIdea eLocIdea v form p =
             Left _ -> nil
             Right idea ->
                 footer_ [class_ "form-footer"] $ do
-                    postButtonConfirm_
-                        (Just "Idee wirklich löschen?")
+                    postButton_
                         [ class_ "btn-cta"
-                        , jsRedirectOnClick
+                        , jsRedirectOnClickConfirm "Idee wirklich löschen?"
                             (absoluteUriPath . U.relPath $ U.listIdeas cancelUrl)
                         ]
                         (U.deleteIdea idea)

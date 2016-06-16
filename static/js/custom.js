@@ -26,14 +26,6 @@ function toggleMenu(el, out) {
     }
 }
 
-// Confirm delete
-function areYouSure(msg) {
-    if (!msg) {
-        msg = "Bitte bestätigen!";
-    }
-    return confirm(msg);
-}
-
 // Mobile menu
 
 document.getElementById("mobile-menu-button").onclick = function() {
@@ -168,20 +160,23 @@ function httpReqAsync(method, url, callback)
     xmlHttp.send(null);
 }
 
-function simplePost(whereToAfter) {
+function simplePost(config) {
     // NOTE: it would be nice to avoid reload, but this is not a hard
     // requirement any more.
+
     var successHandler = function() {
-        if (whereToAfter && whereToAfter.hash) {
-            document.location.hash = whereToAfter.hash;
+        if (config && config.hash) {
+            document.location.hash = config.hash;
         }
-        if (whereToAfter && whereToAfter.href) {
-            document.location.href = whereToAfter.href;
+        if (config && config.href) {
+            document.location.href = config.href;
         }
         document.location.reload(true);
     };
 
-    httpReqAsync("POST", event.currentTarget.parentElement.action, successHandler);
+    if (!config.askConfirm || confirm(config.askConfirm)) {
+        httpReqAsync("POST", event.currentTarget.parentElement.action, successHandler);
+    }
     event.preventDefault();
     event.stopImmediatePropagation();
     event.stopPropagation();

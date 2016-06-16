@@ -62,11 +62,11 @@ commentToHtml w = div_ [id_ . U.anchor $ comment ^. _Id] $ do
                 a_ [class_ "btn comment-footer-button", href_ (edit comment)] $ do
                     i_ [class_ "icon-pencil"] nil
                     "bearbeiten"
-            when (CanDeleteComment `elem` comCaps) .
-                postButtonConfirm_ (Just "Kommentar wirklich loeschen?")
+            when (CanDeleteComment `elem` comCaps) $ do
+                let msg = "Kommentar wirklich loeschen?"
                                           -- FIXME: umlauts.  `ö`, `\\u00F6`, or `&ouml;` won't do it.
-                            [ class_ "btn comment-footer-button"
-                            , jsReloadOnClickAnchor . U.anchor $ comment ^. _Id
+                postButton_ [ class_ "btn comment-footer-button"
+                            , jsReloadOnClickAnchorConfirm msg . U.anchor $ comment ^. _Id
                             ]
                             (U.deleteComment comment) $ do
                     i_ [class_ "icon-trash-o"] nil

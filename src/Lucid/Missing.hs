@@ -23,7 +23,6 @@ module Lucid.Missing
     , formMethod_
     , postLink_
     , postButton_
-    , postButtonConfirm_
     , nbsp
     )
   where
@@ -120,11 +119,6 @@ postLink_ attrs path = formMethod_ "POST" [] path . inputSubmit_ attrs
 postButton_ :: (Monad m, HasPath p)
   => [Lucid.Attribute] -> p 'AllowPost -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
 postButton_ = postButton' []
-
-postButtonConfirm_ :: (Monad m, HasPath p)
-  => Maybe ST -> [Lucid.Attribute] -> p 'AllowPost -> Lucid.HtmlT m () -> Lucid.HtmlT m ()
-postButtonConfirm_ mmsg =
-    postButton' [onsubmit_ $ "return areYouSure(" <> maybe "" (cs . show) mmsg <> ")"]
 
 postButton' :: (Monad m, HasPath p)
   => [Lucid.Attribute] -> [Lucid.Attribute] -> p 'AllowPost -> Lucid.HtmlT m () -> Lucid.HtmlT m ()

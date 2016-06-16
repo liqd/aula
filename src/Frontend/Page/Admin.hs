@@ -627,9 +627,10 @@ instance FormPage AdminEditUser where
                     tbody_ . forM_ (user ^.. userRoles) $ \role -> tr_ $ do
                         td_ $ role ^. uilabeledST . html
                         td_ $ role ^. roleSchoolClass . uilabeledST . html
-                        td_ $ postButtonConfirm_
-                                (Just "Soll diese Rolle wirklich entfernt werden?")
-                                [class_ "btn-cta", jsReloadOnClick]
+                        td_ $ postButton_
+                                [ class_ "btn-cta"
+                                , jsReloadOnClickConfirm "Soll diese Rolle wirklich entfernt werden?"
+                                ]
                                 (U.adminRemRole user role) "Rolle löschen"
                 div_ [class_ "admin-buttons"] $ do
                     a_ [href_ $ U.adminAddRole user, class_ "btn-cta"] "Rolle hinzufügen"
