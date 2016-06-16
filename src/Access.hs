@@ -92,7 +92,7 @@ data Capability
     | CanMarkWinner
     | CanAddCreatorStatement
     | CanEditCreatorStatement
-    | CanEditAndDelete
+    | CanEditAndDeleteIdea
     | CanMoveBetweenLocations
     -- Comment
     | CanReplyComment
@@ -175,7 +175,7 @@ ideaCapabilities :: AUID User -> Role -> Idea -> Phase -> [Capability]
 ideaCapabilities uid r i p = CanView : phaseCap uid r i p
 
 editCap :: AUID User -> Idea -> [Capability]
-editCap uid i = [CanEditAndDelete | i ^. createdBy == uid]
+editCap uid i = [CanEditAndDeleteIdea | i ^. createdBy == uid]
 
 allowedDuringFreeze :: [Capability]
 allowedDuringFreeze = [ CanComment
@@ -201,7 +201,7 @@ wildIdeaCap u i = \case
     Student    _clss -> [CanLike, CanComment, CanVoteComment] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
+    Moderator        -> [CanEditAndDeleteIdea, CanComment, CanVoteComment, CanMoveBetweenLocations]
     Principal        -> []
     Admin            -> thereIsAGod []
 
@@ -210,7 +210,7 @@ phaseRefinementCap u i = \case
     Student    _clss -> [CanComment, CanVoteComment] <> editCap u i
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditAndDelete, CanComment, CanVoteComment, CanMoveBetweenLocations]
+    Moderator        -> [CanEditAndDeleteIdea, CanComment, CanVoteComment, CanMoveBetweenLocations]
     Principal        -> []
     Admin            -> thereIsAGod []  -- FIXME: should be allowed to thaw; capture here when capabilities affect more than a couple of UI elements
 
