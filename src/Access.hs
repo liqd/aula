@@ -237,7 +237,7 @@ phaseResultCap u i = \case
     Student    _clss -> [CanAddCreatorStatement | u `isCreatorOf` i, isWinning i]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> mconcat [ [CanMarkWinner] <>
+    Moderator        -> mconcat [ [CanMarkWinner, CanEditAndDeleteIdea] <>
                                   [CanEditCreatorStatement | ideaHasCreatorStatement i]
                                   | isFeasibleIdea i ]
     Principal        -> []
