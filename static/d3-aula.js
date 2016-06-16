@@ -1,6 +1,9 @@
+// inspirating example:
+// http://bl.ocks.org/mbostock/1153292
+
 var aulaDelegationMain = function(graph) {
     var width = 960;
-    var height = 500;
+    var height = 800;
 
     var tick = function() {
         link.attr("x1", function(d) { return d.source.x; })
@@ -11,11 +14,9 @@ var aulaDelegationMain = function(graph) {
         node.attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
 
-        text.attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
+        text.attr("dx", function(d) { return d.x; })
+            .attr("dy", function(d) { return d.y; });
     };
-
-    // http://bl.ocks.org/mbostock/1153292  -- next step: steal this, and get it to work 1:1.  then mutate that.
 
     function linkArc(d) {
         var dx = d.target.x - d.source.x;
@@ -25,8 +26,8 @@ var aulaDelegationMain = function(graph) {
     };
 
     var force = d3.layout.force()
-        .charge(-120)
-        .linkDistance(30)
+        .charge(-180)
+        .linkDistance(70)
         .size([width, height])
         .on("tick", tick);
 
@@ -55,7 +56,6 @@ var aulaDelegationMain = function(graph) {
         .attr("r", function(d) { return (20 + 3 * d.power); })
         .call(force.drag);
 
-// texts are visible, but in the upper left corner!
     var text = svg.append("g")
         .selectAll("text")
         .data(graph.nodes)
@@ -63,17 +63,9 @@ var aulaDelegationMain = function(graph) {
         .append("text")
         .attr("dx", ".10em")
         .attr("dy", ".10em")
-        .text(function(d) { return "d.name"; });
+        .text(function(d) { return d.name; });
 
 /*
-    node.append("title")
-        .text(function(d) { return d.name; });
-
-    node.append("text")
-        .attr("dy", ".3em")
-        .style("text-anchor", "middle")
-        .text(function(d) { return d.name; });
-
     node.append("svg:image")
         .attr("xlink:href", function(d) {
             return "http://zierfischverzeichnis.de/klassen/pisces/perciformes/percoidei/thumbnails/gymnocephalus_cernuus.gif";

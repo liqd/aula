@@ -1701,6 +1701,7 @@ instance Aeson.ToJSON DelegationNetwork where
         array :: Aeson.ToJSON v => [v] -> Aeson.Value
         array = Aeson.Array . Vector.fromList . fmap Aeson.toJSON
 
+        -- TODO: make this transitive
         getPower :: User -> [Delegation] -> Aeson.Value
         getPower u = Aeson.toJSON . List.length
                    . List.filter (== (u ^. _Id))
