@@ -283,7 +283,7 @@ topicWildIdeaCaps = \case
     Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> []
+    Moderator        -> [CanCreateIdea]
     Principal        -> []
     Admin            -> thereIsAGod []
 
@@ -292,7 +292,7 @@ topicRefinementCaps = \case
     Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanEditTopic, CanPhaseForwardTopic]
+    Moderator        -> [CanCreateIdea, CanEditTopic, CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> thereIsAGod [CanPhaseForwardTopic]
 
