@@ -260,8 +260,8 @@ studentsInIdeaSpace spc = fltr <$> cllct spc
 
     cllct :: IdeaSpace -> EQuery [User]
     cllct = \case
-        SchoolSpace       -> getActiveUsers
-        ClassSpace school -> getUsersInClass school
+        SchoolSpace    -> getActiveUsers
+        ClassSpace cls -> getUsersInClass cls
 
 studentsInDScope :: DScope -> EQuery [User]
 studentsInDScope DScopeGlobal
