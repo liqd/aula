@@ -134,6 +134,8 @@ type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 type instance CaptureData Role               = Role
 
+-- | FUTUREWORK: All @Unsafe*@ constructors should move to "Frontend.Core.Internal".  That move
+-- could work well together with SafeHaskell markers.
 newtype GetResult a = UnsafeGetResult { fromGetResult :: a }
     deriving (ToHtml, ToJSON, Generic)
 
@@ -499,6 +501,9 @@ form formHandler = getH :<|> postH
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
+    -- If form is not filled out successfully, 'postH' responds with a new page to render.  This
+    -- makes it impossible to re-use 'runPostHandler': we need the user info and the page computed
+    -- pre-authorization and forwarded by 'coreRunHandler'.
     postH formData = coreRunHandler (const getPage) $ \mu page -> do
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
@@ -575,7 +580,7 @@ completeRegistration = do
 makeFrame :: ActionUserHandler m => Maybe User -> p -> m (Frame p)
 makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages
 
--- | Call 'coreRunHandler'' on a handler that has no effect on the database state, and 'Frame' the result.
+-- | Call 'coreRunHandler' on a handler that has no effect on the database state, and 'Frame' the result.
 runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
            => m p -> m (GetResult (Frame p))
 runHandler mp = coreRunHandler (const mp) (\mu p -> UnsafeGetResult <$> makeFrame mu p)
