@@ -20,7 +20,7 @@ import Access
 import Action
 import Frontend.Fragment.IdeaList
 import Frontend.Prelude
-import Persistent (findWildIdeasBySpace, getIdeaStats, findTopicsBySpace)
+import Persistent (findWildIdeasBySpace, getIdeaStats, findTopicsBySpace, dbFreeze)
 
 import qualified Data.Text as ST
 import qualified Frontend.Path as U
@@ -55,7 +55,8 @@ viewRooms = PageOverviewOfSpaces . sort <$> getSpacesForCurrentUser
 viewIdeas :: (ActionPersist m, ActionUserHandler m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
-    ctx <- spaceCapCtx space
+    mphase <- Just . PhaseWildIdea <$> query (view dbFreeze)
+    ctx <- set capCtxPhase mphase <$> spaceCapCtx space
     PageOverviewOfWildIdeas ctx space <$> equery (do
         is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
         pure $ ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery is)
@@ -88,7 +89,7 @@ instance Page PageOverviewOfSpaces where
 
 instance ToHtml PageOverviewOfWildIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageOverviewOfWildIdeas _ctx space ideasAndNumVoters) = semanticDiv p $ do
+    toHtml p@(PageOverviewOfWildIdeas ctx space ideasAndNumVoters) = semanticDiv p $ do
         toHtml $ Tabs WildIdeas space
         header_ [class_ "ideas-header"] $ do
             h1_ [class_ "main-heading"] $ do
@@ -97,7 +98,8 @@ instance ToHtml PageOverviewOfWildIdeas where
             p_ [class_ "sub-header"] . span_ $
                 "Du kannst hier jede lose Idee, die du im Kopf hast, einwerfen und kannst für " <>
                 "die Idee abstimmen und diese somit \"auf den Tisch bringen\"."
-            button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta m-large"] "+ Neue Idee"
+            when (CanCreateIdea `elem` capabilities ctx) $
+                button_ [onclick_ (U.createIdea (IdeaLocationSpace space)), class_ "btn-cta m-large"] "+ Neue Idee"
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
