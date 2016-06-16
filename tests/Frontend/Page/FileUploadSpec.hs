@@ -39,7 +39,7 @@ spec = describe "file upload" $ do
                         ]
 
         it "posts users successfully; users will appear under /testing/user" $ \wreq -> do
-            logAsAdmin wreq
+            loginAsAdmin wreq
             post wreq (fileUploadPath "") [classPart, filePart]
                 `shouldRespond` [codeShouldBe 303]
             get wreq "/testing/users"

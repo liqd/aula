@@ -62,5 +62,5 @@ withServerWithEventLog action = withSystemTempFile "aula-test-events" $ \elpath 
     hClose h
     cfg <- (logging . eventLogPath .~ elpath) <$> testConfig
     withServer' cfg $ \wreq -> do
-        logAsAdmin wreq
+        loginAsAdmin wreq
         action wreq

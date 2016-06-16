@@ -113,8 +113,8 @@ data WreqQuery = WreqQuery
 doNotThrowExceptionsOnErrorCodes :: StatusChecker
 doNotThrowExceptionsOnErrorCodes _ _ _ = Nothing
 
-logAsAdmin :: WreqQuery -> IO ()
-logAsAdmin wreq =
+loginAsAdmin :: WreqQuery -> IO ()
+loginAsAdmin wreq =
     post wreq "/login"
         [partString "/login.user" "admin", partString "/login.pass" "pssst"]
         `shouldRespond` [codeShouldBe 303]
@@ -145,7 +145,7 @@ withServer' cfg action = do
 withServerAsAdmin :: (WreqQuery -> IO a) -> IO a
 withServerAsAdmin action = withServer $ \wreq -> do
     putStrLn "logging in as admin"
-    logAsAdmin wreq
+    loginAsAdmin wreq
     putStrLn "logged in as admin"
     action wreq
 
