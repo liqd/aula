@@ -4,6 +4,7 @@ HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -idist/build/autogen
 FULL_SOURCES=$(AULA_SOURCES) -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
 AULA_IMAGE=quay.io/liqd/aula
+AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 
 .phony:
 
@@ -71,9 +72,11 @@ wc:
 	find src tests -name '*.hs' | xargs wc
 
 content:
-	curl -XPOST http://localhost:8080/api/manage-state/create-init
-	curl -XPOST http://localhost:8080/api/manage-state/create-demo
-	curl -XPOST http://localhost:8080/api/manage-state/create-votes
+	curl -XPOST $(AULA_URL)/api/manage-state/create-init
+	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
+	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-demo
+	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-votes
+	rm cookie-jar
 
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/

@@ -1,25 +1,26 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE MultiWayIf            #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE ViewPatterns          #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE MultiWayIf                 #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE Rank2Types                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE ViewPatterns               #-}
 
-{-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
     ( -- * helpers for routing tables
-      Singular, CaptureData, (::>), Reply
-    , GetH, PostH, FormHandler
+      Singular, CaptureData, (::>), Reply, GetResult(..), PostResult(..), PostResult'
+    , GetH, PostH, FormHandler, GetCSV, Redirect
 
       -- * helpers for handlers
     , semanticDiv, semanticDiv'
@@ -48,7 +49,10 @@ module Frontend.Core
 
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
+    , coreRunHandler
     , runHandler
+    , runGetHandler
+    , runPostHandler
     , completeRegistration
 
       -- * js glue
@@ -56,25 +60,29 @@ module Frontend.Core
     )
   where
 
+import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
 import Control.Monad (replicateM_, when)
+import Data.Aeson (ToJSON)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
-import GHC.TypeLits (Symbol)
+import GHC.Generics (Generic)
+import GHC.TypeLits (Symbol, KnownSymbol)
 import Lucid.Base
 import Lucid hiding (href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
-import Servant.Missing (FormH, getFormDataEnv, throwError500)
+import Servant.Missing (getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Map as Map
 import qualified Data.Text as ST
+import qualified Generics.SOP as SOP
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -84,6 +92,7 @@ import Action
 import Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Path (HasPath(..))
+import Logger.EventLog (EventLog)
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
 
@@ -125,6 +134,33 @@ type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 type instance CaptureData Role               = Role
 
+-- | FUTUREWORK: All @Unsafe*@ constructors should move to "Frontend.Core.Internal".  That move
+-- could work well together with SafeHaskell markers.
+newtype GetResult a = UnsafeGetResult { fromGetResult :: a }
+    deriving (ToHtml, ToJSON, Generic)
+
+instance SOP.Generic (GetResult a)
+
+instance MimeRender CSV a => MimeRender CSV (GetResult a) where
+    mimeRender p = mimeRender p . fromGetResult
+
+instance MimeRender PlainText a => MimeRender PlainText (GetResult a) where
+    mimeRender p = mimeRender p . fromGetResult
+
+-- | 'PostResult p r' is wrapper over the type 'r' that carries authorization info on the type level.
+-- (The constructor should only be used in 'runPostHandler', where the authorization check happens
+-- before the request has any effect on the database state.)
+newtype PostResult p r = UnsafePostResult { fromPostResult :: r }
+  deriving (ToHtml, ToJSON, Generic)
+
+-- When the result type and page type are the same.
+type PostResult' p = PostResult p p
+
+instance SOP.Generic (PostResult p r)
+
+instance MimeRender PlainText r => MimeRender PlainText (PostResult p r) where
+    mimeRender p = mimeRender p . fromPostResult
+
 -- | Every 'Get' handler in aula (both for simple pages and for forms) accepts repsonse content
 -- types 'HTML' (for normal operation) and 'PlainText' (for generating samples for RenderHtml.  The
 -- plaintext version of any page can be requested using curl on the resp. URL with @-H"content-type:
@@ -133,9 +169,36 @@ type instance CaptureData Role               = Role
 -- Using this via `curl` is complicated by the fact that we need cookie authentication, so this
 -- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
 -- for more details).
-type GetH = Get '[HTML, PlainText]
-type PostH = Post '[HTML] ()
-type FormHandler p = FormH '[HTML, PlainText] (Frame (FormPageRep p)) (FormPageResult p)
+type GetH p = Get '[HTML, PlainText] (GetResult p)
+type PostH' p r = Post '[HTML, PlainText] (PostResult p r)
+type PostH p = PostH' p ()
+type FormHandler p =
+       GetH (Frame (FormPageRep p))
+  :<|> FormReqBody :> PostH' (Frame (FormPageRep p)) (Frame (FormPageRep p)) -- Redirect
+
+type GetCSV a = Get '[CSV] (GetResult (CsvHeaders a))
+
+instance Page () where
+    isAuthorized = publicPage
+
+instance MimeRender PlainText () where
+    mimeRender Proxy = nil
+
+-- | A void type for end-points that respond with 303 and thus never return any values.
+data Redirect
+
+instance Show Redirect where
+    show _ = error "instance Show Redirect"
+
+instance ToHtml Redirect where
+    toHtmlRaw = toHtml
+    toHtml _ = "You are being redirected"
+
+instance MimeRender PlainText Redirect where
+    mimeRender _ = error "instance MimeRender PlainText Redirect"
+
+instance Page Redirect where
+    isAuthorized _ = error "instance Page Redirect"
 
 
 -- * helpers for handlers
@@ -223,6 +286,9 @@ percentVotes idea numVoters vv = {- assert c -} v
 -- * pages
 
 -- | Defines some properties for pages
+--
+-- FIXME: factor out 'isAuthorized' into its own type class.  (Page should always want a Frame, i
+-- think.)
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
@@ -232,14 +298,50 @@ class Page p where
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
-instance Page () where isAuthorized = publicPage
-
-instance Page ST where isAuthorized = adminPage
-
 instance Page p => Page (Frame p) where
     isAuthorized a = isAuthorized (_frameBody <$> a)
     extraFooterElems = extraFooterElems . _frameBody
 
+instance (Page a, Page b) => Page (a :<|> b) where
+    isAuthorized = error "IMPOSSIBLE: instance (Page a, Page b) => Page (a :<|> b)"
+
+instance (KnownSymbol s, Page a) => Page (s :> a) where
+    isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (s :> a)"
+
+instance (KnownSymbol s, Page a) => Page (Capture s c :> a) where
+    isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (Capture s c :> a)"
+
+instance Page a => Page (Headers h a) where
+    isAuthorized = isAuthorized . fmap getResponse
+    extraFooterElems = extraFooterElems . getResponse
+
+instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a) where
+    isAuthorized = error "IMPOSSIBLE: instance (KnownSymbol s, Page a) => Page (QueryParam s b :> a)"
+
+instance Page a => Page (FormReqBody :> a) where
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (FormReqBody :> a)"
+
+-- We must not generalize this instance to a `Page (Get c a)` instance.
+instance Page a => Page (Get c (GetResult a)) where
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Get c (GetResult a))"
+
+-- We must not generalize this instance to a `Page (Get c a)` instance.
+instance Page a => Page (Get c (Frame a)) where
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Get c (Frame a))"
+
+-- We must not generalize this instance to a `Page (Post c a)` instance.
+instance (Page p, Page r) => Page (Post c (PostResult p r)) where
+    isAuthorized = error "IMPOSSIBLE: instance (Page p, Page r) => Page (Post c (PostResult p r))"
+
+-- We must not generalize this instance to a `Page (Post c a)` instance.
+instance Page a => Page (Post c (Frame a)) where
+    isAuthorized = error "IMPOSSIBLE: instance Page a => Page (Post c (Frame a))"
+
+instance Page EventLog where
+    isAuthorized = adminPage
+
+instance Page DelegationNetwork where
+    isAuthorized = userPage
 
 -- | Debugging page, uses the 'Show' instance of the underlying type.
 newtype PageShow a = PageShow { _unPageShow :: a }
@@ -319,6 +421,28 @@ data FormPageHandler m p = FormPageHandler
     , _formStatusMessage :: p -> FormPagePayload p -> FormPageResult p -> m (Maybe StatusMessage)
     }
 
+instance Page (NeedCap 'CanVoteComment)         where isAuthorized = needCap CanVoteComment
+instance Page (NeedCap 'CanDeleteComment)       where isAuthorized = needCap CanDeleteComment
+instance Page (NeedCap 'CanLike)                where isAuthorized = needCap CanLike
+instance Page (NeedCap 'CanEditAndDelete)       where isAuthorized = needCap CanEditAndDelete
+instance Page (NeedCap 'CanVote)                where isAuthorized = needCap CanVote
+instance Page (NeedCap 'CanMarkWinner)          where isAuthorized = needCap CanMarkWinner
+instance Page (NeedCap 'CanDelegate)            where isAuthorized = needCap CanDelegate
+instance Page (NeedCap 'CanPhaseForwardTopic)   where isAuthorized = needCap CanPhaseForwardTopic
+instance Page (NeedCap 'CanPhaseBackwardTopic)  where isAuthorized = needCap CanPhaseBackwardTopic
+
+instance Page NeedAdmin where isAuthorized = adminPage
+
+-- FIXME: move this to the rest of the delegation logic?  (where's that?)
+instance Page DelegateTo where
+    isAuthorized = authNeedPage $ \_ (DelegateTo ctx user) ->
+        authNeedCaps' [CanDelegate] ctx <<>>
+        if haveCommonSchoolClass ctx user
+            then accessGranted
+            else accessDenied Nothing
+      where
+        (<<>>) = liftA2 (<>)
+
 formPageHandler
     :: Applicative m
     => m p
@@ -377,8 +501,10 @@ form formHandler = getH :<|> postH
         v <- getForm fa (processor1 page)
         pure $ FormPageRep v fa page
 
-    postH formData = runHandler $ do
-        page <- getPage
+    -- If form is not filled out successfully, 'postH' responds with a new page to render.  This
+    -- makes it impossible to re-use 'runPostHandler': we need the user info and the page computed
+    -- pre-authorization and forwarded by 'coreRunHandler'.
+    postH formData = coreRunHandler (const getPage) $ \mu page -> do
         let fa = absoluteUriPath . relPath $ formAction page
             env = getFormDataEnv formData
         (v, mpayload) <- postForm fa (processor1 page) (\_ -> return $ return . runIdentity . env)
@@ -386,7 +512,7 @@ form formHandler = getH :<|> postH
             Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
                                redirectPath newPath
-            Nothing      -> pure $ FormPageRep v fa page)
+            Nothing      -> UnsafePostResult <$> makeFrame mu (FormPageRep v fa page))
             `finally` cleanupTempFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
@@ -399,35 +525,44 @@ form formHandler = getH :<|> postH
 -- * frame creation
 
 -- | Wrap anything that has 'ToHtml' and wrap it in an HTML body with complete page.
+--
+-- The status messages in 'PublicFrame' are intentional.  We use this for a status message "thanks
+-- for playing" that is presented after logout.  (This is methodically sound: a session extends over
+-- the entire sequence of requests the client presents the same cookie, not only over those
+-- sub-sequences where the user is logged-in.)
 data Frame body
     = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
     | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
   deriving (Show, Read, Functor)
 
--- Run the given handler, check for authorization and finally add the frame around the page.
-runHandler :: forall m p. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-           => m p -> m (Frame p)
-runHandler mp = do
+-- | Check authorization of a page action.  Returns a new action.
+--
+-- The first function 'mp' computes the page from the current logged in user.  WARNING, 'mp' CAN be
+-- run before authorization, this 'mp' SHOULD NOT modify the state.  The second function 'mr'
+-- computes the result and performs the necessary action on the state.
+coreRunHandler :: forall m p r. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+               => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
+coreRunHandler mp mr = do
     isli <- isLoggedIn
     if isli
         then do
             user <- currentUser
             access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
             case access0 of
-                AccessGranted -> Frame user <$> mp <*> flushMessages
+                AccessGranted -> mr (Just user) =<< mp (Just user)
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> do
-                    p <- mp
+                    p <- mp (Just user)
                     access1 <- isAuthorized (LoggedIn user (Just p))
                     case access1 of
-                        AccessGranted -> Frame user p <$> flushMessages
+                        AccessGranted -> mr (Just user) p
                         AccessDenied s u -> handleDenied s u
                         AccessDeferred ->
                             throwError500 "AccessDeferred should not be used with LoggedIn"
         else do
             access <- isAuthorized (NotLoggedIn :: AccessInput p)
             case access of
-                AccessGranted -> PublicFrame <$> mp <*> flushMessages
+                AccessGranted -> mr Nothing =<< mp Nothing
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> throwError500 "AccessDeferred should not be used with NotLoggedIn"
   where
@@ -441,6 +576,26 @@ completeRegistration = do
         then do addMessage "Bitte ändere dein Passwort, damit niemand in deinem Namen Unsinn machen kann."
                 redirectPath P.userSettings
         else redirectPath P.listSpaces
+
+makeFrame :: ActionUserHandler m => Maybe User -> p -> m (Frame p)
+makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages
+
+-- | Call 'coreRunHandler' on a handler that has no effect on the database state, and 'Frame' the result.
+runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+           => m p -> m (GetResult (Frame p))
+runHandler mp = coreRunHandler (const mp) (\mu p -> UnsafeGetResult <$> makeFrame mu p)
+
+-- | Like 'runHandler', but do not 'Frame' the result.
+runGetHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+                 => m p -> m (GetResult p)
+runGetHandler action = coreRunHandler (\_ -> action) (\_ -> pure . UnsafeGetResult)
+
+-- | Call 'coreRunHandler' on a post handler, and 'Frame' the result.  In contrast to 'runHandler',
+-- this case requires distinguishing between the action that promises not to modify the database
+-- state and the action that is supposed to do just that.
+runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+               => m p -> m r -> m (PostResult p r)
+runPostHandler mp mr = coreRunHandler (const mp) $ \_ _ -> UnsafePostResult <$> mr
 
 
 -- * js glue

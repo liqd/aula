@@ -329,6 +329,7 @@ test-suite spec
     , free
     , hspec
     , hspec-wai
+    , HUnit >= 1.3
     , lens
     , lucid
     , mtl
@@ -336,6 +337,7 @@ test-suite spec
     , servant-mock
     , servant-server
     , string-conversions
+    , temporary >=1.2.0.3 && <1.3
     , text
     , wai-extra
     , wreq
@@ -355,6 +357,7 @@ test-suite spec
       Frontend.Page.LoginSpec
       Frontend.PathSpec
       FrontendSpec
+      MonoidSpec
       Persistent.ApiSpec
       Test.Hspec.Missing
       TypesSpec

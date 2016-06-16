@@ -522,6 +522,18 @@ instance Arbitrary Capability where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary (NeedCap cap) where
+    arbitrary = NeedCap <$> arbitrary
+    shrink = _NeedCap shrink
+
+instance Arbitrary p => Arbitrary (GetResult p) where
+    arbitrary = UnsafeGetResult <$> arb
+    shrink    = gshrink
+
+instance Arbitrary r => Arbitrary (PostResult p r) where
+    arbitrary = UnsafePostResult <$> arb
+    shrink    = gshrink
+
 instance Arbitrary IdeasFilterQuery where
     arbitrary = garbitrary
     shrink    = gshrink
@@ -918,6 +930,10 @@ instance Arbitrary SearchClasses where
 
 instance Arbitrary UriPart where
     arbitrary = fromString . List.filter (/= '/') <$> garbitrary
+
+instance Arbitrary Redirect where
+    arbitrary = pure $ error "instance Arbitrary Redirect"
+    shrink _ = error "instance Arbitrary Redirect"
 
 
 -- * servant-mock

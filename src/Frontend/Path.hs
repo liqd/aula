@@ -240,18 +240,18 @@ broken = Broken
 instance HasPath Main where relPath p = main p nil
 
 main :: Main r -> UriPath -> UriPath
-main ListSpaces          root = root </> "space"
-main (Space sid p)       root = spacePath p (root </> "space" </> uriPart sid)
-main (IdeaPath l m)      root = ideaPath l m root
-main (UserProf uid p)    root = user  p (root </> "user" </> uriPart uid)
-main UserSettings        root = root </> "user" </> "settings"
-main (Admin p)           root = adminMode p (root </> "admin")
-main DelegationEdit      root = root </> "delegation" </> "edit"
-main (DelegationView ms) root = root </> "delegation" </> "view"
-                                     </?> ("scope", cs . toUrlPiece <$> ms)
+main ListSpaces           root = root </> "space"
+main (Space sid p)        root = spacePath p (root </> "space" </> uriPart sid)
+main (IdeaPath l m)       root = ideaPath l m root
+main (UserProf uid p)     root = user  p (root </> "user" </> uriPart uid)
+main UserSettings         root = root </> "user" </> "settings"
+main (Admin p)            root = adminMode p (root </> "admin")
+main DelegationEdit       root = root </> "delegation" </> "edit"
+main (DelegationView ms)  root = root </> "delegation" </> "view"
+                                      </?> ("scope", cs . toUrlPiece <$> ms)
 main Imprint              root = root </> "imprint"
 main Terms                root = root </> "terms"
-main Login                root = root </> "login"  -- TODO: align
+main Login                root = root </> "login"
 main CompleteRegistration root = root </> "completeregistration"
 main Logout               root = root </> "logout"
 main Broken               root = root </> "bröken"
@@ -328,7 +328,7 @@ data IdeaMode (r :: AllowedMethod) =
     | MoveIdea (AUID Idea)
     | LikeIdea (AUID Idea)
     | VoteOnIdea (AUID Idea) IdeaVoteValue
-    | UnvoteOnIdea (AUID Idea) (AUID User)
+    | UnvoteOnIdea (AUID Idea)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
     | CommentOnIdea (AUID Idea)
     | MarkIdeaAsWinner (AUID Idea)
@@ -353,7 +353,7 @@ ideaMode (MoveIdea i)           root = root </> "idea" </> uriPart i </> "move"
 ideaMode (LikeIdea i)           root = root </> "idea" </> uriPart i </> "like"
 ideaMode (VoteOnIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
                                             </> uriPart v
-ideaMode (UnvoteOnIdea i u)     root = root </> "idea" </> uriPart i </> "user" </> uriPart u </> "remove"
+ideaMode (UnvoteOnIdea i)       root = root </> "idea" </> uriPart i </> "remove"
 ideaMode (JudgeIdea i v)        root = root </> "idea" </> uriPart i </> "jury"
                                             </> uriPart v
 ideaMode (CommentOnIdea i)      root = root </> "idea" </> uriPart i </> "comment"
@@ -594,8 +594,8 @@ judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
 voteOnIdea :: Idea -> IdeaVoteValue -> Main 'AllowPost
 voteOnIdea idea = IdeaPath (idea ^. ideaLocation) . VoteOnIdea (idea ^. _Id)
 
-unvoteOnIdea :: Idea -> User -> Main 'AllowPost
-unvoteOnIdea idea u = IdeaPath (idea ^. ideaLocation) $ UnvoteOnIdea (idea ^. _Id) (u ^. _Id)
+unvoteOnIdea :: Idea -> Main 'AllowPost
+unvoteOnIdea idea = IdeaPath (idea ^. ideaLocation) $ UnvoteOnIdea (idea ^. _Id)
 
 markIdeaAsWinner :: Idea -> Main 'AllowPost
 markIdeaAsWinner idea = IdeaPath (idea ^. ideaLocation) $ MarkIdeaAsWinner (idea ^. _Id)

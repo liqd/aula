@@ -38,6 +38,7 @@ import Thentos.Prelude hiding (logger, DEBUG)
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
+import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction)
 import Config
@@ -49,7 +50,7 @@ import Frontend.Prelude
 import Frontend.Testing
 import Logger
 import Persistent.Api (RunPersist)
-import Persistent (withPersist)
+import Persistent (withPersist, findUser)
 
 import qualified Action
 import qualified Backend
@@ -58,8 +59,11 @@ import qualified Frontend.Path as U
 
 -- * driver
 
+-- FIXME: not implemented.  i'm also not sure what this was supposed to do any more.  perhaps this
+-- has been obsoleted by the 'isAuthorized' code and can be removed?  or is it intended to renew the
+-- session so it won't time out unless the user is inactive for the timeout period?
 extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
-extendClearanceOnSessionToken _ = pure () -- FIXME
+extendClearanceOnSessionToken _ = pure ()
 
 -- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()
@@ -101,7 +105,7 @@ runFrontend' cfg log rp = do
 type AulaTop
     =  "samples" :> Raw
   :<|> "static"  :> Raw
-  :<|> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
+  :<|> GetH Redirect
   :<|> Raw
 
 aulaTop :: Config -> Application -> Server AulaTop
@@ -134,9 +138,9 @@ aulaTop cfg app =
 type AulaActions =
        AulaMain
   :<|> "api" :> Backend.Api
-  :<|> "testing" :> AulaTesting
+  :<|> "testing" :> AulaTesting  -- TODO: take this back in?  or move it to test suite?
 
-aulaActions :: (GenArbitrary m, ActionM m) => ServerT AulaActions m
+aulaActions :: (Page AulaActions, GenArbitrary m, ActionM m) => ServerT AulaActions m
 aulaActions =
        aulaMain
   :<|> Backend.api
@@ -167,8 +171,8 @@ type AulaMain =
 
        -- login / logout
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
-  :<|> "completeregistration" :> GetH (Frame ())  -- TODO: introduce dedicated page type
-  :<|> "logout" :> GetH (Frame ())  -- FIXME: give this a void page type for path magic.
+  :<|> "completeregistration" :> GetH Redirect
+  :<|> "logout" :> GetH Redirect
 
 
 aulaMain :: ActionM m => ServerT AulaMain m
@@ -196,30 +200,38 @@ type CommentApi
        -- edit an existing comment
   :<|> "edit" :> FormHandler EditComment
        -- vote on a comment
-  :<|> UpDown ::> PostH
+  :<|> UpDown ::> PostH (NeedCap 'CanVoteComment)
        -- vote on a reply of a comment
-  :<|> Reply ::> UpDown ::> PostH
+  :<|> Reply ::> UpDown ::> PostH (NeedCap 'CanVoteComment)
        -- delete a comment
-  :<|> "delete" :> PostH
+  :<|> "delete" :> PostH (NeedCap 'CanDeleteComment)
        -- delete a comment reply
-  :<|> Reply ::> "delete" :> PostH
+  :<|> Reply ::> "delete" :> PostH (NeedCap 'CanDeleteComment)
        -- report a comment
   :<|> "report" :> FormHandler ReportComment
        -- report a comment reply
   :<|> Reply ::> "report" :> FormHandler ReportComment
   :<|> Reply ::> "edit"   :> FormHandler EditComment
 
-commentApi :: ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
+commentApi :: forall m. ActionM m => IdeaLocation -> AUID Idea -> AUID Comment -> ServerT CommentApi m
 commentApi loc iid cid
     =  form (Page.replyToComment     loc iid cid)
   :<|> form (Page.editComment        loc iid cid)
-  :<|> Action.voteIdeaComment        loc iid cid
-  :<|> Action.voteIdeaCommentReply   loc iid cid
-  :<|> Action.deleteIdeaComment      loc iid cid
-  :<|> Action.deleteIdeaCommentReply loc iid cid
+  :<|> commentHandler ck . Action.voteIdeaComment ck
+  :<|> (\rid -> commentHandler (rk rid) . Action.voteIdeaComment (rk rid))
+  :<|> commentHandler ck (Action.deleteIdeaComment ck)
+  :<|> (\rid -> commentHandler (rk rid) $ Action.deleteIdeaComment (rk rid))
   :<|> form (Page.reportComment      loc iid cid)
   :<|> form . Page.reportReply       loc iid cid
   :<|> form . Page.editReply         loc iid cid
+
+  where
+    ck = commentKey loc iid cid
+    rk = replyKey   loc iid cid
+    commentHandler :: forall cap. Page (NeedCap cap)
+                   => CommentKey -> m () -> m (PostResult (NeedCap cap) ())
+    commentHandler = runPostHandler . fmap (NeedCap . fst) . Action.commentCapCtx
+
 
 type IdeaApi
        -- view idea details (applies to both wild ideas and ideas in topics)
@@ -229,15 +241,15 @@ type IdeaApi
        -- move idea between topics (applies to both wild ideas and ideas in topics)
   :<|> Idea ::> "move" :> FormHandler Page.MoveIdea
        -- `like' on an idea
-  :<|> Idea ::> "like" :> PostH
+  :<|> Idea ::> "like" :> PostH (NeedCap 'CanLike)
        -- delete an idea
-  :<|> Idea ::> "delete" :> PostH
+  :<|> Idea ::> "delete" :> PostH (NeedCap 'CanEditAndDelete)
        -- report an idea
   :<|> Idea ::> "report" :> FormHandler Page.ReportIdea
        -- vote on an idea
-  :<|> Idea ::> IdeaVoteValue ::> PostH
+  :<|> Idea ::> IdeaVoteValue ::> PostH (NeedCap 'CanVote)
        -- remove vote from idea
-  :<|> Idea ::> User ::> "remove" :> PostH
+  :<|> Idea ::> "remove" :> PostH (NeedCap 'CanVote)
        -- comment on an idea
   :<|> Idea ::> "comment" :> FormHandler CommentOnIdea
        -- API specific to one comment
@@ -245,9 +257,9 @@ type IdeaApi
        -- jury an idea
   :<|> Idea ::> IdeaJuryResultType ::> FormHandler JudgeIdea
        -- mark winner idea
-  :<|> Idea ::> "markwinner" :> PostH
+  :<|> Idea ::> "markwinner" :> PostH (NeedCap 'CanMarkWinner)
        -- revoke winner status
-  :<|> Idea ::> "revokewinner" :> PostH
+  :<|> Idea ::> "revokewinner" :> PostH (NeedCap 'CanMarkWinner)
        -- add creator statement
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create idea
@@ -260,19 +272,23 @@ ideaApi loc
     =  runHandler . Page.viewIdea
   :<|> form . Page.editIdea
   :<|> form . Page.moveIdea
-  :<|> Action.likeIdea
-  :<|> Action.deleteIdea
+  :<|> post   Action.likeIdea
+  :<|> post   Action.deleteIdea
   :<|> form . Page.reportIdea
-  :<|> Action.voteOnIdea
-  :<|> Action.unvoteOnIdea
+  :<|> post2  Action.voteOnIdea
+  :<|> post   Action.unvoteOnIdea
   :<|> form . Page.commentOnIdea loc
   :<|> commentApi loc
   :<|> app2 form Page.judgeIdea
-  :<|> flip Action.markIdeaInResultPhase (Winning Nothing)
-  :<|> Action.revokeWinnerStatusOfIdea
+  :<|> post   (`Action.markIdeaInResultPhase` Winning Nothing)
+  :<|> post   Action.revokeWinnerStatusOfIdea
   :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
   :<|> form . Page.ideaDelegation
+
+  where
+    post  a iid = runPostHandler (NeedCap . fst <$> Action.ideaCapCtx iid) $ a iid
+    post2 a iid = runPostHandler (NeedCap . fst <$> Action.ideaCapCtx iid) . a iid
 
 type TopicApi =
        -- browse topics in an idea space
@@ -330,8 +346,8 @@ type AulaUser =
   :<|> "delegations" :> "class"  :> GetH (Frame PageUserProfileDelegatedVotes)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
-  :<|> "delegate"    :> "school" :> PostH
-  :<|> "delegate"    :> "class"  :> PostH
+  :<|> "delegate"    :> "school" :> PostH DelegateTo
+  :<|> "delegate"    :> "class"  :> PostH DelegateTo
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
@@ -340,9 +356,11 @@ aulaUser userId =
   :<|> runHandler (Page.delegatedVotesClass  userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
-  :<|> Action.delegateVoteOnSchoolSpace userId
-  :<|> Action.delegateVoteOnClassSpace  userId
-
+  :<|> postDelegateTo Action.delegateVoteOnSchoolSpace
+  :<|> postDelegateTo Action.delegateVoteOnClassSpace
+  where
+    delegateTo = DelegateTo <$> Action.currentUserCapCtx <*> Action.mquery (findUser userId)
+    postDelegateTo a = runPostHandler delegateTo $ a userId
 
 type AulaAdmin =
        -- durations
@@ -358,16 +376,16 @@ type AulaAdmin =
   :<|> "classes" :> ClassesFilterApi :> GetH (Frame AdminViewClasses)
   :<|> "class" :> "create" :> FormHandler AdminCreateClass
   :<|> User ::> "role" :> "add" :> FormHandler AdminAddRole
-  :<|> User ::> Role ::> "delete" :> PostH
+  :<|> User ::> Role ::> "delete" :> PostH NeedAdmin
   :<|> User ::> "edit" :> FormHandler AdminEditUser
   :<|> SchoolClass ::> "edit" :> GetH (Frame AdminEditClass)
   :<|> User ::> "delete" :> FormHandler AdminDeleteUser
        -- event log
   :<|> "event"  :> FormHandler PageAdminSettingsEventsProtocol
-  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> Get '[CSV] (CsvHeaders InitialPasswordsCsv)
-  :<|> "downloads" :> "events" :> QueryParam "space" IdeaSpace :> Get '[CSV] (CsvHeaders EventLog)
-  :<|> Topic ::> "next-phase" :> PostH
-  :<|> Topic ::> "voting-prev-phase" :> PostH
+  :<|> "downloads" :> "passwords" :> Capture "schoolclass" SchoolClass :> GetCSV InitialPasswordsCsv
+  :<|> "downloads" :> "events" :> QueryParam "space" IdeaSpace :> GetCSV EventLog
+  :<|> Topic ::> "next-phase" :> PostH (NeedCap 'CanPhaseForwardTopic)
+  :<|> Topic ::> "voting-prev-phase" :> PostH (NeedCap 'CanPhaseBackwardTopic)
   :<|> "change-phase" :> FormHandler AdminPhaseChange
 
 
@@ -382,16 +400,19 @@ aulaAdmin =
   :<|> runHandler . Page.adminViewClasses
   :<|> form Page.adminCreateClass
   :<|> form . Page.adminAddRole
-  :<|> Page.adminRemRole
+  :<|> postAdminRemRole
   :<|> form . Page.adminEditUser
   :<|> runHandler . Page.adminEditClass
   :<|> form . Page.adminDeleteUser
   :<|> form Page.adminEventsProtocol
-  :<|> Page.adminInitialPasswordsCsv
-  :<|> adminEventLogCsv
-  :<|> Action.topicForcePhaseChange Forward
-  :<|> Action.topicForcePhaseChange Backward
+  :<|> runGetHandler . Page.adminInitialPasswordsCsv
+  :<|> runGetHandler . adminEventLogCsv
+  :<|> postWithTopic (Action.topicForcePhaseChange Forward)
+  :<|> postWithTopic (Action.topicForcePhaseChange Backward)
   :<|> form Page.adminPhaseChange
+  where
+    postWithTopic a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) (a tid)
+    postAdminRemRole user role = runPostHandler (pure NeedAdmin) (Page.adminRemRole user role)
 
 
 catch404 :: Middleware

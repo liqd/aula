@@ -4,7 +4,7 @@ import AulaTests
 
 spec :: Spec
 spec = do
-    describe "servant exception handling" . around withServer $ do
+    describe "servant exception handling" . around withServerAsAdmin $ do
         context "on `undefined`" $ do
             it "writes error message to stdout" $ \_wreq -> do
                 pending
@@ -26,7 +26,7 @@ spec = do
             it "responds with 303." $ \wreq -> do
                 get wreq "/testing/error303" `shouldRespond` [codeShouldBe 303]
 
-    describe "catch404" . around withServer $ do
+    describe "catch404" . around withServerAsAdmin $ do
         context "when routing table has no matching entry" $ do
             it "writes error message to stdout" $ \_wreq -> do
                 pending

@@ -32,14 +32,14 @@ type AulaTesting =
 
 aulaTesting :: (GenArbitrary m, ActionM m) => ServerT AulaTesting m
 aulaTesting =
-       ((`PublicFrame` []) . PageShow <$> Action.query getIdeas)
-  :<|> ((`PublicFrame` []) . PageShow <$> Action.query getSpaces)
-  :<|> ((`PublicFrame` []) . PageShow <$> Action.query getTopics)
-  :<|> ((`PublicFrame` []) . PageShow <$> Action.query getAllUsers)
+       runHandler (PageShow <$> Action.query getIdeas)
+  :<|> runHandler (PageShow <$> Action.query getSpaces)
+  :<|> runHandler (PageShow <$> Action.query getTopics)
+  :<|> runHandler (PageShow <$> Action.query getAllUsers)
 
-  :<|> undefined  -- (intentional)
-  :<|> throwError500 "testing error500"
-  :<|> redirect ("/target" :: String)
+  :<|> runGetHandler undefined  -- (intentional)
+  :<|> runGetHandler (throwError500 "testing error500")
+  :<|> runGetHandler (redirect ("/target" :: String))
 
 data Page404 = Page404
 

@@ -10,10 +10,11 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold)
-import Control.Monad (zipWithM_, replicateM, replicateM_)
+import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
+import Control.Monad (zipWithM_, replicateM, replicateM_, unless)
 import Data.List (nub)
 import Data.String.Conversions ((<>), cs)
+import Servant.Missing
 
 import Arbitrary hiding (generate)
 import Frontend.Constant (initialDemoPassword)
@@ -25,6 +26,7 @@ import Types
 import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Test.QuickCheck.Gen as QC
 import qualified Config
@@ -258,8 +260,14 @@ userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpac
 --
 -- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
 -- the event procotol for moderators.
+--
+-- TODO: this doesn't feed the 'EventLog', which is the reason that the tests in
+-- @/tests/Frontend/Page/AdminSpec.hs@ fail.
 genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
+    noUsers <- query $ views dbUserMap Map.null
+    unless noUsers $
+        throwError500 "create-init (genInitialTestDb) can only be used when there are no users!"
     now <- getCurrentTimestamp
 
     update $ AddIdeaSpaceIfNotExists SchoolSpace

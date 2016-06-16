@@ -220,8 +220,8 @@ runClient (Free (VoteOnComment t cp v k)) = do
     -- FIXME: Check if the user already voted, if yes the number of votes
     -- should be the same.
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t cp
-    step . lift $ do
-        Action.voteIdeaComment (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id) v
+    let ck = commentKey (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id)
+    step . lift $ Action.voteIdeaComment ck v
     postcondition $ do
         Just (_idea, Just comment') <- findIdeaAndComment t cp
         let noOfVotes  = Map.size $ comment  ^. commentVotes
@@ -234,13 +234,8 @@ runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
     -- should be the same.
     Just (idea, Just (comment1, Just comment2)) <-
         precondition $ findIdeaAndCommentComment t c1 c2
-    step . lift $ do
-        Action.voteIdeaCommentReply
-            (idea ^. ideaLocation)
-            (idea ^. _Id)
-            (comment1 ^. _Id)
-            (comment2 ^. _Id)
-            v
+    let ck = replyKey (idea ^. ideaLocation) (idea ^. _Id) (comment1 ^. _Id) (comment2 ^. _Id)
+    step . lift $ Action.voteIdeaComment ck v
     postcondition $ do
         Just (_idea, Just (_comment1, Just comment2')) <-
             findIdeaAndCommentComment t c1 c2
@@ -251,11 +246,8 @@ runClient (Free (VoteOnCommentReply t c1 c2 v k)) = do
 
 runClient (Free (DeleteComment t c k)) = do
     Just (idea, Just comment) <- precondition $ findIdeaAndComment t c
-    step . lift $ do
-        Action.deleteIdeaComment
-            (idea ^. ideaLocation)
-            (idea ^. _Id)
-            (comment ^. _Id)
+    let ck = commentKey (idea ^. ideaLocation) (idea ^. _Id) (comment ^. _Id)
+    step . lift $ Action.deleteIdeaComment ck
     postcondition $ do
         Just (_idea, Just comment') <- findIdeaAndComment t c
         (comment' ^. commentDeleted) `shouldBe` True

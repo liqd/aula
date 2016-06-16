@@ -115,6 +115,7 @@ module Persistent.Pure
     , dbDurations
     , dbQuorums
     , dbFreeze
+    , dbUserMap
     , adminUsernameHack
     , addDelegation
     , deleteDelegation
