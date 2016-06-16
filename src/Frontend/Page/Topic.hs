@@ -41,6 +41,7 @@ import Persistent
     ( findDelegationsByScope
     , findIdeasByTopic
     , findIdeasByTopicId
+    , findTopicsBySpace
     , findWildIdeasBySpace
     , IdeaStats(..)
     , ideaReachedQuorum
@@ -53,6 +54,7 @@ import Persistent
 import qualified Action (createTopic, editTopic)
 import qualified Frontend.Constant as Constant
 import qualified Frontend.Path as U
+import qualified Text.Digestive.Types as DF (Result(..))
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
@@ -101,7 +103,7 @@ data CreateTopic = CreateTopic
     , _ctIdeaSpace   :: IdeaSpace
     , _ctIdeas       :: [IdeaStats]
     , _ctRefPhaseEnd :: Timestamp }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Ord)
 
 makeLenses ''CreateTopic
 
@@ -117,7 +119,7 @@ data EditTopic = EditTopic
     , _etIdeasStats :: [IdeaStats]
     , _etIdeas      :: [AUID Idea]
     }
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Ord)
 
 makeLenses ''EditTopic
 
@@ -263,8 +265,23 @@ displayPhaseTime now = phaseStatus . to info
     stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1
     showStamp = formatTime aulaTimeLocale " am %F um ca. %H Uhr %Z" . unsafeTimestampToLocalTime
 
-validateTopicTitle :: FormCS m r s
-validateTopicTitle = validate "Title des Themas" titleV
+validateTopicTitle
+    :: (ActionM m)
+    => IdeaSpace -> Maybe Topic -> FormCS m r ST
+validateTopicTitle ideaSpace mTopic =
+    DF.validateM checkUniqness . validate "Title des Themas" titleV
+  where
+    -- Says 'False' on current topic, 'True' to all others (based on 'AUID').
+    otherAUID topic =
+        maybe True
+              (\actTopic -> (actTopic ^. _Id) /= (topic ^. _Id))
+              mTopic
+
+    checkUniqness title = equery $ do
+        topicTitles <- view topicTitle <$$> filter otherAUID <$> findTopicsBySpace ideaSpace
+        pure $ if title `elem` topicTitles
+                then DF.Error "Es gibt in diesem Ideenraum schon ein Thema mit diesem Namen."
+                else DF.Success title
 
 validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m PlainDocument
 validateTopicDesc =
@@ -281,7 +298,7 @@ instance FormPage CreateTopic where
 
     makeForm ct =
         ProtoTopic
-        <$> ("title" .: validateTopicTitle (DF.text nil))
+        <$> ("title" .: validateTopicTitle (ct ^. ctIdeaSpace) Nothing (DF.text nil))
         <*> ("desc"  .: validateTopicDesc  (DF.text nil))
         <*> ("image" .: DF.text nil) -- FIXME: validation
         <*> pure (ct ^. ctIdeaSpace)
@@ -321,9 +338,9 @@ instance FormPage EditTopic where
     formAction (EditTopic _ space topic _ _) = U.editTopic space (topic ^. _Id)
     redirectOf et _ = U.listIdeasInTopic (et ^. etTopic) ListIdeasInTopicTabAll Nothing
 
-    makeForm (EditTopic _ctx _space topic ideas preselected) =
+    makeForm (EditTopic _ctx space topic ideas preselected) =
         EditTopicData
-        <$> ("title" .: validateTopicTitle (DF.text . Just $ topic ^. topicTitle))
+        <$> ("title" .: validateTopicTitle space (Just topic) (DF.text . Just $ topic ^. topicTitle))
         <*> ("desc"  .: validateTopicDesc  (DF.text (topic ^. topicDesc . to unDescription . to Just)))
         <*> makeFormIdeaSelection preselected (_ideaStatsIdea <$> ideas)
 

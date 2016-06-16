@@ -19,6 +19,7 @@ import Data.String.Conversions
 import Data.Typeable (typeOf)
 import Data.Tree as Tree (flatten)
 import Test.QuickCheck
+import Test.QuickCheck.Missing (uniqueOf)
 import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)
 import Text.Digestive.Types
 import Text.Digestive.View
@@ -110,8 +111,8 @@ spec = do
                       createUser (shouldBe `on` view userLogin)
 
           -- topic forms
-        , formTest (arb :: Gen CreateTopic)
-        , formTest (arb :: Gen EditTopic)
+        , formTest (uniqueOf numOfUniqueTries arb :: Gen CreateTopic)
+        , formTest (uniqueOf numOfUniqueTries arb :: Gen EditTopic)
 
           -- user forms
 --        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
@@ -129,6 +130,9 @@ spec = do
           in testValidationError page EmptyPayloadContext payload
             ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
 
+-- Limit for 'uniqueOf' combinator.
+numOfUniqueTries :: Int
+numOfUniqueTries = 1000
 
 -- * translate form data back to form input
 
@@ -462,7 +466,7 @@ instance ArbFormPagePayload PageHomeWithLoginPrompt where
                                <**> (set userPassword <$> arbValidUserPass)
 
 instance ArbFormPagePayload CreateTopic where
-    arbFormPagePayload (CreateTopic _ctx space ideas _timestamp) =
+    arbFormPagePayload (CreateTopic _ctx space ideas _timestamp) = uniqueOf numOfUniqueTries $
             set protoTopicIdeaSpace space
           . set protoTopicIdeas (ideas ^.. each . ideaStatsIdea . _Id)
         <$> arbitrary
