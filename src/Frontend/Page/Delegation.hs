@@ -167,10 +167,10 @@ instance FormPage PageDelegationNetwork where
         PageDelegationNetworkPayload
         <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
       where
-        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> Tree.flatten dscopes
+        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> sort (Tree.flatten dscopes)
 
     formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
-        let dummy = True  -- FIXME: remove this as soon as the non-dummy version is more interesting.
+        let dummy = False  -- FIXME: remove this as soon as the non-dummy version is more interesting.
         if dummy
             then runDummy
             else runReally
@@ -180,11 +180,15 @@ instance FormPage PageDelegationNetwork where
 
        runReally = do
         form $ do
+            label_ "Geltungsbereich auswählen"
             inputSelect_ [] "scope" v
-            DF.inputSubmit "neu anzeigen"
-        Lucid.script_ $ do
-            "var aulaDelegationData = " <> cs (Aeson.encode delegations)
-        div_ [class_ "d3_aula"] nil
+            DF.inputSubmit "anzeigen"
+        if null (delegations ^. networkDelegations)
+            then do
+                "[Keine Delegationen in diesem Geltungsbereich]"
+            else do
+                Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
+                div_ [class_ "d3_aula"] nil
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
@@ -199,6 +203,12 @@ delegationInfos scope = do
     delegations <- findDelegationsByScope scope
     let users = Set.toList . Set.fromList
                 $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
-    userMap <- Map.fromList . catMaybes
-               <$> forM users (\userId -> (,) userId <$$> findUser userId)
+
+        mkNode :: AUID User -> EQuery (AUID User, (User, Int))
+        mkNode userId = do
+            u <- maybe404 =<< findUser userId
+            p <- length <$> votingPower userId scope
+            pure (userId, (u, p))
+
+    userMap <- Map.fromList <$> forM users mkNode
     pure $ DelegationNetwork (Map.elems userMap) delegations

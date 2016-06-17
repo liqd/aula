@@ -1,8 +1,24 @@
+// inspiring examples:
+// http://bl.ocks.org/mbostock/1153292
+// http://bl.ocks.org/mbostock/2706022
+
 var aulaDelegationMain = function(graph) {
     var width = 960;
-    var height = 500;
+    var height = 800;
 
     var tick = function() {
+        // adjust positions (FIXME: is there a better place for this than here in the tick function?)
+        for (i in graph.nodes) {
+            var wallElasticity = 10;
+            if (graph.nodes[i]) {
+                if (graph.nodes[i].x < 0)      graph.nodes[i].x = wallElasticity;
+                if (graph.nodes[i].x > width)  graph.nodes[i].x = width - wallElasticity;
+                if (graph.nodes[i].y < 0)      graph.nodes[i].y = wallElasticity;
+                if (graph.nodes[i].y > height) graph.nodes[i].y = height - wallElasticity;
+            }
+        }
+
+        // update elems
         link.attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
@@ -11,11 +27,12 @@ var aulaDelegationMain = function(graph) {
         node.attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
 
-        text.attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
-    };
+        text.attr("dx", function(d) { return d.x; })
+            .attr("dy", function(d) { return d.y; });
 
-    // http://bl.ocks.org/mbostock/1153292  -- next step: steal this, and get it to work 1:1.  then mutate that.
+        avat.attr("x", function(d) { return d.x; })
+            .attr("y", function(d) { return d.y; });
+    };
 
     function linkArc(d) {
         var dx = d.target.x - d.source.x;
@@ -25,8 +42,8 @@ var aulaDelegationMain = function(graph) {
     };
 
     var force = d3.layout.force()
-        .charge(-120)
-        .linkDistance(30)
+        .charge(-180)
+        .linkDistance(70)
         .size([width, height])
         .on("tick", tick);
 
@@ -41,74 +58,46 @@ var aulaDelegationMain = function(graph) {
 
     var link = svg
         .selectAll(".link")
-        .data(graph.links)
-        .enter()
+        .data(graph.links).enter()
         .append("line")
         .attr("class", "link");
 
     var node = svg.append("g")
         .selectAll(".node")
-        .data(graph.nodes)
-        .enter()
+        .data(graph.nodes).enter()
         .append("circle")
         .attr("class", "node")
         .attr("r", function(d) { return (20 + 3 * d.power); })
         .call(force.drag);
 
-// texts are visible, but in the upper left corner!
     var text = svg.append("g")
         .selectAll("text")
-        .data(graph.nodes)
-        .enter()
+        .data(graph.nodes).enter()
         .append("text")
         .attr("dx", ".10em")
         .attr("dy", ".10em")
-        .text(function(d) { return "d.name"; });
+        .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
-/*
-    node.append("title")
-        .text(function(d) { return d.name; });
+    var avat = svg.append("g")
+        .selectAll("image")
+        .data(graph.nodes).enter()
+        .append("image")
+        .attr("x", ".10em")
+        .attr("y", ".10em")
+        .attr("width", "1cm")
+        .attr("height", "1cm")
+        .attr("xlink:href", function(d) { return d.avatar; });
 
-    node.append("text")
-        .attr("dy", ".3em")
-        .style("text-anchor", "middle")
-        .text(function(d) { return d.name; });
-
-    node.append("svg:image")
-        .attr("xlink:href", function(d) {
-            return "http://zierfischverzeichnis.de/klassen/pisces/perciformes/percoidei/thumbnails/gymnocephalus_cernuus.gif";
-        });
-*/
-
-
+    /*
+        http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+          <clipPath id="clipCircle">
+            <circle r="50" cx="50" cy="50"/>
+          </clipPath>
+          <rect width="100" height="100" clip-path="url(#clipCircle)"/>
+        </svg>
+    */
 
 };
 
 window.onload = function() { aulaDelegationMain(aulaDelegationData); };
-
-
-/*
-
-        svg_node_groups.append("svg:image")
-            .attr("class", function(d) { return d.csscls.join(" "); })
-            .attr("xlink:href", function(d) {
-                function f(csscls) {
-                    var imagePath = image_path + "default.gif";
-                    // (if no relevant css class assignments are found, return path to default gif.)
-
-                    if (csscls.hasOwnProperty("length")) {
-                        csscls.forEach(function(cls) {
-                            switch(cls) {
-                            case "bw_bexquery":            imagePath = image_path + "bexquery.gif";            break;
-
--- FIXME: show avatars
--- FIXME: make context selectable
--- FIXME: double click on node: remove from graph
--- FIXME: only list with hidden nodes, no list ofr shown nodes.  double-click there to show
--- FIXME: show all / hide all
-
--- more FIXMEs:
-- what you click moves to top (covers other nodes)
-- make bounds strong (no nodes may escape)
-
-*/

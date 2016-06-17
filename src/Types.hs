@@ -33,7 +33,7 @@ import Crypto.Scrypt
 import Data.Binary
 import Data.Char
 import Data.Function (on)
-import Data.List as List (sortBy, zipWith, length, filter)
+import Data.List as List (sortBy, zipWith)
 import Data.Set as Set (Set, singleton, member)
 import Data.Map as Map (Map, fromList, lookup, unions, singleton)
 import Data.Maybe (isJust, mapMaybe)
@@ -836,7 +836,7 @@ data DScopeFull =
 instance SOP.Generic DScopeFull
 
 data DelegationNetwork = DelegationNetwork
-    { _networkUsers         :: [User]
+    { _networkUsers         :: [(User, Int)]  -- ^ 'User's and their 'votingPower's.
     , _networkDelegations   :: [Delegation]
     }
   deriving (Eq, Show, Read, Generic)
@@ -1676,10 +1676,10 @@ instance Aeson.ToJSON DelegationNetwork where
             ]
 
         -- FIXME: It shouldn't be rendered for deleted users.
-        renderNode n = Aeson.object
-            [ "name"   Aeson..= (n ^. userLogin . unUserLogin)
-            , "avatar" Aeson..= (n ^. userAvatar)
-            , "power"  Aeson..= getPower n links
+        renderNode (u, p) = Aeson.object
+            [ "name"   Aeson..= (u ^. userLogin . unUserLogin)
+            , "avatar" Aeson..= (u ^. userAvatar)
+            , "power"  Aeson..= p
             ]
 
         renderLink (Delegation _ _ u1 u2) = Aeson.object
@@ -1695,16 +1695,11 @@ instance Aeson.ToJSON DelegationNetwork where
             m :: Map.Map (AUID User) Int
             m = Map.unions $ List.zipWith f nodes [0..]
 
-            f :: User -> Int -> Map.Map (AUID User) Int
-            f u = Map.singleton (u ^. _Id)
+            f :: (User, Int) -> Int -> Map.Map (AUID User) Int
+            f (u, _) = Map.singleton (u ^. _Id)
 
         array :: Aeson.ToJSON v => [v] -> Aeson.Value
         array = Aeson.Array . Vector.fromList . fmap Aeson.toJSON
-
-        getPower :: User -> [Delegation] -> Aeson.Value
-        getPower u = Aeson.toJSON . List.length
-                   . List.filter (== (u ^. _Id))
-                   . fmap (view delegationTo)
 
 
 instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson

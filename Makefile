@@ -79,7 +79,9 @@ content:
 	rm cookie-jar
 
 content-deleg:
-	curl -XPOST http://localhost:8080/api/manage-state/create-delegations
+	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
+	curl -b cookie-jar -XPOST http://localhost:8080/api/manage-state/create-delegations
+	rm cookie-jar
 
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/

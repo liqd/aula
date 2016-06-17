@@ -1,7 +1,8 @@
 .node {
   fill: yellow;
+  fill-opacity: .4;
   stroke: black;
-  stroke-opacity: .9;
+  stroke-opacity: .4;
   stroke-width: 1.5px;
 }
 
@@ -11,7 +12,7 @@
 }
 
 text {
-  font: 10px sans-serif;
+  font: 16px sans-serif;
   pointer-events: none;
   text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
 }
