@@ -18,7 +18,7 @@ import           Data.Tree (Tree)
 import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Data.Tree as Tree (flatten)
+import qualified Data.Tree as Tree (Tree(Node), flatten)
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -85,8 +85,20 @@ topicDelegation tid = formPageHandlerWithMsg
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) DelegationNetwork
+data PageDelegationNetwork = PageDelegationNetwork DScope DScopeTree DelegationNetwork
   deriving (Eq, Show, Read)
+
+newtype DScopeTree = DScopeTree (Tree DScopeFull)
+  deriving (Eq, Show, Read)
+
+instance Aeson.ToJSON DScopeTree where
+    toJSON (DScopeTree t) = f t
+      where
+        f (Tree.Node dscope chldrn) = Aeson.object $
+            [ "dscope"   Aeson..= toUrlPiece (fullDScopeToDScope dscope)
+            , "text"     Aeson..= uilabelST dscope
+            , "children" Aeson..= (DScopeTree <$> chldrn)
+            ]
 
 data PageDelegationNetworkPayload = PageDelegationNetworkPayload DScope
   deriving (Eq, Show)
@@ -163,13 +175,13 @@ instance FormPage PageDelegationNetwork where
     formAction (PageDelegationNetwork scope _ _)      = U.delegationViewScope scope
     redirectOf _ (PageDelegationNetworkPayload scope) = U.delegationViewScope scope
 
-    makeForm (PageDelegationNetwork actualDScope dscopes _delegations) =
+    makeForm (PageDelegationNetwork actualDScope (DScopeTree dscopes) _delegations) =
         PageDelegationNetworkPayload
         <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
       where
         delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> sort (Tree.flatten dscopes)
 
-    formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
+    formPage v form p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
         let dummy = False  -- FIXME: remove this as soon as the non-dummy version is more interesting.
         if dummy
             then runDummy
@@ -183,18 +195,21 @@ instance FormPage PageDelegationNetwork where
             label_ "Geltungsbereich auswählen"
             inputSelect_ [] "scope" v
             DF.inputSubmit "anzeigen"
-        if null (delegations ^. networkDelegations)
-            then do
-                "[Keine Delegationen in diesem Geltungsbereich]"
-            else do
-                Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
-                div_ [class_ "d3_aula"] nil
+
+        div_ $ do
+            Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
+            Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
+            Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
+
+        div_ [class_ "d3_aula"] nil
+        when (null (delegations ^. networkDelegations)) $
+            "[Keine Delegationen in diesem Geltungsbereich]"
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
     (do user <- currentUser
         equery $ PageDelegationNetwork scope
-                    <$> delegationScopeTree user
+                    <$> (DScopeTree <$> delegationScopeTree user)
                     <*> delegationInfos scope)
     pure
 

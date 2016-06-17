@@ -1,4 +1,11 @@
-var aulaDelegationMain = function(graph) {
+(function() {
+
+    var showNavigation = function(aulaDScopeCurrent, aulaDScopeTree) {
+        console.log(aulaDScopeCurrent);
+        console.log(aulaDScopeTree);
+    };
+
+var showGraph = function(graph) {
     var width = 960;
     var height = 800;
 
@@ -103,4 +110,9 @@ var aulaDelegationMain = function(graph) {
 
 };
 
-window.onload = function() { aulaDelegationMain(aulaDelegationData); };
+window.onload = function() {
+    showNavigation(aulaDScopeCurrent, aulaDScopeTree);
+    showGraph(aulaDelegationData);
+};
+
+})();

@@ -584,9 +584,9 @@ instance PayloadToEnv PageDelegationNetworkPayload where
 
 instance ArbFormPagePayload PageDelegationNetwork where
     type ArbFormPagePayloadContext PageDelegationNetwork = [DScopeFull]
-    arbFormPagePayloadCtx (PageDelegationNetwork _dscope scopeTree _delegationInfos)
+    arbFormPagePayloadCtx (PageDelegationNetwork _dscope (DScopeTree scopeTree) _delegationInfos)
         = pure $ Tree.flatten scopeTree
-    arbFormPagePayload (PageDelegationNetwork _dscope scopeTree _delegationInfos)
+    arbFormPagePayload (PageDelegationNetwork _dscope (DScopeTree scopeTree) _delegationInfos)
         = PageDelegationNetworkPayload . fullDScopeToDScope
           <$> Test.QuickCheck.elements (Tree.flatten scopeTree)
 
