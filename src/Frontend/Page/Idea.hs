@@ -124,7 +124,7 @@ instance SOP.Generic EditIdea
 makeLenses ''EditIdea
 
 instance Page EditIdea where
-    isAuthorized = authNeedCaps [CanEditAndDelete] eiCtx
+    isAuthorized = authNeedCaps [CanEditAndDeleteIdea] eiCtx
 
 -- | X. Move idea
 -- Move idea to a topic.
@@ -246,7 +246,7 @@ instance ToHtml ViewIdea where
                 nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                     ul_ [class_ "pop-menu-list"] $ do
                         li_ [class_ "pop-menu-list-item"] $ do
-                            when (CanEditAndDelete `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
+                            when (CanEditAndDeleteIdea `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
                                 i_ [class_ "icon-pencil"] nil
                                 "bearbeiten"
                             when (ideaReachedQuorum stats && CanCreateTopic `elem` caps) .

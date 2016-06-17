@@ -243,7 +243,7 @@ type IdeaApi
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH (NeedCap 'CanLike)
        -- delete an idea
-  :<|> Idea ::> "delete" :> PostH (NeedCap 'CanEditAndDelete)
+  :<|> Idea ::> "delete" :> PostH (NeedCap 'CanEditAndDeleteIdea)
        -- report an idea
   :<|> Idea ::> "report" :> FormHandler Page.ReportIdea
        -- vote on an idea
