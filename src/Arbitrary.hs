@@ -373,8 +373,10 @@ instance Arbitrary PageDelegationNetworkPayload where
 
 -- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
-    shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
-    arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> (DScopeTree <$> arbDScopeFullTree) <*> arb
+    arbitrary = scaleDown $ PageDelegationNetwork
+        <$> ((:) <$> arb <*> arb)
+        <*> (DScopeTree <$> arbDScopeFullTree)
+        <*> arb
       where
         -- Trees with a small max height.  (Note that the arbitrary structure allows arbitrary
         -- scopes to be contained in arbitrary other ones, so this could potentially get much deeper
@@ -385,6 +387,7 @@ instance Arbitrary PageDelegationNetwork where
             genTree :: Int -> Gen (DScopeFull, [Int])
             genTree 0 = (,) <$> arb <*> pure []
             genTree n = (,) <$> arb <*> listOf (choose (0, n-1))
+    shrink (PageDelegationNetwork x y z) = PageDelegationNetwork x <$> shr y <*> shr z
 
 instance Arbitrary DScopeTree where
     arbitrary = DScopeTree <$> arb

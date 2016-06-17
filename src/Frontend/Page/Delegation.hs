@@ -85,7 +85,7 @@ topicDelegation tid = formPageHandlerWithMsg
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope DScopeTree DelegationNetwork
+data PageDelegationNetwork = PageDelegationNetwork [DScope] DScopeTree DelegationNetwork
   deriving (Eq, Show, Read)
 
 newtype DScopeTree = DScopeTree (Tree DScopeFull)
@@ -172,16 +172,16 @@ instance FormPage PageDelegationNetwork where
     type FormPagePayload PageDelegationNetwork = PageDelegationNetworkPayload
     type FormPageResult  PageDelegationNetwork = PageDelegationNetworkPayload
 
-    formAction (PageDelegationNetwork scope _ _)      = U.delegationViewScope scope
-    redirectOf _ (PageDelegationNetworkPayload scope) = U.delegationViewScope scope
+    formAction (PageDelegationNetwork (last -> scope) _ _) = U.delegationViewScope scope
+    redirectOf _ (PageDelegationNetworkPayload scope)      = U.delegationViewScope scope
 
-    makeForm (PageDelegationNetwork actualDScope (DScopeTree dscopes) _delegations) =
+    makeForm (PageDelegationNetwork (last -> currentDScope) (DScopeTree dscopes) _delegations) =
         PageDelegationNetworkPayload
-        <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
+        <$> ("scope" .: DF.choice delegationScopeList (Just currentDScope))
       where
         delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> sort (Tree.flatten dscopes)
 
-    formPage v form p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
+    formPage v form p@(PageDelegationNetwork currentDScopes dscopeTree delegations) = semanticDiv p $ do
         let dummy = False  -- FIXME: remove this as soon as the non-dummy version is more interesting.
         if dummy
             then runDummy
@@ -197,7 +197,7 @@ instance FormPage PageDelegationNetwork where
             DF.inputSubmit "anzeigen"
 
         div_ $ do
-            Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
+            Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece <$> currentDScopes))
             Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
             Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
@@ -209,8 +209,9 @@ instance FormPage PageDelegationNetwork where
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
     (do user <- currentUser
-        equery $ PageDelegationNetwork scope
-                    <$> (DScopeTree <$> delegationScopeTree user)
+        equery $ PageDelegationNetwork
+                    <$> scopeHiearchy scope
+                    <*> (DScopeTree <$> delegationScopeTree user)
                     <*> delegationInfos scope)
     pure
 
