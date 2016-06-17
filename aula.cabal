@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.15.0
+version:        0.16.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -360,5 +360,6 @@ test-suite spec
       MonoidSpec
       Persistent.ApiSpec
       Test.Hspec.Missing
+      Test.QuickCheck.Missing
       TypesSpec
   default-language: Haskell2010
