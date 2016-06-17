@@ -554,8 +554,6 @@ voteOnIdea ideaId voteVal = do
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope t = do
     user <- currentUser
-    delegations <- filter ((user ^. _Id ==) . view delegationFrom) <$> query (findDelegationsByScope scope)
-    forM_ delegations (update . DeleteDelegation . view _Id)
     addWithCurrentUser_ AddDelegation (ProtoDelegation scope (user ^. _Id) t)
     eventLogUserDelegates scope t
 

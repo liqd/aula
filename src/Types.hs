@@ -67,7 +67,6 @@ import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
 import Data.Markdown
 
-
 -- * a small prelude
 
 -- | A shorter alias for 'mempty'.
@@ -761,8 +760,7 @@ instance SafeCopy EmailAddress where
 
 -- | "Beauftragung"
 data Delegation = Delegation
-    { _delegationMeta  :: MetaInfo Delegation
-    , _delegationScope :: DScope
+    { _delegationScope :: DScope
     , _delegationFrom  :: AUID User
     , _delegationTo    :: AUID User
     }
@@ -927,7 +925,6 @@ type AMap a = Map (IdOf a) a
 type Users        = AMap User
 type Ideas        = AMap Idea
 type Topics       = AMap Topic
-type Delegations  = AMap Delegation
 type Comments     = AMap Comment
 type CommentVotes = AMap CommentVote
 type IdeaVotes    = AMap IdeaVote
@@ -1309,7 +1306,6 @@ class Ord (IdOf a) => HasMetaInfo a where
     changedAt       :: Lens' a Timestamp
     changedAt       = metaInfo . metaChangedAt
 
-instance HasMetaInfo Delegation where metaInfo = delegationMeta
 instance HasMetaInfo Idea where metaInfo = ideaMeta
 instance HasMetaInfo IdeaJuryResult where metaInfo = ideaJuryResultMeta
 instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
@@ -1681,7 +1677,7 @@ instance Aeson.ToJSON DelegationNetwork where
             , "power"  Aeson..= p
             ]
 
-        renderLink (Delegation _ _ u1 u2) = Aeson.object
+        renderLink (Delegation _ u1 u2) = Aeson.object
             [ "source"  Aeson..= nodeId u1
             , "target"  Aeson..= nodeId u2
             ]
