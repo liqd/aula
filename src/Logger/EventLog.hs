@@ -106,7 +106,7 @@ instance MimeRender CSV EventLog where
 
 instance CSV.ToRecord (WithURL EventLogItemWarm) where
     toRecord (WithURL domainUrl (EventLogItem ispace timestamp user ev)) = CSV.toRecord
-        [ showIdeaSpace ispace
+        [ ideaSpaceCode ispace
         , showTimestamp timestamp
         , user ^. userLogin . unUserLogin . csi
         ] <> f ev

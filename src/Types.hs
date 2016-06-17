@@ -1425,10 +1425,10 @@ ideaHasCreatorStatement :: Idea -> Bool
 ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
 
 instance HasUriPart IdeaSpace where
-    uriPart = fromString . showIdeaSpace
+    uriPart = fromString . ideaSpaceCode
 
 instance HasUriPart SchoolClass where
-    uriPart = fromString . showSchoolClass
+    uriPart = fromString . schoolClassCode
 
 instance HasUILabel IdeaSpace where
     uilabel = \case
@@ -1441,25 +1441,24 @@ instance HasUILabel IdeaSpace where
 instance HasUILabel SchoolClass where
     uilabel = fromString . cs . view className
 
-showIdeaSpace :: IdeaSpace -> String
-showIdeaSpace SchoolSpace    = "school"
-showIdeaSpace (ClassSpace c) = showSchoolClass c
+ideaSpaceCode :: IdeaSpace -> String
+ideaSpaceCode SchoolSpace    = "school"
+ideaSpaceCode (ClassSpace c) = schoolClassCode c
 
--- FIXME HasUILabel: there is already an instance for SchoolClass.
-showSchoolClass :: SchoolClass -> String
-showSchoolClass c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
+schoolClassCode :: SchoolClass -> String
+schoolClassCode c = show (c ^. classSchoolYear) <> "-" <> cs (c ^. className)
 
 showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
 showIdeaSpaceCategory SchoolSpace    = "school"
 showIdeaSpaceCategory (ClassSpace _) = "class"
 
-parseIdeaSpace :: (IsString err, Monoid err) => [ST] -> Either err IdeaSpace
-parseIdeaSpace = \case
+parseIdeaSpaceCode :: (IsString err, Monoid err) => [ST] -> Either err IdeaSpace
+parseIdeaSpaceCode = \case
     ["school"] -> pure SchoolSpace
-    xs         -> ClassSpace <$> parseSchoolClass xs
+    xs         -> ClassSpace <$> parseSchoolClassCode xs
 
-parseSchoolClass :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
-parseSchoolClass = \case
+parseSchoolClassCode :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
+parseSchoolClassCode = \case
     [year, name] -> (`schoolClass` name) <$> readYear year
     _:_:_:_      -> err "Too many parts (two parts expected)"
     _            -> err "Too few parts (two parts expected)"
@@ -1472,21 +1471,21 @@ parseRole = \case
     ["admin"]      -> pure Admin
     ["principal"]  -> pure Principal
     ["moderator"]  -> pure Moderator
-    ("student":xs) -> Student <$> parseSchoolClass xs
-    ("guest":xs)   -> guestRole <$> parseIdeaSpace xs
+    ("student":xs) -> Student <$> parseSchoolClassCode xs
+    ("guest":xs)   -> guestRole <$> parseIdeaSpaceCode xs
     _              -> Left "Ill-formed role"
 
 instance FromHttpApiData Role where
     parseUrlPiece = parseRole . ST.splitOn "-"
 
 instance FromHttpApiData IdeaSpace where
-    parseUrlPiece = parseIdeaSpace . ST.splitOn "-"
+    parseUrlPiece = parseIdeaSpaceCode . ST.splitOn "-"
 
 instance ToHttpApiData IdeaSpace where
-    toUrlPiece = cs . showIdeaSpace
+    toUrlPiece = cs . ideaSpaceCode
 
 instance FromHttpApiData SchoolClass where
-    parseUrlPiece = parseSchoolClass . ST.splitOn "-"
+    parseUrlPiece = parseSchoolClassCode . ST.splitOn "-"
 
 instance FromHttpApiData IdeaVoteValue where
     parseUrlPiece = \case

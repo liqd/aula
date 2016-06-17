@@ -107,7 +107,7 @@ instance ToHtml LoginDemoHints where
                     td_ . toHtml $ ST.intercalate ","
                                     (u ^.. userRoles . uilabeled)
                     td_ . toHtml $ ST.intercalate ","
-                                    (u ^.. userSchoolClasses . to showSchoolClass . csi)
+                                    (u ^.. userSchoolClasses . uilabeled)
                     td_ . toHtml $ (u ^. userEmailAddress :: ST)
                     td_ . toHtml $
                         case u ^. userPassword of

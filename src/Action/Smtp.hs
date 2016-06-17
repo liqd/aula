@@ -105,7 +105,7 @@ sendMailToAddressIO logger receiver msg = do
             throwSendMailError $ IOErrorRunningSendMail e
   where
     subjectLabel = case msg ^. msgSubjectLabel of
-        IdeaSpaceSubject is -> cs $ showIdeaSpace is
+        IdeaSpaceSubject is -> is ^. uilabeled
         UserLoginSubject ul -> ul ^. unUserLogin
 
 sendMailToUser :: HasSendMail e r m => [SendMailFlag] -> User -> EmailMessage -> m ()

@@ -194,7 +194,7 @@ persistApiSpec imp = do
     describe "addIdeaSpace" $ do
         let test :: (Int -> Int) -> IdeaSpace -> SpecWith RunPersist
             test upd ispace = do
-                it ("can add " <> showIdeaSpace ispace) $ \rp -> do
+                it ("can add " <> uilabel ispace) $ \rp -> do
                     let getL = runQ rp getSpaces
                         addS = runU rp $ AddIdeaSpaceIfNotExists ispace
                     bef <- getL

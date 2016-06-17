@@ -191,7 +191,7 @@ userHeaderDiv ctx (ActiveUser user) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        forM_ (user ^.. userSchoolClasses . to showSchoolClass . html) $ \cl ->
+        forM_ (user ^.. userSchoolClasses . to uilabelST . html) $ \cl ->
             span_ [class_ "post-title"] cl
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 

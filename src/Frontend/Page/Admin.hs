@@ -426,7 +426,7 @@ instance ToHtml AdminViewUsers where
                 let renderUserInfoRow :: forall m. (Monad m) => User -> HtmlT m ()
                     renderUserInfoRow user = do
                         td_ $ user ^. userLogin . unUserLogin . html
-                        td_ . toHtml $ ST.intercalate "," (user ^.. userSchoolClasses . to showSchoolClass . csi)
+                        td_ . toHtml $ ST.intercalate "," (user ^.. userSchoolClasses . uilabeled)
                         td_ . toHtml $ ST.intercalate "," (user ^.. userRoles . uilabeled)
                         td_ $ toHtmlRaw nbsp
 
@@ -1003,7 +1003,7 @@ csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (fall
 
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss =
-    csvHeaders ("Passwortliste " <> showSchoolClass clss) .
+    csvHeaders ("Passwortliste " <> clss ^. uilabeled) .
     InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of
