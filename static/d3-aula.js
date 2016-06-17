@@ -1,7 +1,3 @@
-// inspiring examples:
-// http://bl.ocks.org/mbostock/1153292
-// http://bl.ocks.org/mbostock/2706022
-
 var aulaDelegationMain = function(graph) {
     var width = 960;
     var height = 800;
@@ -19,10 +15,7 @@ var aulaDelegationMain = function(graph) {
         }
 
         // update elems
-        link.attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
+        path.attr("d", linkArc);
 
         node.attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
@@ -42,7 +35,7 @@ var aulaDelegationMain = function(graph) {
     };
 
     var force = d3.layout.force()
-        .charge(-180)
+        .charge(-200)
         .linkDistance(70)
         .size([width, height])
         .on("tick", tick);
@@ -56,32 +49,42 @@ var aulaDelegationMain = function(graph) {
         .attr("width", width)
         .attr("height", height);
 
-    var link = svg
-        .selectAll(".link")
-        .data(graph.links).enter()
-        .append("line")
-        .attr("class", "link");
+    svg.append("defs")
+        .selectAll("marker")
+        .data(["default"]).enter().append("marker")
+        .attr("id", function(d) { return d; })
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 15)
+        .attr("refY", -1.5)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5");
+
+    var path = svg.append("g")
+        .selectAll("path")
+        .data(force.links()).enter().append("path")
+        .attr("class", function(d) { return "link default"; })
+        .attr("marker-end", function(d) { return "url(#default)"; });
 
     var node = svg.append("g")
         .selectAll(".node")
-        .data(graph.nodes).enter()
-        .append("circle")
+        .data(graph.nodes).enter().append("circle")
         .attr("class", "node")
         .attr("r", function(d) { return (20 + 3 * d.power); })
         .call(force.drag);
 
     var text = svg.append("g")
         .selectAll("text")
-        .data(graph.nodes).enter()
-        .append("text")
+        .data(graph.nodes).enter().append("text")
         .attr("dx", ".10em")
         .attr("dy", ".10em")
         .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
     var avat = svg.append("g")
         .selectAll("image")
-        .data(graph.nodes).enter()
-        .append("image")
+        .data(graph.nodes).enter().append("image")
         .attr("x", ".10em")
         .attr("y", ".10em")
         .attr("width", "1cm")
