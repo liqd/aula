@@ -219,7 +219,7 @@ instance Filter SearchUsers where
       where
         searchee :: User -> ST
         searchee u =
-            ST.unwords $ u ^. userLogin . _UserLogin : u ^.. userSchoolClasses . to showSchoolClass . csi
+            ST.unwords $ u ^. userLogin . _UserLogin : u ^.. userSchoolClasses . uilabeled
 
     renderFilter = renderQueryParam
 
