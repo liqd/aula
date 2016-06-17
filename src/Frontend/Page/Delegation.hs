@@ -180,11 +180,15 @@ instance FormPage PageDelegationNetwork where
 
        runReally = do
         form $ do
+            label_ "Geltungsbereich auswählen"
             inputSelect_ [] "scope" v
-            DF.inputSubmit "neu anzeigen"
-        Lucid.script_ $ do
-            "var aulaDelegationData = " <> cs (Aeson.encode delegations)
-        div_ [class_ "d3_aula"] nil
+            DF.inputSubmit "anzeigen"
+        if null (delegations ^. networkDelegations)
+            then do
+                "[Keine Delegationen in diesem Geltungsbereich]"
+            else do
+                Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
+                div_ [class_ "d3_aula"] nil
 
 viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
