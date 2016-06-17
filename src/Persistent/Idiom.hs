@@ -241,7 +241,7 @@ getVote uid iid = do
             voter <- maybe404 =<< findUser (vv ^. ideaVoteDelegate)
             pure $ Just (voter, vv ^. ideaVoteValue)
 
-scopeHiearchy :: DScope -> EQuery [DScope]  -- FUTUREWORK: use a type for non-empty lists.
+scopeHiearchy :: DScope -> EQuery [DScope]
 scopeHiearchy = \case
     DScopeGlobal           -> pure [DScopeGlobal]
     s@(DScopeIdeaSpace {}) -> pure [s, DScopeGlobal]
