@@ -7,6 +7,18 @@ var aulaDelegationMain = function(graph) {
     var height = 800;
 
     var tick = function() {
+        // adjust positions (FIXME: is there a better place for this than here in the tick function?)
+        for (i in graph.nodes) {
+            var wallElasticity = 10;
+            if (graph.nodes[i]) {
+                if (graph.nodes[i].x < 0)      graph.nodes[i].x = wallElasticity;
+                if (graph.nodes[i].x > width)  graph.nodes[i].x = width - wallElasticity;
+                if (graph.nodes[i].y < 0)      graph.nodes[i].y = wallElasticity;
+                if (graph.nodes[i].y > height) graph.nodes[i].y = height - wallElasticity;
+            }
+        }
+
+        // update elems
         link.attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
@@ -74,7 +86,7 @@ var aulaDelegationMain = function(graph) {
         .attr("y", ".10em")
         .attr("width", "1cm")
         .attr("height", "1cm")
-        .attr("xlink:href", function(d) { if (d.avatar) debugger; return d.avatar; });
+        .attr("xlink:href", function(d) { return d.avatar; });
 
     /*
         http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle
