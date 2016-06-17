@@ -80,7 +80,7 @@ content:
 
 content-deleg:
 	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
-	curl -b cookie-jar -XPOST http://localhost:8080/api/manage-state/create-delegations
+	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-delegations
 	rm cookie-jar
 
 tags: .phony
