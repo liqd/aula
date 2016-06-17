@@ -184,7 +184,7 @@ data AulaData = AulaData
     , _dbIdeaMap             :: Ideas
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
-    , _dbDelegationMap       :: Delegations
+    , _dbDelegations         :: Delegations
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
@@ -606,7 +606,7 @@ addTopicYieldLocs now pt = do
 
 addDelegation :: AddDb Delegation
 addDelegation env = do
-    dbDelegationMap %= Data.Delegation.setDelegation delegatee scope delegate
+    dbDelegations %= Data.Delegation.setDelegation delegatee scope delegate
     pure $ Delegation scope delegatee delegate
   where
     (ProtoDelegation scope delegatee delegate) = env ^. envWith
@@ -645,7 +645,7 @@ scopeDelegatees :: AUID User -> DScope -> EQuery [Delegation]
 scopeDelegatees uid scope =
     Delegation scope uid
     <$$> Set.toList
-    <$> views dbDelegationMap (Data.Delegation.scopeDelegatees uid scope)
+    <$> views dbDelegations (Data.Delegation.scopeDelegatees uid scope)
 
 
 votingPower :: AUID User -> DScope -> EQuery [User]
@@ -653,7 +653,7 @@ votingPower uid scope = do
     hiearchy <- scopeHiearchy scope
     catMaybes
         <$> (mapM findUser
-             =<< views dbDelegationMap (Data.Delegation.votingPower uid hiearchy))
+             =<< views dbDelegations (Data.Delegation.votingPower uid hiearchy))
 
 scopeHiearchy :: DScope -> EQuery [DScope]
 scopeHiearchy = \case
@@ -670,7 +670,7 @@ scopeHiearchy = \case
 
 findDelegationsByScope :: DScope -> Query [Delegation]
 findDelegationsByScope =
-    fmap (fmap toDelegation) . views dbDelegationMap . Data.Delegation.findDelegationsByScope
+    fmap (fmap toDelegation) . views dbDelegations . Data.Delegation.findDelegationsByScope
   where
     toDelegation (de, s, dee) = Delegation s (unDelegate de) (unDelegatee dee)
 
