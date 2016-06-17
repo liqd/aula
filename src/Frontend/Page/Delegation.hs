@@ -199,6 +199,12 @@ delegationInfos scope = do
     delegations <- findDelegationsByScope scope
     let users = Set.toList . Set.fromList
                 $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
-    userMap <- Map.fromList . catMaybes
-               <$> forM users (\userId -> (,) userId <$$> findUser userId)
+
+        mkNode :: AUID User -> EQuery (AUID User, (User, Int))
+        mkNode userId = do
+            u <- maybe404 =<< findUser userId
+            p <- length <$> votingPower userId scope
+            pure (userId, (u, p))
+
+    userMap <- Map.fromList <$> forM users mkNode
     pure $ DelegationNetwork (Map.elems userMap) delegations

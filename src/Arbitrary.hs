@@ -1179,7 +1179,11 @@ fishDelegationNetworkAction mSchoolClass = do
                     u2  <- genGen $ elements users'
                     (:[]) <$> addWithCurrentUser AddDelegation (ProtoDelegation scope (u1 ^. _Id) (u2 ^. _Id))
 
-    DelegationNetwork users . breakCycles . join <$> replicateM 18 mkdel
+    dels <- replicateM 18 mkdel
+    users'' <- let dscope = maybe DScopeGlobal (DScopeIdeaSpace . ClassSpace) mSchoolClass
+               in (\u -> (u,) . List.length <$> equery (votingPower (u ^. _Id) dscope)) `mapM` users
+
+    pure . DelegationNetwork users'' . breakCycles . join $ dels
 
 -- (NOTE: we only want to break cycles inside each context.  cyclical paths travelling through
 -- different contexts are not really cycles.)

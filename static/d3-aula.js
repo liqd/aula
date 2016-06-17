@@ -64,7 +64,7 @@ var aulaDelegationMain = function(graph) {
         .append("text")
         .attr("dx", ".10em")
         .attr("dy", ".10em")
-        .text(function(d) { return d.name; });
+        .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
     var avat = svg.append("g")
         .selectAll("image")
