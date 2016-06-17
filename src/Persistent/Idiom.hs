@@ -207,6 +207,8 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 
 -- * voting
 
+-- | The number of votes a 'User' has in a 'DScope', including own vote, direct delegations,
+-- transitive delegations, and implicit delegations from ancestor 'DScope's.
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower vid scope = do
     hiearchy <- scopeHiearchy scope
