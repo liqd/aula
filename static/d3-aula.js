@@ -1,11 +1,129 @@
 (function() {
 
-    var showNavigation = function(rootElem, aulaDScopeCurrent, aulaDScopeTree) {
-        console.log(aulaDScopeCurrent);
-        console.log(aulaDScopeTree);
+    //////////////////////////////////////////////////////////////////////
+
+    // dictionary that maps dscopes to their sibling trees and
+    // ancestor paths.  (the siblings attribute needs to be lazified
+    // by lambda abstraction because the right siblings do not exist
+    // yet when it is constructed.)
+    var buildDScopeTreeIndex = function(aulaDScopeTree) {
+        var treeix = {};
+
+        var f = function(tree, ancestors) {
+            var parent = ancestors[ancestors.length - 1];
+            ancestors.push(tree.dscope);
+            treeix[tree.dscope] = {
+                "ancestors": ancestors.slice(),
+                "subtree": tree,
+                "siblings": function() {
+                    return !parent
+                        ? []
+                        : treeix[parent].subtree.children.map(function(c) {
+                            return treeix[c.dscope].subtree;
+                        });
+                },
+            }
+            tree.children.map(function(d) { f(d, ancestors); });
+            ancestors.pop();
+        };
+
+        f(aulaDScopeTree, []);
+        return treeix;
     };
 
-    var showGraph = function(rootElem, graph) {
+
+    //////////////////////////////////////////////////////////////////////
+
+    var showNavigation = function(rootSel, current, tree) {
+        var treeix = buildDScopeTreeIndex(tree);
+
+        var update = function() {
+            updateMenus();
+            updateButtons();
+        };
+
+        var updateMenus = function() {
+            var mkSelects = function(ancestors) {
+                var result = [];
+                for (i in ancestors) {
+                    if (ancestors[i]) {
+                        result.push(treeix[ancestors[i]]);
+                    }
+                }
+                return result;
+            }
+
+            var mkSelected = function(d) {
+                return treeix[current].ancestors.indexOf(d.dscope) >= 0
+                    ? true
+                    : undefined;  // 'undefined' is the only thing that works here!
+            }
+
+            var select = menuDiv
+                .selectAll("select").data(mkSelects(treeix[current].ancestors));
+            select.exit()
+                .remove();
+            select.enter()
+                .append("select")
+                .attr("name", function(d) { return d.ancestors[d.ancestors.length - 1]; })
+                .on("change", function(d) { current = this.value; update(); });
+
+            select
+                .selectAll("option").data(function(d) { return d.siblings(); }).enter()
+                .append("option")
+                .attr("value", function(d) { return d.dscope; })
+                .attr("selected", mkSelected)
+                .text(function(d) { return d.text; });
+        };
+
+        var updateButtons = function() {
+            var button = buttonDiv
+                .selectAll("button")
+                .data(["moreLevels", "fewerLevels"]);
+            button.enter()
+                .append("button")
+                .text(function(d) {
+                    if (d == "moreLevels") {
+                        return "aufklappen";
+                    } else if (d == "fewerLevels") {
+                        return "zuklappen";
+                    }
+                })
+                .on("click", function(d) {
+                    if (d == "moreLevels") {
+                        current = treeix[current].subtree.children[0].dscope;
+                    } else if (d == "fewerLevels") {
+                        var ancs = treeix[current].ancestors;
+                        current = ancs[ancs.length - 2];
+                    }
+                    update();
+                });
+            button
+                .attr("disabled", function(d) {
+                    if (d == "moreLevels") {
+                        return treeix[current].subtree.children.length == 0 || undefined;
+                    } else if (d == "fewerLevels") {
+                        return treeix[current].ancestors.length == 1 || undefined;
+                    }
+                })
+        };
+
+        var rootElem = d3.select(rootSel).append("div");
+        rootElem.append("label").text("Geltungsbereich auswählen");
+        var menuDiv = rootElem.append("div");
+        var buttonDiv = rootElem.append("div");
+        rootElem.append("input")
+            .attr("value", "anzeigen")
+            .attr("type", "submit")
+            .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
+
+        update();
+    };
+
+
+    //////////////////////////////////////////////////////////////////////
+
+    var showGraph = function(rootSel, graph) {
         var width = 960;
         var height = 800;
 
@@ -52,7 +170,7 @@
             .links(graph.links)
             .start();
 
-        var svg = d3.select(rootElem).append("svg")
+        var svg = d3.select(rootSel).append("svg")
             .attr("width", width)
             .attr("height", height);
 
@@ -109,6 +227,9 @@
         */
 
     };
+
+
+    //////////////////////////////////////////////////////////////////////
 
     window.onload = function() {
         showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeTree);
