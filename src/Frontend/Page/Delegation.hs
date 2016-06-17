@@ -201,7 +201,8 @@ instance FormPage PageDelegationNetwork where
             Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
             Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
-        div_ [class_ "d3_aula"] nil
+        div_ [class_ "aula-d3-navig"] nil
+        div_ [class_ "aula-d3-view"] nil
         when (null (delegations ^. networkDelegations)) $
             "[Keine Delegationen in diesem Geltungsbereich]"
 

@@ -1,11 +1,11 @@
 (function() {
 
-    var showNavigation = function(aulaDScopeCurrent, aulaDScopeTree) {
+    var showNavigation = function(rootElem, aulaDScopeCurrent, aulaDScopeTree) {
         console.log(aulaDScopeCurrent);
         console.log(aulaDScopeTree);
     };
 
-    var showGraph = function(graph) {
+    var showGraph = function(rootElem, graph) {
         var width = 960;
         var height = 800;
 
@@ -52,7 +52,7 @@
             .links(graph.links)
             .start();
 
-        var svg = d3.select(".d3_aula").append("svg")
+        var svg = d3.select(rootElem).append("svg")
             .attr("width", width)
             .attr("height", height);
 
@@ -111,8 +111,8 @@
     };
 
     window.onload = function() {
-        showNavigation(aulaDScopeCurrent, aulaDScopeTree);
-        showGraph(aulaDelegationData);
+        showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeTree);
+        showGraph(".aula-d3-view", aulaDelegationData);
     };
 
 })();
