@@ -1,5 +1,6 @@
-// inspirating example:
+// inspiring examples:
 // http://bl.ocks.org/mbostock/1153292
+// http://bl.ocks.org/mbostock/2706022
 
 var aulaDelegationMain = function(graph) {
     var width = 960;
@@ -16,6 +17,9 @@ var aulaDelegationMain = function(graph) {
 
         text.attr("dx", function(d) { return d.x; })
             .attr("dy", function(d) { return d.y; });
+
+        avat.attr("x", function(d) { return d.x; })
+            .attr("y", function(d) { return d.y; });
     };
 
     function linkArc(d) {
@@ -42,15 +46,13 @@ var aulaDelegationMain = function(graph) {
 
     var link = svg
         .selectAll(".link")
-        .data(graph.links)
-        .enter()
+        .data(graph.links).enter()
         .append("line")
         .attr("class", "link");
 
     var node = svg.append("g")
         .selectAll(".node")
-        .data(graph.nodes)
-        .enter()
+        .data(graph.nodes).enter()
         .append("circle")
         .attr("class", "node")
         .attr("r", function(d) { return (20 + 3 * d.power); })
@@ -58,49 +60,32 @@ var aulaDelegationMain = function(graph) {
 
     var text = svg.append("g")
         .selectAll("text")
-        .data(graph.nodes)
-        .enter()
+        .data(graph.nodes).enter()
         .append("text")
         .attr("dx", ".10em")
         .attr("dy", ".10em")
         .text(function(d) { return d.name; });
 
-/*
-    node.append("svg:image")
-        .attr("xlink:href", function(d) {
-            return "http://zierfischverzeichnis.de/klassen/pisces/perciformes/percoidei/thumbnails/gymnocephalus_cernuus.gif";
-        });
-*/
+    var avat = svg.append("g")
+        .selectAll("image")
+        .data(graph.nodes).enter()
+        .append("image")
+        .attr("x", ".10em")
+        .attr("y", ".10em")
+        .attr("width", "1cm")
+        .attr("height", "1cm")
+        .attr("xlink:href", function(d) { if (d.avatar) debugger; return d.avatar; });
 
-
+    /*
+        http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+          <clipPath id="clipCircle">
+            <circle r="50" cx="50" cy="50"/>
+          </clipPath>
+          <rect width="100" height="100" clip-path="url(#clipCircle)"/>
+        </svg>
+    */
 
 };
 
 window.onload = function() { aulaDelegationMain(aulaDelegationData); };
-
-
-/*
-
-        svg_node_groups.append("svg:image")
-            .attr("class", function(d) { return d.csscls.join(" "); })
-            .attr("xlink:href", function(d) {
-                function f(csscls) {
-                    var imagePath = image_path + "default.gif";
-                    // (if no relevant css class assignments are found, return path to default gif.)
-
-                    if (csscls.hasOwnProperty("length")) {
-                        csscls.forEach(function(cls) {
-                            switch(cls) {
-                            case "bw_bexquery":            imagePath = image_path + "bexquery.gif";            break;
-
--- FIXME: show avatars
--- FIXME: make context selectable
--- FIXME: double click on node: remove from graph
--- FIXME: only list with hidden nodes, no list ofr shown nodes.  double-click there to show
--- FIXME: show all / hide all
-
--- more FIXMEs:
-- what you click moves to top (covers other nodes)
-- make bounds strong (no nodes may escape)
-
-*/
