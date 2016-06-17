@@ -13,8 +13,9 @@ module Persistent.Idiom
 where
 
 import Control.Lens
-import Control.Monad (unless)
+import Control.Monad (forM, unless)
 import Data.Functor.Infix ((<$$>))
+import Data.Maybe (catMaybes)
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
