@@ -233,7 +233,9 @@
 
     window.onload = function() {
         showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeTree);
-        showGraph(".aula-d3-view", aulaDelegationData);
+        if (d3.selectAll(".aula-d3-navig").length > 0) {
+            showGraph(".aula-d3-view", aulaDelegationData);
+        }
     };
 
 })();

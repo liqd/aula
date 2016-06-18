@@ -111,15 +111,18 @@ instance Page PageDelegationNetwork where
 instance ToHtml PageDelegationNetwork where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
-        div_ $ do
-            Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
-            Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
-            Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
+        span_ "Beauftragungsnetzwerk"
+        Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
+        Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
+        Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
         div_ [class_ "aula-d3-navig"] nil
-        div_ [class_ "aula-d3-view"] nil
-        when (null (delegations ^. networkDelegations))
-            "[Keine Delegationen in diesem Geltungsbereich]"
+
+        div_  $ if (null (delegations ^. networkDelegations))
+            then do
+                span_ "[Keine Delegationen in diesem Geltungsbereich]"
+            else do
+                div_ [class_ "aula-d3-view"] nil
 
 viewDelegationNetwork :: ActionM m  => Maybe DScope -> m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
