@@ -8,9 +8,8 @@
 module Frontend.Fragment.DelegationTab
 where
 
-import Action
 import Frontend.Prelude hiding ((</>), (<.>))
-import Persistent (findUser, scopeDelegatees)
+import Persistent (EQuery, findUser, scopeDelegatees)
 
 import qualified Frontend.Path as U
 
@@ -19,8 +18,8 @@ import qualified Frontend.Path as U
 newtype DelegationTree = DelegationTree [(User, [User])]
   deriving (Eq, Show, Read)
 
-delegationTree :: forall m . ActionPersist m => AUID User -> DScope -> m DelegationTree
-delegationTree uid scope = equery $ do
+delegationTree :: AUID User -> DScope -> EQuery DelegationTree
+delegationTree uid scope = do
     let findDelegatees uid' = do
             scopeDelegatees uid' scope
             >>= mapM (findUser . view delegationFrom)

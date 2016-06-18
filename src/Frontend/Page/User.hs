@@ -289,8 +289,8 @@ delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> DScope -> m PageUserProfileDelegatedVotes
 delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
-    PageUserProfileDelegatedVotes ctx
-        <$> (makeUserView <$> mquery (findUser userId))
+    equery $ PageUserProfileDelegatedVotes ctx
+        <$> (makeUserView <$> (maybe404 =<< findUser userId))
         <*> delegationTree (ctx ^. capCtxUser . _Id) scope
 
 
