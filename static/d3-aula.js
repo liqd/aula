@@ -69,7 +69,16 @@
                 .on("change", function(d) { current = this.value; update(); });
 
             select
-                .selectAll("option").data(function(d) { return d.siblings(); }).enter()
+                .selectAll("option").data(function(d) {
+                    if (d.siblings().length > 0) {
+                        return d.siblings();
+                    } else {
+                        // this is a bit fake; we don't really have a
+                        // menu here, there is only one "everywhere".
+                        // but symmetry-wise this works well.
+                        return [{ "dscope": "global", "text": "In allen Ideenräumen" }];
+                    }
+                }).enter()
                 .append("option")
                 .attr("value", function(d) { return d.dscope; })
                 .attr("selected", mkSelected)
