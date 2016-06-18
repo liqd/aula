@@ -1177,7 +1177,7 @@ fishDelegationNetworkAction mSchoolClass = do
                 else do
                     u1  <- genGen $ elements users'
                     u2  <- genGen $ elements users'
-                    (:[]) <$> addWithCurrentUser AddDelegation (ProtoDelegation scope (u1 ^. _Id) (u2 ^. _Id))
+                    (:[]) <$> addWithCurrentUser AddDelegation (Delegation scope (u1 ^. _Id) (u2 ^. _Id))
 
     dels <- replicateM 18 mkdel
     users'' <- let dscope = maybe DScopeGlobal (DScopeIdeaSpace . ClassSpace) mSchoolClass

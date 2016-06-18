@@ -554,7 +554,7 @@ voteOnIdea ideaId voteVal = do
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope t = do
     user <- currentUser
-    addWithCurrentUser_ AddDelegation (ProtoDelegation scope (user ^. _Id) t)
+    addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) t)
     eventLogUserDelegates scope t
 
 -- | Delegates the current user's vote to the given user at school space

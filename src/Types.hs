@@ -768,17 +768,7 @@ data Delegation = Delegation
 
 instance SOP.Generic Delegation
 
-type instance Proto Delegation = ProtoDelegation
-
--- | "Beauftragung"
-data ProtoDelegation = ProtoDelegation
-    { _protoDelegationScope :: DScope
-    , _protoDelegationFrom  :: AUID User
-    , _protoDelegationTo    :: AUID User
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic ProtoDelegation
+type instance Proto Delegation = Delegation
 
 -- | Node type for the delegation scope hierarchy DAG.  The four levels are 'Idea', 'Topic',
 -- 'SchoolClass', and global.
@@ -1210,7 +1200,6 @@ makeLenses ''IdeaVoteResult
 makeLenses ''InitialPassword
 makeLenses ''Phase
 makeLenses ''PhaseStatus
-makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoIdeaVote
 makeLenses ''ProtoTopic
@@ -1263,7 +1252,6 @@ deriveSafeCopy 0 'base ''InitialPassword
 deriveSafeCopy 0 'base ''MoveIdea
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
-deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoIdeaVote
 deriveSafeCopy 0 'base ''ProtoTopic

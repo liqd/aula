@@ -609,7 +609,7 @@ addDelegation env = do
     dbDelegations %= Data.Delegation.setDelegation delegatee scope delegate
     pure $ Delegation scope delegatee delegate
   where
-    (ProtoDelegation scope delegatee delegate) = env ^. envWith
+    (Delegation scope delegatee delegate) = env ^. envWith
 
 delegationScopeTree :: User -> Query (Tree DScopeFull)
 delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
@@ -910,10 +910,6 @@ instance FromProto Topic where
         , _topicIdeaSpace = t ^. protoTopicIdeaSpace
         , _topicPhase     = PhaseRefinement . ActivePhase $ t ^. protoTopicRefPhaseEnd
         }
-
--- TODO: Remove
-instance FromProto Delegation where
-    fromProto (ProtoDelegation ctx f t) _m = Delegation ctx f t
 
 mkMetaInfo :: User -> Timestamp -> KeyOf a -> MetaInfo a
 mkMetaInfo cUser now key = MetaInfo
