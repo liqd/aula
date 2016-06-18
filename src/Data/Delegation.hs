@@ -134,7 +134,7 @@ votingPower vid path ds = unDelegatee <$$> Set.toList . flip runReader ds $ do
   where
     delegateeToDelegate (Delegatee d) = Delegate d
 
-    voters :: Set (Delegatee U) -> Delegate U -> Reader (Delegations) (Set (Delegatee U))
+    voters :: Set (Delegatee U) -> Delegate U -> Reader Delegations (Set (Delegatee U))
     voters discovered user = do
         oneStepNewDelegatees
             <- (`Set.difference` discovered) . Set.unions
