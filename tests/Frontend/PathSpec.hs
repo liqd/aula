@@ -149,7 +149,6 @@ spec = do
         , F (arb :: Gen PageUserSettings)
         , F (arb :: Gen EditUserProfile)
         , F (arb :: Gen ReportUserProfile)
-        , F (arb :: Gen PageDelegationNetwork)
         ]
 
 -- FIXME: Unify the Form Arbitrary GADTs and generate the form
