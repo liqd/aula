@@ -108,75 +108,9 @@ instance Page PageDelegationNetwork where
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
-{-
-        let bigHr = do
-              hr_ []
-              br_ []
-              hr_ []
-
-        bigHr
-
-        let delegationLevels = div_ $ do
-                br_ []
-                "  Ebene  "
-                select_ [name_ "level"] $ do
-                    option_ "Schule"
-                    option_ [selected_ "selected"] "Klasse 5f"
-                    option_ "Thema"
-                    option_ "Idee"
-
-                br_ []
-                "  Thema  "
-                select_ [name_ "topic"] $ do
-                    option_ [selected_ "selected"] "Thema 'Kantinenessen'"
-                    option_ [selected_ "selected"] "Thema 'Schulhofmöbel'"
-                    option_ [selected_ "selected"] "Thema 'Saunabereich'"
-
-                br_ []
-                "  Idee  "
-                select_ [name_ "idea"] $ do
-                    option_ [selected_ "selected"] "Idee '1'"
-                    option_ [selected_ "selected"] "Idee '2'"
-                    option_ [selected_ "selected"] "Idee '3'"
-                    option_ [selected_ "selected"] "Idee '4'"
-                    option_ [selected_ "selected"] "Idee '5'"
-                    option_ [selected_ "selected"] "Idee '6'"
-                    option_ [selected_ "selected"] "Idee '7'"
-                    option_ [selected_ "selected"] "Idee '8'"
-                    option_ [selected_ "selected"] "Idee '9'"
-
-        div_ $ do
-
-            br_ []
-            table_ $ do
-                tr_ $ do
-                    th_ "[angezeigte ebene]"
-                    th_ "[angezeigte schüler]"
-                    th_ "[weggeblendete schüler]"
-                    th_ "[das netzwerk]"
-                tr_ $ do
-                    td_ delegationLevels
-                    td_ . ul_ $ li_ `mapM_` ["Hannah", "Hanna", "Leonie", "Leoni", "Lea", "Leah", "Lena"]
-                    td_ . ul_ $ li_ `mapM_` ["Sara", "Emma", "Lilli", "Lilly", "Lili", "Marie", "Lina",
-                                             "Maja", "Maya", "Johanna", "Sophie", "Sofie", "Nele", "Neele",
-                                             "Sophia", "Sofia", "Amelie", "Lisa", "Leni", "Julia", "Alina"]
-                    td_ $ span_ [id_ "d3"] nil
-
-        bigHr
--}
-
 instance ToHtml PageDelegationNetwork where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
-        let dummy = False  -- FIXME: remove this as soon as the non-dummy version is more interesting.
-        if dummy
-            then runDummy
-            else runReally
-      where
-       runDummy = do
-        img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
-
-       runReally = do
         div_ $ do
             Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
             Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
@@ -189,10 +123,10 @@ instance ToHtml PageDelegationNetwork where
 
 viewDelegationNetwork :: ActionM m  => Maybe DScope -> m PageDelegationNetwork
 viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
-        user <- currentUser  -- TODO align
-        equery $ PageDelegationNetwork scope
-                    <$> (DScopeTree <$> delegationScopeTree user)
-                    <*> delegationInfos scope
+    user <- currentUser
+    equery $ PageDelegationNetwork scope
+                <$> (DScopeTree <$> delegationScopeTree user)
+                <*> delegationInfos scope
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
