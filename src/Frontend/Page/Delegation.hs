@@ -94,7 +94,7 @@ newtype DScopeTree = DScopeTree (Tree DScopeFull)
 instance Aeson.ToJSON DScopeTree where
     toJSON (DScopeTree t) = f t
       where
-        f (Tree.Node dscope chldrn) = Aeson.object $
+        f (Tree.Node dscope chldrn) = Aeson.object
             [ "dscope"   Aeson..= toUrlPiece (fullDScopeToDScope dscope)
             , "text"     Aeson..= uilabelST dscope
             , "children" Aeson..= (DScopeTree <$> chldrn)
@@ -184,7 +184,7 @@ instance ToHtml PageDelegationNetwork where
 
         div_ [class_ "aula-d3-navig"] nil
         div_ [class_ "aula-d3-view"] nil
-        when (null (delegations ^. networkDelegations)) $
+        when (null (delegations ^. networkDelegations))
             "[Keine Delegationen in diesem Geltungsbereich]"
 
 viewDelegationNetwork :: ActionM m  => Maybe DScope -> m PageDelegationNetwork
