@@ -163,7 +163,7 @@ type AulaMain =
 
        -- delegation network
   :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote
-  :<|> "delegation" :> "view" :> QueryParam "scope" DScope :> FormHandler PageDelegationNetwork
+  :<|> "delegation" :> "view" :> QueryParam "scope" DScope :> GetH (Frame PageDelegationNetwork)
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
@@ -185,7 +185,7 @@ aulaMain =
   :<|> aulaAdmin
 
   :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
-  :<|> form . Page.viewDelegationNetwork
+  :<|> runHandler . Page.viewDelegationNetwork
 
   :<|> runHandler (pure PageStaticImprint)
   :<|> runHandler (pure PageStaticTermsOfUse)

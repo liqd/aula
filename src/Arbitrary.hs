@@ -367,10 +367,6 @@ instance Arbitrary PageDelegateVote where
     arbitrary = PageDelegateVote <$> arb <*> arb
     shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
 
-instance Arbitrary PageDelegationNetworkPayload where
-    arbitrary = PageDelegationNetworkPayload <$> arb
-    shrink (PageDelegationNetworkPayload x) = PageDelegationNetworkPayload <$> shr x
-
 -- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
     shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z

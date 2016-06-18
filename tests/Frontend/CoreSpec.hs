@@ -17,7 +17,6 @@ import Control.Category ((.))
 import Data.List
 import Data.String.Conversions
 import Data.Typeable (typeOf)
-import Data.Tree as Tree (flatten)
 import Test.QuickCheck
 import Test.QuickCheck.Missing (uniqueOf)
 import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)
@@ -71,6 +70,7 @@ spec = do
         , H (arb :: Gen PageStaticTermsOfUse)
         , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
+        , H (arb :: Gen PageDelegationNetwork)
         ]
     describe "PageFormView" $ mapM_ testForm
           -- admin forms
@@ -118,7 +118,6 @@ spec = do
 --        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
         , formTest (arb :: Gen EditUserProfile)
         , formTest (arb :: Gen ReportUserProfile)
-        , formTest (arb :: Gen PageDelegationNetwork)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -573,22 +572,6 @@ instance PayloadToEnv AdminDeleteUserPayload where
         _ -> pure [TextInput ""]
 
 instance ArbFormPagePayload AdminCreateUser
-
-instance PayloadToEnv PageDelegationNetworkPayload where
-    type PayloadToEnvContext PageDelegationNetworkPayload = [DScopeFull]
-    payloadDefaultContext _ = [DScopeGlobalFull]
-    payloadToEnvMapping ds v (PageDelegationNetworkPayload dscope) = \case
-        "scope" -> pure [TextInput $ selectValue "scope" v vs dscope]
-      where
-        vs = (fullDScopeToDScope &&& uilabel) <$> ds
-
-instance ArbFormPagePayload PageDelegationNetwork where
-    type ArbFormPagePayloadContext PageDelegationNetwork = [DScopeFull]
-    arbFormPagePayloadCtx (PageDelegationNetwork _dscope (DScopeTree scopeTree) _delegationInfos)
-        = pure $ Tree.flatten scopeTree
-    arbFormPagePayload (PageDelegationNetwork _dscope (DScopeTree scopeTree) _delegationInfos)
-        = PageDelegationNetworkPayload . fullDScopeToDScope
-          <$> Test.QuickCheck.elements (Tree.flatten scopeTree)
 
 {- TODO
   1) Frontend.Core.PageFormView Gen AdminCreateUser (process valid forms)
