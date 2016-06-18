@@ -271,7 +271,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
                     div_ [class_ "filter-toggles"] $ do
                         a_ [class_ "filter-toggle-btn", href_ (U.userGlobalDelegations user)] "Schulweit"
                         a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
-                    renderDelegations delegations
+                    renderDelegations True delegations
 
 delegatedVotesGlobal :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes
@@ -291,7 +291,7 @@ delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
     equery $ PageUserProfileDelegatedVotes ctx
         <$> (makeUserView <$> (maybe404 =<< findUser userId))
-        <*> delegationTree (ctx ^. capCtxUser . _Id) scope
+        <*> userDelegationTree (ctx ^. capCtxUser . _Id) scope
 
 
 -- ** User Profile: Edit profile

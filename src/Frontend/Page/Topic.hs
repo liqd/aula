@@ -153,7 +153,7 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicDelegations now scope topic delegations) = semanticDiv p $ do
         viewTopicHeaderDiv now scope topic TabDelegation
         -- FIXME: It renders only the delegation of the current user
-        renderDelegations delegations
+        renderDelegations False delegations
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab
@@ -401,7 +401,7 @@ viewTopic tab topicId = do
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
-                    <$> delegationTree (_capCtxUser ctx ^. _Id) (DScopeTopicId topicId)
+                    <$> topicDelegationTree topicId
             TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab

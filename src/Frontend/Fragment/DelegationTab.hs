@@ -9,8 +9,14 @@ module Frontend.Fragment.DelegationTab
 where
 
 import Frontend.Prelude hiding ((</>), (<.>))
-import Persistent (EQuery, findUser, scopeDelegatees)
-
+import Persistent
+    ( EQuery
+    , findUser
+    , scopeDelegatees
+    , findTopic
+    , maybe404
+    , getVotersForSpace
+    )
 import qualified Frontend.Path as U
 
 
@@ -18,20 +24,35 @@ import qualified Frontend.Path as U
 newtype DelegationTree = DelegationTree [(User, [User])]
   deriving (Eq, Show, Read)
 
-delegationTree :: AUID User -> DScope -> EQuery DelegationTree
-delegationTree uid scope = do
-    let findDelegatees uid' = do
-            scopeDelegatees uid' scope
-            >>= mapM (findUser . view delegationFrom)
-            >>= pure . catMaybes
+-- | Find the delegatees of the given user for the given scope
+findDelegatees :: AUID User -> DScope -> EQuery [User]
+findDelegatees uid scope = do
+    scopeDelegatees uid scope
+    >>= mapM (findUser . view delegationFrom)
+    >>= pure . catMaybes
 
-    firstLevelDelegatees <- findDelegatees uid
-    DelegationTree <$> forM firstLevelDelegatees (\user ->
-                            (,) user <$> findDelegatees (user ^. _Id))
+-- | Delegation tree for the given user and scope.
+-- The first level contains all the delegatees of the given user
+userDelegationTree :: AUID User -> DScope -> EQuery DelegationTree
+userDelegationTree uid scope = do
+    firstLevelDelegatees <- findDelegatees uid scope
+    DelegationTree
+        <$> forM firstLevelDelegatees
+                (\user -> (,) user <$> findDelegatees (user ^. _Id) scope)
 
-renderDelegations :: forall m. Monad m => DelegationTree -> HtmlT m ()
-renderDelegations (DelegationTree delegations) = do
-    h2_ $ "Insgesamt " <> total ^. showed . html
+-- | Delegation tree for the given scope, the first level contains
+-- all the users who can vote in the given topic.
+topicDelegationTree :: AUID Topic -> EQuery DelegationTree
+topicDelegationTree topicId = do
+    let scope = DScopeTopicId topicId
+    topic <- maybe404 =<< findTopic topicId
+    voters <- getVotersForSpace (topic ^. topicIdeaSpace)
+    DelegationTree <$> forM voters (\user ->
+                            (,) user <$> findDelegatees (user ^. _Id) scope)
+
+renderDelegations :: forall m. Monad m => Bool -> DelegationTree -> HtmlT m ()
+renderDelegations showTotal (DelegationTree delegations) = do
+    when showTotal $ h2_ ("Insgesamt " <> total ^. showed . html)
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
     total = sum $ map ((1 +) . length . snd) delegations
