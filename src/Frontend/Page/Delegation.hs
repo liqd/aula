@@ -112,6 +112,23 @@ instance ToHtml PageDelegationNetwork where
     toHtml = toHtmlRaw
     toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
         span_ "Beauftragungsnetzwerk"
+
+        div_ [class_ "container-info"] $ do
+            p_ $ do
+                "einige hinweise zur bedienung"
+            p_ $ do
+                "der geltungsbereich einer delegation kann die gesamte schule oder eine klasse,"
+                " oder ein thema, oder eine idee (ob wild oder in ein thema eingeordnet)."
+            p_ $ do
+                "beachte den unterschied zwischen 'gesamte schule' und 'ideenraum schule': ersterer"
+                " geltungsbereich erstreckt sich über alle ideenräume, also auf ideen im ideenraum"
+                " 'schule' oder und auf solche im ideenraum 'klasse 9a'.  letzterer nur auf den"
+                " einen ideenraum."
+            p_ $ do
+                "mit den menus kann ein beliebiger geltungsbereich angesteuert werden, von eben zu"
+                " ebene springt man mit den knöpfen 'aufklappen' und 'zuklappen'; auf jeder ebene"
+                " kann man sich mit den aufgeklappten menus einen geltungsbereich auswählen."
+
         Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
         Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
         Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
