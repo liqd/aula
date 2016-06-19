@@ -8,6 +8,7 @@
 module Frontend.Fragment.DelegationTab
 where
 
+import Data.List (intersperse)
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
     ( DelegateeLists(..)
@@ -29,8 +30,11 @@ renderDelegations showTotal (DelegateeLists delegations) = do
                 div_ [class_ "small-avatar-list-image"] $ do
                     nil -- FIXME Make a real image a child here (avatarImgFromHasMeta)
             div_ [class_ "col-11-12"] $ do
-                h3_ $ a_ [href_ $ U.viewUserProfile delegate] (delegate ^. userLogin . unUserLogin  . html)
+                h3_ $ a_ [href_ $ U.viewUserProfile delegate]
+                    (delegate ^. userLogin . unUserLogin  . html)
                 p_ $ do
                     toHtml $ show (length delegatees) <> " Stimmen von "
-                    strong_ . forM_ delegatees $ \delegatee -> do
-                        a_ [href_ $ U.viewUserProfile delegatee] (delegatee ^. userLogin . unUserLogin  . html)
+                    let f :: User -> HtmlT m ()
+                        f delegatee = strong_ $ a_ [href_ $ U.viewUserProfile delegatee]
+                            (delegatee ^. userLogin . unUserLogin  . html)
+                    sequence_ . intersperse ", " $ f <$> delegatees
