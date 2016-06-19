@@ -53,7 +53,6 @@ $(makeAcidic ''AulaData
     , 'setCommentDesc
     , 'addCommentVote
     , 'addDelegation
-    , 'deleteDelegation
     , 'addFirstUser
     , 'addIdea
     , 'addIdeaJuryResult

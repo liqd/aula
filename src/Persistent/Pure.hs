@@ -118,12 +118,11 @@ module Persistent.Pure
     , dbUserMap
     , adminUsernameHack
     , addDelegation
-    , deleteDelegation
     , delegationScopeTree
-    , allDelegations
     , allDelegationScopes
-    , findDelegationsByScope
-    , findDelegationsByDelegatee
+    , Persistent.Pure.scopeDelegatees
+    , Persistent.Pure.votingPower
+    , Persistent.Pure.findDelegationsByScope
     , addIdeaJuryResult
     , removeIdeaJuryResult
     , setCreatorStatement
@@ -174,6 +173,7 @@ import qualified Data.Text as ST
 
 import Types
 import LifeCycle (freezePhase)
+import Data.Delegation
 
 
 -- * state type
@@ -184,7 +184,7 @@ data AulaData = AulaData
     , _dbIdeaMap             :: Ideas
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
-    , _dbDelegationMap       :: Delegations  -- FIXME: Speed up searching for delegatees, delegates, scopes
+    , _dbDelegations         :: Delegations
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
@@ -213,7 +213,7 @@ dbSnapshot :: AulaGetter AulaData
 dbSnapshot = to id
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil nil defaultSettings 0
+emptyAulaData = AulaData nil nil nil nil emptyDelegations defaultSettings 0
 
 type TraverseMetas a = forall b. Traversal' (MetaInfo b) a
 
@@ -246,7 +246,7 @@ aulaMetas t f (AulaData sp is us ts ds st li) =
              <*> (each . ideaMetas  t) f is -- See ideaMetas
              <*> (each . metaInfo . t) f us -- Only one MetaInfo per User
              <*> (each . metaInfo . t) f ts -- Only one MetaInfo per Topic
-             <*> (each . metaInfo . t) f ds -- Only one MetaInfo per Delegation
+             <*> pure ds                    -- No MetaInfo in dbDelegations
              <*> pure st                    -- No MetaInfo in dbSettings
              <*> pure li                    -- No MetaInfo in dbListId
 
@@ -605,10 +605,11 @@ addTopicYieldLocs now pt = do
     (topic,) <$> moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
 
 addDelegation :: AddDb Delegation
-addDelegation = addDb dbDelegationMap
-
-deleteDelegation :: AUID Delegation -> AUpdate ()
-deleteDelegation did = dbDelegationMap . at did .= Nothing
+addDelegation env = do
+    dbDelegations %= Data.Delegation.setDelegation delegatee scope delegate
+    pure $ Delegation scope delegatee delegate
+  where
+    (Delegation scope delegatee delegate) = env ^. envWith
 
 delegationScopeTree :: User -> Query (Tree DScopeFull)
 delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
@@ -630,9 +631,6 @@ delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
     discover s@(DScopeIdeaFull{}) =
         pure (s, [])
 
-allDelegations :: Query [Delegation]
-allDelegations = Map.elems <$> view dbDelegationMap
-
 allDelegationScopes :: Query [DScope]
 allDelegationScopes = do
     ideas  <- getIdeas
@@ -643,13 +641,37 @@ allDelegationScopes = do
             <> (DScopeTopicId . view _Id <$> topics)
             <> (DScopeIdeaId  . view _Id <$> ideas)
 
-findDelegationsByDelegatee :: AUID User -> Query [Delegation]
-findDelegationsByDelegatee uid =
-    filter ((uid ==) . view delegationFrom) <$> allDelegations
+scopeDelegatees :: AUID User -> DScope -> EQuery [Delegation]
+scopeDelegatees uid scope =
+    Delegation scope uid
+    <$$> Set.toList
+    <$> views dbDelegations (Data.Delegation.scopeDelegatees uid scope)
+
+votingPower :: AUID User -> DScope -> EQuery [User]
+votingPower uid scope = do
+    hiearchy <- scopeHiearchy scope
+    catMaybes
+        <$> (mapM findUser
+             =<< views dbDelegations (Data.Delegation.votingPower uid hiearchy))
+
+scopeHiearchy :: DScope -> EQuery [DScope]
+scopeHiearchy = \case
+    DScopeGlobal           -> pure [DScopeGlobal]
+    s@(DScopeIdeaSpace {}) -> pure [s, DScopeGlobal]
+    t@(DScopeTopicId tid)  -> do
+        space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
+        (t:) <$> scopeHiearchy (DScopeIdeaSpace space)
+    i@(DScopeIdeaId iid)     -> do
+        loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
+        (i:) <$> scopeHiearchy (case loc of
+            IdeaLocationSpace s    -> DScopeIdeaSpace s
+            IdeaLocationTopic _s t -> DScopeTopicId   t)
 
 findDelegationsByScope :: DScope -> Query [Delegation]
-findDelegationsByScope scope = filter ((== scope) . view delegationScope) . Map.elems
-    <$> view dbDelegationMap
+findDelegationsByScope =
+    fmap (fmap toDelegation) . views dbDelegations . Data.Delegation.findDelegationsByScope
+  where
+    toDelegation (de, s, dee) = Delegation s (unDelegate de) (unDelegatee dee)
 
 findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
@@ -887,9 +909,6 @@ instance FromProto Topic where
         , _topicIdeaSpace = t ^. protoTopicIdeaSpace
         , _topicPhase     = PhaseRefinement . ActivePhase $ t ^. protoTopicRefPhaseEnd
         }
-
-instance FromProto Delegation where
-    fromProto (ProtoDelegation ctx f t) m = Delegation m ctx f t
 
 mkMetaInfo :: User -> Timestamp -> KeyOf a -> MetaInfo a
 mkMetaInfo cUser now key = MetaInfo

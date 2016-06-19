@@ -67,7 +67,6 @@ import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
 import Data.Markdown
 
-
 -- * a small prelude
 
 -- | A shorter alias for 'mempty'.
@@ -761,8 +760,7 @@ instance SafeCopy EmailAddress where
 
 -- | "Beauftragung"
 data Delegation = Delegation
-    { _delegationMeta  :: MetaInfo Delegation
-    , _delegationScope :: DScope
+    { _delegationScope :: DScope
     , _delegationFrom  :: AUID User
     , _delegationTo    :: AUID User
     }
@@ -770,17 +768,7 @@ data Delegation = Delegation
 
 instance SOP.Generic Delegation
 
-type instance Proto Delegation = ProtoDelegation
-
--- | "Beauftragung"
-data ProtoDelegation = ProtoDelegation
-    { _protoDelegationScope :: DScope
-    , _protoDelegationFrom  :: AUID User
-    , _protoDelegationTo    :: AUID User
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic ProtoDelegation
+type instance Proto Delegation = Delegation
 
 -- | Node type for the delegation scope hierarchy DAG.  The four levels are 'Idea', 'Topic',
 -- 'SchoolClass', and global.
@@ -927,7 +915,6 @@ type AMap a = Map (IdOf a) a
 type Users        = AMap User
 type Ideas        = AMap Idea
 type Topics       = AMap Topic
-type Delegations  = AMap Delegation
 type Comments     = AMap Comment
 type CommentVotes = AMap CommentVote
 type IdeaVotes    = AMap IdeaVote
@@ -1213,7 +1200,6 @@ makeLenses ''IdeaVoteResult
 makeLenses ''InitialPassword
 makeLenses ''Phase
 makeLenses ''PhaseStatus
-makeLenses ''ProtoDelegation
 makeLenses ''ProtoIdea
 makeLenses ''ProtoIdeaVote
 makeLenses ''ProtoTopic
@@ -1266,7 +1252,6 @@ deriveSafeCopy 0 'base ''InitialPassword
 deriveSafeCopy 0 'base ''MoveIdea
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
-deriveSafeCopy 0 'base ''ProtoDelegation
 deriveSafeCopy 0 'base ''ProtoIdea
 deriveSafeCopy 0 'base ''ProtoIdeaVote
 deriveSafeCopy 0 'base ''ProtoTopic
@@ -1309,7 +1294,6 @@ class Ord (IdOf a) => HasMetaInfo a where
     changedAt       :: Lens' a Timestamp
     changedAt       = metaInfo . metaChangedAt
 
-instance HasMetaInfo Delegation where metaInfo = delegationMeta
 instance HasMetaInfo Idea where metaInfo = ideaMeta
 instance HasMetaInfo IdeaJuryResult where metaInfo = ideaJuryResultMeta
 instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
@@ -1681,7 +1665,7 @@ instance Aeson.ToJSON DelegationNetwork where
             , "power"  Aeson..= p
             ]
 
-        renderLink (Delegation _ _ u1 u2) = Aeson.object
+        renderLink (Delegation _ u1 u2) = Aeson.object
             [ "source"  Aeson..= nodeId u1
             , "target"  Aeson..= nodeId u2
             ]
