@@ -642,10 +642,10 @@ allDelegationScopes = do
             <> (DScopeIdeaId  . view _Id <$> ideas)
 
 scopeDelegatees :: AUID User -> DScope -> EQuery [Delegation]
-scopeDelegatees uid scope =
-    Delegation scope uid
+scopeDelegatees delegate scope =
+    (\delegatee -> Delegation scope delegatee delegate)
     <$$> Set.toList
-    <$> views dbDelegations (Data.Delegation.scopeDelegatees uid scope)
+    <$> views dbDelegations (Data.Delegation.scopeDelegatees delegate scope)
 
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower uid scope = do

@@ -13,8 +13,11 @@ module Persistent.Idiom
 where
 
 import Control.Lens
-import Control.Monad (unless)
+import Control.Monad (forM, unless)
+import Data.Function (on)
 import Data.Functor.Infix ((<$$>))
+import Data.Maybe (catMaybes)
+import Data.List (sortBy)
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
@@ -204,6 +207,48 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 
 -- * voting
 
+
+-- | Find the delegatees of the given user for the given scope
+findDelegatees :: AUID User -> DScope -> EQuery [User]
+findDelegatees uid scope = do
+    scopeDelegatees uid scope
+    >>= mapM (findUser . view delegationFrom)
+    >>= pure . catMaybes
+
+
+-- | Some delegates and their direct delegatees.  Used in delegation tabs both in topic and in user
+-- profile (see 'topicDelegateeLists', 'userDelegateeLists', resp.).  In topic, it contains all
+-- delegates with their direct delegatees in the topic's 'DScope'; in the user profile, it contains
+-- all direct delegatees of the user and *their* direct delegatees.
+newtype DelegateeLists = DelegateeLists [(User, [User])]
+  deriving (Eq, Show, Read)
+
+-- | 'DelegationLists' should be ordered by power and, if first argument is 'True', omit delegates
+-- with no delegatees.
+delegateeLists :: Bool -> [(User, [User])] -> DelegateeLists
+delegateeLists omitEmpty = DelegateeLists . s . f
+  where
+    s = sortBy (flip compare `on` (length . snd))
+    f = if omitEmpty then filter (not . null . snd) else id
+
+-- | Delegation tree for the given user and scope.
+-- The first level contains all the delegatees of the given user
+userDelegateeLists :: AUID User -> DScope -> EQuery DelegateeLists
+userDelegateeLists uid scope = do
+    firstLevelDelegatees <- findDelegatees uid scope
+    delegateeLists False
+        <$> forM firstLevelDelegatees
+                (\user -> (,) user <$> findDelegatees (user ^. _Id) scope)
+
+-- | Delegation tree for the given scope, the first level contains
+-- all the users who can vote in the given topic.
+topicDelegateeLists :: AUID Topic -> EQuery DelegateeLists
+topicDelegateeLists topicId = do
+    let scope = DScopeTopicId topicId
+    topic <- maybe404 =<< findTopic topicId
+    voters <- getVotersForSpace (topic ^. topicIdeaSpace)
+    delegateeLists True <$> forM voters (\user ->
+                            (,) user <$> findDelegatees (user ^. _Id) scope)
 
 getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
 getVote uid iid = do

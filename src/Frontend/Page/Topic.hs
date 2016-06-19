@@ -34,11 +34,13 @@ import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
                spaceCapCtx, topicCapCtx, getCurrentTimestamp)
 import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
+import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import Persistent
-    ( findDelegationsByScope
+    ( DelegateeLists(..)
+    , topicDelegateeLists
     , findIdeasByTopic
     , findIdeasByTopicId
     , findTopicsBySpace
@@ -87,7 +89,7 @@ data ViewTopic
     { _vtNow         :: Timestamp
     , _vtCtx         :: CapCtx
     , _vtTopic       :: Topic
-    , _vtDelegations :: [Delegation]
+    , _vtDelegations :: DelegateeLists
     }
   deriving (Eq, Show, Read)
 
@@ -152,10 +154,8 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicDelegations now scope topic delegations) = semanticDiv p $ do
         viewTopicHeaderDiv now scope topic TabDelegation
-        -- related: Frontend.Page.User.renderDelegations
-        -- FIXME: implement!
-        pre_ $ topic ^. showed . html
-        pre_ $ delegations ^. showed . html
+        -- FIXME: It renders only the delegation of the current user
+        renderDelegations False delegations
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab
@@ -403,7 +403,7 @@ viewTopic tab topicId = do
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
-                    <$> findDelegationsByScope (DScopeTopicId topicId)
+                    <$> topicDelegateeLists topicId
             TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
