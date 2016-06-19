@@ -68,6 +68,7 @@ pagesPlain f =
     , f (Proxy :: Proxy PageUserProfileDelegatedVotes)
     , f (Proxy :: Proxy ViewIdea)
     , f (Proxy :: Proxy ViewTopic)
+    , f (Proxy :: Proxy PageDelegationNetwork)
     ]
 
 pagesForm :: forall b.
@@ -90,7 +91,6 @@ pagesForm f =
     , f (Proxy :: Proxy PageUserSettings)
     , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     , f (Proxy :: Proxy PageDelegateVote)
-    , f (Proxy :: Proxy PageDelegationNetwork)
     ]
 
 

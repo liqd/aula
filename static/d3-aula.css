@@ -7,8 +7,9 @@
 }
 
 .link {
+  fill: none;
   stroke: black;
-  stroke-width: 3.5px;
+  stroke-width: 2.5px;
 }
 
 text {

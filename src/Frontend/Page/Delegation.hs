@@ -18,7 +18,7 @@ import           Data.Tree (Tree)
 import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Data.Tree as Tree (flatten)
+import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -85,11 +85,20 @@ topicDelegation tid = formPageHandlerWithMsg
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope (Tree DScopeFull) DelegationNetwork
+data PageDelegationNetwork = PageDelegationNetwork DScope DScopeTree DelegationNetwork
   deriving (Eq, Show, Read)
 
-data PageDelegationNetworkPayload = PageDelegationNetworkPayload DScope
-  deriving (Eq, Show)
+newtype DScopeTree = DScopeTree (Tree DScopeFull)
+  deriving (Eq, Show, Read)
+
+instance Aeson.ToJSON DScopeTree where
+    toJSON (DScopeTree t) = f t
+      where
+        f (Tree.Node dscope chldrn) = Aeson.object
+            [ "dscope"   Aeson..= toUrlPiece (fullDScopeToDScope dscope)
+            , "text"     Aeson..= uilabelST dscope
+            , "children" Aeson..= (DScopeTree <$> chldrn)
+            ]
 
 instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
@@ -99,104 +108,45 @@ instance Page PageDelegationNetwork where
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]
 
-{-
-        let bigHr = do
-              hr_ []
-              br_ []
-              hr_ []
+instance ToHtml PageDelegationNetwork where
+    toHtml = toHtmlRaw
+    toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
+        span_ "Beauftragungsnetzwerk"
 
-        bigHr
+        div_ [class_ "container-info"] $ do
+            p_ $ do
+                "einige hinweise zur bedienung"
+            p_ $ do
+                "der geltungsbereich einer delegation kann die gesamte schule oder eine klasse,"
+                " oder ein thema, oder eine idee (ob wild oder in ein thema eingeordnet)."
+            p_ $ do
+                "beachte den unterschied zwischen 'gesamte schule' und 'ideenraum schule': ersterer"
+                " geltungsbereich erstreckt sich über alle ideenräume, also auf ideen im ideenraum"
+                " 'schule' oder und auf solche im ideenraum 'klasse 9a'.  letzterer nur auf den"
+                " einen ideenraum."
+            p_ $ do
+                "mit den menus kann ein beliebiger geltungsbereich angesteuert werden, von eben zu"
+                " ebene springt man mit den knöpfen 'aufklappen' und 'zuklappen'; auf jeder ebene"
+                " kann man sich mit den aufgeklappten menus einen geltungsbereich auswählen."
 
-        let delegationLevels = div_ $ do
-                br_ []
-                "  Ebene  "
-                select_ [name_ "level"] $ do
-                    option_ "Schule"
-                    option_ [selected_ "selected"] "Klasse 5f"
-                    option_ "Thema"
-                    option_ "Idee"
+        Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
+        Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
+        Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
-                br_ []
-                "  Thema  "
-                select_ [name_ "topic"] $ do
-                    option_ [selected_ "selected"] "Thema 'Kantinenessen'"
-                    option_ [selected_ "selected"] "Thema 'Schulhofmöbel'"
-                    option_ [selected_ "selected"] "Thema 'Saunabereich'"
+        div_ [class_ "aula-d3-navig"] nil
 
-                br_ []
-                "  Idee  "
-                select_ [name_ "idea"] $ do
-                    option_ [selected_ "selected"] "Idee '1'"
-                    option_ [selected_ "selected"] "Idee '2'"
-                    option_ [selected_ "selected"] "Idee '3'"
-                    option_ [selected_ "selected"] "Idee '4'"
-                    option_ [selected_ "selected"] "Idee '5'"
-                    option_ [selected_ "selected"] "Idee '6'"
-                    option_ [selected_ "selected"] "Idee '7'"
-                    option_ [selected_ "selected"] "Idee '8'"
-                    option_ [selected_ "selected"] "Idee '9'"
-
-        div_ $ do
-
-            br_ []
-            table_ $ do
-                tr_ $ do
-                    th_ "[angezeigte ebene]"
-                    th_ "[angezeigte schüler]"
-                    th_ "[weggeblendete schüler]"
-                    th_ "[das netzwerk]"
-                tr_ $ do
-                    td_ delegationLevels
-                    td_ . ul_ $ li_ `mapM_` ["Hannah", "Hanna", "Leonie", "Leoni", "Lea", "Leah", "Lena"]
-                    td_ . ul_ $ li_ `mapM_` ["Sara", "Emma", "Lilli", "Lilly", "Lili", "Marie", "Lina",
-                                             "Maja", "Maya", "Johanna", "Sophie", "Sofie", "Nele", "Neele",
-                                             "Sophia", "Sofia", "Amelie", "Lisa", "Leni", "Julia", "Alina"]
-                    td_ $ span_ [id_ "d3"] nil
-
-        bigHr
--}
-
-instance FormPage PageDelegationNetwork where
-    type FormPagePayload PageDelegationNetwork = PageDelegationNetworkPayload
-    type FormPageResult  PageDelegationNetwork = PageDelegationNetworkPayload
-
-    formAction (PageDelegationNetwork scope _ _)      = U.delegationViewScope scope
-    redirectOf _ (PageDelegationNetworkPayload scope) = U.delegationViewScope scope
-
-    makeForm (PageDelegationNetwork actualDScope dscopes _delegations) =
-        PageDelegationNetworkPayload
-        <$> ("scope" .: DF.choice delegationScopeList (Just actualDScope))
-      where
-        delegationScopeList = (fullDScopeToDScope &&& uilabel) <$> sort (Tree.flatten dscopes)
-
-    formPage v form p@(PageDelegationNetwork _ _ delegations) = semanticDiv p $ do
-        let dummy = False  -- FIXME: remove this as soon as the non-dummy version is more interesting.
-        if dummy
-            then runDummy
-            else runReally
-      where
-       runDummy = do
-        img_ [src_ . U.TopStatic $ "images" </> "delegation_network_dummy.jpg"]
-
-       runReally = do
-        form $ do
-            label_ "Geltungsbereich auswählen"
-            inputSelect_ [] "scope" v
-            DF.inputSubmit "anzeigen"
-        if null (delegations ^. networkDelegations)
+        div_ $ if null (delegations ^. networkDelegations)
             then do
-                "[Keine Delegationen in diesem Geltungsbereich]"
+                span_ "[Keine Delegationen in diesem Geltungsbereich]"
             else do
-                Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
-                div_ [class_ "d3_aula"] nil
+                div_ [class_ "aula-d3-view"] nil
 
-viewDelegationNetwork :: ActionM m => Maybe DScope -> FormPageHandler m PageDelegationNetwork
-viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = formPageHandler
-    (do user <- currentUser
-        equery $ PageDelegationNetwork scope
-                    <$> delegationScopeTree user
-                    <*> delegationInfos scope)
-    pure
+viewDelegationNetwork :: ActionM m  => Maybe DScope -> m PageDelegationNetwork
+viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
+    user <- currentUser
+    equery $ PageDelegationNetwork scope
+                <$> (DScopeTree <$> delegationScopeTree user)
+                <*> delegationInfos scope
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
