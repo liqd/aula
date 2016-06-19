@@ -228,7 +228,7 @@ newtype DelegateeLists = DelegateeLists [(User, [User])]
 delegateeLists :: Bool -> [(User, [User])] -> DelegateeLists
 delegateeLists omitEmpty = DelegateeLists . s . f
   where
-    s = reverse . sortBy (compare `on` (length . snd))
+    s = sortBy (flip compare `on` (length . snd))
     f = if omitEmpty then filter (not . null . snd) else id
 
 -- | Delegation tree for the given user and scope.
