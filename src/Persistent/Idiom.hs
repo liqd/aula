@@ -14,8 +14,10 @@ where
 
 import Control.Lens
 import Control.Monad (forM, unless)
+import Data.Function (on)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (catMaybes)
+import Data.List (sortBy)
 import GHC.Generics (Generic)
 import Servant.Missing (throwError500)
 
@@ -221,12 +223,20 @@ findDelegatees uid scope = do
 newtype DelegateeLists = DelegateeLists [(User, [User])]
   deriving (Eq, Show, Read)
 
+-- | 'DelegationLists' should be ordered by power and, if first argument is 'True', omit delegates
+-- with no delegatees.
+delegateeLists :: Bool -> [(User, [User])] -> DelegateeLists
+delegateeLists omitEmpty = DelegateeLists . s . f
+  where
+    s = reverse . sortBy (compare `on` (length . snd))
+    f = if omitEmpty then filter (not . null . snd) else id
+
 -- | Delegation tree for the given user and scope.
 -- The first level contains all the delegatees of the given user
 userDelegateeLists :: AUID User -> DScope -> EQuery DelegateeLists
 userDelegateeLists uid scope = do
     firstLevelDelegatees <- findDelegatees uid scope
-    DelegateeLists
+    delegateeLists False
         <$> forM firstLevelDelegatees
                 (\user -> (,) user <$> findDelegatees (user ^. _Id) scope)
 
@@ -237,7 +247,7 @@ topicDelegateeLists topicId = do
     let scope = DScopeTopicId topicId
     topic <- maybe404 =<< findTopic topicId
     voters <- getVotersForSpace (topic ^. topicIdeaSpace)
-    DelegateeLists <$> forM voters (\user ->
+    delegateeLists True <$> forM voters (\user ->
                             (,) user <$> findDelegatees (user ^. _Id) scope)
 
 getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
