@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.16.0
+version:        0.17.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -89,6 +89,7 @@ library
       Config
       Daemon
       Data.Avatar
+      Data.Delegation
       Data.Markdown
       Data.Markdown.HtmlWhiteLists
       Data.UriPath
@@ -99,6 +100,7 @@ library
       Frontend.Filter
       Frontend.Fragment.Category
       Frontend.Fragment.Comment
+      Frontend.Fragment.DelegationTab
       Frontend.Fragment.IdeaList
       Frontend.Fragment.Note
       Frontend.Fragment.VotesBar
