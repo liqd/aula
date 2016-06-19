@@ -135,7 +135,7 @@ instance ToHtml PageDelegationNetwork where
 
         div_ [class_ "aula-d3-navig"] nil
 
-        div_  $ if (null (delegations ^. networkDelegations))
+        div_ $ if null (delegations ^. networkDelegations)
             then do
                 span_ "[Keine Delegationen in diesem Geltungsbereich]"
             else do
