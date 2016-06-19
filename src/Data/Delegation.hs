@@ -31,21 +31,22 @@ import Control.Monad.Reader
 import Types
 
 
---  Type parameters for this module is 'U' and 'S', fixing them
+--  Type parameters for this module are 'U' and 'S'.  Fixing them
 -- is necessary as a workaround for an issue of 'dericeSafeCopy'.
 --
 --  The deriveSafeCopy can not add the Ord constraints when
--- creates the SafeCopy class for the 'DelegationMap S U', which
--- constrant is needed to be able to copy the inner map.
+-- creating the SafeCopy class for the 'DelegationMap S U'.  The
+-- constraints are necessary to copy the inner map.
 --
 --  The type constants U and S are created to be able to make this
--- module parametric easier if the issue got resolved.
+-- module parametric easier when the issue is resolved.
 
 
 -- * type constants
 
 type U = AUID User
 type S = DScope
+
 
 -- * types
 

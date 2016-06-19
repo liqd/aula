@@ -173,8 +173,8 @@ import qualified Data.Text as ST
 
 import Types
 import LifeCycle (freezePhase)
-
 import Data.Delegation
+
 
 -- * state type
 
@@ -646,7 +646,6 @@ scopeDelegatees uid scope =
     Delegation scope uid
     <$$> Set.toList
     <$> views dbDelegations (Data.Delegation.scopeDelegatees uid scope)
-
 
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower uid scope = do

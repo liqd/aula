@@ -215,8 +215,6 @@ getVote uid iid = do
             voter <- maybe404 =<< findUser (vv ^. ideaVoteDelegate)
             pure $ Just (voter, vv ^. ideaVoteValue)
 
-
-
 studentsInIdeaSpace :: IdeaSpace -> EQuery [User]
 studentsInIdeaSpace spc = fltr <$> cllct spc
   where
