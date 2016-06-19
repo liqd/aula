@@ -110,7 +110,6 @@ import Logger.EventLog
 import Frontend.Core
 import Frontend.Filter
 import Frontend.Fragment.Comment
-import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList
 import Frontend.Page
 import Frontend.Prelude (set, (^.), (^?), over, (.~), (%~), (&), ppShow, join)

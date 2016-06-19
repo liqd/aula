@@ -27,7 +27,9 @@ import Persistent.Api
     , SetUserProfile(SetUserProfile)
     )
 import Persistent
-    ( findUser
+    ( DelegationTree(..)
+    , userDelegationTree
+    , findUser
     , findIdeasByUserId
     , getIdeaStats
     )

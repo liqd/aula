@@ -39,7 +39,9 @@ import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import Persistent
-    ( findIdeasByTopic
+    ( DelegationTree(..)
+    , topicDelegationTree
+    , findIdeasByTopic
     , findIdeasByTopicId
     , findTopicsBySpace
     , findWildIdeasBySpace
