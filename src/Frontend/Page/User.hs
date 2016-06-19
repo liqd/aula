@@ -27,8 +27,8 @@ import Persistent.Api
     , SetUserProfile(SetUserProfile)
     )
 import Persistent
-    ( DelegationTree(..)
-    , userDelegationTree
+    ( DelegateeLists(..)
+    , userDelegateeLists
     , findUser
     , findIdeasByUserId
     , getIdeaStats
@@ -64,7 +64,7 @@ instance Page PageUserProfileCreatedIdeas where
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegationTree
+        PageUserProfileDelegatedVotes CapCtx UserView DelegateeLists
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
@@ -293,7 +293,7 @@ delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
     equery $ PageUserProfileDelegatedVotes ctx
         <$> (makeUserView <$> (maybe404 =<< findUser userId))
-        <*> userDelegationTree (ctx ^. capCtxUser . _Id) scope
+        <*> userDelegateeLists (ctx ^. capCtxUser . _Id) scope
 
 
 -- ** User Profile: Edit profile

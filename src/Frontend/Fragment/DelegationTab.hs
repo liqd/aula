@@ -10,13 +10,13 @@ where
 
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
-    ( DelegationTree(..)
+    ( DelegateeLists(..)
     )
 import qualified Frontend.Path as U
 
 
-renderDelegations :: forall m. Monad m => Bool -> DelegationTree -> HtmlT m ()
-renderDelegations showTotal (DelegationTree delegations) = do
+renderDelegations :: forall m. Monad m => Bool -> DelegateeLists -> HtmlT m ()
+renderDelegations showTotal (DelegateeLists delegations) = do
     when showTotal $ h2_ ("Insgesamt " <> total ^. showed . html)
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where

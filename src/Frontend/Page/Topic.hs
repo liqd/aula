@@ -39,8 +39,8 @@ import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import Persistent
-    ( DelegationTree(..)
-    , topicDelegationTree
+    ( DelegateeLists(..)
+    , topicDelegateeLists
     , findIdeasByTopic
     , findIdeasByTopicId
     , findTopicsBySpace
@@ -89,7 +89,7 @@ data ViewTopic
     { _vtNow         :: Timestamp
     , _vtCtx         :: CapCtx
     , _vtTopic       :: Topic
-    , _vtDelegations :: DelegationTree
+    , _vtDelegations :: DelegateeLists
     }
   deriving (Eq, Show, Read)
 
@@ -403,7 +403,7 @@ viewTopic tab topicId = do
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
-                    <$> topicDelegationTree topicId
+                    <$> topicDelegateeLists topicId
             TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab

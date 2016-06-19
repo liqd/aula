@@ -212,27 +212,31 @@ findDelegatees uid scope = do
     >>= mapM (findUser . view delegationFrom)
     >>= pure . catMaybes
 
--- Represents two step long delegation paths from a user.
-newtype DelegationTree = DelegationTree [(User, [User])]
+
+-- | Some delegates and their direct delegatees.  Used in delegation tabs both in topic and in user
+-- profile (see 'topicDelegateeLists', 'userDelegateeLists', resp.).  In topic, it contains all
+-- delegates with their direct delegatees in the topic's 'DScope'; in the user profile, it contains
+-- all direct delegatees of the user and *their* direct delegatees.
+newtype DelegateeLists = DelegateeLists [(User, [User])]
   deriving (Eq, Show, Read)
 
 -- | Delegation tree for the given user and scope.
 -- The first level contains all the delegatees of the given user
-userDelegationTree :: AUID User -> DScope -> EQuery DelegationTree
-userDelegationTree uid scope = do
+userDelegateeLists :: AUID User -> DScope -> EQuery DelegateeLists
+userDelegateeLists uid scope = do
     firstLevelDelegatees <- findDelegatees uid scope
-    DelegationTree
+    DelegateeLists
         <$> forM firstLevelDelegatees
                 (\user -> (,) user <$> findDelegatees (user ^. _Id) scope)
 
 -- | Delegation tree for the given scope, the first level contains
 -- all the users who can vote in the given topic.
-topicDelegationTree :: AUID Topic -> EQuery DelegationTree
-topicDelegationTree topicId = do
+topicDelegateeLists :: AUID Topic -> EQuery DelegateeLists
+topicDelegateeLists topicId = do
     let scope = DScopeTopicId topicId
     topic <- maybe404 =<< findTopic topicId
     voters <- getVotersForSpace (topic ^. topicIdeaSpace)
-    DelegationTree <$> forM voters (\user ->
+    DelegateeLists <$> forM voters (\user ->
                             (,) user <$> findDelegatees (user ^. _Id) scope)
 
 getVote :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaVoteValue))
