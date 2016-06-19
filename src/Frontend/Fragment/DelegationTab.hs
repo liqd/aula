@@ -23,14 +23,14 @@ renderDelegations showTotal (DelegateeLists delegations) = do
     total = sum $ map ((1 +) . length . snd) delegations
 
     renderLi :: (User, [User]) -> HtmlT m ()
-    renderLi (delegatee, secondDelegatees) = do
+    renderLi (delegate, delegatees) = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
                 div_ [class_ "small-avatar-list-image"] $ do
                     nil -- FIXME Make a real image a child here (avatarImgFromHasMeta)
             div_ [class_ "col-11-12"] $ do
-                h3_ $ a_ [href_ $ U.viewUserProfile delegatee] (delegatee ^. userLogin . unUserLogin  . html)
+                h3_ $ a_ [href_ $ U.viewUserProfile delegate] (delegate ^. userLogin . unUserLogin  . html)
                 p_ $ do
-                    toHtml $ show (length secondDelegatees) <> " Stimmen von "
-                    strong_ . forM_ secondDelegatees $ \delegatee' ->
-                        a_ [href_ $ U.viewUserProfile delegatee'] (delegatee' ^. userLogin . unUserLogin  . html)
+                    toHtml $ show (length delegatees) <> " Stimmen von "
+                    strong_ . forM_ delegatees $ \delegatee -> do
+                        a_ [href_ $ U.viewUserProfile delegatee] (delegatee ^. userLogin . unUserLogin  . html)
