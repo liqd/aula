@@ -46,6 +46,7 @@ module Frontend.Core
     , formPageHandler, formPageHandlerWithMsg
     , formPageHandlerCalcMsg, formPageHandlerCalcMsgM
     , form
+    , cancelButton
 
       -- * frames
     , Frame(..), frameBody, frameUser, frameMessages
@@ -527,6 +528,9 @@ form formHandler = getH :<|> postH
     processor1 = makeForm
     processor2 page result =
         (redirectOf page &&& formMessage page result) <$> processor result
+
+cancelButton :: (FormPage p , () ~ FormPageResult p, Monad m) => p -> HtmlT m ()
+cancelButton p = a_ [class_ "btn", href_ $ redirectOf p ()] "Abbrechen"
 
 
 -- * frame creation

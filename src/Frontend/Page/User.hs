@@ -75,11 +75,8 @@ data EditUserProfile = EditUserProfile CapCtx User
   deriving (Eq, Show, Read)
 
 instance Page EditUserProfile where
-    -- Can the admin edit any profile through that endpoint?
-    isAuthorized = authNeedPage $ \_ (EditUserProfile ctx u) ->
-        if isOwnProfile ctx u
-            then accessGranted
-            else accessDenied Nothing
+    isAuthorized = authNeedPage $ \_ (EditUserProfile ctx _u) ->
+        authNeedCaps' [CanEditUser] ctx
 
 -- | 8.X Report user profile
 data ReportUserProfile = ReportUserProfile User
@@ -244,11 +241,14 @@ createdIdeas userId = do
                         SchoolScope      -> True
                         ClassesScope cls -> c `Set.member` cls
     equery (do
-        user  <- makeUserView <$> (maybe404 =<< findUser userId)
+        user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
               <$> (mapM getIdeaStats =<< filter visibleByCurrentUser <$> findIdeasByUserId userId)
-        pure $ PageUserProfileCreatedIdeas ctx user ideas)
+        pure $ PageUserProfileCreatedIdeas
+            (set capCtxUserProfile (Just user) ctx)
+            (makeUserView user)
+            ideas)
 
 
 -- ** User Profile: Delegated Votes
@@ -291,9 +291,12 @@ delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> DScope -> m PageUserProfileDelegatedVotes
 delegatedVotes userId scope = do
     ctx <- currentUserCapCtx
-    equery $ PageUserProfileDelegatedVotes ctx
-        <$> (makeUserView <$> (maybe404 =<< findUser userId))
-        <*> userDelegateeLists (ctx ^. capCtxUser . _Id) scope
+    equery $ do
+        user <- maybe404 =<< findUser userId
+        PageUserProfileDelegatedVotes
+            (set capCtxUserProfile (Just user) ctx)
+            (makeUserView user)
+            <$> userDelegateeLists (ctx ^. capCtxUser . _Id) scope
 
 
 -- ** User Profile: Edit profile
@@ -324,10 +327,14 @@ instance FormPage EditUserProfile where
                     inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Änderungen speichern"
+                    cancelButton p
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
-    (EditUserProfile <$> currentUserCapCtx <*> mquery (findUser uid))
+    (do user <- mquery (findUser uid)
+        ctx  <- set capCtxUserProfile (Just user) <$> currentUserCapCtx
+        pure $ EditUserProfile ctx user
+    )
     (\up -> do
         case up ^. profileAvatar of
             Nothing ->

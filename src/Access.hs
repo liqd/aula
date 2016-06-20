@@ -19,7 +19,8 @@
 module Access
     ( -- * capabilities
       Capability(..)
-    , CapCtx(..), capCtxUser, capCtxSpace, capCtxIdea, capCtxPhase, capCtxComment
+    , CapCtx(..)
+    , capCtxUser, capCtxSpace, capCtxIdea, capCtxPhase, capCtxComment, capCtxUserProfile
     , capabilities
 
       -- * types for access control
@@ -112,11 +113,12 @@ data Capability
 instance SOP.Generic Capability
 
 data CapCtx = CapCtx
-    { _capCtxUser    :: User
-    , _capCtxSpace   :: Maybe IdeaSpace
-    , _capCtxPhase   :: Maybe Phase
-    , _capCtxIdea    :: Maybe Idea
-    , _capCtxComment :: Maybe Comment
+    { _capCtxUser        :: User
+    , _capCtxSpace       :: Maybe IdeaSpace
+    , _capCtxPhase       :: Maybe Phase
+    , _capCtxIdea        :: Maybe Idea
+    , _capCtxComment     :: Maybe Comment
+    , _capCtxUserProfile :: Maybe User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -135,14 +137,19 @@ checkSpace (Just (ClassSpace c)) (ClassesScope cls) = c `Set.member` cls
 -- * When the context is the whole school, then no restrictions.
 checkSpace _ _ = True
 
+isOwnProfilePred :: User -> User -> Bool
+isOwnProfilePred currentUser otherUser =
+    currentUser ^. _Id == otherUser ^. _Id
+
 capabilities :: CapCtx -> [Capability]
-capabilities (CapCtx u ms mp mi mc)
+capabilities (CapCtx u ms mp mi mc mup)
     | not . checkSpace ms $ rs ^. each . roleScope = []
     | otherwise = mconcat . mconcat $
     [ [ userCapabilities r                   | r <- rs ]
     , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
     , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
     , [ topicCapabilities p r                | r <- rs, p <- l mp ]
+    , [ [CanEditUser]                        | up <- l mup, isOwnProfilePred u up ]
     ]
   where
     rs = u ^.. userRoles
@@ -447,7 +454,7 @@ needCap cap = authNeedCaps [cap] needCapCtx
 -- * misc
 
 isOwnProfile :: CapCtx -> User -> Bool
-isOwnProfile ctx user = ctx ^. capCtxUser . _Id == user ^. _Id
+isOwnProfile ctx = isOwnProfilePred (ctx ^. capCtxUser)
 
 haveCommonSchoolClass :: CapCtx -> User -> Bool
 haveCommonSchoolClass ctx = not . Set.null . commonSchoolClasses (ctx ^. capCtxUser)

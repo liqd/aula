@@ -529,7 +529,7 @@ instance FormPage MoveIdea where
             " verschoben werden?"
         DF.inputSelect "topic-to-move" v
         DF.inputSubmit "Verschieben"
-        a_ [class_ "btn", href_ $ redirectOf mi ()] "Zurück"
+        cancelButton mi
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
