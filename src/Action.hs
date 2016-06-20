@@ -966,11 +966,11 @@ currentUserCapCtx :: (ActionPersist m, ActionUserHandler m) => m CapCtx
 currentUserCapCtx = do
     user <- currentUser
     pure CapCtx
-        { _capCtxUser    = user
-        , _capCtxSpace   = Nothing
-        , _capCtxPhase   = Nothing
-        , _capCtxIdea    = Nothing
-        , _capCtxComment = Nothing
+        { _capCtxUser        = user
+        , _capCtxSpace       = Nothing
+        , _capCtxPhase       = Nothing
+        , _capCtxIdea        = Nothing
+        , _capCtxComment     = Nothing
         , _capCtxUserProfile = Nothing
         }
 
