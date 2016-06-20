@@ -216,24 +216,21 @@ delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m (
 delegationButtons (view capCtxUser -> delegatee)
                   delegate
                   (delegatedDScopes delegatee -> dscopes) = do
+    let but = postButton_ [class_ "btn-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
         if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
             then do
-                postButton_ [class_ "btn-cta"]
-                    (U.withdrawDelegationOnClassSpace delegate clss)
+                but (U.withdrawDelegationOnClassSpace delegate clss)
                     ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
-                postButton_ [class_ "btn-cta"]
-                    (U.delegateVoteOnClassSpace delegate clss)
+                but (U.delegateVoteOnClassSpace delegate clss)
                     ("Für Klasse " <> uilabel clss <> " beauftragen")
     if DScopeIdeaSpace SchoolSpace `elem` dscopes
         then do
-            postButton_ [class_ "btn-cta"]
-                (U.withdrawDelegationOnSchoolSpace delegate)
+            but (U.withdrawDelegationOnSchoolSpace delegate)
                 "Schulweite beauftragung entziehen"
         else do
-            postButton_ [class_ "btn-cta"]
-                (U.delegateVoteOnSchoolSpace delegate)
+            but (U.delegateVoteOnSchoolSpace delegate)
                 "Schulweit beauftragen"
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
