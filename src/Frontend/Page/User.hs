@@ -28,8 +28,8 @@ import Persistent.Api
     , SetUserProfile(SetUserProfile)
     )
 import Persistent
-    ( DelegateeLists(..)
-    , userDelegateeLists
+    ( DelegateeListsMap(..)
+    , userDelegateeListsMap
     , findUser
     , findIdeasByUserId
     , getIdeaStats
@@ -57,7 +57,8 @@ instance Page PageUserSettings where
             else accessDenied Nothing
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas DelegateeLists
+data PageUserProfileCreatedIdeas =
+        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas DelegateeListsMap
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
@@ -65,7 +66,7 @@ instance Page PageUserProfileCreatedIdeas where
 
 -- | 8.2 User profile: Delegated votes
 data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegateeLists
+        PageUserProfileDelegatedVotes CapCtx UserView DelegateeListsMap
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileDelegatedVotes where
@@ -178,7 +179,7 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
-userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, DelegateeLists) -> HtmlT m ()
+userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, DelegateeListsMap) -> HtmlT m ()
 userHeaderDiv _ (Left user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -252,12 +253,12 @@ createdIdeas userId = do
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
               <$> (mapM getIdeaStats =<< filter visibleByCurrentUser <$> findIdeasByUserId userId)
+        delegatees <- userDelegateeListsMap (ctx ^. capCtxUser . _Id)
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)
             (makeUserView user)
             ideas
-            (DelegateeLists []))  -- TODO: erm...  which scopes?  we need "school" plus "class" for
-                                  -- all shared classes.
+            delegatees)
 
 
 -- ** User Profile: Delegated Votes
@@ -298,14 +299,14 @@ delegatedVotesClass userId = do
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> DScope -> m PageUserProfileDelegatedVotes
-delegatedVotes userId scope = do
+delegatedVotes userId _scope = do  -- TODO: about dropping _scope on the floor here, see #682.  see also: userDelegateeListsMap
     ctx <- currentUserCapCtx
     equery $ do
         user <- maybe404 =<< findUser userId
         PageUserProfileDelegatedVotes
             (setProfileContext user ctx)
             (makeUserView user)
-            <$> userDelegateeLists (ctx ^. capCtxUser . _Id) scope
+            <$> userDelegateeListsMap (ctx ^. capCtxUser . _Id)
 
 
 -- ** User Profile: Edit profile

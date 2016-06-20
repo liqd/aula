@@ -270,6 +270,10 @@ instance Arbitrary DelegateeLists where
     arbitrary = DelegateeLists <$> arb
     shrink (DelegateeLists x) = DelegateeLists <$> shr x
 
+instance Arbitrary DelegateeListsMap where
+    arbitrary = DelegateeListsMap <$> arb
+    shrink (DelegateeListsMap x) = DelegateeListsMap <$> shr x
+
 instance Arbitrary PageUserProfileDelegatedVotes where
     arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
     shrink (PageUserProfileDelegatedVotes x y z) =

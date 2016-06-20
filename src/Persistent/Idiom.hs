@@ -5,6 +5,7 @@
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TupleSections       #-}
 {-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
@@ -207,7 +208,6 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 
 -- * voting
 
-
 -- | Find the delegatees of the given user for the given scope
 findDelegatees :: AUID User -> DScope -> EQuery [User]
 findDelegatees uid scope = do
@@ -220,7 +220,10 @@ findDelegatees uid scope = do
 -- profile (see 'topicDelegateeLists', 'userDelegateeLists', resp.).  In topic, it contains all
 -- delegates with their direct delegatees in the topic's 'DScope'; in the user profile, it contains
 -- all direct delegatees of the user and *their* direct delegatees.
-newtype DelegateeLists = DelegateeLists [(User, [User])]
+newtype DelegateeLists = DelegateeLists { unDelegateeLists :: [(User, [User])] }
+  deriving (Eq, Show, Read)
+
+newtype DelegateeListsMap = DelegateeListsMap { unDelegateeListsMap :: [(DScope, DelegateeLists)] }
   deriving (Eq, Show, Read)
 
 -- | 'DelegationLists' should be ordered by power and, if first argument is 'True', omit delegates
@@ -230,6 +233,14 @@ delegateeLists omitEmpty = DelegateeLists . s . f
   where
     s = sortBy (flip compare `on` (length . snd))
     f = if omitEmpty then filter (not . null . snd) else id
+
+-- | Call 'userDelegateeLists' for all 'IdeaSpace'-level 'DScopes' the user is involved with.
+userDelegateeListsMap :: AUID User -> EQuery DelegateeListsMap
+userDelegateeListsMap uid = do
+    user <- maybe404 =<< findUser uid
+    let spaces = SchoolSpace : (ClassSpace <$> (user ^.. userSchoolClasses))
+        runScope scope = (scope,) <$> userDelegateeLists uid scope
+    DelegateeListsMap <$> forM (DScopeIdeaSpace <$> spaces) runScope
 
 -- | Delegation tree for the given user and scope.
 -- The first level contains all the delegatees of the given user
