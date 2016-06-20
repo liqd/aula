@@ -65,12 +65,13 @@ categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation ->
 categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
     p_ $ b_ "Filtere nach Kategorie"
     br_ []
-    ul_ . for_ [minBound..] $ \cat -> do
-        li_ [ class_ . ST.unwords $
-                ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
-            ] .
-            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
-                uilabel cat
+    ul_ $ do
+        for_ [minBound..] $ \cat -> do
+            li_ [ class_ . ST.unwords $
+                    ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
+                ] .
+                a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
+                    uilabel cat
 
 
 -- * local types
