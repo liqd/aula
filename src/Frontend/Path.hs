@@ -25,7 +25,7 @@ module Frontend.Path
     ( HasPath(..)
     , Top(..)
     , AllowedMethod(..)
-    , Main
+    , Main(Broken)
     , Space
     , IdeaMode
     , CommentMode

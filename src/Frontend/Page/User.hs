@@ -5,6 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -29,6 +30,7 @@ import Persistent.Api
     )
 import Persistent
     ( DelegateeListsMap(..)
+    , DelegateeLists(..)
     , userDelegateeListsMap
     , findUser
     , findIdeasByUserId
@@ -208,18 +210,38 @@ userHeaderDiv ctx (Right (user, delegations)) =
 -- philosophical, but it doesn't really matter: users can delegate to themselves
 -- just like to anybody else, and the graph will look different if they do.
 --
--- TODO: use delegations do indicate which scopes
--- have been delegated already.  and to offer the
--- "withdraw" button.
+-- TODO: integrate list of class memberships with the delegation buttons.  buttons need to be much
+-- smaller in the end.
 delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
-delegationButtons ctx user _delegations = do
-    forM_ (commonSchoolClasses (ctx ^. capCtxUser) user) $ \clss -> do
-        postButton_ [class_ "btn-cta"]
-            (U.delegateVoteOnClassSpace user clss)
-            ("Für Klasse " <> uilabel clss <> " beauftragen")
-    postButton_ [class_ "btn-cta"]
-        (U.delegateVoteOnSchoolSpace user)
-            "Schulweit beauftragen"
+delegationButtons (view capCtxUser -> delegatee)
+                  delegate
+                  (delegatedDScopes delegatee -> dscopes) = do
+    forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
+        if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
+            then do
+                postButton_ [class_ "btn-cta"]
+                    U.Broken  -- TODO
+                    ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
+            else do
+                postButton_ [class_ "btn-cta"]
+                    (U.delegateVoteOnClassSpace delegate clss)
+                    ("Für Klasse " <> uilabel clss <> " beauftragen")
+    if DScopeIdeaSpace SchoolSpace `elem` dscopes
+        then do
+            postButton_ [class_ "btn-cta"]
+                U.Broken
+                "Schulweite beauftragung entziehen"
+        else do
+            postButton_ [class_ "btn-cta"]
+                (U.delegateVoteOnSchoolSpace delegate)
+                "Schulweit beauftragen"
+
+-- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
+delegatedDScopes :: User -> DelegateeListsMap -> [DScope]
+delegatedDScopes delegatee (DelegateeListsMap xs) = fst <$> filter pr xs
+  where
+    pr :: (DScope, DelegateeLists) -> Bool
+    pr (_, DelegateeLists ys) = delegatee `elem` (fst <$> ys)
 
 
 -- ** User Profile: Created Ideas

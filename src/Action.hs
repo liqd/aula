@@ -563,7 +563,7 @@ delegateVoteOnSchoolSpace = delegateTo (DScopeIdeaSpace SchoolSpace)
 
 -- | Delegates the current user's vote for his/her class to the given user.
 delegateVoteOnClassSpace :: ActionM m => SchoolClass -> AUID User -> m ()
-delegateVoteOnClassSpace cl delegateId = delegateTo (DScopeIdeaSpace (ClassSpace cl)) delegateId
+delegateVoteOnClassSpace cl = delegateTo (DScopeIdeaSpace (ClassSpace cl))
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: CommentKey -> Create_ CommentVote
