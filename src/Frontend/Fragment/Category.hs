@@ -43,19 +43,14 @@ formPageSelectCategory v = do
             "Kann deine Idee einer der folgenden Kategorieren zugeordnet werden?"
         DF.inputHidden "idea-category" v
         div_ [class_ "icon-list m-inline category-image-select"] $ do
-            ul_ $ toHtml `mapM_` [(minBound :: CategoryButton)..]
-
--- | only for selecting a category, not for filtering.  for the latter, see 'categoryFilterButtons'
--- below.  (it's a newtype so deriving is easier.)
-newtype CategoryButton = CategoryButton Category
-  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+            ul_ $ toHtml `mapM_` [(minBound :: CategorySelectButton)..]
 
 newtype CategoryLabel = CategoryLabel Category
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 instance ToHtml CategoryLabel where
     toHtmlRaw = toHtml
-    toHtml (CategoryLabel cat) = toHtml $ CategoryButton cat
+    toHtml (CategoryLabel cat) = toHtml $ CategorySelectButton cat
         -- FIXME: something without the `li_` elem?
 
 newtype CategoryMiniLabel = CategoryMiniLabel Category
@@ -66,21 +61,35 @@ instance ToHtml CategoryMiniLabel where
     toHtml (CategoryMiniLabel cat) =
         li_ [class_ $ "icon-" <> toUrlPiece cat] . span_ $ uilabel cat
 
--- | The "m-active" class is managed in js.  See `static/js/custom.js`.
-instance ToHtml CategoryButton where
-    toHtmlRaw = toHtml
-    toHtml (CategoryButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
-        span_ [ class_ "icon-list-button"
-              , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
-              ] $ uilabel cat
-
 categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
 categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
     p_ $ b_ "Filtere nach Kategorie"
     br_ []
-    ul_ . for_ [minBound..] $ \cat -> do
+    ul_ $ do
+        for_ [minBound..] $ \cat -> do
+            li_ [ class_ . ST.unwords $
+                    ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
+                ] .
+                a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
+                    uilabel cat
         li_ [ class_ . ST.unwords $
-                ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
+                "icon-all-cats" : [ "m-active" | q ^. ideasQueryF == AllIdeas ]
             ] .
-            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
-                uilabel cat
+            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF .~ AllIdeas)] $
+                "Alle Kategorien"
+
+
+-- * local types
+
+-- | only for selecting a category, not for filtering.  for the latter, see 'categoryFilterButtons'
+-- below.  (it's a newtype so deriving is easier.)
+newtype CategorySelectButton = CategorySelectButton Category
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
+-- | The "m-active" class is managed in js.  See `static/js/custom.js`.
+instance ToHtml CategorySelectButton where
+    toHtmlRaw = toHtml
+    toHtml (CategorySelectButton cat) = li_ [class_ $ "icon-" <> toUrlPiece cat] .
+        span_ [ class_ "icon-list-button"
+              , id_ $ "select-.idea-category." <> (cs . show $ fromEnum cat)
+              ] $ uilabel cat
