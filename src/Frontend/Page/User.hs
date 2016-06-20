@@ -213,13 +213,13 @@ userHeaderDiv ctx (Right (user, delegations)) =
 -- "withdraw" button.
 delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
 delegationButtons ctx user _delegations = do
-                forM_ (commonSchoolClasses (ctx ^. capCtxUser) user) $ \clss -> do
-                    postButton_ [class_ "btn-cta"]
-                        (U.delegateVoteOnClassSpace user clss)
-                        ("Für Klasse " <> uilabel clss <> " beauftragen")
-                postButton_ [class_ "btn-cta"]
-                    (U.delegateVoteOnSchoolSpace user)
-                        "Schulweit beauftragen"
+    forM_ (commonSchoolClasses (ctx ^. capCtxUser) user) $ \clss -> do
+        postButton_ [class_ "btn-cta"]
+            (U.delegateVoteOnClassSpace user clss)
+            ("Für Klasse " <> uilabel clss <> " beauftragen")
+    postButton_ [class_ "btn-cta"]
+        (U.delegateVoteOnSchoolSpace user)
+            "Schulweit beauftragen"
 
 
 -- ** User Profile: Created Ideas
