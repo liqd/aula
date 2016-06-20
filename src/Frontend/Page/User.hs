@@ -185,9 +185,7 @@ userHeaderDiv _ (Left user) =
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
         p_ "Dieser Nutzer ist gelöscht"
 
-userHeaderDiv ctx (Right (user, _delegations)) =  -- TODO: use delegations do indicate which scopes
-                                                  -- have been delegated already.  and to offer the
-                                                  -- "withdraw" button.
+userHeaderDiv ctx (Right (user, delegations)) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -200,10 +198,21 @@ userHeaderDiv ctx (Right (user, _delegations)) =  -- TODO: use delegations do in
 
         div_ [class_ "heroic-btn-group"] $ do
             let caps = capabilities ctx
-            -- NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
-            -- philosophical, but it doesn't really matter: users can delegate to themselves
-            -- just like to anybody else, and the graph will look different if they do.
             when (CanDelegate `elem` caps) $ do
+                delegationButtons ctx user delegations
+            btn (U.reportUser user) "melden"
+            when (CanEditUser `elem` caps) $ do
+                editProfileBtn
+
+-- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
+-- philosophical, but it doesn't really matter: users can delegate to themselves
+-- just like to anybody else, and the graph will look different if they do.
+--
+-- TODO: use delegations do indicate which scopes
+-- have been delegated already.  and to offer the
+-- "withdraw" button.
+delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
+delegationButtons ctx user _delegations = do
                 forM_ (commonSchoolClasses (ctx ^. capCtxUser) user) $ \clss -> do
                     postButton_ [class_ "btn-cta"]
                         (U.delegateVoteOnClassSpace user clss)
@@ -211,9 +220,6 @@ userHeaderDiv ctx (Right (user, _delegations)) =  -- TODO: use delegations do in
                 postButton_ [class_ "btn-cta"]
                     (U.delegateVoteOnSchoolSpace user)
                         "Schulweit beauftragen"
-            btn (U.reportUser user) "melden"
-            when (CanEditUser `elem` caps) $ do
-                editProfileBtn
 
 
 -- ** User Profile: Created Ideas
