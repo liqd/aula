@@ -551,15 +551,15 @@ voteOnIdea ideaId voteVal = do
                             (ProtoIdeaVote voteVal (voter ^. _Id))
 
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
-delegateTo scope t = do
+delegateTo scope delegate = do
     user <- currentUser
-    addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) t)
-    eventLogUserDelegates scope t
+    addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) delegate)
+    eventLogUserDelegates scope delegate
 
 withdrawDelegationTo :: ActionM m => DScope -> AUID User -> m ()
 withdrawDelegationTo scope delegate = do
     update $ WithdrawDelegation delegate scope
-    -- eventLogUserDelegates scope t  -- TODO: we need the inverse event here.
+    eventLogUserWithdrawsDelegation scope delegate
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: CommentKey -> Create_ CommentVote
@@ -870,6 +870,20 @@ eventLogUserDelegates scope delegateId = do
                                   <$> mquery (findIdea iid)
     eventLog ispace (delegatee ^. _Key) $ EventLogUserDelegates scope (delegate ^. _Key)
 
+eventLogUserWithdrawsDelegation ::
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => DScope -> AUID User -> m ()
+eventLogUserWithdrawsDelegation scope delegateId = do
+    delegate <- mquery $ findUser delegateId
+    delegatee <- currentUser
+    ispace <- case scope of
+        DScopeGlobal           -> pure SchoolSpace
+        DScopeIdeaSpace ispace -> pure ispace
+        DScopeTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
+        DScopeIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
+                                  <$> mquery (findIdea iid)
+    eventLog ispace (delegatee ^. _Key) $ EventLogUserWithdrawsDelegation scope (delegate ^. _Key)
+
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
     eventLog (topic ^. topicIdeaSpace) (topic ^. createdBy) $
@@ -922,6 +936,8 @@ instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
                   pure $ EventLogUserVotesOnComment i' c' mc' ud
         EventLogUserDelegates s u
             -> EventLogUserDelegates s <$> warmUp' u
+        EventLogUserWithdrawsDelegation s u
+            -> EventLogUserWithdrawsDelegation s <$> warmUp' u
         EventLogTopicNewPhase t p1 p2
             -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2
         EventLogIdeaNewLocation i mt1 mt2
