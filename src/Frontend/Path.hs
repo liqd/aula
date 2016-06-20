@@ -526,13 +526,13 @@ data UserMode (r :: AllowedMethod) =
 instance SOP.Generic (UserMode r)
 
 user :: UserMode r -> UriPath -> UriPath
-user UserIdeas                     path = path </> "ideas"
-user UserGlobalDelegations         path = path </> "delegations" </> "global"
-user UserClassDelegations          path = path </> "delegations" </> "class"
-user UserDelegateVoteOnSchoolSpace path = path </> "delegate" </> "school"    -- TODO: re-align
+user UserIdeas                         path = path </> "ideas"
+user UserGlobalDelegations             path = path </> "delegations" </> "global"
+user UserClassDelegations              path = path </> "delegations" </> "class"
+user UserDelegateVoteOnSchoolSpace     path = path </> "delegate" </> "school"
 user (UserDelegateVoteOnClassSpace c)  path = path </> "delegate" </> "class" </> uriPart c
-user UserEdit                      path = path </> "edit"
-user ReportUser                    path = path </> "report"
+user UserEdit                          path = path </> "edit"
+user ReportUser                        path = path </> "report"
 
 delegateVoteOnSchoolSpace :: User -> Main 'AllowPost
 delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
@@ -722,9 +722,9 @@ isPostOnly = \case
           _                           -> False
     UserProf _ m ->
       case m of
-          UserDelegateVoteOnSchoolSpace -> True
-          (UserDelegateVoteOnClassSpace _) -> True  -- TODO: re-align
-          _                             -> False
+          UserDelegateVoteOnSchoolSpace    -> True
+          (UserDelegateVoteOnClassSpace _) -> True
+          _                                -> False
     -- FIXME[#312] Logout -> True
     _ -> False
 

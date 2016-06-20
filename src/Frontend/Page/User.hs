@@ -200,7 +200,6 @@ userHeaderDiv ctx (ActiveUser user) =
             -- NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
             -- philosophical, but it doesn't really matter: users can delegate to themselves
             -- just like to anybody else, and the graph will look different if they do.
-            -- FIXME: Styling
             when (CanDelegate `elem` caps) $ do
                 forM_ (commonSchoolClasses (ctx ^. capCtxUser) user) $ \clss -> do
                     postButton_ [class_ "btn-cta"]
