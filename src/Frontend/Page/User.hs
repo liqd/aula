@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
@@ -247,7 +248,7 @@ createdIdeas userId = do
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
               <$> (mapM getIdeaStats =<< filter visibleByCurrentUser <$> findIdeasByUserId userId)
         pure $ PageUserProfileCreatedIdeas
-            (set capCtxUserProfile (Just user) ctx)
+            (setProfileContext user ctx)
             (makeUserView user)
             ideas)
 
@@ -295,7 +296,7 @@ delegatedVotes userId scope = do
     equery $ do
         user <- maybe404 =<< findUser userId
         PageUserProfileDelegatedVotes
-            (set capCtxUserProfile (Just user) ctx)
+            (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegateeLists (ctx ^. capCtxUser . _Id) scope
 
@@ -316,7 +317,7 @@ instance FormPage EditUserProfile where
     formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
             h1_ [class_ "main-heading"] .
-                toHtml $ if isOwnProfile ctx user
+                toHtml $ if isOwnProfile (ctx ^. capCtxUser) user
                     then "Eigenes Nutzerprofil bearbeiten"
                     else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
             form $ do
@@ -333,7 +334,7 @@ instance FormPage EditUserProfile where
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
     (do user <- mquery (findUser uid)
-        ctx  <- set capCtxUserProfile (Just user) <$> currentUserCapCtx
+        ctx  <- setProfileContext user <$> currentUserCapCtx
         pure $ EditUserProfile ctx user
     )
     (\up -> do
@@ -385,3 +386,11 @@ reportUser userId = formPageHandlerWithMsg
     (ReportUserProfile <$> mquery (findUser userId))
     (Action.reportUser userId)
     "Das Nutzerprofil wurde der Moderation gemeldet."
+
+
+-- * misc
+
+setProfileContext :: User -> CapCtx -> CapCtx
+setProfileContext user =
+    set capCtxUserProfile (Just user) .
+    set capCtxDelegateTo  (Just user)
