@@ -349,7 +349,7 @@ type AulaUser =
   :<|> "delegate"    :> "school" :> PostH DelegateTo
   :<|> "delegate"    :> "class"  :> Capture "schoolclass" SchoolClass :> PostH DelegateTo
 
-aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
+aulaUser :: forall m. ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
        runHandler (Page.createdIdeas    userId)
   :<|> runHandler (Page.delegatedVotesGlobal userId)
@@ -359,8 +359,10 @@ aulaUser userId =
   :<|> postDelegateTo (Action.delegateTo (DScopeIdeaSpace SchoolSpace))
   :<|> postDelegateTo . Action.delegateTo . DScopeIdeaSpace . ClassSpace
   where
-    delegateTo = DelegateTo <$> Action.currentUserCapCtx <*> Action.mquery (findUser userId)
+    postDelegateTo :: (AUID User -> m ()) -> m (PostResult DelegateTo ())
     postDelegateTo a = runPostHandler delegateTo $ a userId
+      where
+        delegateTo = DelegateTo <$> Action.currentUserCapCtx <*> Action.mquery (findUser userId)
 
 type AulaAdmin =
        -- durations
