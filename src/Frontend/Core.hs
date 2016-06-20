@@ -445,8 +445,7 @@ instance Page DelegateTo where
     isAuthorized = authNeedCaps [CanDelegate] delegateToCapCtx
 
 instance Page WithdrawDelegationFrom where
-    isAuthorized = authNeedPage $ \_ (WithdrawDelegationFrom ctx) ->
-        authNeedCaps' [CanDelegate] ctx
+    isAuthorized = authNeedCaps [CanDelegate] withdrawDelegationFromCapCtx
 
 formPageHandler
     :: Applicative m
