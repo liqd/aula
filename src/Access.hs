@@ -20,7 +20,9 @@ module Access
     ( -- * capabilities
       Capability(..)
     , CapCtx(..)
-    , capCtxUser, capCtxSpace, capCtxIdea, capCtxPhase, capCtxComment, capCtxUserProfile
+    , capCtxUser, capCtxSpace, capCtxIdea
+    , capCtxPhase, capCtxComment, capCtxUserProfile
+    , capCtxDelegateTo
     , capabilities
 
       -- * types for access control
@@ -42,7 +44,6 @@ module Access
     , publicPage
     , adminPage
     , userPage
-    , authNeedCaps'
 
       -- * policy makers
     , rolePage
@@ -50,19 +51,12 @@ module Access
     , authNeedCaps
     , authNeedCapsAnyOf
     , needCap
-
-      -- * misc
-    , isOwnProfile
-    , haveCommonSchoolClass
-    , commonSchoolClasses
     )
     where
 
 import Control.Lens
 import Data.Maybe
 import Data.Monoid
-import Data.Set (Set)
-import Data.Set.Lens (setOf)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 
@@ -120,6 +114,7 @@ data CapCtx = CapCtx
     , _capCtxIdea        :: Maybe Idea
     , _capCtxComment     :: Maybe Comment
     , _capCtxUserProfile :: Maybe User
+    , _capCtxDelegateTo  :: Maybe User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
@@ -138,23 +133,11 @@ checkSpace (Just (ClassSpace c)) (ClassesScope cls) = c `Set.member` cls
 -- * When the context is the whole school, then no restrictions.
 checkSpace _ _ = True
 
-isOwnProfilePred :: User -> User -> Bool
-isOwnProfilePred currentUser otherUser =
-    currentUser ^. _Id == otherUser ^. _Id
 
-capabilities :: CapCtx -> [Capability]
-capabilities (CapCtx u ms mp mi mc mup)
-    | not . checkSpace ms $ rs ^. each . roleScope = []
-    | otherwise = mconcat . mconcat $
-    [ [ userCapabilities r                   | r <- rs ]
-    , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
-    , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
-    , [ topicCapabilities p r                | r <- rs, p <- l mp ]
-    , [ [CanEditUser]                        | up <- l mup, isOwnProfilePred u up ]
-    ]
-  where
-    rs = u ^.. userRoles
-    l  = maybeToList
+-- ** misc
+
+haveCommonSchoolClass :: User -> User -> Bool
+haveCommonSchoolClass user = not . Set.null . commonSchoolClasses user
 
 -- | modify this function to determine whether the 'Admin' role is all-powerful (@isThere == True@)
 -- or can only do things that 'Admin's need to do (@isThere == False@).
@@ -162,6 +145,24 @@ thereIsAGod :: (Bounded a, Enum a) => [a] -> [a]
 thereIsAGod nope = if isThere then [minBound..] else nope
   where
     isThere = True
+
+
+-- ** capabilities
+
+capabilities :: CapCtx -> [Capability]
+capabilities (CapCtx u ms mp mi mc mup mdt)
+    | not . checkSpace ms $ rs ^. each . roleScope = []
+    | otherwise = mconcat . mconcat $
+    [ [ userCapabilities r                   | r <- rs ]
+    , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
+    , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
+    , [ topicCapabilities p r                | r <- rs, p <- l mp ]
+    , [ [CanEditUser]                        | up <- l mup, isOwnProfile u up ]
+    , [ [CanDelegate]                        | dtu <- l mdt, haveCommonSchoolClass u dtu ]
+    ]
+  where
+    rs = u ^.. userRoles
+    l  = maybeToList
 
 
 -- ** User capabilities
@@ -414,9 +415,6 @@ rolePage r (LoggedIn u _)
     | otherwise     = accessDenied . Just $ "Rolle " <> r ^. uilabeled <> " benötigt."
 rolePage _ NotLoggedIn = redirectLogin
 
-authNeedCaps' :: [Capability] -> CapCtx -> AccessResult'
-authNeedCaps' = authNeedSomeCaps' True
-
 -- | Grants access based on the required capabilities.
 -- If the needAll is
 --  * True, all the capabilities are needed from the needCaps'
@@ -464,16 +462,3 @@ makePrisms ''DelegateTo
 needCap :: {- cap :: -} Capability -> AccessCheck (NeedCap cap)
 needCap cap = authNeedCaps [cap] needCapCtx
 
-
--- * misc
-
-isOwnProfile :: CapCtx -> User -> Bool
-isOwnProfile ctx = isOwnProfilePred (ctx ^. capCtxUser)
-
-haveCommonSchoolClass :: CapCtx -> User -> Bool
-haveCommonSchoolClass ctx = not . Set.null . commonSchoolClasses (ctx ^. capCtxUser)
-
-commonSchoolClasses :: User -> User -> Set SchoolClass
-commonSchoolClasses user user' =
-    Set.intersection (setOf userSchoolClasses user)
-                     (setOf userSchoolClasses user')

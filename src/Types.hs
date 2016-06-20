@@ -27,6 +27,7 @@ module Types
 where
 
 import Control.Lens
+import Data.Set.Lens (setOf)
 import Control.Monad
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Crypto.Scrypt
@@ -34,7 +35,7 @@ import Data.Binary
 import Data.Char
 import Data.Function (on)
 import Data.List as List (sortBy, zipWith)
-import Data.Set as Set (Set, singleton, member)
+import Data.Set as Set (Set, intersection, singleton, member)
 import Data.Map as Map (Map, fromList, lookup, unions, singleton)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
@@ -1365,6 +1366,15 @@ rolesScope = folded . roleScope
 
 userRoleScope :: Fold User RoleScope
 userRoleScope = userRoles . roleScope
+
+commonSchoolClasses :: User -> User -> Set SchoolClass
+commonSchoolClasses user user' =
+    Set.intersection (setOf userSchoolClasses user)
+                     (setOf userSchoolClasses user')
+
+isOwnProfile :: User -> User -> Bool
+isOwnProfile currentUser otherUser =
+    currentUser ^. _Id == otherUser ^. _Id
 
 onActiveUser :: a -> (User -> a) -> User -> a
 onActiveUser x f u

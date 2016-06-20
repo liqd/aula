@@ -66,7 +66,6 @@ module Frontend.Core
     )
   where
 
-import Control.Applicative
 import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
@@ -443,13 +442,7 @@ instance Page NeedAdmin where isAuthorized = adminPage
 
 -- FIXME: move this to the rest of the delegation logic?  (where's that?)
 instance Page DelegateTo where
-    isAuthorized = authNeedPage $ \_ (DelegateTo ctx user) ->
-        authNeedCaps' [CanDelegate] ctx <<>>
-        if haveCommonSchoolClass ctx user
-            then accessGranted
-            else accessDenied Nothing
-      where
-        (<<>>) = liftA2 (<>)
+    isAuthorized = authNeedCaps [CanDelegate] delegateToCapCtx
 
 formPageHandler
     :: Applicative m

@@ -71,12 +71,13 @@ instance Page PageUserProfileDelegatedVotes where
     isAuthorized = userPage -- Are profiles public?
 
 -- | 8.X User profile: Editing the public profile
-data EditUserProfile = EditUserProfile CapCtx User
+data EditUserProfile = EditUserProfile { _eupCapCtx :: CapCtx, _eupUser :: User }
   deriving (Eq, Show, Read)
 
+makeLenses ''EditUserProfile
+
 instance Page EditUserProfile where
-    isAuthorized = authNeedPage $ \_ (EditUserProfile ctx _u) ->
-        authNeedCaps' [CanEditUser] ctx
+    isAuthorized = authNeedCaps [CanEditUser]  eupCapCtx
 
 -- | 8.X Report user profile
 data ReportUserProfile = ReportUserProfile User
@@ -199,7 +200,7 @@ userHeaderDiv ctx (ActiveUser user) =
             -- philosophical, but it doesn't really matter: users can delegate to themselves
             -- just like to anybody else, and the graph will look different if they do.
             -- FIXME: Styling
-            when (CanDelegate `elem` caps && haveCommonSchoolClass ctx user) $ do
+            when (CanDelegate `elem` caps) $ do
                 postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
             when (CanDelegate `elem` caps) $ do
                 postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
