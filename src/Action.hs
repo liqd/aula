@@ -61,6 +61,7 @@ module Action
     , likeIdea
     , voteOnIdea
     , delegateTo
+    , withdrawDelegationTo
     , voteIdeaComment
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
@@ -556,6 +557,11 @@ delegateTo scope t = do
     user <- currentUser
     addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) t)
     eventLogUserDelegates scope t
+
+withdrawDelegationTo :: ActionM m => DScope -> AUID User -> m ()
+withdrawDelegationTo scope delegate = do
+    update $ WithdrawDelegation delegate scope
+    -- eventLogUserDelegates scope t  -- TODO: we need the inverse event here.
 
 -- | Delegates the current user's vote to the given user at school space
 delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
