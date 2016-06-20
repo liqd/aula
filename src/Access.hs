@@ -48,6 +48,7 @@ module Access
     , rolePage
     , authNeedPage
     , authNeedCaps
+    , authNeedCapsAnyOf
     , needCap
 
       -- * misc
@@ -414,13 +415,21 @@ rolePage r (LoggedIn u _)
 rolePage _ NotLoggedIn = redirectLogin
 
 authNeedCaps' :: [Capability] -> CapCtx -> AccessResult'
-authNeedCaps' needCaps' capCtx =
+authNeedCaps' = authNeedSomeCaps' True
+
+-- | Grants access based on the required capabilities.
+-- If the needAll is
+--  * True, all the capabilities are needed from the needCaps'
+--  * False, one of the capabilities is enough.
+authNeedSomeCaps' :: Bool -> [Capability] -> CapCtx -> AccessResult'
+authNeedSomeCaps' needAll needCaps' capCtx =
     let
         needCaps = Set.fromList needCaps'
         haveCaps = Set.fromList $ capabilities capCtx
-        diffCaps = needCaps `Set.difference` haveCaps
+        merge    = if needAll then Set.difference else Set.intersection
+        mergedCaps = needCaps `merge` haveCaps
     in
-    if Set.null diffCaps
+    if (if needAll then Set.null mergedCaps else not $ Set.null mergedCaps)
         then accessGranted
         else accessDenied Nothing
             -- FIXME: log something like this:
@@ -438,7 +447,12 @@ authNeedPage k = \case
     LoggedIn u (Just p) -> k u p
 
 authNeedCaps :: [Capability] -> Getter p CapCtx -> AccessCheck p
-authNeedCaps needCaps getCapCtx = authNeedPage $ \_ p -> authNeedCaps' needCaps (p ^. getCapCtx)
+authNeedCaps needCaps getCapCtx =
+    authNeedPage $ \_ p -> authNeedSomeCaps' True needCaps (p ^. getCapCtx)
+
+authNeedCapsAnyOf :: [Capability] -> Getter p CapCtx -> AccessCheck p
+authNeedCapsAnyOf needCaps getCapCtx =
+    authNeedPage $ \_ p -> authNeedSomeCaps' False needCaps (p ^. getCapCtx)
 
 makeLenses ''NeedCap
 makePrisms ''NeedCap

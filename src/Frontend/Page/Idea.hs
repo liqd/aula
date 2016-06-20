@@ -186,7 +186,7 @@ instance SOP.Generic CreatorStatement
 makeLenses ''CreatorStatement
 
 instance Page CreatorStatement where
-    isAuthorized = authNeedCaps [CanEditCreatorStatement] csCtx
+    isAuthorized = authNeedCapsAnyOf [CanEditCreatorStatement, CanAddCreatorStatement] csCtx
 
 data ReportComment = ReportComment { _rcCtx :: CapCtx, _rcComment :: Comment }
   deriving (Eq, Show, Read, Generic)
