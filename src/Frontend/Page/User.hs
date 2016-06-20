@@ -78,7 +78,7 @@ data EditUserProfile = EditUserProfile { _eupCapCtx :: CapCtx, _eupUser :: User 
 makeLenses ''EditUserProfile
 
 instance Page EditUserProfile where
-    isAuthorized = authNeedCaps [CanEditUser]  eupCapCtx
+    isAuthorized = authNeedCaps [CanEditUser] eupCapCtx
 
 -- | 8.X Report user profile
 data ReportUserProfile = ReportUserProfile User
