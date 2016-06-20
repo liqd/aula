@@ -260,11 +260,11 @@ instance Arbitrary ReportComment where
     shrink    = gshrink
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas)
+    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas) <*> arb
       where
         repair = listItemIdeasWhatPage .~ IdeaInUserProfile
-    shrink (PageUserProfileCreatedIdeas x y z) =
-        PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z
+    shrink (PageUserProfileCreatedIdeas x y z v) =
+        PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z <*> shr v
 
 instance Arbitrary DelegateeLists where
     arbitrary = DelegateeLists <$> arb

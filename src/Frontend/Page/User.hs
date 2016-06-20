@@ -57,7 +57,7 @@ instance Page PageUserSettings where
             else accessDenied Nothing
 
 -- | 8.1 User profile: Created ideas
-data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas
+data PageUserProfileCreatedIdeas = PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas DelegateeLists
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
@@ -178,13 +178,15 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
-userHeaderDiv :: (Monad m) => CapCtx -> UserView -> HtmlT m ()
-userHeaderDiv _   (DeletedUser user) =
+userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, DelegateeLists) -> HtmlT m ()
+userHeaderDiv _ (Left user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
         p_ "Dieser Nutzer ist gelöscht"
 
-userHeaderDiv ctx (ActiveUser user) =
+userHeaderDiv ctx (Right (user, _delegations)) =  -- TODO: use delegations do indicate which scopes
+                                                  -- have been delegated already.  and to offer the
+                                                  -- "withdraw" button.
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -217,12 +219,12 @@ userHeaderDiv ctx (ActiveUser user) =
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileCreatedIdeas ctx u@(DeletedUser _user) _ideas) = semanticDiv p $ do
+    toHtml p@(PageUserProfileCreatedIdeas ctx (DeletedUser user) _ideas _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv ctx u
-    toHtml p@(PageUserProfileCreatedIdeas ctx u@(ActiveUser user) ideas) = semanticDiv p $ do
+            userHeaderDiv ctx (Left user)
+    toHtml p@(PageUserProfileCreatedIdeas ctx (ActiveUser user) ideas delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv ctx u
+            userHeaderDiv ctx (Right (user, delegations))
             -- Tab selection
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
@@ -253,19 +255,21 @@ createdIdeas userId = do
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)
             (makeUserView user)
-            ideas)
+            ideas
+            (DelegateeLists []))  -- TODO: erm...  which scopes?  we need "school" plus "class" for
+                                  -- all shared classes.
 
 
 -- ** User Profile: Delegated Votes
 
 instance ToHtml PageUserProfileDelegatedVotes where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileDelegatedVotes ctx u@(DeletedUser _user) _delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileDelegatedVotes ctx (DeletedUser user) _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv ctx u
-    toHtml p@(PageUserProfileDelegatedVotes ctx u@(ActiveUser user) delegations) = semanticDiv p $ do
+            userHeaderDiv ctx (Left user)
+    toHtml p@(PageUserProfileDelegatedVotes ctx (ActiveUser user) delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
-            userHeaderDiv ctx u
+            userHeaderDiv ctx (Right (user, delegations))
             div_ [class_ "heroic-tabs"] $ do
                 a_ [class_ "heroic-tab-item", href_ (U.viewUserProfile user)]
                     "Erstellte Ideen"
@@ -274,7 +278,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    -- School / Class select buttons: FIXME mechanics!
+                    -- School / Class select buttons: FIXME mechanics!  use widget from delegation network browser!
                     div_ [class_ "filter-toggles"] $ do
                         a_ [class_ "filter-toggle-btn", href_ (U.userGlobalDelegations user)] "Schulweit"
                         a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
