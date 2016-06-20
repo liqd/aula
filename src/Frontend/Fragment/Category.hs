@@ -72,6 +72,11 @@ categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
                 ] .
                 a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
                     uilabel cat
+        li_ [ class_ . ST.unwords $
+                "icon-all-cats" : [ "m-active" | q ^. ideasQueryF == AllIdeas ]
+            ] .
+            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF .~ AllIdeas)] $
+                "Alle Kategorien"
 
 
 -- * local types
