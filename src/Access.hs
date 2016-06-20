@@ -112,13 +112,12 @@ data Capability
 
 instance SOP.Generic Capability
 
--- TODO: Align
 data CapCtx = CapCtx
-    { _capCtxUser    :: User
-    , _capCtxSpace   :: Maybe IdeaSpace
-    , _capCtxPhase   :: Maybe Phase
-    , _capCtxIdea    :: Maybe Idea
-    , _capCtxComment :: Maybe Comment
+    { _capCtxUser        :: User
+    , _capCtxSpace       :: Maybe IdeaSpace
+    , _capCtxPhase       :: Maybe Phase
+    , _capCtxIdea        :: Maybe Idea
+    , _capCtxComment     :: Maybe Comment
     , _capCtxUserProfile :: Maybe User
     }
   deriving (Eq, Ord, Show, Read, Generic)
