@@ -23,6 +23,7 @@ module Access
     , capCtxUser, capCtxSpace, capCtxIdea
     , capCtxPhase, capCtxComment, capCtxUserProfile
     , capCtxDelegateTo
+    , userOnlyCapCtx
     , capabilities
 
       -- * types for access control
@@ -117,6 +118,9 @@ data CapCtx = CapCtx
     , _capCtxDelegateTo  :: Maybe User
     }
   deriving (Eq, Ord, Show, Read, Generic)
+
+userOnlyCapCtx :: User -> CapCtx
+userOnlyCapCtx u = CapCtx u Nothing Nothing Nothing Nothing Nothing Nothing
 
 makeLenses ''CapCtx
 makePrisms ''CapCtx

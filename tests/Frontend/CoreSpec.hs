@@ -38,7 +38,7 @@ import Frontend.Core
 import Frontend.Fragment.Comment
 import Frontend.Page
 import Frontend.Path (relPath)
-import Access (CapCtx(..))
+import Access (userOnlyCapCtx)
 import Logger (nullLog)
 import Persistent.Implementation (mkRunPersist)
 import Persistent.Idiom (ideaStatsIdea)
@@ -123,7 +123,7 @@ spec = do
     -- FIXME: test this in all forms, for all validation errors.
     describe "form validation errors" $ do
         let spc = IdeaLocationSpace SchoolSpace
-            ctx = CapCtx (error "CoreSpec: IMPOSSIBLE") Nothing Nothing Nothing Nothing Nothing
+            ctx = userOnlyCapCtx (error "CoreSpec: IMPOSSIBLE")
             page = CreateIdea ctx spc
             payload = ProtoIdea "!@" (unsafeMarkdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
