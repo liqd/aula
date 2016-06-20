@@ -971,6 +971,7 @@ currentUserCapCtx = do
         , _capCtxPhase   = Nothing
         , _capCtxIdea    = Nothing
         , _capCtxComment = Nothing
+        , _capCtxUserProfile = Nothing
         }
 
 spaceCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
