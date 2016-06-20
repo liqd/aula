@@ -736,6 +736,8 @@ isPostOnly = \case
       case m of
           UserDelegateVoteOnSchoolSpace    -> True
           (UserDelegateVoteOnClassSpace _) -> True
+          UserWithdrawDelegationOnSchoolSpace    -> True
+          (UserWithdrawDelegationOnClassSpace _) -> True
           _                                -> False
     -- FIXME[#312] Logout -> True
     _ -> False
