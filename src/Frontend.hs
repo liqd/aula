@@ -348,6 +348,9 @@ type AulaUser =
   :<|> "report"      :> FormHandler ReportUserProfile
   :<|> "delegate"    :> "school" :> PostH DelegateTo
   :<|> "delegate"    :> "class"  :> Capture "schoolclass" SchoolClass :> PostH DelegateTo
+  -- (arguably the following could also be done with a DELETE end-point)
+  :<|> "withdraw"    :> "school" :> PostH WithdrawDelegationFrom
+  :<|> "withdraw"    :> "class"  :> Capture "schoolclass" SchoolClass :> PostH WithdrawDelegationFrom
 
 aulaUser :: forall m. ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
@@ -358,11 +361,16 @@ aulaUser userId =
   :<|> form (Page.reportUser userId)
   :<|> postDelegateTo (Action.delegateTo (DScopeIdeaSpace SchoolSpace))
   :<|> postDelegateTo . Action.delegateTo . DScopeIdeaSpace . ClassSpace
+  :<|> postWithdraw (Action.withdrawDelegationTo (DScopeIdeaSpace SchoolSpace))
+  :<|> postWithdraw . Action.withdrawDelegationTo . DScopeIdeaSpace . ClassSpace
   where
     postDelegateTo :: (AUID User -> m ()) -> m (PostResult DelegateTo ())
     postDelegateTo a = runPostHandler delegateTo $ a userId
       where
         delegateTo = DelegateTo <$> Action.currentUserCapCtx <*> Action.mquery (findUser userId)
+
+    postWithdraw :: (AUID User -> m ()) -> m (PostResult WithdrawDelegationFrom ())
+    postWithdraw a = runPostHandler (WithdrawDelegationFrom <$> Action.currentUserCapCtx) $ a userId
 
 type AulaAdmin =
        -- durations

@@ -103,6 +103,8 @@ module Frontend.Path
     -- * user profile
     , delegateVoteOnSchoolSpace
     , delegateVoteOnClassSpace
+    , withdrawDelegationOnSchoolSpace
+    , withdrawDelegationOnClassSpace
     , userGlobalDelegations
     , userClassDelegations
     , userIdeas
@@ -519,6 +521,8 @@ data UserMode (r :: AllowedMethod) =
   | UserClassDelegations
   | UserDelegateVoteOnSchoolSpace
   | UserDelegateVoteOnClassSpace SchoolClass
+  | UserWithdrawDelegationOnSchoolSpace
+  | UserWithdrawDelegationOnClassSpace SchoolClass
   | UserEdit
   | ReportUser
   deriving (Generic, Show)
@@ -530,7 +534,9 @@ user UserIdeas                         path = path </> "ideas"
 user UserGlobalDelegations             path = path </> "delegations" </> "global"
 user UserClassDelegations              path = path </> "delegations" </> "class"
 user UserDelegateVoteOnSchoolSpace     path = path </> "delegate" </> "school"
-user (UserDelegateVoteOnClassSpace c)  path = path </> "delegate" </> "class" </> uriPart c
+user (UserDelegateVoteOnClassSpace c)  path = path </> "delegate" </> "class" </> uriPart c  -- TODO: re-align
+user UserWithdrawDelegationOnSchoolSpace     path = path </> "withdraw" </> "school"
+user (UserWithdrawDelegationOnClassSpace c)  path = path </> "withdraw" </> "class" </> uriPart c
 user UserEdit                          path = path </> "edit"
 user ReportUser                        path = path </> "report"
 
@@ -539,6 +545,12 @@ delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
 
 delegateVoteOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
 delegateVoteOnClassSpace u = UserProf (u ^. _Id) . UserDelegateVoteOnClassSpace
+
+withdrawDelegationOnSchoolSpace :: User -> Main 'AllowPost
+withdrawDelegationOnSchoolSpace u = UserProf (u ^. _Id) UserWithdrawDelegationOnSchoolSpace
+
+withdrawDelegationOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
+withdrawDelegationOnClassSpace u = UserProf (u ^. _Id) . UserWithdrawDelegationOnClassSpace
 
 userGlobalDelegations :: User -> Main 'AllowGetPost
 userGlobalDelegations u = UserProf (u ^. _Id) UserGlobalDelegations

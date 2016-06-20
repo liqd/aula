@@ -220,7 +220,7 @@ delegationButtons (view capCtxUser -> delegatee)
         if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
             then do
                 postButton_ [class_ "btn-cta"]
-                    U.Broken  -- TODO
+                    (U.withdrawDelegationOnClassSpace delegate clss)
                     ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
                 postButton_ [class_ "btn-cta"]
@@ -229,7 +229,7 @@ delegationButtons (view capCtxUser -> delegatee)
     if DScopeIdeaSpace SchoolSpace `elem` dscopes
         then do
             postButton_ [class_ "btn-cta"]
-                U.Broken
+                (U.withdrawDelegationOnSchoolSpace delegate)
                 "Schulweite beauftragung entziehen"
         else do
             postButton_ [class_ "btn-cta"]

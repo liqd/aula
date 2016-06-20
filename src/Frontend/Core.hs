@@ -444,6 +444,10 @@ instance Page NeedAdmin where isAuthorized = adminPage
 instance Page DelegateTo where
     isAuthorized = authNeedCaps [CanDelegate] delegateToCapCtx
 
+instance Page WithdrawDelegationFrom where
+    isAuthorized = authNeedPage $ \_ (WithdrawDelegationFrom ctx) ->
+        authNeedCaps' [CanDelegate] ctx
+
 formPageHandler
     :: Applicative m
     => m p
