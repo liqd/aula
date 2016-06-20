@@ -473,4 +473,3 @@ makePrisms ''WithdrawDelegationFrom
 -- (the type signature would be more interesting with dependent types.)
 needCap :: {- cap :: -} Capability -> AccessCheck (NeedCap cap)
 needCap cap = authNeedCaps [cap] needCapCtx
-
