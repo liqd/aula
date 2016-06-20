@@ -454,7 +454,7 @@ needCap cap = authNeedCaps [cap] needCapCtx
 -- * misc
 
 isOwnProfile :: CapCtx -> User -> Bool
-isOwnProfile ctx user = isOwnProfilePred (ctx ^. capCtxUser) user
+isOwnProfile ctx = isOwnProfilePred (ctx ^. capCtxUser)
 
 haveCommonSchoolClass :: CapCtx -> User -> Bool
 haveCommonSchoolClass ctx = not . Set.null . commonSchoolClasses (ctx ^. capCtxUser)
