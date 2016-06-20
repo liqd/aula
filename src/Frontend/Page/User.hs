@@ -327,6 +327,7 @@ instance FormPage EditUserProfile where
                     inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Änderungen speichern"
+                    cancelButton p
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
