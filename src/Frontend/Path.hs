@@ -518,7 +518,7 @@ data UserMode (r :: AllowedMethod) =
   | UserGlobalDelegations
   | UserClassDelegations
   | UserDelegateVoteOnSchoolSpace
-  | UserDelegateVoteOnClassSpace
+  | UserDelegateVoteOnClassSpace SchoolClass
   | UserEdit
   | ReportUser
   deriving (Generic, Show)
@@ -529,16 +529,16 @@ user :: UserMode r -> UriPath -> UriPath
 user UserIdeas                     path = path </> "ideas"
 user UserGlobalDelegations         path = path </> "delegations" </> "global"
 user UserClassDelegations          path = path </> "delegations" </> "class"
-user UserDelegateVoteOnSchoolSpace path = path </> "delegate" </> "school"
-user UserDelegateVoteOnClassSpace  path = path </> "delegate" </> "class"
+user UserDelegateVoteOnSchoolSpace path = path </> "delegate" </> "school"    -- TODO: re-align
+user (UserDelegateVoteOnClassSpace c)  path = path </> "delegate" </> "class" </> uriPart c
 user UserEdit                      path = path </> "edit"
 user ReportUser                    path = path </> "report"
 
 delegateVoteOnSchoolSpace :: User -> Main 'AllowPost
 delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
 
-delegateVoteOnClassSpace :: User -> Main 'AllowPost
-delegateVoteOnClassSpace u = UserProf (u ^. _Id) UserDelegateVoteOnClassSpace
+delegateVoteOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
+delegateVoteOnClassSpace u = UserProf (u ^. _Id) . UserDelegateVoteOnClassSpace
 
 userGlobalDelegations :: User -> Main 'AllowGetPost
 userGlobalDelegations u = UserProf (u ^. _Id) UserGlobalDelegations
@@ -723,7 +723,7 @@ isPostOnly = \case
     UserProf _ m ->
       case m of
           UserDelegateVoteOnSchoolSpace -> True
-          UserDelegateVoteOnClassSpace  -> True
+          (UserDelegateVoteOnClassSpace _) -> True  -- TODO: re-align
           _                             -> False
     -- FIXME[#312] Logout -> True
     _ -> False

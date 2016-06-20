@@ -562,13 +562,8 @@ delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
 delegateVoteOnSchoolSpace = delegateTo (DScopeIdeaSpace SchoolSpace)
 
 -- | Delegates the current user's vote for his/her class to the given user.
-delegateVoteOnClassSpace :: ActionM m => AUID User -> m ()
-delegateVoteOnClassSpace delegateId = do
-    delegatee <- currentUser
-    delegate  <- mquery $ findUser delegateId
-    -- TODO: the user should pick a particular class and not all of them at the same time.
-    forM_ (commonSchoolClasses delegatee delegate) $ \cl ->
-        delegateTo (DScopeIdeaSpace (ClassSpace cl)) delegateId
+delegateVoteOnClassSpace :: ActionM m => SchoolClass -> AUID User -> m ()
+delegateVoteOnClassSpace cl delegateId = delegateTo (DScopeIdeaSpace (ClassSpace cl)) delegateId
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: CommentKey -> Create_ CommentVote

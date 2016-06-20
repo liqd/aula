@@ -347,7 +347,7 @@ type AulaUser =
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
   :<|> "delegate"    :> "school" :> PostH DelegateTo
-  :<|> "delegate"    :> "class"  :> PostH DelegateTo
+  :<|> "delegate"    :> "class"  :> Capture "schoolclass2" SchoolClass :> PostH DelegateTo
 
 aulaUser :: ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
@@ -357,7 +357,7 @@ aulaUser userId =
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
   :<|> postDelegateTo Action.delegateVoteOnSchoolSpace
-  :<|> postDelegateTo Action.delegateVoteOnClassSpace
+  :<|> postDelegateTo . Action.delegateVoteOnClassSpace
   where
     delegateTo = DelegateTo <$> Action.currentUserCapCtx <*> Action.mquery (findUser userId)
     postDelegateTo a = runPostHandler delegateTo $ a userId

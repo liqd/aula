@@ -202,9 +202,13 @@ userHeaderDiv ctx (ActiveUser user) =
             -- just like to anybody else, and the graph will look different if they do.
             -- FIXME: Styling
             when (CanDelegate `elem` caps) $ do
-                postButton_ [class_ "btn-cta"] (U.delegateVoteOnClassSpace user)  "Klassenweit beauftragen"
-            when (CanDelegate `elem` caps) $ do
-                postButton_ [class_ "btn-cta"] (U.delegateVoteOnSchoolSpace user) "Schulweit beauftragen"
+                forM_ (commonSchoolClasses (ctx ^. capCtxUser) user) $ \clss -> do
+                    postButton_ [class_ "btn-cta"]
+                        (U.delegateVoteOnClassSpace user clss)
+                        ("Für Klasse " <> uilabel clss <> " beauftragen")
+                postButton_ [class_ "btn-cta"]
+                    (U.delegateVoteOnSchoolSpace user)
+                        "Schulweit beauftragen"
             btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
                 editProfileBtn
