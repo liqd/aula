@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ViewPatterns        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 
 {-# OPTIONS_GHC -Werror -Wall    #-}
 
@@ -13,20 +13,21 @@ import Data.List (intersperse)
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
     ( DelegateeListsMap(..)
-    , unDelegateeLists
+    , DelegateeLists(..)
     )
 import qualified Frontend.Path as U
 
 
-temporary :: DelegateeListsMap -> [(User, [User])]  -- TODO: #682
-temporary (DelegateeListsMap xs) = concat $ unDelegateeLists . snd <$> xs
-
-renderDelegations :: forall m. Monad m => DelegateeListsMap -> HtmlT m ()
-renderDelegations (temporary -> delegations) = do
-    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
+renderDelegations :: forall m. Monad m => Bool -> DelegateeListsMap -> HtmlT m ()
+renderDelegations _showScope delegations = do
+    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` flatten delegations
   where
-    renderLi :: (User, [User]) -> HtmlT m ()
-    renderLi (delegate, delegatees) = do
+    flatten :: DelegateeListsMap -> [(DScope, (User, [User]))]
+    flatten (DelegateeListsMap xs) = concat $ f <$> xs
+      where f (dscope, DelegateeLists lists) = (dscope,) <$> lists
+
+    renderLi :: (DScope, (User, [User])) -> HtmlT m ()
+    renderLi (dscope, (delegate, delegatees)) = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
                 div_ [class_ "small-avatar-list-image"] $ do
@@ -34,6 +35,8 @@ renderDelegations (temporary -> delegations) = do
             div_ [class_ "col-11-12"] $ do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)
+                p_ $ do
+                    toHtml $ "Geltungsbereich: " <> toUrlPiece dscope  -- TODO: we want to use uilabelST here, but for that we need a DScopeFull.
                 case length delegatees of
                     0 -> nil
                     n -> do

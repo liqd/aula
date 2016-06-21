@@ -156,7 +156,7 @@ instance ToHtml ViewTopic where
     toHtml p@(ViewTopicDelegations now capCtx topic delegations) = semanticDiv p $ do
         viewTopicHeaderDiv now capCtx topic TabDelegation
         -- TODO: It renders only the delegation of the current user
-        renderDelegations (DelegateeListsMap [(DScopeTopicId (topic ^. _Id), delegations)])
+        renderDelegations False (DelegateeListsMap [(DScopeTopicId (topic ^. _Id), delegations)])
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab
