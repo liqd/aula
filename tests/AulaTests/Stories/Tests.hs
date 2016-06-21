@@ -53,25 +53,13 @@ topicTimeoutStory = do
 
 backAndForthJuryVotingPhases :: Behavior ()
 backAndForthJuryVotingPhases = do
-    login "admin"
-    selectIdeaSpace "school"
-    createIdea idea1 "description" CatTime
-    createTopic idea1 topic1a "description" -- in refinement
-    moveTopicForward topic1a -- in jury
-    moveTopicForward topic1a -- in voting
-    moveTopicBackward topic1a -- in jury
+    bumpTopicBackAndForth
     moveTopicForward topic1a -- in voting
     logout
 
 markIdeaAsNotFeasableAfterMarked :: Behavior ()
 markIdeaAsNotFeasableAfterMarked = do
-    login "admin"
-    selectIdeaSpace "school"
-    createIdea idea1 "description" CatTime
-    createTopic idea1 topic1a "description" -- in refinement
-    moveTopicForward topic1a -- in jury
-    moveTopicForward topic1a -- in voting
-    moveTopicBackward topic1a -- in jury
+    bumpTopicBackAndForth
     markIdea idea1 (Left $ NotFeasible (unsafeMarkdown ""))
     checkTopicPhaseVoting topic1a
     logout
@@ -90,6 +78,19 @@ someUserBehavior = do
     reportIdea idea1
     deleteIdea idea1
     logout
+
+
+-- * snippets
+
+bumpTopicBackAndForth :: Behavior ()
+bumpTopicBackAndForth = do
+    login "admin"
+    selectIdeaSpace "school"
+    createIdea idea1 "description" CatTime
+    createTopic idea1 topic1a "description" -- in refinement
+    moveTopicForward topic1a -- in jury
+    moveTopicForward topic1a -- in voting
+    moveTopicBackward topic1a -- in jury
 
 
 -- * helpers
