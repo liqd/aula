@@ -1564,8 +1564,8 @@ instance HasUriPart Role where
 
 instance HasUILabel Role where
     uilabel = \case
-        (Student _)    -> "Schüler"
-        (ClassGuest _) -> "Gast (Klasse)"
+        (Student c)    -> "Schüler (" <> uilabel c <> ")"
+        (ClassGuest c) -> "Gast (" <> uilabel c <> ")"
         SchoolGuest    -> "Gast (Schule)"
         Moderator      -> "Moderator"
         Principal      -> "Direktor"

@@ -191,8 +191,8 @@ userHeaderDiv ctx (Right (user, delegations)) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        forM_ (user ^.. userSchoolClasses . to uilabelST . html) $ \cl ->
-            span_ [class_ "post-title"] cl
+        forM_ (user ^. userRoleSet . to Set.toList) $ \r ->
+            span_ [class_ "post-title"] $ r ^. uilabeled
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
