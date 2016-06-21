@@ -225,11 +225,6 @@
             .attr("class", function(d) { return "link default"; })
             .attr("marker-end", function(d) { return "url(#default)"; });
 
-        var text = svg.append("g")
-            .selectAll("text")
-            .data(graph.nodes).enter().append("text")
-            .text(function(d) { return (d.name + " [" + d.power + "]"); });
-
         var avatarWidthHeight = function(d) {
             // tweak hints: 30, 200 are good bounds for this.
             return (50 + 30 * d.power) / 4;
@@ -269,6 +264,11 @@
             .on("dblclick",   on_dblclick)
             .on("mouseover",  on_mouseover)
             .on("mouseout",   on_mouseout);
+
+        var text = svg.append("g")
+            .selectAll("text")
+            .data(graph.nodes).enter().append("text")
+            .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
 
         /*
