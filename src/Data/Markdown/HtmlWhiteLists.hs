@@ -508,12 +508,12 @@ html4Attributes = unsafeFromJSON [aesonQQ|
       { "key": "A::REL",
         "reason": [
             "Can make an assertion about the entire page.",
-            "TODO(kpreid): Allow filtering rels to include e.g. 'nofollow'"
+            "todo(kpreid): Allow filtering rels to include e.g. 'nofollow'"
           ] },
       { "key": "A::REV",
         "reason": [
             "Can make an assertion about the entire page.",
-            "TODO(kpreid): Allow filtering rels to include e.g. 'nofollow'"
+            "todo(kpreid): Allow filtering rels to include e.g. 'nofollow'"
           ] },
       "LINK::CHARSET",
       "SCRIPT::CHARSET",
@@ -559,7 +559,7 @@ html5Attributes = unsafeFromJSON [aesonQQ|
       "FIELDSET::DISABLED",
       "KEYGEN::DISABLED",
       { "key": "*::DRAGGABLE",
-        "comment": "TODO(kpreid): write matching script interfaces" },
+        "comment": "todo(kpreid): write matching script interfaces" },
       "OUTPUT::FOR",
       "CANVAS::HEIGHT",
       "VIDEO::HEIGHT",
@@ -628,7 +628,7 @@ html5Attributes = unsafeFromJSON [aesonQQ|
       "SOURCE::TYPE",
       "MENU::TYPE",
       { "key": "OBJECT::TYPEMUSTMATCH",
-        "comment": "TODO(kpreid): Can we make use of this attribute?" },
+        "comment": "todo(kpreid): Can we make use of this attribute?" },
       "DATA::VALUE",
       "METER::VALUE",
       "PROGRESS::VALUE",
@@ -639,7 +639,7 @@ html5Attributes = unsafeFromJSON [aesonQQ|
 
   "denied": [
       { "key": "SCRIPT::ASYNC",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "BUTTON::AUTOFOCUS",
         "comment": "allows stealing focus from host page" },
       { "key": "INPUT::AUTOFOCUS",
@@ -657,145 +657,145 @@ html5Attributes = unsafeFromJSON [aesonQQ|
       { "key": "VIDEO::AUTOPLAY",
         "comment": "audio can't be isolated; safe to enable if wanted" },
       { "key": "KEYGEN::CHALLENGE",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "*::CONTENTEDITABLE",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "*::CONTEXTMENU",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "AUDIO::CROSSORIGIN",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(how does this interact with our policy?)"
           ] },
       { "key": "IMG::CROSSORIGIN",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(how does this interact with our policy?)"
           ] },
       { "key": "VIDEO::CROSSORIGIN",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(how does this interact with our policy?)"
           ] },
       { "key": "INPUT::DIRNAME",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(is adding new form submit pairs OK?)"
           ] },
       { "key": "TEXTAREA::DIRNAME",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(is adding new form submit pairs OK?)"
           ] },
       { "key": "A::DOWNLOAD",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "AREA::DOWNLOAD",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "*::DROPZONE",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(enables new information sources)"
           ] },
       { "key": "BUTTON::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "FIELDSET::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "INPUT::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "KEYGEN::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "LABEL::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "OBJECT::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "OUTPUT::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "SELECT::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "TEXTAREA::FORM",
         "comment": [
-            "TODO(kpreid): further review",
+            "todo(kpreid): further review",
             "(breaks containment assumption, if we care)"
           ] },
       { "key": "BUTTON::FORMACTION",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "INPUT::FORMACTION",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "BUTTON::FORMENCTYPE",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "INPUT::FORMENCTYPE",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "BUTTON::FORMMETHOD",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "INPUT::FORMMETHOD",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "BUTTON::FORMNOVALIDATE",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "INPUT::FORMNOVALIDATE",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "BUTTON::FORMTARGET",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "INPUT::FORMTARGET",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "*::ITEMID",
-        "comment": "TODO(kpreid): need to be non-rewritten URIs" },
+        "comment": "todo(kpreid): need to be non-rewritten URIs" },
       { "key": "*::ITEMTYPE",
-        "comment": "TODO(kpreid): need to be non-rewritten URIs" },
+        "comment": "todo(kpreid): need to be non-rewritten URIs" },
       { "key": "HTML::MANIFEST",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "A::MEDIA",
         "comment":
-            "TODO(kpreid): Implement MEDIA_QUERY atype sanitization FOR THESE 3"
+            "todo(kpreid): Implement MEDIA_QUERY atype sanitization FOR THESE 3"
         },
       "AREA::MEDIA",
       "SOURCE::MEDIA",
       { "key": "FIELDSET::NAME",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "DIALOG::OPEN",
         "comment":
-          "TODO(kpreid): further review (can this steal page focus/pop out?)" },
+          "todo(kpreid): further review (can this steal page focus/pop out?)" },
       { "key": "A::PING",
-        "comment": "TODO(kpreid): introduce multiple-URI type for this" },
+        "comment": "todo(kpreid): introduce multiple-URI type for this" },
       { "key": "AREA::PING",
-        "comment": "TODO(kpreid): introduce multiple-URI type for this" },
+        "comment": "todo(kpreid): introduce multiple-URI type for this" },
       { "key": "AREA::REL",
         "reason": [
             "Can make an assertion about the entire page.",
-            "TODO(kpreid): Allow filtering rels to include e.g. 'nofollow'"
+            "todo(kpreid): Allow filtering rels to include e.g. 'nofollow'"
           ] },
       { "key": "IFRAME::SANDBOX",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "STYLE::SCOPED",
         "comment":
-          "TODO(kpreid): Stop migrating style elements so that this works" },
+          "todo(kpreid): Stop migrating style elements so that this works" },
       { "key": "IFRAME::SEAMLESS",
-        "comment": "TODO(kpreid): further review" },
+        "comment": "todo(kpreid): further review" },
       { "key": "IFRAME::SRCDOC",
-        "comment": "TODO(kpreid): Implement HTML atype sanitization" }
+        "comment": "todo(kpreid): Implement HTML atype sanitization" }
       ]
 }
 |]

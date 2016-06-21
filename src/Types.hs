@@ -790,7 +790,7 @@ type instance Proto Delegation = Delegation
 -- coincidentally) constitute a subset relationship between class spaces and school space.
 data DScope =
     DScopeGlobal
-  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }  -- TODO: should be 'SchoolClass'
+  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }
   | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
   | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -1564,8 +1564,8 @@ instance HasUriPart Role where
 
 instance HasUILabel Role where
     uilabel = \case
-        (Student _)    -> "Schüler"
-        (ClassGuest _) -> "Gast (Klasse)"
+        (Student c)    -> "Schüler (" <> uilabel c <> ")"
+        (ClassGuest c) -> "Gast (" <> uilabel c <> ")"
         SchoolGuest    -> "Gast (Schule)"
         Moderator      -> "Moderator"
         Principal      -> "Direktor"

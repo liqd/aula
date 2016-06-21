@@ -81,7 +81,7 @@ spec = do
         , formTest (AdminAddRole <$> arb <*> pure schoolClasses)
         , formTest (arb :: Gen AdminEditUser)
         , formTest (arb :: Gen AdminDeleteUser)
---        , formTest (arb :: Gen AdminCreateUser) -- TODO: Investigate issue
+--        , formTest (arb :: Gen AdminCreateUser) -- FIXME: Investigate issue
         , formTest (arb :: Gen AdminCreateClass)
         , formTest (arb :: Gen AdminPhaseChange)
         , formTest (arb :: Gen PageAdminResetPassword)
@@ -355,7 +355,7 @@ testValidationError ::
     => page -> payloadCtx -> payload -> [String] -> Spec
 testValidationError page ctx payload expected =
     describe ("validation in form " <> show (typeOf page, payload)) . it "works" $ do
-        (v, Nothing) <- simulateForm (\_ _ -> pure ()) page ctx payload --TODO
+        (v, Nothing) <- simulateForm (\_ _ -> pure ()) page ctx payload -- FIXME
         (show . snd <$> viewErrors v) `shouldBe` expected
             -- FIXME: render Html instead of showing it?
 
@@ -573,7 +573,7 @@ instance PayloadToEnv AdminDeleteUserPayload where
 
 instance ArbFormPagePayload AdminCreateUser
 
-{- TODO
+{- FIXME
   1) Frontend.Core.PageFormView Gen AdminCreateUser (process valid forms)
        uncaught exception: ErrorCall (Prelude.!!: index too large) (after 1 test)
 

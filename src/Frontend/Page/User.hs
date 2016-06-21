@@ -191,8 +191,8 @@ userHeaderDiv ctx (Right (user, delegations)) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        forM_ (user ^.. userSchoolClasses . to uilabelST . html) $ \cl ->
-            span_ [class_ "post-title"] cl
+        forM_ (user ^. userRoleSet . to Set.toList) $ \r ->
+            span_ [class_ "post-title"] $ r ^. uilabeled
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
@@ -209,9 +209,6 @@ userHeaderDiv ctx (Right (user, delegations)) =
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
 -- philosophical, but it doesn't really matter: users can delegate to themselves
 -- just like to anybody else, and the graph will look different if they do.
---
--- TODO: integrate list of class memberships with the delegation buttons.  buttons need to be much
--- smaller in the end.
 delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
 delegationButtons (view capCtxUser -> delegatee)
                   delegate

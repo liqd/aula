@@ -61,19 +61,13 @@ module Arbitrary
     , someOf
     , arbName
     , schoolClasses
-    , fishDelegationNetworkIO
-    , fishDelegationNetworkAction
-    , breakCycles
-    , fishAvatarsPath
     , fishAvatars
     , constantSampleTimestamp
     , sampleEventLog
     ) where
 
 import Control.Applicative ((<**>))
-import Control.Exception (ErrorCall(ErrorCall), throwIO)
 import Control.Monad (replicateM)
-import Control.Monad.Trans.Except (runExceptT)
 import Crypto.Scrypt
 import Data.Functor.Infix ((<$$>))
 import Data.Char
@@ -84,13 +78,11 @@ import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
 import Data.Tree as Tree (Tree)
 import Generics.SOP
-import Servant
-import System.FilePath (takeBaseName)
 import System.Directory (getCurrentDirectory, getDirectoryContents)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
     ( Arbitrary(..), Gen, Property, Testable
-    , elements, oneof, vectorOf, frequency, scale, generate, arbitrary, listOf, suchThat
+    , elements, oneof, vectorOf, frequency, scale, generate, arbitrary, listOf, listOf1, suchThat
     , forAllShrink, choose
     )
 import Test.QuickCheck.Modifiers
@@ -98,12 +90,9 @@ import Test.QuickCheck.Instances ()
 import Text.Email.Validate as Email (localPart, domainPart, emailAddress, toByteString, unsafeEmailAddress)
 
 import qualified Data.Set as Set
-import qualified Data.Graph as Graph
 import qualified Data.Tree as Tree
 
 import Access
-import Action
-import Action.Implementation
 import Config
 import Data.UriPath
 import Logger.EventLog
@@ -112,8 +101,7 @@ import Frontend.Filter
 import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
-import Frontend.Prelude (set, (^.), (^?), over, (.~), (%~), (&), ppShow, join)
-import Persistent.Api hiding (EditTopic(..), EditIdea(..))
+import Frontend.Prelude (set, (^.), over, (.~), (%~), (&))
 import Persistent
 import Types
 
@@ -385,6 +373,13 @@ instance Arbitrary PageDelegationNetwork where
             genTree :: Int -> Gen (DScopeFull, [Int])
             genTree 0 = (,) <$> arb <*> pure []
             genTree n = (,) <$> arb <*> listOf (choose (0, n-1))
+
+instance Arbitrary DelegationNetwork where
+    arbitrary = do
+        nodes <- listOf1 arb
+        let mkNodeRef = elements $ ((^. _Id) . fst) <$> nodes
+        edges <- listOf1 $ Delegation <$> arb <*> mkNodeRef <*> mkNodeRef
+        pure $ DelegationNetwork nodes edges
 
 instance Arbitrary DScopeTree where
     arbitrary = DScopeTree <$> arb
@@ -1101,8 +1096,6 @@ topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 
 
--- * arbitrary (but plausible) delegation graphs
-
 fishAvatarsPath :: URL
 fishAvatarsPath = "/static/demo/avatars/"
 
@@ -1114,107 +1107,6 @@ fishAvatarsIO = fmap ((fishAvatarsPath <>) . cs)
 {-# NOINLINE fishAvatars #-}
 fishAvatars :: [URL]
 fishAvatars = unsafePerformIO fishAvatarsIO
-
-mkFishUser :: (GenArbitrary m, ActionM m) => Maybe SchoolClass -> ST -> m User
-mkFishUser mSchoolClass avatarPath = do
-    let first_last = cs . takeBaseName . cs $ avatarPath
-        (fnam, lnam) = case ST.findIndex (== '_') first_last of
-            Nothing -> error $ "mkFishUser: could not parse avatar url: " <> show avatarPath
-            Just i -> ( UserFirstName $ ST.take i first_last
-                      , UserLastName  $ ST.drop (i+1) first_last
-                      )
-    role <- Student <$> maybe genArbitrary pure mSchoolClass
-    let pu = ProtoUser Nothing fnam lnam (Set.singleton role) (InitialPassword "dummy password") Nothing nil
-    user <- addWithCurrentUser AddUser pu
-    update $ SetUserAvatar (user ^. _Id) avatarPath
-    return user
-
-instance Arbitrary DelegationNetwork where
-    arbitrary = pure fishDelegationNetworkUnsafe
-
-{-# NOINLINE fishDelegationNetworkUnsafe #-}
-fishDelegationNetworkUnsafe :: DelegationNetwork
-fishDelegationNetworkUnsafe = unsafePerformIO fishDelegationNetworkIO
-
-fishDelegationNetworkIO :: IO DelegationNetwork
-fishDelegationNetworkIO = do
-    let action :: Action DelegationNetwork
-        action = do
-            now <- getCurrentTimestamp
-            admin <- update . AddFirstUser now $ ProtoUser
-                (Just "admin") (UserFirstName "admin") (UserLastName "admin")
-                (Set.singleton Admin) (InitialPassword "admin") Nothing nil
-            Action.loginByUser admin
-            fishDelegationNetworkAction Nothing
-
-    cfg <- (persistConfig . persistenceImpl .~ AcidStateInMem)
-        <$> Config.readConfig print Config.DontWarnMissing
-        -- FIXME: we should use AulaTests.testConfig here, but that's under /tests/
-    let runAction :: RunPersist -> IO DelegationNetwork
-        runAction rp = do
-            -- FIXME: Do not use print
-            v <- runExceptT (unNat (mkRunAction (ActionEnv rp cfg print)) action)
-            either (throwIO . ErrorCall . ppShow) pure v
-    withPersist print cfg runAction
-
-fishDelegationNetworkAction :: Maybe SchoolClass ->
-    (GenArbitrary m, ActionM m) => m DelegationNetwork
-fishDelegationNetworkAction mSchoolClass = do
-    users <- mkFishUser mSchoolClass `mapM` List.take 25 fishAvatars
-    let -- invariants:
-        -- - u1 and u2 are in the same class or ctx is school.
-        -- - no cycles  -- FIXME: not implemented!
-        mkdel :: (GenArbitrary m, ActionM m) => m [Delegation]
-        mkdel = do
-            scope :: DScope
-                <- DScopeIdeaSpace . ClassSpace <$> maybe genArbitrary pure mSchoolClass
-            let fltr u = scope == DScopeIdeaSpace SchoolSpace
-                      || case u ^? userRoles . _Student of -- TODO: this is selecting only the first class
-                             Just cl -> scope == DScopeIdeaSpace (ClassSpace cl)
-                             _       -> False
-
-                users' = List.filter fltr users
-
-            if List.null users'
-                then pure []
-                else do
-                    u1  <- genGen $ elements users'
-                    u2  <- genGen $ elements users'
-                    (:[]) <$> addWithCurrentUser AddDelegation (Delegation scope (u1 ^. _Id) (u2 ^. _Id))
-
-    dels <- replicateM 18 mkdel
-    users'' <- let dscope = maybe DScopeGlobal (DScopeIdeaSpace . ClassSpace) mSchoolClass
-               in (\u -> (u,) . List.length <$> equery (votingPower (u ^. _Id) dscope)) `mapM` users
-
-    pure . DelegationNetwork users'' . breakCycles . join $ dels
-
--- (NOTE: we only want to break cycles inside each context.  cyclical paths travelling through
--- different contexts are not really cycles.)
-breakCycles :: [Delegation] -> [Delegation]
-breakCycles ds = List.filter good ds
-  where
-    es = [mkEdge d | d <- ds]
-    ns = (fst <$> es) <> (snd <$> es)
-
-    mkEdge :: Delegation -> Graph.Edge
-    mkEdge d = (fromIntegral $ d ^. delegationFrom, fromIntegral $ d ^. delegationTo)
-
-    forestEdges :: Tree.Forest Graph.Vertex -> [Graph.Edge]
-    forestEdges [] = []
-    forestEdges (Tree.Node x xs : ys) = ((x,) . Tree.rootLabel <$> xs) <> forestEdges (xs <> ys)
-
-    g :: Graph.Graph
-    g = Graph.buildG (List.minimum ns, List.maximum ns) es
-
-    g' :: Tree.Forest Graph.Vertex
-    g' = Graph.dfs g ns
-
-    es' :: [Graph.Edge]
-    es' = forestEdges g'
-
-    good :: Delegation -> Bool
-    good = (`Set.member` Set.fromList es') . mkEdge
-
 
 
 -- * event log
