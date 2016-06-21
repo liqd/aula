@@ -39,11 +39,9 @@ import Test.Hspec
 import Test.QuickCheck
 import Text.Digestive.View (getForm)
 
-import qualified Data.Aeson.Encode.Pretty as Aeson
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.IO as ST
 
-import Arbitrary
+import Arbitrary ()
 import Config (getSamplesPath)
 import Action.Dummy
 import Frontend.Core
@@ -96,9 +94,6 @@ pagesForm f =
 
 -- * machine room
 
-doGenerateDelegationNetworksHack :: Bool
-doGenerateDelegationNetworksHack = False
-
 main :: IO ()
 main = error "i'm going to do nothing.  this really works best if you run via `make click-dummies-refresh`."
 
@@ -107,10 +102,6 @@ main = error "i'm going to do nothing.  this really works best if you run via `m
 spec :: Spec
 spec = do
     describe "refresh html samples" . it "works" . run $ refreshSamples
-    when doGenerateDelegationNetworksHack $ do
-        describe "render sample delegation graph" . it "works" . run $
-            fishDelegationNetworkIO >>=
-                LBS.writeFile "/tmp/d3-aula-sample-fishes.json" . Aeson.encodePretty
 
 
 -- | set locale, target directory.  create target directory if missing.

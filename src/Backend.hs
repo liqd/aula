@@ -14,7 +14,6 @@ import Servant
 
 import Access
 import Action
-import Arbitrary
 import DemoData
 import Frontend.Core
 import Persistent.Api
@@ -24,25 +23,13 @@ import Types
 -- * rest api
 
 type Api =
-       "delegations" :> DelegationsApi
-  :<|> "manage-state" :> ManageStateApi
+       "manage-state" :> ManageStateApi
 
 api :: (Page Api, GenArbitrary m, ActionM m) => ServerT Api m
-api =  delegationsApi
-  :<|> manageStateApi
+api = manageStateApi
 
 type GetJ p = Get '[JSON] (GetResult p)
 type PostJ p r = Post '[JSON] (PostResult p r)
-
--- * delegations
-
-type DelegationsApi = GetJ DelegationNetwork
-
--- | FIXME: This is all a bit silly: the returned
--- delegation networks are generated on top of the existing data; testing doesn't really test
--- anything.  But it is self-contained and a good basis to continue from.
-delegationsApi :: (GenArbitrary m, ActionM m) => ServerT DelegationsApi m
-delegationsApi = runGetHandler $ fishDelegationNetworkAction Nothing
 
 data NeedEmptyUserMap = NeedEmptyUserMap
 
