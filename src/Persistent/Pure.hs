@@ -118,6 +118,7 @@ module Persistent.Pure
     , dbUserMap
     , adminUsernameHack
     , addDelegation
+    , withdrawDelegation
     , delegationScopeTree
     , allDelegationScopes
     , Persistent.Pure.scopeDelegatees
@@ -610,6 +611,10 @@ addDelegation env = do
     pure $ Delegation scope delegatee delegate
   where
     (Delegation scope delegatee delegate) = env ^. envWith
+
+withdrawDelegation :: AUID User -> DScope -> AUpdate ()
+withdrawDelegation delegatee dscope =
+    dbDelegations %= Data.Delegation.deleteDelegation delegatee dscope
 
 delegationScopeTree :: User -> Query (Tree DScopeFull)
 delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull

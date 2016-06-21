@@ -40,6 +40,7 @@ import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import Persistent
     ( DelegateeLists(..)
+    , DelegateeListsMap(..)
     , topicDelegateeLists
     , findIdeasByTopic
     , findIdeasByTopicId
@@ -152,10 +153,10 @@ tabLink topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
-    toHtml p@(ViewTopicDelegations now scope topic delegations) = semanticDiv p $ do
-        viewTopicHeaderDiv now scope topic TabDelegation
-        -- FIXME: It renders only the delegation of the current user
-        renderDelegations False delegations
+    toHtml p@(ViewTopicDelegations now capCtx topic delegations) = semanticDiv p $ do
+        viewTopicHeaderDiv now capCtx topic TabDelegation
+        -- TODO: It renders only the delegation of the current user
+        renderDelegations False (DelegateeListsMap [(DScopeTopicId (topic ^. _Id), delegations)])
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab

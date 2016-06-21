@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall    #-}
 
@@ -11,13 +12,17 @@ where
 import Data.List (intersperse)
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
-    ( DelegateeLists(..)
+    ( DelegateeListsMap(..)
+    , unDelegateeLists
     )
 import qualified Frontend.Path as U
 
 
-renderDelegations :: forall m. Monad m => Bool -> DelegateeLists -> HtmlT m ()
-renderDelegations showTotal (DelegateeLists delegations) = do
+temporary :: DelegateeListsMap -> [(User, [User])]  -- TODO: #682
+temporary (DelegateeListsMap xs) = concat $ unDelegateeLists . snd <$> xs
+
+renderDelegations :: forall m. Monad m => Bool -> DelegateeListsMap -> HtmlT m ()
+renderDelegations showTotal (temporary -> delegations) = do
     when showTotal $ h2_ ("Insgesamt " <> total ^. showed . html)
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where

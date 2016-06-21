@@ -48,8 +48,6 @@ module Action
     , getSpacesForCurrentUser
     , deleteUser
     , reportUser
-    , delegateVoteOnSchoolSpace
-    , delegateVoteOnClassSpace
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
@@ -61,6 +59,7 @@ module Action
     , likeIdea
     , voteOnIdea
     , delegateTo
+    , withdrawDelegationTo
     , voteIdeaComment
     , markIdeaInJuryPhase
     , markIdeaInResultPhase
@@ -552,23 +551,15 @@ voteOnIdea ideaId voteVal = do
                             (ProtoIdeaVote voteVal (voter ^. _Id))
 
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
-delegateTo scope t = do
+delegateTo scope delegate = do
     user <- currentUser
-    addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) t)
-    eventLogUserDelegates scope t
+    addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) delegate)
+    eventLogUserGivesDelegation scope delegate
 
--- | Delegates the current user's vote to the given user at school space
-delegateVoteOnSchoolSpace :: ActionM m => AUID User -> m ()
-delegateVoteOnSchoolSpace = delegateTo (DScopeIdeaSpace SchoolSpace)
-
--- | Delegates the current user's vote for his/her class to the given user.
-delegateVoteOnClassSpace :: ActionM m => AUID User -> m ()
-delegateVoteOnClassSpace delegateId = do
-    delegatee <- currentUser
-    delegate  <- mquery $ findUser delegateId
-    -- TODO: the user should pick a particular class and not all of them at the same time.
-    forM_ (commonSchoolClasses delegatee delegate) $ \cl ->
-        delegateTo (DScopeIdeaSpace (ClassSpace cl)) delegateId
+withdrawDelegationTo :: ActionM m => DScope -> AUID User -> m ()
+withdrawDelegationTo scope delegate = do
+    update $ WithdrawDelegation delegate scope
+    eventLogUserWithdrawsDelegation scope delegate
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: CommentKey -> Create_ CommentVote
@@ -865,10 +856,20 @@ eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
 
-eventLogUserDelegates ::
+eventLogUserGivesDelegation, eventLogUserWithdrawsDelegation ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
       => DScope -> AUID User -> m ()
-eventLogUserDelegates scope delegateId = do
+eventLogUserGivesDelegation = eventLogUserDelegates True
+eventLogUserWithdrawsDelegation = eventLogUserDelegates False
+
+eventLogUserDelegates ::
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => Bool -> DScope -> AUID User -> m ()
+eventLogUserDelegates setOrWithdraw scope delegateId = do
+    let event = if setOrWithdraw
+            then EventLogUserDelegates
+            else EventLogUserWithdrawsDelegation
+
     delegate <- mquery $ findUser delegateId
     delegatee <- currentUser
     ispace <- case scope of
@@ -877,7 +878,7 @@ eventLogUserDelegates scope delegateId = do
         DScopeTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DScopeIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
                                   <$> mquery (findIdea iid)
-    eventLog ispace (delegatee ^. _Key) $ EventLogUserDelegates scope (delegate ^. _Key)
+    eventLog ispace (delegatee ^. _Key) $ event scope (delegate ^. _Key)
 
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()
 eventLogTopicNewPhase topic fromPhase toPhase =
@@ -931,6 +932,8 @@ instance ActionM m => WarmUp m EventLogItemValueCold EventLogItemValueWarm where
                   pure $ EventLogUserVotesOnComment i' c' mc' ud
         EventLogUserDelegates s u
             -> EventLogUserDelegates s <$> warmUp' u
+        EventLogUserWithdrawsDelegation s u
+            -> EventLogUserWithdrawsDelegation s <$> warmUp' u
         EventLogTopicNewPhase t p1 p2
             -> do t' <- warmUp' t; pure $ EventLogTopicNewPhase t' p1 p2
         EventLogIdeaNewLocation i mt1 mt2

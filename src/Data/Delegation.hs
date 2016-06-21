@@ -9,6 +9,7 @@ module Data.Delegation
     , Delegations
     , emptyDelegations
     , setDelegation
+    , deleteDelegation
     , scopeDelegatees
     , scopeDelegateesSafe
     , votingPower
@@ -89,6 +90,11 @@ insertDoubleMap k1 k2 v m = case Map.lookup k1 m of
     Nothing -> Map.insert k1 (Map.singleton k2 v) m
     Just m' -> Map.insert k1 (Map.insert k2 v m') m
 
+deleteDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> Map k1 (Map k2 v) -> Map k1 (Map k2 v)
+deleteDoubleMap k1 k2 m = m
+                        & at k1 . _Just . at k2 .~ Nothing
+                        & at k1 %~ deleteEmpty
+
 lookupDMap :: Delegatee U -> S -> DelegationMap -> Maybe (Delegate U)
 lookupDMap d s (DelegationMap dmap) = lookupDoubleMap d s dmap
 
@@ -102,22 +108,38 @@ emptyDelegations = Delegations (DelegationMap Map.empty) (CoDelegationMap Map.em
 -- * delegation handling
 
 setDelegation :: U -> S -> U -> Delegations -> Delegations
-setDelegation f topic t (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
+setDelegation f dscope t (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
     = Delegations dmap' coDmap'
   where
     from = Delegatee f
     to   = Delegate  t
-    mOldTo = lookupDoubleMap from topic dmap
+    mOldTo = lookupDoubleMap from dscope dmap
 
-    dmap'   = DelegationMap (insertDoubleMap from topic to dmap)
+    dmap'   = DelegationMap (insertDoubleMap from dscope to dmap)
     coDmap' = CoDelegationMap coDmap1
-    coDmap0 = maybe coDmap (\to' -> coDmap & at to' . _Just . at topic . _Just . at from .~ Nothing
-                                           & at to' . _Just . at topic %~ deleteEmpty
+    coDmap0 = maybe coDmap (\to' -> coDmap & at to' . _Just . at dscope . _Just . at from .~ Nothing
+                                           & at to' . _Just . at dscope %~ deleteEmpty
                                            & at to' %~ deleteEmpty) mOldTo
-    coDmap1 = insertDoubleMap to topic (Set.insert from $ fromMaybe Set.empty (lookupDoubleMap to topic coDmap0)) coDmap0
+    coDmap1 = insertDoubleMap to dscope (Set.insert from $ fromMaybe Set.empty (lookupDoubleMap to dscope coDmap0)) coDmap0
 
-    deleteEmpty (Just s) | null s = Nothing
-    deleteEmpty x                 = x
+deleteEmpty :: Foldable t => Maybe (t a) -> Maybe (t a)
+deleteEmpty (Just s) | null s = Nothing
+deleteEmpty x                 = x
+
+-- | FIXME: if we mention the delegate here, not just the delegatee, we can confirm that is is the
+-- one we expect, and we will catch errors more local to their source.
+deleteDelegation :: U -> S -> Delegations -> Delegations
+deleteDelegation f dscope (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
+    = Delegations dmap' coDmap'
+  where
+    from = Delegatee f
+    mOldTo = lookupDoubleMap from dscope dmap
+
+    dmap'   = DelegationMap (deleteDoubleMap from dscope dmap)
+    coDmap' = CoDelegationMap coDmap1
+    coDmap1 = maybe coDmap (\to' -> coDmap & at to' . _Just . at dscope . _Just . at from .~ Nothing
+                                           & at to' . _Just . at dscope %~ deleteEmpty
+                                           & at to' %~ deleteEmpty) mOldTo
 
 scopeDelegatees :: U -> S -> Delegations -> Set U
 scopeDelegatees delegate scope =
