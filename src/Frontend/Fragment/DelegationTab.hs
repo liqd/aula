@@ -50,7 +50,7 @@ renderDelegations showScope delegations = do
                             -- (oh, it's actually a bit worse: the delegatee's delegatees in the user
                             -- profile list are all shown as single delegations, so transitive
                             -- delegations are not appearent at all here.)
-                            toHtml $ show (length delegatees)
+                            toHtml $ show n
                                 <> " Stimme" <> (if n == 1 then "" else "n")
                                 <> " von "
                             let f :: User -> HtmlT m ()
