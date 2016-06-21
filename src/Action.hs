@@ -554,12 +554,12 @@ delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope delegate = do
     user <- currentUser
     addWithCurrentUser_ AddDelegation (Delegation scope (user ^. _Id) delegate)
-    eventLogUserDelegates True scope delegate
+    eventLogUserGivesDelegation scope delegate
 
 withdrawDelegationTo :: ActionM m => DScope -> AUID User -> m ()
 withdrawDelegationTo scope delegate = do
     update $ WithdrawDelegation delegate scope
-    eventLogUserDelegates False scope delegate
+    eventLogUserWithdrawsDelegation scope delegate
 
 -- ASSUMPTION: Idea is in the given idea location.
 voteIdeaComment :: CommentKey -> Create_ CommentVote
@@ -855,6 +855,12 @@ eventLogUserVotesOnComment ck@(CommentKey _ ideaId parentIds _) v = do
             _     -> assert False $ error "eventLogUserVotesOnComment: too many parents."
     eventLog (idea ^. ideaLocation . ideaLocationSpace) uid $
         EventLogUserVotesOnComment (idea ^. _Key) (comment ^. _Key) (view _Key <$> mcomment) v
+
+eventLogUserGivesDelegation, eventLogUserWithdrawsDelegation ::
+      (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
+      => DScope -> AUID User -> m ()
+eventLogUserGivesDelegation = eventLogUserDelegates True
+eventLogUserWithdrawsDelegation = eventLogUserDelegates False
 
 eventLogUserDelegates ::
       (ActionUserHandler m, ActionPersist m, ActionCurrentTimestamp m, ActionLog m)
