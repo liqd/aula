@@ -19,8 +19,8 @@ module Frontend.Fragment.Category
 where
 
 import Frontend.Prelude
+import Frontend.Fragment.WhatListPage
 
-import qualified Frontend.Path as U
 import qualified Data.Text as ST
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
@@ -61,8 +61,8 @@ instance ToHtml CategoryMiniLabel where
     toHtml (CategoryMiniLabel cat) =
         li_ [class_ $ "icon-" <> toUrlPiece cat] . span_ $ uilabel cat
 
-categoryFilterButtons :: Monad m => Maybe ListIdeasInTopicTab -> IdeaLocation -> IdeasQuery -> HtmlT m ()
-categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
+categoryFilterButtons :: Monad m => WhatListPage -> IdeasQuery -> HtmlT m ()
+categoryFilterButtons whatListPage q = div_ [class_ "icon-list"] $ do
     p_ $ b_ "Filtere nach Kategorie"
     br_ []
     ul_ $ do
@@ -70,12 +70,12 @@ categoryFilterButtons mtab loc q = div_ [class_ "icon-list"] $ do
             li_ [ class_ . ST.unwords $
                     ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
                 ] .
-                a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
+                a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
                     uilabel cat
         li_ [ class_ . ST.unwords $
                 "icon-all-cats" : [ "m-active" | q ^. ideasQueryF == AllIdeas ]
             ] .
-            a_ [href_ $ U.listIdeas' loc mtab (Just $ q & ideasQueryF .~ AllIdeas)] $
+            a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF .~ AllIdeas)] $
                 "Alle Kategorien"
 
 
