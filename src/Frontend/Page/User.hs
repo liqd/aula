@@ -278,7 +278,7 @@ createdIdeas userId = do
         ideas <- ListItemIdeas ctx IdeaInUserProfile
                     (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
               <$> (mapM getIdeaStats =<< filter visibleByCurrentUser <$> findIdeasByUserId userId)
-        delegatees <- userDelegateeListsMap (ctx ^. capCtxUser . _Id)
+        delegatees <- userDelegateeListsMap userId
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)
             (makeUserView user)
@@ -315,7 +315,7 @@ delegatedVotes userId = do
         PageUserProfileDelegatedVotes
             (setProfileContext user ctx)
             (makeUserView user)
-            <$> userDelegateeListsMap (ctx ^. capCtxUser . _Id)
+            <$> userDelegateeListsMap userId
 
 
 -- ** User Profile: Edit profile
