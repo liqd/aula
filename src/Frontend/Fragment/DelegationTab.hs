@@ -44,6 +44,9 @@ renderDelegations showScope delegations = do
                             -- FUTUREWORK: we should name the voting power here, and then the list of
                             -- delegatees.  (voting power is different from length of delegatee list unless
                             -- the delegate has delegated to herself.)
+                            -- (oh, it's actually a bit worse: the delegatee's delegatees in the user
+                            -- profile list are all shown as single delegations, so transitive
+                            -- delegations are not appearent at all here.)
                             toHtml $ show (length delegatees)
                                 <> " Stimme" <> (if n == 1 then "" else "n")
                                 <> " von "
