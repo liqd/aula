@@ -676,7 +676,7 @@ findDelegationsByScope :: DScope -> Query [Delegation]
 findDelegationsByScope =
     fmap (fmap toDelegation) . views dbDelegations . Data.Delegation.findDelegationsByScope
   where
-    toDelegation (de, s, dee) = Delegation s (unDelegate de) (unDelegatee dee)
+    toDelegation (de, s, dee) = Delegation s (unDelegatee dee) (unDelegate de)
 
 findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
