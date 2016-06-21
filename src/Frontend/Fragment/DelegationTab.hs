@@ -19,7 +19,7 @@ import qualified Frontend.Path as U
 
 
 renderDelegations :: forall m. Monad m => Bool -> DelegateeListsMap -> HtmlT m ()
-renderDelegations _showScope delegations = do
+renderDelegations showScope delegations = do
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` flatten delegations
   where
     flatten :: DelegateeListsMap -> [(DScopeFull, (User, [User]))]
@@ -35,7 +35,7 @@ renderDelegations _showScope delegations = do
             div_ [class_ "col-11-12"] $ do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)
-                p_ $ do
+                when showScope . p_ $ do
                     toHtml $ "Geltungsbereich: " <> uilabelST dscope
                 case length delegatees of
                     0 -> nil
