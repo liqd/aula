@@ -138,6 +138,10 @@
         var width = 960;
         var height = 800;
 
+        graph.nodes.forEach(function(d) {
+            d.visible = true;
+        });
+
         var tick = function() {
             // adjust positions (is there a better place for this than here in the tick function?)
             for (i in graph.nodes) {
@@ -150,14 +154,34 @@
                 }
             }
 
+            var setvisibility = function(visible, elem) {
+                var result = "";
+                if (elem.attributes['class']) {
+                    result = elem.attributes['class'].value;
+                }
+
+                // remove hidden class
+                result = result.replace(" hidden", "");
+                result = result.replace("hidden", "");
+
+                // add it if appropriate
+                if (!visible) {
+                    result = result + " " + "hidden";
+                }
+                return result;
+            };
+
             // update elems
-            path.attr("d", linkArc);
+            path.attr("d", linkArc)
+                .attr("class", function(d) { return setvisibility(d.source.visible && d.target.visible, this); });
 
             text.attr("dx", function(d) { return d.x; })
-                .attr("dy", function(d) { return d.y; });
+                .attr("dy", function(d) { return d.y; })
+                .attr("class", function(d) { return setvisibility(d.visible, this); });
 
             avat.attr("x", avatarXPos)
-                .attr("y", avatarYPos);
+                .attr("y", avatarYPos)
+                .attr("class", function(d) { return setvisibility(d.visible, this); });
         };
 
         function linkArc(d) {
@@ -227,6 +251,25 @@
             .attr("width",  avatarWidthHeight)
             .attr("height", avatarWidthHeight)
             .attr("xlink:href", function(d) { return d.avatar; });
+
+        var on_click = function(d) {
+            d.visible = false;
+        };
+
+        var on_dblclick = function(d) {
+        };
+
+        var on_mouseover = function(d) {
+        };
+
+        var on_mouseout = function(d) {
+        };
+
+        avat.on("click",      on_click)
+            .on("dblclick",   on_dblclick)
+            .on("mouseover",  on_mouseover)
+            .on("mouseout",   on_mouseout);
+
 
         /*
             http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle

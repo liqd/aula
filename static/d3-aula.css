@@ -7,6 +7,10 @@
   stroke-width: 2.5px;
 }
 
+.hidden {
+  opacity: 0;
+}
+
 text {
   font: 16px sans-serif;
   pointer-events: none;
