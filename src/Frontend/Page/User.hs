@@ -209,9 +209,6 @@ userHeaderDiv ctx (Right (user, delegations)) =
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
 -- philosophical, but it doesn't really matter: users can delegate to themselves
 -- just like to anybody else, and the graph will look different if they do.
---
--- TODO: integrate list of class memberships with the delegation buttons.  buttons need to be much
--- smaller in the end.
 delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
 delegationButtons (view capCtxUser -> delegatee)
                   delegate
