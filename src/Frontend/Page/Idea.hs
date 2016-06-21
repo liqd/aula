@@ -289,6 +289,10 @@ instance ToHtml ViewIdea where
             -- bars
             toHtml $ IdeaVoteLikeBars stats
 
+            a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
+                i_ [class_ "icon-bullhorn"] nil
+                "Stimme beauftragen"
+
             -- indicators
             div_ [class_ "table-actions m-no-hover"] $ do
                 div_ [class_ "icon-list m-inline"] . ul_ $ do
