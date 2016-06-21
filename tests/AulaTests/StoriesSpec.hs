@@ -34,6 +34,7 @@ spec :: Spec
 spec = describe "stories" $ do
     story_ "Topic in refinement phase times out" topicTimeoutStory
     story_ "Some user behavior" someUserBehavior
+    story_ "Back and forth: jury, voting phases" backAndForthJuryVotingPhases
 
 
 -- | Runs the 'Behavior' represented story with the 'Action' interpreter,

@@ -38,18 +38,31 @@ topicTimeoutStory = do
     voteOnCommentReply idea1 comment1 comment2 Up
     createTopic idea1 topic1a "desc"
     editTopic topic1a topic1 "desc1"
-    timeoutTopic topic1
+    moveTopicForward topic1
     markIdea idea1 (Left $ Feasible Nothing)
     setFreeze Frozen
     voteOnIdea idea1 Yes  -- succeeds, because capabilities only affect UI
     -- FIXME: how to catch the expected error below?
       -- timeoutTopic topic1  -- fails, phase change illegal;
     setFreeze NotFrozen
-    timeoutTopic topic1  -- now succeeds
+    moveTopicForward topic1  -- now succeeds
     markIdea idea1 (Right $ Winning Nothing)
     setCreatorStatement idea1 "Winner"
     revokeWinner idea1
     logout
+
+backAndForthJuryVotingPhases :: Behavior ()
+backAndForthJuryVotingPhases = do
+    login "admin"
+    selectIdeaSpace "school"
+    createIdea idea1 "description" CatTime
+    createTopic idea1 topic1a "description" -- in refinement
+    moveTopicForward topic1a -- in jury
+    moveTopicForward topic1a -- in voting
+    moveTopicBackward topic1a -- in jury
+    moveTopicForward topic1a -- in voting
+    logout
+
 
 -- Collection of steps under development, no test design involved.
 someUserBehavior :: Behavior ()
