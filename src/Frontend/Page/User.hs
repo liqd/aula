@@ -304,7 +304,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    renderDelegations True delegations
+                    renderDelegations delegations
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileDelegatedVotes

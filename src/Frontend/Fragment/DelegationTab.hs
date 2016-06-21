@@ -21,13 +21,10 @@ import qualified Frontend.Path as U
 temporary :: DelegateeListsMap -> [(User, [User])]  -- TODO: #682
 temporary (DelegateeListsMap xs) = concat $ unDelegateeLists . snd <$> xs
 
-renderDelegations :: forall m. Monad m => Bool -> DelegateeListsMap -> HtmlT m ()
-renderDelegations showTotal (temporary -> delegations) = do
-    when showTotal $ h2_ ("Insgesamt " <> total ^. showed . html)
+renderDelegations :: forall m. Monad m => DelegateeListsMap -> HtmlT m ()
+renderDelegations (temporary -> delegations) = do
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` delegations
   where
-    total = sum $ map ((1 +) . length . snd) delegations
-
     renderLi :: (User, [User]) -> HtmlT m ()
     renderLi (delegate, delegatees) = do
         li_ [class_ "small-avatar-list-item"] $ do
