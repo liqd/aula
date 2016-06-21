@@ -98,12 +98,9 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                 = do
                     div_ [class_ "voting-buttons"] $ do
                         postButton_
-                                [class_ "btn-cta voting-button", jsReloadOnClick]
-                                (U.likeIdea idea)
-                                "Idee Auf den Tisch Bringen"  -- FIXME: #558 button should not be shows in quorum has been reached
-                        a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
-                                i_ [class_ "icon-bullhorn"] nil
-                                "Stimme beauftragen"
+                            [class_ "btn-cta voting-button", jsReloadOnClick]
+                            (U.likeIdea idea)
+                            "Idee Auf den Tisch Bringen"
 
         voteButtons :: Html ()
         voteButtons

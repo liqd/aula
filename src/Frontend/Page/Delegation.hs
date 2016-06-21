@@ -64,7 +64,7 @@ instance FormPage PageDelegateVote where
         -- TODO: Table from users
         DF.inputSelect "user-to-delegate" v
         DF.inputSubmit "beauftragen"
-        -- TODO: Cancel button
+        cancelButton p
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerWithMsg
