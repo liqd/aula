@@ -138,7 +138,7 @@ aulaTop cfg app =
 type AulaActions =
        AulaMain
   :<|> "api" :> Backend.Api
-  :<|> "testing" :> AulaTesting  -- TODO: take this back in?  or move it to test suite?
+  :<|> "testing" :> AulaTesting
 
 aulaActions :: (Page AulaActions, GenArbitrary m, ActionM m) => ServerT AulaActions m
 aulaActions =
