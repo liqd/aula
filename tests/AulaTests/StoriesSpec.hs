@@ -35,6 +35,7 @@ spec = describe "stories" $ do
     story_ "Topic in refinement phase times out" topicTimeoutStory
     story_ "Some user behavior" someUserBehavior
     story_ "Back and forth: jury, voting phases" backAndForthJuryVotingPhases
+    story_ "Mark idea not feasable after it is marked" markIdeaAsNotFeasableAfterMarked
 
 
 -- | Runs the 'Behavior' represented story with the 'Action' interpreter,

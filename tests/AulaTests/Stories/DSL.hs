@@ -58,6 +58,9 @@ data Step a where
     -- System events, these events probably need a test support, API, etc...
     MoveTopicForward    :: TopicTitle -> a -> Step a
     MoveTopicBackward   :: TopicTitle -> a -> Step a
+
+    -- Check voting phase
+    CheckTopicPhaseVoting :: TopicTitle -> a -> Step a
   deriving Functor
 
 type Behavior = Free Step
@@ -139,3 +142,6 @@ setCreatorStatement idea statement =
 
 setFreeze :: Freeze -> Behavior ()
 setFreeze shouldBeFrozenOrNot = liftF $ SetFreeze shouldBeFrozenOrNot ()
+
+checkTopicPhaseVoting :: TopicTitle -> Behavior ()
+checkTopicPhaseVoting title = liftF $ CheckTopicPhaseVoting title ()

@@ -9,7 +9,7 @@
 
 module AulaTests.Stories.Tests where
 
-import Prelude hiding ((.), id)
+import Data.String.Conversions
 import Types
 
 import AulaTests.Stories.DSL
@@ -63,6 +63,18 @@ backAndForthJuryVotingPhases = do
     moveTopicForward topic1a -- in voting
     logout
 
+markIdeaAsNotFeasableAfterMarked :: Behavior ()
+markIdeaAsNotFeasableAfterMarked = do
+    login "admin"
+    selectIdeaSpace "school"
+    createIdea idea1 "description" CatTime
+    createTopic idea1 topic1a "description" -- in refinement
+    moveTopicForward topic1a -- in jury
+    moveTopicForward topic1a -- in voting
+    moveTopicBackward topic1a -- in jury
+    markIdea idea1 (Left $ NotFeasible (unsafeMarkdown ""))
+    checkTopicPhaseVoting topic1a
+    logout
 
 -- Collection of steps under development, no test design involved.
 someUserBehavior :: Behavior ()
@@ -78,3 +90,9 @@ someUserBehavior = do
     reportIdea idea1
     deleteIdea idea1
     logout
+
+
+-- * helpers
+
+unsafeMarkdown :: ST -> Document
+unsafeMarkdown = either (error . show) id . markdown
