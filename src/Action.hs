@@ -517,7 +517,6 @@ moveIdeaToTopic ideaId moveIdea = do
 
 -- * Vote Handling
 
--- TODO: Delegated liking.
 likeIdea :: ActionM m => AUID Idea -> m ()
 likeIdea ideaId = do
     addWithCurrentUser_ (AddLikeToIdea ideaId) ()
