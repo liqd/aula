@@ -24,6 +24,7 @@ import Servant.Missing (throwError500)
 
 import qualified Data.Map as Map
 import qualified Data.Monoid
+import qualified Data.Tree as Tree
 import qualified Generics.SOP as SOP
 
 import LifeCycle
@@ -223,7 +224,7 @@ findDelegatees uid scope = do
 newtype DelegateeLists = DelegateeLists { unDelegateeLists :: [(User, [User])] }
   deriving (Eq, Show, Read)
 
-newtype DelegateeListsMap = DelegateeListsMap { unDelegateeListsMap :: [(DScope, DelegateeLists)] }
+newtype DelegateeListsMap = DelegateeListsMap { unDelegateeListsMap :: [(DScopeFull, DelegateeLists)] }
   deriving (Eq, Show, Read)
 
 -- | 'DelegationLists' should be ordered by power and, if first argument is 'True', omit delegates
@@ -234,13 +235,12 @@ delegateeLists omitEmpty = DelegateeLists . s . f
     s = sortBy (flip compare `on` (length . snd))
     f = if omitEmpty then filter (not . null . snd) else id
 
--- | Call 'userDelegateeLists' for all 'IdeaSpace'-level 'DScopes' the user is involved with.
+-- | Call 'userDelegateeLists' for all 'DScopes' the user is involved with.
 userDelegateeListsMap :: AUID User -> EQuery DelegateeListsMap
 userDelegateeListsMap uid = do
-    user <- maybe404 =<< findUser uid
-    let spaces = SchoolSpace : (ClassSpace <$> (user ^.. userSchoolClasses))
-        runScope scope = (scope,) <$> userDelegateeLists uid scope
-    DelegateeListsMap <$> forM (DScopeIdeaSpace <$> spaces) runScope
+    let runScope dscope = (dscope,) <$> userDelegateeLists uid (fullDScopeToDScope dscope)
+    dscopes <- delegationScopeTree =<< maybe404 =<< findUser uid
+    DelegateeListsMap <$> runScope `mapM` Tree.flatten dscopes
 
 -- | Delegation tree for the given user and scope.
 -- The first level contains all the delegatees of the given user
