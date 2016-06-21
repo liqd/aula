@@ -261,9 +261,6 @@ userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpac
 --
 -- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
 -- the event procotol for moderators.
---
--- TODO: this doesn't feed the 'EventLog', which is the reason that the tests in
--- @/tests/Frontend/Page/AdminSpec.hs@ fail.
 genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
     noUsers <- query $ views dbUserMap Map.null
