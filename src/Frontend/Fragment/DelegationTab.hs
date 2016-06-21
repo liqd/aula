@@ -9,7 +9,7 @@
 module Frontend.Fragment.DelegationTab
 where
 
-import Data.List (intersperse)
+import Data.List (intersperse, sortBy)
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
     ( DelegateeListsMap(..)
@@ -20,11 +20,14 @@ import qualified Frontend.Path as U
 
 renderDelegations :: forall m. Monad m => Bool -> DelegateeListsMap -> HtmlT m ()
 renderDelegations showScope delegations = do
-    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` flatten delegations
+    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` sortBy orddeleg (flatten delegations)
   where
     flatten :: DelegateeListsMap -> [(DScopeFull, (User, [User]))]
     flatten (DelegateeListsMap xs) = concat $ f <$> xs
       where f (dscope, DelegateeLists lists) = (dscope,) <$> lists
+
+    orddeleg :: (DScopeFull, (User, [User])) -> (DScopeFull, (User, [User])) -> Ordering
+    orddeleg a@(s, (u, _)) a'@(s', (u', _)) = compare (s, u ^. userLogin, a) (s', u' ^. userLogin, a')
 
     renderLi :: (DScopeFull, (User, [User])) -> HtmlT m ()
     renderLi (dscope, (delegate, delegatees)) = do
