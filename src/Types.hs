@@ -790,7 +790,7 @@ type instance Proto Delegation = Delegation
 -- coincidentally) constitute a subset relationship between class spaces and school space.
 data DScope =
     DScopeGlobal
-  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }  -- TODO: should be 'SchoolClass'
+  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }
   | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
   | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
