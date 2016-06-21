@@ -34,9 +34,17 @@ renderDelegations (temporary -> delegations) = do
             div_ [class_ "col-11-12"] $ do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)
-                p_ $ do
-                    toHtml $ show (length delegatees) <> " Stimmen von "
-                    let f :: User -> HtmlT m ()
-                        f delegatee = strong_ $ a_ [href_ $ U.viewUserProfile delegatee]
-                            (delegatee ^. userLogin . unUserLogin  . html)
-                    sequence_ . intersperse ", " $ f <$> delegatees
+                case length delegatees of
+                    0 -> nil
+                    n -> do
+                        p_ $ do
+                            -- FUTUREWORK: we should name the voting power here, and then the list of
+                            -- delegatees.  (voting power is different from length of delegatee list unless
+                            -- the delegate has delegated to herself.)
+                            toHtml $ show (length delegatees)
+                                <> " Stimme" <> (if n == 1 then "" else "n")
+                                <> " von "
+                            let f :: User -> HtmlT m ()
+                                f delegatee = strong_ $ a_ [href_ $ U.viewUserProfile delegatee]
+                                    (delegatee ^. userLogin . unUserLogin  . html)
+                            sequence_ . intersperse ", " $ f <$> delegatees
