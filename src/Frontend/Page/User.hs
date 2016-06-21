@@ -235,9 +235,9 @@ delegationButtons (view capCtxUser -> delegatee)
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegateeListsMap -> [DScope]
-delegatedDScopes delegatee (DelegateeListsMap xs) = fst <$> filter pr xs
+delegatedDScopes delegatee (DelegateeListsMap xs) = fullDScopeToDScope . fst <$> filter pr xs
   where
-    pr :: (DScope, DelegateeLists) -> Bool
+    pr :: (a, DelegateeLists) -> Bool
     pr (_, DelegateeLists ys) = delegatee `elem` (fst <$> ys)
 
 

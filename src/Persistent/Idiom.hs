@@ -223,7 +223,7 @@ findDelegatees uid scope = do
 newtype DelegateeLists = DelegateeLists { unDelegateeLists :: [(User, [User])] }
   deriving (Eq, Show, Read)
 
-newtype DelegateeListsMap = DelegateeListsMap { unDelegateeListsMap :: [(DScope, DelegateeLists)] }
+newtype DelegateeListsMap = DelegateeListsMap { unDelegateeListsMap :: [(DScopeFull, DelegateeLists)] }
   deriving (Eq, Show, Read)
 
 -- | 'DelegationLists' should be ordered by power and, if first argument is 'True', omit delegates
@@ -239,8 +239,8 @@ userDelegateeListsMap :: AUID User -> EQuery DelegateeListsMap
 userDelegateeListsMap uid = do
     user <- maybe404 =<< findUser uid
     let spaces = SchoolSpace : (ClassSpace <$> (user ^.. userSchoolClasses))
-        runScope scope = (scope,) <$> userDelegateeLists uid scope
-    DelegateeListsMap <$> forM (DScopeIdeaSpace <$> spaces) runScope
+        runScope scope = (scope,) <$> userDelegateeLists uid (fullDScopeToDScope scope)
+    DelegateeListsMap <$> forM (DScopeIdeaSpaceFull <$> spaces) runScope
 
 -- | Delegation tree for the given user and scope.
 -- The first level contains all the delegatees of the given user

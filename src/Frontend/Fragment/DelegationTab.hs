@@ -22,11 +22,11 @@ renderDelegations :: forall m. Monad m => Bool -> DelegateeListsMap -> HtmlT m (
 renderDelegations _showScope delegations = do
     ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` flatten delegations
   where
-    flatten :: DelegateeListsMap -> [(DScope, (User, [User]))]
+    flatten :: DelegateeListsMap -> [(DScopeFull, (User, [User]))]
     flatten (DelegateeListsMap xs) = concat $ f <$> xs
       where f (dscope, DelegateeLists lists) = (dscope,) <$> lists
 
-    renderLi :: (DScope, (User, [User])) -> HtmlT m ()
+    renderLi :: (DScopeFull, (User, [User])) -> HtmlT m ()
     renderLi (dscope, (delegate, delegatees)) = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
@@ -36,7 +36,7 @@ renderDelegations _showScope delegations = do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)
                 p_ $ do
-                    toHtml $ "Geltungsbereich: " <> toUrlPiece dscope  -- TODO: we want to use uilabelST here, but for that we need a DScopeFull.
+                    toHtml $ "Geltungsbereich: " <> uilabelST dscope
                 case length delegatees of
                     0 -> nil
                     n -> do

@@ -271,7 +271,7 @@ instance Arbitrary DelegateeLists where
     shrink (DelegateeLists x) = DelegateeLists <$> shr x
 
 instance Arbitrary DelegateeListsMap where
-    arbitrary = DelegateeListsMap . (:[]) . (DScopeGlobal,) <$> arb
+    arbitrary = DelegateeListsMap . (:[]) . (DScopeGlobalFull,) <$> arb
     shrink (DelegateeListsMap x) = DelegateeListsMap <$> shr x
 
 instance Arbitrary PageUserProfileDelegatedVotes where
