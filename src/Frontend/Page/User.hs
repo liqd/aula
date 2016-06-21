@@ -255,7 +255,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "heroic-tabs"] $ do
                 span_ [class_ "heroic-tab-item m-active"]
                     "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (U.userGlobalDelegations user)]
+                a_ [class_ "heroic-tab-item", href_ (U.userDelegations user)]
                     "Erhaltene Stimmen"
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
@@ -304,27 +304,11 @@ instance ToHtml PageUserProfileDelegatedVotes where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    -- School / Class select buttons: FIXME mechanics!  use widget from delegation network browser!
-                    div_ [class_ "filter-toggles"] $ do
-                        a_ [class_ "filter-toggle-btn", href_ (U.userGlobalDelegations user)] "Schulweit"
-                        a_ [class_ "filter-toggle-btn m-active", href_ (U.userClassDelegations user)] "Klassenweit"
                     renderDelegations True delegations
 
-delegatedVotesGlobal :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileDelegatedVotes
-delegatedVotesGlobal userId = delegatedVotes userId DScopeGlobal
-
-delegatedVotesClass :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileDelegatedVotes
-delegatedVotesClass userId = do
-    user <- mquery (findUser userId)
-    case user ^? userRoles . _Student of -- TODO: only the first student role...
-        Nothing -> throwError500 "Nutzer ist kein Schüler."
-        Just cl -> delegatedVotes userId (DScopeIdeaSpace (ClassSpace cl))
-
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> DScope -> m PageUserProfileDelegatedVotes
-delegatedVotes userId _scope = do  -- TODO: about dropping _scope on the floor here, see #682.  see also: userDelegateeListsMap
+      => AUID User -> m PageUserProfileDelegatedVotes
+delegatedVotes userId = do
     ctx <- currentUserCapCtx
     equery $ do
         user <- maybe404 =<< findUser userId

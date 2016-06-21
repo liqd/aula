@@ -105,8 +105,7 @@ module Frontend.Path
     , delegateVoteOnClassSpace
     , withdrawDelegationOnSchoolSpace
     , withdrawDelegationOnClassSpace
-    , userGlobalDelegations
-    , userClassDelegations
+    , userDelegations
     , userIdeas
 
     -- * admin paths
@@ -517,8 +516,7 @@ adminMode (AdminResetPassword uid)        path = path </> "user" </> uriPart uid
 
 data UserMode (r :: AllowedMethod) =
     UserIdeas
-  | UserGlobalDelegations
-  | UserClassDelegations
+  | UserDelegations
   | UserDelegateVoteOnSchoolSpace
   | UserDelegateVoteOnClassSpace SchoolClass
   | UserWithdrawDelegationOnSchoolSpace
@@ -531,8 +529,7 @@ instance SOP.Generic (UserMode r)
 
 user :: UserMode r -> UriPath -> UriPath
 user UserIdeas                               path = path </> "ideas"
-user UserGlobalDelegations                   path = path </> "delegations" </> "global"
-user UserClassDelegations                    path = path </> "delegations" </> "class"
+user UserDelegations                         path = path </> "delegations"
 user UserDelegateVoteOnSchoolSpace           path = path </> "delegate" </> "school"
 user (UserDelegateVoteOnClassSpace c)        path = path </> "delegate" </> "class" </> uriPart c
 user UserWithdrawDelegationOnSchoolSpace     path = path </> "withdraw" </> "school"
@@ -552,11 +549,8 @@ withdrawDelegationOnSchoolSpace u = UserProf (u ^. _Id) UserWithdrawDelegationOn
 withdrawDelegationOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
 withdrawDelegationOnClassSpace u = UserProf (u ^. _Id) . UserWithdrawDelegationOnClassSpace
 
-userGlobalDelegations :: User -> Main 'AllowGetPost
-userGlobalDelegations u = UserProf (u ^. _Id) UserGlobalDelegations
-
-userClassDelegations :: User -> Main 'AllowGetPost
-userClassDelegations u = UserProf (u ^. _Id) UserClassDelegations
+userDelegations :: User -> Main 'AllowGetPost
+userDelegations u = UserProf (u ^. _Id) UserDelegations
 
 userIdeas :: AUID User -> Main 'AllowGetPost
 userIdeas uid = UserProf uid UserIdeas
