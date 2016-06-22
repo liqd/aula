@@ -76,16 +76,18 @@ wc:
 	find src tests -name '*.hs' | xargs wc
 
 content:
+	rm -f cookie-jar
 	curl -XPOST $(AULA_URL)/api/manage-state/create-init
 	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
 	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-demo
 	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-votes
-	rm cookie-jar
+	rm -f cookie-jar
 
 content-deleg:
+	rm -f cookie-jar
 	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
 	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-delegations
-	rm cookie-jar
+	rm -f cookie-jar
 
 tags: .phony
 	hasktags -b src/ tests/ exec/ dist/build/autogen/
