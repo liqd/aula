@@ -311,7 +311,7 @@ runClient (Free (CheckTopicPhaseVoting t k)) = do
     postcondition $ do
         Just topic' <- findTopicByTitle t
         let phase = topic' ^. topicPhase
-        unless (isVotingPhase phase) . fail . ("runClient: " ++) $ show phase
+        unless (has _PhaseVoting phase) . fail . ("runClient: " ++) $ show phase
     runClient k
 
 -- * helpers
@@ -331,10 +331,6 @@ findCommentCommentByText c t = find ((t ==) . unMarkdown . _commentText) . Map.e
 findIdeaAndComment :: (ActionM m) => IdeaTitle -> CommentText -> ActionClient m (Maybe (Idea, Maybe Comment))
 findIdeaAndComment it cp =
     (id &&& flip findCommentByText cp) <$$> findIdeaByTitle it
-
-isVotingPhase :: Phase -> Bool
-isVotingPhase (PhaseVoting{}) = True
-isVotingPhase _               = False
 
 findIdeaAndCommentComment
     :: (ActionM m)
