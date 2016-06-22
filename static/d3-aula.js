@@ -254,13 +254,17 @@
 
         };
 
+        // not sure we should use dblclick.  doesn't seem to work very
+        // well in firefox, and not sure about phones, either.
         var on_dblclick = function(d) {
         };
 
         var on_mouseover = function(d) {
+            d.fixed = true;
         };
 
         var on_mouseout = function(d) {
+            d.fixed = false;
         };
 
 
