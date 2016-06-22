@@ -240,9 +240,12 @@
 
         // toggle visibility of all delegatees (recursively).
         //
-        // FIXME: remember visibility of transitive delegatees for when
-        // we toggle back on, so the user won't have to click open
-        // every single level of the tree by hand.
+        // (currently, if we click around in a large delegatee tree,
+        // turning individual sub-trees off and on, and then close and
+        // open the entire tree, everything will be visible.  it would
+        // be slightly nicer to remember which nodes were invisible
+        // and recover the state before the previous click on the root
+        // node.)
         var on_click = function(d) {
             var newVisibilityStatus = undefined;
             var visited = [];
