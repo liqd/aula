@@ -236,22 +236,19 @@
             return d.y - (avatarWidthHeight(d) / 2);
         };
 
+        // toggle visibility of all delegatees (recursively).
+        //
+        // TODO: remember visibility of transitive delegatees for when
+        // we toggle back on, so the user won't have to click open
+        // every single level of the tree by hand.
         var on_click = function(d) {
+            graph.links.forEach(function(l) {
+                if (l.target.name === d.name) {
+                    l.source.visible = false;
+                }
+            });
 
-            force.nodes([graph.nodes[0]]).links([]);
-            console.log(force.nodes());
-            console.log(force.links());
-            updateWidget();
-
-            /*
-
-            d.visible = false;
             updateVisibility();
-
-            TODO: ultimately, all delegatees of this node should get their visibility toggled.
-
-            */
-
         };
 
         // not sure we should use dblclick.  doesn't seem to work very
