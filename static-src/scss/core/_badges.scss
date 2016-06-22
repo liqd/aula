@@ -3,7 +3,7 @@
 }
 
 .badge {
-    @include rem(font-size, $font-size-small);
+    @include rem(font-size, $font-size-smaller);
     @include rem(margin, 0 10px 10px 0);
     @include rem(padding, 0 10px);
     border: 1px solid $color-positive;
