@@ -242,6 +242,7 @@
         // we toggle back on, so the user won't have to click open
         // every single level of the tree by hand.
         var on_click = function(d) {
+            var newVisibilityStatus = undefined;
             var visited = [];
             var traverse = function(d) {
                 if (visited.indexOf(d.name) >= 0) {
@@ -250,7 +251,10 @@
                 visited.push(d.name);
                 graph.links.forEach(function(l) {
                     if (l.target.name === d.name) {
-                        l.source.visible = false;  // TODO: toggle, but not quite!
+                        if (newVisibilityStatus === undefined) {
+                            newVisibilityStatus = !l.source.visible;
+                        }
+                        l.source.visible = newVisibilityStatus;
                         traverse(l.source);
                     }
                 });
