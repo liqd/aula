@@ -133,14 +133,8 @@
     //////////////////////////////////////////////////////////////////////
 
     var showGraph = function(rootSel, graph) {
-        // tweak hints: width should depend on browser width; height
-        // should depend on total voting power of all nodes in scope.
-        var width = 960;
-        var height = 800;
 
-        graph.nodes.forEach(function(d) {
-            d.visible = true;
-        });
+        // [local functions]
 
         var tick = function() {
             // adjust positions (is there a better place for this than here in the tick function?)
@@ -172,10 +166,6 @@
         };
 
         var updateVisibility = function() {
-            path.attr("class", function(d) { return switchClass(this, d.source.visible && d.target.visible, "hidden"); });
-            text.attr("class", function(d) { return switchClass(this, d.visible, "hidden"); });
-            avat.attr("class", function(d) { return switchClass(this, d.visible, "hidden"); });
-
             var gnodes = [];
             var glinks = [];
 
@@ -192,17 +182,77 @@
             });
 
             force.nodes(gnodes).links(glinks);
+            updateWidget();
         };
 
-        var force = d3.layout.force()
-            .charge(-200)
-            .linkDistance(70)
-            .size([width, height])
-            .on("tick", tick);
+        var avatarWidthHeight = function(d) {
+            // tweak hints: 30, 200 are good bounds for this.
+            return (50 + 30 * d.power) / 4;
+        };
 
-        force
+        var avatarXPos = function(d) {
+            return d.x - (avatarWidthHeight(d) / 2);
+        };
+
+        var avatarYPos = function(d) {
+            return d.y - (avatarWidthHeight(d) / 2);
+        };
+
+        var on_click = function(d) {
+            d.visible = false;
+            updateVisibility();
+        };
+
+        var on_dblclick = function(d) {
+        };
+
+        var on_mouseover = function(d) {
+        };
+
+        var on_mouseout = function(d) {
+        };
+
+        var updateWidget = function() {
+            path.data(force.links()).enter().append("path")
+                .attr("class", function(d) { return "link default"; })
+                .attr("marker-end", function(d) { return "url(#default)"; });
+
+              // TODO: .exit().remove();
+
+            avat.data(graph.nodes).enter().append("image")
+                .attr("class", ".node")
+                .call(force.drag)
+                .attr("width",  avatarWidthHeight)
+                .attr("height", avatarWidthHeight)
+                .attr("xlink:href", function(d) { return d.avatar; })
+                .on("click",      on_click)
+                .on("dblclick",   on_dblclick)
+                .on("mouseover",  on_mouseover)
+                .on("mouseout",   on_mouseout);
+
+            text.data(graph.nodes).enter().append("text")
+                .text(function(d) { return (d.name + " [" + d.power + "]"); });
+        };
+
+
+        // [initialization]
+
+        // tweak hints: width should depend on browser width; height
+        // should depend on total voting power of all nodes in scope.
+        var width = 960;
+        var height = 800;
+
+        graph.nodes.forEach(function(d) {
+            d.visible = true;
+        });
+
+        var force = d3.layout.force()
+            .size([width, height])
             .nodes(graph.nodes)
             .links(graph.links)
+            .on("tick", tick)
+            .charge(-200)
+            .linkDistance(70)
             .start();
 
         var svg = d3.select(rootSel).append("svg")
@@ -222,83 +272,11 @@
             .append("path")
             .attr("d", "M0,-5L10,0L0,5");
 
-        var path = svg.append("g")
-            .selectAll("path")
-            .data(force.links()).enter().append("path")
-            .attr("class", function(d) { return "link default"; })
-            .attr("marker-end", function(d) { return "url(#default)"; });
+        var path = svg.append("g").selectAll("path");
+        var avat = svg.append("g").selectAll(".node");
+        var text = svg.append("g").selectAll("text");
 
-        var avatarWidthHeight = function(d) {
-            // tweak hints: 30, 200 are good bounds for this.
-            return (50 + 30 * d.power) / 4;
-        };
-
-        var avatarXPos = function(d) {
-            return d.x - (avatarWidthHeight(d) / 2);
-        };
-
-        var avatarYPos = function(d) {
-            return d.y - (avatarWidthHeight(d) / 2);
-        };
-
-        var avat = svg.append("g")
-            .selectAll(".node")
-            .data(graph.nodes).enter().append("image")
-            .attr("class", ".node")
-            .call(force.drag)
-            .attr("width",  avatarWidthHeight)
-            .attr("height", avatarWidthHeight)
-            .attr("xlink:href", function(d) { return d.avatar; });
-
-        var on_click = function(d) {
-            d.visible = false;
-            updateVisibility();
-        };
-
-        var on_dblclick = function(d) {
-        };
-
-        var on_mouseover = function(d) {
-        };
-
-        var on_mouseout = function(d) {
-        };
-
-        avat.on("click",      on_click)
-            .on("dblclick",   on_dblclick)
-            .on("mouseover",  on_mouseover)
-            .on("mouseout",   on_mouseout);
-
-        var text = svg.append("g")
-            .selectAll("text")
-            .data(graph.nodes).enter().append("text")
-            .text(function(d) { return (d.name + " [" + d.power + "]"); });
-    };
-
-
-    // take a dom elem, a boolean, and a class name.  if the boolean
-    // is false, return the class attribute of the elem with the class
-    // name removed (if present).  if it is true, return the class
-    // attribute with the class name appended (and earlier occurrances
-    // removed if present).
-    var switchClass = function(elem, onOrOff, clss) {
-        var result = "";
-
-        // retrieve old value (if present)
-        if (elem.attributes['class']) {
-            result = elem.attributes['class'].value;
-        }
-
-        // remove
-        result = result.replace(" hidden", "");
-        result = result.replace("hidden", "");
-
-        // add
-        if (!onOrOff) {
-            result = result + " " + "hidden";
-        }
-
-        return result;
+        updateWidget();
     };
 
 
