@@ -487,7 +487,7 @@ createOrEditIdea eLocIdea v form p =
                 a_ [ class_ "btn m-input-action"
                    , Lucid.onclick_ $ "showPreview('" <> editDomId <> "', '" <> previewDomId <> "')"
                    ]
-                   "bearbeiten <> ansehen"
+                   "Vorschau einblenden"
             div_ [id_ previewDomId, class_ "markdown-preview m-closed"] nil
             formPageSelectCategory v
             footer_ [class_ "form-footer"] $ do
