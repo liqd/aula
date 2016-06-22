@@ -236,6 +236,7 @@
             text = svg.append("g")
                 .selectAll("text").data(force.nodes())
                 .enter().append("text")
+                .attr("class", function(d) { return setvisibility(d.showTitle, this); })
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
             force.alpha(.3);
@@ -291,10 +292,14 @@
         };
 
         var on_mouseover = function(d) {
+            d.showTitle = true;
+            updateVisibility();
             d.fixed = true;
         };
 
         var on_mouseout = function(d) {
+            d.showTitle = false;
+            updateVisibility();
             d.fixed = false;
         };
 
@@ -371,6 +376,24 @@
             .on("click",   function() { filterByMatching(); });
 
         controls.append("hr");
+    };
+
+    // FIXME: i think d3js has a better way to do this.
+    var setvisibility = function(visible, elem) {
+        var result = "";
+        if (elem.attributes['class']) {
+            result = elem.attributes['class'].value;
+        }
+
+        // remove hidden class
+        result = result.replace(" hidden", "");
+        result = result.replace("hidden", "");
+
+        // add it if appropriate
+        if (!visible) {
+            result = result + " " + "hidden";
+        }
+        return result;
     };
 
 
