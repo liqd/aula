@@ -29,3 +29,9 @@ maxPasswordLength = 120
 
 initialDemoPassword :: ST
 initialDemoPassword = "1234"
+
+avatarDefaultSize :: Int
+avatarDefaultSize = 100
+
+avatarExtraSizes :: [Int]
+avatarExtraSizes = [64, 300]
