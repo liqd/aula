@@ -303,6 +303,9 @@ instance ToHtml ViewIdea where
             -- explanation by the dean why the idea is feasible or not (if available)
             feasibilityVerdict idea
 
+            when (isWinning idea) $
+                div_ [class_ "btn-cta"] "gewonnen"
+
             -- buttons
             toHtml $ ideaVoteLikeButtons ctx stats
 
@@ -335,7 +338,6 @@ instance ToHtml ViewIdea where
                 (creatorStatementOfIdea idea)
 
             -- mark winning idea
-            -- FIXME: Styling
             when (isFeasibleIdea idea) $ do
                 div_ [class_ "winning-idea voting-buttons"] $ do
                     when (CanMarkWinner `elem` caps) $ do
@@ -346,13 +348,9 @@ instance ToHtml ViewIdea where
                                     ]
 
                         when (isNothing (idea ^. ideaVoteResult)) $
-                            winnerButton (U.markIdeaAsWinner idea) "Idee hat gewonnen"
+                            winnerButton (U.markIdeaAsWinner idea) "als \"gewonnen\" markieren"
                         when (isWinning idea) $
                             winnerButton (U.unmarkIdeaAsWinner idea) "\"gewonnen\" zurücknehmen"
-
-                    when (isWinning idea) $
-                        div_ [class_ "btn-cta"] "gewonnen"
-                    -- FIXME: Add information about not enough votes.
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do
