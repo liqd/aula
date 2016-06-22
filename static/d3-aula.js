@@ -172,9 +172,9 @@
         };
 
         var updateVisibility = function() {
-            path.attr("class", function(d) { return setvisibility(d.source.visible && d.target.visible, this); });
-            text.attr("class", function(d) { return setvisibility(d.visible, this); });
-            avat.attr("class", function(d) { return setvisibility(d.visible, this); });
+            path.attr("class", function(d) { return switchClass(this, d.source.visible && d.target.visible, "hidden"); });
+            text.attr("class", function(d) { return switchClass(this, d.visible, "hidden"); });
+            avat.attr("class", function(d) { return switchClass(this, d.visible, "hidden"); });
         };
 
         var force = d3.layout.force()
@@ -277,7 +277,7 @@
         result = result.replace("hidden", "");
 
         // add
-        if (!onOfOff) {
+        if (!onOrOff) {
             result = result + " " + "hidden";
         }
 
