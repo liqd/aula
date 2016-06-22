@@ -171,6 +171,14 @@
             updateVisibility();
         };
 
+        var highlightMatching = function() {
+            console.log('highlightMatching', arguments);
+        };
+
+        var filterByMatching = function () {
+            console.log('filterByMatching', arguments);
+        };
+
         var updateVisibility = function() {
             var gnodes = [];
             var glinks = [];
@@ -311,7 +319,7 @@
             .linkDistance(70)
             .start();
 
-        initializeControlPanel(rootSel, filterByPower);
+        initializeControlPanel(rootSel, filterByPower, highlightMatching, filterByMatching);
 
         var svg = d3.select(rootSel).append("svg")
             .attr("width", width)
@@ -337,7 +345,7 @@
         updateWidget();
     };
 
-    var initializeControlPanel = function(rootSel, filterByPower) {
+    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching, filterByMatching) {
         var controls = d3.select(rootSel);
 
         controls.append("label").text("Nur Delegierte mit mindestens ");
@@ -346,6 +354,23 @@
             .on("keyup",   function() { filterByPower(this.value); })
             .on("mouseup", function() { filterByPower(this.value); });
         controls.append("label").text(" Stimmen anzeigen.");
+
+        controls.append("hr");
+
+        controls.append("label").text("Nutzer suchen: ");
+        controls.append("input")
+            .attr("type", "text")
+            .on("keyup",   function() { highlightMatching(this.value); })
+            .on("mouseup", function() { highlightMatching(this.value); });
+
+        controls.append("hr");
+
+        controls.append("input")
+            .attr("type", "button")
+            .attr("value", "Nur Treffer anzeigen!")
+            .on("click",   function() { filterByMatching(); });
+
+        controls.append("hr");
     };
 
 
