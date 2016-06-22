@@ -138,15 +138,13 @@
 
         var tick = function() {
             // adjust positions (is there a better place for this than here in the tick function?)
-            for (i in graph.nodes) {
-                var wallElasticity = 10;
-                if (graph.nodes[i]) {
-                    if (graph.nodes[i].x < 0)      graph.nodes[i].x = wallElasticity;
-                    if (graph.nodes[i].x > width)  graph.nodes[i].x = width - wallElasticity;
-                    if (graph.nodes[i].y < 0)      graph.nodes[i].y = wallElasticity;
-                    if (graph.nodes[i].y > height) graph.nodes[i].y = height - wallElasticity;
-                }
-            }
+            var wallElasticity = 10;
+            force.nodes().forEach(function(n) {
+                if (n.x < 0)      n.x = wallElasticity;
+                if (n.x > width)  n.x = width - wallElasticity;
+                if (n.y < 0)      n.y = wallElasticity;
+                if (n.y > height) n.y = height - wallElasticity;
+            });
 
             // update elems
             path.attr("d", linkArc);
@@ -169,13 +167,13 @@
             var gnodes = [];
             var glinks = [];
 
-            graph.nodes.forEach(function(n) {
+            force.nodes().forEach(function(n) {
                 if (n.visible) {
                     gnodes.push(n);
                 }
             });
 
-            graph.links.forEach(function(l) {
+            force.links().forEach(function(l) {
                 if (l.source.visible && l.target.visible) {
                     glinks.push(l);
                 }
@@ -183,6 +181,36 @@
 
             force.nodes(gnodes).links(glinks);
             updateWidget();
+        };
+
+        var updateWidget = function() {
+            var p = path.data(force.links());
+
+            p.exit().remove();
+            p.enter().append("path")
+                .attr("class", function(d) { return "link default"; })
+                .attr("marker-end", function(d) { return "url(#default)"; });
+
+            var a = avat.data(force.nodes());
+
+            a.exit().remove()
+            a.enter().append("image")
+                .attr("class", ".node")
+                .call(force.drag)
+                .attr("width",  avatarWidthHeight)
+                .attr("height", avatarWidthHeight)
+                .attr("xlink:href", function(d) { return d.avatar; });
+
+            a.on("click",      on_click)
+                .on("dblclick",   on_dblclick)
+                .on("mouseover",  on_mouseover)
+                .on("mouseout",   on_mouseout);
+
+            var t = text.data(force.nodes());
+
+            t.exit().remove()
+            t.enter().append("text")
+                .text(function(d) { return (d.name + " [" + d.power + "]"); });
         };
 
         var avatarWidthHeight = function(d) {
@@ -199,8 +227,21 @@
         };
 
         var on_click = function(d) {
+
+            /*
+
+            force.nodes([]).links([]);
+            console.log(force.nodes());
+            console.log(force.links());
+            updateWidget();
+
             d.visible = false;
             updateVisibility();
+
+            TODO: ultimately, all delegatees of this node should get their visibility toggled.
+
+            */
+
         };
 
         var on_dblclick = function(d) {
@@ -250,39 +291,9 @@
             .append("path")
             .attr("d", "M0,-5L10,0L0,5");
 
-        var path = undefined;
-        var avat = undefined;
-        var text = undefined;
-
-        var updateWidget = function() {
-            path = svg.append("g")
-                .selectAll("path").data(force.links())
-                .enter().append("path")
-                .attr("class", function(d) { return "link default"; })
-                .attr("marker-end", function(d) { return "url(#default)"; });
-
-            avat = svg.append("g")
-                .selectAll(".node").data(force.nodes())
-                .enter().append("image")
-                .attr("class", ".node")
-                .call(force.drag)
-                .attr("width",  avatarWidthHeight)
-                .attr("height", avatarWidthHeight)
-                .attr("xlink:href", function(d) { return d.avatar; });
-
-            avat.on("click",      on_click)
-                .on("dblclick",   on_dblclick)
-                .on("mouseover",  on_mouseover)
-                .on("mouseout",   on_mouseout);
-
-            text = svg.append("g")
-                .selectAll("text").data(force.nodes())
-                .enter().append("text")
-                .text(function(d) { return (d.name + " [" + d.power + "]"); });
-
-            // TODO: .exit().remove();
-
-        };
+        var path = svg.append("g").selectAll("path");
+        var avat = svg.append("g").selectAll(".node");
+        var text = svg.append("g").selectAll("text");
 
         updateWidget();
     };
