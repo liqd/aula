@@ -236,6 +236,7 @@
             text = svg.append("g")
                 .selectAll("text").data(force.nodes())
                 .enter().append("text")
+                .attr("class", function(d) { return setvisibility(false, this); })
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
             force.alpha(.3);
