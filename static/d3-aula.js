@@ -167,13 +167,15 @@
             var gnodes = [];
             var glinks = [];
 
-            force.nodes().forEach(function(n) {
+            // we need to use `graph` here, not `force`.  invisible
+            // nodes are still in the former, but not in the latter.
+            graph.nodes.forEach(function(n) {
                 if (n.visible) {
                     gnodes.push(n);
                 }
             });
 
-            force.links().forEach(function(l) {
+            graph.links.forEach(function(l) {
                 if (l.source.visible && l.target.visible) {
                     glinks.push(l);
                 }
