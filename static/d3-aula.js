@@ -163,6 +163,14 @@
             return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
         };
 
+        // make all nodes below a certain power threshold invisible.
+        var filterByPower = function(threshold) {
+            graph.nodes.forEach(function(n) {
+                n.visible = n.power >= threshold;
+            });
+            updateVisibility();
+        };
+
         var updateVisibility = function() {
             var gnodes = [];
             var glinks = [];
@@ -302,6 +310,10 @@
             .charge(-200)
             .linkDistance(70)
             .start();
+
+        var controls = d3.select(rootSel).append("textArea").on("change", function() {
+            filterByPower(this.value);
+        });
 
         var svg = d3.select(rootSel).append("svg")
             .attr("width", width)
