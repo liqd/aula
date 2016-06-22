@@ -351,8 +351,8 @@ validateImageFile Nothing = pure $ DF.Success Nothing
 validateImageFile imgPath@(Just file) = do
     img <- readImageFile (cs file)
     pure $ case img of
-        -- TODO: Translate
-        Left _  -> DF.Error   "The selected file is not a picture."
+        -- FIXME: what are the accepted formats?  be more specific and more accurate!
+        Left _  -> DF.Error   "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
         Right _ -> DF.Success imgPath
 
 
