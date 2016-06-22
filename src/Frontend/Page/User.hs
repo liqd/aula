@@ -40,6 +40,7 @@ import Persistent
 import qualified Data.Set as Set
 import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Types as DF (Result(..))
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 
@@ -325,7 +326,7 @@ instance FormPage EditUserProfile where
 
     makeForm (EditUserProfile _ctx user) =
         UserProfile
-        <$> ("avatar" .: (cs <$$> DF.file))
+        <$> ("avatar" .: (cs <$$> DF.validateM validateImageFile DF.file))
         <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
@@ -344,6 +345,16 @@ instance FormPage EditUserProfile where
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Änderungen speichern"
                     cancelButton p
+
+validateImageFile :: ActionM m => Maybe FilePath -> m (DF.Result (Html ()) (Maybe FilePath))
+validateImageFile Nothing = pure $ DF.Success Nothing
+validateImageFile imgPath@(Just file) = do
+    img <- readImageFile (cs file)
+    pure $ case img of
+        -- FIXME: what are the accepted formats?  be more specific and more accurate!
+        Left _  -> DF.Error   "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
+        Right _ -> DF.Success imgPath
+
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
