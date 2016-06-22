@@ -116,8 +116,6 @@ instance ToHtml ListItemIdeas where
         for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
 
 
--- | FUTUREWORK: there are no queries for IdeaInUserProfile.  to implement that, we need to refactor
--- the idea location that is currently used to calculate the urls for the filter and sort links.
 ideaListHeader :: Monad m => WhatListPage -> IdeasQuery -> HtmlT m ()
 ideaListHeader whatListPage ideasQuery = do
 
