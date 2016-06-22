@@ -20,13 +20,14 @@ import qualified Frontend.Path as U
 
 data WhatListPage
     = IdeaInIdeasOverview
-        { _whatListPageIdeaLocation :: IdeaLocation }
+        { _whatListPageIdeaLocation :: IdeaLocation
+        }
     | IdeaInViewTopic
-        { _whatListPageTopicTab :: ListIdeasInTopicTab
+        { _whatListPageTopicTab     :: ListIdeasInTopicTab
         , _whatListPageIdeaLocation :: IdeaLocation
         }
     | IdeaInUserProfile
-        { _whatListPageUserProfile :: User
+        { _whatListPageUserProfile  :: User
         }
   deriving (Eq, Show, Read, Generic)
 
