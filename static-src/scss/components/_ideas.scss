@@ -151,6 +151,10 @@
         &:first-child {
             margin-right: 0;
         }
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            float: none;
+        }
     }
 
     .is-feasible .indicator-icon {
