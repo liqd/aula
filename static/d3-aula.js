@@ -221,6 +221,8 @@
                 .selectAll("text").data(force.nodes())
                 .enter().append("text")
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
+
+            force.alpha(.3);
         };
 
         var avatarWidthHeight = function(d) {
