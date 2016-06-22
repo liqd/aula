@@ -39,6 +39,6 @@ instance SOP.Generic WhatListPage
 
 pathToIdeaListPage :: WhatListPage -> Maybe IdeasQuery -> U.Main 'U.AllowGetPost
 pathToIdeaListPage whatListPage = case whatListPage of
-    IdeaInUserProfile user  -> U.userIdeas' (user ^. _Id)
     IdeaInIdeasOverview loc -> U.listIdeas' loc Nothing
     IdeaInViewTopic tab loc -> U.listIdeas' loc (Just tab)
+    IdeaInUserProfile user  -> U.userIdeas' (user ^. _Id)
