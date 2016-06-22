@@ -35,6 +35,8 @@ spec = describe "stories" $ do
     story_ "Topic in refinement phase times out" topicTimeoutStory
     story_ "Some user behavior" someUserBehavior
     story_ "Back and forth: jury, voting phases" backAndForthJuryVotingPhases
+    -- the following tests that when you revert to jury phase to fix an idea and fix it, the change
+    -- in the idea verdict will trigger a phase transition back to voting phase.
     story_ "Mark idea not feasable after it is marked" markIdeaAsNotFeasableAfterMarked
 
 
