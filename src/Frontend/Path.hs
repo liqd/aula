@@ -559,6 +559,7 @@ userIdeas' uid = UserProf uid . UserIdeas
 userIdeas :: AUID User -> Main 'AllowGetPost
 userIdeas uid = UserProf uid $ UserIdeas Nothing
 
+
 -- * paths to ideas
 
 viewIdea :: Idea -> Main 'AllowGetPost
