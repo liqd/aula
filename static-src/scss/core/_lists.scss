@@ -115,7 +115,7 @@
             @media screen and (max-width: $mobile-breakpoint) {
                 @include rem(min-width, 43px);
                 @include rem(margin-right, 15px);
-                @include rem(margin-bottom, 10px);
+                @include rem(margin-bottom, 20px);
                 background-size: inherit;
 
                 > a, > span {
@@ -124,6 +124,11 @@
             }
         }
     }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        padding-bottom: 0;
+    }
+
 }
 
 .meta-list {
