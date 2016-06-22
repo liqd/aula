@@ -238,16 +238,25 @@
 
         // toggle visibility of all delegatees (recursively).
         //
-        // TODO: remember visibility of transitive delegatees for when
+        // FIXME: remember visibility of transitive delegatees for when
         // we toggle back on, so the user won't have to click open
         // every single level of the tree by hand.
         var on_click = function(d) {
-            graph.links.forEach(function(l) {
-                if (l.target.name === d.name) {
-                    l.source.visible = false;
+            var visited = [];
+            var traverse = function(d) {
+                if (visited.indexOf(d.name) >= 0) {
+                    return;
                 }
-            });
+                visited.push(d.name);
+                graph.links.forEach(function(l) {
+                    if (l.target.name === d.name) {
+                        l.source.visible = false;  // TODO: toggle, but not quite!
+                        traverse(l.source);
+                    }
+                });
+            };
 
+            traverse(d);
             updateVisibility();
         };
 
