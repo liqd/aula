@@ -154,41 +154,27 @@
                 }
             }
 
-            var setvisibility = function(visible, elem) {
-                var result = "";
-                if (elem.attributes['class']) {
-                    result = elem.attributes['class'].value;
-                }
-
-                // remove hidden class
-                result = result.replace(" hidden", "");
-                result = result.replace("hidden", "");
-
-                // add it if appropriate
-                if (!visible) {
-                    result = result + " " + "hidden";
-                }
-                return result;
-            };
-
             // update elems
-            path.attr("d", linkArc)
-                .attr("class", function(d) { return setvisibility(d.source.visible && d.target.visible, this); });
+            path.attr("d", linkArc);
 
             text.attr("dx", function(d) { return d.x; })
-                .attr("dy", function(d) { return d.y; })
-                .attr("class", function(d) { return setvisibility(d.visible, this); });
+                .attr("dy", function(d) { return d.y; });
 
             avat.attr("x", avatarXPos)
-                .attr("y", avatarYPos)
-                .attr("class", function(d) { return setvisibility(d.visible, this); });
+                .attr("y", avatarYPos);
         };
 
-        function linkArc(d) {
+        var linkArc = function(d) {
             var dx = d.target.x - d.source.x;
             var dy = d.target.y - d.source.y;
             var dr = Math.sqrt(dx * dx + dy * dy);
             return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+        };
+
+        var updateVisibility = function() {
+            path.attr("class", function(d) { return setvisibility(d.source.visible && d.target.visible, this); });
+            text.attr("class", function(d) { return setvisibility(d.visible, this); });
+            avat.attr("class", function(d) { return setvisibility(d.visible, this); });
         };
 
         var force = d3.layout.force()
@@ -249,6 +235,7 @@
 
         var on_click = function(d) {
             d.visible = false;
+            updateVisibility();
         };
 
         var on_dblclick = function(d) {
@@ -269,18 +256,32 @@
             .selectAll("text")
             .data(graph.nodes).enter().append("text")
             .text(function(d) { return (d.name + " [" + d.power + "]"); });
+    };
 
 
-        /*
-            http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle
-            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-              <clipPath id="clipCircle">
-                <circle r="50" cx="50" cy="50"/>
-              </clipPath>
-              <rect width="100" height="100" clip-path="url(#clipCircle)"/>
-            </svg>
-        */
+    // take a dom elem, a boolean, and a class name.  if the boolean
+    // is false, return the class attribute of the elem with the class
+    // name removed (if present).  if it is true, return the class
+    // attribute with the class name appended (and earlier occurrances
+    // removed if present).
+    var switchClass = function(elem, onOrOff, clss) {
+        var result = "";
 
+        // retrieve old value (if present)
+        if (elem.attributes['class']) {
+            result = elem.attributes['class'].value;
+        }
+
+        // remove
+        result = result.replace(" hidden", "");
+        result = result.replace("hidden", "");
+
+        // add
+        if (!onOfOff) {
+            result = result + " " + "hidden";
+        }
+
+        return result;
     };
 
 
