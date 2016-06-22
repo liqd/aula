@@ -46,6 +46,18 @@ data UniverseSize = UniverseSize
     , numberOfCommentVotes :: Int
     }
 
+smallUniverseSize :: UniverseSize
+smallUniverseSize = UniverseSize
+    { numberOfIdeaSpaces = 3
+    , numberOfStudents = 30
+    , numberOfTopics = 9
+    , numberOfIdeas = 30
+    , numberOfLikes = 50
+    , numberOfComments = 50
+    , numberOfReplies = 200
+    , numberOfCommentVotes = 300
+    }
+
 defaultUniverseSize :: UniverseSize
 defaultUniverseSize = UniverseSize
     { numberOfIdeaSpaces = 15
