@@ -175,6 +175,23 @@
             path.attr("class", function(d) { return switchClass(this, d.source.visible && d.target.visible, "hidden"); });
             text.attr("class", function(d) { return switchClass(this, d.visible, "hidden"); });
             avat.attr("class", function(d) { return switchClass(this, d.visible, "hidden"); });
+
+            var gnodes = [];
+            var glinks = [];
+
+            graph.nodes.forEach(function(n) {
+                if (n.visible) {
+                    gnodes.push(n);
+                }
+            });
+
+            graph.links.forEach(function(l) {
+                if (l.source.visible && l.target.visible) {
+                    glinks.push(l);
+                }
+            });
+
+            force.nodes(gnodes).links(glinks);
         };
 
         var force = d3.layout.force()
