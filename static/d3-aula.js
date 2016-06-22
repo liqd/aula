@@ -236,10 +236,17 @@
             text = svg.append("g")
                 .selectAll("text").data(force.nodes())
                 .enter().append("text")
-                .attr("class", function(d) { return setvisibility(d.showTitle, this); })
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
             force.alpha(.3);
+        };
+
+        var updateWidgetJustTitles = function() {
+            // there is still something wrong with updateWidget that
+            // destroys the state if we call it from here, so we'll do
+            // something simpler.
+
+            text.attr("class", function(d) { return setvisibility(d.showTitle, this); });
         };
 
         var avatarWidthHeight = function(d) {
@@ -293,13 +300,13 @@
 
         var on_mouseover = function(d) {
             d.showTitle = true;
-            updateVisibility();
+            updateWidgetJustTitles();
             d.fixed = true;
         };
 
         var on_mouseout = function(d) {
             d.showTitle = false;
-            updateVisibility();
+            updateWidgetJustTitles();
             d.fixed = false;
         };
 
