@@ -471,6 +471,7 @@ topicForcePhaseChange dir tid = do
         let nonMarked = not . has (ideaJuryResult . _Just)
         ideas <- filter nonMarked <$> query (findIdeasByTopic topic)
         forM_ ideas $ \idea -> markIdeaInJuryPhase (idea ^. _Id) (Feasible Nothing)
+        checkCloseJuryPhase topic
         view topicPhase <$> mquery (findTopic (topic ^. _Id))
 
 

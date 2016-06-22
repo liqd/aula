@@ -153,7 +153,7 @@ runClient (Free (EditTopic ot nt d k)) = do
         pure ()
     runClient k
 
-runClient (Free (TimeoutTopic t k)) = do
+runClient (Free (MoveTopicForward t k)) = do
     Just topic <- precondition $ findTopicByTitle t
     step . lift $ Action.topicForcePhaseChange Forward (topic ^. _Id)
     postcondition $ do
@@ -161,6 +161,16 @@ runClient (Free (TimeoutTopic t k)) = do
         let phase1 = topic ^. topicPhase
         let phase2 = topic' ^. topicPhase
         unless (phase2 `followsPhase` phase1) . fail . ("runClient: " ++) $ show (phase1, phase2)
+    runClient k
+
+runClient (Free (MoveTopicBackward t k)) = do
+    Just topic <- precondition $ findTopicByTitle t
+    step . lift $ Action.topicForcePhaseChange Backward (topic ^. _Id)
+    postcondition $ do
+        Just topic' <- findTopicByTitle t
+        let phase2 = topic' ^. topicPhase
+        let phase1 = topic ^. topicPhase
+        unless (phase1 `followsPhase` phase2) . fail . ("runClient: " ++) $ show (phase2, phase1)
     runClient k
 
 runClient (Free (MarkIdea t v k)) = do
@@ -295,6 +305,13 @@ runClient (Free (SetFreeze shouldBeFrozenOrNot k)) = do
     postcondition $ do
         dbFrozen <- lift (query $ view dbFreeze)
         dbFrozen `shouldBe` shouldBeFrozenOrNot
+    runClient k
+
+runClient (Free (CheckTopicPhaseVoting t k)) = do
+    postcondition $ do
+        Just topic' <- findTopicByTitle t
+        let phase = topic' ^. topicPhase
+        unless (has _PhaseVoting phase) . fail . ("runClient: " ++) $ show phase
     runClient k
 
 -- * helpers

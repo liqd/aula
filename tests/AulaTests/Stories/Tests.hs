@@ -9,7 +9,7 @@
 
 module AulaTests.Stories.Tests where
 
-import Prelude hiding ((.), id)
+import Arbitrary (unsafeMarkdown)
 import Types
 
 import AulaTests.Stories.DSL
@@ -38,17 +38,30 @@ topicTimeoutStory = do
     voteOnCommentReply idea1 comment1 comment2 Up
     createTopic idea1 topic1a "desc"
     editTopic topic1a topic1 "desc1"
-    timeoutTopic topic1
+    moveTopicForward topic1
     markIdea idea1 (Left $ Feasible Nothing)
     setFreeze Frozen
     voteOnIdea idea1 Yes  -- succeeds, because capabilities only affect UI
     -- FIXME: how to catch the expected error below?
       -- timeoutTopic topic1  -- fails, phase change illegal;
     setFreeze NotFrozen
-    timeoutTopic topic1  -- now succeeds
+    moveTopicForward topic1  -- now succeeds
     markIdea idea1 (Right $ Winning Nothing)
     setCreatorStatement idea1 "Winner"
     revokeWinner idea1
+    logout
+
+backAndForthJuryVotingPhases :: Behavior ()
+backAndForthJuryVotingPhases = do
+    bumpTopicBackAndForth
+    moveTopicForward topic1a -- in voting
+    logout
+
+markIdeaAsNotFeasableAfterMarked :: Behavior ()
+markIdeaAsNotFeasableAfterMarked = do
+    bumpTopicBackAndForth
+    markIdea idea1 (Left $ NotFeasible (unsafeMarkdown ""))
+    checkTopicPhaseVoting topic1a
     logout
 
 -- Collection of steps under development, no test design involved.
@@ -65,3 +78,16 @@ someUserBehavior = do
     reportIdea idea1
     deleteIdea idea1
     logout
+
+
+-- * snippets
+
+bumpTopicBackAndForth :: Behavior ()
+bumpTopicBackAndForth = do
+    login "admin"
+    selectIdeaSpace "school"
+    createIdea idea1 "description" CatTime
+    createTopic idea1 topic1a "description"  -- start in refinement
+    moveTopicForward topic1a                 -- move to jury
+    moveTopicForward topic1a                 -- move to voting
+    moveTopicBackward topic1a                -- move back to jury

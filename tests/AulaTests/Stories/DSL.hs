@@ -56,7 +56,11 @@ data Step a where
     SetFreeze           :: Freeze -> a -> Step a
 
     -- System events, these events probably need a test support, API, etc...
-    TimeoutTopic     :: TopicTitle -> a -> Step a
+    MoveTopicForward    :: TopicTitle -> a -> Step a
+    MoveTopicBackward   :: TopicTitle -> a -> Step a
+
+    -- Check voting phase
+    CheckTopicPhaseVoting :: TopicTitle -> a -> Step a
   deriving Functor
 
 type Behavior = Free Step
@@ -91,8 +95,11 @@ createTopic ititle ttitle tdesc = liftF $ CreateTopic ititle ttitle tdesc ()
 editTopic :: TopicTitle -> TopicTitle -> TopicDescription -> Behavior ()
 editTopic oldTitle newTitle desc = liftF $ EditTopic oldTitle newTitle desc ()
 
-timeoutTopic :: TopicTitle -> Behavior ()
-timeoutTopic title = liftF $ TimeoutTopic title ()
+moveTopicForward :: TopicTitle -> Behavior ()
+moveTopicForward title = liftF $ MoveTopicForward title ()
+
+moveTopicBackward :: TopicTitle -> Behavior ()
+moveTopicBackward title = liftF $ MoveTopicBackward title ()
 
 markIdea :: IdeaTitle -> Either IdeaJuryResultValue IdeaVoteResultValue -> Behavior ()
 markIdea title value = liftF $ MarkIdea title value ()
@@ -135,3 +142,6 @@ setCreatorStatement idea statement =
 
 setFreeze :: Freeze -> Behavior ()
 setFreeze shouldBeFrozenOrNot = liftF $ SetFreeze shouldBeFrozenOrNot ()
+
+checkTopicPhaseVoting :: TopicTitle -> Behavior ()
+checkTopicPhaseVoting title = liftF $ CheckTopicPhaseVoting title ()
