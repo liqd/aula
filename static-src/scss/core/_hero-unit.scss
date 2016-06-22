@@ -48,14 +48,27 @@
 }
 
 .heroic-cta {
-    @include rem(font-size, 18px);
-    line-height: $button-height + 3;
+    @include rem(font-size, $font-size-small);
+    line-height: $font-size-small + 3;
 
     .heroic-btn-group & {
-        @include rem(margin, 0 15px 10px);
+        @include rem(margin, 0 10px 5px);
 
         &:last-child {
             margin-right: 0;
+        }
+    }
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        @include rem(font-size, 18px);
+        line-height: $button-height + 3;
+
+        .heroic-btn-group & {
+            @include rem(margin, 0 15px 10px);
+
+            &:last-child {
+                margin-right: 0;
+            }
         }
     }
 }
@@ -65,6 +78,7 @@
 
     form {
         @extend .heroic-cta;
+        display: inline-block;
 
         .heroic-cta {
             margin: 0;
