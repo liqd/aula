@@ -285,7 +285,6 @@
         };
 
         updateWidget();
-        debugger;
     };
 
 
