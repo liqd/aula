@@ -1,15 +1,14 @@
 .node {
-  fill: yellow;
-  fill-opacity: .4;
-  stroke: black;
-  stroke-opacity: .4;
-  stroke-width: 1.5px;
 }
 
 .link {
   fill: none;
   stroke: black;
   stroke-width: 2.5px;
+}
+
+.hidden {
+  opacity: 0;
 }
 
 text {

@@ -133,11 +133,17 @@
     //////////////////////////////////////////////////////////////////////
 
     var showGraph = function(rootSel, graph) {
+        // tweak hints: width should depend on browser width; height
+        // should depend on total voting power of all nodes in scope.
         var width = 960;
         var height = 800;
 
+        graph.nodes.forEach(function(d) {
+            d.visible = true;
+        });
+
         var tick = function() {
-            // adjust positions (FIXME: is there a better place for this than here in the tick function?)
+            // adjust positions (is there a better place for this than here in the tick function?)
             for (i in graph.nodes) {
                 var wallElasticity = 10;
                 if (graph.nodes[i]) {
@@ -148,17 +154,34 @@
                 }
             }
 
-            // update elems
-            path.attr("d", linkArc);
+            var setvisibility = function(visible, elem) {
+                var result = "";
+                if (elem.attributes['class']) {
+                    result = elem.attributes['class'].value;
+                }
 
-            node.attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; });
+                // remove hidden class
+                result = result.replace(" hidden", "");
+                result = result.replace("hidden", "");
+
+                // add it if appropriate
+                if (!visible) {
+                    result = result + " " + "hidden";
+                }
+                return result;
+            };
+
+            // update elems
+            path.attr("d", linkArc)
+                .attr("class", function(d) { return setvisibility(d.source.visible && d.target.visible, this); });
 
             text.attr("dx", function(d) { return d.x; })
-                .attr("dy", function(d) { return d.y; });
+                .attr("dy", function(d) { return d.y; })
+                .attr("class", function(d) { return setvisibility(d.visible, this); });
 
-            avat.attr("x", function(d) { return d.x; })
-                .attr("y", function(d) { return d.y; });
+            avat.attr("x", avatarXPos)
+                .attr("y", avatarYPos)
+                .attr("class", function(d) { return setvisibility(d.visible, this); });
         };
 
         function linkArc(d) {
@@ -202,28 +225,51 @@
             .attr("class", function(d) { return "link default"; })
             .attr("marker-end", function(d) { return "url(#default)"; });
 
-        var node = svg.append("g")
+        var avatarWidthHeight = function(d) {
+            // tweak hints: 30, 200 are good bounds for this.
+            return (50 + 30 * d.power) / 4;
+        };
+
+        var avatarXPos = function(d) {
+            return d.x - (avatarWidthHeight(d) / 2);
+        };
+
+        var avatarYPos = function(d) {
+            return d.y - (avatarWidthHeight(d) / 2);
+        };
+
+        var avat = svg.append("g")
             .selectAll(".node")
-            .data(graph.nodes).enter().append("circle")
-            .attr("class", "node")
-            .attr("r", function(d) { return (20 + 3 * d.power); })
-            .call(force.drag);
+            .data(graph.nodes).enter().append("image")
+            .attr("class", ".node")
+            .call(force.drag)
+            .attr("width",  avatarWidthHeight)
+            .attr("height", avatarWidthHeight)
+            .attr("xlink:href", function(d) { return d.avatar; });
+
+        var on_click = function(d) {
+            d.visible = false;
+        };
+
+        var on_dblclick = function(d) {
+        };
+
+        var on_mouseover = function(d) {
+        };
+
+        var on_mouseout = function(d) {
+        };
+
+        avat.on("click",      on_click)
+            .on("dblclick",   on_dblclick)
+            .on("mouseover",  on_mouseover)
+            .on("mouseout",   on_mouseout);
 
         var text = svg.append("g")
             .selectAll("text")
             .data(graph.nodes).enter().append("text")
-            .attr("dx", ".10em")
-            .attr("dy", ".10em")
             .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
-        var avat = svg.append("g")
-            .selectAll("image")
-            .data(graph.nodes).enter().append("image")
-            .attr("x", ".10em")
-            .attr("y", ".10em")
-            .attr("width", "1cm")
-            .attr("height", "1cm")
-            .attr("xlink:href", function(d) { return d.avatar; });
 
         /*
             http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle
