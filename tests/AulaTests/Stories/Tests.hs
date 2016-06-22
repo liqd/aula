@@ -9,7 +9,7 @@
 
 module AulaTests.Stories.Tests where
 
-import Data.String.Conversions
+import Arbitrary (unsafeMarkdown)
 import Types
 
 import AulaTests.Stories.DSL
@@ -91,9 +91,3 @@ bumpTopicBackAndForth = do
     moveTopicForward topic1a                 -- move to jury
     moveTopicForward topic1a                 -- move to voting
     moveTopicBackward topic1a                -- move back to jury
-
-
--- * helpers
-
-unsafeMarkdown :: ST -> Document
-unsafeMarkdown = either (error . show) id . markdown
