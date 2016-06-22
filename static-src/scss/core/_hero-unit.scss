@@ -114,3 +114,7 @@
         display: block;
     }
 }
+
+.role-badges {
+    @include rem(margin-bottom, 15px);
+}
