@@ -212,30 +212,6 @@
         var on_mouseout = function(d) {
         };
 
-        var updateWidget = function() {
-            path.data(force.links()).exit().remove();
-            avat.data(force.links()).exit().remove();
-            text.data(force.links()).exit().remove();
-
-            path.data(force.links()).enter().append("path")
-                .attr("class", function(d) { return "link default"; })
-                .attr("marker-end", function(d) { return "url(#default)"; });
-
-            avat.data(graph.nodes).enter().append("image")
-                .attr("class", ".node")
-                .call(force.drag)
-                .attr("width",  avatarWidthHeight)
-                .attr("height", avatarWidthHeight)
-                .attr("xlink:href", function(d) { return d.avatar; })
-                .on("click",      on_click)
-                .on("dblclick",   on_dblclick)
-                .on("mouseover",  on_mouseover)
-                .on("mouseout",   on_mouseout);
-
-            text.data(graph.nodes).enter().append("text")
-                .text(function(d) { return (d.name + " [" + d.power + "]"); });
-        };
-
 
         // [initialization]
 
@@ -274,11 +250,42 @@
             .append("path")
             .attr("d", "M0,-5L10,0L0,5");
 
-        var path = svg.append("g").selectAll("path");
-        var avat = svg.append("g").selectAll(".node");
-        var text = svg.append("g").selectAll("text");
+        var path = undefined;
+        var avat = undefined;
+        var text = undefined;
+
+        var updateWidget = function() {
+            path = svg.append("g")
+                .selectAll("path").data(force.links())
+                .enter().append("path")
+                .attr("class", function(d) { return "link default"; })
+                .attr("marker-end", function(d) { return "url(#default)"; });
+
+            avat = svg.append("g")
+                .selectAll(".node")
+                .data(force.nodes()).enter().append("image")
+                .attr("class", ".node")
+                .call(force.drag)
+                .attr("width",  avatarWidthHeight)
+                .attr("height", avatarWidthHeight)
+                .attr("xlink:href", function(d) { return d.avatar; });
+
+            avat.on("click",      on_click)
+                .on("dblclick",   on_dblclick)
+                .on("mouseover",  on_mouseover)
+                .on("mouseout",   on_mouseout);
+
+            text = svg.append("g")
+                .selectAll("text")
+                .data(force.nodes()).enter().append("text")
+                .text(function(d) { return (d.name + " [" + d.power + "]"); });
+
+            // TODO: .exit().remove();
+
+        };
 
         updateWidget();
+        debugger;
     };
 
 
