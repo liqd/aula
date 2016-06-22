@@ -261,8 +261,8 @@ instance ToHtml PageUserProfileCreatedIdeas where
 
 -- | List all the created ideas for the given user.
 createdIdeas :: (ActionPersist m, ActionUserHandler m)
-    => AUID User -> m PageUserProfileCreatedIdeas
-createdIdeas userId = do
+    => AUID User -> IdeasQuery -> m PageUserProfileCreatedIdeas
+createdIdeas userId ideasQuery = do
     ctx <- currentUserCapCtx
     let visibleByCurrentUser idea =
             case idea ^. ideaLocation . ideaLocationSpace of
@@ -273,9 +273,11 @@ createdIdeas userId = do
                         ClassesScope cls -> c `Set.member` cls
     equery (do
         user  <- maybe404 =<< findUser userId
-        ideas <- ListItemIdeas ctx IdeaInUserProfile
-                    (IdeaLocationSpace SchoolSpace) emptyIdeasQuery
-              <$> (mapM getIdeaStats =<< filter visibleByCurrentUser <$> findIdeasByUserId userId)
+        ideas <- ListItemIdeas ctx (IdeaInUserProfile user) ideasQuery
+              <$> (applyFilter ideasQuery <$>
+                    (mapM getIdeaStats
+                     =<< filter visibleByCurrentUser
+                         <$> findIdeasByUserId userId))
         delegatees <- userDelegateeListsMap userId
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)

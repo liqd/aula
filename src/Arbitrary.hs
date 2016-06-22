@@ -169,8 +169,9 @@ instance Arbitrary PageOverviewOfWildIdeas where
     arbitrary = do
         ctx   <- arb
         space <- arb
-        ideas <- (listItemIdeasWhatPage .~ IdeaInIdeasOverview) <$>
-                 mkListItemIdeasInLocation (IdeaLocationSpace space)
+        let locaction = IdeaLocationSpace space
+        ideas <- (listItemIdeasWhatPage .~ IdeaInIdeasOverview locaction) <$>
+                 mkListItemIdeasInLocation locaction
         pure $ PageOverviewOfWildIdeas ctx space ideas
     shrink (PageOverviewOfWildIdeas x y z) = PageOverviewOfWildIdeas <$> shr x <*> shr y <*> shr z
 
@@ -248,9 +249,13 @@ instance Arbitrary ReportComment where
     shrink    = gshrink
 
 instance Arbitrary PageUserProfileCreatedIdeas where
-    arbitrary = PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas) <*> arb
+    arbitrary = do
+        userView <- arb
+        let repair = listItemIdeasWhatPage .~ IdeaInUserProfile (getUserFromView userView)
+        PageUserProfileCreatedIdeas <$> arb <*> arb <*> (repair <$> mkListItemIdeas) <*> arb
       where
-        repair = listItemIdeasWhatPage .~ IdeaInUserProfile
+        getUserFromView (ActiveUser u)  = u
+        getUserFromView (DeletedUser u) = u
     shrink (PageUserProfileCreatedIdeas x y z v) =
         PageUserProfileCreatedIdeas <$> shr x <*> shr y <*> shr z <*> shr v
 
@@ -498,7 +503,7 @@ mkListItemIdeasInLocation loc = repair <$> mkListItemIdeas
   where
     repair :: ListItemIdeas -> ListItemIdeas
     repair lst = lst
-        & (listItemIdeasLocation .~ loc)
+        & (listItemIdeasWhatPage . whatListPageIdeaLocation .~ loc)
         . (listItemIdeasData %~ fmap (ideaStatsIdea . ideaLocation .~ loc))
 
 instance Arbitrary IdeasQuery where

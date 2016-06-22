@@ -414,7 +414,7 @@ viewTopic tab topicId = do
                      <$> (findIdeasByTopic topic >>= mapM getIdeaStats)
 
                 let listItemIdeas =
-                        ListItemIdeas ctx (IdeaInViewTopic ideasTab) loc ideasQuery ideas
+                        ListItemIdeas ctx (IdeaInViewTopic ideasTab loc) ideasQuery ideas
 
                 pure $ ViewTopicIdeas now ctx tab topic listItemIdeas
 

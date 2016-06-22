@@ -8,11 +8,10 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Fragment.IdeaList
-    ( WhatListPage(..)
+    ( module Frontend.Fragment.WhatListPage
     , ListItemIdeas(..)
     , listItemIdeasCtx
     , listItemIdeasWhatPage
-    , listItemIdeasLocation
     , listItemIdeasFilter
     , listItemIdeasData
     )
@@ -25,19 +24,12 @@ import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
 import Frontend.Fragment.VotesBar
+import Frontend.Fragment.WhatListPage
 import Persistent (IdeaStats(IdeaStats), ideaReachedQuorum)
 
 import qualified Frontend.Path as U
 import qualified Generics.SOP as SOP
 
-data WhatListPage
-    = IdeaInIdeasOverview
-    | IdeaInViewTopic { _whatListPageTopicTab :: ListIdeasInTopicTab }
-    | IdeaInUserProfile
-  deriving (Eq, Show, Read, Generic)
-
-makeLenses ''WhatListPage
-makePrisms ''WhatListPage
 
 -- | One entry in an idea list.  Constructed from the 'IdeaStats' values in 'ListItemIdeas'.
 data ListItemIdea = ListItemIdea
@@ -52,7 +44,6 @@ data ListItemIdea = ListItemIdea
 data ListItemIdeas = ListItemIdeas
       { _listItemIdeasCtx      :: CapCtx
       , _listItemIdeasWhatPage :: WhatListPage
-      , _listItemIdeasLocation :: IdeaLocation
       , _listItemIdeasFilter   :: IdeasQuery
       , _listItemIdeasData     :: [IdeaStats]
       }
@@ -60,7 +51,6 @@ data ListItemIdeas = ListItemIdeas
 
 makeLenses ''ListItemIdeas
 
-instance SOP.Generic WhatListPage
 instance SOP.Generic ListItemIdea
 instance SOP.Generic ListItemIdeas
 
@@ -114,25 +104,22 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx whatPage loc ideasQuery []) = semanticDiv p $ do
-        ideaListHeader whatPage loc ideasQuery
+    toHtml p@(ListItemIdeas _ctx whatPage ideasQuery []) = semanticDiv p $ do
+        ideaListHeader whatPage ideasQuery
         div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
       where
         mCatInfo =
             ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeledST . to (" in der Kategorie " <>)
 
-    toHtml p@(ListItemIdeas ctx whatPage loc ideasQuery ideasAndNumVoters) = semanticDiv p $ do
-        ideaListHeader whatPage loc ideasQuery
+    toHtml p@(ListItemIdeas ctx whatPage ideasQuery ideasAndNumVoters) = semanticDiv p $ do
+        ideaListHeader whatPage ideasQuery
         for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
 
 
--- | FUTUREWORK: there are no queries for IdeaInUserProfile.  to implement that, we need to refactor
--- the idea location that is currently used to calculate the urls for the filter and sort links.
-ideaListHeader :: Monad m => WhatListPage -> IdeaLocation -> IdeasQuery -> HtmlT m ()
-ideaListHeader IdeaInUserProfile _ _ = nil
-ideaListHeader whatListPage loc ideasQuery = do
-    let mtab' = whatListPage ^? whatListPageTopicTab
-    categoryFilterButtons mtab' loc ideasQuery
+ideaListHeader :: Monad m => WhatListPage -> IdeasQuery -> HtmlT m ()
+ideaListHeader whatListPage ideasQuery = do
+
+    categoryFilterButtons whatListPage ideasQuery
 
     div_ [class_ "clearfix"] $ do
         div_ [class_ "btn-settings pop-menu"] $ do
@@ -141,7 +128,7 @@ ideaListHeader whatListPage loc ideasQuery = do
                 sequence_
                     [ let mactive | by == ideasQuery ^. ideasQueryS = " m-active"
                                   | otherwise                       = nil
-                          hrf = href_ $ U.listIdeas' loc mtab' (Just $ ideasQuery & ideasQueryS .~ by)
+                          hrf = href_ $ pathToIdeaListPage whatListPage (Just $ ideasQuery & ideasQueryS .~ by)
                           txt = uilabel by
                       in li_ [class_ $ "pop-menu-list-item" <> mactive] $ a_ [hrf] txt
                     | by <- [minBound..] ]

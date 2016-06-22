@@ -59,7 +59,7 @@ viewIdeas space ideasQuery = do
     ctx <- set capCtxPhase mphase <$> spaceCapCtx space
     PageOverviewOfWildIdeas ctx space <$> equery (do
         is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
-        pure $ ListItemIdeas ctx IdeaInIdeasOverview (IdeaLocationSpace space) ideasQuery is)
+        pure $ ListItemIdeas ctx (IdeaInIdeasOverview (IdeaLocationSpace space)) ideasQuery is)
 
 viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
 viewTopics space =
