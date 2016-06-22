@@ -87,10 +87,10 @@ bumpTopicBackAndForth = do
     login "admin"
     selectIdeaSpace "school"
     createIdea idea1 "description" CatTime
-    createTopic idea1 topic1a "description" -- in refinement
-    moveTopicForward topic1a -- in jury
-    moveTopicForward topic1a -- in voting
-    moveTopicBackward topic1a -- in jury
+    createTopic idea1 topic1a "description"  -- start in refinement
+    moveTopicForward topic1a                 -- move to jury
+    moveTopicForward topic1a                 -- move to voting
+    moveTopicBackward topic1a                -- move back to jury
 
 
 -- * helpers
