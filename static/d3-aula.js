@@ -262,8 +262,8 @@
                 .attr("marker-end", function(d) { return "url(#default)"; });
 
             avat = svg.append("g")
-                .selectAll(".node")
-                .data(force.nodes()).enter().append("image")
+                .selectAll(".node").data(force.nodes())
+                .enter().append("image")
                 .attr("class", ".node")
                 .call(force.drag)
                 .attr("width",  avatarWidthHeight)
@@ -276,8 +276,8 @@
                 .on("mouseout",   on_mouseout);
 
             text = svg.append("g")
-                .selectAll("text")
-                .data(force.nodes()).enter().append("text")
+                .selectAll("text").data(force.nodes())
+                .enter().append("text")
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
             // TODO: .exit().remove();
