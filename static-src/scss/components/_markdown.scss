@@ -57,7 +57,7 @@
     @extend .markdown;
     border: 1px solid $color-grey-light;
     max-height: 500px;
-    overflow: hidden;
+    overflow: auto;
     transition: max-height 0.5s, display 0.5s;
 
     &.m-closed {

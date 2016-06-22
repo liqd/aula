@@ -9,7 +9,7 @@
         border-width: 1px 0;
         overflow: hidden;
 
-        @media screen and (max-width: $mobile-breakpoint) {
+        @media screen and (max-width: $tablet-breakpoint) {
             text-align: center;
         }
     }
@@ -27,7 +27,7 @@
 
     .comments-header-heading,
     .comments-header-button {
-        @media screen and (max-width: $mobile-breakpoint) {
+        @media screen and (max-width: $tablet-breakpoint) {
             float: none;
         }
     }

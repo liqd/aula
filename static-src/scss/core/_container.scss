@@ -61,8 +61,7 @@ body.m-shadow {
     }
 
     @media screen and (max-width: $mobile-breakpoint) {
-        @include rem(padding-left, 15px);
-        @include rem(padding-right, 15px);
+        padding: 0;
     }
 }
 

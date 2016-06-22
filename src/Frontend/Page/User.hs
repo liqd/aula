@@ -214,7 +214,7 @@ delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m (
 delegationButtons (view capCtxUser -> delegatee)
                   delegate
                   (delegatedDScopes delegatee -> dscopes) = do
-    let but = postButton_ [class_ "btn-cta", jsReloadOnClick]
+    let but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
         if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
             then do

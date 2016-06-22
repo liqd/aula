@@ -115,7 +115,7 @@
             @media screen and (max-width: $mobile-breakpoint) {
                 @include rem(min-width, 43px);
                 @include rem(margin-right, 15px);
-                @include rem(margin-bottom, 10px);
+                @include rem(margin-bottom, 20px);
                 background-size: inherit;
 
                 > a, > span {
@@ -124,6 +124,11 @@
             }
         }
     }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        padding-bottom: 0;
+    }
+
 }
 
 .meta-list {
@@ -157,4 +162,21 @@
 
 .view-category {
     @include rem(padding-top, 60px);
+}
+
+.checkboxes {
+    li {
+        @include rem(margin-bottom, 3px);
+        position: relative;
+
+        input {
+            @include rem(top, 3px);
+            position: absolute;
+        }
+
+        span {
+            @include rem(padding-left, 20px);
+            display: block;
+        }
+    }
 }

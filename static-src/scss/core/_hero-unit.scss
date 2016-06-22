@@ -52,7 +52,7 @@
     line-height: $button-height + 3;
 
     .heroic-btn-group & {
-        @include rem(margin-right, 15px);
+        @include rem(margin, 0 15px 10px);
 
         &:last-child {
             margin-right: 0;
@@ -61,7 +61,7 @@
 }
 
 .heroic-btn-group {
-    @include rem(margin-bottom, 40px);
+    @include rem(margin-bottom, 30px);
 }
 
 .heroic-avatar {
