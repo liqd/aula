@@ -213,11 +213,13 @@
         };
 
         var updateWidget = function() {
+            path.data(force.links()).exit().remove();
+            avat.data(force.links()).exit().remove();
+            text.data(force.links()).exit().remove();
+
             path.data(force.links()).enter().append("path")
                 .attr("class", function(d) { return "link default"; })
                 .attr("marker-end", function(d) { return "url(#default)"; });
-
-              // TODO: .exit().remove();
 
             avat.data(graph.nodes).enter().append("image")
                 .attr("class", ".node")
