@@ -185,7 +185,18 @@
             updateWidget();
         };
 
+        // this is called if the set of nodes changes (i.e., if nodes
+        // are removed or re-added).
         var updateWidget = function() {
+            // (we remove all nodes from the svg and then add them
+            // again.  the `.update` method could offer some tuning
+            // potential, should we experience low frame rates.  or it
+            // may not be the bottleneck, who knows.)
+
+            svg.selectAll("g path").data([]).exit().remove();
+            svg.selectAll("g image").data([]).exit().remove();
+            svg.selectAll("g text").data([]).exit().remove();
+
             path = svg.append("g")
                 .selectAll("path").data(force.links())
                 .enter().append("path")
@@ -193,7 +204,7 @@
                 .attr("marker-end", function(d) { return "url(#default)"; });
 
             avat = svg.append("g")
-                .selectAll(".node").data(force.nodes())
+                .selectAll("image").data(force.nodes())
                 .enter().append("image")
                 .attr("class", ".node")
                 .call(force.drag)
@@ -210,36 +221,6 @@
                 .selectAll("text").data(force.nodes())
                 .enter().append("text")
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
-
-/*
-            var p = path.data(force.links());
-
-            p.exit().remove();
-            p.enter().append("path")
-                .attr("class", function(d) { return "link default"; })
-                .attr("marker-end", function(d) { return "url(#default)"; });
-
-            var a = avat.data(force.nodes());
-
-            a.exit().remove()
-            a.enter().append("image")
-                .attr("class", ".node")
-                .call(force.drag)
-                .attr("width",  avatarWidthHeight)
-                .attr("height", avatarWidthHeight)
-                .attr("xlink:href", function(d) { return d.avatar; });
-
-            a.on("click",      on_click)
-                .on("dblclick",   on_dblclick)
-                .on("mouseover",  on_mouseover)
-                .on("mouseout",   on_mouseout);
-
-            var t = text.data(force.nodes());
-
-            t.exit().remove()
-            t.enter().append("text")
-                .text(function(d) { return (d.name + " [" + d.power + "]"); });
-*/
         };
 
         var avatarWidthHeight = function(d) {
@@ -257,12 +238,12 @@
 
         var on_click = function(d) {
 
-            /*
-
-            force.nodes([]).links([]);
+            force.nodes([graph.nodes[0]]).links([]);
             console.log(force.nodes());
             console.log(force.links());
             updateWidget();
+
+            /*
 
             d.visible = false;
             updateVisibility();
