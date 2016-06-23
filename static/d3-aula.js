@@ -141,9 +141,9 @@
             var wallElasticity = 10;
             force.nodes().forEach(function(n) {
                 if (n.x < 0)      n.x = wallElasticity;
-                if (n.x > width)  n.x = width - wallElasticity;
+                if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
                 if (n.y < 0)      n.y = wallElasticity;
-                if (n.y > height) n.y = height - wallElasticity;
+                if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
             });
 
             // update elems
@@ -311,15 +311,15 @@
 
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
-        var width = 960;
-        var height = 800;
+        var globalGraphWidth = 600;
+        var globalGraphHeight = 600;
 
         graph.nodes.forEach(function(d) {
             d.visible = true;
         });
 
         var force = d3.layout.force()
-            .size([width, height])
+            .size([globalGraphWidth, globalGraphHeight])
             .nodes(graph.nodes)
             .links(graph.links)
             .on("tick", tick)
@@ -335,7 +335,7 @@
                .append("svg")
                // responsive SVG needs these 2 attributes and no width and height attr
                .attr("preserveAspectRatio", "xMinYMin meet")
-               .attr("viewBox", function() { return "0 0 600 " + 20 * force.nodes().length; })
+               .attr("viewBox", function() { return "0 0 " + globalGraphWidth + " " + globalGraphHeight; })
                // class to make it responsive
                .classed("svg-content-responsive", true);
 
