@@ -122,12 +122,6 @@
         // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
-        /* fixme
-        buttonDiv.append("input")
-            .attr("type", "button")
-            .attr("class", "btn-cta")
-            .attr("value", "Nur Treffer anzeigen!")
-            .on("click",   function() { filterByMatching(); }); */
         buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")
@@ -179,10 +173,6 @@
 
         var highlightMatching = function() {
             console.log('highlightMatching', arguments);
-        };
-
-        var filterByMatching = function () {
-            console.log('filterByMatching', arguments);
         };
 
         var updateVisibility = function() {
@@ -337,7 +327,7 @@
             .linkDistance(70)
             .start();
 
-        initializeControlPanel(rootSel, filterByPower, highlightMatching, filterByMatching);
+        initializeControlPanel(rootSel, filterByPower, highlightMatching);
 
         var svg = d3.select("div#aula-d3-view")
             .append("div")
@@ -370,7 +360,7 @@
         updateWidget();
     };
 
-    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching, filterByMatching) {
+    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching) {
         var controls = d3.select(".delagation-header").append("div").attr("class", "controls");
 
         var ig1 = controls.append("div").attr("class", "input-group");
