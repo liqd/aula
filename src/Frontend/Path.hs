@@ -34,6 +34,8 @@ module Frontend.Path
 
     -- * top level paths
     , login
+    , resetPasswordViaEmail
+    , finalizePasswordViaEmail
     , listSpaces
     , delegationView
     , delegationViewScope
@@ -154,6 +156,7 @@ import Types
     , IdeaVoteValue, UpDown
     , IdeaJuryResultType(..)
     , ListIdeasInTopicTab(..)
+    , PasswordToken(..)
     )
 
 
@@ -202,6 +205,8 @@ data Main (r :: AllowedMethod) =
   | Imprint
   | Terms
   | Login
+  | ResetPasswordViaEmail
+  | FinalizePasswordViaEmail (AUID User) PasswordToken
   | CompleteRegistration
   | Logout
   | Broken  -- FIXME: for keeping track of missing links.  do not leave lying around in production!
@@ -230,6 +235,12 @@ userSettings = UserSettings
 logout :: Main 'AllowGetPost
 logout = Logout
 
+resetPasswordViaEmail :: Main 'AllowGetPost
+resetPasswordViaEmail = ResetPasswordViaEmail
+
+finalizePasswordViaEmail :: User -> PasswordToken -> Main 'AllowGetPost
+finalizePasswordViaEmail u = FinalizePasswordViaEmail (u ^. _Id)
+
 terms :: Main 'AllowGetPost
 terms = Terms
 
@@ -241,6 +252,8 @@ broken = Broken
 
 instance HasPath Main where relPath p = main p nil
 
+-- TODO: Align
+-- FIXME: Automatic generation of parts which comes from the usage of (::>) type
 main :: Main r -> UriPath -> UriPath
 main ListSpaces           root = root </> "space"
 main (Space sid p)        root = spacePath p (root </> "space" </> uriPart sid)
@@ -254,6 +267,8 @@ main (DelegationView ms)  root = root </> "delegation" </> "view"
 main Imprint              root = root </> "imprint"
 main Terms                root = root </> "terms"
 main Login                root = root </> "login"
+main ResetPasswordViaEmail root = root </> "resetpwd"
+main (FinalizePasswordViaEmail u t) root = root </> "changepwd" </> "user" </> uriPart u </> "token" </> uriPart t
 main CompleteRegistration root = root </> "completeregistration"
 main Logout               root = root </> "logout"
 main Broken               root = root </> "bröken"

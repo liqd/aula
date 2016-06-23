@@ -125,7 +125,7 @@ instance FormPage PageUserSettings where
         . DF.check "Passwort-Felder sind nur teilweise ausgefüllt."  checkPwdAllOrNothing
         $ UserSettingData
             <$> ("email"         .:
-                    emailField "Email" (user ^. userEmail))
+                    optionalEmailField "Email" (user ^. userEmail))
             <*> ("old-password"  .:
                     -- while we need to check that the old password is the correct
                     -- one, we do not need to validate it against the rules for new passwords.

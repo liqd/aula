@@ -23,7 +23,7 @@ module Action
     , ActionLog(log, readEventLog)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
-    , ActionRandomPassword(mkRandomPassword)
+    , ActionRandomPassword(mkRandomPassword, mkRandomPasswordToken)
     , ActionEncryptPassword(encryptPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
@@ -49,6 +49,9 @@ module Action
     , getSpacesForCurrentUser
     , deleteUser
     , reportUser
+    , resetPasswordViaEmail
+    , Action.checkValidPasswordToken
+    , finalizePasswordViaEmail
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
@@ -256,6 +259,7 @@ class (MonadError ActionExcept m) => ActionPersist m where
 
 class ActionRandomPassword m where
     mkRandomPassword :: m InitialPassword
+    mkRandomPasswordToken :: m PasswordToken
 
 class ActionEncryptPassword m where
     encryptPassword :: ST -> m EncryptedPassword
@@ -586,7 +590,7 @@ deleteIdeaComment = update . DeleteComment
 fullPathOf :: ActionSendMail m => U.Main 'U.AllowGetPost -> m ST
 fullPathOf path = do
     cfg <- viewConfig
-    pure $ (cfg ^. exposedUrl . csi) <> (absoluteUriPath $ relPath path)
+    pure $ (cfg ^. exposedUrl . csi) <> absoluteUriPath (relPath path)
 
 reportIdea :: AUID Idea -> Document -> ActionM m => m ()
 reportIdea ideaId doc = do
@@ -665,6 +669,42 @@ reportUser uid doc = do
         , _msgHtml = Nothing -- Not supported yet
         }
 
+passwordTokenExpires :: Timespan
+passwordTokenExpires = TimespanDays 3
+
+resetPasswordViaEmail :: ActionM m => EmailAddress -> m ()
+resetPasswordViaEmail email = do
+    users <- query $ findUsersByEmail email
+    now   <- getCurrentTimestamp
+    forM_ users $ \user -> do
+        token <- mkRandomPasswordToken
+        -- TODO: Fill the fields
+        uri <- fullPathOf $ U.finalizePasswordViaEmail user token
+        sendMailToUser [IgnoreMissingEmails] user EmailMessage
+            { _msgSubjectLabel = ForgottenPassword
+            , _msgSubjectText  = "Password reset"
+            , _msgBody    = uri
+            , _msgHtml    = Nothing -- Not supported yet
+            }
+        update $ AddPasswordToken (user ^. _Id) token now passwordTokenExpires
+
+checkValidPasswordToken :: ActionM m => AUID User -> PasswordToken -> m PasswordTokenState
+checkValidPasswordToken uid token = do
+    now <- getCurrentTimestamp
+    equery $ Persistent.checkValidPasswordToken uid token now
+
+finalizePasswordViaEmail :: ActionM m => AUID User -> PasswordToken -> ST -> m ()
+finalizePasswordViaEmail uid token pwd = do
+    valid <- Action.checkValidPasswordToken uid token
+    -- TODO: Translate messages
+    case valid of
+        Invalid  -> addMessage "The token has timed out."
+        TimedOut -> addMessage "The token has timed out."
+        Valid    -> do
+            encryptPassword pwd >>= update . SetUserPass uid
+            addMessage "The password has changed."
+            now <- getCurrentTimestamp
+            update $ RemovePasswordToken uid token now
 
 -- ASSUMPTION: Idea is in the given idea location.
 reportIdeaComment

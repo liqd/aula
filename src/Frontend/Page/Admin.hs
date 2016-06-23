@@ -457,7 +457,7 @@ instance FormPage AdminCreateUser where
             <$> ("firstname"  .: firstName (DF.string Nothing))
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
-            <*> emailField "Email" Nothing
+            <*> optionalEmailField "Email" Nothing
             <*> (Set.singleton <$> roleForm Nothing Nothing classes)
         where
             -- FIXME: Users with more than one name?

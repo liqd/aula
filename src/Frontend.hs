@@ -171,6 +171,8 @@ type AulaMain =
 
        -- login / logout
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt
+  :<|> "resetpwd" :> FormHandler PasswordResetViaEmail
+  :<|> "changepwd" :> User ::> PasswordToken ::> FormHandler FinalizePasswordViaEmail
   :<|> "completeregistration" :> GetH Redirect
   :<|> "logout" :> GetH Redirect
 
@@ -191,6 +193,8 @@ aulaMain =
   :<|> runHandler (pure PageStaticTermsOfUse)
 
   :<|> form Page.login
+  :<|> form Page.passwordResetViaEmail
+  :<|> form <..> Page.finalizePasswordViaEmail
   :<|> completeRegistration
   :<|> (logout >> redirectPath U.login)
 

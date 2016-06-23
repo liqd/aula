@@ -74,6 +74,8 @@ instance FormPage PageHomeWithLoginPrompt where
                     inputSubmit_   [] "Login"
                     p_ [class_ "text-muted login-register-form-notice"]
                         "Solltest du dein Passwort nicht mehr kennen, melde dich bitte bei den Admins euer Schule."
+                    -- TODO: Translate
+                    a_ [href_ U.resetPasswordViaEmail] "Forgotten password?"
             toHtml loginDemoHints
 
 
