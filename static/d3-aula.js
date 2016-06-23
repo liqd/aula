@@ -122,11 +122,12 @@
         // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
+        /* fixme
         buttonDiv.append("input")
             .attr("type", "button")
             .attr("class", "btn-cta")
             .attr("value", "Nur Treffer anzeigen!")
-            .on("click",   function() { filterByMatching(); });
+            .on("click",   function() { filterByMatching(); }); */
         buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")
@@ -371,11 +372,11 @@
     };
 
     var initializeControlPanel = function(rootSel, filterByPower, highlightMatching, filterByMatching) {
-        var controls = d3.select(".delagation-header").insert("div", " .button-group").attr("class", "controls");
+        var controls = d3.select(".delagation-header").append("div").attr("class", "controls");
 
         var ig1 = controls.append("div").attr("class", "input-group");
 
-        ig1.append("label").text("Nur Delegierte mit mindestens ");
+        ig1.append("label").text("Untergrenze Anzahl Beauftragungen:");
         ig1.append("input")
             .attr("type", "number")
             .attr("class", "input-text input-number")
