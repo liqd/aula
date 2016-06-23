@@ -102,6 +102,7 @@
 
             &.icon-winner {
                 @include svg(trophy);
+                background-size: contain;
             }
 
             &.icon-table {

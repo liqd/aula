@@ -12,7 +12,7 @@
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
-            background: url(/static/images/ausarbeitungsphase_l.png) no-repeat center center;
+            background: #fff url(/static/images/ausarbeitungsphase_l.png) no-repeat left center;
         }
     }
 
@@ -22,7 +22,7 @@
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
-            background: url(/static/images/prufungsphase_l.png) no-repeat center center;
+            background: url(/static/images/prufungsphase_l.png) no-repeat left center;
         }
     }
 
@@ -32,7 +32,7 @@
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
-            background: url(/static/images/header_vote_left.png) no-repeat center center;
+            background: #fff url(/static/images/header_vote_left.png) no-repeat left center;
         }
     }
 
@@ -42,7 +42,7 @@
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
-            background: url(/static/images/ergebnisphase_l.png) no-repeat center center;
+            background: #fff url(/static/images/ergebnisphase_l.png) no-repeat left center;
         }
     }
 }
