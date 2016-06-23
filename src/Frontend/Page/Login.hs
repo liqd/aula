@@ -30,10 +30,7 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt LoginDemoHints
   deriving (Eq, Show, Read)
 
 instance Page PageHomeWithLoginPrompt where
-    isAuthorized = \case
-        -- Redirect from login if the user is already logged in.
-        NotLoggedIn -> accessGranted
-        LoggedIn{}  -> accessRedirected "You are already logged in" U.listSpaces
+    isAuthorized = loginPage
 
 -- FIXME: remove (or otherwise protect) this type before going to production!
 data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }

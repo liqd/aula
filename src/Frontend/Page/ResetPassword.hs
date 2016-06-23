@@ -24,11 +24,7 @@ data PasswordResetViaEmail = PasswordResetViaEmail
   deriving (Eq, Show, Read)
 
 instance Page PasswordResetViaEmail where
-    -- TODO: Define as a function
-    isAuthorized = \case
-        -- Redirect from login if the user is already logged in.
-        NotLoggedIn -> accessGranted
-        LoggedIn{}  -> accessRedirected "You are already logged in" U.listSpaces
+    isAuthorized = loginPage
 
 data ResetPasswordFormData =
         ResetPasswordFormData
@@ -72,10 +68,7 @@ data FinalizePasswordViaEmail
   deriving (Eq, Show, Read)
 
 instance Page FinalizePasswordViaEmail where
-    isAuthorized = \case
-        -- Redirect from login if the user is already logged in.
-        NotLoggedIn -> accessGranted
-        LoggedIn{}  -> accessRedirected "You are already logged in" U.listSpaces
+    isAuthorized = loginPage
 
 data FinalizePasswordViaEmailPayload = FinalizePasswordViaEmailPayload
     { newPassword1 :: ST
