@@ -64,11 +64,11 @@ instance FormPage PageDelegateVote where
         valid :: ST -> DF.Result (Html ()) (Maybe (AUID User))
         valid "" = pure Nothing
         valid (ST.breakOn "page-delegate-vote-uid." -> ("page-delegate-vote-uid.", s)) =
-          Just <$> case readMay $ cs s of  -- TODO: re-align.
-            Nothing -> DF.Error "invalid user id"
-            Just (AUID -> uid)
-              | uid `elem` (view _Id <$> options) -> DF.Success uid
-              | otherwise                         -> DF.Error "user id not found"
+            Just <$> case readMay $ cs s of
+                Nothing -> DF.Error "invalid user id"
+                Just (AUID -> uid)
+                  | uid `elem` (view _Id <$> options) -> DF.Success uid
+                  | otherwise                         -> DF.Error "user id not found"
         valid _ = DF.Error "corrupt form data"
 
     formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
