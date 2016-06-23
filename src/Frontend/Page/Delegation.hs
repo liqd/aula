@@ -72,8 +72,7 @@ instance FormPage PageDelegateVote where
         valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
     formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
-        p_ $ b_ "Stimme beauftragen"
-        br_ []
+        h1_ [class_ "main-heading"] "Stimme beauftragen"
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
@@ -81,15 +80,17 @@ instance FormPage PageDelegateVote where
                     let url = "avatars/" <> uid <> ".png"
                         uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin
-                    li_ [ class_ "icon-list-button"
+                    li_ [ class_ "icon-list-button col-3-12"
                           , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
                         img_ [ src_ . U.TopStatic $ fromString url
                              , alt_ $ cs uid
                              ]
-                        toHtml unm
-        DF.inputSubmit "beauftragen"
-        cancelButton p
+                        span_ $ do
+                            toHtml unm
+                div_ [class_ "button-group clearfix"] $ do
+                    DF.inputSubmit "beauftragen"
+                    cancelButton p
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerWithMsg
