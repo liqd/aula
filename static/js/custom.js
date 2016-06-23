@@ -50,7 +50,7 @@ var registerImageSelectionHandlers = function(imageSelect) {
                     if(buttons[b2] && buttons[b2].className) {
                         if (b2 == b1) {
                             var toggledOn = toggleClass(buttons[b2].parentNode, "m-active");
-                            hidden.value = toggledOn ? b2 : "";
+                            hidden.value = toggledOn ? buttons[b2].id : "";
                         } else {
                             removeClass(buttons[b2].parentNode, "m-active");
                         }
