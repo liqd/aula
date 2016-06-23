@@ -58,6 +58,7 @@ module Action
       -- * vote handling
     , likeIdea
     , voteOnIdea
+    , delegateOrWithdraw
     , delegateTo
     , withdrawDelegationTo
     , voteIdeaComment
@@ -549,6 +550,10 @@ voteOnIdea ideaId voteVal = do
     voteFor voter delegatee = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
                             (ProtoIdeaVote voteVal (voter ^. _Id))
+
+delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
+delegateOrWithdraw scope (Just delegate) = delegateTo           scope delegate
+delegateOrWithdraw _scope Nothing         = error "withdrawDelegationTo scope delegate"  -- TODO
 
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope delegate = do
