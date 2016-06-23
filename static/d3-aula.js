@@ -257,8 +257,7 @@
         };
 
         var avatarWidthHeight = function(d) {
-            // tweak hints: 30, 200 are good bounds for this.
-            return (50 + 30 * d.power) / 4;
+            return 20 + Math.min(Math.sqrt(d.power * 100), 160);
         };
 
         var avatarXPos = function(d) {
@@ -384,11 +383,10 @@
             .on("mouseup", function() { filterByPower(this.value); });
 
         var ig2 = controls.append("div").attr("class", "input-group");
-        ig2.append("label").text("Nutzer suchen: ");
+        ig2.append("label").text("Nutzer suchen:");
         ig2.append("input")
             .attr("type", "text")
-            .attr("type", "number")
-            .attr("class", "input-text input-number")
+            .attr("class", "input-text")
             .on("keyup",   function() { highlightMatching(this.value); })
             .on("mouseup", function() { highlightMatching(this.value); });
     };
