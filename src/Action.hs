@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -400,16 +401,14 @@ sendMailToRole role msg = do
 
 phaseAction :: (ActionM m) => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
-    cfg <- viewConfig
+    uri <- fullPathOf $ U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
     let topicTemplate addr phase = ST.unlines
             [ "Liebe " <> addr <> ","
             , ""
             , "das Thema:"
             , ""
             , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
-            , "    " <> (cfg ^. exposedUrl . csi)
-                     <> (absoluteUriPath . relPath $
-                           U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing)
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
@@ -584,11 +583,15 @@ deleteIdea = update . DeleteIdea
 deleteIdeaComment :: CommentKey -> ActionPersist m => m ()
 deleteIdeaComment = update . DeleteComment
 
+fullPathOf :: ActionSendMail m => U.Main 'U.AllowGetPost -> m ST
+fullPathOf path = do
+    cfg <- viewConfig
+    pure $ (cfg ^. exposedUrl . csi) <> (absoluteUriPath $ relPath path)
+
 reportIdea :: AUID Idea -> Document -> ActionM m => m ()
 reportIdea ideaId doc = do
     idea <- mquery $ findIdea ideaId
-    let uri = relPath $ U.viewIdea idea
-    cfg <- viewConfig
+    uri  <- fullPathOf $ U.viewIdea idea
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject
         , _msgSubjectText  = "Problematische Idee."
@@ -597,7 +600,7 @@ reportIdea ideaId doc = do
             , ""
             , "Eine Idee wurde als problematisch gemeldet:"
             , ""
-            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , ""
@@ -617,8 +620,7 @@ reportIdea ideaId doc = do
 reportCommentById :: CommentKey -> Document -> (ActionPersist m, ActionSendMail m) => m ()
 reportCommentById ck doc = do
     comment <- mquery $ findComment ck
-    let uri = relPath $ U.viewComment comment
-    cfg <- viewConfig
+    uri     <- fullPathOf $ U.viewComment comment
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject
         , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
@@ -627,7 +629,7 @@ reportCommentById ck doc = do
             , ""
             , "Ein Verbesserungsvorschlag wurde als problematisch gemeldet:"
             , ""
-            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , ""
@@ -642,8 +644,7 @@ reportCommentById ck doc = do
 reportUser :: ActionM m => AUID User -> Document -> m ()
 reportUser uid doc = do
     user <- mquery $ findUser uid
-    let uri = relPath $ U.viewUserProfile user
-    cfg <- viewConfig
+    uri <- fullPathOf $ U.viewUserProfile user
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
         , _msgSubjectText  = "Problematisches Nutzerprofil."
@@ -652,7 +653,7 @@ reportUser uid doc = do
             , ""
             , "Ein Nutzerprofil wurde als problematisch gemeldet:"
             , ""
-            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , ""
