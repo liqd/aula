@@ -553,7 +553,7 @@ voteOnIdea ideaId voteVal = do
 
 delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
 delegateOrWithdraw scope (Just delegate) = delegateTo           scope delegate
-delegateOrWithdraw _scope Nothing         = error "withdrawDelegationTo scope delegate"  -- TODO
+delegateOrWithdraw _scope Nothing         = error "withdrawDelegationTo scope delegate"  -- FIXME
 
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope delegate = do
