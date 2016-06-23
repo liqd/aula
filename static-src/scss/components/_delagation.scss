@@ -1,0 +1,59 @@
+.container-delagation-network {
+    @include rem(padding, 20px 30px);
+    background: $color-grey-lighter;
+
+    .main-heading {
+        @include rem(margin-bottom, 10px);
+        text-align: left;
+    }
+}
+
+body .delagation-header {
+    select {
+        @include rem(margin-right, 15px);
+        margin-bottom: 0;
+        max-width: 200px;
+        display: inline-block;
+    }
+
+    .button-group {
+        @extend .clearfix;
+        @include rem(margin-top, 15px);
+
+        .btn {
+            @include rem(margin-left, 15px);
+            float: right;
+        }
+
+        .btn-cta {
+            float: left;
+            @include rem(margin-right, 15px);
+        }
+    }
+
+    .input-text {
+        @include rem(padding, 10px);
+        line-height: 1;
+        margin-bottom: 0;
+        text-align: left;
+        width: auto;
+
+        &.input-number {
+            @include rem(width, 75px);
+        }
+    }
+
+    .input-group {
+        @include rem(margin-right, 15px);
+        display: inline-block;
+
+        label {
+            @include rem(padding-bottom, 10px);
+            display: block;
+        }
+    }
+
+    .controls {
+        @include rem(margin-top, 15px);
+    }
+}
