@@ -53,7 +53,7 @@ instance FormPage PageDelegateVote where
         Left  topic  -> U.viewTopic topic
         Right idea   -> U.viewIdea idea
 
-    makeForm (PageDelegateVote _scope _options mselected) =
+    makeForm (PageDelegateVote _scope options mselected) =
         PageDelegationVotePayload <$>
             "selected-delegate" .: DF.validate valid (DF.text (render <$> mselected))
       where
@@ -61,8 +61,11 @@ instance FormPage PageDelegateVote where
         render = cs . show . view unAUID
 
         valid :: ST -> DF.Result (Html ()) (AUID User)
-        valid s = maybe (DF.Error "invalid user id") (DF.Success . AUID) (readMay $ cs s)
-          -- TODO: check that it's in _options!
+        valid s = case readMay $ cs s of
+            Nothing -> DF.Error "invalid user id"
+            Just (AUID -> uid)
+              | uid `elem` (view _Id <$> options) -> DF.Success uid
+              | otherwise                         -> DF.Error "user id not found"
 
     formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
         p_ $ b_ "Stimme beauftragen"
