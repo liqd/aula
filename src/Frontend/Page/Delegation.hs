@@ -14,10 +14,8 @@ module Frontend.Page.Delegation
 where
 
 import           Control.Arrow ((&&&))
-import           Data.Tree (Tree)
+import           Data.Graph
 import qualified Data.Aeson as Aeson
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -25,6 +23,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
 import Action (ActionM, currentUser, delegateTo, equery)
+import Data.Delegation (unDelegate, unDelegatee)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
 import Persistent
@@ -150,15 +149,41 @@ viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
+
+    -- Create delegations
+    let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
     delegations <- findDelegationsByScope scope
-    let users = Set.toList . Set.fromList
-                $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
 
-        mkNode :: AUID User -> EQuery (AUID User, (User, Int))
-        mkNode userId = do
-            u <- maybe404 =<< findUser userId
-            p <- length <$> votingPower userId scope
-            pure (userId, (u, p))
+    -- Build graphs and graph handler functions
+    let delegationsForGraph = mkGraphNode <$> delegations
+    let (delegationGraph, _vertexToGraphNode, nodeToVertex) = graphFromEdges delegationsForGraph
+    let uidToVertex = fromJust . nodeToVertex
+    let graphComponents = stronglyConnComp delegationsForGraph
 
-    userMap <- Map.fromList <$> forM users mkNode
-    pure $ DelegationNetwork (Map.elems userMap) delegations
+    -- Create user power list
+    let mkNode uid = do
+            u <- maybe404 =<< findUser uid
+            -- FIXME: Use the 'votingPower' functions instead of reachable
+            let p = length $ reachable delegationGraph (uidToVertex uid)
+            pure (u, p)
+    let mkNodeCyclic p uid = do
+            u <- maybe404 =<< findUser uid
+            pure (u, p)
+
+    users <- concat <$> forM graphComponents (\case
+                AcyclicSCC uid  -> (:[]) <$> mkNode uid
+                CyclicSCC  []   -> pure [] -- Impossible
+                CyclicSCC  (uid:uids) -> do
+                    -- Every node in the cycle has the same voting power
+                    -- no need to compute more than once.
+                    up@(_u, p) <- mkNode uid
+                    (up:) <$> forM uids (mkNodeCyclic p))
+
+    -- Convert delegations to the needed form
+    let flippedDelegations =
+            [ Delegation s (unDelegatee dee) (unDelegate de)
+            | (de, s, dees) <- delegations
+            , dee <- dees
+            ]
+
+    pure $ DelegationNetwork users flippedDelegations
