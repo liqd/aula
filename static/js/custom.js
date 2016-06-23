@@ -72,6 +72,20 @@ var registerImageSelectionHandlers = function(imageSelect) {
 registerImageSelectionHandlers(getElementByClassName("category-image-select"));
 registerImageSelectionHandlers(getElementByClassName("delegate-image-select"));
 
+// 'AdminAddRole': hide school class selection if role doesn't have a school class.
+
+var toggleShowSchoolClass = function(event, showclson) {
+    var selector = "div[data-aula-type=\"AdminAddRole\"] label";
+    var elem = document.querySelectorAll(selector)[1];
+    var selection = event.srcElement.value;
+
+    if (showclson.indexOf(selection) < 0) {
+        addClass(elem, "hidden");
+    } else {
+        removeClass(elem, "hidden");
+    }
+};
+
 // UI Messages
 
 document.onclick = function() {
@@ -126,6 +140,7 @@ function removeClass(el, cl) {
 }
 
 function addClass(el, cl) {
+    removeClass(el, cl);
     if(el) el.className = el.className + " " + cl;
 }
 
