@@ -519,6 +519,10 @@ data SchoolClass = SchoolClass
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+nilSchoolClass :: SchoolClass -> Bool
+nilSchoolClass (SchoolClass _ "") = True
+nilSchoolClass _                  = False
+
 -- | FIXME: needs to be gone by the end of school year 2016!
 theOnlySchoolYearHack :: Int
 theOnlySchoolYearHack = 2016
@@ -1565,8 +1569,12 @@ instance HasUriPart Role where
 
 instance HasUILabel Role where
     uilabel = \case
-        (Student c)    -> "Schüler (" <> uilabel c <> ")"
-        (ClassGuest c) -> "Gast (" <> uilabel c <> ")"
+        (Student c)
+          | nilSchoolClass c -> "Schüler"
+          | otherwise        -> "Schüler (" <> uilabel c <> ")"
+        (ClassGuest c)
+          | nilSchoolClass c -> "Gast"
+          | otherwise        -> "Gast (" <> uilabel c <> ")"
         SchoolGuest    -> "Gast (Schule)"
         Moderator      -> "Moderator"
         Principal      -> "Direktor"
