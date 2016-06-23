@@ -101,3 +101,15 @@ grep.%:
 docker-hpc:
 	./.travis/docker-build.sh 1000
 	cp -R /liqd/aula/.stack-work/install/x86_64-linux/lts-3.20/7.10.2/hpc .
+
+team-avatars: .phony
+	-rm -r team-avatars
+	mkdir team-avatars
+	curl -o team-avatars/andorp https://avatars1.githubusercontent.com/u/3465327?v=3&s=400
+	curl -o team-avatars/fisx https://avatars2.githubusercontent.com/u/10210727?v=3&s=400
+	curl -o team-avatars/np https://avatars3.githubusercontent.com/u/5548?v=3&s=400
+	curl -o team-avatars/rittermo https://avatars3.githubusercontent.com/u/15341015?v=3&s=400
+	curl -o team-avatars/localgrr https://avatars1.githubusercontent.com/u/701632?v=3&s=400
+	curl -o team-avatars/mikolaj https://avatars1.githubusercontent.com/u/281893?v=3&s=400
+	$(EXEC) runhaskell -j5 $(FULL_SOURCES) ./exec/ResizeAvatar.hs 300 100 64 32 -- ./team-avatars/andorp ./team-avatars/fisx ./team-avatars/localgrr ./team-avatars/mikolaj ./team-avatars/np ./team-avatars/rittermo
+	@echo "Open now your web browser on: file://$$PWD/avatars.html"

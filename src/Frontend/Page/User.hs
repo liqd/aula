@@ -17,6 +17,7 @@ import System.FilePath
 import Access
 import Action
 import Data.Avatar
+import Frontend.Constant (avatarDefaultSize, avatarExtraSizes)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
@@ -372,16 +373,20 @@ editUserProfile uid = formPageHandlerWithMsg
                 throwError500 "IMPOSSIBLE: editUserProfile"
                 -- update . SetUserProfileDesc uid $ up ^. profileDesc
             Just file -> do
-                let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
-                    url = "/" <> dst
+                let dst dim = "static" </> "avatars" </> cs (uriPart uid) <> "-" <> show dim <.> "png"
+                    url dim = "/" <> dst dim
                 img <- readImageFile (cs file)
                 case img of
                     Left _e ->
                         -- FIXME: this should be dealt with the Nothing case.
                         -- throwError500 $ "image decoding failed: " <> e
                         update . SetUserProfileDesc uid $ up ^. profileDesc
-                    Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
-                update . SetUserProfile uid $ up & profileAvatar ?~ cs url
+                    Right pic -> do
+                        forM_ (avatarDefaultSize : avatarExtraSizes) $ \dim -> savePngImageFile (dst dim) $ makeAvatar dim pic
+                -- There is no need to store this URL as long as it is determined only by the user
+                -- id and dimension. Therefore the profileAvatar field could computed on the fly,
+                -- except for the 'Nothing' case (where we want to use a default profile picture.
+                update . SetUserProfile uid $ up & profileAvatar ?~ cs (url avatarDefaultSize)
     )
     "Die Änderungen wurden gespeichert."
 
