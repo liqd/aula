@@ -37,10 +37,10 @@ document.getElementById("mobile-menu-button").onclick = function() {
 var body = document.getElementsByTagName("body")[0];
 removeClass(body, "no-js");
 
-// Category image selecting
+// Category and image selecting
 
-var imageSelect = getElementByClassName("category-image-select");
-if(imageSelect) {
+var registerImageSelectionHandlers = function(imageSelect) {
+  if(imageSelect) {
     var buttons = imageSelect.getElementsByClassName("icon-list-button");
     var hidden = document.querySelectorAll("input[type=hidden]")[0];
 
@@ -66,7 +66,11 @@ if(imageSelect) {
     if (hidden.value !== "") {
         addClass(buttons[hidden.value].parentNode, "m-active");
     }
-}
+  }
+};
+
+registerImageSelectionHandlers(getElementByClassName("category-image-select"));
+registerImageSelectionHandlers(getElementByClassName("delegate-image-select"));
 
 // 'AdminAddRole': hide school class selection if role doesn't have a school class.
 
