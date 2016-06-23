@@ -382,12 +382,9 @@ editUserProfile uid = formPageHandlerWithMsg
                         update . SetUserProfileDesc uid $ up ^. profileDesc
                     Right pic -> do
                         forM_ (avatarDefaultSize : avatarExtraSizes) $ \dim -> savePngImageFile (dst dim) $ makeAvatar dim pic
-                -- There is no need to store this URL as long as it is determined only by the
-                -- user id & dimension. Therefor the profileAvatar field to be remove and
-                -- computed on the fly.
-                -- Moreover updating your profile picture is not changing this url so unless the
-                -- first time where it is empty.
-                --
+                -- There is no need to store this URL as long as it is determined only by the user
+                -- id and dimension. Therefore the profileAvatar field could computed on the fly,
+                -- except for the 'Nothing' case (where we want to use a default profile picture.
                 update . SetUserProfile uid $ up & profileAvatar ?~ cs (url avatarDefaultSize)
     )
     "Die Änderungen wurden gespeichert."
