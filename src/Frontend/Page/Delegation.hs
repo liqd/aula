@@ -24,7 +24,7 @@ import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
-import Action (ActionM, currentUser, delegateTo, equery)
+import Action (ActionM, currentUser, delegateOrWithdraw, equery)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
 import Persistent
@@ -39,7 +39,7 @@ data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User] (Maybe (AUID
 instance Page PageDelegateVote where isAuthorized = userPage
 
 newtype PageDelegationVotePayload = PageDelegationVotePayload
-    { unPageDelegationVotePayload :: AUID User }
+    { unPageDelegationVotePayload :: Maybe (AUID User) }
   deriving (Eq, Show, Read)
 
 instance FormPage PageDelegateVote where
@@ -60,8 +60,9 @@ instance FormPage PageDelegateVote where
         render :: AUID User -> ST
         render = cs . show . view unAUID
 
-        valid :: ST -> DF.Result (Html ()) (AUID User)
-        valid s = case readMay $ cs s of
+        valid :: ST -> DF.Result (Html ()) (Maybe (AUID User))
+        valid "" = pure Nothing
+        valid s = Just <$> case readMay $ cs s of
             Nothing -> DF.Error "invalid user id"
             Just (AUID -> uid)
               | uid `elem` (view _Id <$> options) -> DF.Success uid
@@ -93,7 +94,7 @@ ideaDelegation iid = formPageHandlerWithMsg
         do idea <- maybe404 =<< findIdea iid
            users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
            pure $ PageDelegateVote (Right idea) users Nothing)  -- TODO
-    (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
+    (Action.delegateOrWithdraw (DScopeIdeaId iid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
@@ -102,7 +103,7 @@ topicDelegation tid = formPageHandlerWithMsg
         do topic <- maybe404 =<< findTopic tid
            users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
            pure $ PageDelegateVote (Left topic) users Nothing)  -- TODO
-    (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
+    (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
 -- | 13. Delegation network
