@@ -119,8 +119,7 @@
         };
 
         var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
-        /* fixme not in design
-        rootElem.append("label").text("Geltungsbereich auswählen"); */
+        // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
         buttonDiv.append("input")
@@ -342,12 +341,12 @@
 
         var svg = d3.select("div#aula-d3-view")
             .append("div")
-               .classed("svg-container", true) //container class to make it responsive
+               .classed("svg-container", true) // container class to make it responsive
                .append("svg")
-               //responsive SVG needs these 2 attributes and no width and height attr
+               // responsive SVG needs these 2 attributes and no width and height attr
                .attr("preserveAspectRatio", "xMinYMin meet")
-               .attr("viewBox", "0 0 600 400")
-               //class to make it responsive
+               .attr("viewBox", function() { return "0 0 600 " + 20 * force.nodes().length; })
+               // class to make it responsive
                .classed("svg-content-responsive", true);
 
 
