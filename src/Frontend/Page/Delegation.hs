@@ -17,6 +17,7 @@ import           Data.Tree (Tree)
 import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.Text as ST
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -62,11 +63,13 @@ instance FormPage PageDelegateVote where
 
         valid :: ST -> DF.Result (Html ()) (Maybe (AUID User))
         valid "" = pure Nothing
-        valid s = Just <$> case readMay $ cs s of
+        valid (ST.commonPrefixes "page-delegate-vote-uid." -> Just ("page-delegate-vote-uid.", "", s)) =
+          Just <$> case readMay $ cs s of  -- TODO: re-align.
             Nothing -> DF.Error "invalid user id"
             Just (AUID -> uid)
               | uid `elem` (view _Id <$> options) -> DF.Success uid
               | otherwise                         -> DF.Error "user id not found"
+        valid _ = DF.Error "corrupt form data"
 
     formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
         p_ $ b_ "Stimme beauftragen"
@@ -79,7 +82,7 @@ instance FormPage PageDelegateVote where
                         uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin
                     span_ [ class_ "icon-list-button"
-                          , id_ $ cs uid  -- TODO: put in a prefix here!
+                          , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
                         img_ [ src_ . U.TopStatic $ fromString url
                              , alt_ $ cs uid
