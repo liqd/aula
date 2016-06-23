@@ -49,7 +49,7 @@
 
 .heroic-cta {
     @include rem(font-size, $font-size-small);
-    line-height: $font-size-small + 3;
+    line-height: $font-size-small + 6;
 
     .heroic-btn-group & {
         @include rem(margin, 0 10px 5px);
@@ -61,7 +61,7 @@
 
     @media screen and (max-width: $tablet-breakpoint) {
         @include rem(font-size, 18px);
-        line-height: $button-height + 3;
+        line-height: $button-height + 5;
 
         .heroic-btn-group & {
             @include rem(margin, 0 15px 10px);

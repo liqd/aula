@@ -62,7 +62,7 @@ manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
        runPostHandler (pure NeedAdmin) (update DangerousResetAulaData)
   :<|> runPostHandler (pure NeedEmptyUserMap) genInitialTestDb
-  :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse defaultUniverseSize))
+  :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse smallUniverseSize))
   :<|> runPostHandler (pure NeedAdmin) genVotingPhaseTopic
   :<|> runPostHandler (pure NeedAdmin) randomDelegations
   :<|> runPostHandler (pure NeedAdmin) . update . DangerousRenameAllLogins

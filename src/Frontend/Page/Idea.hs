@@ -289,9 +289,10 @@ instance ToHtml ViewIdea where
             -- bars
             toHtml $ IdeaVoteLikeBars stats
 
-            a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
-                i_ [class_ "icon-bullhorn"] nil
-                "Stimme beauftragen"
+            when (False) $ do -- fixme !!
+              a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
+                  i_ [class_ "icon-bullhorn"] nil
+                  "Stimme beauftragen"
 
             -- indicators
             div_ [class_ "table-actions m-no-hover"] $ do
@@ -299,12 +300,11 @@ instance ToHtml ViewIdea where
                     when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                         feasibilityIndicator idea
+                    when (isWinning idea) $
+                        li_ [class_ "icon-winner"] $ span_ "gewonnen"
 
             -- explanation by the dean why the idea is feasible or not (if available)
             feasibilityVerdict idea
-
-            when (isWinning idea) $
-                div_ [class_ "btn-cta"] "gewonnen"
 
             -- buttons
             toHtml $ ideaVoteLikeButtons ctx stats
