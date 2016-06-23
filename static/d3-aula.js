@@ -91,6 +91,7 @@
                 .data(["moreLevels", "fewerLevels"]);
             button.enter()
                 .append("button")
+                .attr("class", "btn")
                 .text(function(d) {
                     if (d == "moreLevels") {
                         return "aufklappen";
@@ -117,15 +118,20 @@
                 })
         };
 
-        var rootElem = d3.select(rootSel).append("div");
-        rootElem.append("label").text("Geltungsbereich auswählen");
+        var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
+        /* fixme not in design
+        rootElem.append("label").text("Geltungsbereich auswählen"); */
         var menuDiv = rootElem.append("div");
-        var buttonDiv = rootElem.append("div");
-        rootElem.append("input")
+        var buttonDiv = rootElem.append("div").attr("class", "button-group");
+        buttonDiv.append("input")
+            .attr("type", "button")
+            .attr("class", "btn-cta")
+            .attr("value", "Nur Treffer anzeigen!")
+            .on("click",   function() { filterByMatching(); });
+        buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")
             .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
-
         update();
     };
 
@@ -334,9 +340,16 @@
 
         initializeControlPanel(rootSel, filterByPower, highlightMatching, filterByMatching);
 
-        var svg = d3.select(rootSel).append("svg")
-            .attr("width", width)
-            .attr("height", height);
+        var svg = d3.select("div#aula-d3-view")
+            .append("div")
+               .classed("svg-container", true) //container class to make it responsive
+               .append("svg")
+               //responsive SVG needs these 2 attributes and no width and height attr
+               .attr("preserveAspectRatio", "xMinYMin meet")
+               .attr("viewBox", "0 0 600 400")
+               //class to make it responsive
+               .classed("svg-content-responsive", true);
+
 
         svg.append("defs")
             .selectAll("marker")
@@ -359,31 +372,25 @@
     };
 
     var initializeControlPanel = function(rootSel, filterByPower, highlightMatching, filterByMatching) {
-        var controls = d3.select(rootSel);
+        var controls = d3.select(".delagation-header").insert("div", " .button-group").attr("class", "controls");
 
-        controls.append("label").text("Nur Delegierte mit mindestens ");
-        controls.append("input")
+        var ig1 = controls.append("div").attr("class", "input-group");
+
+        ig1.append("label").text("Nur Delegierte mit mindestens ");
+        ig1.append("input")
             .attr("type", "number")
+            .attr("class", "input-text input-number")
             .on("keyup",   function() { filterByPower(this.value); })
             .on("mouseup", function() { filterByPower(this.value); });
-        controls.append("label").text(" Stimmen anzeigen.");
 
-        controls.append("hr");
-
-        controls.append("label").text("Nutzer suchen: ");
-        controls.append("input")
+        var ig2 = controls.append("div").attr("class", "input-group");
+        ig2.append("label").text("Nutzer suchen: ");
+        ig2.append("input")
             .attr("type", "text")
+            .attr("type", "number")
+            .attr("class", "input-text input-number")
             .on("keyup",   function() { highlightMatching(this.value); })
             .on("mouseup", function() { highlightMatching(this.value); });
-
-        controls.append("hr");
-
-        controls.append("input")
-            .attr("type", "button")
-            .attr("value", "Nur Treffer anzeigen!")
-            .on("click",   function() { filterByMatching(); });
-
-        controls.append("hr");
     };
 
     // FIXME: i think d3js has a better way to do this.
