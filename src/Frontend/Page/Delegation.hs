@@ -76,7 +76,7 @@ instance FormPage PageDelegateVote where
         br_ []
         ul_ $ do
             DF.inputHidden "selected-delegate" v
-            div_ [class_ "icon-list m-inline delegate-image-select"] $ do
+            div_ [class_ "delegate-image-select"] $ do
                 ul_ . for_ options $ \user -> do
                     let url = "avatars/" <> uid <> ".png"
                         uid = user ^. _Id . unAUID . showed
