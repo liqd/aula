@@ -25,7 +25,7 @@ import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
-import Action (ActionM, currentUser, delegateOrWithdraw, equery)
+import Action (ActionM, currentUser, delegateOrWithdraw, equery, mquery)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
 import Persistent
@@ -92,22 +92,27 @@ instance FormPage PageDelegateVote where
                     cancelButton p
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
-ideaDelegation iid = formPageHandlerWithMsg
+ideaDelegation iid = formPageHandlerCalcMsgM
     (equery $
         do idea <- maybe404 =<< findIdea iid
            users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
            pure $ PageDelegateVote (Right idea) users Nothing)  -- TODO
     (Action.delegateOrWithdraw (DScopeIdeaId iid) . unPageDelegationVotePayload)
-    "Beauftragung erfolgt"
+    pageDelegateVoteSuccessMsg
+
+pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
+pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload muid) _ = do
+    delegate <- mquery $ findUser (muid ^?! _Just)
+    pure $ "Du hast " <> delegate ^. userLogin . unUserLogin <> " mit Deiner Stimme beauftragt"
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
-topicDelegation tid = formPageHandlerWithMsg
+topicDelegation tid = formPageHandlerCalcMsgM
     (equery $
         do topic <- maybe404 =<< findTopic tid
            users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
            pure $ PageDelegateVote (Left topic) users Nothing)  -- TODO
     (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
-    "Beauftragung erfolgt"
+    pageDelegateVoteSuccessMsg
 
 -- | 13. Delegation network
 data PageDelegationNetwork = PageDelegationNetwork DScope DScopeTree DelegationNetwork
