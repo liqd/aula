@@ -136,6 +136,7 @@ function removeClass(el, cl) {
 }
 
 function addClass(el, cl) {
+    removeClass(el, cl);
     if(el) el.className = el.className + " " + cl;
 }
 
