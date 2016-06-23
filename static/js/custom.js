@@ -39,7 +39,7 @@ removeClass(body, "no-js");
 
 // Category and image selecting
 
-var registerImageSelectionHandlers = function(imageSelect) {
+var registerImageSelectionHandlers = function(imageSelect, findActivatee) {
     if(imageSelect) {
         var buttons = imageSelect.getElementsByClassName("icon-list-button");
         var hidden = document.querySelectorAll("input[type=hidden]")[0];
@@ -49,10 +49,10 @@ var registerImageSelectionHandlers = function(imageSelect) {
                 for (b2 = 0; b2 < buttons.length; ++b2) {
                     if(buttons[b2] && buttons[b2].className) {
                         if (b2 == b1) {
-                            var toggledOn = toggleClass(buttons[b2].parentNode, "m-active");
+                            var toggledOn = toggleClass(findActivatee(buttons[b2]), "m-active");
                             hidden.value = toggledOn ? buttons[b2].id : "";
                         } else {
-                            removeClass(buttons[b2].parentNode, "m-active");
+                            removeClass(findActivatee(buttons[b2]), "m-active");
                         }
                     }
                 }
@@ -64,13 +64,13 @@ var registerImageSelectionHandlers = function(imageSelect) {
         }
 
         if (hidden.value !== "") {
-            addClass(buttons[hidden.value].parentNode, "m-active");
+            addClass(findActivatee(buttons[hidden.value]), "m-active");
         }
     }
 };
 
-registerImageSelectionHandlers(getElementByClassName("category-image-select"));
-registerImageSelectionHandlers(getElementByClassName("delegate-image-select"));
+registerImageSelectionHandlers(getElementByClassName("category-image-select"), function(elem) { return elem.parentNode; });
+registerImageSelectionHandlers(getElementByClassName("delegate-image-select"), function(elem) { return elem; });
 
 // 'AdminAddRole': hide school class selection if role doesn't have a school class.
 
