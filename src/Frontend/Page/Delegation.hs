@@ -81,7 +81,7 @@ instance FormPage PageDelegateVote where
                     let url = "avatars/" <> uid <> ".png"
                         uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin
-                    span_ [ class_ "icon-list-button"
+                    li_ [ class_ "icon-list-button"
                           , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
                         img_ [ src_ . U.TopStatic $ fromString url
