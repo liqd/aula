@@ -69,7 +69,7 @@ instance FormPage PageDelegateVote where
                 Just (AUID -> uid)
                   | uid `elem` (view _Id <$> options) -> DF.Success uid
                   | otherwise                         -> DF.Error "user id not found"
-        valid _ = DF.Error "corrupt form data"
+        valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
     formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
         p_ $ b_ "Stimme beauftragen"
