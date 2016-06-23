@@ -23,4 +23,3 @@ aula.yaml*
 /static/avatars/*.png
 /hpc
 cookie-jar
-src/Backend.hs
