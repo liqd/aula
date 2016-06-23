@@ -91,12 +91,13 @@ scaleUp (w, h) img@(Image w0 h0 _) = generateImage f w h where
                 y' :: Float = fromIntegral y * fromIntegral h0 / fromIntegral h
             in pixelAt img (floor x') (floor y')
 
+-- | this should only be called after adjusting dimensions so that the catch-all never happens.
 resize :: IntegralPixel a => (Int, Int) -> Image a -> Image a
 resize (w, h) img@(Image w0 h0 _)
     | w == w0 && h == h0 = img
     | w >= w0 && h >= h0 = scaleUp (w, h) img
     | w <= w0 && h <= h0 = scaleDown (w, h) img
-    | otherwise          = error $ unwords ["TODO unsupported resize:", show (w0, h0), "to", show (w, h)]
+    | otherwise = error $ unwords ["internal error: ", show (w0, h0, w, h)]
 
 -- From Codec.Picture.Saving
 componentToLDR :: forall a. (Integral a, Bounded a) => Float -> a
