@@ -137,13 +137,10 @@ data Either3 a b c = Left3 a | Middle3 b | Right3 c
 
 instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a b c)
 
-app2 :: (c -> d) -> (a -> b -> c) -> a -> b -> d
-app2 f g x y = f $ g x y
-
 infixr 9 <..>
 
 (<..>) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
-(<..>) = app2
+(<..>) f g x y = f $ g x y
 
 infixr 9 <...>
 
