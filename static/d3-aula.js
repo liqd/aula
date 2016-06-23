@@ -369,6 +369,7 @@
         ig1.append("input")
             .attr("type", "number")
             .attr("class", "input-text input-number")
+            .attr("min", "1")
             .on("keyup",   function() { filterByPower(this.value); })
             .on("mouseup", function() { filterByPower(this.value); });
 
