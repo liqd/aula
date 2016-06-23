@@ -13,7 +13,6 @@
 module Frontend.Page.Delegation
 where
 
-import           Control.Arrow ((&&&))
 import           Data.Tree (Tree)
 import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
@@ -21,6 +20,7 @@ import qualified Data.Set as Set
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
+import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
@@ -33,7 +33,7 @@ import qualified Frontend.Path as U
 
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User]
+data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User] (Maybe (AUID User))
   deriving (Eq, Show, Read)
 
 instance Page PageDelegateVote where isAuthorized = userPage
@@ -45,24 +45,42 @@ newtype PageDelegationVotePayload = PageDelegationVotePayload
 instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
-    formAction (PageDelegateVote scope _users) = case scope of
+    formAction (PageDelegateVote scope _options _mselected) = case scope of
         Left  topic  -> U.delegateVoteOnTopic topic
         Right idea   -> U.delegateVoteOnIdea idea
 
-    redirectOf (PageDelegateVote scope _users) _ = case scope of
+    redirectOf (PageDelegateVote scope _options _mselected) _ = case scope of
         Left  topic  -> U.viewTopic topic
         Right idea   -> U.viewIdea idea
 
-    -- TODO: Show the existing delegation
-    makeForm (PageDelegateVote _scope users) =
-        PageDelegationVotePayload
-        <$> "user-to-delegate" .: DF.choice userList Nothing
+    makeForm (PageDelegateVote _scope _options mselected) =
+        PageDelegationVotePayload <$>
+            "selected-delegate" .: DF.validate valid (DF.text (render <$> mselected))
       where
-        userList = (view _Id &&& view (userLogin . unUserLogin . html)) <$> users
+        render :: AUID User -> ST
+        render = cs . show . view unAUID
 
-    formPage v f p@(PageDelegateVote _scope _users) = semanticDiv p . f $ do
-        -- TODO: Table from users
-        DF.inputSelect "user-to-delegate" v
+        valid :: ST -> DF.Result (Html ()) (AUID User)
+        valid s = maybe (DF.Error "invalid user id") (DF.Success . AUID) (readMay $ cs s)
+          -- TODO: check that it's in _options!
+
+    formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
+        p_ $ b_ "Stimme beauftragen"
+        br_ []
+        ul_ $ do
+            DF.inputHidden "selected-delegate" v
+            div_ [class_ "icon-list m-inline delegate-image-select"] $ do
+                ul_ . for_ options $ \user -> do
+                    let url = "avatars/" <> uid <> ".png"
+                        uid = user ^. _Id . unAUID . showed
+                        unm = user ^. userLogin . unUserLogin
+                    span_ [ class_ "icon-list-button"
+                          , id_ $ cs uid  -- TODO: put in a prefix here!
+                          ] $ do
+                        img_ [ src_ . U.TopStatic $ fromString url
+                             , alt_ $ cs uid
+                             ]
+                        toHtml unm
         DF.inputSubmit "beauftragen"
         cancelButton p
 
@@ -71,7 +89,7 @@ ideaDelegation iid = formPageHandlerWithMsg
     (equery $
         do idea <- maybe404 =<< findIdea iid
            users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-           pure $ PageDelegateVote (Right idea) users)
+           pure $ PageDelegateVote (Right idea) users Nothing)  -- TODO
     (Action.delegateTo (DScopeIdeaId iid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
@@ -80,7 +98,7 @@ topicDelegation tid = formPageHandlerWithMsg
     (equery $
         do topic <- maybe404 =<< findTopic tid
            users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
-           pure $ PageDelegateVote (Left topic) users)
+           pure $ PageDelegateVote (Left topic) users Nothing)  -- TODO
     (Action.delegateTo (DScopeTopicId tid) . unPageDelegationVotePayload)
     "Beauftragung erfolgt"
 
