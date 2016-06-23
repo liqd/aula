@@ -96,7 +96,7 @@ ideaDelegation iid = formPageHandlerCalcMsgM
     (equery $
         do idea <- maybe404 =<< findIdea iid
            users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-           pure $ PageDelegateVote (Right idea) users Nothing)  -- TODO
+           pure $ PageDelegateVote (Right idea) users Nothing)
     (Action.delegateOrWithdraw (DScopeIdeaId iid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
@@ -110,7 +110,7 @@ topicDelegation tid = formPageHandlerCalcMsgM
     (equery $
         do topic <- maybe404 =<< findTopic tid
            users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
-           pure $ PageDelegateVote (Left topic) users Nothing)  -- TODO
+           pure $ PageDelegateVote (Left topic) users Nothing)
     (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
