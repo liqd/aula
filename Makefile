@@ -103,7 +103,7 @@ docker-hpc:
 	cp -R /liqd/aula/.stack-work/install/x86_64-linux/lts-3.20/7.10.2/hpc .
 
 team-avatars: .phony
-	rm -r team-avatars
+	-rm -r team-avatars
 	mkdir team-avatars
 	curl -o team-avatars/andorp https://avatars1.githubusercontent.com/u/3465327?v=3&s=400
 	curl -o team-avatars/fisx https://avatars2.githubusercontent.com/u/10210727?v=3&s=400

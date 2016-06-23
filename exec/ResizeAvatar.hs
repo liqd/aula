@@ -27,7 +27,7 @@ main = do
             Left err -> fail err
             Right pic ->
                 forM_ dims $ \dim -> do
-                    hPutStrLn stderr $ unwords ["Resizing to", show dim]
+                    hPutStrLn stderr $ unwords ["Resizing to ", show dim]
                     savePngImage (destName dim arg) (makeAvatar dim pic)
     renderToFile "avatars.html" . html_ $ do
         head_ . title_ $ "AuLA avatars"
@@ -42,8 +42,6 @@ main = do
                         td_ $ img_ [src_ (cs arg)]
                         forM_ dims $ \dim ->
                             td_ $ img_ [src_ (cs $ destName dim arg)]
-
-
   where
     readDim s
         | not (null s) && all isDigit s = pure $ read s
