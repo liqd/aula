@@ -40,33 +40,33 @@ removeClass(body, "no-js");
 // Category and image selecting
 
 var registerImageSelectionHandlers = function(imageSelect) {
-  if(imageSelect) {
-    var buttons = imageSelect.getElementsByClassName("icon-list-button");
-    var hidden = document.querySelectorAll("input[type=hidden]")[0];
+    if(imageSelect) {
+        var buttons = imageSelect.getElementsByClassName("icon-list-button");
+        var hidden = document.querySelectorAll("input[type=hidden]")[0];
 
-    var makeHandler = function(b1) {
-        return function() {
-            for (b2 = 0; b2 < buttons.length; ++b2) {
-                if(buttons[b2] && buttons[b2].className) {
-                    if (b2 == b1) {
-                        var toggledOn = toggleClass(buttons[b2].parentNode, "m-active");
-                        hidden.value = toggledOn ? b2 : "";
-                    } else {
-                        removeClass(buttons[b2].parentNode, "m-active");
+        var makeHandler = function(b1) {
+            return function() {
+                for (b2 = 0; b2 < buttons.length; ++b2) {
+                    if(buttons[b2] && buttons[b2].className) {
+                        if (b2 == b1) {
+                            var toggledOn = toggleClass(buttons[b2].parentNode, "m-active");
+                            hidden.value = toggledOn ? b2 : "";
+                        } else {
+                            removeClass(buttons[b2].parentNode, "m-active");
+                        }
                     }
                 }
             }
+        };
+
+        for (b = 0; b < buttons.length; ++b) {
+            buttons[b].addEventListener("click", makeHandler(b));
         }
-    };
 
-    for (b = 0; b < buttons.length; ++b) {
-        buttons[b].addEventListener("click", makeHandler(b));
+        if (hidden.value !== "") {
+            addClass(buttons[hidden.value].parentNode, "m-active");
+        }
     }
-
-    if (hidden.value !== "") {
-        addClass(buttons[hidden.value].parentNode, "m-active");
-    }
-  }
 };
 
 registerImageSelectionHandlers(getElementByClassName("category-image-select"));
