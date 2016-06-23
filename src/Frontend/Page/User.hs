@@ -12,12 +12,9 @@
 module Frontend.Page.User
 where
 
-import System.FilePath
-
 import Access
 import Action
-import Data.Avatar
-import Frontend.Constant (avatarDefaultSize, avatarExtraSizes)
+import Codec.Picture (DynamicImage)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
@@ -26,8 +23,7 @@ import Frontend.Validation
 import Persistent.Api
     ( SetUserEmail(SetUserEmail)
     , SetUserPass(SetUserPass)
-    , SetUserProfileDesc(SetUserProfileDesc)
-    , SetUserProfile(SetUserProfile)
+    , SetUserDesc(SetUserDesc)
     )
 import Persistent
     ( DelegateeListsMap(..)
@@ -43,6 +39,14 @@ import qualified Frontend.Path as U
 import qualified Text.Digestive.Form as DF
 import qualified Text.Digestive.Types as DF (Result(..))
 import qualified Text.Digestive.Lucid.Html5 as DF
+
+
+-- * misc
+
+setProfileContext :: User -> CapCtx -> CapCtx
+setProfileContext user =
+    set capCtxUserProfile (Just user) .
+    set capCtxDelegateTo  (Just user)
 
 
 -- * page
@@ -191,7 +195,7 @@ userHeaderDiv _ (Left user) =
 
 userHeaderDiv ctx (Right (user, delegations)) =
     div_ $ do
-        div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
+        div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
         ul_ [class_ "role-badges"] $ do
             forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
@@ -322,15 +326,22 @@ delegatedVotes userId = do
 
 -- ** User Profile: Edit profile
 
+data UserProfileUpdate = UserProfileUpdate
+    { _profileAvatar :: Maybe DynamicImage
+    , _profileDesc   :: Document
+    }
+
+makeLenses ''UserProfileUpdate
+
 instance FormPage EditUserProfile where
-    type FormPagePayload EditUserProfile = UserProfile
+    type FormPagePayload EditUserProfile = UserProfileUpdate
 
     formAction (EditUserProfile _ctx u) = U.editUserProfile u
     redirectOf (EditUserProfile _ctx u) _ = U.viewUserProfile u
 
     makeForm (EditUserProfile _ctx user) =
-        UserProfile
-        <$> ("avatar" .: (cs <$$> DF.validateM validateImageFile DF.file))
+        UserProfileUpdate
+        <$> ("avatar" .: DF.validateM validateImageFile DF.file)
         <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
@@ -350,14 +361,15 @@ instance FormPage EditUserProfile where
                     DF.inputSubmit "Änderungen speichern"
                     cancelButton p
 
-validateImageFile :: ActionM m => Maybe FilePath -> m (DF.Result (Html ()) (Maybe FilePath))
-validateImageFile Nothing = pure $ DF.Success Nothing
-validateImageFile imgPath@(Just file) = do
-    img <- readImageFile (cs file)
-    pure $ case img of
-        -- FIXME: what are the accepted formats?  be more specific and more accurate!
-        Left _  -> DF.Error   "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
-        Right _ -> DF.Success imgPath
+validateImageFile :: ActionM m => Maybe FilePath -> m (DF.Result (Html ()) (Maybe DynamicImage))
+validateImageFile = \case
+    Nothing   -> pure $ DF.Success Nothing
+    Just file -> do
+        img <- readImageFile (cs file)
+        pure $ case img of
+            -- FIXME: what are the accepted formats?  be more specific and more accurate!
+            Left _    -> DF.Error   "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
+            Right pic -> DF.Success $ Just pic
 
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
@@ -371,22 +383,10 @@ editUserProfile uid = formPageHandlerWithMsg
             Nothing ->
                 -- FIXME: this should not be impossible
                 throwError500 "IMPOSSIBLE: editUserProfile"
-                -- update . SetUserProfileDesc uid $ up ^. profileDesc
-            Just file -> do
-                let dst dim = "static" </> "avatars" </> cs (uriPart uid) <> "-" <> show dim <.> "png"
-                    url dim = "/" <> dst dim
-                img <- readImageFile (cs file)
-                case img of
-                    Left _e ->
-                        -- FIXME: this should be dealt with the Nothing case.
-                        -- throwError500 $ "image decoding failed: " <> e
-                        update . SetUserProfileDesc uid $ up ^. profileDesc
-                    Right pic -> do
-                        forM_ (avatarDefaultSize : avatarExtraSizes) $ \dim -> savePngImageFile (dst dim) $ makeAvatar dim pic
-                -- There is no need to store this URL as long as it is determined only by the user
-                -- id and dimension. Therefore the profileAvatar field could computed on the fly,
-                -- except for the 'Nothing' case (where we want to use a default profile picture.
-                update . SetUserProfile uid $ up & profileAvatar ?~ cs (url avatarDefaultSize)
+                -- update . SetUserDesc uid $ up ^. profileDesc
+            Just pic -> do
+                update . SetUserDesc uid $ up ^. profileDesc
+                saveAvatar uid pic
     )
     "Die Änderungen wurden gespeichert."
 
@@ -419,11 +419,3 @@ reportUser userId = formPageHandlerWithMsg
     (ReportUserProfile <$> mquery (findUser userId))
     (Action.reportUser userId)
     "Das Nutzerprofil wurde der Moderation gemeldet."
-
-
--- * misc
-
-setProfileContext :: User -> CapCtx -> CapCtx
-setProfileContext user =
-    set capCtxUserProfile (Just user) .
-    set capCtxDelegateTo  (Just user)

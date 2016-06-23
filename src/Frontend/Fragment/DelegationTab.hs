@@ -34,7 +34,7 @@ renderDelegations showScope delegations = do
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
                 div_ [class_ "small-avatar-list-image"] $ do
-                    nil -- FIXME Make a real image a child here (avatarImgFromHasMeta)
+                    nil -- FIXME Make a real image a child here (createdByAvatarImg)
             div_ [class_ "col-11-12"] $ do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)

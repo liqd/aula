@@ -29,7 +29,7 @@ module Frontend.Core
     , IsTab
     , tabSelected
     , redirect, redirectPath
-    , avatarImgFromMaybeURL, avatarImgFromMeta, avatarImgFromHasMeta
+    , avatarImg, userAvatarImg, createdByAvatarImg
     , numLikes, percentLikes, numVotes, percentVotes
 
       -- * pages
@@ -98,6 +98,7 @@ import Access
 import Action
 import Config
 import Data.UriPath (absoluteUriPath)
+import Frontend.Constant
 import Frontend.Path (HasPath(..))
 import Logger.EventLog (EventLog)
 import Lucid.Missing (script_, href_, src_, nbsp)
@@ -253,15 +254,14 @@ redirect = throwServantErr . err303With
 redirectPath :: (MonadServantErr err m, HasPath p) => p 'P.AllowGetPost -> m a
 redirectPath = redirect . absoluteUriPath . relPath
 
-avatarImgFromMaybeURL :: forall m. (Monad m) => Maybe URL -> HtmlT m ()
-avatarImgFromMaybeURL = maybe nil (img_ . pure . Lucid.src_)
+avatarImg :: Monad m => AvatarDimension -> Getter (AUID User) (HtmlT m ())
+avatarImg dim = avatarUrl dim . to (img_ . pure . Lucid.src_)
 
-avatarImgFromMeta :: forall m a i. (Monad m) => GMetaInfo a i -> HtmlT m ()
-avatarImgFromMeta = avatarImgFromMaybeURL . view metaCreatedByAvatar
+createdByAvatarImg :: (Monad m, HasMetaInfo a) => AvatarDimension -> Getter a (HtmlT m ())
+createdByAvatarImg dim = createdBy . avatarImg dim
 
-avatarImgFromHasMeta :: forall m a. (Monad m, HasMetaInfo a) => a -> HtmlT m ()
-avatarImgFromHasMeta = avatarImgFromMeta . view metaInfo
-
+userAvatarImg :: Monad m => AvatarDimension -> Getter User (HtmlT m ())
+userAvatarImg dim = _Id . avatarImg dim
 
 numLikes :: Idea -> Int
 numLikes idea = Map.size $ idea ^. ideaLikes
@@ -711,7 +711,8 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                 div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu"] $ do
                         -- FIXME: please add class m-selected to currently selected menu item
-                        div_ [class_ "user-avatar"] $ maybe nil avatarImgFromHasMeta mUser
+                        div_ [class_ "user-avatar"] $
+                            mUser ^. _Just . userAvatarImg avatarDefaultSize
                         span_ [class_ "user-name"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do

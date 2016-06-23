@@ -61,7 +61,7 @@ instance ToHtml ListItemIdea where
         semanticDiv' [class_ "ideas-list-item"] p $ do
             a_ [href_ $ U.viewIdea idea] $ do
                 div_ [class_ "col-5-12"] $ do
-                    div_ [class_ "ideas-list-img-container"] $ avatarImgFromHasMeta idea
+                    div_ [class_ "ideas-list-img-container"] $ idea ^. createdByAvatarImg avatarDefaultSize
                     div_ [class_ "ideas-list-text-container"] $ do
                         h2_ [class_ "ideas-list-title"] $ do
                             idea ^. ideaTitle . html

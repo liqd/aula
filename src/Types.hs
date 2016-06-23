@@ -26,7 +26,7 @@ module Types
     )
 where
 
-import Control.Lens
+import Control.Lens hiding ((<.>))
 import Data.Set.Lens (setOf)
 import Control.Monad
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
@@ -43,7 +43,7 @@ import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeC
 import Data.String
 import Data.String.Conversions
 import Data.Time
-import Data.UriPath
+import Data.UriPath (HasUriPart(uriPart))
 import GHC.Generics (Generic)
 import Lucid (ToHtml, toHtml, toHtmlRaw, div_)
 import Network.HTTP.Media ((//))
@@ -53,6 +53,7 @@ import Servant.API
     ( FromHttpApiData(parseUrlPiece), ToHttpApiData(toUrlPiece)
     , Accept, MimeRender, Headers(..), Header, contentType, mimeRender, addHeader
     )
+import System.FilePath ((</>), (<.>))
 import Text.Read (readMaybe, readEither)
 
 import qualified Data.Aeson as Aeson
@@ -67,6 +68,7 @@ import qualified Text.Email.Validate as Email
 import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
 import Data.Markdown
+import Frontend.Constant
 
 -- * a small prelude
 
@@ -609,15 +611,6 @@ followsPhase _               _                   = False
 
 -- * user
 
-data UserProfile = UserProfile
-    { _profileAvatar :: Maybe URL -- ^ FIXME: (1) This is a FilePath now; (2) do we want to keep
-                                  -- track of the stored sizes here?
-    , _profileDesc   :: Document
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic UserProfile
-
 data UserSettings = UserSettings
     { _userSettingsPassword :: UserPass
     , _userSettingsEmail    :: Maybe EmailAddress
@@ -632,7 +625,7 @@ data User = User
     , _userFirstName :: UserFirstName
     , _userLastName  :: UserLastName
     , _userRoleSet   :: Set Role
-    , _userProfile   :: UserProfile
+    , _userDesc      :: Document
     , _userSettings  :: UserSettings
     }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -941,7 +934,6 @@ data GMetaInfo a k = MetaInfo
     { _metaKey             :: k
     , _metaCreatedBy       :: AUID User
     , _metaCreatedByLogin  :: UserLogin
-    , _metaCreatedByAvatar :: Maybe URL
     , _metaCreatedAt       :: Timestamp
     , _metaChangedBy       :: AUID User
     , _metaChangedAt       :: Timestamp
@@ -1142,7 +1134,6 @@ instance Binary User
 instance Binary UserFirstName
 instance Binary UserLastName
 instance Binary UserLogin
-instance Binary UserProfile
 instance Binary UserSettings
 instance Binary DurationDays
 instance Binary Durations
@@ -1218,7 +1209,6 @@ makeLenses ''UserFirstName
 makeLenses ''UserLastName
 makeLenses ''UserLogin
 makeLenses ''UserPass
-makeLenses ''UserProfile
 makeLenses ''UserSettings
 makeLenses ''UserView
 
@@ -1271,8 +1261,15 @@ deriveSafeCopy 0 'base ''UserFirstName
 deriveSafeCopy 0 'base ''UserLastName
 deriveSafeCopy 0 'base ''UserLogin
 deriveSafeCopy 0 'base ''UserPass
-deriveSafeCopy 0 'base ''UserProfile
 deriveSafeCopy 0 'base ''UserSettings
+
+type AvatarDimension = Int
+
+avatarFile :: AvatarDimension -> Getter (AUID a) FilePath
+avatarFile dim = to $ \uid -> "static" </> "avatars" </> cs (uriPart uid) <> "-" <> show dim <.> "png"
+
+avatarUrl :: AvatarDimension -> Getter (AUID a) URL
+avatarUrl dim = to $ \uid -> "/" <> uid ^. avatarFile dim . csi
 
 class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
@@ -1287,8 +1284,8 @@ class Ord (IdOf a) => HasMetaInfo a where
     createdBy       = metaInfo . metaCreatedBy
     createdByLogin  :: Lens' a UserLogin
     createdByLogin  = metaInfo . metaCreatedByLogin
-    createdByAvatar :: Lens' a (Maybe URL)
-    createdByAvatar = metaInfo . metaCreatedByAvatar
+    createdByAvatar :: AvatarDimension -> Getter a URL
+    createdByAvatar dim = metaInfo . metaCreatedBy . avatarUrl dim
     createdAt       :: Lens' a Timestamp
     createdAt       = metaInfo . metaCreatedAt
     changedBy       :: Lens' a (AUID User)
@@ -1605,11 +1602,8 @@ traverseParents :: [AUID Comment] -> Traversal' Comments Comments
 traverseParents []     = id
 traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
 
-userAvatar :: Lens' User (Maybe URL)
-userAvatar = userProfile . profileAvatar
-
-userDesc :: Lens' User Document
-userDesc = userProfile . profileDesc
+userAvatar :: AvatarDimension -> Getter User URL
+userAvatar dim = _Id . avatarUrl dim
 
 userPassword :: Lens' User UserPass
 userPassword = userSettings . userSettingsPassword
@@ -1656,7 +1650,6 @@ instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""  -- FIXME: where do we need this?  think of something else!
-instance Aeson.ToJSON UserProfile where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
 instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
 
@@ -1672,7 +1665,7 @@ instance Aeson.ToJSON DelegationNetwork where
         -- FIXME: It shouldn't be rendered for deleted users.
         renderNode (u, p) = Aeson.object
             [ "name"   Aeson..= (u ^. userLogin . unUserLogin)
-            , "avatar" Aeson..= (u ^. userAvatar)
+            , "avatar" Aeson..= (u ^. userAvatar avatarDefaultSize)
             , "power"  Aeson..= p
             ]
 
@@ -1717,6 +1710,5 @@ instance Aeson.FromJSON UserFirstName where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON UserLastName where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON UserLogin where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON UserPass where parseJSON _ = pure . UserPassInitial $ InitialPassword ""  -- FIXME: where do we need this?  think of something else!
-instance Aeson.FromJSON UserProfile where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON UserSettings where parseJSON = Aeson.gparseJson
 instance Aeson.FromJSON User where parseJSON = Aeson.gparseJson

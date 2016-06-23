@@ -81,14 +81,12 @@ $(makeAcidic ''AulaData
     , 'saveDurations
     , 'saveQuorums
     , 'setTopicPhase
-    , 'setUserAvatar
     , 'setUserEmail
     , 'setUserPass
     , 'setUserLogin
     , 'addUserRole
     , 'remUserRole
-    , 'setUserProfile
-    , 'setUserProfileDesc
+    , 'setUserDesc
     , 'resetUserPass
     , 'deleteComment
     , 'deactivateUser

@@ -87,14 +87,12 @@ module Persistent.Pure
     , mkMetaInfo
     , mkUserLogin
     , withUser
-    , setUserProfile
-    , setUserProfileDesc
+    , setUserDesc
     , setUserEmail
     , setUserPass
     , setUserLogin
     , addUserRole
     , remUserRole
-    , setUserAvatar
     , resetUserPass
     , getTopics
     , setTopicPhase
@@ -474,11 +472,8 @@ withIdea = withRecord dbIdeaMap
 withUser :: AUID User -> AulaTraversal User
 withUser = withRecord dbUserMap
 
-setUserProfile :: AUID User -> UserProfile -> AUpdate ()
-setUserProfile uid profile = withUser uid . userProfile .= profile
-
-setUserProfileDesc :: AUID User -> Document -> AUpdate ()
-setUserProfileDesc uid desc = withUser uid . userProfile . profileDesc .= desc
+setUserDesc :: AUID User -> Document -> AUpdate ()
+setUserDesc uid desc = withUser uid . userDesc .= desc
 
 setUserEmail :: AUID User -> EmailAddress -> AUpdate ()
 setUserEmail uid email = withUser uid . userEmail ?= email
@@ -502,9 +497,6 @@ addUserRole uid role = withUser uid . userRoleSet %= Set.insert role
 
 remUserRole :: AUID User -> Role -> AUpdate ()
 remUserRole uid role = withUser uid . userRoleSet %= Set.delete role
-
-setUserAvatar :: AUID User -> URL -> AUpdate ()
-setUserAvatar uid url = withUser uid . userAvatar ?= url
 
 -- | Update topic value.  Returns information about the ideas that have changed location.
 editTopic :: AUID Topic -> EditTopicData -> AUpdate [IdeaChangedLocation]
@@ -831,10 +823,7 @@ userFromProto metainfo uLogin uPassword proto = User
         { _userSettingsPassword = UserPassInitial uPassword
         , _userSettingsEmail    = proto ^. protoUserEmail
         }
-    , _userProfile   = UserProfile
-        { _profileAvatar = Nothing
-        , _profileDesc   = proto ^. protoUserDesc
-        }
+    , _userDesc      = proto ^. protoUserDesc
     }
 
 checkLoginIsAvailable :: UserLogin -> AUpdate ()
@@ -920,7 +909,6 @@ mkMetaInfo cUser now key = MetaInfo
     { _metaKey             = key
     , _metaCreatedBy       = cUser ^. _Id
     , _metaCreatedByLogin  = cUser ^. userLogin
-    , _metaCreatedByAvatar = cUser ^. userAvatar
     , _metaCreatedAt       = now
     , _metaChangedBy       = cUser ^. _Id
     , _metaChangedAt       = now
