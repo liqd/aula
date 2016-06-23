@@ -11,7 +11,6 @@ import Types
 
 spec :: Spec
 spec = do
-    -- TODO better descriptions
     describe "Reset Password Token store properties" $ do
 
         it "New password token allways valid at insertion" .
