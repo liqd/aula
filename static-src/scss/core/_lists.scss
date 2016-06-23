@@ -100,6 +100,10 @@
                 color: $color-negative;
             }
 
+            &.icon-winner {
+                @include svg(trophy);
+            }
+
             &.icon-table {
                 background-image: url(../images/badge_aufdemtisch.png);
 

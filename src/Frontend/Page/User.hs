@@ -17,6 +17,7 @@ import System.FilePath
 import Access
 import Action
 import Data.Avatar
+import Frontend.Constant (avatarDefaultSize, avatarExtraSizes)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
@@ -192,8 +193,9 @@ userHeaderDiv ctx (Right (user, delegations)) =
     div_ $ do
         div_ [class_ "heroic-avatar"] $ user ^. userAvatar . to avatarImgFromMaybeURL
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        forM_ (user ^. userRoleSet . to Set.toList) $ \r ->
-            span_ [class_ "post-title"] $ r ^. uilabeled
+        ul_ [class_ "role-badges"] $ do
+            forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
+                li_ [class_ "badge"] $ r ^. uilabeled
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
@@ -371,16 +373,20 @@ editUserProfile uid = formPageHandlerWithMsg
                 throwError500 "IMPOSSIBLE: editUserProfile"
                 -- update . SetUserProfileDesc uid $ up ^. profileDesc
             Just file -> do
-                let dst = "static" </> "avatars" </> cs (uriPart uid) <.> "png"
-                    url = "/" <> dst
+                let dst dim = "static" </> "avatars" </> cs (uriPart uid) <> "-" <> show dim <.> "png"
+                    url dim = "/" <> dst dim
                 img <- readImageFile (cs file)
                 case img of
                     Left _e ->
                         -- FIXME: this should be dealt with the Nothing case.
                         -- throwError500 $ "image decoding failed: " <> e
                         update . SetUserProfileDesc uid $ up ^. profileDesc
-                    Right pic -> savePngImageFile dst (dynamicResize (53, 53) pic)
-                update . SetUserProfile uid $ up & profileAvatar ?~ cs url
+                    Right pic -> do
+                        forM_ (avatarDefaultSize : avatarExtraSizes) $ \dim -> savePngImageFile (dst dim) $ makeAvatar dim pic
+                -- There is no need to store this URL as long as it is determined only by the user
+                -- id and dimension. Therefore the profileAvatar field could computed on the fly,
+                -- except for the 'Nothing' case (where we want to use a default profile picture.
+                update . SetUserProfile uid $ up & profileAvatar ?~ cs (url avatarDefaultSize)
     )
     "Die Änderungen wurden gespeichert."
 
