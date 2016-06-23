@@ -65,11 +65,11 @@ instance FormPage PageDelegateVote where
         valid "" = pure Nothing
         valid (ST.commonPrefixes "page-delegate-vote-uid." -> Just ("page-delegate-vote-uid.", "", s)) =
             Just <$> case readMay $ cs s of
-                Nothing -> DF.Error "invalid user id"
+                Nothing -> DF.Error ("invalid user id: " <> fromString (show s))
                 Just (AUID -> uid)
                   | uid `elem` (view _Id <$> options) -> DF.Success uid
                   | otherwise                         -> DF.Error "user id not found"
-        valid _ = DF.Error "corrupt form data"
+        valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
     formPage v f p@(PageDelegateVote _scope options _mselected) = semanticDiv p . f $ do
         p_ $ b_ "Stimme beauftragen"
