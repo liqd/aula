@@ -39,7 +39,7 @@ body .delagation-header {
         width: auto;
 
         &.input-number {
-            @include rem(width, 50px);
+            @include rem(width, 75px);
         }
     }
 
