@@ -57,3 +57,38 @@ body .delagation-header {
         @include rem(margin-top, 15px);
     }
 }
+
+.delegate-image-select {
+    ul {
+        @extend .clearfix;
+
+        li {
+            @include rem(margin-bottom, 15px);
+            cursor: pointer;
+            text-align: center;
+
+            img {
+                @include rem(margin-bottom, 10px);
+                display: block;
+                vertical-align: middle;
+            }
+
+            &.m-active {
+                color: $color-positive;
+
+                span {
+                    font-weight: bold;
+                    text-transform: underline;
+                }
+            }
+        }
+    }
+
+    .button-group {
+        @include rem(padding, 20px 0);
+
+        input[type=submit] {
+            @include rem(margin-right, 15px);
+        }
+    }
+}
