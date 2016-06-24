@@ -607,7 +607,8 @@ followsPhase _               _                   = False
 -- * user
 
 data UserProfile = UserProfile
-    { _profileAvatar :: Maybe URL -- FIXME: This is a FilePath now
+    { _profileAvatar :: Maybe URL -- ^ FIXME: (1) This is a FilePath now; (2) do we want to keep
+                                  -- track of the stored sizes here?
     , _profileDesc   :: Document
     }
   deriving (Eq, Ord, Show, Read, Generic)

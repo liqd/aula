@@ -48,20 +48,42 @@
 }
 
 .heroic-cta {
-    @include rem(font-size, 18px);
-    line-height: $button-height + 3;
+    @include rem(font-size, $font-size-small);
+    line-height: $font-size-small + 6;
 
     .heroic-btn-group & {
-        @include rem(margin-right, 15px);
+        @include rem(margin, 0 10px 5px);
 
         &:last-child {
             margin-right: 0;
         }
     }
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        @include rem(font-size, 18px);
+        line-height: $button-height + 5;
+
+        .heroic-btn-group & {
+            @include rem(margin, 0 15px 10px);
+
+            &:last-child {
+                margin-right: 0;
+            }
+        }
+    }
 }
 
 .heroic-btn-group {
-    @include rem(margin-bottom, 40px);
+    @include rem(margin-bottom, 30px);
+
+    form {
+        @extend .heroic-cta;
+        display: inline-block;
+
+        .heroic-cta {
+            margin: 0;
+        }
+    }
 }
 
 .heroic-avatar {
@@ -113,4 +135,8 @@
         @include rem(font-size, 50px);
         display: block;
     }
+}
+
+.role-badges {
+    @include rem(margin-bottom, 15px);
 }

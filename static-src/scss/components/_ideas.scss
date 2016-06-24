@@ -66,6 +66,10 @@
 .ideas-list {
     @include rem(padding, 15px);
     clear: both;
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        @include rem(padding, 15px 10px);
+    }
 }
 
 .ideas-list-title {
@@ -146,6 +150,10 @@
 
         &:first-child {
             margin-right: 0;
+        }
+
+        @media screen and (max-width: $tablet-breakpoint) {
+            float: none;
         }
     }
 

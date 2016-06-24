@@ -91,6 +91,7 @@
                 .data(["moreLevels", "fewerLevels"]);
             button.enter()
                 .append("button")
+                .attr("class", "btn")
                 .text(function(d) {
                     if (d == "moreLevels") {
                         return "aufklappen";
@@ -117,15 +118,14 @@
                 })
         };
 
-        var rootElem = d3.select(rootSel).append("div");
-        rootElem.append("label").text("Geltungsbereich auswählen");
+        var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
+        // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
-        var buttonDiv = rootElem.append("div");
-        rootElem.append("input")
+        var buttonDiv = rootElem.append("div").attr("class", "button-group");
+        buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")
             .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
-
         update();
     };
 
@@ -133,6 +133,182 @@
     //////////////////////////////////////////////////////////////////////
 
     var showGraph = function(rootSel, graph) {
+
+        // [local functions]
+
+        var tick = function() {
+            // adjust positions (is there a better place for this than here in the tick function?)
+            var wallElasticity = 10;
+            force.nodes().forEach(function(n) {
+                if (n.x < 0)      n.x = wallElasticity;
+                if (n.x > width)  n.x = width - wallElasticity;
+                if (n.y < 0)      n.y = wallElasticity;
+                if (n.y > height) n.y = height - wallElasticity;
+            });
+
+            // update elems
+            path.attr("d", linkArc);
+
+            text.attr("dx", function(d) { return d.x; })
+                .attr("dy", function(d) { return d.y; });
+
+            avat.attr("x", avatarXPos)
+                .attr("y", avatarYPos);
+        };
+
+        var linkArc = function(d) {
+            var dx = d.target.x - d.source.x;
+            var dy = d.target.y - d.source.y;
+            var dr = Math.sqrt(dx * dx + dy * dy);
+            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+        };
+
+        // make all nodes below a certain power threshold invisible.
+        var filterByPower = function(threshold) {
+            graph.nodes.forEach(function(n) {
+                n.visible = n.power >= threshold;
+            });
+            updateVisibility();
+        };
+
+        var highlightMatching = function() {
+            console.log('highlightMatching', arguments);
+        };
+
+        var updateVisibility = function() {
+            var gnodes = [];
+            var glinks = [];
+
+            // we need to use `graph` here, not `force`.  invisible
+            // nodes are still in the former, but not in the latter.
+            graph.nodes.forEach(function(n) {
+                if (n.visible) {
+                    gnodes.push(n);
+                }
+            });
+
+            graph.links.forEach(function(l) {
+                if (l.source.visible && l.target.visible) {
+                    glinks.push(l);
+                }
+            });
+
+            force.nodes(gnodes).links(glinks);
+            updateWidget();
+        };
+
+        // this is called if the set of nodes changes (i.e., if nodes
+        // are removed or re-added).
+        var updateWidget = function() {
+            // (we remove all nodes from the svg and then add them
+            // again.  the `.update` method could offer some tuning
+            // potential, should we experience low frame rates.  or it
+            // may not be the bottleneck, who knows.)
+
+            svg.selectAll("g path").data([]).exit().remove();
+            svg.selectAll("g image").data([]).exit().remove();
+            svg.selectAll("g text").data([]).exit().remove();
+
+            path = svg.append("g")
+                .selectAll("path").data(force.links())
+                .enter().append("path")
+                .attr("class", function(d) { return "link default"; })
+                .attr("marker-end", function(d) { return "url(#default)"; });
+
+            avat = svg.append("g")
+                .selectAll("image").data(force.nodes())
+                .enter().append("image")
+                .attr("class", ".node")
+                .call(force.drag)
+                .attr("width",  avatarWidthHeight)
+                .attr("height", avatarWidthHeight)
+                .attr("xlink:href", function(d) { return d.avatar; });
+
+            avat.on("click",      on_click)
+                .on("dblclick",   on_dblclick)
+                .on("mouseover",  on_mouseover)
+                .on("mouseout",   on_mouseout);
+
+            text = svg.append("g")
+                .selectAll("text").data(force.nodes())
+                .enter().append("text")
+                .attr("class", function(d) { return setvisibility(false, this); })
+                .text(function(d) { return (d.name + " [" + d.power + "]"); });
+
+            force.alpha(.3);
+        };
+
+        var updateWidgetJustTitles = function() {
+            // there is still something wrong with updateWidget that
+            // destroys the state if we call it from here, so we'll do
+            // something simpler.
+
+            text.attr("class", function(d) { return setvisibility(d.showTitle, this); });
+        };
+
+        var avatarWidthHeight = function(d) {
+            return 20 + Math.min(Math.sqrt(d.power * 100), 160);
+        };
+
+        var avatarXPos = function(d) {
+            return d.x - (avatarWidthHeight(d) / 2);
+        };
+
+        var avatarYPos = function(d) {
+            return d.y - (avatarWidthHeight(d) / 2);
+        };
+
+        // toggle visibility of all delegatees (recursively).
+        //
+        // (currently, if we click around in a large delegatee tree,
+        // turning individual sub-trees off and on, and then close and
+        // open the entire tree, everything will be visible.  it would
+        // be slightly nicer to remember which nodes were invisible
+        // and recover the state before the previous click on the root
+        // node.)
+        var on_click = function(d) {
+            var newVisibilityStatus = undefined;
+            var visited = [];
+            var traverse = function(d) {
+                if (visited.indexOf(d.name) >= 0) {
+                    return;
+                }
+                visited.push(d.name);
+                graph.links.forEach(function(l) {
+                    if (l.target.name === d.name) {
+                        if (newVisibilityStatus === undefined) {
+                            newVisibilityStatus = !l.source.visible;
+                        }
+                        l.source.visible = newVisibilityStatus;
+                        traverse(l.source);
+                    }
+                });
+            };
+
+            traverse(d);
+            updateVisibility();
+        };
+
+        // not sure we should use dblclick.  doesn't seem to work very
+        // well in firefox, and not sure about phones, either.
+        var on_dblclick = function(d) {
+        };
+
+        var on_mouseover = function(d) {
+            d.showTitle = true;
+            updateWidgetJustTitles();
+            d.fixed = true;
+        };
+
+        var on_mouseout = function(d) {
+            d.showTitle = false;
+            updateWidgetJustTitles();
+            d.fixed = false;
+        };
+
+
+        // [initialization]
+
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
         var width = 960;
@@ -142,69 +318,27 @@
             d.visible = true;
         });
 
-        var tick = function() {
-            // adjust positions (is there a better place for this than here in the tick function?)
-            for (i in graph.nodes) {
-                var wallElasticity = 10;
-                if (graph.nodes[i]) {
-                    if (graph.nodes[i].x < 0)      graph.nodes[i].x = wallElasticity;
-                    if (graph.nodes[i].x > width)  graph.nodes[i].x = width - wallElasticity;
-                    if (graph.nodes[i].y < 0)      graph.nodes[i].y = wallElasticity;
-                    if (graph.nodes[i].y > height) graph.nodes[i].y = height - wallElasticity;
-                }
-            }
-
-            var setvisibility = function(visible, elem) {
-                var result = "";
-                if (elem.attributes['class']) {
-                    result = elem.attributes['class'].value;
-                }
-
-                // remove hidden class
-                result = result.replace(" hidden", "");
-                result = result.replace("hidden", "");
-
-                // add it if appropriate
-                if (!visible) {
-                    result = result + " " + "hidden";
-                }
-                return result;
-            };
-
-            // update elems
-            path.attr("d", linkArc)
-                .attr("class", function(d) { return setvisibility(d.source.visible && d.target.visible, this); });
-
-            text.attr("dx", function(d) { return d.x; })
-                .attr("dy", function(d) { return d.y; })
-                .attr("class", function(d) { return setvisibility(d.visible, this); });
-
-            avat.attr("x", avatarXPos)
-                .attr("y", avatarYPos)
-                .attr("class", function(d) { return setvisibility(d.visible, this); });
-        };
-
-        function linkArc(d) {
-            var dx = d.target.x - d.source.x;
-            var dy = d.target.y - d.source.y;
-            var dr = Math.sqrt(dx * dx + dy * dy);
-            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
-        };
-
         var force = d3.layout.force()
-            .charge(-200)
-            .linkDistance(70)
             .size([width, height])
-            .on("tick", tick);
-
-        force
             .nodes(graph.nodes)
             .links(graph.links)
+            .on("tick", tick)
+            .charge(-200)
+            .linkDistance(70)
             .start();
 
-        var svg = d3.select(rootSel).append("svg")
-            .attr("width", width)
-            .attr("height", height);
+        initializeControlPanel(rootSel, filterByPower, highlightMatching);
+
+        var svg = d3.select("div#aula-d3-view")
+            .append("div")
+               .classed("svg-container", true) // container class to make it responsive
+               .append("svg")
+               // responsive SVG needs these 2 attributes and no width and height attr
+               .attr("preserveAspectRatio", "xMinYMin meet")
+               .attr("viewBox", function() { return "0 0 600 " + 20 * force.nodes().length; })
+               // class to make it responsive
+               .classed("svg-content-responsive", true);
+
 
         svg.append("defs")
             .selectAll("marker")
@@ -219,68 +353,50 @@
             .append("path")
             .attr("d", "M0,-5L10,0L0,5");
 
-        var path = svg.append("g")
-            .selectAll("path")
-            .data(force.links()).enter().append("path")
-            .attr("class", function(d) { return "link default"; })
-            .attr("marker-end", function(d) { return "url(#default)"; });
+        var path = undefined;
+        var avat = undefined;
+        var text = undefined;
 
-        var avatarWidthHeight = function(d) {
-            // tweak hints: 30, 200 are good bounds for this.
-            return (50 + 30 * d.power) / 4;
-        };
+        updateWidget();
+    };
 
-        var avatarXPos = function(d) {
-            return d.x - (avatarWidthHeight(d) / 2);
-        };
+    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching) {
+        var controls = d3.select(".delagation-header").append("div").attr("class", "controls");
 
-        var avatarYPos = function(d) {
-            return d.y - (avatarWidthHeight(d) / 2);
-        };
+        var ig1 = controls.append("div").attr("class", "input-group");
 
-        var avat = svg.append("g")
-            .selectAll(".node")
-            .data(graph.nodes).enter().append("image")
-            .attr("class", ".node")
-            .call(force.drag)
-            .attr("width",  avatarWidthHeight)
-            .attr("height", avatarWidthHeight)
-            .attr("xlink:href", function(d) { return d.avatar; });
+        ig1.append("label").text("Untergrenze Anzahl Beauftragungen:");
+        ig1.append("input")
+            .attr("type", "number")
+            .attr("class", "input-text input-number")
+            .on("keyup",   function() { filterByPower(this.value); })
+            .on("mouseup", function() { filterByPower(this.value); });
 
-        var on_click = function(d) {
-            d.visible = false;
-        };
+        var ig2 = controls.append("div").attr("class", "input-group");
+        ig2.append("label").text("Nutzer suchen:");
+        ig2.append("input")
+            .attr("type", "text")
+            .attr("class", "input-text")
+            .on("keyup",   function() { highlightMatching(this.value); })
+            .on("mouseup", function() { highlightMatching(this.value); });
+    };
 
-        var on_dblclick = function(d) {
-        };
+    // FIXME: i think d3js has a better way to do this.
+    var setvisibility = function(visible, elem) {
+        var result = "";
+        if (elem.attributes['class']) {
+            result = elem.attributes['class'].value;
+        }
 
-        var on_mouseover = function(d) {
-        };
+        // remove hidden class
+        result = result.replace(" hidden", "");
+        result = result.replace("hidden", "");
 
-        var on_mouseout = function(d) {
-        };
-
-        avat.on("click",      on_click)
-            .on("dblclick",   on_dblclick)
-            .on("mouseover",  on_mouseover)
-            .on("mouseout",   on_mouseout);
-
-        var text = svg.append("g")
-            .selectAll("text")
-            .data(graph.nodes).enter().append("text")
-            .text(function(d) { return (d.name + " [" + d.power + "]"); });
-
-
-        /*
-            http://stackoverflow.com/questions/13691463/svg-how-to-crop-an-image-to-a-circle
-            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-              <clipPath id="clipCircle">
-                <circle r="50" cx="50" cy="50"/>
-              </clipPath>
-              <rect width="100" height="100" clip-path="url(#clipCircle)"/>
-            </svg>
-        */
-
+        // add it if appropriate
+        if (!visible) {
+            result = result + " " + "hidden";
+        }
+        return result;
     };
 
 

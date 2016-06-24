@@ -93,6 +93,13 @@ executables:
       - fsnotify
       - hspec
 
+  aula-avatars:
+    main: ResizeAvatar.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+
 tests:
   spec:
     main: Spec.hs

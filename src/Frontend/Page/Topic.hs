@@ -363,17 +363,16 @@ ideaToFormField idea = "idea-" <> idea ^. _Id . showed . csi
 -- are pre-selected.
 formPageIdeaSelection :: (Monad m) => View (HtmlT m ()) -> [IdeaStats] -> HtmlT m ()
 formPageIdeaSelection v ideaStats =
-    table_ [class_ "admin-table", style_ "padding: 30px"] .
-      for_ (sortBy (compare `on` view (ideaStatsIdea . ideaTitle)) ideaStats) $ \ideaStat ->
-          tr_ $ do
-              td_ $ do
-                  DF.inputCheckbox
-                      (ideaToFormField $ ideaStat ^. ideaStatsIdea)
-                      v
-              td_ $ do
-                  ideaStat ^. ideaStatsIdea . ideaTitle . html
-              td_ . when (ideaReachedQuorum ideaStat) $ do
-                  img_ [src_ . U.TopStatic $ "images/badge_aufdemtisch.png", width_ "31"]
+    ul_ [class_ "checkboxes"] .
+        for_ (sortBy (compare `on` view (ideaStatsIdea . ideaTitle)) ideaStats) $ \ideaStat ->
+            li_ $ do
+                DF.inputCheckbox
+                    (ideaToFormField $ ideaStat ^. ideaStatsIdea)
+                    v
+                span_ $ do
+                    ideaStat ^. ideaStatsIdea . ideaTitle . html
+                    when (ideaReachedQuorum ideaStat) $ do
+                        img_ [src_ . U.TopStatic $ "images/badge_aufdemtisch.png", width_ "31"]
 
 
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
