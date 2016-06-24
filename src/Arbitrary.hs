@@ -175,6 +175,7 @@ instance Arbitrary PasswordTokens where
     arbitrary = PasswordTokens <$> arb
     shrink (PasswordTokens x) = PasswordTokens <$> shr x
 
+
 -- * pages
 
 instance Arbitrary PageOverviewOfSpaces where

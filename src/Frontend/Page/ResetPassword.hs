@@ -40,16 +40,15 @@ instance FormPage PasswordResetViaEmail where
         ResetPasswordFormData
         <$> ("email" .: emailField "Email" Nothing)
 
-    -- TODO: Translate
     formPage v form p@PasswordResetViaEmail =
         semanticDiv p $ do
             div_ [class_ "login-register-form"] $ do
-                h1_ [class_ "main-heading"] "Password reset"
+                h1_ [class_ "main-heading"] "Passwort neu setzen"
+                p_ [class_ "text-muted login-register-form-notice"]
+                    "Du kannst Dir einen Link an Deine email-Adresse schicken lassen, unter dem Du ein neues Passwort eingeben kannst."
                 div_ . form $ do
-                    inputText_     [placeholder_ "Your email"] "email" v
-                    inputSubmit_   [] "Reset Password"
-                    p_ [class_ "text-muted login-register-form-notice"]
-                        "We will send a link to your email address."
+                    inputText_     [placeholder_ "Deine email-Adresse"] "email" v
+                    inputSubmit_   [] "Anfordern"
 
 
 passwordResetViaEmail :: ActionM m => FormPageHandler m PasswordResetViaEmail
@@ -57,8 +56,7 @@ passwordResetViaEmail =
     formPageHandlerWithMsg
         (pure PasswordResetViaEmail)
         (Action.resetPasswordViaEmail . unResetPasswordFormData)
-        -- TODO: Translate
-        "The email has sent to your email address"
+        "Die email mit dem Link wurde versendet."
 
 
 -- * finalize password via email
@@ -88,31 +86,30 @@ instance FormPage FinalizePasswordViaEmail where
                     validate "neues Passwort" passwordV (DF.text Nothing))
             <*> ("new-password2" .:
                     validate "neues Passwort (Wiederholung)" passwordV (DF.text Nothing))
+                    -- FUTUREWORK: validating second password leads to obnoxious double-errors.
       where
         checkNewPassword u = newPassword1 u == newPassword2 u
 
-    -- TODO: Translate
     formPage v form p@(FinalizePasswordViaEmail user _token Valid) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-            h1_ [class_ "main-heading"] $ "New password for " <> (user ^. userLogin . unUserLogin . html)
+            h1_ [class_ "main-heading"] $ "Neues Passwort fuer " <> (user ^. userLogin . unUserLogin . html)
             form $ do
                 label_ $ do
-                    span_ [class_ "label-text"] "neues Passwort"
+                    span_ [class_ "label-text"] "Neues Passwort"
                     inputPassword_ [class_ "m-small"]
                         "new-password1" v
                 label_ $ do
-                    span_ [class_ "label-text"] "neues Passwort bestätigen"
+                    span_ [class_ "label-text"] "Neues Passwort bestätigen"
                     inputPassword_ [class_ "m-small"]
                         "new-password2" v
                 footer_ [class_ "form-footer"] $ do
-                    inputSubmit_ [] "Save password"
+                    inputSubmit_ [] "Password speichern"
 
-    -- TODO: Translate
     formPage _v _form p@(FinalizePasswordViaEmail _user _token _state) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-            h1_ [class_ "main-heading"] "The password reset request is timed out"
-            a_ [href_ U.login] "Back to login"
-
+            h1_ [class_ "main-heading"] "Der Link ist abgelaufen"
+            p_ "Auf der Login-Seite kannst du einen neuen Link anfordern."
+            a_ [href_ U.login] "Zurueck zum Login"
 
 
 finalizePasswordViaEmail :: ActionM m => AUID User -> PasswordToken -> FormPageHandler m FinalizePasswordViaEmail

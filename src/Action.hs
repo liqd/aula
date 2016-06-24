@@ -678,16 +678,28 @@ resetPasswordViaEmail email = do
     now   <- getCurrentTimestamp
     forM_ users $ \user -> do
         token <- mkRandomPasswordToken
-        -- TODO: Fill the fields
         uri <- pathToURI $ U.finalizePasswordViaEmail user token
         sendMailToUser [IgnoreMissingEmails] user EmailMessage
-            { _msgSubjectLabel = ForgottenPassword
-            , _msgSubjectText  = "Password reset"
-            , _msgBody    = uri
+            { _msgSubjectLabel = UserLoginSubject $ user ^. userLogin
+            , _msgSubjectText  = "Passwort zuruecksetzen"
+            , _msgBody    = ST.unlines
+                [ "Du hast eine email angefordert, um dein AuLA-Passwort neu zu setzen."
+                , "Das kannst du tun, indem du diesem Link folgst:"
+                , ""
+                , "    " <> uri
+                , ""
+                , "Wenn Du diese email nicht angefordert hast, brauchst du nichts zu tun."
+                , "Dein altes Passwort bleibt dann unveraendert."
+                , ""
+                , "Viel Spass!"
+                , "Dein AuLA-Team."
+                ]
             , _msgHtml    = Nothing -- Not supported yet
             }
         update $ AddPasswordToken (user ^. _Id) token now passwordTokenExpires
 
+-- | This function is called twice: once when rendering the form for entering a new password, and
+-- once when verifying it.
 checkValidPasswordToken :: ActionM m => AUID User -> PasswordToken -> m PasswordTokenState
 checkValidPasswordToken uid token = do
     now <- getCurrentTimestamp
@@ -696,13 +708,12 @@ checkValidPasswordToken uid token = do
 finalizePasswordViaEmail :: ActionM m => AUID User -> PasswordToken -> ST -> m ()
 finalizePasswordViaEmail uid token pwd = do
     valid <- Action.checkValidPasswordToken uid token
-    -- TODO: Translate messages
     case valid of
-        Invalid  -> addMessage "The token has timed out."
-        TimedOut -> addMessage "The token has timed out."
+        Invalid  -> addMessage "Der Link ist nicht mehr gueltig."
+        TimedOut -> addMessage "Der Link ist nicht mehr gueltig."
         Valid    -> do
             encryptPassword pwd >>= update . SetUserPass uid
-            addMessage "The password has changed."
+            addMessage "Dein Passwort wurde geaendert."
             now <- getCurrentTimestamp
             update $ RemovePasswordToken uid token now
 

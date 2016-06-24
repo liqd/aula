@@ -57,7 +57,6 @@ type MonadSendMailError e m = (MonadError e m, ThrowSendMailError e)
 data EmailSubjectLabel
     = IdeaSpaceSubject IdeaSpace
     | UserLoginSubject UserLogin
-    | ForgottenPassword
   deriving (Eq, Ord, Show, Read, Generic)
 
 data EmailMessage = EmailMessage
@@ -110,11 +109,10 @@ sendMailToAddressIO logger receiver msg = do
     subjectLabel = case msg ^. msgSubjectLabel of
         IdeaSpaceSubject is -> is ^. uilabeled
         UserLoginSubject ul -> ul ^. unUserLogin
-        ForgottenPassword   -> "ForgottenPassword" -- TODO: Translate
 
 sendMailToUser :: HasSendMail e r m => [SendMailFlag] -> User -> EmailMessage -> m ()
 sendMailToUser _ user _
-    | isDeletedUser user = pure () -- FIXME: Log this edge case
+    | isDeletedUser user = pure () -- FIXME: Log this corner case
 sendMailToUser flags user msg = do
     case userAddress user of
         Just address -> sendMailToAddress address msg
