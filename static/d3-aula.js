@@ -171,8 +171,11 @@
             updateVisibility();
         };
 
-        var highlightMatching = function() {
-            console.log('highlightMatching', arguments);
+        var highlightMatching = function(substring) {
+            graph.nodes.forEach(function(n) {
+                n.visible = substring === "" || n.name.indexOf(substring) >= 0;
+            });
+            updateVisibility();
         };
 
         var updateVisibility = function() {
