@@ -47,6 +47,7 @@ module Access
     , publicPage
     , adminPage
     , userPage
+    , loginPage
 
       -- * policy makers
     , rolePage
@@ -408,6 +409,11 @@ redirectLogin = accessRedirected "Not logged in" P.login
 userPage :: AccessCheck any
 userPage LoggedIn{}  = accessGranted
 userPage NotLoggedIn = redirectLogin
+
+-- Redirect from login if the user is already logged in.
+loginPage :: AccessCheck any
+loginPage NotLoggedIn = accessGranted
+loginPage LoggedIn{}  = accessRedirected "You are already logged in" P.listSpaces
 
 
 -- * common policies (AccessCheck)

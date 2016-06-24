@@ -457,7 +457,7 @@ instance FormPage AdminCreateUser where
             <$> ("firstname"  .: firstName (DF.string Nothing))
             <*> ("lastname"   .: lastName  (DF.string Nothing))
             <*> ("login"      .: loginName (DF.optionalString Nothing))
-            <*> emailField "Email" Nothing
+            <*> optionalEmailField "Email" Nothing
             <*> (Set.singleton <$> roleForm Nothing Nothing classes)
         where
             -- FIXME: Users with more than one name?
@@ -574,16 +574,18 @@ instance FormPage AdminAddRole where
         adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
             div_ [class_ "col-9-12"] $ do
                 h1_ [class_ "admin-main-heading"] $ toHtml (userFullName user :: ST)
-                label_ [class_ "col-6-12"] $ do
-                    span_ [class_ "label-text"] "Nutzerrolle"
-                    inputSelect_ [class_ "m-stretch"] "role" v
-                label_ [class_ "col-6-12"] $ do  -- FIXME: we need a js hook that checks the value
-                                                 -- of the role field, and if that's not one of the
-                                                 -- first two, the "school class" field here should
-                                                 -- be hidden.  (nothing needs to be done to the
-                                                 -- form logic, this is a pure UI task.)
-                    span_ [class_ "label-text"] "Klasse"
-                    inputSelect_ [class_ "m-stretch"]  "class" v
+                div_ [class_ "clearfix"] $ do
+                    label_ [class_ "col-6-12"] $ do
+                        span_ [class_ "label-text"] "Nutzerrolle"
+                        let jscall = cs $ "toggleShowSchoolClass" <> jsargs
+                            jsargs    :: String   = "(event, " <> show showclson <> ")"
+                            -- FIXME: we should use digestive-functors to construct the following.
+                            showclson :: [String] = (prefix <>) <$> ["0", "1"]
+                            prefix    :: String   = "/admin/user/" <> (user ^. _Id . unAUID . showed) <> "/role/add.role."
+                        inputSelect_ [class_ "m-stretch", onchange_ jscall, onload_ jscall] "role" v
+                    label_ [class_ "col-6-12"] $ do
+                        span_ [class_ "label-text"] "Klasse"
+                        inputSelect_ [class_ "m-stretch"]  "class" v
                 div_ [class_ "admin-buttons"] $ do
                     DF.inputSubmit "Rolle hinzufügen"
 

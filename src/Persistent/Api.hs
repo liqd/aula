@@ -54,6 +54,8 @@ $(makeAcidic ''AulaData
     , 'addCommentVote
     , 'addDelegation
     , 'withdrawDelegation
+    , 'addPasswordToken
+    , 'removePasswordToken
     , 'addFirstUser
     , 'addIdea
     , 'addIdeaJuryResult

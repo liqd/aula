@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -22,7 +23,7 @@ module Action
     , ActionLog(log, readEventLog)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
-    , ActionRandomPassword(mkRandomPassword)
+    , ActionRandomPassword(mkRandomPassword, mkRandomPasswordToken)
     , ActionEncryptPassword(encryptPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
     , ActionSendMail
@@ -48,6 +49,9 @@ module Action
     , getSpacesForCurrentUser
     , deleteUser
     , reportUser
+    , resetPasswordViaEmail
+    , Action.checkValidPasswordToken
+    , finalizePasswordViaEmail
 
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
@@ -58,6 +62,7 @@ module Action
       -- * vote handling
     , likeIdea
     , voteOnIdea
+    , delegateOrWithdraw
     , delegateTo
     , withdrawDelegationTo
     , voteIdeaComment
@@ -258,6 +263,7 @@ class (MonadError ActionExcept m) => ActionPersist m where
 
 class ActionRandomPassword m where
     mkRandomPassword :: m InitialPassword
+    mkRandomPasswordToken :: m PasswordToken
 
 class ActionEncryptPassword m where
     encryptPassword :: ST -> m EncryptedPassword
@@ -403,16 +409,14 @@ sendMailToRole role msg = do
 
 phaseAction :: (ActionM m) => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
-    cfg <- viewConfig
+    uri <- pathToURI $ U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
     let topicTemplate addr phase = ST.unlines
             [ "Liebe " <> addr <> ","
             , ""
             , "das Thema:"
             , ""
             , "    " <> topic ^. topicTitle  -- FIXME: sanity checking!
-            , "    " <> (cfg ^. exposedUrl . csi)
-                     <> (absoluteUriPath . relPath $
-                           U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing)
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , "hat die " <> phase <> " erreicht und bedarf Ihrer Aufmerksamkeit."
@@ -553,6 +557,10 @@ voteOnIdea ideaId voteVal = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
                             (ProtoIdeaVote voteVal (voter ^. _Id))
 
+delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
+delegateOrWithdraw scope (Just delegate) = delegateTo           scope delegate
+delegateOrWithdraw _scope Nothing         = error "withdrawDelegationTo scope delegate"  -- FIXME
+
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope delegate = do
     user <- currentUser
@@ -587,11 +595,15 @@ deleteIdea = update . DeleteIdea
 deleteIdeaComment :: CommentKey -> ActionPersist m => m ()
 deleteIdeaComment = update . DeleteComment
 
+pathToURI :: ActionSendMail m => U.Main 'U.AllowGetPost -> m ST
+pathToURI path = do
+    cfg <- viewConfig
+    pure $ (cfg ^. exposedUrl . csi) <> absoluteUriPath (relPath path)
+
 reportIdea :: AUID Idea -> Document -> ActionM m => m ()
 reportIdea ideaId doc = do
     idea <- mquery $ findIdea ideaId
-    let uri = relPath $ U.viewIdea idea
-    cfg <- viewConfig
+    uri  <- pathToURI $ U.viewIdea idea
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject
         , _msgSubjectText  = "Problematische Idee."
@@ -600,7 +612,7 @@ reportIdea ideaId doc = do
             , ""
             , "Eine Idee wurde als problematisch gemeldet:"
             , ""
-            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , ""
@@ -620,8 +632,7 @@ reportIdea ideaId doc = do
 reportCommentById :: CommentKey -> Document -> (ActionPersist m, ActionSendMail m) => m ()
 reportCommentById ck doc = do
     comment <- mquery $ findComment ck
-    let uri = relPath $ U.viewComment comment
-    cfg <- viewConfig
+    uri     <- pathToURI $ U.viewComment comment
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject
         , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
@@ -630,7 +641,7 @@ reportCommentById ck doc = do
             , ""
             , "Ein Verbesserungsvorschlag wurde als problematisch gemeldet:"
             , ""
-            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , ""
@@ -645,8 +656,7 @@ reportCommentById ck doc = do
 reportUser :: ActionM m => AUID User -> Document -> m ()
 reportUser uid doc = do
     user <- mquery $ findUser uid
-    let uri = relPath $ U.viewUserProfile user
-    cfg <- viewConfig
+    uri <- pathToURI $ U.viewUserProfile user
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
         , _msgSubjectText  = "Problematisches Nutzerprofil."
@@ -655,7 +665,7 @@ reportUser uid doc = do
             , ""
             , "Ein Nutzerprofil wurde als problematisch gemeldet:"
             , ""
-            , "    " <> (cfg ^. exposedUrl . csi) <> absoluteUriPath uri
+            , "    " <> uri
                 -- FIXME: do we want to send urls by email?  phishing and all?
             , ""
             , ""
@@ -667,6 +677,53 @@ reportUser uid doc = do
         , _msgHtml = Nothing -- Not supported yet
         }
 
+passwordTokenExpires :: Timespan
+passwordTokenExpires = TimespanDays 3
+
+resetPasswordViaEmail :: ActionM m => EmailAddress -> m ()
+resetPasswordViaEmail email = do
+    users <- query $ findUsersByEmail email
+    now   <- getCurrentTimestamp
+    forM_ users $ \user -> do
+        token <- mkRandomPasswordToken
+        uri <- pathToURI $ U.finalizePasswordViaEmail user token
+        sendMailToUser [IgnoreMissingEmails] user EmailMessage
+            { _msgSubjectLabel = UserLoginSubject $ user ^. userLogin
+            , _msgSubjectText  = "Passwort zuruecksetzen"
+            , _msgBody    = ST.unlines
+                [ "Du hast eine email angefordert, um dein AuLA-Passwort neu zu setzen."
+                , "Das kannst du tun, indem du diesem Link folgst:"
+                , ""
+                , "    " <> uri
+                , ""
+                , "Wenn Du diese email nicht angefordert hast, brauchst du nichts zu tun."
+                , "Dein altes Passwort bleibt dann unveraendert."
+                , ""
+                , "Viel Spass!"
+                , "Dein AuLA-Team."
+                ]
+            , _msgHtml    = Nothing -- Not supported yet
+            }
+        update $ AddPasswordToken (user ^. _Id) token now passwordTokenExpires
+
+-- | This function is called twice: once when rendering the form for entering a new password, and
+-- once when verifying it.
+checkValidPasswordToken :: ActionM m => AUID User -> PasswordToken -> m PasswordTokenState
+checkValidPasswordToken uid token = do
+    now <- getCurrentTimestamp
+    equery $ Persistent.checkValidPasswordToken uid token now
+
+finalizePasswordViaEmail :: ActionM m => AUID User -> PasswordToken -> ST -> m ()
+finalizePasswordViaEmail uid token pwd = do
+    valid <- Action.checkValidPasswordToken uid token
+    case valid of
+        Invalid  -> addMessage "Der Link ist nicht mehr gueltig."
+        TimedOut -> addMessage "Der Link ist nicht mehr gueltig."
+        Valid    -> do
+            encryptPassword pwd >>= update . SetUserPass uid
+            addMessage "Dein Passwort wurde geaendert."
+            now <- getCurrentTimestamp
+            update $ RemovePasswordToken uid token now
 
 -- ASSUMPTION: Idea is in the given idea location.
 reportIdeaComment

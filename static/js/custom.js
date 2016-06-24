@@ -37,36 +37,54 @@ document.getElementById("mobile-menu-button").onclick = function() {
 var body = document.getElementsByTagName("body")[0];
 removeClass(body, "no-js");
 
-// Category image selecting
+// Category and image selecting
 
-var imageSelect = getElementByClassName("category-image-select");
-if(imageSelect) {
-    var buttons = imageSelect.getElementsByClassName("icon-list-button");
-    var hidden = document.querySelectorAll("input[type=hidden]")[0];
+var registerImageSelectionHandlers = function(imageSelect, findActivatee) {
+    if(imageSelect) {
+        var buttons = imageSelect.getElementsByClassName("icon-list-button");
+        var hidden = document.querySelectorAll("input[type=hidden]")[0];
 
-    var makeHandler = function(b1) {
-        return function() {
-            for (b2 = 0; b2 < buttons.length; ++b2) {
-                if(buttons[b2] && buttons[b2].className) {
-                    if (b2 == b1) {
-                        var toggledOn = toggleClass(buttons[b2].parentNode, "m-active");
-                        hidden.value = toggledOn ? b2 : "";
-                    } else {
-                        removeClass(buttons[b2].parentNode, "m-active");
+        var makeHandler = function(b1) {
+            return function() {
+                for (b2 = 0; b2 < buttons.length; ++b2) {
+                    if(buttons[b2] && buttons[b2].className) {
+                        if (b2 == b1) {
+                            var toggledOn = toggleClass(findActivatee(buttons[b2]), "m-active");
+                            hidden.value = toggledOn ? buttons[b2].id : "";
+                        } else {
+                            removeClass(findActivatee(buttons[b2]), "m-active");
+                        }
                     }
                 }
             }
+        };
+
+        for (b = 0; b < buttons.length; ++b) {
+            buttons[b].addEventListener("click", makeHandler(b));
         }
-    };
 
-    for (b = 0; b < buttons.length; ++b) {
-        buttons[b].addEventListener("click", makeHandler(b));
+        if (hidden.value !== "") {
+            addClass(findActivatee(buttons[hidden.value]), "m-active");
+        }
     }
+};
 
-    if (hidden.value !== "") {
-        addClass(buttons[hidden.value].parentNode, "m-active");
+registerImageSelectionHandlers(getElementByClassName("category-image-select"), function(elem) { return elem.parentNode; });
+registerImageSelectionHandlers(getElementByClassName("delegate-image-select"), function(elem) { return elem; });
+
+// 'AdminAddRole': hide school class selection if role doesn't have a school class.
+
+var toggleShowSchoolClass = function(event, showclson) {
+    var selector = "div[data-aula-type=\"AdminAddRole\"] label";
+    var elem = document.querySelectorAll(selector)[1];
+    var selection = event.srcElement.value;
+
+    if (showclson.indexOf(selection) < 0) {
+        addClass(elem, "hidden");
+    } else {
+        removeClass(elem, "hidden");
     }
-}
+};
 
 // UI Messages
 
@@ -122,6 +140,7 @@ function removeClass(el, cl) {
 }
 
 function addClass(el, cl) {
+    removeClass(el, cl);
     if(el) el.className = el.className + " " + cl;
 }
 

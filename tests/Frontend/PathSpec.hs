@@ -56,6 +56,7 @@ spec = do
             , U (arb :: Gen IdeaVoteValue)
             , U (arb :: Gen IdeaJuryResultType)
             , U (arb :: Gen UpDown)
+            , U (arb :: Gen PasswordToken)
             ]
 
     describe "FromHttpApiData <-> ToHttpApiData" $ do

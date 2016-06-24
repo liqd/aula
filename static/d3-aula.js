@@ -91,6 +91,7 @@
                 .data(["moreLevels", "fewerLevels"]);
             button.enter()
                 .append("button")
+                .attr("class", "btn")
                 .text(function(d) {
                     if (d == "moreLevels") {
                         return "aufklappen";
@@ -117,15 +118,14 @@
                 })
         };
 
-        var rootElem = d3.select(rootSel).append("div");
-        rootElem.append("label").text("Geltungsbereich auswählen");
+        var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
+        // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
-        var buttonDiv = rootElem.append("div");
-        rootElem.append("input")
+        var buttonDiv = rootElem.append("div").attr("class", "button-group");
+        buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")
             .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
-
         update();
     };
 
@@ -141,9 +141,9 @@
             var wallElasticity = 10;
             force.nodes().forEach(function(n) {
                 if (n.x < 0)      n.x = wallElasticity;
-                if (n.x > width)  n.x = width - wallElasticity;
+                if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
                 if (n.y < 0)      n.y = wallElasticity;
-                if (n.y > height) n.y = height - wallElasticity;
+                if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
             });
 
             // update elems
@@ -173,10 +173,6 @@
 
         var highlightMatching = function() {
             console.log('highlightMatching', arguments);
-        };
-
-        var filterByMatching = function () {
-            console.log('filterByMatching', arguments);
         };
 
         var updateVisibility = function() {
@@ -251,8 +247,7 @@
         };
 
         var avatarWidthHeight = function(d) {
-            // tweak hints: 30, 200 are good bounds for this.
-            return (50 + 30 * d.power) / 4;
+            return 20 + Math.min(Math.sqrt(d.power * 100), 160);
         };
 
         var avatarXPos = function(d) {
@@ -316,15 +311,15 @@
 
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
-        var width = 960;
-        var height = 800;
+        var globalGraphWidth = 600;
+        var globalGraphHeight = 600;
 
         graph.nodes.forEach(function(d) {
             d.visible = true;
         });
 
         var force = d3.layout.force()
-            .size([width, height])
+            .size([globalGraphWidth, globalGraphHeight])
             .nodes(graph.nodes)
             .links(graph.links)
             .on("tick", tick)
@@ -332,11 +327,18 @@
             .linkDistance(70)
             .start();
 
-        initializeControlPanel(rootSel, filterByPower, highlightMatching, filterByMatching);
+        initializeControlPanel(rootSel, filterByPower, highlightMatching);
 
-        var svg = d3.select(rootSel).append("svg")
-            .attr("width", width)
-            .attr("height", height);
+        var svg = d3.select("div#aula-d3-view")
+            .append("div")
+               .classed("svg-container", true) // container class to make it responsive
+               .append("svg")
+               // responsive SVG needs these 2 attributes and no width and height attr
+               .attr("preserveAspectRatio", "xMinYMin meet")
+               .attr("viewBox", function() { return "0 0 " + globalGraphWidth + " " + globalGraphHeight; })
+               // class to make it responsive
+               .classed("svg-content-responsive", true);
+
 
         svg.append("defs")
             .selectAll("marker")
@@ -358,32 +360,26 @@
         updateWidget();
     };
 
-    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching, filterByMatching) {
-        var controls = d3.select(rootSel);
+    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching) {
+        var controls = d3.select(".delagation-header").append("div").attr("class", "controls");
 
-        controls.append("label").text("Nur Delegierte mit mindestens ");
-        controls.append("input")
+        var ig1 = controls.append("div").attr("class", "input-group");
+
+        ig1.append("label").text("Untergrenze Anzahl Beauftragungen:");
+        ig1.append("input")
             .attr("type", "number")
+            .attr("class", "input-text input-number")
+            .attr("min", "1")
             .on("keyup",   function() { filterByPower(this.value); })
             .on("mouseup", function() { filterByPower(this.value); });
-        controls.append("label").text(" Stimmen anzeigen.");
 
-        controls.append("hr");
-
-        controls.append("label").text("Nutzer suchen: ");
-        controls.append("input")
+        var ig2 = controls.append("div").attr("class", "input-group");
+        ig2.append("label").text("Nutzer suchen:");
+        ig2.append("input")
             .attr("type", "text")
+            .attr("class", "input-text")
             .on("keyup",   function() { highlightMatching(this.value); })
             .on("mouseup", function() { highlightMatching(this.value); });
-
-        controls.append("hr");
-
-        controls.append("input")
-            .attr("type", "button")
-            .attr("value", "Nur Treffer anzeigen!")
-            .on("click",   function() { filterByMatching(); });
-
-        controls.append("hr");
     };
 
     // FIXME: i think d3js has a better way to do this.

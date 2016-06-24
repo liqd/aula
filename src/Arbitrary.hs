@@ -95,6 +95,7 @@ import qualified Data.Tree as Tree
 
 import Access
 import Config
+import Data.PasswordTokens
 import Data.UriPath hiding ((</>))
 import Logger.EventLog
 import Frontend.Core
@@ -149,6 +150,10 @@ instance Arbitrary DurationDays where
     arbitrary = DurationDays <$> arb
     shrink    = gshrink
 
+instance Arbitrary PasswordToken where
+    arbitrary = PasswordToken <$> arbWord
+    shrink    = gshrink
+
 instance ( Generic a, Generic b, Generic c
          , Arbitrary a, Arbitrary b, Arbitrary c
          ) => Arbitrary (Either3 a b c) where
@@ -158,6 +163,18 @@ instance ( Generic a, Generic b, Generic c
 instance Arbitrary CapCtx where
     arbitrary = garbitrary
     shrink    = gshrink
+
+instance Arbitrary PasswordTokenState where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary Validity where
+    arbitrary = Validity <$> arb
+    shrink (Validity x) = Validity <$> shr x
+
+instance Arbitrary PasswordTokens where
+    arbitrary = PasswordTokens <$> arb
+    shrink (PasswordTokens x) = PasswordTokens <$> shr x
 
 
 -- * pages
@@ -362,8 +379,8 @@ instance Arbitrary AdminPhaseChange where
     arbitrary = pure AdminPhaseChange
 
 instance Arbitrary PageDelegateVote where
-    arbitrary = PageDelegateVote <$> arb <*> arb
-    shrink (PageDelegateVote x y) = PageDelegateVote <$> shr x <*> shr y
+    arbitrary = PageDelegateVote <$> arb <*> arb <*> arb
+    shrink (PageDelegateVote x y z) = PageDelegateVote <$> shr x <*> shr y <*> shr z
 
 -- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
@@ -405,6 +422,13 @@ instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
     shrink (LoginFormData x y) = LoginFormData <$> shr x <*> shr y
 
+instance Arbitrary PasswordResetViaEmail where
+    arbitrary = pure PasswordResetViaEmail
+
+instance Arbitrary FinalizePasswordViaEmail where
+    arbitrary = FinalizePasswordViaEmail <$> arb <*> arb <*> arb
+    shrink (FinalizePasswordViaEmail x y z) =
+            FinalizePasswordViaEmail <$> shr x <*> shr y <*> shr z
 
 -- * idea
 

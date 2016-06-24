@@ -29,6 +29,7 @@ import Data.SafeCopy (base, deriveSafeCopy)
 
 import Control.Monad.Reader
 
+import Data.DoubleMap
 import Types
 
 
@@ -80,25 +81,6 @@ data Delegations = Delegations {
   deriving (Eq, Show, Read)
 
 
--- * helpers
-
-lookupDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> Map k1 (Map k2 v) -> Maybe v
-lookupDoubleMap k1 k2 m = Map.lookup k1 m >>= Map.lookup k2
-
-insertDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> v -> Map k1 (Map k2 v) -> Map k1 (Map k2 v)
-insertDoubleMap k1 k2 v m = case Map.lookup k1 m of
-    Nothing -> Map.insert k1 (Map.singleton k2 v) m
-    Just m' -> Map.insert k1 (Map.insert k2 v m') m
-
-deleteDoubleMap :: (Ord k1, Ord k2) => k1 -> k2 -> Map k1 (Map k2 v) -> Map k1 (Map k2 v)
-deleteDoubleMap k1 k2 m = m
-                        & at k1 . _Just . at k2 .~ Nothing
-                        & at k1 %~ deleteEmpty
-
-lookupDMap :: Delegatee U -> S -> DelegationMap -> Maybe (Delegate U)
-lookupDMap d s (DelegationMap dmap) = lookupDoubleMap d s dmap
-
-
 -- * delegation
 
 emptyDelegations :: Delegations
@@ -121,10 +103,6 @@ setDelegation f dscope t (Delegations (DelegationMap dmap) (CoDelegationMap coDm
                                            & at to' . _Just . at dscope %~ deleteEmpty
                                            & at to' %~ deleteEmpty) mOldTo
     coDmap1 = insertDoubleMap to dscope (Set.insert from $ fromMaybe Set.empty (lookupDoubleMap to dscope coDmap0)) coDmap0
-
-deleteEmpty :: Foldable t => Maybe (t a) -> Maybe (t a)
-deleteEmpty (Just s) | null s = Nothing
-deleteEmpty x                 = x
 
 -- | FIXME: if we mention the delegate here, not just the delegatee, we can confirm that is is the
 -- one we expect, and we will catch errors more local to their source.
@@ -169,11 +147,10 @@ votingPower vid path ds = unDelegatee <$$> Set.toList . flip runReader ds $ do
         pure (discovered `Set.union` allNewDelegatees)
 
 -- FIXME: Speed-up using a third Map, which indexes the scope
-findDelegationsByScope :: S -> Delegations -> [(Delegate U, S, Delegatee U)]
-findDelegationsByScope scope (Delegations dmap@(DelegationMap dm) _codmap) =
-    [ (delegate, scope, delegatee)
-    | delegatee  <- Map.keys dm
-    , delegate   <- maybeToList $ lookupDMap delegatee scope dmap
+findDelegationsByScope :: S -> Delegations -> [(Delegate U, S, [Delegatee U])]
+findDelegationsByScope scope (Delegations _dmap (CoDelegationMap cdm)) =
+    [ (delegate, scope, fromMaybe [] $ Set.toList <$> lookupDoubleMap delegate scope cdm)
+    | delegate   <- Map.keys cdm
     ]
 
 

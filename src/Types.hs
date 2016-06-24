@@ -139,13 +139,10 @@ data Either3 a b c = Left3 a | Middle3 b | Right3 c
 
 instance (SOP.Generic a, SOP.Generic b, SOP.Generic c) => SOP.Generic (Either3 a b c)
 
-app2 :: (c -> d) -> (a -> b -> c) -> a -> b -> d
-app2 f g x y = f $ g x y
-
 infixr 9 <..>
 
 (<..>) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
-(<..>) = app2
+(<..>) f g x y = f $ g x y
 
 infixr 9 <...>
 
@@ -1095,6 +1092,25 @@ class Monad m => GenArbitrary m where
 genArbitrary :: (GenArbitrary m, Arbitrary a) => m a
 genArbitrary = genGen arbitrary
 
+newtype PasswordToken = PasswordToken { unPasswordToken :: ST }
+  deriving (Eq, Generic, Ord, Read, Show)
+
+instance SOP.Generic PasswordToken
+
+instance HasUriPart PasswordToken where
+    uriPart = fromString . cs . unPasswordToken
+
+-- FIXME: Smart constructor for tokens
+instance FromHttpApiData PasswordToken where
+    parseUrlPiece = Right . PasswordToken . cs
+
+data PasswordTokenState
+    = Invalid
+    | TimedOut
+    | Valid
+  deriving (Eq, Generic, Ord, Read, Show)
+
+instance SOP.Generic PasswordTokenState
 
 -- * boilerplate: binary, lens (alpha order), SafeCopy
 
@@ -1242,6 +1258,7 @@ deriveSafeCopy 0 'base ''IdeaVoteResultValue
 deriveSafeCopy 0 'base ''IdeaVoteValue
 deriveSafeCopy 0 'base ''InitialPassword
 deriveSafeCopy 0 'base ''MoveIdea
+deriveSafeCopy 0 'base ''PasswordToken
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoIdea

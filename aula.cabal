@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.17.0
+version:        0.18.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -90,8 +90,10 @@ library
       Daemon
       Data.Avatar
       Data.Delegation
+      Data.DoubleMap
       Data.Markdown
       Data.Markdown.HtmlWhiteLists
+      Data.PasswordTokens
       Data.UriPath
       DemoData
       Frontend
@@ -111,6 +113,7 @@ library
       Frontend.Page.Idea
       Frontend.Page.Login
       Frontend.Page.Overview
+      Frontend.Page.ResetPassword
       Frontend.Page.Static
       Frontend.Page.Topic
       Frontend.Page.User
@@ -419,6 +422,7 @@ test-suite spec
       AulaTests.Stories.Tests
       AulaTests.StoriesSpec
       Data.MarkdownSpec
+      Data.PasswordTokensSpec
       DelegationSpec
       Frontend.CoreSpec
       Frontend.Page.AdminSpec

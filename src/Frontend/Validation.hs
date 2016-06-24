@@ -29,6 +29,7 @@ module Frontend.Validation
     , passwordV
     , titleV
     , markdownV
+    , optionalEmailField
     , emailField
 
       -- * missing parser combinators
@@ -225,8 +226,8 @@ titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffer
 markdownV :: FieldValidator ST Document
 markdownV = nonEmptyV >>> fieldEither markdown
 
-emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
-emailField name emailValue =
+optionalEmailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm (Maybe Frontend.EmailAddress)
+optionalEmailField name emailValue =
     {-  Since not all texts values are valid email addresses, emailAddress is a @Prism@
         from texts to @EmailAddress@. Here we want to traverse the text of an email address
         thus one needs to reverse this prism. While Prisms cannot be reversed in full
@@ -242,12 +243,17 @@ emailField name emailValue =
         mapped to @Just@  of an @EmailAddress@.
     -}
     DF.validateOptional
-        checkEmail
+        (checkEmail name)
         (DF.optionalText (emailValue ^? _Just . re Frontend.emailAddress))
-  where
-    checkEmail value = case Email.emailAddress (cs value) of
-        Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
-        Just e  -> DF.Success $ InternalEmailAddress e
+
+checkEmail :: FieldName -> ST -> DF.Result (Html ()) Frontend.EmailAddress
+checkEmail name value = case Email.emailAddress (cs value) of
+    Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
+    Just e  -> DF.Success $ InternalEmailAddress e
+
+-- Same as 'optionalEmailField' but the email value is required.
+emailField :: FieldName -> Maybe Frontend.EmailAddress -> DfForm Frontend.EmailAddress
+emailField name emailValue = DF.validate (checkEmail name) (DF.text (emailValue ^? _Just . re Frontend.emailAddress))
 
 
 -- * missing things from parsec
