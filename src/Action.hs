@@ -405,7 +405,7 @@ sendMailToRole role msg = do
 
 phaseAction :: (ActionM m) => Topic -> PhaseAction -> m ()
 phaseAction topic phasact = do
-    uri <- fullPathOf $ U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
+    uri <- pathToURI $ U.listIdeasInTopic topic ListIdeasInTopicTabAll Nothing
     let topicTemplate addr phase = ST.unlines
             [ "Liebe " <> addr <> ","
             , ""
@@ -587,15 +587,15 @@ deleteIdea = update . DeleteIdea
 deleteIdeaComment :: CommentKey -> ActionPersist m => m ()
 deleteIdeaComment = update . DeleteComment
 
-fullPathOf :: ActionSendMail m => U.Main 'U.AllowGetPost -> m ST
-fullPathOf path = do
+pathToURI :: ActionSendMail m => U.Main 'U.AllowGetPost -> m ST
+pathToURI path = do
     cfg <- viewConfig
     pure $ (cfg ^. exposedUrl . csi) <> absoluteUriPath (relPath path)
 
 reportIdea :: AUID Idea -> Document -> ActionM m => m ()
 reportIdea ideaId doc = do
     idea <- mquery $ findIdea ideaId
-    uri  <- fullPathOf $ U.viewIdea idea
+    uri  <- pathToURI $ U.viewIdea idea
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = idea ^. ideaLocation . ideaLocationSpace . to IdeaSpaceSubject
         , _msgSubjectText  = "Problematische Idee."
@@ -624,7 +624,7 @@ reportIdea ideaId doc = do
 reportCommentById :: CommentKey -> Document -> (ActionPersist m, ActionSendMail m) => m ()
 reportCommentById ck doc = do
     comment <- mquery $ findComment ck
-    uri     <- fullPathOf $ U.viewComment comment
+    uri     <- pathToURI $ U.viewComment comment
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = comment ^. _Key . ckIdeaLocation . ideaLocationSpace . to IdeaSpaceSubject
         , _msgSubjectText  = "Problematischer Verbesserungsvorschlag."
@@ -648,7 +648,7 @@ reportCommentById ck doc = do
 reportUser :: ActionM m => AUID User -> Document -> m ()
 reportUser uid doc = do
     user <- mquery $ findUser uid
-    uri <- fullPathOf $ U.viewUserProfile user
+    uri <- pathToURI $ U.viewUserProfile user
     sendMailToRole Moderator EmailMessage
         { _msgSubjectLabel = user ^. userLogin . to UserLoginSubject
         , _msgSubjectText  = "Problematisches Nutzerprofil."
@@ -679,7 +679,7 @@ resetPasswordViaEmail email = do
     forM_ users $ \user -> do
         token <- mkRandomPasswordToken
         -- TODO: Fill the fields
-        uri <- fullPathOf $ U.finalizePasswordViaEmail user token
+        uri <- pathToURI $ U.finalizePasswordViaEmail user token
         sendMailToUser [IgnoreMissingEmails] user EmailMessage
             { _msgSubjectLabel = ForgottenPassword
             , _msgSubjectText  = "Password reset"
