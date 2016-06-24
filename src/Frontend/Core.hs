@@ -437,6 +437,8 @@ instance Page (NeedCap 'CanEditAndDeleteIdea)   where isAuthorized = needCap Can
 instance Page (NeedCap 'CanVote)                where isAuthorized = needCap CanVote
 instance Page (NeedCap 'CanMarkWinner)          where isAuthorized = needCap CanMarkWinner
 instance Page (NeedCap 'CanDelegate)            where isAuthorized = needCap CanDelegate
+instance Page (NeedCap 'CanDelegateInSchool)    where isAuthorized = needCap CanDelegateInSchool
+instance Page (NeedCap 'CanDelegateInClass)     where isAuthorized = needCap CanDelegateInClass
 instance Page (NeedCap 'CanPhaseForwardTopic)   where isAuthorized = needCap CanPhaseForwardTopic
 instance Page (NeedCap 'CanPhaseBackwardTopic)  where isAuthorized = needCap CanPhaseBackwardTopic
 
@@ -444,10 +446,16 @@ instance Page NeedAdmin where isAuthorized = adminPage
 
 -- FIXME: move this to the rest of the delegation logic?  (where's that?)
 instance Page DelegateTo where
-    isAuthorized = authNeedCaps [CanDelegate] delegateToCapCtx
+    isAuthorized =
+        authNeedCapsAnyOf
+            [CanDelegateInClass, CanDelegateInSchool, CanDelegate]
+            delegateToCapCtx
 
 instance Page WithdrawDelegationFrom where
-    isAuthorized = authNeedCaps [CanDelegate] withdrawDelegationFromCapCtx
+    isAuthorized =
+        authNeedCapsAnyOf
+            [CanDelegateInClass, CanDelegateInSchool, CanDelegate]
+            withdrawDelegationFromCapCtx
 
 formPageHandler
     :: Applicative m

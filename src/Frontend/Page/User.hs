@@ -203,7 +203,7 @@ userHeaderDiv ctx (Right (user, delegations)) =
 
         div_ [class_ "heroic-btn-group"] $ do
             let caps = capabilities ctx
-            when (CanDelegate `elem` caps) $ do
+            when (CanDelegateInClass `elem` caps || CanDelegateInSchool `elem` caps) $ do
                 delegationButtons ctx user delegations
             btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
