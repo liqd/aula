@@ -26,6 +26,8 @@ type AulaTesting =
   :<|> "topics" :> GetH (Frame (PageShow [Topic]))
   :<|> "users"  :> GetH (Frame (PageShow [User]))
 
+  :<|> "csrf_token" :> GetH CsrfToken
+
   :<|> "undefined" :> GetH ()
   :<|> "error500" :> GetH ()
   :<|> "error303" :> GetH ()
@@ -36,6 +38,8 @@ aulaTesting =
   :<|> runHandler (PageShow <$> Action.query getSpaces)
   :<|> runHandler (PageShow <$> Action.query getTopics)
   :<|> runHandler (PageShow <$> Action.query getAllUsers)
+
+  :<|> runGetHandler (maybe (throwServantErr err404) pure =<< getCsrfToken)
 
   :<|> runGetHandler undefined  -- (intentional)
   :<|> runGetHandler (throwError500 "testing error500")
