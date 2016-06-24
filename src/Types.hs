@@ -519,6 +519,8 @@ data SchoolClass = SchoolClass
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+-- FIXME: SchoolClass shouldn't have an empty text, ever.  We avoid the distinction in some other
+-- way, like with making 'Role' a parametric type.  (anyway, could we make this a pattern synonym?)
 nilSchoolClass :: SchoolClass -> Bool
 nilSchoolClass (SchoolClass _ "") = True
 nilSchoolClass _                  = False
