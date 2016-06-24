@@ -175,12 +175,12 @@ delegationInfos scope = do
 
     users <- concat <$> forM graphComponents (\case
                 AcyclicSCC uid  -> (:[]) <$> mkNode uid
-                CyclicSCC  []   -> pure [] -- Impossible
+                CyclicSCC  []   -> error "delegationInfos: impossible."
                 CyclicSCC  (uid:uids) -> do
-                    -- Every node in the cycle has the same voting power
+                    -- Every node in the cycle has the same voting power,
                     -- no need to compute more than once.
                     up@(_u, p) <- mkNode uid
-                    (up:) <$> forM uids (mkNodeCyclic p))
+                    (up:) <$> mkNodeCyclic p `mapM` uids)
 
     -- Convert delegations to the needed form
     let flippedDelegations =
