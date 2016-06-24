@@ -95,9 +95,6 @@ deleteDoubleMap k1 k2 m = m
                         & at k1 . _Just . at k2 .~ Nothing
                         & at k1 %~ deleteEmpty
 
-lookupDMap :: Delegatee U -> S -> DelegationMap -> Maybe (Delegate U)
-lookupDMap d s (DelegationMap dmap) = lookupDoubleMap d s dmap
-
 
 -- * delegation
 
@@ -169,11 +166,10 @@ votingPower vid path ds = unDelegatee <$$> Set.toList . flip runReader ds $ do
         pure (discovered `Set.union` allNewDelegatees)
 
 -- FIXME: Speed-up using a third Map, which indexes the scope
-findDelegationsByScope :: S -> Delegations -> [(Delegate U, S, Delegatee U)]
-findDelegationsByScope scope (Delegations dmap@(DelegationMap dm) _codmap) =
-    [ (delegate, scope, delegatee)
-    | delegatee  <- Map.keys dm
-    , delegate   <- maybeToList $ lookupDMap delegatee scope dmap
+findDelegationsByScope :: S -> Delegations -> [(Delegate U, S, [Delegatee U])]
+findDelegationsByScope scope (Delegations _dmap (CoDelegationMap cdm)) =
+    [ (delegate, scope, fromMaybe [] $ Set.toList <$> lookupDoubleMap delegate scope cdm)
+    | delegate   <- Map.keys cdm
     ]
 
 
