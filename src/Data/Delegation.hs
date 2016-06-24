@@ -172,6 +172,7 @@ findDelegationsByScope scope (Delegations _dmap (CoDelegationMap cdm)) =
     | delegate   <- Map.keys cdm
     ]
 
+
 -- * safe copy
 
 deriveSafeCopy 0 'base ''Delegate

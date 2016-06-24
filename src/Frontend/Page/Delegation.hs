@@ -149,10 +149,10 @@ viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
+    delegations <- findDelegationsByScope scope
 
     -- Create delegations
     let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
-    delegations <- findDelegationsByScope scope
 
     -- Build graphs and graph handler functions
     let delegationsForGraph = mkGraphNode <$> delegations
@@ -160,10 +160,13 @@ delegationInfos scope = do
     let uidToVertex = fromJust . nodeToVertex
     let graphComponents = stronglyConnComp delegationsForGraph
 
-    -- Create user power list
+    -- Count number of inbound delegation edges in local 'DScope'.  This is not the 'votingPower'
+    -- because it does not take into account delegations from surrounding 'DScope's, but it is much
+    -- cheaper to calculate.  (FUTUREWORK: it would be nice to have the actual voting power here,
+    -- but that should go together with showing the implicit (inherited) delegation edges in the
+    -- graph as well, e.g. as dashed lines.)
     let mkNode uid = do
             u <- maybe404 =<< findUser uid
-            -- FIXME: Use the 'votingPower' functions instead of reachable
             let p = length $ reachable delegationGraph (uidToVertex uid)
             pure (u, p)
     let mkNodeCyclic p uid = do
