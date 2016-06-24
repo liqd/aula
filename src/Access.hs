@@ -85,7 +85,6 @@ data Capability
     = CanView
     | CanLike
     | CanVote
-    | CanDelegate
     | CanComment
     | CanVoteComment
     | CanJudge  -- also can add jury statement
@@ -106,6 +105,9 @@ data Capability
     | CanCreateIdea
     -- User
     | CanCreateTopic
+    | CanDelegate
+    | CanDelegateInClass
+    | CanDelegateInSchool
     | CanEditUser
   deriving (Enum, Bounded, Eq, Ord, Show, Read, Generic)
 
@@ -160,14 +162,22 @@ capabilities :: CapCtx -> [Capability]
 capabilities (CapCtx u ms mp mi mc mup mdt)
     | not . checkSpace ms $ rs ^. each . roleScope = []
     | otherwise = mconcat . mconcat $
-    [ [ userCapabilities r                   | r <- rs ]
+    [ userCapabilities'
     , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
     , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
     , [ topicCapabilities p r                | r <- rs, p <- l mp ]
     , [ [CanEditUser]                        | up <- l mup, isOwnProfile u up ]
-    , [ [CanDelegate]                        | dtu <- l mdt, haveCommonSchoolClass u dtu ]
+    , [ [CanDelegateInClass]                 | dtu <- l mdt, haveCommonSchoolClass u dtu, canDelegateToUser]
+    , [ [CanDelegateInSchool]                | canDelegateToUser ]
     ]
   where
+    userCapabilities' = userCapabilities <$> rs
+    canDelegateToUser =
+        maybe
+            False
+            (\dtu -> CanDelegate `elem` concat userCapabilities'
+                     && CanDelegate `elem` (userCapabilities =<< (dtu ^.. userRoles)))
+            mdt
     rs = u ^.. userRoles
     l  = maybeToList
 
