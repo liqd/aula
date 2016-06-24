@@ -672,11 +672,8 @@ scopeHiearchy = \case
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
-findDelegationsByScope :: DScope -> Query [Delegation]
-findDelegationsByScope =
-    fmap (fmap toDelegation) . views dbDelegations . Data.Delegation.findDelegationsByScope
-  where
-    toDelegation (de, s, dee) = Delegation s (unDelegatee dee) (unDelegate de)
+findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
+findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsByScope
 
 findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin

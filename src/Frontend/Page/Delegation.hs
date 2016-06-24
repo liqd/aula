@@ -14,10 +14,8 @@ module Frontend.Page.Delegation
 where
 
 import           Control.Arrow ((&&&))
-import           Data.Tree (Tree)
+import           Data.Graph
 import qualified Data.Aeson as Aeson
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -25,6 +23,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
 import Action (ActionM, currentUser, delegateTo, equery)
+import Data.Delegation (unDelegate, unDelegatee)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
 import Persistent
@@ -136,14 +135,43 @@ viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
     delegations <- findDelegationsByScope scope
-    let users = Set.toList . Set.fromList
-                $ (\d -> [d ^. delegationFrom, d ^. delegationTo]) =<< delegations
 
-        mkNode :: AUID User -> EQuery (AUID User, (User, Int))
-        mkNode userId = do
-            u <- maybe404 =<< findUser userId
-            p <- length <$> votingPower userId scope
-            pure (userId, (u, p))
+    -- Create delegations
+    let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
 
-    userMap <- Map.fromList <$> forM users mkNode
-    pure $ DelegationNetwork (Map.elems userMap) delegations
+    -- Build graphs and graph handler functions
+    let graphNodes = mkGraphNode <$> delegations
+    let (delegationGraph, _vertexToGraphNode, nodeToVertex) = graphFromEdges graphNodes
+    let uidToVertex = fromJust . nodeToVertex
+    let graphComponents = stronglyConnComp graphNodes
+
+    -- Count number of inbound delegation edges in local 'DScope'.  This is not the 'votingPower'
+    -- because it does not take into account delegations from surrounding 'DScope's, but it is much
+    -- cheaper to calculate.  (FUTUREWORK: it would be nice to have the actual voting power here,
+    -- but that should go together with showing the implicit (inherited) delegation edges in the
+    -- graph as well, e.g. as dashed lines.)
+    let mkNode uid = do
+            u <- maybe404 =<< findUser uid
+            let p = length $ reachable delegationGraph (uidToVertex uid)
+            pure (u, p)
+    let mkNodeCyclic p uid = do
+            u <- maybe404 =<< findUser uid
+            pure (u, p)
+
+    users <- concat <$> forM graphComponents (\case
+                AcyclicSCC uid  -> (:[]) <$> mkNode uid
+                CyclicSCC  []   -> error "delegationInfos: impossible."
+                CyclicSCC  (uid:uids) -> do
+                    -- Every node in the cycle has the same voting power,
+                    -- no need to compute more than once.
+                    up@(_u, p) <- mkNode uid
+                    (up:) <$> mkNodeCyclic p `mapM` uids)
+
+    -- Convert delegations to the needed form
+    let flippedDelegations =
+            [ Delegation s (unDelegatee dee) (unDelegate de)
+            | (de, s, dees) <- delegations
+            , dee <- dees
+            ]
+
+    pure $ DelegationNetwork users flippedDelegations
