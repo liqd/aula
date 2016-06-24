@@ -104,13 +104,12 @@ setDelegation f dscope t (Delegations (DelegationMap dmap) (CoDelegationMap coDm
                                            & at to' %~ deleteEmpty) mOldTo
     coDmap1 = DMap.insert to dscope (Set.insert from $ fromMaybe Set.empty (DMap.lookup to dscope coDmap0)) coDmap0
 
--- | FIXME: if we mention the delegate here, not just the delegatee, we can confirm that is is the
--- one we expect, and we will catch errors more local to their source.
-deleteDelegation :: U -> S -> Delegations -> Delegations
-deleteDelegation f dscope (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
-    = Delegations dmap' coDmap'
+deleteDelegation :: U -> S -> U -> Delegations -> Delegations
+deleteDelegation delegatee dscope delegate ds@(Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
+    | DMap.lookup (Delegatee delegatee) dscope dmap /= Just (Delegate delegate) = ds
+    | otherwise = Delegations dmap' coDmap'
   where
-    from = Delegatee f
+    from = Delegatee delegatee
     mOldTo = DMap.lookup from dscope dmap
 
     dmap'   = DelegationMap (DMap.remove from dscope dmap)

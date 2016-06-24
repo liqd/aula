@@ -569,7 +569,8 @@ delegateTo scope delegate = do
 
 withdrawDelegationTo :: ActionM m => DScope -> AUID User -> m ()
 withdrawDelegationTo scope delegate = do
-    update $ WithdrawDelegation delegate scope
+    delegatee <- view _Id <$> currentUser
+    update $ WithdrawDelegation delegatee scope delegate
     eventLogUserWithdrawsDelegation scope delegate
 
 -- ASSUMPTION: Idea is in the given idea location.
