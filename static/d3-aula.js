@@ -266,7 +266,7 @@
         // be slightly nicer to remember which nodes were invisible
         // and recover the state before the previous click on the root
         // node.)
-        var on_click = function(d) {
+        var on_click = function(clickee) {
             var newVisibilityStatus = undefined;
             var visited = [];
             var traverse = function(d) {
@@ -275,7 +275,12 @@
                 }
                 visited.push(d.name);
                 graph.links.forEach(function(l) {
-                    if (l.target.name === d.name) {
+                    // the target of the edge needs to be in the
+                    // sub-graph, but the source must not be the one
+                    // that we just clicked on: we don't want to close
+                    // the click-on node, or we won't be able to
+                    // re-open it.
+                    if (l.target.name === d.name && l.source.name !== clickee.name) {
                         if (newVisibilityStatus === undefined) {
                             newVisibilityStatus = !l.source.visible;
                         }
@@ -285,7 +290,7 @@
                 });
             };
 
-            traverse(d);
+            traverse(clickee);
             updateVisibility();
         };
 
