@@ -61,6 +61,8 @@ instance FormPage PageDelegateVote where
         render :: AUID User -> ST
         render = cs . show . view unAUID
 
+        -- the error messages here are not translated because they shouldn't be user facing: the
+        -- only causes for them are users messing with the page source and programming errors.
         valid :: ST -> DF.Result (Html ()) (Maybe (AUID User))
         valid "" = pure Nothing
         valid (ST.commonPrefixes "page-delegate-vote-uid." -> Just ("page-delegate-vote-uid.", "", s)) =
