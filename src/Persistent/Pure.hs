@@ -77,6 +77,7 @@ module Persistent.Pure
     , findUser
     , findUserByLogin
     , findUsersByRole
+    , findUsersByEmail
     , getActiveUsers
     , getAllUsers
     , getUsersInClass
@@ -124,6 +125,9 @@ module Persistent.Pure
     , Persistent.Pure.scopeDelegatees
     , Persistent.Pure.votingPower
     , Persistent.Pure.findDelegationsByScope
+    , addPasswordToken
+    , checkValidPasswordToken
+    , Persistent.Pure.removePasswordToken
     , addIdeaJuryResult
     , removeIdeaJuryResult
     , setCreatorStatement
@@ -175,6 +179,7 @@ import qualified Data.Text as ST
 import Types
 import LifeCycle (freezePhase)
 import Data.Delegation
+import Data.PasswordTokens
 
 
 -- * state type
@@ -186,6 +191,7 @@ data AulaData = AulaData
     , _dbUserMap             :: Users
     , _dbTopicMap            :: Topics
     , _dbDelegations         :: Delegations
+    , _dbResetPwdTokens      :: PasswordTokens
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
@@ -214,7 +220,16 @@ dbSnapshot :: AulaGetter AulaData
 dbSnapshot = to id
 
 emptyAulaData :: AulaData
-emptyAulaData = AulaData nil nil nil nil emptyDelegations defaultSettings 0
+emptyAulaData =
+    AulaData
+        nil
+        nil
+        nil
+        nil
+        emptyDelegations
+        emptyPasswordTokens
+        defaultSettings
+        0
 
 type TraverseMetas a = forall b. Traversal' (MetaInfo b) a
 
@@ -242,12 +257,13 @@ ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes de
 
 -- This is using pattern matching on AulaData to force us to adapt this function when extending it.
 aulaMetas :: TraverseMetas a -> AulaTraversal a
-aulaMetas t f (AulaData sp is us ts ds st li) =
+aulaMetas t f (AulaData sp is us ts ds pt st li) =
     AulaData <$> pure sp                    -- No MetaInfo in dbSpaceSet
              <*> (each . ideaMetas  t) f is -- See ideaMetas
              <*> (each . metaInfo . t) f us -- Only one MetaInfo per User
              <*> (each . metaInfo . t) f ts -- Only one MetaInfo per Topic
              <*> pure ds                    -- No MetaInfo in dbDelegations
+             <*> pure pt                    -- No MetaInfo in dbPasswordTokens
              <*> pure st                    -- No MetaInfo in dbSettings
              <*> pure li                    -- No MetaInfo in dbListId
 
@@ -605,6 +621,7 @@ addTopicYieldLocs now pt = do
     -- - Make it fail hard
     (topic,) <$> moveIdeasToLocation (pt ^. envWith . protoTopicIdeas) (topicIdeaLocation topic)
 
+
 addDelegation :: AddDb Delegation
 addDelegation env = do
     dbDelegations %= Data.Delegation.setDelegation delegatee scope delegate
@@ -675,11 +692,29 @@ scopeHiearchy = \case
 findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
 findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsByScope
 
+addPasswordToken :: AUID User -> PasswordToken -> Timestamp -> Timespan -> AUpdate ()
+addPasswordToken u token now later =
+    dbResetPwdTokens %= Data.PasswordTokens.insertPasswordToken u token now later
+
+checkValidPasswordToken :: AUID User -> PasswordToken -> Timestamp -> Query PasswordTokenState
+checkValidPasswordToken u token now =
+    views dbResetPwdTokens (Data.PasswordTokens.checkValid u token now)
+
+removePasswordToken :: AUID User -> PasswordToken -> Timestamp -> AUpdate ()
+removePasswordToken u token now =
+    dbResetPwdTokens %= Data.PasswordTokens.removePasswordToken u token now
+
 findUserByLogin :: UserLogin -> MQuery User
 findUserByLogin = findInBy dbUsers userLogin
 
 findUsersByRole :: Role -> Query [User]
 findUsersByRole r = filter isActiveUser <$> findAllIn dbUsers (`hasRole` r)
+
+findUsersByEmail :: EmailAddress -> Query [User]
+findUsersByEmail e =
+    findAllIn
+        dbUsers
+        (\u -> u ^? (userSettings . userSettingsEmail . _Just) == Just e)
 
 findTopic :: AUID Topic -> MQuery Topic
 findTopic = findInById dbTopicMap

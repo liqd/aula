@@ -9,6 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TemplateHaskell        #-}
 
+{-# OPTIONS_GHC -Werror -Wall       #-}
+
 module Action.Smtp
     ( EmailMessage(..), msgSubjectLabel, msgSubjectText, msgBody, msgHtml
     , EmailSubjectLabel(..)
@@ -110,7 +112,7 @@ sendMailToAddressIO logger receiver msg = do
 
 sendMailToUser :: HasSendMail e r m => [SendMailFlag] -> User -> EmailMessage -> m ()
 sendMailToUser _ user _
-    | isDeletedUser user = pure () -- FIXME: Log this edge case
+    | isDeletedUser user = pure () -- FIXME: Log this corner case
 sendMailToUser flags user msg = do
     case userAddress user of
         Just address -> sendMailToAddress address msg
