@@ -79,6 +79,7 @@ import Data.Text as ST
 import Data.Tree as Tree (Tree)
 import Generics.SOP
 import System.Directory (getCurrentDirectory, getDirectoryContents)
+import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
     ( Arbitrary(..), Gen, Property, Testable
@@ -95,7 +96,7 @@ import qualified Data.Tree as Tree
 import Access
 import Config
 import Data.PasswordTokens
-import Data.UriPath
+import Data.UriPath hiding ((</>))
 import Logger.EventLog
 import Frontend.Core
 import Frontend.Filter
@@ -661,9 +662,6 @@ instance Arbitrary UserView where
     shrink (ActiveUser u)  = ActiveUser  <$> shr u
     shrink (DeletedUser u) = DeletedUser <$> shr u
 
-instance Arbitrary UserProfile where
-    arbitrary = garbitrary
-    shrink    = gshrink
 
 instance Arbitrary UserSettings where
     arbitrary = garbitrary
@@ -1125,16 +1123,16 @@ topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 
 
-fishAvatarsPath :: URL
-fishAvatarsPath = "/static/demo/avatars/"
+fishAvatarsPath :: FilePath
+fishAvatarsPath = "static/demo/avatars"
 
-fishAvatarsIO :: IO [URL]
-fishAvatarsIO = fmap ((fishAvatarsPath <>) . cs)
-              . List.filter (\(h:_) -> h /= '.')
-            <$> (getCurrentDirectory >>= getDirectoryContents . (<> cs fishAvatarsPath))
+fishAvatarsIO :: IO [FilePath]
+fishAvatarsIO = do
+    dir <- (</> fishAvatarsPath) <$> getCurrentDirectory
+    fmap (dir </>) . List.filter (\(h:_) -> h /= '.') <$> getDirectoryContents dir
 
 {-# NOINLINE fishAvatars #-}
-fishAvatars :: [URL]
+fishAvatars :: [FilePath]
 fishAvatars = unsafePerformIO fishAvatarsIO
 
 

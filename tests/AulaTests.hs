@@ -171,10 +171,7 @@ someTestUser = user
         , _userFirstName = "Vorname"
         , _userLastName  = "Name"
         , _userRoleSet   = Set.singleton Admin
-        , _userProfile   = UserProfile
-            { _profileAvatar = Nothing
-            , _profileDesc   = nil
-            }
+        , _userDesc      = nil
         , _userSettings  = UserSettings
             { _userSettingsPassword = UserPassInitial (InitialPassword "")
             , _userSettingsEmail    = Nothing

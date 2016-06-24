@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,9 +13,9 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
-import Control.Monad (zipWithM_, replicateM, replicateM_, unless)
+import Control.Monad (replicateM_, unless)
 import Data.List (nub)
-import Data.String.Conversions ((<>), cs)
+import Data.String.Conversions ((<>))
 import Servant.Missing
 
 import Arbitrary hiding (generate)
@@ -73,30 +74,19 @@ defaultUniverseSize = UniverseSize
 
 -- * Generators
 
-genInitialPassword :: Gen InitialPassword
-genInitialPassword = mk <$> arbWord <*> replicateM 2 (elements ['0' .. '9'])
-  where
-    mk w ns = InitialPassword $ w <> cs ns
-
-genFirstUser :: Gen ProtoUser
-genFirstUser =
-    arbitrary
-    <**> (set protoUserLogin . Just <$> arbitrary)
-    <**> (set protoUserPassword <$> genInitialPassword)
-
-genStudent :: [SchoolClass] -> Gen ProtoUser
-genStudent classes = genUser $ elements (map Student classes)
+genStudent :: [SchoolClass] -> Gen ProtoUserWithAvatar
+genStudent classes = genUser (pure Nothing) $ elements (map Student classes)
 
 -- | login names are not provided here.  the 'AddUser' transaction will find a fresh login name.
-genUser :: Gen Role -> Gen ProtoUser
-genUser genRole =
-    arbitrary
-    <**> pure (set protoUserLogin Nothing)  -- (there is probably a simpler way to put this)
-    <**> (set protoUserRoleSet . Set.singleton <$> genRole)
-    <**> (set protoUserEmail <$> pure (("nobody@localhost" :: String) ^? emailAddress))
-    <**> pure (set protoUserPassword (InitialPassword initialDemoPassword))
+genUser :: Gen (Maybe UserLogin) -> Gen Role -> Gen ProtoUserWithAvatar
+genUser genLogin genRole = (,) <$> arbProtoUser <*> genAvatar where
+    arbProtoUser =
+        ProtoUser <$> genLogin <*> arb <*> arb <*> (Set.singleton <$> genRole)
+            <*> pure (InitialPassword initialDemoPassword)
+            <*> pure (("nobody@localhost" :: String) ^? emailAddress)
+            <*> arb
 
-genAvatar :: Gen URL
+genAvatar :: Gen FilePath
 genAvatar = elements fishAvatars
 
 genTopic :: Timestamp -> [IdeaSpace] -> Gen ProtoTopic
@@ -172,20 +162,27 @@ genCommentVote comments_in_context students = do
     let action = addWithUser . AddCommentVote $ comment ^. _Key
     action student <$> arb
 
-updateAvatar :: User -> URL -> forall m . ActionM m => m ()
-updateAvatar user url = update $ SetUserAvatar (user ^. _Id) url
+updateAvatar :: User -> FilePath -> forall m . ActionM m => m ()
+updateAvatar user file = readImageFile file >>= \case
+    Right pic -> saveAvatar (user ^. _Id) pic
+    Left err -> fail err
 
-addUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
-addUserWithEmailFromConfig protoUser = do
+type ProtoUserWithAvatar = (Proto User, FilePath)
+
+addUserWithEmailFromConfig :: ProtoUserWithAvatar -> forall m . ActionM m => m User
+addUserWithEmailFromConfig (protoUser, avatar) = do
     user <- setEmailFromConfig protoUser >>= addWithCurrentUser AddUser
     encryptPassword (protoUser ^. protoUserPassword . unInitialPassword)
         >>= update . SetUserPass (user ^. _Id)
+    updateAvatar user avatar
     pure user
 
-addFirstUserWithEmailFromConfig :: Proto User -> forall m . ActionM m => m User
-addFirstUserWithEmailFromConfig pu = do
+addFirstUserWithEmailFromConfig :: ProtoUserWithAvatar -> forall m . ActionM m => m User
+addFirstUserWithEmailFromConfig (pu, avatar) = do
     now <- getCurrentTimestamp
-    setEmailFromConfig pu >>= update . AddFirstUser now
+    user <- setEmailFromConfig pu >>= update . AddFirstUser now
+    updateAvatar user avatar
+    pure user
 
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
 setEmailFromConfig puser = do
@@ -213,11 +210,11 @@ data Universe = Universe {
 universe :: QCGen -> UniverseSize -> forall m . ActionM m => m Universe
 universe rnd size = do
     now <- getCurrentTimestamp
-    admin <- addFirstUserWithEmailFromConfig =<< gen rnd genFirstUser
+    admin <- addFirstUserWithEmailFromConfig =<< gen rnd (genUser (Just <$> arb) (pure Admin))
     loginByUser admin
 
-    generate 3 rnd (genUser (pure Principal)) >>= mapM_ addUserWithEmailFromConfig
-    generate 8 rnd (genUser (pure Moderator)) >>= mapM_ addUserWithEmailFromConfig
+    generate 3 rnd (genUser (pure Nothing) (pure Principal)) >>= mapM_ addUserWithEmailFromConfig
+    generate 8 rnd (genUser (pure Nothing) (pure Moderator)) >>= mapM_ addUserWithEmailFromConfig
 
     ideaSpaces <- nub <$> generate (numberOfIdeaSpaces size) rnd arbitrary
     mapM_ (update . AddIdeaSpaceIfNotExists) ideaSpaces
@@ -226,8 +223,6 @@ universe rnd size = do
 
     students' <- generate (numberOfStudents size) rnd (genStudent classes)
     students  <- mapM addUserWithEmailFromConfig students'
-    avatars   <- generate (numberOfStudents size) rnd genAvatar
-    zipWithM_ updateAvatar students avatars
 
     topics <- mapM (addWithCurrentUser (AddTopic now))
                 =<< generate (numberOfTopics size) rnd (genTopic now ideaSpaces)
@@ -354,8 +349,6 @@ genVotingPhaseTopic = do
     students <- do
         students' <- generate 28 rnd (genStudent [votingClass])
         vs        <- mapM addUserWithEmailFromConfig students'
-        avatars   <- generate 28 rnd genAvatar
-        zipWithM_ updateAvatar vs avatars
         pure vs
 
     topic <- update $ AddTopic now (EnvWith admin now ProtoTopic

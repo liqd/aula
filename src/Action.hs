@@ -108,6 +108,7 @@ module Action
     , CleanupTempFiles(cleanupTempFiles)
     , decodeCsv
     , ActionAvatar(readImageFile, savePngImageFile)
+    , saveAvatar
 
     , MonadServantErr, ThrowServantErr(..)
 
@@ -157,7 +158,9 @@ import qualified Data.Vector as V
 
 import Action.Smtp
 import Config (Config, GetConfig(..), exposedUrl)
+import Data.Avatar
 import Data.UriPath (absoluteUriPath)
+import Frontend.Constant
 import Frontend.Path (relPath)
 import Access
 import LifeCycle
@@ -828,6 +831,11 @@ instance HasUILabel PhaseShiftResult where
 class Monad m => ActionAvatar m where
     readImageFile :: FilePath -> m (Either String DynamicImage)
     savePngImageFile :: FilePath -> DynamicImage -> m ()
+
+saveAvatar :: ActionAvatar m => AUID User -> DynamicImage -> m ()
+saveAvatar uid pic =
+    forM_ (avatarDefaultSize : avatarExtraSizes) $ \dim ->
+        savePngImageFile (uid ^. avatarFile dim) $ makeAvatar dim pic
 
 class Monad m => ReadTempFile m where
     readTempFile :: FilePath -> m LBS

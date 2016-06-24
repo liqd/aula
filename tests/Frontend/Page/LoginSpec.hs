@@ -2,7 +2,6 @@
 module Frontend.Page.LoginSpec where
 
 import AulaTests
-import Frontend.Constant (minPasswordLength)
 
 spec :: Spec
 spec = describe "logging in" $ do
