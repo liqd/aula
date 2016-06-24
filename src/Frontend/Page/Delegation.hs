@@ -155,10 +155,10 @@ delegationInfos scope = do
     let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
 
     -- Build graphs and graph handler functions
-    let delegationsForGraph = mkGraphNode <$> delegations
-    let (delegationGraph, _vertexToGraphNode, nodeToVertex) = graphFromEdges delegationsForGraph
+    let graphNodes = mkGraphNode <$> delegations
+    let (delegationGraph, _vertexToGraphNode, nodeToVertex) = graphFromEdges graphNodes
     let uidToVertex = fromJust . nodeToVertex
-    let graphComponents = stronglyConnComp delegationsForGraph
+    let graphComponents = stronglyConnComp graphNodes
 
     -- Count number of inbound delegation edges in local 'DScope'.  This is not the 'votingPower'
     -- because it does not take into account delegations from surrounding 'DScope's, but it is much
