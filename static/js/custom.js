@@ -179,7 +179,7 @@ function httpReqAsync(method, url, callback)
     xmlHttp.send(null);
 }
 
-function simplePost(config) {
+function simplePost(event, config) {
     // NOTE: it would be nice to avoid reload, but this is not a hard
     // requirement any more.
 

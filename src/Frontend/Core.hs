@@ -645,7 +645,7 @@ instance ToJSON JsSimplePost where
         conf = maybeToList $ ("askConfirm" Aeson..=) <$> mAskConfirm
 
 onclickJs :: JsSimplePost -> Attribute
-onclickJs = Lucid.onclick_ . ("simplePost(" <>) . (<> ")") . cs . Aeson.encode
+onclickJs = Lucid.onclick_ . ("simplePost(event, " <>) . (<> ")") . cs . Aeson.encode
 
 jsReloadOnClick :: Attribute
 jsReloadOnClick = onclickJs $ JsSimplePost JsSimplePostHere Nothing
