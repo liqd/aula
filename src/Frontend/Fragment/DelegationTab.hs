@@ -38,8 +38,8 @@ renderDelegations showScope delegations = do
             div_ [class_ "col-11-12"] $ do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)
-                when showScope . p_ $ do
-                    toHtml $ "Geltungsbereich: " <> uilabelST dscope
+                when showScope . p_ .
+                    a_ [href_ . U.delegationViewScope $ fullDScopeToDScope dscope] . toHtml $ "Geltungsbereich: " <> uilabelST dscope
                 case length delegatees of
                     0 -> nil
                     n -> do
