@@ -796,7 +796,21 @@ revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 -- * admin
 
 resetPassword :: ActionM m => AUID User -> InitialPassword -> m ()
-resetPassword = update <..> ResetUserPass
+resetPassword uid pwd = do
+    update $ ResetUserPass uid pwd
+    user <- mquery (findUser uid)
+    sendMailToUser [IgnoreMissingEmails] user EmailMessage
+            { _msgSubjectLabel = UserLoginSubject $ user ^. userLogin
+            , _msgSubjectText  = "Password reset by admin"
+            , _msgBody    = ST.unlines
+                [ "Your password has been reseted by the admin user."
+                , "For more details please ask your administrator."
+                , "Viel Spass!"
+                , "Dein AuLA-Team."
+                ]
+            , _msgHtml    = Nothing -- Not supported yet
+            }
+
 
 
 -- * phase shift
