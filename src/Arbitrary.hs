@@ -292,6 +292,11 @@ instance Arbitrary PageUserProfileDelegatedVotes where
     shrink (PageUserProfileDelegatedVotes x y z) =
         PageUserProfileDelegatedVotes <$> shr x <*> shr y <*> shr z
 
+instance Arbitrary PageUserProfileVotesFromDelegatees where
+    arbitrary = PageUserProfileVotesFromDelegatees <$> arb <*> arb <*> arb
+    shrink (PageUserProfileVotesFromDelegatees x y z) =
+        PageUserProfileVotesFromDelegatees <$> shr x <*> shr y <*> shr z
+
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
     shrink (PageUserSettings x) = PageUserSettings <$> shr x
@@ -931,6 +936,10 @@ instance Arbitrary (P.CommentMode r) where
     shrink    = gshrink
 
 instance Arbitrary (P.Space r) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary P.DelegationRole where
     arbitrary = garbitrary
     shrink    = gshrink
 
