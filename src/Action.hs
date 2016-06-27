@@ -801,16 +801,16 @@ resetPassword uid pwd = do
     user <- mquery (findUser uid)
     sendMailToUser [IgnoreMissingEmails] user EmailMessage
             { _msgSubjectLabel = UserLoginSubject $ user ^. userLogin
-            , _msgSubjectText  = "Password reset by admin"
+            , _msgSubjectText  = "Dein Passwort wurde von einem Adminstrator zurückgesetzt"
             , _msgBody    = ST.unlines
-                [ "Your password has been reseted by the admin user."
-                , "For more details please ask your administrator."
+                [ "Das Passwort für Dein Aula-Konto wurde von der Administration zurückgesetzt."
+                , "Wenn Du nicht dabei warst, liegt wahrscheinlich ein Fehler vor.  In dem Fall sprich bitte mit eine Lehrer."
+                , ""
                 , "Viel Spass!"
                 , "Dein AuLA-Team."
                 ]
             , _msgHtml    = Nothing -- Not supported yet
             }
-
 
 
 -- * phase shift
