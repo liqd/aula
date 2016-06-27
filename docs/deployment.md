@@ -2,6 +2,13 @@
 
 ...
 
+tbd.: parts of the state that need to be kept in mind during database destruction migration:
+
+- static/avatars
+- aula-events.json
+- ...  anything else we missed?
+
+
 ## Enforcing file size limits
 
 The deployment is responsible for enforcing this constraint. Since it is recommended to keep a
