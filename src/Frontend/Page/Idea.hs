@@ -289,11 +289,6 @@ instance ToHtml ViewIdea where
             -- bars
             toHtml $ IdeaVoteLikeBars stats
 
-            when (CanDelegate `elem` caps) $ do
-                a_ [class_ "btn-cta voting-button", href_ $ U.delegateVoteOnIdea idea] $ do
-                    i_ [class_ "icon-bullhorn"] nil
-                    "Stimme beauftragen"
-
             -- indicators
             div_ [class_ "table-actions m-no-hover"] $ do
                 div_ [class_ "icon-list m-inline"] . ul_ $ do
@@ -306,9 +301,6 @@ instance ToHtml ViewIdea where
             -- explanation by the dean why the idea is feasible or not (if available)
             feasibilityVerdict idea
 
-            -- buttons
-            toHtml $ ideaVoteLikeButtons ctx stats
-
             when (has _PhaseWildIdea phase &&
                   ideaReachedQuorum stats &&
                   CanCreateTopic `elem` caps) $ do
@@ -320,30 +312,28 @@ instance ToHtml ViewIdea where
                         "Thema anlegen"
 
             div_ [class_ "button-group"] $ do
+                -- buttons
+                toHtml $ ideaVoteLikeButtons ctx stats
                 feasibilityButtons True idea caps
 
                 when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
-                    div_ [class_ "creator-statement-button"] $ do
-                        button_ [ class_ "button-group-item btn-cta m-valid"
-                                , onclick_ $ U.creatorStatement idea
-                                ] $ do
-                            i_ [class_ "icon-check"] nil
-                            if isNothing $ creatorStatementOfIdea idea
-                                then "Statement abgeben"
-                                else "Statement ändern"
-
-            -- creator statement
-            mapM_
-                (div_ [class_ "creator-statement"] . view html)
-                (creatorStatementOfIdea idea)
-
-            -- mark winning idea
-            when (isFeasibleIdea idea) $ do
-                div_ [class_ "winning-idea voting-buttons"] $ do
+                    button_ [ class_ "button-group-item btn-cta m-valid"
+                            , onclick_ $ U.creatorStatement idea
+                            ] $ do
+                        i_ [class_ "icon-check"] nil
+                        if isNothing $ creatorStatementOfIdea idea
+                            then "Statement abgeben"
+                            else "Statement ändern"
+                when (CanDelegate `elem` caps) $ do
+                    a_ [class_ "btn-cta voting-button button-group-item", href_ $ U.delegateVoteOnIdea idea] $ do
+                        i_ [class_ "icon-bullhorn"] nil
+                        "Stimme beauftragen"
+                -- mark winning idea
+                when (isFeasibleIdea idea) $ do
                     when (CanMarkWinner `elem` caps) $ do
                         let winnerButton =
                                 postButton_
-                                    [ class_ "btn-cta mark-winner-button"
+                                    [ class_ "btn-cta mark-winner-button button-group-item"
                                     , jsReloadOnClick
                                     ]
 
@@ -351,6 +341,11 @@ instance ToHtml ViewIdea where
                             winnerButton (U.markIdeaAsWinner idea) "als \"gewonnen\" markieren"
                         when (isWinning idea) $
                             winnerButton (U.unmarkIdeaAsWinner idea) "\"gewonnen\" zurücknehmen"
+
+            -- creator statement
+            mapM_
+                (div_ [class_ "creator-statement"] . view html)
+                (creatorStatementOfIdea idea)
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do
@@ -524,14 +519,15 @@ instance FormPage MoveIdea where
         currentTopic = idea ^. ideaLocation ^? ideaLocationTopicId
 
     formPage v form mi = semanticDiv mi . form $ do
-        h2_ [class_ "sub-header"] "Idee verschieben"
+        h1_ [class_ "main-heading align-left"] "Idee verschieben"
         div_ [class_ "container-info"] . p_ $ do
             "Soll die Idee '" >> mi ^. miIdea . ideaTitle . html >> "'"
             " aus '" >> mi ^. miIdea ^. ideaLocation . uilabeledST . html >> "'"
             " verschoben werden?"
         DF.inputSelect "topic-to-move" v
-        DF.inputSubmit "Verschieben"
-        cancelButton mi
+        div_ [class_ "form-footer"] $ do
+          DF.inputSubmit "Verschieben"
+          cancelButton mi
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
