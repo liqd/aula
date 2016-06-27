@@ -531,25 +531,27 @@ moveIdeaToTopic ideaId moveIdea = do
 
 -- * Vote Handling
 
+-- | Shared code of all actions a delegate can perform for a delegatee on an idea, e.g. 'likeIdea'
+-- or 'voteOnIdea'.
 delegatedOperationOnIdea
     :: ActionM m
     => (AUID User -> AUID Idea -> EQuery (Maybe (User, a)))
     -> (User -> User -> m ())
     -> AUID Idea
     -> m ()
-delegatedOperationOnIdea getOperationResult operation ideaId = do
-    -- Like idea
-    user <- currentUser
+delegatedOperationOnIdea getGuyWhoDidId operation ideaId = do
+    cuser <- currentUser
     let scope = DScopeIdeaId ideaId
-    operation user user
-    equery (votingPower (user ^. _Id) scope)
+    operation cuser cuser  -- do it for yourself.
+    equery (votingPower (cuser ^. _Id) scope)
         >>= filterM hasDoneItAlready
-        >>= mapM_ (operation user)
+        >>= mapM_ (operation cuser)  -- do it for those delegatees who have not been active
+                                     -- themselves.
   where
     hasDoneItAlready :: ActionM m => User -> m Bool
     hasDoneItAlready delegatee = equery $ do
         let delegateeId = delegatee ^. _Id
-        mlike <- getOperationResult delegateeId ideaId
+        mlike <- getGuyWhoDidId delegateeId ideaId
         pure $ case mlike of
             Nothing -> True
             Just (user', _result) -> delegateeId /= (user' ^. _Id)

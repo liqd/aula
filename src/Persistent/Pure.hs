@@ -739,10 +739,13 @@ findComment ck = findComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommen
 instance FromProto IdeaLike where
     fromProto p m = IdeaLike m (_protoIdeaLikeDelegate p)
 
+-- | The user whose vote is cast is passed is given as an explicit arg.  The user who actually casts
+-- it for her is hidden in the 'IdeaLikeProto'.
+--
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
 addLikeToIdea :: AUID Idea -> User -> AddDb IdeaLike
-addLikeToIdea iid user =
-    addDb' (const (mkIdeaVoteLikeKey iid user))
+addLikeToIdea iid delegatee =
+    addDb' (const (mkIdeaVoteLikeKey iid delegatee))
            (dbIdeaMap . at iid . _Just . ideaLikes)
 
 mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
@@ -754,9 +757,10 @@ instance FromProto IdeaVote where
                              , _ideaVoteDelegate = _protoIdeaVoteDelegate p
                              }
 
+-- | Analogous to 'addLikeToIdea'.
 addVoteToIdea :: AUID Idea -> User -> AddDb IdeaVote
-addVoteToIdea iid user =
-    addDb' (const (mkIdeaVoteLikeKey iid user))
+addVoteToIdea iid delegatee =
+    addDb' (const (mkIdeaVoteLikeKey iid delegatee))
            (dbIdeaMap . at iid . _Just . ideaVotes)
 
 -- Removes the vote of the given user.
