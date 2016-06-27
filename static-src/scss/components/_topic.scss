@@ -7,8 +7,8 @@
     }
 
     &.phase-PhaseRefinement {
-        background:     url(/static/images/ausarbeitungsphase_l.png) no-repeat left top,
-                        url(/static/images/ausarbeitungsphase_r.png) no-repeat right top,
+        background:     url(/static/images/ausarbeitungsphase_l.png) no-repeat left bottom,
+                        url(/static/images/ausarbeitungsphase_r.png) no-repeat right bottom,
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
@@ -17,8 +17,8 @@
     }
 
     &.phase-PhaseJury {
-        background:     url(/static/images/prufungsphase_l.png) no-repeat left top,
-                        url(/static/images/prufungsphase_r.png) no-repeat right top,
+        background:     url(/static/images/prufungsphase_l.png) no-repeat left bottom,
+                        url(/static/images/prufungsphase_r.png) no-repeat right bottom,
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
@@ -27,8 +27,8 @@
     }
 
     &.phase-PhaseVoting {
-        background:     url(/static/images/header_vote_left.png) no-repeat left top,
-                        url(/static/images/header_vote_right.png) no-repeat right top,
+        background:     url(/static/images/header_vote_left.png) no-repeat left bottom,
+                        url(/static/images/header_vote_right.png) no-repeat right bottom,
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
@@ -37,8 +37,8 @@
     }
 
     &.phase-PhaseResult {
-        background:     url(/static/images/ergebnisphase_l.png) no-repeat left top,
-                        url(/static/images/ergebnisphase_r.png) no-repeat right top,
+        background:     url(/static/images/ergebnisphase_l.png) no-repeat left bottom,
+                        url(/static/images/ergebnisphase_r.png) no-repeat right bottom,
                         white;
 
         @media screen and (max-width: $tablet-breakpoint) {
