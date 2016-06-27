@@ -737,11 +737,13 @@ findComment :: CommentKey -> MQuery Comment
 findComment ck = findComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
 
 instance FromProto IdeaLike where
-    fromProto () = IdeaLike
+    fromProto p m = IdeaLike m (_protoIdeaLikeDelegate p)
 
 -- FIXME: Assumption: the given @AUID Idea@ MUST be in the DB.
-addLikeToIdea :: AUID Idea -> AddDb IdeaLike
-addLikeToIdea iid = addDb' (mkIdeaVoteLikeKey iid) (dbIdeaMap . at iid . _Just . ideaLikes)
+addLikeToIdea :: AUID Idea -> User -> AddDb IdeaLike
+addLikeToIdea iid user =
+    addDb' (const (mkIdeaVoteLikeKey iid user))
+           (dbIdeaMap . at iid . _Just . ideaLikes)
 
 mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
 mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)

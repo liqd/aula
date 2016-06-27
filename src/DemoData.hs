@@ -130,7 +130,10 @@ ideaStudentPair ideas students = do
 genLike :: [Idea] -> [User] -> forall m . ActionM m => Gen (m IdeaLike)
 genLike ideas students = do
     (idea, student) <- ideaStudentPair ideas students
-    return $ addWithUser (AddLikeToIdea (idea ^. _Id)) student ()
+    pure $ addWithUser
+        (AddLikeToIdea (idea ^. _Id) student)
+        student
+        (ProtoIdeaLike (student ^. _Id))
 
 arbComment :: Gen Document
 arbComment = unsafeMarkdown <$> arbPhraseOf 10 100

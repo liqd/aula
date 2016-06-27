@@ -271,6 +271,16 @@ getVote uid iid = do
             voter <- maybe404 =<< findUser (vv ^. ideaVoteDelegate)
             pure $ Just (voter, vv ^. ideaVoteValue)
 
+getLike :: AUID User -> AUID Idea -> EQuery (Maybe (User, IdeaLike))
+getLike uid iid = do
+    idea <- maybe404 =<< findIdea iid
+    let mLike = idea ^? ideaLikes . at uid . _Just
+    case mLike of
+        Nothing -> pure Nothing
+        Just vl -> do
+            liker <- maybe404 =<< findUser (vl ^. ideaLikeDelegate)
+            pure $ Just (liker, vl)
+
 studentsInIdeaSpace :: IdeaSpace -> EQuery [User]
 studentsInIdeaSpace spc = fltr <$> cllct spc
   where
