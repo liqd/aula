@@ -158,7 +158,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), exposedUrl)
+import Config (Config, GetConfig(..), exposedUrl, delegateLikes)
 import Data.Avatar
 import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
@@ -556,7 +556,12 @@ delegatedOperationOnIdea getOperationResult operation ideaId = do
 
 likeIdea :: ActionM m => AUID Idea -> m ()
 likeIdea ideaId = do
-    delegatedOperationOnIdea getLike likeFor ideaId
+    cfg <- viewConfig
+    if cfg ^. delegateLikes
+        then delegatedOperationOnIdea getLike likeFor ideaId
+        else do
+            user <- currentUser
+            likeFor user user
     -- Log when idea reches the quorum
     do (idea, info) <- equery $ do
           ide <- maybe404 =<< findIdea ideaId
