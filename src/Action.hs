@@ -803,7 +803,21 @@ revokeWinnerStatusOfIdea = update . RevokeWinnerStatus
 -- * admin
 
 resetPassword :: ActionM m => AUID User -> InitialPassword -> m ()
-resetPassword = update <..> ResetUserPass
+resetPassword uid pwd = do
+    update $ ResetUserPass uid pwd
+    user <- mquery (findUser uid)
+    sendMailToUser [IgnoreMissingEmails] user EmailMessage
+            { _msgSubjectLabel = UserLoginSubject $ user ^. userLogin
+            , _msgSubjectText  = "Dein Passwort wurde von einem Adminstrator zurückgesetzt"
+            , _msgBody    = ST.unlines
+                [ "Das Passwort für Dein Aula-Konto wurde von der Administration zurückgesetzt."
+                , "Wenn Du nicht dabei warst, liegt wahrscheinlich ein Fehler vor.  In dem Fall sprich bitte mit eine Lehrer."
+                , ""
+                , "Viel Spass!"
+                , "Dein AuLA-Team."
+                ]
+            , _msgHtml    = Nothing -- Not supported yet
+            }
 
 
 -- * phase shift
