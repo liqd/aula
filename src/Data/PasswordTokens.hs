@@ -9,7 +9,7 @@ import Control.Lens
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.Map as Map
 
-import Data.DoubleMap
+import Data.DoubleMap as DMap
 import Types
 
 
@@ -42,12 +42,12 @@ emptyPasswordTokens = PasswordTokens Map.empty
 -- Add a new token to the tokens which will time out on the given timestamp
 newPasswordToken :: U -> PasswordToken -> Timestamp -> PasswordTokens -> PasswordTokens
 newPasswordToken u t ts (PasswordTokens pt) =
-    PasswordTokens $ insertDoubleMap u t (Validity ts) pt
+    PasswordTokens $ DMap.insert u t (Validity ts) pt
 
 -- Checks if the token is valid and not expired at the given timestamp
 checkValid :: U -> PasswordToken -> Timestamp -> PasswordTokens -> PasswordTokenState
 checkValid u t ts (PasswordTokens pt) =
-    maybe Invalid (\t' -> if isTimedOut ts t' then TimedOut else Valid) $ lookupDoubleMap u t pt
+    maybe Invalid (\t' -> if isTimedOut ts t' then TimedOut else Valid) $ DMap.lookup u t pt
 
 -- Clears the timed out tokens for the given user
 clearTimeoutTokens :: U -> Timestamp -> PasswordTokens -> PasswordTokens
@@ -62,7 +62,7 @@ checkForTimeoutTokens u ts (PasswordTokens pt) =
 
 removeToken :: U -> PasswordToken -> PasswordTokens -> PasswordTokens
 removeToken u t (PasswordTokens pt) =
-    PasswordTokens $ deleteDoubleMap u t pt
+    PasswordTokens $ DMap.remove u t pt
 
 
 -- * behavior

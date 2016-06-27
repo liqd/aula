@@ -621,9 +621,9 @@ addDelegation env = do
   where
     (Delegation scope delegatee delegate) = env ^. envWith
 
-withdrawDelegation :: AUID User -> DScope -> AUpdate ()
-withdrawDelegation delegatee dscope =
-    dbDelegations %= Data.Delegation.deleteDelegation delegatee dscope
+withdrawDelegation :: AUID User -> DScope -> AUID User -> AUpdate ()
+withdrawDelegation delegatee dscope delegate =
+    dbDelegations %= Data.Delegation.deleteDelegation delegatee dscope delegate
 
 delegationScopeTree :: User -> Query (Tree DScopeFull)
 delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull

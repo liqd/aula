@@ -29,7 +29,7 @@ import Data.SafeCopy (base, deriveSafeCopy)
 
 import Control.Monad.Reader
 
-import Data.DoubleMap
+import Data.DoubleMap as DMap
 import Types
 
 
@@ -95,25 +95,24 @@ setDelegation f dscope t (Delegations (DelegationMap dmap) (CoDelegationMap coDm
   where
     from = Delegatee f
     to   = Delegate  t
-    mOldTo = lookupDoubleMap from dscope dmap
+    mOldTo = DMap.lookup from dscope dmap
 
-    dmap'   = DelegationMap (insertDoubleMap from dscope to dmap)
+    dmap'   = DelegationMap (DMap.insert from dscope to dmap)
     coDmap' = CoDelegationMap coDmap1
     coDmap0 = maybe coDmap (\to' -> coDmap & at to' . _Just . at dscope . _Just . at from .~ Nothing
                                            & at to' . _Just . at dscope %~ deleteEmpty
                                            & at to' %~ deleteEmpty) mOldTo
-    coDmap1 = insertDoubleMap to dscope (Set.insert from $ fromMaybe Set.empty (lookupDoubleMap to dscope coDmap0)) coDmap0
+    coDmap1 = DMap.insert to dscope (Set.insert from $ fromMaybe Set.empty (DMap.lookup to dscope coDmap0)) coDmap0
 
--- | FIXME: if we mention the delegate here, not just the delegatee, we can confirm that is is the
--- one we expect, and we will catch errors more local to their source.
-deleteDelegation :: U -> S -> Delegations -> Delegations
-deleteDelegation f dscope (Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
-    = Delegations dmap' coDmap'
+deleteDelegation :: U -> S -> U -> Delegations -> Delegations
+deleteDelegation delegatee dscope delegate ds@(Delegations (DelegationMap dmap) (CoDelegationMap coDmap))
+    | DMap.lookup (Delegatee delegatee) dscope dmap /= Just (Delegate delegate) = ds
+    | otherwise = Delegations dmap' coDmap'
   where
-    from = Delegatee f
-    mOldTo = lookupDoubleMap from dscope dmap
+    from = Delegatee delegatee
+    mOldTo = DMap.lookup from dscope dmap
 
-    dmap'   = DelegationMap (deleteDoubleMap from dscope dmap)
+    dmap'   = DelegationMap (DMap.remove from dscope dmap)
     coDmap' = CoDelegationMap coDmap1
     coDmap1 = maybe coDmap (\to' -> coDmap & at to' . _Just . at dscope . _Just . at from .~ Nothing
                                            & at to' . _Just . at dscope %~ deleteEmpty
@@ -125,7 +124,7 @@ scopeDelegatees delegate scope =
 
 scopeDelegateesSafe :: Delegate U -> S -> Delegations -> Set (Delegatee U)
 scopeDelegateesSafe delegate scope (Delegations _dmap (CoDelegationMap coDMap)) =
-    fromMaybe Set.empty $ lookupDoubleMap delegate scope coDMap
+    fromMaybe Set.empty $ DMap.lookup delegate scope coDMap
 
 -- | The number of votes a 'User' has in a 'DScope', including own vote, direct delegations,
 -- transitive delegations, and implicit delegations from ancestor 'DScope's.
@@ -149,7 +148,7 @@ votingPower vid path ds = unDelegatee <$$> Set.toList . flip runReader ds $ do
 -- FIXME: Speed-up using a third Map, which indexes the scope
 findDelegationsByScope :: S -> Delegations -> [(Delegate U, S, [Delegatee U])]
 findDelegationsByScope scope (Delegations _dmap (CoDelegationMap cdm)) =
-    [ (delegate, scope, fromMaybe [] $ Set.toList <$> lookupDoubleMap delegate scope cdm)
+    [ (delegate, scope, fromMaybe [] $ Set.toList <$> DMap.lookup delegate scope cdm)
     | delegate   <- Map.keys cdm
     ]
 
