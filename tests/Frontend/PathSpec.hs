@@ -168,7 +168,7 @@ instance (FormPage a, Arbitrary a) => Arbitrary (FormPageRep a) where
         page        <- arb
         frameAction <- arb
         Right view  <- runDummyT $ getForm frameAction (makeForm page)
-        pure $ FormPageRep view frameAction page
+        pure $ FormPageRep Nothing view frameAction page
 
 mockAulaMain :: IO Application
 mockAulaMain = do

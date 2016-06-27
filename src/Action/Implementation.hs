@@ -37,6 +37,7 @@ import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOStat
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Thentos.Frontend.CSRF as CSRF
 
 import Action
 import Config
@@ -139,6 +140,10 @@ instance ActionUserHandler Action where
     userState = use
 
     logout = put userLoggedOut >> addMessage "Danke fürs Mitmachen!"
+
+instance ActionCsrfToken Action where
+    getCsrfToken   = use usCsrfToken
+    checkCsrfToken = CSRF.checkCsrfToken
 
 instance ReadTempFile Action where
     readTempFile = actionIO . LBS.readFile

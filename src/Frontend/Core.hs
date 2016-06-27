@@ -39,12 +39,14 @@ module Frontend.Core
       -- * forms
     , FormPage
     , FormPagePayload, FormPageResult
+    , CsrfToken(..)
     , formAction, redirectOf, makeForm, formPage
 
     , FormPageRep(..)
-    , FormPageHandler, formGetPage, formProcessor, formStatusMessage
+    , FormPageHandler, formRequireCsrf, formGetPage, formProcessor, formStatusMessage
     , formPageHandler, formPageHandlerWithMsg
     , formPageHandlerCalcMsg, formPageHandlerCalcMsgM
+    , formPageHandlerWithoutCsrf
     , form
     , cancelButton
 
@@ -84,6 +86,7 @@ import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.View
+import Text.Digestive.Form ((.:))
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Aeson as Aeson
@@ -103,6 +106,7 @@ import Frontend.Path (HasPath(..))
 import Logger.EventLog (EventLog)
 import Lucid.Missing (script_, href_, src_, nbsp)
 import Types
+import Thentos.Frontend.CSRF (CsrfToken(..))
 
 import qualified Frontend.Path as P
 
@@ -349,6 +353,19 @@ instance Page a => Page (Post c (Frame a)) where
 instance Page EventLog where
     isAuthorized = adminPage
 
+instance Page CsrfToken where
+    isAuthorized = adminPage
+    -- This could be lowered to userPage as anyone able to request any form can see his/her CSRF
+    -- token. However since this is just used for testing purposes so far there is no need to allow
+    -- that.
+
+instance MimeRender PlainText CsrfToken where
+    mimeRender Proxy = cs . fromCsrfToken
+
+instance ToHtml CsrfToken where
+    toHtmlRaw = toHtmlRaw . fromCsrfToken
+    toHtml    = toHtml    . fromCsrfToken
+
 instance Page DelegationNetwork where
     isAuthorized = userPage
 
@@ -406,26 +423,38 @@ class Page p => FormPage p where
 
 -- | Representation of a 'FormPage' suitable for passing to 'formPage' and generating Html from it.
 data FormPageRep p = FormPageRep
-    { _formPageRepView   :: View (Html ())
+    { _formPageRepToken  :: Maybe CsrfToken
+    , _formPageRepView   :: View (Html ())
     , _formPageRepAction :: ST
     , _formPageRepPage   :: p
     }
 
 instance (Show p) => Show (FormPageRep p) where
-    show (FormPageRep _v _a p) = show p
+    show (FormPageRep _t _v _a p) = show p
 
 instance Page p => Page (FormPageRep p) where
     isAuthorized = isAuthorized . fmap _formPageRepPage
-    extraFooterElems (FormPageRep _v _a p) = extraFooterElems p
+    extraFooterElems = extraFooterElems . _formPageRepPage
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
-    toHtml (FormPageRep v a p) =  toHtml $ formPage v frm p
+    toHtml (FormPageRep t v a p) = toHtml $ formPage v frm p
       where
-        frm bdy = DF.childErrorList "" v >> DF.form v a bdy
+        frm bdy = DF.childErrorList "" v >> DF.form v a (bdy <> csrfField)
+        csrfField
+            | Just csrfToken <- t =
+                let name = absoluteRef "_csrf" v in
+                input_  [ type_ "hidden"
+                        , id_    name
+                        , name_  name
+                        , value_ $ fromCsrfToken csrfToken
+                        ]
+            | otherwise = nil
+
 
 data FormPageHandler m p = FormPageHandler
-    { _formGetPage       :: m p
+    { _formRequireCsrf   :: Bool
+    , _formGetPage       :: m p
     , _formProcessor     :: FormPagePayload p -> m (FormPageResult p)
     , _formStatusMessage :: p -> FormPagePayload p -> FormPageResult p -> m (Maybe StatusMessage)
     }
@@ -462,7 +491,7 @@ formPageHandler
     => m p
     -> (FormPagePayload p -> m (FormPageResult p))
     -> FormPageHandler m p
-formPageHandler get processor = FormPageHandler get processor noMsg
+formPageHandler get processor = FormPageHandler True get processor noMsg
   where
     noMsg _ _ _ = pure Nothing
 
@@ -472,7 +501,7 @@ formPageHandlerWithMsg
     -> (FormPagePayload p -> m (FormPageResult p))
     -> ST
     -> FormPageHandler m p
-formPageHandlerWithMsg get processor msg = FormPageHandler get processor (\_ _ _ -> pure . Just . cs $ msg)
+formPageHandlerWithMsg get processor msg = FormPageHandler True get processor (\_ _ _ -> pure . Just . cs $ msg)
 
 formPageHandlerCalcMsg
     :: (Applicative m, ConvertibleStrings s StatusMessage)
@@ -480,7 +509,7 @@ formPageHandlerCalcMsg
     -> (FormPagePayload p -> m (FormPageResult p))
     -> (p -> FormPagePayload p -> FormPageResult p -> s)
     -> FormPageHandler m p
-formPageHandlerCalcMsg get processor msg = FormPageHandler get processor ((pure . Just . cs) <...> msg)
+formPageHandlerCalcMsg get processor msg = FormPageHandler True get processor ((pure . Just . cs) <...> msg)
 
 formPageHandlerCalcMsgM
     :: (Applicative m, ConvertibleStrings s StatusMessage)
@@ -488,7 +517,16 @@ formPageHandlerCalcMsgM
     -> (FormPagePayload p -> m (FormPageResult p))
     -> (p -> FormPagePayload p -> FormPageResult p -> m s)
     -> FormPageHandler m p
-formPageHandlerCalcMsgM get processor msg = FormPageHandler get processor (fmap (Just . cs) <...> msg)
+formPageHandlerCalcMsgM get processor msg = FormPageHandler True get processor (fmap (Just . cs) <...> msg)
+
+formPageHandlerWithoutCsrf
+    :: Applicative m
+    => m p
+    -> (FormPagePayload p -> m (FormPageResult p))
+    -> FormPageHandler m p
+formPageHandlerWithoutCsrf get processor = FormPageHandler False get processor noMsg
+  where
+    noMsg _ _ _ = pure Nothing
 
 
 -- | (this is similar to 'formRedirectH' from "Servant.Missing".  not sure how hard is would be to
@@ -505,6 +543,7 @@ formPageHandlerCalcMsgM get processor msg = FormPageHandler get processor (fmap 
 form :: (FormPage p, Page p, ActionM m) => FormPageHandler m p -> ServerT (FormHandler p) m
 form formHandler = getH :<|> postH
   where
+    csrfRequired = _formRequireCsrf formHandler
     getPage = _formGetPage formHandler
     processor = _formProcessor formHandler
     formMessage = _formStatusMessage formHandler
@@ -513,7 +552,8 @@ form formHandler = getH :<|> postH
         page <- getPage
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
-        pure $ FormPageRep v fa page
+        t <- getCsrfToken
+        pure $ FormPageRep t v fa page
 
     -- If form is not filled out successfully, 'postH' responds with a new page to render.  This
     -- makes it impossible to re-use 'runPostHandler': we need the user info and the page computed
@@ -526,13 +566,15 @@ form formHandler = getH :<|> postH
             Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
                                redirectPath newPath
-            Nothing      -> UnsafePostResult <$> makeFrame mu (FormPageRep v fa page))
+            Nothing      -> do t <- getCsrfToken
+                               UnsafePostResult <$> makeFrame mu (FormPageRep t v fa page))
             `finally` cleanupTempFiles formData
 
     -- (possibly interesting: on ghc-7.10.3, inlining `processor1` in the `postForm` call above
     -- produces a type error.  is this a ghc bug, or a bug in our code?)
-    processor1 = makeForm
-    processor2 page result =
+    processor1 page = (,) <$> (CsrfToken <$> ("_csrf" .: DF.text Nothing)) <*> makeForm page
+    processor2 page (csrfToken, result) = do
+        when csrfRequired $ checkCsrfToken csrfToken
         (redirectOf page &&& formMessage page result) <$> processor result
 
 cancelButton :: (FormPage p , () ~ FormPageResult p, Monad m) => p -> HtmlT m ()

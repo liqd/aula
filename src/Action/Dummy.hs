@@ -69,6 +69,10 @@ instance Monad m => ActionUserHandler (DummyT ActionExcept m) where
     addMessage _  = notImplemented "ActionUserHandler" "addMessage"
     flushMessages = notImplemented "ActionUserHandler" "flushMessage"
 
+instance Monad m => ActionCsrfToken (DummyT ActionExcept m) where
+    getCsrfToken     = notImplemented "ActionCsrfToken" "getCsrfToken"
+    checkCsrfToken _ = notImplemented "ActionCsrfToken" "checkCsrfToken"
+
 instance Monad m => MonadReader ActionEnv (DummyT ActionExcept m) where
     ask = notImplemented "MonadReader" "ask"
     local _ _ = notImplemented "MonadReader" "local"

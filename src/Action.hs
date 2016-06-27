@@ -23,6 +23,7 @@ module Action
     , ActionLog(log, readEventLog)
     , ActionPersist(queryDb, query, equery, mquery, update), maybe404
     , ActionUserHandler(login, logout, userState, addMessage, flushMessages)
+    , ActionCsrfToken(getCsrfToken, checkCsrfToken)
     , ActionRandomPassword(mkRandomPassword, mkRandomPasswordToken)
     , ActionEncryptPassword(encryptPassword)
     , ActionCurrentTimestamp(getCurrentTimestamp)
@@ -228,6 +229,7 @@ type ActionM m =
       ( ActionLog m
       , ActionPersist m
       , ActionUserHandler m
+      , ActionCsrfToken m
       , ActionError m
       , ReadTempFile m
       , ActionAvatar m
@@ -291,6 +293,10 @@ class ActionError m => ActionUserHandler m where
     flushMessages :: m [StatusMessage]
     -- | Make the user log out
     logout :: m ()
+
+class ActionError m => ActionCsrfToken m where
+    getCsrfToken   :: m (Maybe CsrfToken)
+    checkCsrfToken :: CsrfToken -> m ()
 
 instance ThrowServantErr ActionExcept where
     _ServantErr = _ActionExcept

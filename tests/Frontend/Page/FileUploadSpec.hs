@@ -38,9 +38,11 @@ spec = describe "file upload" $ do
                         , "Jens;Kuhn;jens@example.org"
                         ]
 
-        it "posts users successfully; users will appear under /testing/user" $ \wreq -> do
+        it "posts users successfully; users will appear under /testing/users" $ \wreq -> do
             loginAsAdmin wreq
-            post wreq (fileUploadPath "") [classPart, filePart]
+            t <- get wreq "/testing/csrf_token"
+            let tokenPart = partString (fileUploadPath "._csrf") (t ^. responseBody . csi)
+            post wreq (fileUploadPath "") [tokenPart, classPart, filePart]
                 `shouldRespond` [codeShouldBe 303]
             get wreq "/testing/users"
                 `shouldRespond` [codeShouldBe 200
