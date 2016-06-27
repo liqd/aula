@@ -35,3 +35,8 @@ avatarDefaultSize = 100
 
 avatarExtraSizes :: [Int]
 avatarExtraSizes = [64, 300]
+
+-- | This is just for showing the information.  To enforce this limit, set up a reverse proxie like
+-- nginx and configure it accordingly.  See ./docs/deployment.md for details.
+avatarMaxByteSize :: ST
+avatarMaxByteSize = "10MB"

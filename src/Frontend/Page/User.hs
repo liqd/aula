@@ -353,6 +353,23 @@ instance FormPage EditUserProfile where
             form $ do
                 label_ $ do
                     span_ [class_ "label-text"] "Avatar"
+                    div_ $ do
+                        "Einige wichtige Hinweise zum Hochladen von Bildern."
+                        ul_ $ do
+                            li_ $ do
+                                "Das alte Bild wird beim hochladen überschrieben.  Ziehe dir bitte "
+                                "jetzt zuerst eine Sicherheitskopie, wenn du es später noch brauchst."
+                            li_ $ do
+                                "Nach dem hochladen wird das neue Bild in Kreisform geschnitten. "
+                                "Es sollte also nicht zu lang oder hoch sein und nichts wichtiges "
+                                "in den Ecken zeigen."
+                            li_ $ do
+                                let dim = fromString . show . maximum $ avatarDefaultSize : avatarExtraSizes
+                                "Das neue Bild sollte für optimale Qualität mindestens "
+                                dim >> "x" >> dim >> " "
+                                "Pixel haben."
+                            li_ $ do
+                                "Es darf nicht größer sein als " >> avatarMaxByteSize ^. html >> "."
                     DF.inputFile "avatar" v
                 label_ $ do
                     span_ [class_ "label-text"] "Beschreibung"
