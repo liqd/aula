@@ -311,9 +311,10 @@ class Page p where
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
+    -- | Used in 'pageFrame' below for rendering pages in desktop mode on phones if they do not
+    -- support responsive design.  Default is 'True'.
     isResponsive :: p -> Bool
     isResponsive _ = True
-
 
 
 instance Page p => Page (Frame p) where
