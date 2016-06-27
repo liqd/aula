@@ -61,80 +61,108 @@ data PageAdminSettingsDurations =
     PageAdminSettingsDurations Durations
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsDurations where isAuthorized = adminPage
+instance Page PageAdminSettingsDurations where
+    isAuthorized = adminPage
+    isResponsive _ = False
 
 -- | 11.2 Admin settings: Quorum
 data PageAdminSettingsQuorum =
     PageAdminSettingsQuorum Quorums
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsQuorum where isAuthorized = adminPage
+instance Page PageAdminSettingsQuorum where
+    isAuthorized = adminPage
+    isResponsive _ = False
 
 -- | Admin settings: Freeze
 data PageAdminSettingsFreeze =
     PageAdminSettingsFreeze Freeze
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsFreeze where isAuthorized = adminPage
+instance Page PageAdminSettingsFreeze where
+    isAuthorized = adminPage
+    isResponsive _ = False
 
 -- | 11.3 Admin settings: Manage groups & permissions
 data AdminViewUsers = AdminViewUsers UsersQuery [UserView]
   deriving (Eq, Show, Read)
 
-instance Page AdminViewUsers where isAuthorized = adminPage
+instance Page AdminViewUsers where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminCreateUser = AdminCreateUser [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page AdminCreateUser where isAuthorized = adminPage
+instance Page AdminCreateUser where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminAddRole = AdminAddRole User [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page AdminAddRole where isAuthorized = adminPage
+instance Page AdminAddRole where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminEditUser = AdminEditUser User
   deriving (Eq, Show, Read)
 
-instance Page AdminEditUser where isAuthorized = adminPage
+instance Page AdminEditUser where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminDeleteUser = AdminDeleteUser User
   deriving (Eq, Show, Read)
 
-instance Page AdminDeleteUser where isAuthorized = adminPage
+instance Page AdminDeleteUser where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminViewClasses = AdminViewClasses ClassesFilterQuery [SchoolClass]
   deriving (Eq, Show, Read)
 
-instance Page AdminViewClasses where isAuthorized = adminPage
+instance Page AdminViewClasses where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminCreateClass = AdminCreateClass
   deriving (Eq, Show, Read)
 
-instance Page AdminCreateClass where isAuthorized = adminPage
+instance Page AdminCreateClass where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminEditClass = AdminEditClass SchoolClass [UserView]
   deriving (Eq, Show, Read)
 
-instance Page AdminEditClass where isAuthorized = adminPage
+instance Page AdminEditClass where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data AdminPhaseChange = AdminPhaseChange
   deriving (Eq, Show, Read)
 
-instance Page AdminPhaseChange where isAuthorized = adminPage
+instance Page AdminPhaseChange where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 -- | 11.4 Admin settings: Events protocol
 data PageAdminSettingsEventsProtocol =
     PageAdminSettingsEventsProtocol [IdeaSpace]
   deriving (Eq, Show, Read)
 
-instance Page PageAdminSettingsEventsProtocol where isAuthorized = adminPage
+instance Page PageAdminSettingsEventsProtocol where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data PageAdminResetPassword =
     PageAdminResetPassword User InitialPassword
   deriving (Eq, Show, Read)
 
-instance Page PageAdminResetPassword where isAuthorized = adminPage
+instance Page PageAdminResetPassword where
+    isAuthorized   = adminPage
+    isResponsive _ = False
 
 data CreateUserPayload = CreateUserPayload
     { _createUserFirstName :: UserFirstName
@@ -949,7 +977,9 @@ data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
 
 instance SOP.Generic InitialPasswordsCsv
 
-instance Page InitialPasswordsCsv where isAuthorized = adminPage
+instance Page InitialPasswordsCsv where
+    isAuthorized = adminPage
+    isResponsive _ = False
 
 
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
