@@ -73,22 +73,20 @@ data PageUserProfileCreatedIdeas =
 instance Page PageUserProfileCreatedIdeas where
     isAuthorized = userPage -- Are profiles public?
 
--- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegateeListsMap
+-- | 8.2 User profile: Votes from delegatees
+data PageUserProfileUserAsDelegate =
+        PageUserProfileUserAsDelegate CapCtx UserView DelegateeListsMap
   deriving (Eq, Show, Read)
 
--- TODO: Rename
-instance Page PageUserProfileDelegatedVotes where
+instance Page PageUserProfileUserAsDelegate where
     isAuthorized = userPage -- Are profiles public?
 
--- | 8.X User profile: Votes from delegatees
-data PageUserProfileVotesFromDelegatees =
-        PageUserProfileVotesFromDelegatees CapCtx UserView DelegateeListsMap
+-- | 8.X User profile: Votes to delegates
+data PageUserProfileUserAsDelegatee =
+        PageUserProfileUserAsDelegatee CapCtx UserView DelegateeListsMap
   deriving (Eq, Show, Read)
 
--- TODO: Rename
-instance Page PageUserProfileVotesFromDelegatees where
+instance Page PageUserProfileUserAsDelegatee where
     isAuthorized = userPage -- Are profiles public?
 
 -- | 8.X User profile: Editing the public profile
@@ -320,14 +318,14 @@ createdIdeas userId ideasQuery = do
             delegatees)
 
 
--- ** User Profile: Delegated Votes
+-- ** User Profile: User As Delegatee
 
-instance ToHtml PageUserProfileDelegatedVotes where
+instance ToHtml PageUserProfileUserAsDelegate where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileDelegatedVotes ctx (DeletedUser user) _delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegate ctx (DeletedUser user) _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Left user)
-    toHtml p@(PageUserProfileDelegatedVotes ctx (ActiveUser user) delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegate ctx (ActiveUser user) delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
             userProfileTab UserDelegateesTab user
@@ -337,12 +335,12 @@ instance ToHtml PageUserProfileDelegatedVotes where
                     renderDelegations True delegations
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileDelegatedVotes
+      => AUID User -> m PageUserProfileUserAsDelegate
 delegatedVotes userId = do
     ctx <- currentUserCapCtx
     equery $ do
         user <- maybe404 =<< findUser userId
-        PageUserProfileDelegatedVotes
+        PageUserProfileUserAsDelegate
             (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegateeListsMap userId
@@ -350,12 +348,12 @@ delegatedVotes userId = do
 
 -- ** User Profile: Votes from delegatees
 
-instance ToHtml PageUserProfileVotesFromDelegatees where
+instance ToHtml PageUserProfileUserAsDelegatee where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileVotesFromDelegatees ctx (DeletedUser user) _delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegatee ctx (DeletedUser user) _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Left user)
-    toHtml p@(PageUserProfileVotesFromDelegatees ctx (ActiveUser user) delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegatee ctx (ActiveUser user) delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
             userProfileTab UserDelegatesTab user
@@ -365,12 +363,12 @@ instance ToHtml PageUserProfileVotesFromDelegatees where
                     renderDelegations True delegations
 
 votesFromDelegatees :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileVotesFromDelegatees
+      => AUID User -> m PageUserProfileUserAsDelegatee
 votesFromDelegatees userId = do
     ctx <- currentUserCapCtx
     equery $ do
         user <- maybe404 =<< findUser userId
-        PageUserProfileVotesFromDelegatees
+        PageUserProfileUserAsDelegatee
             (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegateListsMap userId
