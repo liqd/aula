@@ -87,6 +87,7 @@ pagesForm f =
     , f (Proxy :: Proxy PageAdminSettingsFreeze)
     , f (Proxy :: Proxy PageHomeWithLoginPrompt)
     , f (Proxy :: Proxy PageUserSettings)
+    , f (Proxy :: Proxy EditUserProfile)
     , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     , f (Proxy :: Proxy PageDelegateVote)
     ]
