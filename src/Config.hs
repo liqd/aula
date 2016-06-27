@@ -163,7 +163,7 @@ defaultLogConfig = LogConfig
 
 defaultConfig :: Config
 defaultConfig = Config
-    { _exposedUrl           = "http://localhost:8080"
+    { _exposedUrl           = "http://192.168.1.41:8080"
     , _listenerInterface    = "0.0.0.0"
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"

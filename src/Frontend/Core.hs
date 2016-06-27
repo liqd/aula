@@ -692,10 +692,12 @@ pageFrame frame = do
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
 
         -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
-        let viewport_content
+{- Fixme #746
+       let viewport_content
                 | anyOf frameUser isAdmin frame = "width=1024"
                 | otherwise                     = "width=device-width, initial-scale=1"
-        meta_ [name_ "viewport", content_ viewport_content]
+        meta_ [name_ "viewport", content_ viewport_content] -}
+        meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"] -- fixme
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
         div_ [class_ "page-wrapper"] $ do
