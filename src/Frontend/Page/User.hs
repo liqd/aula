@@ -195,11 +195,7 @@ userHeaderDiv _ (Left user) =
 
 userHeaderDiv ctx (Right (user, delegations)) =
     div_ $ do
-        div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
-        h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        ul_ [class_ "role-badges"] $ do
-            forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
-                li_ [class_ "badge"] $ r ^. uilabeled
+        userHeaderDivCore user
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
         let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
@@ -212,6 +208,14 @@ userHeaderDiv ctx (Right (user, delegations)) =
             btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
                 editProfileBtn
+
+userHeaderDivCore :: User -> Monad m => HtmlT m ()
+userHeaderDivCore user = do
+        div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
+        h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
+        ul_ [class_ "role-badges"] $ do
+            forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
+                li_ [class_ "badge"] $ r ^. uilabeled
 
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
 -- philosophical, but it doesn't really matter: users can delegate to themselves
@@ -346,13 +350,32 @@ instance FormPage EditUserProfile where
 
     formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
+            userHeaderDivCore user
             h1_ [class_ "main-heading"] .
                 toHtml $ if isOwnProfile (ctx ^. capCtxUser) user
                     then "Eigenes Nutzerprofil bearbeiten"
                     else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
+
             form $ do
                 label_ $ do
                     span_ [class_ "label-text"] "Avatar"
+                    div_ $ do
+                        "Einige wichtige Hinweise zum Hochladen von Bildern."
+                        ul_ $ do
+                            li_ $ do
+                                "Das alte Bild wird beim hochladen überschrieben.  Ziehe dir bitte "
+                                "jetzt zuerst eine Sicherheitskopie, wenn du es später noch brauchst."
+                            li_ $ do
+                                "Nach dem hochladen wird das neue Bild in Kreisform geschnitten. "
+                                "Es sollte also nicht zu lang oder hoch sein und nichts wichtiges "
+                                "in den Ecken zeigen."
+                            li_ $ do
+                                let dim = fromString . show . maximum $ avatarDefaultSize : avatarExtraSizes
+                                "Das neue Bild sollte für optimale Qualität mindestens "
+                                dim >> "x" >> dim >> " "
+                                "Pixel haben."
+                            li_ $ do
+                                "Es darf nicht größer sein als " >> avatarMaxByteSize ^. html >> "."
                     DF.inputFile "avatar" v
                 label_ $ do
                     span_ [class_ "label-text"] "Beschreibung"
@@ -367,9 +390,11 @@ validateImageFile = \case
     Just file -> do
         img <- readImageFile (cs file)
         pure $ case img of
-            -- FIXME: what are the accepted formats?  be more specific and more accurate!
-            Left _    -> DF.Error   "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
-            Right pic -> DF.Success $ Just pic
+            Nothing          -> DF.Success Nothing  -- FIXME: get rid of this double-'Maybe'; see
+                                                    -- documentation of 'readImageFile'
+            Just (Right pic) -> DF.Success (Just pic)
+            Just (Left _)    -> DF.Error "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
+                                -- (everything that juicy-pixles can read is allowed here)
 
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
@@ -379,14 +404,8 @@ editUserProfile uid = formPageHandlerWithMsg
         pure $ EditUserProfile ctx user
     )
     (\up -> do
-        case up ^. profileAvatar of
-            Nothing ->
-                -- FIXME: this should not be impossible
-                throwError500 "IMPOSSIBLE: editUserProfile"
-                -- update . SetUserDesc uid $ up ^. profileDesc
-            Just pic -> do
-                update . SetUserDesc uid $ up ^. profileDesc
-                saveAvatar uid pic
+        update . SetUserDesc uid $ up ^. profileDesc
+        saveAvatar uid `mapM_` (up ^. profileAvatar)
     )
     "Die Änderungen wurden gespeichert."
 

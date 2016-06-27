@@ -30,6 +30,7 @@ import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
+import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
 import Thentos.Action (freshSessionToken)
 import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
@@ -152,7 +153,14 @@ instance CleanupTempFiles Action where
     cleanupTempFiles = actionIO . releaseFormTempFiles
 
 instance ActionAvatar Action where
-    readImageFile = actionIO . readImage
+    readImageFile filePath = actionIO $ do
+        h <- openFile filePath ReadMode
+        s <- hFileSize h
+        hClose h
+        if s > 0
+            then Just <$> readImage filePath
+            else pure Nothing
+
     savePngImageFile p = actionIO . savePngImage p
 
 -- | Creates a natural transformation from Action to the servant handler monad.

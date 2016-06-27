@@ -164,8 +164,9 @@ genCommentVote comments_in_context students = do
 
 updateAvatar :: User -> FilePath -> forall m . ActionM m => m ()
 updateAvatar user file = readImageFile file >>= \case
-    Right pic -> saveAvatar (user ^. _Id) pic
-    Left err -> fail err
+    Just (Right pic) -> saveAvatar (user ^. _Id) pic
+    Just (Left err)  -> fail err
+    Nothing          -> fail $ "empty image file: " <> show file
 
 type ProtoUserWithAvatar = (Proto User, FilePath)
 
