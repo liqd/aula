@@ -311,6 +311,11 @@ class Page p where
     extraBodyClasses  :: p -> [ST]
     extraBodyClasses _ = nil
 
+    isResponsive :: p -> Bool
+    isResponsive _ = True
+
+
+
 instance Page p => Page (Frame p) where
     isAuthorized a = isAuthorized (_frameBody <$> a)
     extraFooterElems = extraFooterElems . _frameBody
@@ -435,6 +440,7 @@ instance (Show p) => Show (FormPageRep p) where
 instance Page p => Page (FormPageRep p) where
     isAuthorized = isAuthorized . fmap _formPageRepPage
     extraFooterElems = extraFooterElems . _formPageRepPage
+    isResponsive = isResponsive . _formPageRepPage
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
@@ -735,8 +741,8 @@ pageFrame frame = do
 
         -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
         let viewport_content
-                | anyOf frameUser isAdmin frame = "width=1024"
-                | otherwise                     = "width=device-width, initial-scale=1"
+                | isResponsive p = "width=device-width, initial-scale=1"
+                | otherwise      = "width=1024"
         meta_ [name_ "viewport", content_ viewport_content]
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
