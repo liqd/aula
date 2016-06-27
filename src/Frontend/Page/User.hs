@@ -346,10 +346,17 @@ instance FormPage EditUserProfile where
 
     formPage v form p@(EditUserProfile ctx user) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
+            div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
+            h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
+            ul_ [class_ "role-badges"] $ do
+                forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
+                    li_ [class_ "badge"] $ r ^. uilabeled
             h1_ [class_ "main-heading"] .
                 toHtml $ if isOwnProfile (ctx ^. capCtxUser) user
                     then "Eigenes Nutzerprofil bearbeiten"
                     else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
+            -- FIXME: merge this with 'userHeaderDiv'.
+
             form $ do
                 label_ $ do
                     span_ [class_ "label-text"] "Avatar"
