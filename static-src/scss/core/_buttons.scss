@@ -139,6 +139,10 @@ $btn-settings-size: 35px;
 
 .button-group {
     overflow: hidden;
+
+    > form {
+        display: inline-block;
+    }
 }
 
 .button-group-item {
@@ -148,9 +152,5 @@ $btn-settings-size: 35px;
 
     .button-group-item {
         margin: 0;
-    }
-
-    &:last-child {
-        margin-right: 0;
     }
 }
