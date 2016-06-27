@@ -29,6 +29,7 @@ import Persistent
     ( DelegateeListsMap(..)
     , DelegateeLists(..)
     , userDelegateeListsMap
+    , userDelegateListsMap
     , findUser
     , findIdeasByUserId
     , getIdeaStats
@@ -77,7 +78,17 @@ data PageUserProfileDelegatedVotes =
         PageUserProfileDelegatedVotes CapCtx UserView DelegateeListsMap
   deriving (Eq, Show, Read)
 
+-- TODO: Rename
 instance Page PageUserProfileDelegatedVotes where
+    isAuthorized = userPage -- Are profiles public?
+
+-- | 8.X User profile: Votes from delegatees
+data PageUserProfileVotesFromDelegatees =
+        PageUserProfileVotesFromDelegatees CapCtx UserView DelegateeListsMap
+  deriving (Eq, Show, Read)
+
+-- TODO: Rename
+instance Page PageUserProfileVotesFromDelegatees where
     isAuthorized = userPage -- Are profiles public?
 
 -- | 8.X User profile: Editing the public profile
@@ -251,6 +262,24 @@ delegatedDScopes delegatee (DelegateeListsMap xs) = fullDScopeToDScope . fst <$>
 
 -- ** User Profile: Created Ideas
 
+data UserProfileTab
+    = UserIdeasTab
+    | UserDelegateesTab
+    | UserDelegatesTab
+  deriving (Eq)
+
+userProfileTab :: Monad m => UserProfileTab -> User -> HtmlT m ()
+userProfileTab activeTab user = do
+    div_ [class_ "heroic-tabs"] $ do
+        -- TODO: Translation
+        tabLink UserIdeasTab      (U.viewUserProfile user) "Erstellte Ideen"
+        tabLink UserDelegateesTab (U.userDelegations user U.DelegateRole) "Delegations to me"
+        tabLink UserDelegatesTab  (U.userDelegations user U.DelegateeRole) "Delegations from me"
+  where
+    tabLink t path
+        | t == activeTab = span_ [class_ "heroic-tab-item  m-active"]
+        | otherwise = a_ [class_ "heroic-tab-item", href_ path]
+
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
     toHtml p@(PageUserProfileCreatedIdeas ctx (DeletedUser user) _ideas _delegations) = semanticDiv p $ do
@@ -259,12 +288,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
     toHtml p@(PageUserProfileCreatedIdeas ctx (ActiveUser user) ideas delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            -- Tab selection
-            div_ [class_ "heroic-tabs"] $ do
-                span_ [class_ "heroic-tab-item m-active"]
-                    "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (U.userDelegations user)]
-                    "Erhaltene Stimmen"
+            userProfileTab UserIdeasTab user
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ toHtml ideas
@@ -306,11 +330,7 @@ instance ToHtml PageUserProfileDelegatedVotes where
     toHtml p@(PageUserProfileDelegatedVotes ctx (ActiveUser user) delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (U.viewUserProfile user)]
-                    "Erstellte Ideen"
-                span_ [class_ "heroic-tab-item  m-active"]
-                    "Erhaltene Stimmen"
+            userProfileTab UserDelegateesTab user
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
@@ -327,6 +347,33 @@ delegatedVotes userId = do
             (makeUserView user)
             <$> userDelegateeListsMap userId
 
+
+-- ** User Profile: Votes from delegatees
+
+instance ToHtml PageUserProfileVotesFromDelegatees where
+    toHtmlRaw = toHtml
+    toHtml p@(PageUserProfileVotesFromDelegatees ctx (DeletedUser user) _delegations) = semanticDiv p $ do
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv ctx (Left user)
+    toHtml p@(PageUserProfileVotesFromDelegatees ctx (ActiveUser user) delegations) = semanticDiv p $ do
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv ctx (Right (user, delegations))
+            userProfileTab UserDelegatesTab user
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    renderDelegations True delegations
+
+votesFromDelegatees :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileVotesFromDelegatees
+votesFromDelegatees userId = do
+    ctx <- currentUserCapCtx
+    equery $ do
+        user <- maybe404 =<< findUser userId
+        PageUserProfileVotesFromDelegatees
+            (setProfileContext user ctx)
+            (makeUserView user)
+            <$> userDelegateListsMap userId
 
 -- ** User Profile: Edit profile
 

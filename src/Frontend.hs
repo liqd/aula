@@ -346,7 +346,8 @@ aulaSpace space
 
 type AulaUser =
        "ideas"       :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageUserProfileCreatedIdeas)
-  :<|> "delegations" :> GetH (Frame PageUserProfileDelegatedVotes)
+  :<|> "delegations" :> "delegate"  :> GetH (Frame PageUserProfileDelegatedVotes)
+  :<|> "delegations" :> "delegatee" :> GetH (Frame PageUserProfileVotesFromDelegatees)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
   :<|> "delegate"    :> "school" :> PostH DelegateTo
@@ -359,6 +360,7 @@ aulaUser :: forall m. ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
        (runHandler . Page.createdIdeas userId) <..> mkIdeasQuery
   :<|> runHandler (Page.delegatedVotes userId)
+  :<|> runHandler (Page.votesFromDelegatees userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
   :<|> postDelegateTo (Action.delegateTo (DScopeIdeaSpace SchoolSpace))
