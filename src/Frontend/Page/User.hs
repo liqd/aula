@@ -391,9 +391,11 @@ validateImageFile = \case
     Just file -> do
         img <- readImageFile (cs file)
         pure $ case img of
-            -- FIXME: what are the accepted formats?  be more specific and more accurate!
-            Left _    -> DF.Error   "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
-            Right pic -> DF.Success $ Just pic
+            Nothing          -> DF.Success Nothing  -- FIXME: get rid of this double-'Maybe'; see
+                                                    -- documentation of 'readImageFile'
+            Just (Right pic) -> DF.Success (Just pic)
+            Just (Left _)    -> DF.Error "Die ausgewählte Datei ist kein Bild (jpg, png, gif, ...)"
+                                -- (everything that juicy-pixles can read is allowed here)
 
 
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
@@ -403,14 +405,8 @@ editUserProfile uid = formPageHandlerWithMsg
         pure $ EditUserProfile ctx user
     )
     (\up -> do
-        case up ^. profileAvatar of
-            Nothing ->
-                -- FIXME: this should not be impossible
-                throwError500 "IMPOSSIBLE: editUserProfile"
-                -- update . SetUserDesc uid $ up ^. profileDesc
-            Just pic -> do
-                update . SetUserDesc uid $ up ^. profileDesc
-                saveAvatar uid pic
+        update . SetUserDesc uid $ up ^. profileDesc
+        saveAvatar uid `mapM_` (up ^. profileAvatar)
     )
     "Die Änderungen wurden gespeichert."
 

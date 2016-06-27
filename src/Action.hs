@@ -836,7 +836,12 @@ instance HasUILabel PhaseShiftResult where
 -- * files
 
 class Monad m => ActionAvatar m where
-    readImageFile :: FilePath -> m (Either String DynamicImage)
+    -- Yield a 'Nothing' if the image file is empty, a 'Just . Left' if the image cannot be parsed,
+    -- and a 'Just . Right' image value otherwise.  The 'Maybe' is necessary to work around the fact
+    -- that digestive-functors returns an empty file if the user is not uploading anything.
+    --
+    -- FIXME: figure out how to do that better with digestive-functors.
+    readImageFile :: FilePath -> m (Maybe (Either String DynamicImage))
     savePngImageFile :: FilePath -> DynamicImage -> m ()
 
 saveAvatar :: ActionAvatar m => AUID User -> DynamicImage -> m ()
