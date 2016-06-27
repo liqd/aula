@@ -16,6 +16,7 @@ where
 import qualified Data.Aeson as Aeson
 import qualified Data.Text as ST
 import           Data.Graph
+import           Data.Graph.Missing (fixLeaves)
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -172,7 +173,7 @@ delegationInfos scope = do
     let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
 
     -- Build graphs and graph handler functions
-    let graphNodes = mkGraphNode <$> delegations
+    let graphNodes = fixLeaves $ mkGraphNode <$> delegations
     let (delegationGraph, _vertexToGraphNode, nodeToVertex) = graphFromEdges graphNodes
     let uidToVertex = fromJust . nodeToVertex
     let graphComponents = stronglyConnComp graphNodes
