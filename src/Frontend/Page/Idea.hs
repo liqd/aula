@@ -519,14 +519,15 @@ instance FormPage MoveIdea where
         currentTopic = idea ^. ideaLocation ^? ideaLocationTopicId
 
     formPage v form mi = semanticDiv mi . form $ do
-        h2_ [class_ "sub-header"] "Idee verschieben"
+        h1_ [class_ "main-heading align-left"] "Idee verschieben"
         div_ [class_ "container-info"] . p_ $ do
             "Soll die Idee '" >> mi ^. miIdea . ideaTitle . html >> "'"
             " aus '" >> mi ^. miIdea ^. ideaLocation . uilabeledST . html >> "'"
             " verschoben werden?"
         DF.inputSelect "topic-to-move" v
-        DF.inputSubmit "Verschieben"
-        cancelButton mi
+        div_ [class_ "form-footer"] $ do
+          DF.inputSubmit "Verschieben"
+          cancelButton mi
 
 commentIdeaNote :: Note Idea
 commentIdeaNote = Note
