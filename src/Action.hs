@@ -841,6 +841,7 @@ class Monad m => ActionAvatar m where
     -- that digestive-functors returns an empty file if the user is not uploading anything.
     --
     -- FIXME: figure out how to do that better with digestive-functors.
+    -- FIXME: use an ADT here for the three cases (unless it gets easier again once we've hacked DF).
     readImageFile :: FilePath -> m (Maybe (Either String DynamicImage))
     savePngImageFile :: FilePath -> DynamicImage -> m ()
 
