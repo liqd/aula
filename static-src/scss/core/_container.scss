@@ -65,6 +65,15 @@ body.m-shadow {
     }
 }
 
+.grid-view {
+    @include rem(left, 10px);
+    position: relative;
+
+    @media screen and (max-width: $tablet-breakpoint) {
+        @include rem(left, 5px);
+    }
+}
+
 .popup-page {
     .main-heading {
         text-align: left;

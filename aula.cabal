@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.18.0
+version:        0.19.0
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -91,6 +91,7 @@ library
       Data.Avatar
       Data.Delegation
       Data.DoubleMap
+      Data.Graph.Missing
       Data.Markdown
       Data.Markdown.HtmlWhiteLists
       Data.PasswordTokens

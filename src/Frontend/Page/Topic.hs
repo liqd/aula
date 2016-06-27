@@ -216,7 +216,7 @@ viewTopicHeaderDiv now ctx topic tab = do
                        ] $
                       "+ Neue Idee"
                 delegateVoteButton = when (CanDelegate `elem` caps) .
-                    a_  [ class_ "btn-cta heroic-cta"
+                    a_  [ class_ "btn-cta heroic-cta m-large"
                         , href_ $ U.createTopicDelegation space topicId
                         ] $ do
                       i_ [class_ "icon-bullhorn"] nil
