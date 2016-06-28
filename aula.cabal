@@ -91,6 +91,7 @@ library
       Data.Avatar
       Data.Delegation
       Data.DoubleMap
+      Data.Graph.Missing
       Data.Markdown
       Data.Markdown.HtmlWhiteLists
       Data.PasswordTokens
