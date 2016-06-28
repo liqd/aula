@@ -171,7 +171,7 @@
             updateVisibility();
         };
 
-        var highlightMatching = function(substring) {
+        var filterMatching = function(substring) {
             graph.nodes.forEach(function(n) {
                 n.visible = substring === "" || n.name.indexOf(substring) >= 0;
             });
@@ -338,7 +338,7 @@
             .linkDistance(70)
             .start();
 
-        initializeControlPanel(rootSel, filterByPower, highlightMatching);
+        initializeControlPanel(rootSel, filterByPower, filterMatching);
 
         var svg = d3.select("div#aula-d3-view")
             .append("div")
@@ -371,7 +371,7 @@
         updateWidget();
     };
 
-    var initializeControlPanel = function(rootSel, filterByPower, highlightMatching) {
+    var initializeControlPanel = function(rootSel, filterByPower, filterMatching) {
         var controls = d3.select(".delagation-header").append("div").attr("class", "controls");
 
         var ig1 = controls.append("div").attr("class", "input-group");
@@ -389,8 +389,8 @@
         ig2.append("input")
             .attr("type", "text")
             .attr("class", "input-text")
-            .on("keyup",   function() { highlightMatching(this.value); })
-            .on("mouseup", function() { highlightMatching(this.value); });
+            .on("keyup",   function() { filterMatching(this.value); })
+            .on("mouseup", function() { filterMatching(this.value); });
     };
 
     // FIXME: i think d3js has a better way to do this.
