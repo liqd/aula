@@ -357,7 +357,7 @@
             .links(graph.links)
             .on("tick", tick)
             .charge(-200)
-            .linkDistance(110)
+            .linkDistance(70)
             .start();
 
         initializeControlPanel(rootSel, filterByPower, filterMatching);
@@ -378,8 +378,8 @@
             .data(["default"]).enter().append("marker")
             .attr("id", function(d) { return d; })
             .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 15)
-            .attr("refY", -1.5)
+            .attr("refX", 10)
+            .attr("refY", 0)
             .attr("markerWidth", 6)
             .attr("markerHeight", 6)
             .attr("orient", "auto")
