@@ -50,6 +50,7 @@
 .heroic-cta {
     @include rem(font-size, $font-size-small);
     line-height: $font-size-small + 6;
+    vertical-align: middle;
 
     .heroic-btn-group & {
         @include rem(margin, 0 10px 5px);

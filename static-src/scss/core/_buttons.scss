@@ -53,6 +53,10 @@ input[type=submit]:not(.btn-plain) {
 
     &.m-selected {
         background: darken($button-cta-base-color, 10%);
+
+        &:hover, &:focus {
+            background: $button-cta-base-color;
+        }
     }
 
     &.m-not-selected {
