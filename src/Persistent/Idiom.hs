@@ -255,7 +255,7 @@ userDelegateListsMap delegatee = do
             dsFull <- dscopeFull dscope
             firstLevelUser <- maybe404 =<< findUser delegate
             secondLevelUsers <- findDelegatees (firstLevelUser ^. _Id) dscope
-            pure $ (dsFull, (delegateeLists True [(firstLevelUser, secondLevelUsers)]))
+            pure (dsFull, delegateeLists True [(firstLevelUser, secondLevelUsers)])
     DelegateeListsMap <$> mapM runScope ds
 
 -- | Delegation tree for the given user and scope.
