@@ -63,6 +63,7 @@ module Action
       -- * vote handling
     , likeIdea
     , voteOnIdea
+    , delegationInScope
     , delegateOrWithdraw
     , delegateTo
     , withdrawDelegationTo
@@ -141,6 +142,7 @@ import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
+import Data.List as List (find)
 import Data.Maybe (isJust)
 import Data.Monoid
 import Data.String.Conversions (ST, LBS, cs)
@@ -587,9 +589,21 @@ voteOnIdea ideaId voteVal = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
                             (ProtoIdeaVote voteVal (voter ^. _Id))
 
+-- | Returns `Just delegation` if the current user has
+-- explicit delegation in the given scope.
+delegationInScope
+    :: (ActionPersist m, ActionUserHandler m)
+    => DScope -> m (Maybe Delegation)
+delegationInScope scope = do
+    delegatee <- currentUser
+    List.find ((scope ==) . view delegationScope)
+        <$> equery (delegates (delegatee ^. _Id))
+
 delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
-delegateOrWithdraw scope (Just delegate) = delegateTo           scope delegate
-delegateOrWithdraw _scope Nothing         = error "withdrawDelegationTo scope delegate"  -- FIXME
+delegateOrWithdraw scope (Just delegate) = delegateTo scope delegate
+delegateOrWithdraw scope Nothing         = do
+    delegationInScope scope
+    >>= mapM_ (withdrawDelegationTo scope . view delegationTo)
 
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope delegate = do

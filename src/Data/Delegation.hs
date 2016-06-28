@@ -10,6 +10,8 @@ module Data.Delegation
     , emptyDelegations
     , setDelegation
     , deleteDelegation
+    , delegates
+    , delegatesSafe
     , scopeDelegatees
     , scopeDelegateesSafe
     , votingPower
@@ -117,6 +119,14 @@ deleteDelegation delegatee dscope delegate ds@(Delegations (DelegationMap dmap) 
     coDmap1 = maybe coDmap (\to' -> coDmap & at to' . _Just . at dscope . _Just . at from .~ Nothing
                                            & at to' . _Just . at dscope %~ deleteEmpty
                                            & at to' %~ deleteEmpty) mOldTo
+
+delegates :: U -> Delegations -> [(DScope, U)]
+delegates delegatee ds = over _2 unDelegate <$> delegatesSafe (Delegatee delegatee) ds
+
+-- | Returns all the delegates for a given delegatee.
+delegatesSafe :: Delegatee U -> Delegations -> [(DScope, Delegate U)]
+delegatesSafe delegatee (Delegations (DelegationMap dmap) _coDmap)
+  = maybe [] Map.toList $ Map.lookup delegatee dmap
 
 scopeDelegatees :: U -> S -> Delegations -> Set U
 scopeDelegatees delegate scope =

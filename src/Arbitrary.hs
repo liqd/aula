@@ -213,22 +213,24 @@ instance Arbitrary ViewTopic where
     arbitrary = do
         tab <- arb
         case tab of
-            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb <*> arb
+            TabDelegation -> ViewTopicDelegations <$> arb <*> arb <*> arb <*> arb <*> arb
             _ -> do
                 timestamp     <- arb
                 ctx           <- arb
                 topic         <- arb
                 listItemIdeas <- mkListItemIdeasInLocation (topicIdeaLocation topic)
-                pure $ ViewTopicIdeas timestamp ctx tab topic listItemIdeas
+                delegation    <- arb
+                pure $ ViewTopicIdeas timestamp ctx tab topic listItemIdeas delegation
 
-    shrink (ViewTopicDelegations x y z t) =
-        ViewTopicDelegations <$> shr x <*> shr y <*> shr z <*> shr t
-    shrink (ViewTopicIdeas x y z w t) =
-        ViewTopicIdeas <$> shr x <*> shr y <*> shr z <*> shr w <*> shr t
+    shrink (ViewTopicDelegations x y z t d) =
+        ViewTopicDelegations <$> shr x <*> shr y <*> shr z <*> shr t <*> shr d
+    shrink (ViewTopicIdeas x y z w t d) =
+        ViewTopicIdeas <$> shr x <*> shr y <*> shr z <*> shr w <*> shr t <*> shr d
 
 instance Arbitrary ViewIdea where
-    arbitrary = ViewIdea <$> arb <*> arb
-    shrink (ViewIdea ctx ideaList) = ViewIdea <$> shr ctx <*> shr ideaList
+    arbitrary = ViewIdea <$> arb <*> arb <*> arb
+    shrink (ViewIdea ctx ideaList delegation) =
+        ViewIdea <$> shr ctx <*> shr ideaList <*> shr delegation
 
 instance Arbitrary CreateIdea where
     arbitrary = garbitrary

@@ -13,7 +13,9 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Topic
-    ( ViewTopic(..), vtNow, vtCtx, vtTab, vtTopic, vtIdeas, vtDelegations
+    ( ViewTopic(..)
+    , vtNow, vtCtx, vtTab, vtTopic, vtIdeas
+    , vtDelegations, vtDelegation
     , ViewTopicTab(..)
     , CreateTopic(..), ctCtx, ctIdeaSpace, ctIdeas, ctRefPhaseEnd
     , EditTopic(..), etCtx, etIdeaSpace, etTopic, etIdeasStats, etIdeas
@@ -32,7 +34,7 @@ import Prelude hiding ((.))
 
 import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
-               spaceCapCtx, topicCapCtx, getCurrentTimestamp)
+               spaceCapCtx, topicCapCtx, getCurrentTimestamp, delegationInScope)
 import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList as IdeaList
@@ -85,12 +87,14 @@ data ViewTopic
     , _vtTab         :: ViewTopicTab
     , _vtTopic       :: Topic
     , _vtIdeas       :: ListItemIdeas
+    , _vtDelegation  :: Maybe Delegation
     }
   | ViewTopicDelegations
     { _vtNow         :: Timestamp
     , _vtCtx         :: CapCtx
     , _vtTopic       :: Topic
     , _vtDelegations :: DelegateeLists
+    , _vtDelegation  :: Maybe Delegation
     }
   deriving (Eq, Show, Read)
 
@@ -153,17 +157,17 @@ tabLink topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
-    toHtml p@(ViewTopicDelegations now capCtx topic delegations) = semanticDiv p $ do
-        viewTopicHeaderDiv now capCtx topic TabDelegation
+    toHtml p@(ViewTopicDelegations now capCtx topic delegations delegation) = semanticDiv p $ do
+        viewTopicHeaderDiv now capCtx topic TabDelegation delegation
         renderDelegations False (DelegateeListsMap [(DScopeTopicFull topic, delegations)])
 
-    toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters) = semanticDiv p $ do
-        assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab
+    toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters delegation) = semanticDiv p $ do
+        assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab delegation
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
-viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> HtmlT m ()
-viewTopicHeaderDiv now ctx topic tab = do
+viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe Delegation -> HtmlT m ()
+viewTopicHeaderDiv now ctx topic tab delegation = do
     let caps    = capabilities ctx
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
@@ -220,7 +224,9 @@ viewTopicHeaderDiv now ctx topic tab = do
                         , href_ $ U.createTopicDelegation space topicId
                         ] $ do
                       i_ [class_ "icon-bullhorn"] nil
-                      "Stimme beauftragen"
+                      if isNothing delegation
+                            then "Stimme beauftragen"
+                            else "Beauftragung ändern"
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
@@ -401,12 +407,14 @@ viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
 viewTopic tab topicId = do
     now <- getCurrentTimestamp
+    delegation <- delegationInScope (DScopeTopicId topicId)
     (ctx, topic) <- topicCapCtx topicId
     equery $
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> topicDelegateeLists topicId
+                    <*> pure delegation
             TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
@@ -415,7 +423,7 @@ viewTopic tab topicId = do
                 let listItemIdeas =
                         ListItemIdeas ctx (IdeaInViewTopic ideasTab loc) ideasQuery ideas
 
-                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas delegation
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic

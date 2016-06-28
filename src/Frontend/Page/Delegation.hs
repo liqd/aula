@@ -24,7 +24,10 @@ import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
-import Action (ActionM, currentUser, delegateOrWithdraw, equery, mquery)
+import Action
+    ( ActionM, currentUser, equery, mquery
+    , delegateOrWithdraw, delegationInScope
+    )
 import Data.Delegation (unDelegate, unDelegatee)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
@@ -79,6 +82,8 @@ instance FormPage PageDelegateVote where
             let delegationText name = "Wähle einen Beauftragten für " <> show name
             toHtml . delegationText $
                 either (view topicTitle) (view ideaTitle) scope
+            br_ []
+            "Du kannst deine Beauftragung widerrufen, indem du sie nochmal anklickst."
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
@@ -99,24 +104,28 @@ instance FormPage PageDelegateVote where
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerCalcMsgM
-    (equery $
-        do idea <- maybe404 =<< findIdea iid
-           users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-           pure $ PageDelegateVote (Right idea) users Nothing)
+    (do delegate <- view delegationTo <$$> delegationInScope (DScopeIdeaId iid)
+        equery $
+            do  idea <- maybe404 =<< findIdea iid
+                users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
+                pure $ PageDelegateVote (Right idea) users delegate)
     (Action.delegateOrWithdraw (DScopeIdeaId iid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
 pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
-pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload muid) _ = do
-    delegate <- mquery $ findUser (muid ^?! _Just)
+pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload Nothing)    _ =
+    pure "Deine Beauftragung wurde zurückgenommen."
+pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload (Just uid)) _ = do
+    delegate <- mquery $ findUser uid
     pure $ "Du hast " <> delegate ^. userLogin . unUserLogin <> " mit Deiner Stimme beauftragt"
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
 topicDelegation tid = formPageHandlerCalcMsgM
-    (equery $
-        do topic <- maybe404 =<< findTopic tid
-           users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
-           pure $ PageDelegateVote (Left topic) users Nothing)
+    (do delegate <- view delegationTo <$$> delegationInScope (DScopeTopicId tid)
+        equery $
+            do  topic <- maybe404 =<< findTopic tid
+                users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
+                pure $ PageDelegateVote (Left topic) users delegate)
     (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
