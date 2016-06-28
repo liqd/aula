@@ -75,9 +75,10 @@ instance FormPage PageDelegateVote where
 
     formPage v f p@(PageDelegateVote scope options _mselected) = semanticDiv p . f $ do
         h1_ [class_ "main-heading"] "Stimme beauftragen"
-        div_ $ do
-            let delegationText name = "Please select your delegate on " <> name <> "."
-            p_ . toHtml . delegationText $ either (view topicTitle) (view ideaTitle) scope
+        div_ [class_ "sub-heading"] $ do
+            let delegationText name = "Wähle einen Beauftragten für " <> show name
+            toHtml . delegationText $
+                either (view topicTitle) (view ideaTitle) scope
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
