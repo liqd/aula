@@ -37,11 +37,6 @@
     var showNavigation = function(rootSel, current, tree) {
         var treeix = buildDScopeTreeIndex(tree);
 
-        var update = function() {
-            updateMenus();
-            updateButtons();
-        };
-
         var updateMenus = function() {
             var mkSelects = function(ancestors) {
                 var result = [];
@@ -59,63 +54,44 @@
                     : undefined;  // 'undefined' is the only thing that works here!
             }
 
+            var selects = mkSelects(treeix[current].ancestors).slice();
+//            selects.push({});
             var select = menuDiv
-                .selectAll("select").data(mkSelects(treeix[current].ancestors));
+                .selectAll("select").data(selects);
             select.exit()
                 .remove();
             select.enter()
                 .append("select")
                 .attr("name", function(d) { return d.ancestors[d.ancestors.length - 1]; })
-                .on("change", function(d) { current = this.value; update(); });
+                .on("change", function(d) {
+                    if (this.value) {
+                        current = this.value;
+                    } else {
+                        // set current to the selected value of the selection to the left.
+
+                        // set all selected values to the right to [Alles].
+
+                        // current = ...;
+
+                    }
+                    updateMenus();
+                });
 
             select
                 .selectAll("option").data(function(d) {
-                    if (d.siblings().length > 0) {
-                        return d.siblings();
-                    } else {
-                        // this is a bit fake; we don't really have a
-                        // menu here, there is only one "everywhere".
-                        // but symmetry-wise this works well.
-                        return [{ "dscope": "global", "text": "In allen Ideenräumen" }];
-                    }
+                    var options = d.siblings().slice();
+                    // first entry in every selection means "nothing
+                    // selected here".  it will close all selections
+                    // to the right and means that the selection to
+                    // the left determines the current delegation
+                    // scope.
+                    options.unshift({"dscope": false, "text": "[Alles]"});
+                    return options;
                 }).enter()
                 .append("option")
                 .attr("value", function(d) { return d.dscope; })
                 .attr("selected", mkSelected)
                 .text(function(d) { return d.text; });
-        };
-
-        var updateButtons = function() {
-            var button = buttonDiv
-                .selectAll("button")
-                .data(["moreLevels", "fewerLevels"]);
-            button.enter()
-                .append("button")
-                .attr("class", "btn")
-                .text(function(d) {
-                    if (d == "moreLevels") {
-                        return "aufklappen";
-                    } else if (d == "fewerLevels") {
-                        return "zuklappen";
-                    }
-                })
-                .on("click", function(d) {
-                    if (d == "moreLevels") {
-                        current = treeix[current].subtree.children[0].dscope;
-                    } else if (d == "fewerLevels") {
-                        var ancs = treeix[current].ancestors;
-                        current = ancs[ancs.length - 2];
-                    }
-                    update();
-                });
-            button
-                .attr("disabled", function(d) {
-                    if (d == "moreLevels") {
-                        return treeix[current].subtree.children.length == 0 || undefined;
-                    } else if (d == "fewerLevels") {
-                        return treeix[current].ancestors.length == 1 || undefined;
-                    }
-                })
         };
 
         var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
@@ -126,7 +102,7 @@
             .attr("value", "aktualisieren")
             .attr("type", "submit")
             .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
-        update();
+        updateMenus();
     };
 
 
