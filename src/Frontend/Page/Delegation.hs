@@ -24,7 +24,10 @@ import qualified Text.Digestive.Types as DF
 import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
-import Action (ActionM, currentUser, delegateOrWithdraw, equery, mquery)
+import Action
+    ( ActionM, currentUser, equery, mquery
+    , delegateOrWithdraw, delegationInScope
+    )
 import Data.Delegation (unDelegate, unDelegatee)
 import Frontend.Core hiding (form)
 import Frontend.Prelude
@@ -73,12 +76,15 @@ instance FormPage PageDelegateVote where
                   | otherwise                         -> DF.Error "user id not found"
         valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
-    formPage v f p@(PageDelegateVote scope options _mselected) = semanticDiv p . f $ do
+    formPage v f p@(PageDelegateVote scope options mselected) = semanticDiv p . f $ do
         h1_ [class_ "main-heading"] "Stimme beauftragen"
         div_ [class_ "sub-heading"] $ do
             let delegationText name = "Wähle einen Beauftragten für " <> show name
             toHtml . delegationText $
                 either (view topicTitle) (view ideaTitle) scope
+            -- TODO: Translate
+            br_ []
+            "You can revoke your delegation unselecting the one you delegated to."
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
@@ -86,7 +92,8 @@ instance FormPage PageDelegateVote where
                     let url = "avatars/" <> uid <> ".png"
                         uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin
-                    li_ [ class_ "icon-list-button col-3-12"
+                    li_ [ class_ $ "icon-list-button col-3-12"
+                                        <> maybe "" (bool "" "m-active" . (user ^. _Id ==)) mselected
                           , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
                         img_ [ src_ . U.TopStatic $ fromString url
@@ -99,24 +106,28 @@ instance FormPage PageDelegateVote where
 
 ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
 ideaDelegation iid = formPageHandlerCalcMsgM
-    (equery $
-        do idea <- maybe404 =<< findIdea iid
-           users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-           pure $ PageDelegateVote (Right idea) users Nothing)
+    (do delegate <- view delegationTo <$$> delegationInScope (DScopeIdeaId iid)
+        equery $
+            do  idea <- maybe404 =<< findIdea iid
+                users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
+                pure $ PageDelegateVote (Right idea) users delegate)
     (Action.delegateOrWithdraw (DScopeIdeaId iid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
 pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
-pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload muid) _ = do
-    delegate <- mquery $ findUser (muid ^?! _Just)
+pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload Nothing)    _ =
+    pure "Your delegation is revoked." -- TODO: Translate
+pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload (Just uid)) _ = do
+    delegate <- mquery $ findUser uid
     pure $ "Du hast " <> delegate ^. userLogin . unUserLogin <> " mit Deiner Stimme beauftragt"
 
 topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
 topicDelegation tid = formPageHandlerCalcMsgM
-    (equery $
-        do topic <- maybe404 =<< findTopic tid
-           users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
-           pure $ PageDelegateVote (Left topic) users Nothing)
+    (do delegate <- view delegationTo <$$> delegationInScope (DScopeTopicId tid)
+        equery $
+            do  topic <- maybe404 =<< findTopic tid
+                users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
+                pure $ PageDelegateVote (Left topic) users delegate)
     (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
