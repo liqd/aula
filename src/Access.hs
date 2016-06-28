@@ -42,6 +42,7 @@ module Access
     , accessDenied
     , accessRedirected
     , redirectLogin
+    , redirectLoginErr
 
       -- * common policies (AccessCheck)
     , publicPage
@@ -62,6 +63,7 @@ import Control.Lens
 import Data.Maybe
 import Data.Monoid
 import Data.String.Conversions
+import Servant (ServantErr(..), err303)
 import GHC.Generics (Generic)
 
 import qualified Data.Set as Set
@@ -413,8 +415,16 @@ accessRedirected m = pure . AccessDenied m . Just . absoluteUriPath . relPath
 accessDeferred :: AccessResult'
 accessDeferred = pure AccessDeferred
 
+-- Keep in sync with redirectLoginErr
 redirectLogin :: AccessResult'
 redirectLogin = accessRedirected "Not logged in" P.login
+
+-- Keep in sync with redirectLogin
+redirectLoginErr :: ServantErr
+redirectLoginErr = Servant.err303
+    { errHeaders = ("Location", "/login") : errHeaders Servant.err303
+    , errBody    = "Not logged in"
+    }
 
 userPage :: AccessCheck any
 userPage LoggedIn{}  = accessGranted

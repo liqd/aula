@@ -22,7 +22,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, throwError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
-import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
 import Data.String.Conversions (LBS, cs)
@@ -41,6 +41,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Thentos.Frontend.CSRF as CSRF
 
 import Action
+import Access
 import Config
 import Logger.EventLog
 import Persistent
@@ -168,7 +169,14 @@ instance ActionAvatar Action where
 mkRunAction :: ActionEnv -> Action :~> ExceptT ServantErr IO
 mkRunAction env = Nat run
   where
-    run = withExceptT runActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
+    handleExns m = ExceptT $ do
+        (e, s, _) <- m
+        pure $ e & _Left %~ mayRedirectToLogin s . runActionExcept
+    mayRedirectToLogin :: UserState -> ServantErr -> ServantErr
+    mayRedirectToLogin u e | validLoggedIn u      = e
+                           | errHTTPCode e == 303 = e
+                           | otherwise            = redirectLoginErr
+    run = handleExns . runRWSTflip env userLoggedOut
         . runExceptT . unAction . (checkCurrentUser >>)
     runRWSTflip r s comp = runRWST comp r s
 
