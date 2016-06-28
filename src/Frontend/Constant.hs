@@ -39,11 +39,11 @@ initialDemoPassword = "1234"
 -- * Prefer the use of avatarUrl over avatarFile.
 -- * Instead updating a size in avatarExtraSizes just add the new one.
 avatarDefaultSize :: Int
-avatarDefaultSize = 100
+avatarDefaultSize = 600
 
 -- | See avatarDefaultSize.
 avatarExtraSizes :: [Int]
-avatarExtraSizes = [64, 300]
+avatarExtraSizes = [64, 100, 300]
 
 -- | This is just for showing the information.  To enforce this limit, set up a reverse proxie like
 -- nginx and configure it accordingly.  See ./docs/deployment.md for details.  FIXME: this should be
