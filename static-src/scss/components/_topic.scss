@@ -3,47 +3,31 @@
     min-height: 337px;
 
     @media screen and (max-width: $tablet-breakpoint) {
-        background-size: cover;
+        background: none !important;
     }
 
     &.phase-PhaseRefinement {
         background:     url(/static/images/ausarbeitungsphase_l.png) no-repeat left bottom,
                         url(/static/images/ausarbeitungsphase_r.png) no-repeat right bottom,
                         white;
-
-        @media screen and (max-width: $tablet-breakpoint) {
-            background: #fff url(/static/images/ausarbeitungsphase_l.png) no-repeat left center;
-        }
     }
 
     &.phase-PhaseJury {
         background:     url(/static/images/prufungsphase_l.png) no-repeat left bottom,
                         url(/static/images/prufungsphase_r.png) no-repeat right bottom,
                         white;
-
-        @media screen and (max-width: $tablet-breakpoint) {
-            background: url(/static/images/prufungsphase_l.png) no-repeat left center;
-        }
     }
 
     &.phase-PhaseVoting {
         background:     url(/static/images/header_vote_left.png) no-repeat left bottom,
                         url(/static/images/header_vote_right.png) no-repeat right bottom,
                         white;
-
-        @media screen and (max-width: $tablet-breakpoint) {
-            background: #fff url(/static/images/header_vote_left.png) no-repeat left center;
-        }
     }
 
     &.phase-PhaseResult {
         background:     url(/static/images/ergebnisphase_l.png) no-repeat left bottom,
                         url(/static/images/ergebnisphase_r.png) no-repeat right bottom,
                         white;
-
-        @media screen and (max-width: $tablet-breakpoint) {
-            background: #fff url(/static/images/ergebnisphase_l.png) no-repeat left center;
-        }
     }
 }
 

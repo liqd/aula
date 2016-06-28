@@ -92,7 +92,7 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
             | CanLike `notElem` caps
                 = nil
             | userLikesIdea user idea
-                = span_ [class_ "btn"] "Du hast für diese Idee gestimmt!"
+                = button_ [class_ "btn-cta m-selected button-group-item"] "Du hast für diese Idee gestimmt!"
                   -- FIXME: make this a button and allow un-liking!
             | otherwise
                 = do
