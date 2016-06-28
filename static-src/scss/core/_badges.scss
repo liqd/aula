@@ -3,9 +3,9 @@
 }
 
 .badge {
-    @include rem(font-size, $font-size-smaller);
+    @include rem(font-size, $font-size-small);
     @include rem(margin, 0 10px 10px 0);
-    @include rem(padding, 0 10px);
+    @include rem(padding, 3px 10px);
     border: 1px solid $color-positive;
     color: $color-positive;
     display: inline-block;
