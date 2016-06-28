@@ -595,9 +595,9 @@ delegationInScope
     :: (ActionPersist m, ActionUserHandler m)
     => DScope -> m (Maybe Delegation)
 delegationInScope scope = do
-    user <- currentUser
+    delegatee <- currentUser
     List.find ((scope ==) . view delegationScope)
-        <$> (equery $ delegates (user ^. _Id))
+        <$> equery $ delegates (delegatee ^. _Id)
 
 delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
 delegateOrWithdraw scope (Just delegate) = delegateTo scope delegate

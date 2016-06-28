@@ -327,9 +327,9 @@ instance ToHtml ViewIdea where
                 when (CanDelegate `elem` caps) $ do
                     a_ [class_ "btn-cta voting-button button-group-item", href_ $ U.delegateVoteOnIdea idea] $ do
                         i_ [class_ "icon-bullhorn"] nil
-                        (if isNothing delegation
+                        if isNothing delegation
                             then "Stimme beauftragen"
-                            else "Change or revoke delegation") -- TODO: Translate
+                            else "Beauftragung ändern oder widerrufen"
                 -- mark winning idea
                 when (isFeasibleIdea idea) $ do
                     when (CanMarkWinner `elem` caps) $ do

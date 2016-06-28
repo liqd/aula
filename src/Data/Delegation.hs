@@ -121,7 +121,7 @@ deleteDelegation delegatee dscope delegate ds@(Delegations (DelegationMap dmap) 
                                            & at to' %~ deleteEmpty) mOldTo
 
 delegates :: U -> Delegations -> [(DScope, U)]
-delegates delegatee ds = (over _2  unDelegate) <$> delegatesSafe (Delegatee delegatee) ds
+delegates delegatee ds = over _2 unDelegate <$> delegatesSafe (Delegatee delegatee) ds
 
 -- | Returns all the delegates for a given delegatee.
 delegatesSafe :: Delegatee U -> Delegations -> [(DScope, Delegate U)]

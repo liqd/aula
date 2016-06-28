@@ -76,15 +76,14 @@ instance FormPage PageDelegateVote where
                   | otherwise                         -> DF.Error "user id not found"
         valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
-    formPage v f p@(PageDelegateVote scope options mselected) = semanticDiv p . f $ do
+    formPage v f p@(PageDelegateVote scope options _mselected) = semanticDiv p . f $ do
         h1_ [class_ "main-heading"] "Stimme beauftragen"
         div_ [class_ "sub-heading"] $ do
             let delegationText name = "Wähle einen Beauftragten für " <> show name
             toHtml . delegationText $
                 either (view topicTitle) (view ideaTitle) scope
-            -- TODO: Translate
             br_ []
-            "You can revoke your delegation unselecting the one you delegated to."
+            "Du kannst deine Beauftragung widerrufen, indem du sie nochmal anklickst."
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
@@ -92,8 +91,7 @@ instance FormPage PageDelegateVote where
                     let url = "avatars/" <> uid <> ".png"
                         uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin
-                    li_ [ class_ $ "icon-list-button col-3-12"
-                                        <> maybe "" (bool "" "m-active" . (user ^. _Id ==)) mselected
+                    li_ [ class_ "icon-list-button col-3-12"
                           , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
                         img_ [ src_ . U.TopStatic $ fromString url
@@ -116,7 +114,7 @@ ideaDelegation iid = formPageHandlerCalcMsgM
 
 pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
 pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload Nothing)    _ =
-    pure "Your delegation is revoked." -- TODO: Translate
+    pure "Deine Beauftragung wurde zurückgenommen."
 pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload (Just uid)) _ = do
     delegate <- mquery $ findUser uid
     pure $ "Du hast " <> delegate ^. userLogin . unUserLogin <> " mit Deiner Stimme beauftragt"
