@@ -90,8 +90,8 @@
                 .selectAll("button")
                 .data(["moreLevels", "fewerLevels"]);
             button.enter()
-                .append("button")
-                .attr("class", "btn")
+                .insert("button")
+                .attr("class", "btn-cta")
                 .text(function(d) {
                     if (d == "moreLevels") {
                         return "aufklappen";
@@ -122,6 +122,7 @@
         // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
+        //Selection.insert("div",":first-child");
         buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")

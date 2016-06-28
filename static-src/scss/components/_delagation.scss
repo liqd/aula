@@ -20,14 +20,9 @@ body .delagation-header {
         @extend .clearfix;
         @include rem(margin-top, 15px);
 
-        .btn {
-            @include rem(margin-left, 15px);
-            float: right;
-        }
-
-        .btn-cta {
-            float: left;
+        .btn, .btn-cta, input[type=submit] {
             @include rem(margin-right, 15px);
+            float: left;
         }
     }
 
@@ -70,9 +65,7 @@ body .delagation-header {
             text-align: center;
 
             img {
-                @include rem(margin, 0 auto 10px);
-                @include rem(height, 75px);
-                @include rem(width, 75px);
+                @include rem(margin-bottom, 10px);
                 display: block;
                 vertical-align: middle;
             }
