@@ -165,7 +165,7 @@ genCommentVote comments_in_context students = do
     let action = addWithUser . AddCommentVote $ comment ^. _Key
     action student <$> arb
 
-updateAvatar :: User -> FilePath -> forall m . ActionM m => m ()
+updateAvatar :: User -> FilePath -> forall m . ActionAvatar m => m ()
 updateAvatar user file = readImageFile file >>= \case
     Just (Right pic) -> saveAvatar (user ^. _Id) pic
     Just (Left err)  -> fail err
@@ -272,7 +272,7 @@ userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpac
 --
 -- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
 -- the event procotol for moderators.
-genInitialTestDb :: (ActionPersist m, ActionCurrentTimestamp m) => m ()
+genInitialTestDb :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m) => m ()
 genInitialTestDb = do
     noUsers <- query $ views dbUserMap Map.null
     unless noUsers $
@@ -293,6 +293,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         }
+    updateAvatar user1 "static/demo/avatars/test_user.png" -- admins could get a different default avatar
 
     user2 <- update $ AddUser (EnvWith user1 now ProtoUser
         { _protoUserLogin     = Just "godmin"
@@ -303,6 +304,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         })
+    updateAvatar user2 "static/demo/avatars/test_user.png" -- admins could get a different default avatar
 
     _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"

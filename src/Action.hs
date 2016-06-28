@@ -884,9 +884,12 @@ class Monad m => ActionAvatar m where
     savePngImageFile :: FilePath -> DynamicImage -> m ()
 
 saveAvatar :: ActionAvatar m => AUID User -> DynamicImage -> m ()
-saveAvatar uid pic =
-    forM_ (avatarDefaultSize : avatarExtraSizes) $ \dim ->
-        savePngImageFile (uid ^. avatarFile dim) $ makeAvatar dim pic
+saveAvatar uid pic = do
+    let defaultAvatar = makeAvatar avatarDefaultSize pic
+    savePngImageFile (uid ^. avatarFile Nothing)                  defaultAvatar
+    savePngImageFile (uid ^. avatarFile (Just avatarDefaultSize)) defaultAvatar
+    forM_ avatarExtraSizes $ \dim ->
+        savePngImageFile (uid ^. avatarFile (Just dim)) $ makeAvatar dim pic
 
 class Monad m => ReadTempFile m where
     readTempFile :: FilePath -> m LBS

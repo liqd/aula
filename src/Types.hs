@@ -1295,11 +1295,17 @@ deriveSafeCopy 0 'base ''UserSettings
 
 type AvatarDimension = Int
 
-avatarFile :: AvatarDimension -> Getter (AUID a) FilePath
-avatarFile dim = to $ \uid -> "static" </> "avatars" </> cs (uriPart uid) <> "-" <> show dim <.> "png"
+avatarFile :: Maybe AvatarDimension -> Getter (AUID a) FilePath
+avatarFile mdim = to $ \uid -> "static" </> "avatars" </> cs (uriPart uid) <> sdim <.> "png"
+  where
+    sdim = mdim ^. _Just . showed . to ("-" <>)
 
+{- See Frontend.Construct.avatarDefaultSize -}
 avatarUrl :: AvatarDimension -> Getter (AUID a) URL
-avatarUrl dim = to $ \uid -> "/" <> uid ^. avatarFile dim . csi
+avatarUrl dim = to $ \uid -> "/" <> uid ^. avatarFile mdim . csi
+  where
+    mdim | dim == avatarDefaultSize = Nothing
+         | otherwise                = Just dim
 
 class Ord (IdOf a) => HasMetaInfo a where
     metaInfo        :: Lens' a (MetaInfo a)
