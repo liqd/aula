@@ -285,10 +285,15 @@ instance Arbitrary DelegateeListsMap where
     arbitrary = DelegateeListsMap . (:[]) . (DScopeGlobalFull,) <$> arb
     shrink (DelegateeListsMap x) = DelegateeListsMap <$> shr x
 
-instance Arbitrary PageUserProfileDelegatedVotes where
-    arbitrary = PageUserProfileDelegatedVotes <$> arb <*> arb <*> arb
-    shrink (PageUserProfileDelegatedVotes x y z) =
-        PageUserProfileDelegatedVotes <$> shr x <*> shr y <*> shr z
+instance Arbitrary PageUserProfileUserAsDelegate where
+    arbitrary = PageUserProfileUserAsDelegate <$> arb <*> arb <*> arb
+    shrink (PageUserProfileUserAsDelegate x y z) =
+        PageUserProfileUserAsDelegate <$> shr x <*> shr y <*> shr z
+
+instance Arbitrary PageUserProfileUserAsDelegatee where
+    arbitrary = PageUserProfileUserAsDelegatee <$> arb <*> arb <*> arb
+    shrink (PageUserProfileUserAsDelegatee x y z) =
+        PageUserProfileUserAsDelegatee <$> shr x <*> shr y <*> shr z
 
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb
@@ -929,6 +934,10 @@ instance Arbitrary (P.CommentMode r) where
     shrink    = gshrink
 
 instance Arbitrary (P.Space r) where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
+instance Arbitrary P.DelegationRole where
     arbitrary = garbitrary
     shrink    = gshrink
 

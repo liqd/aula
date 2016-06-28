@@ -242,6 +242,22 @@ userDelegateeListsMap uid = do
     dscopes <- delegationScopeTree =<< maybe404 =<< findUser uid
     DelegateeListsMap <$> runScope `mapM` Tree.flatten dscopes
 
+-- | On first level returns the delegates for the scopes which is
+-- applicable to the user. On the second level the users who
+-- delegated their votes to the first level user on the given scope
+--
+-- u0 -> (s1,u1) <- [u3,u4,u5,u0]
+--    -> (s2,u2) <- [u3,u6,u8,u0]
+userDelegateListsMap :: AUID User -> EQuery DelegateeListsMap
+userDelegateListsMap delegatee = do
+    ds <- delegates delegatee
+    let runScope (Delegation dscope _delegatee delegate) = do
+            dsFull <- dscopeFull dscope
+            firstLevelUser <- maybe404 =<< findUser delegate
+            secondLevelUsers <- findDelegatees (firstLevelUser ^. _Id) dscope
+            pure $ (dsFull, (delegateeLists True [(firstLevelUser, secondLevelUsers)]))
+    DelegateeListsMap <$> mapM runScope ds
+
 -- | Delegation tree for the given user and scope.
 -- The first level contains all the delegatees of the given user
 userDelegateeLists :: AUID User -> DScope -> EQuery DelegateeLists
