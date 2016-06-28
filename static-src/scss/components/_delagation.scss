@@ -65,8 +65,9 @@ body .delagation-header {
             text-align: center;
 
             img {
+                @include rem(height, 75px);
                 @include rem(margin, 0 auto 10px);
-                @include rem(max-width, 75px);
+                @include rem(width, 75px);
                 display: block;
                 vertical-align: middle;
             }
@@ -77,7 +78,6 @@ body .delagation-header {
 
                 span {
                     font-weight: bold;
-                    text-transform: underline;
                 }
             }
         }
