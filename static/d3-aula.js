@@ -347,7 +347,7 @@
             .links(graph.links)
             .on("tick", tick)
             .charge(-200)
-            .linkDistance(70)
+            .linkDistance(110)
             .start();
 
         initializeControlPanel(rootSel, filterByPower, filterMatching);
