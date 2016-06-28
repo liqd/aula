@@ -71,7 +71,8 @@ body .delagation-header {
 
             img {
                 @include rem(margin, 0 auto 10px);
-                @include rem(max-width, 75px);
+                @include rem(height, 75px);
+                @include rem(width, 75px);
                 display: block;
                 vertical-align: middle;
             }
