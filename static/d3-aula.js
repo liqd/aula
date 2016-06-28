@@ -373,14 +373,16 @@
 
     var initializeControlPanel = function(rootSel, filterByPower, filterMatching) {
         var controls = d3.select(".delagation-header").append("div").attr("class", "controls");
+        var defaultPowerValue = 2;
+        setTimeout(function() { filterByPower(defaultPowerValue); });
 
         var ig1 = controls.append("div").attr("class", "input-group");
-
         ig1.append("label").text("Untergrenze Anzahl Beauftragungen:");
         ig1.append("input")
             .attr("type", "number")
             .attr("class", "input-text input-number")
-            .attr("min", "1")
+            .attr("value", defaultPowerValue)
+            .attr("min", 1)
             .on("keyup",   function() { filterByPower(this.value); })
             .on("mouseup", function() { filterByPower(this.value); });
 
