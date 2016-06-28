@@ -123,7 +123,7 @@
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
         buttonDiv.append("input")
-            .attr("value", "anzeigen")
+            .attr("value", "aktualisieren")
             .attr("type", "submit")
             .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
         update();
