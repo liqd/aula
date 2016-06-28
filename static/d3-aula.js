@@ -166,14 +166,14 @@
         // make all nodes below a certain power threshold invisible.
         var filterByPower = function(threshold) {
             graph.nodes.forEach(function(n) {
-                n.visible = n.power >= threshold;
+                n.visibleByPower = n.power >= threshold;
             });
             updateVisibility();
         };
 
         var filterMatching = function(substring) {
             graph.nodes.forEach(function(n) {
-                n.visible = substring === "" || n.name.indexOf(substring) >= 0;
+                n.visibleByMatching = substring === "" || n.name.indexOf(substring) >= 0;
             });
             updateVisibility();
         };
@@ -185,13 +185,13 @@
             // we need to use `graph` here, not `force`.  invisible
             // nodes are still in the former, but not in the latter.
             graph.nodes.forEach(function(n) {
-                if (n.visible) {
+                if (visible(n)) {
                     gnodes.push(n);
                 }
             });
 
             graph.links.forEach(function(l) {
-                if (l.source.visible && l.target.visible) {
+                if (visible(l.source) && visible(l.target)) {
                     glinks.push(l);
                 }
             });
@@ -288,9 +288,9 @@
                     // re-open it.
                     if (l.target.name === d.name && l.source.name !== delegate.name) {
                         if (newVisibilityStatus === undefined) {
-                            newVisibilityStatus = !l.source.visible;
+                            newVisibilityStatus = !visible(l.source);
                         }
-                        l.source.visible = newVisibilityStatus;
+                        visible(l.source) = newVisibilityStatus;
                         traverse(l.source);
                     }
                 });
@@ -326,8 +326,13 @@
         var globalGraphHeight = 600;
 
         graph.nodes.forEach(function(d) {
-            d.visible = true;
+            d.visibleByPower = true;
+            d.visibleByMatching = true;
         });
+
+        var visible = function(d) {
+            return d.visibleByPower && d.visibleByMatching;
+        }
 
         var force = d3.layout.force()
             .size([globalGraphWidth, globalGraphHeight])
