@@ -751,9 +751,6 @@ pageFrame frame = do
             div_ [class_ "main-grid-container"] $ do
                 div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
-                    div_ [class_ "ui-messages m-visible"] $ do
-                        ul_ $ do
-                            li_ "Das Thema dsfsfsdfdsf wurde angelegt." -- FIXME - DUMMY !!!
                     frame ^. frameBody . html
         footerMarkup (toHtml $ extraFooterElems p)
 
