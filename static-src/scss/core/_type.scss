@@ -32,6 +32,10 @@ a {
     text-align: center;
 }
 
+.align-left {
+    text-align: left;
+}
+
 .sub-heading {
     @include rem(margin-bottom, 15px);
     color: $color-text-muted;

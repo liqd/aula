@@ -30,6 +30,7 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
     , snapshotInterval
+    , delegateLikes
     , timeoutCheckInterval
     , logging
     , logLevel
@@ -114,6 +115,7 @@ data Config = Config
     , _logging              :: LogConfig
     , _persistConfig        :: PersistConfig
     , _smtpConfig           :: SmtpConfig
+    , _delegateLikes        :: Bool
     , _timeoutCheckInterval :: Timespan
     -- ^ Topics which needs to change phase due to a timeout will
     -- be checked at this interval.
@@ -172,6 +174,7 @@ defaultConfig = Config
     , _logging              = defaultLogConfig
     , _persistConfig        = defaultPersistConfig
     , _smtpConfig           = defaultSmtpConfig
+    , _delegateLikes        = True
     , _timeoutCheckInterval = TimespanHours 6
     }
 

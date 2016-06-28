@@ -53,6 +53,10 @@ input[type=submit]:not(.btn-plain) {
 
     &.m-selected {
         background: darken($button-cta-base-color, 10%);
+
+        &:hover, &:focus {
+            background: $button-cta-base-color;
+        }
     }
 
     &.m-not-selected {
@@ -139,6 +143,10 @@ $btn-settings-size: 35px;
 
 .button-group {
     overflow: hidden;
+
+    > form {
+        display: inline-block;
+    }
 }
 
 .button-group-item {
@@ -148,9 +156,5 @@ $btn-settings-size: 35px;
 
     .button-group-item {
         margin: 0;
-    }
-
-    &:last-child {
-        margin-right: 0;
     }
 }

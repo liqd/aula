@@ -158,7 +158,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), exposedUrl)
+import Config (Config, GetConfig(..), exposedUrl, delegateLikes)
 import Data.Avatar
 import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
@@ -531,33 +531,57 @@ moveIdeaToTopic ideaId moveIdea = do
 
 -- * Vote Handling
 
+-- | Shared code of all actions a delegate can perform for a delegatee on an idea, e.g. 'likeIdea'
+-- or 'voteOnIdea'.
+delegatedOperationOnIdea
+    :: ActionM m
+    => (AUID User -> AUID Idea -> EQuery (Maybe (User, a)))
+    -> (User -> User -> m ())
+    -> AUID Idea
+    -> m ()
+delegatedOperationOnIdea getGuyWhoDidId operation ideaId = do
+    cuser <- currentUser
+    let scope = DScopeIdeaId ideaId
+    operation cuser cuser  -- do it for yourself.
+    equery (votingPower (cuser ^. _Id) scope)
+        >>= filterM hasDoneItAlready
+        >>= mapM_ (operation cuser)  -- do it for those delegatees who have not been active
+                                     -- themselves.
+  where
+    hasDoneItAlready :: ActionM m => User -> m Bool
+    hasDoneItAlready delegatee = equery $ do
+        let delegateeId = delegatee ^. _Id
+        mlike <- getGuyWhoDidId delegateeId ideaId
+        pure $ case mlike of
+            Nothing -> True
+            Just (user', _result) -> delegateeId /= (user' ^. _Id)
+
 likeIdea :: ActionM m => AUID Idea -> m ()
 likeIdea ideaId = do
-    addWithCurrentUser_ (AddLikeToIdea ideaId) ()
+    cfg <- viewConfig
+    if cfg ^. delegateLikes
+        then delegatedOperationOnIdea getLike likeFor ideaId
+        else do
+            user <- currentUser
+            likeFor user user
+    -- Log when idea reches the quorum
     do (idea, info) <- equery $ do
           ide <- maybe404 =<< findIdea ideaId
           inf <- getIdeaStats ide
           pure (ide, inf)
        when (ideaReachedQuorum info) $ eventLogIdeaReachesQuorum idea
+  where
+    likeFor :: ActionM m => User -> User -> m ()
+    likeFor liker' delegatee =
+        addWithCurrentUser_
+            (AddLikeToIdea ideaId delegatee)
+            (ProtoIdeaLike (liker' ^. _Id))
 
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
-    voter <- currentUser
-    let topic = DScopeIdeaId ideaId
-    voteFor voter voter
-    equery (votingPower (voter ^. _Id) topic)
-        >>= filterM hasNotVotedExplicitly
-        >>= mapM_ (voteFor voter)
+    delegatedOperationOnIdea getVote voteFor ideaId
     (`eventLogUserVotesOnIdea` Just voteVal) =<< mquery (findIdea ideaId)
   where
-    hasNotVotedExplicitly :: ActionM m => User -> m Bool
-    hasNotVotedExplicitly delegatee = equery $ do
-        let delegateeId = delegatee ^. _Id
-        mvote <- getVote delegateeId ideaId
-        pure $ case mvote of
-            Nothing              -> True
-            Just (voter', _vote) -> delegateeId /= (voter' ^. _Id)
-
     voteFor :: ActionM m => User -> User -> m ()
     voteFor voter delegatee = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)

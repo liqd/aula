@@ -90,6 +90,7 @@ pagesForm f =
     , f (Proxy :: Proxy EditUserProfile)
     , f (Proxy :: Proxy PageAdminSettingsEventsProtocol)
     , f (Proxy :: Proxy PageDelegateVote)
+    , f (Proxy :: Proxy Frontend.Page.MoveIdea)
     ]
 
 

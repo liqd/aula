@@ -282,13 +282,18 @@ instance HasUILabel Category where
 
 -- | FIXME: Is there a better name for 'Like'?  'Star'?  'Endorsement'?  'Interest'?
 data IdeaLike = IdeaLike
-    { _likeMeta  :: MetaInfo IdeaLike
+    { _ideaLikeMeta     :: MetaInfo IdeaLike
+    , _ideaLikeDelegate :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic IdeaLike
 
-type instance Proto IdeaLike = ()
+data ProtoIdeaLike = ProtoIdeaLike
+    { _protoIdeaLikeDelegate :: AUID User
+    }
+
+type instance Proto IdeaLike = ProtoIdeaLike
 
 -- | "Stimme" for "Idee".  As opposed to 'CommentVote'.
 data IdeaVote = IdeaVote
@@ -1216,6 +1221,7 @@ makeLenses ''InitialPassword
 makeLenses ''Phase
 makeLenses ''PhaseStatus
 makeLenses ''ProtoIdea
+makeLenses ''ProtoIdeaLike
 makeLenses ''ProtoIdeaVote
 makeLenses ''ProtoTopic
 makeLenses ''ProtoUser
@@ -1268,6 +1274,7 @@ deriveSafeCopy 0 'base ''PasswordToken
 deriveSafeCopy 0 'base ''Phase
 deriveSafeCopy 0 'base ''PhaseStatus
 deriveSafeCopy 0 'base ''ProtoIdea
+deriveSafeCopy 0 'base ''ProtoIdeaLike
 deriveSafeCopy 0 'base ''ProtoIdeaVote
 deriveSafeCopy 0 'base ''ProtoTopic
 deriveSafeCopy 0 'base ''ProtoUser
@@ -1337,7 +1344,7 @@ instance HasMetaInfo IdeaVote where
     metaInfo = ideaVoteMeta
     idOfKey _ = ivUser
 instance HasMetaInfo IdeaLike where
-    metaInfo = likeMeta
+    metaInfo = ideaLikeMeta
     idOfKey _ = ivUser
 
 {- Examples:
