@@ -27,4 +27,8 @@
     &.m-error ul {
         background-color: $color-negative;
     }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        position: static;
+    }
 }
