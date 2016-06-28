@@ -123,7 +123,7 @@
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
         buttonDiv.append("input")
-            .attr("value", "anzeigen")
+            .attr("value", "aktualisieren")
             .attr("type", "submit")
             .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
         update();
@@ -139,11 +139,13 @@
         var tick = function() {
             // adjust positions (is there a better place for this than here in the tick function?)
             var wallElasticity = 10;
+            var width  = force.size()[0];
+            var height = force.size()[1];
             force.nodes().forEach(function(n) {
                 if (n.x < 0)      n.x = wallElasticity;
-                if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
+                if (n.x > width)  n.x = width - wallElasticity;
                 if (n.y < 0)      n.y = wallElasticity;
-                if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
+                if (n.y > height) n.y = height - wallElasticity;
             });
 
             // update elems
@@ -323,7 +325,13 @@
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
-        var globalGraphHeight = 600;
+        var defaultGlobalGraphHeight = 600;
+        var updateGlobalGraphHeight = function() {
+            force.size([globalGraphWidth, 1200]);
+            svg.attr("viewBox", "0 0 " + force.size()[0] + " " + force.size()[1])
+               .attr("style", "width:" + force.size()[0] + "px;height:" + force.size()[1] + "px");
+            force.alpha(.3);
+        };
 
         graph.nodes.forEach(function(d) {
             d.visibleByPower = true;
@@ -335,7 +343,7 @@
         }
 
         var force = d3.layout.force()
-            .size([globalGraphWidth, globalGraphHeight])
+            .size([globalGraphWidth, defaultGlobalGraphHeight])
             .nodes(graph.nodes)
             .links(graph.links)
             .on("tick", tick)
@@ -351,10 +359,9 @@
                .append("svg")
                // responsive SVG needs these 2 attributes and no width and height attr
                .attr("preserveAspectRatio", "xMinYMin meet")
-               .attr("viewBox", function() { return "0 0 " + globalGraphWidth + " " + globalGraphHeight; })
+               .attr("viewBox", "0 0 " + globalGraphWidth + " " + defaultGlobalGraphHeight)
                // class to make it responsive
                .classed("svg-content-responsive", true);
-
 
         svg.append("defs")
             .selectAll("marker")
@@ -374,6 +381,8 @@
         var text = undefined;
 
         updateWidget();
+//         updateGlobalGraphHeight();
+//         window.onresize = updateGlobalGraphHeight;
     };
 
     var initializeControlPanel = function(rootSel, filterByPower, filterMatching) {
