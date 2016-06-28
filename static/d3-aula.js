@@ -138,12 +138,51 @@
 
         var tick = function() {
             // adjust positions (is there a better place for this than here in the tick function?)
-            var wallElasticity = 10;
+            var wallElasticity = 0;
             force.nodes().forEach(function(n) {
                 if (n.x < 0)      n.x = wallElasticity;
                 if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
                 if (n.y < 0)      n.y = wallElasticity;
                 if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
+            });
+
+            // avoid collisions
+            force.nodes().forEach(function(n) {
+                force.nodes().forEach(function(m) {
+                    var hasEdge = false;
+                    force.links().forEach(function(l) {
+                        if (l.source.name == n.name && l.target.name === m.name ||
+                            l.source.name == m.name && l.target.name === n.name) {
+                            hasEdge = true;
+                        }
+
+                    });
+                    if (hasEdge) return;
+
+                    var temperature = 0.3;
+
+                    var dx = n.x - m.x;
+                    var dy = n.y - m.y;
+                    var dmin = avatarRadius(n) + avatarRadius(m) + 5;
+                    if (Math.abs(dx) < dmin) {
+                        if (n.x < m.x) {
+                            n.x -= temperature * Math.random();
+                        } else if (n.x > m.x) {
+                            n.x += temperature * Math.random();
+                        } else {
+                            n.x += temperature * (Math.random() - 0.5);
+                        }
+                    }
+                    if (Math.abs(dy) < dmin) {
+                        if (n.y < m.y) {
+                            n.y -= temperature * Math.random();
+                        } else if (n.y > m.y) {
+                            n.y += temperature * Math.random();
+                        }else {
+                            n.y += temperature * (Math.random() - 0.5);
+                        }
+                    }
+                });
             });
 
             // update elems
@@ -159,8 +198,14 @@
         var linkArc = function(d) {
             var dx = d.target.x - d.source.x;
             var dy = d.target.y - d.source.y;
-            var dr = Math.sqrt(dx * dx + dy * dy);
-            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+            var dr = Math.sqrt(dx * dx + dy * dy);  // arrow length, if it's a straight line.
+            var stretchFactorS = (dr - avatarRadius(d.source)) / dr;
+            var stretchFactorT = (dr - avatarRadius(d.target)) / dr;
+            var startx = d.target.x - (dx * stretchFactorS);
+            var starty = d.target.y - (dy * stretchFactorS);
+            var endx   = d.source.x + (dx * stretchFactorT);
+            var endy   = d.source.y + (dy * stretchFactorT);
+            return "M" + startx + "," + starty + "L" + endx + "," + endy;
         };
 
         // make all nodes below a certain power threshold invisible.
@@ -251,6 +296,10 @@
 
         var avatarWidthHeight = function(d) {
             return 20 + Math.min(Math.sqrt(d.power * 100), 160);
+        };
+
+        var avatarRadius = function(d) {
+            return avatarWidthHeight(d) / 2;
         };
 
         var avatarXPos = function(d) {
@@ -368,8 +417,8 @@
             .data(["default"]).enter().append("marker")
             .attr("id", function(d) { return d; })
             .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 15)
-            .attr("refY", -1.5)
+            .attr("refX", 10)
+            .attr("refY", 0)
             .attr("markerWidth", 6)
             .attr("markerHeight", 6)
             .attr("orient", "auto")
