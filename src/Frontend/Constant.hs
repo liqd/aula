@@ -30,9 +30,18 @@ maxPasswordLength = 120
 initialDemoPassword :: ST
 initialDemoPassword = "1234"
 
+-- | Avatar URLs must be persitent, hence changing these constants requires some care
+-- if the system is already in production.
+--
+-- Here are some guidelines:
+-- * Adding new sizes to avatarExtraSizes is OK
+-- * When updating avatarDefaultSize add the current avatarDefaultSize to avatarExtraSizes.
+-- * Prefer the use of avatarUrl over avatarFile.
+-- * Instead updating a size in avatarExtraSizes just add the new one.
 avatarDefaultSize :: Int
 avatarDefaultSize = 100
 
+-- | See avatarDefaultSize.
 avatarExtraSizes :: [Int]
 avatarExtraSizes = [64, 300]
 
