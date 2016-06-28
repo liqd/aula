@@ -146,6 +146,45 @@
                 if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
             });
 
+            // avoid collisions
+            force.nodes().forEach(function(n) {
+                force.nodes().forEach(function(m) {
+                    var hasEdge = false;
+                    force.links().forEach(function(l) {
+                        if (l.source.name == n.name && l.target.name === m.name ||
+                            l.source.name == m.name && l.target.name === n.name) {
+                            hasEdge = true;
+                        }
+
+                    });
+                    if (hasEdge) return;
+
+                    var temperature = 0.3;
+
+                    var dx = n.x - m.x;
+                    var dy = n.y - m.y;
+                    var dmin = avatarRadius(n) + avatarRadius(m) + 5;
+                    if (Math.abs(dx) < dmin) {
+                        if (n.x < m.x) {
+                            n.x -= temperature * Math.random();
+                        } else if (n.x > m.x) {
+                            n.x += temperature * Math.random();
+                        } else {
+                            n.x += temperature * (Math.random() - 0.5);
+                        }
+                    }
+                    if (Math.abs(dy) < dmin) {
+                        if (n.y < m.y) {
+                            n.y -= temperature * Math.random();
+                        } else if (n.y > m.y) {
+                            n.y += temperature * Math.random();
+                        }else {
+                            n.y += temperature * (Math.random() - 0.5);
+                        }
+                    }
+                });
+            });
+
             // update elems
             path.attr("d", linkArc);
 
