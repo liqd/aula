@@ -159,8 +159,14 @@
         var linkArc = function(d) {
             var dx = d.target.x - d.source.x;
             var dy = d.target.y - d.source.y;
-            var dr = Math.sqrt(dx * dx + dy * dy);
-            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+            var dr = Math.sqrt(dx * dx + dy * dy);  // arrow length, if it's a straight line.
+            var stretchFactorS = (dr - avatarRadius(d.source)) / dr;
+            var stretchFactorT = (dr - avatarRadius(d.target)) / dr;
+            var startx = d.target.x - (dx * stretchFactorS);
+            var starty = d.target.y - (dy * stretchFactorS);
+            var endx   = d.source.x + (dx * stretchFactorT);
+            var endy   = d.source.y + (dy * stretchFactorT);
+            return "M" + startx + "," + starty + "L" + endx + "," + endy;
         };
 
         // make all nodes below a certain power threshold invisible.
@@ -251,6 +257,10 @@
 
         var avatarWidthHeight = function(d) {
             return 20 + Math.min(Math.sqrt(d.power * 100), 160);
+        };
+
+        var avatarRadius = function(d) {
+            return avatarWidthHeight(d) / 2;
         };
 
         var avatarXPos = function(d) {
