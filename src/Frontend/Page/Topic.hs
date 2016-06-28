@@ -226,7 +226,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                       i_ [class_ "icon-bullhorn"] nil
                       if isNothing delegation
                             then "Stimme beauftragen"
-                            else "Beauftragung ändern oder widerrufen"
+                            else "Beauftragung ändern"
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton

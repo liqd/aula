@@ -329,7 +329,7 @@ instance ToHtml ViewIdea where
                         i_ [class_ "icon-bullhorn"] nil
                         if isNothing delegation
                             then "Stimme beauftragen"
-                            else "Beauftragung ändern oder widerrufen"
+                            else "Beauftragung ändern"
                 -- mark winning idea
                 when (isFeasibleIdea idea) $ do
                     when (CanMarkWinner `elem` caps) $ do
