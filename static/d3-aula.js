@@ -290,7 +290,11 @@
                         if (newVisibilityStatus === undefined) {
                             newVisibilityStatus = !visible(l.source);
                         }
-                        visible(l.source) = newVisibilityStatus;
+                        l.source.visibleByClick = newVisibilityStatus;
+                        // clicking overrides the other filters
+                        if (l.source.visibleByClick) {
+                            makeAllVisible(l.source);
+                        }
                         traverse(l.source);
                     }
                 });
@@ -325,14 +329,17 @@
         var globalGraphWidth = 600;
         var globalGraphHeight = 600;
 
-        graph.nodes.forEach(function(d) {
+        var visible = function(d) {
+            return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
+        };
+
+        var makeAllVisible = function(d) {
             d.visibleByPower = true;
             d.visibleByMatching = true;
-        });
+            d.visibleByClick = true;
+        };
 
-        var visible = function(d) {
-            return d.visibleByPower && d.visibleByMatching;
-        }
+        graph.nodes.forEach(makeAllVisible);;
 
         var force = d3.layout.force()
             .size([globalGraphWidth, globalGraphHeight])
