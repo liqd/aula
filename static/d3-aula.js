@@ -325,14 +325,14 @@
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
-        var globalGraphHeight = 600;
+        var defaultGlobalGraphHeight = 600;
 
         graph.nodes.forEach(function(d) {
             d.visible = true;
         });
 
         var force = d3.layout.force()
-            .size([globalGraphWidth, globalGraphHeight])
+            .size([globalGraphWidth, defaultGlobalGraphHeight])
             .nodes(graph.nodes)
             .links(graph.links)
             .on("tick", tick)
@@ -348,10 +348,9 @@
                .append("svg")
                // responsive SVG needs these 2 attributes and no width and height attr
                .attr("preserveAspectRatio", "xMinYMin meet")
-               .attr("viewBox", function() { return "0 0 " + globalGraphWidth + " " + globalGraphHeight; })
+               .attr("viewBox", "0 0 " + globalGraphWidth + " " + defaultGlobalGraphHeight)
                // class to make it responsive
                .classed("svg-content-responsive", true);
-
 
         svg.append("defs")
             .selectAll("marker")
