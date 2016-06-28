@@ -142,6 +142,7 @@ import Control.Monad.Reader (runReader, runReaderT)
 import Control.Monad.Except (MonadError, throwError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
+import Data.List as List (find)
 import Data.Maybe (isJust)
 import Data.Monoid
 import Data.String.Conversions (ST, LBS, cs)
@@ -599,8 +600,10 @@ delegationInScope scope = do
         <$> (equery $ delegates (user ^. _Id))
 
 delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
-delegateOrWithdraw scope (Just delegate) = delegateTo           scope delegate
-delegateOrWithdraw _scope Nothing         = error "withdrawDelegationTo scope delegate"  -- FIXME
+delegateOrWithdraw scope (Just delegate) = delegateTo scope delegate
+delegateOrWithdraw scope Nothing         = do
+    delegationInScope scope
+    >>= mapM_ (withdrawDelegationTo scope . view delegationTo)
 
 delegateTo :: ActionM m => DScope -> AUID User -> m ()
 delegateTo scope delegate = do
