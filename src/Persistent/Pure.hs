@@ -120,6 +120,7 @@ module Persistent.Pure
     , withdrawDelegation
     , delegationScopeTree
     , allDelegationScopes
+    , Persistent.Pure.delegates
     , Persistent.Pure.scopeDelegatees
     , Persistent.Pure.votingPower
     , Persistent.Pure.findDelegationsByScope
@@ -654,6 +655,12 @@ allDelegationScopes = do
             : (DScopeIdeaSpace <$> spaces)
             <> (DScopeTopicId . view _Id <$> topics)
             <> (DScopeIdeaId  . view _Id <$> ideas)
+
+-- | Returns all the delegates for a given delegatee with its scope
+delegates :: AUID User -> EQuery [Delegation]
+delegates delegatee =
+    (\(scope,delegate) -> Delegation scope delegatee delegate)
+    <$$> views dbDelegations (Data.Delegation.delegates delegatee)
 
 scopeDelegatees :: AUID User -> DScope -> EQuery [Delegation]
 scopeDelegatees delegate scope =

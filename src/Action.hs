@@ -63,6 +63,7 @@ module Action
       -- * vote handling
     , likeIdea
     , voteOnIdea
+    , delegationInScope
     , delegateOrWithdraw
     , delegateTo
     , withdrawDelegationTo
@@ -586,6 +587,16 @@ voteOnIdea ideaId voteVal = do
     voteFor voter delegatee = do
         addWithCurrentUser_ (AddVoteToIdea ideaId delegatee)
                             (ProtoIdeaVote voteVal (voter ^. _Id))
+
+-- | Returns `Just delegation` if the current user has
+-- explicit delegation in the given scope.
+delegationInScope
+    :: (ActionPersist m, ActionUserHandler m)
+    => DScope -> m (Maybe Delegation)
+delegationInScope scope = do
+    user <- currentUser
+    List.find ((scope ==) . view delegationScope)
+        <$> (equery $ delegates (user ^. _Id))
 
 delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
 delegateOrWithdraw scope (Just delegate) = delegateTo           scope delegate
