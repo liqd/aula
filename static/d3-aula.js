@@ -326,6 +326,12 @@
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
         var defaultGlobalGraphHeight = 600;
+        var updateGlobalGraphHeight = function() {
+            force.size([globalGraphWidth, 1200]);
+            svg.attr("viewBox", "0 0 " + force.size()[0] + " " + force.size()[1])
+               .attr("style", "width:" + force.size()[0] + "px;height:" + force.size()[1] + "px");
+            force.alpha(.3);
+        };
 
         graph.nodes.forEach(function(d) {
             d.visible = true;
@@ -370,6 +376,8 @@
         var text = undefined;
 
         updateWidget();
+//         updateGlobalGraphHeight();
+//         window.onresize = updateGlobalGraphHeight;
     };
 
     var initializeControlPanel = function(rootSel, filterByPower, highlightMatching) {
