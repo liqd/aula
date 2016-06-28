@@ -597,7 +597,7 @@ delegationInScope
 delegationInScope scope = do
     delegatee <- currentUser
     List.find ((scope ==) . view delegationScope)
-        <$> equery $ delegates (delegatee ^. _Id)
+        <$> equery (delegates (delegatee ^. _Id))
 
 delegateOrWithdraw :: ActionM m => DScope -> Maybe (AUID User) -> m ()
 delegateOrWithdraw scope (Just delegate) = delegateTo scope delegate
