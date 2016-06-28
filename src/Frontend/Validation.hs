@@ -265,7 +265,7 @@ infix 0 <??>
 -- | Set the given message if the parser fails as an error message, pretend
 -- no input is consumed.
 (<??>) :: ParsecT s u m a -> String -> ParsecT s u m a
-p <??> msg = (TP.try p) <?> msg
+p <??> msg = TP.try p <?> msg
 
 satisfies :: (a -> Bool) -> ParsecT s u m a -> ParsecT s u m a
 satisfies predicate parser = do
