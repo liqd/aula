@@ -134,6 +134,7 @@ library
       Persistent.Pure
       Persistent.TemplateHaskell
       Types
+      Types.Prelude
   other-modules:
       Paths_aula
   default-language: Haskell2010
