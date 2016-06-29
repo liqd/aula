@@ -181,7 +181,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
 
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                if (canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic) then do
+                if canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic then do
                     ul_ [class_ "pop-menu-list"] $ do
                         when canEditTopic .
                             li_ [class_ "pop-menu-list-item"] $ do
@@ -206,7 +206,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                                         "Vorherige Phase"
                 else do
                     ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ "<Menü ist leer>"
+                        li_ [class_ "pop-menu-list-item"] "<Menü ist leer>"
 
         h1_ [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] $ do
