@@ -489,8 +489,8 @@ instance FormPage AdminCreateUser where
             <*> (Set.singleton <$> roleForm Nothing Nothing classes)
         where
             -- FIXME: Users with more than one name?
-            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter <??> "nur Buchstaben"))
-            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 letter <??> "nur Buchstaben"))
+            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter) "nur Buchstaben")
+            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 letter) "nur Buchstaben")
             loginName = validateOptional "Login" (UserLogin <$> usernameV)
 
     formPage v form p =
@@ -830,7 +830,7 @@ instance FormPage AdminCreateClass where
       where
         classname = validate
             "Name der Klasse"
-            (fieldParser (cs <$> many1 anyChar <??> "nicht leer"))
+            (fieldParser (cs <$> many1 anyChar) "nicht leer")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
@@ -906,7 +906,7 @@ instance FormPage AdminPhaseChange where
       where
         choices = map (id &&& toHtml) [Forward, Backward]
         topicId = validate "ID des Themas"
-            (fieldParser (AUID . read . cs <$> many1 digit <??> "Ziffern von 0-9"))
+            (fieldParser (AUID . read . cs <$> many1 digit) "Ziffern von 0-9")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Phasen verschieben"

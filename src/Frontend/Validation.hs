@@ -89,9 +89,9 @@ fieldEither fun = FieldValidator $ either DF.Error DF.Success . fun
 -- FIXME: Use red color for error message when displaying them on the form.
 fieldParser
     :: (ConvertibleStrings s String)
-    => FieldParser a -> FieldValidator s a
-fieldParser parser =
-    FieldValidator (either errorString DF.Success . parse (parser <* eof) "" . cs)
+    => FieldParser a -> String -> FieldValidator s a
+fieldParser parser msg =
+    FieldValidator (either errorString DF.Success . parse ((parser <* eof) <??> msg) "" . cs)
   where
     errorString = DF.Error . fmap cs . showErrorMessagesDe . errorMessages
 
@@ -166,8 +166,8 @@ validateOptional = DF.validateOptional <..> validate'
 
 inRangeV :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
 inRangeV mn mx = fieldParser
-    (satisfies isBetween (read <$> many1 digit)
-        <??> unwords ["Zahl zwischen", show mn, "und", show mx])
+    (satisfies isBetween (read <$> many1 digit))
+    (unwords ["Zahl zwischen", show mn, "und", show mx])
   where
     isBetween n = mn <= n && n <= mx
 
@@ -210,18 +210,20 @@ usernameV' = dimap (view _UserLogin) UserLogin usernameV
 -- The issue above does not apply here for various reasons but still we can be cautious.
 usernameV :: StringFieldValidator
 usernameV = fieldParser
-    (cs <$> manyNM minUsernameLength maxUsernameLength letter
-            <??> concat [ show minUsernameLength, "-"
-                        , show maxUsernameLength, " Buchstaben"])
+    (cs <$> manyNM minUsernameLength maxUsernameLength letter)
+    (concat [ show minUsernameLength, "-"
+            , show maxUsernameLength, " Buchstaben"])
 
 passwordV :: StringFieldValidator
 passwordV = fieldParser
-    (cs <$> manyNM minPasswordLength maxPasswordLength anyChar
-            <??> concat [ show minPasswordLength, "-"
-                        , show maxPasswordLength, " Zeichen"])
+    (cs <$> manyNM minPasswordLength maxPasswordLength anyChar)
+    (concat [ show minPasswordLength, "-"
+            , show maxPasswordLength, " Zeichen"])
 
 titleV :: StringFieldValidator
-titleV = fieldParser (cs <$> many1 (alphaNum <|> space) <??> "Buchstaben, Ziffern, oder Leerzeichen")
+titleV = fieldParser
+    (cs <$> many1 (alphaNum <|> space))
+    "Buchstaben, Ziffern, oder Leerzeichen"
 
 markdownV :: FieldValidator ST Document
 markdownV = nonEmptyV >>> fieldEither markdown
