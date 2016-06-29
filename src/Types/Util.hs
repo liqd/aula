@@ -322,10 +322,9 @@ traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
 
 -- * idea space, topic, phase
 
--- | TODO: rename to 'showIdeaSpaceKind'
-showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
-showIdeaSpaceCategory SchoolSpace    = "school"
-showIdeaSpaceCategory (ClassSpace _) = "class"
+showIdeaSpaceKind :: IsString s => IdeaSpace -> s
+showIdeaSpaceKind SchoolSpace    = "school"
+showIdeaSpaceKind (ClassSpace _) = "class"
 
 -- | Construct an 'IdeaLocation' from a 'Topic'
 topicIdeaLocation :: Topic -> IdeaLocation

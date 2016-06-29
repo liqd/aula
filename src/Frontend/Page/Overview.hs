@@ -78,7 +78,7 @@ instance ToHtml PageOverviewOfSpaces where
 
         g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
         g ispace = div_ [class_ "col-1-3"] $ do
-            div_ [class_ ("item-room is-" <> showIdeaSpaceCategory ispace)] $ do
+            div_ [class_ ("item-room is-" <> showIdeaSpaceKind ispace)] $ do
                 a_ [href_ $ U.listIdeas (IdeaLocationSpace ispace)] $ do
                     span_ [class_ "item-room-image"] nil
                     h2_ [class_ "item-room-title"] $ uilabel ispace
