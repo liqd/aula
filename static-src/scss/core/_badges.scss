@@ -9,4 +9,8 @@
     border: 1px solid $color-positive;
     color: $color-positive;
     display: inline-block;
+
+    &:last-child {
+        margin-right: 0;
+    }
 }
