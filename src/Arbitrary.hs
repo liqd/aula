@@ -616,7 +616,7 @@ instance Arbitrary SchoolClass where
     shrink  x = dropWhileX x schoolClasses
 
 schoolClasses :: [SchoolClass]
-schoolClasses = schoolClass <$> years <*> names
+schoolClasses = SchoolClass <$> years <*> names
   where
     years = [2016]
     names = [ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ]
