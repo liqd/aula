@@ -122,6 +122,7 @@ module Persistent.Pure
     , dscopeFull
     , allDelegationScopes
     , Persistent.Pure.delegates
+    , Persistent.Pure.scopeDelegate
     , Persistent.Pure.delegatees
     , Persistent.Pure.scopeDelegatees
     , Persistent.Pure.votingPower
@@ -670,6 +671,11 @@ delegates :: AUID User -> EQuery [Delegation]
 delegates delegatee =
     (\(scope,delegate) -> Delegation scope delegatee delegate)
     <$$> views dbDelegations (Data.Delegation.delegates delegatee)
+
+scopeDelegate :: AUID User -> DScope -> EQuery (Maybe Delegation)
+scopeDelegate delegatee scope =
+    Delegation scope delegatee
+    <$$> views dbDelegations (Data.Delegation.scopeDelegate delegatee scope)
 
 delegatees :: AUID User -> EQuery [Delegation]
 delegatees delegate =

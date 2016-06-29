@@ -12,6 +12,8 @@ module Data.Delegation
     , deleteDelegation
     , delegates
     , delegatesSafe
+    , scopeDelegate
+    , scopeDelegateSafe
     , delegatees
     , delegateesSafe
     , scopeDelegatees
@@ -129,6 +131,15 @@ delegates delegatee ds = over _2 unDelegate <$> delegatesSafe (Delegatee delegat
 delegatesSafe :: Delegatee U -> Delegations -> [(DScope, Delegate U)]
 delegatesSafe delegatee (Delegations (DelegationMap dmap) _coDmap)
     = maybe [] Map.toList $ Map.lookup delegatee dmap
+
+scopeDelegate :: U -> DScope -> Delegations -> Maybe U
+scopeDelegate delegatee scope ds =
+    unDelegate <$> scopeDelegateSafe (Delegatee delegatee) scope ds
+
+-- | Returns the direct delegate for a given delegatee in a scope.
+scopeDelegateSafe :: Delegatee U -> DScope -> Delegations -> Maybe (Delegate U)
+scopeDelegateSafe delegatee scope (Delegations (DelegationMap dmap) _coDmap)
+    = DMap.lookup delegatee scope dmap
 
 delegatees :: U -> Delegations -> [(DScope, Set U)]
 delegatees delegate ds = over _2 (Set.map unDelegatee) <$> delegateesSafe (Delegate delegate) ds

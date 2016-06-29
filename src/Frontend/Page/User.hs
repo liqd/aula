@@ -26,14 +26,15 @@ import Persistent.Api
     , SetUserDesc(SetUserDesc)
     )
 import Persistent
-    ( DelegationListsMap(..)
+    ( EQuery
+    , DelegationListsMap(..)
     , DelegateeLists(..)
     , userDelegationListsMap
     , userDelegateListsMap
     , findUser
     , findIdeasByUserId
     , getIdeaStats
-    , delegatees
+    , scopeDelegate
     )
 
 import qualified Data.Set as Set
@@ -227,22 +228,33 @@ userHeaderDivCore user = do
             forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
                 li_ [class_ "badge"] $ r ^. uilabeled
 
+commonIdeaSpaceDelegations :: User -> User -> EQuery [Delegation]
+commonIdeaSpaceDelegations delegatee delegate = do
+    let delegateeId = delegatee ^. _Id
+    schoolDelegation <- scopeDelegate delegateeId (DScopeIdeaSpace SchoolSpace)
+    classDelegations <- forM (Set.toList $ commonSchoolClasses delegatee delegate)
+        (scopeDelegate delegateeId . DScopeIdeaSpace . ClassSpace)
+    pure $ catMaybes (schoolDelegation:classDelegations)
+
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
 -- philosophical, but it doesn't really matter: users can delegate to themselves
 -- just like to anybody else, and the graph will look different if they do.
 delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
 delegationButtons delegatee delegate delegations = do
-    let dscopes = view delegationScope <$> delegations
-    let but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
+    let isActiveDelegation dscope =
+            Delegation dscope (delegatee ^. _Id) (delegate ^. _Id)
+            `elem`
+            delegations
+        but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
-        if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
+        if isActiveDelegation (DScopeIdeaSpace (ClassSpace clss))
             then do
                 but (U.withdrawDelegationOnClassSpace delegate clss)
                     ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
                 but (U.delegateVoteOnClassSpace delegate clss)
                     ("Für Klasse " <> uilabel clss <> " beauftragen")
-    if DScopeIdeaSpace SchoolSpace `elem` dscopes
+    if isActiveDelegation (DScopeIdeaSpace SchoolSpace)
         then do
             but (U.withdrawDelegationOnSchoolSpace delegate)
                 "Schulweite beauftragung entziehen"
@@ -303,6 +315,7 @@ createdIdeas userId ideasQuery = do
                     case ctx ^. capCtxUser . userRoleScope of
                         SchoolScope      -> True
                         ClassesScope cls -> c `Set.member` cls
+    cUser <- currentUser
     equery (do
         user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx (IdeaInUserProfile user) ideasQuery
@@ -310,7 +323,7 @@ createdIdeas userId ideasQuery = do
                     (mapM getIdeaStats
                      =<< filter visibleByCurrentUser
                          <$> findIdeasByUserId userId))
-        ds <- delegatees userId
+        ds <- commonIdeaSpaceDelegations cUser user
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)
             (makeUserView user)
@@ -338,13 +351,14 @@ userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegate
 userProfileUserAsDelegate userId = do
     ctx <- currentUserCapCtx
+    cUser <- currentUser
     equery $ do
         user <- maybe404 =<< findUser userId
         PageUserProfileUserAsDelegate
             (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegationListsMap userId
-            <*> delegatees userId
+            <*> commonIdeaSpaceDelegations cUser user
 
 
 -- ** User Profile: User as a delegatee
@@ -367,13 +381,14 @@ userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegatee
 userProfileUserAsDelegatee userId = do
     ctx <- currentUserCapCtx
+    cUser <- currentUser
     equery $ do
         user <- maybe404 =<< findUser userId
         PageUserProfileUserAsDelegatee
             (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegateListsMap userId
-            <*> delegatees userId
+            <*> commonIdeaSpaceDelegations cUser user
 
 -- ** User Profile: Edit profile
 
