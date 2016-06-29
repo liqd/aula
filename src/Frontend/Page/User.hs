@@ -26,9 +26,9 @@ import Persistent.Api
     , SetUserDesc(SetUserDesc)
     )
 import Persistent
-    ( DelegateeListsMap(..)
+    ( DelegationListsMap(..)
     , DelegateeLists(..)
-    , userDelegateeListsMap
+    , userDelegationListsMap
     , userDelegateListsMap
     , findUser
     , findIdeasByUserId
@@ -76,7 +76,7 @@ instance Page PageUserProfileCreatedIdeas where
 
 -- | 8.2 User profile: Votes from delegatees
 data PageUserProfileUserAsDelegate =
-        PageUserProfileUserAsDelegate CapCtx UserView DelegateeListsMap [Delegation]
+        PageUserProfileUserAsDelegate CapCtx UserView DelegationListsMap [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegate where
@@ -84,7 +84,7 @@ instance Page PageUserProfileUserAsDelegate where
 
 -- | 8.X User profile: Votes to delegates
 data PageUserProfileUserAsDelegatee =
-        PageUserProfileUserAsDelegatee CapCtx UserView DelegateeListsMap [Delegation]
+        PageUserProfileUserAsDelegatee CapCtx UserView DelegationListsMap [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegatee where
@@ -251,8 +251,8 @@ delegationButtons delegatee delegate delegations = do
                 "Schulweit beauftragen"
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
-delegatedDScopes :: User -> DelegateeListsMap -> [DScope]
-delegatedDScopes delegatee (DelegateeListsMap xs) = fullDScopeToDScope . fst <$> filter pr xs
+delegatedDScopes :: User -> DelegationListsMap -> [DScope]
+delegatedDScopes delegatee (DelegationListsMap xs) = fullDScopeToDScope . fst <$> filter pr xs
   where
     pr :: (a, DelegateeLists) -> Bool
     pr (_, DelegateeLists ys) = delegatee `elem` (fst <$> ys)
@@ -343,7 +343,7 @@ userProfileUserAsDelegate userId = do
         PageUserProfileUserAsDelegate
             (setProfileContext user ctx)
             (makeUserView user)
-            <$> userDelegateeListsMap userId
+            <$> userDelegationListsMap userId
             <*> delegatees userId
 
 
