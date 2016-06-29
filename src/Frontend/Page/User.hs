@@ -349,40 +349,43 @@ instance FormPage EditUserProfile where
         <*> ("desc"   .: validate "Beschreibung" markdownV (DF.text . Just . unMarkdown $ user ^. userDesc))
 
     formPage v form p@(EditUserProfile ctx user) = do
-        semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-            userHeaderDivCore user
-            h1_ [class_ "main-heading"] .
-                toHtml $ if isOwnProfile (ctx ^. capCtxUser) user
-                    then "Eigenes Nutzerprofil bearbeiten"
-                    else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
+        semanticDiv' [class_ "container-main container-narrow"] p $ do
+            div_ [class_ "hero-unit"] $ do
+                userHeaderDivCore user
+                h2_ [class_ "sub-heading"] .
+                    toHtml $ if isOwnProfile (ctx ^. capCtxUser) user
+                        then "Eigenes Nutzerprofil bearbeiten"
+                        else "Nutzerprofil von " <> user ^. userLogin . unUserLogin <> " bearbeiten"
 
             form $ do
-                label_ $ do
-                    span_ [class_ "label-text"] "Avatar"
-                    div_ $ do
-                        "Einige wichtige Hinweise zum Hochladen von Bildern."
-                        ul_ $ do
-                            li_ $ do
-                                "Das alte Bild wird beim hochladen überschrieben.  Ziehe dir bitte "
-                                "jetzt zuerst eine Sicherheitskopie, wenn du es später noch brauchst."
-                            li_ $ do
-                                "Nach dem hochladen wird das neue Bild in Kreisform geschnitten. "
-                                "Es sollte also nicht zu lang oder hoch sein und nichts wichtiges "
-                                "in den Ecken zeigen."
-                            li_ $ do
-                                let dim = fromString . show . maximum $ avatarDefaultSize : avatarExtraSizes
-                                "Das neue Bild sollte für optimale Qualität mindestens "
-                                dim >> "x" >> dim >> " "
-                                "Pixel haben."
-                            li_ $ do
-                                "Es darf nicht größer sein als " >> avatarMaxByteSize ^. html >> "."
-                    DF.inputFile "avatar" v
-                label_ $ do
-                    span_ [class_ "label-text"] "Beschreibung"
-                    inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
-                footer_ [class_ "form-footer"] $ do
-                    DF.inputSubmit "Änderungen speichern"
-                    cancelButton p
+                div_ $ do
+                    p_ [class_ "label-text"] "Einige wichtige Hinweise zum Hochladen von Bildern."
+                    div_ [class_ "info-text"] $ do
+                        p_ $ do
+                            "Das alte Bild wird beim hochladen überschrieben.  Ziehe dir bitte "
+                            "jetzt zuerst eine Sicherheitskopie, wenn du es später noch brauchst."
+                        p_ $ do
+                            "Nach dem hochladen wird das neue Bild in Kreisform geschnitten. "
+                            "Es sollte also nicht zu lang oder hoch sein und nichts wichtiges "
+                            "in den Ecken zeigen."
+                        p_ $ do
+                            let dim = fromString . show . maximum $ avatarDefaultSize : avatarExtraSizes
+                            "Das neue Bild sollte für optimale Qualität mindestens "
+                            dim >> "x" >> dim >> " "
+                            "Pixel haben."
+                        p_ $ do
+                            "Es darf nicht größer sein als " >> avatarMaxByteSize ^. html >> "."
+                    label_ $ do
+                        span_ [class_ "label-text"] "Avatar"
+                        DF.inputFile "avatar" v
+                        br_ nil
+                        br_ nil
+                    label_ $ do
+                        span_ [class_ "label-text"] "Beschreibung"
+                        inputTextArea_ [placeholder_ "..."] Nothing Nothing "desc" v
+                    footer_ [class_ "form-footer"] $ do
+                        DF.inputSubmit "Änderungen speichern"
+                        cancelButton p
 
 validateImageFile :: ActionM m => Maybe FilePath -> m (DF.Result (Html ()) (Maybe DynamicImage))
 validateImageFile = \case
