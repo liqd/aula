@@ -68,7 +68,7 @@ spec = do
             Nothing -> error "No idea with topic is found."
             Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
         Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
-    let noChecks (CheckNumVotingPower{}) = False
+    let noChecks (CheckVotingPower{}) = False
         noChecks (CheckVote{})           = False
         noChecks _                       = True
     let observableBehaviour program =
@@ -88,24 +88,24 @@ spec = do
                 ]
         delegationTest "Self delegation"
                 [ SetDelegation student1 (DScopeIdeaId idea) student1
-                , CheckNumVotingPower student1 (DScopeIdeaId idea) 1
+                , CheckVotingPower student1 (DScopeIdeaId idea) 1
                 , Vote student1 idea No
                 ]
         delegationTest "Delegation on topic"
                 [ SetDelegation student1 (DScopeTopicId topic) student2
-                , CheckNumVotingPower student2 (DScopeTopicId topic) 2
+                , CheckVotingPower student2 (DScopeTopicId topic) 2
                 ]
         delegationTest "Delegation on ideaspace"
                 [ SetDelegation student1 (DScopeIdeaSpace ideaspace) student2
-                , CheckNumVotingPower student2 (DScopeIdeaSpace ideaspace) 2
+                , CheckVotingPower student2 (DScopeIdeaSpace ideaspace) 2
                 ]
         delegationTest "Delegation on schoolspace"
                 [ SetDelegation student1 (DScopeIdeaSpace SchoolSpace) student2
-                , CheckNumVotingPower student2 (DScopeIdeaSpace SchoolSpace) 2
+                , CheckVotingPower student2 (DScopeIdeaSpace SchoolSpace) 2
                 ]
         delegationTest "Delegation on global"
                 [ SetDelegation student1 DScopeGlobal student2
-                , CheckNumVotingPower student2 DScopeGlobal 2
+                , CheckVotingPower student2 DScopeGlobal 2
                 ]
         delegationTest "I change my mind before"
                 [ SetDelegation student1 (DScopeIdeaId idea) student2
@@ -136,18 +136,18 @@ spec = do
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
                     [ SetDelegation student1 (DScopeIdeaId idea2) student2
                     , SetDelegation student2 (DScopeTopicId topic2) student3
-                    , CheckNumVotingPower student1 (DScopeIdeaId idea2) 1
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea2) 2
-                    , CheckNumVotingPower student3 (DScopeIdeaId idea2) 3
-                    , CheckNumVotingPower student3 (DScopeTopicId topic2) 2
+                    , CheckVotingPower student1 (DScopeIdeaId idea2) 1
+                    , CheckVotingPower student2 (DScopeIdeaId idea2) 2
+                    , CheckVotingPower student3 (DScopeIdeaId idea2) 3
+                    , CheckVotingPower student3 (DScopeTopicId topic2) 2
                     ]
         describe "Cyclical delegation" $ do
             delegationTest "Cycle in delegation"
                     [ SetDelegation student1 (DScopeIdeaId idea) student2
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea) 2
+                    , CheckVotingPower student2 (DScopeIdeaId idea) 2
                     , SetDelegation student2 (DScopeIdeaId idea) student1
-                    , CheckNumVotingPower student1 (DScopeIdeaId idea) 2
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea) 2
+                    , CheckVotingPower student1 (DScopeIdeaId idea) 2
+                    , CheckVotingPower student2 (DScopeIdeaId idea) 2
                     , Vote student1 idea Yes
                     , Vote student2 idea No
                     ]
@@ -155,9 +155,9 @@ spec = do
                     [ SetDelegation student1 (DScopeIdeaId idea) student2
                     , SetDelegation student2 (DScopeIdeaId idea) student3
                     , SetDelegation student3 (DScopeIdeaId idea) student1
-                    , CheckNumVotingPower student1 (DScopeIdeaId idea) 3
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea) 3
-                    , CheckNumVotingPower student3 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student1 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student2 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student3 (DScopeIdeaId idea) 3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
@@ -166,28 +166,28 @@ spec = do
                     [ SetDelegation student1 (DScopeIdeaId idea2)   student2
                     , SetDelegation student2 (DScopeTopicId topic2) student3
                     , SetDelegation student3 DScopeGlobal student1
-                    , CheckNumVotingPower student1 (DScopeIdeaId idea2) 3
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea2) 3
-                    , CheckNumVotingPower student3 (DScopeIdeaId idea2) 3
-                    , CheckNumVotingPower student1 (DScopeTopicId topic2) 3
-                    , CheckNumVotingPower student2 (DScopeTopicId topic2) 1
-                    , CheckNumVotingPower student3 (DScopeTopicId topic2) 2
-                    , CheckNumVotingPower student1 DScopeGlobal 2
-                    , CheckNumVotingPower student2 DScopeGlobal 1
-                    , CheckNumVotingPower student3 DScopeGlobal 1
+                    , CheckVotingPower student1 (DScopeIdeaId idea2) 3
+                    , CheckVotingPower student2 (DScopeIdeaId idea2) 3
+                    , CheckVotingPower student3 (DScopeIdeaId idea2) 3
+                    , CheckVotingPower student1 (DScopeTopicId topic2) 3
+                    , CheckVotingPower student2 (DScopeTopicId topic2) 1
+                    , CheckVotingPower student3 (DScopeTopicId topic2) 2
+                    , CheckVotingPower student1 DScopeGlobal 2
+                    , CheckVotingPower student2 DScopeGlobal 1
+                    , CheckVotingPower student3 DScopeGlobal 1
                     ]
             delegationTest "Breaking Cycles"
                     [ SetDelegation student1 (DScopeIdeaId idea) student2
                     , SetDelegation student2 (DScopeIdeaId idea) student3
                     , SetDelegation student3 (DScopeIdeaId idea) student1
-                    , CheckNumVotingPower student1 (DScopeIdeaId idea) 3
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea) 3
-                    , CheckNumVotingPower student3 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student1 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student2 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student3 (DScopeIdeaId idea) 3
                     , SetDelegation student1 (DScopeIdeaId idea) student4
-                    , CheckNumVotingPower student1 (DScopeIdeaId idea) 3
-                    , CheckNumVotingPower student2 (DScopeIdeaId idea) 1
-                    , CheckNumVotingPower student3 (DScopeIdeaId idea) 2
-                    , CheckNumVotingPower student4 (DScopeIdeaId idea) 4
+                    , CheckVotingPower student1 (DScopeIdeaId idea) 3
+                    , CheckVotingPower student2 (DScopeIdeaId idea) 1
+                    , CheckVotingPower student3 (DScopeIdeaId idea) 2
+                    , CheckVotingPower student4 (DScopeIdeaId idea) 4
                     ]
         tag Large . it "Random delegation programs" . property . forAllShrinkDef programGen
             $ \(DelegationProgram program) -> monadicIO . run $ runDelegationProgram program
@@ -210,12 +210,13 @@ spec = do
         topics = DScopeTopicId   . view _Id <$> unTopics     u
         ideas  = DScopeIdeaId    . view _Id <$> unIdeas      u
 
+
 -- * delegation program
 
 data DelegationDSL where
     SetDelegation       :: AUID User -> DScope -> AUID User         -> DelegationDSL
     Vote                :: AUID User -> AUID Idea -> IdeaVoteValue  -> DelegationDSL
-    CheckNumVotingPower :: AUID User -> DScope -> Int               -> DelegationDSL
+    CheckVotingPower :: AUID User -> DScope -> Int               -> DelegationDSL
     CheckVote           :: AUID User -> AUID Idea -> IdeaVoteValue  -> DelegationDSL
 
 deriving instance Show DelegationDSL
@@ -293,7 +294,7 @@ interpretDelegationStep (j,step@(Vote v i x)) = do
     let rightVotes = all checkVote votes
     Action.logout
     unless rightVotes . fail $ show ("Not all the votes have right voter or vote.", j, step, delegatees, votes)
-interpretDelegationStep (i,step@(CheckNumVotingPower v scope n)) = do
+interpretDelegationStep (i,step@(CheckVotingPower v scope n)) = do
     Action.login v
     delegatees <- getVotingPower v scope
     Action.logout
