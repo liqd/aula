@@ -359,8 +359,8 @@ type AulaUser =
 aulaUser :: forall m. ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
        (runHandler . Page.createdIdeas userId) <..> mkIdeasQuery
-  :<|> runHandler (Page.delegatedVotes userId)
-  :<|> runHandler (Page.votesFromDelegatees userId)
+  :<|> runHandler (Page.userProfileUserAsDelegate userId)
+  :<|> runHandler (Page.userProfileUserAsDelegatee userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
   :<|> postDelegateTo (Action.delegateTo (DScopeIdeaSpace SchoolSpace))

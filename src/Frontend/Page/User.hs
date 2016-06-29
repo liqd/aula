@@ -334,9 +334,9 @@ instance ToHtml PageUserProfileUserAsDelegate where
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations True delegationListsMap
 
-delegatedVotes :: (ActionPersist m, ActionUserHandler m)
+userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegate
-delegatedVotes userId = do
+userProfileUserAsDelegate userId = do
     ctx <- currentUserCapCtx
     equery $ do
         user <- maybe404 =<< findUser userId
@@ -363,9 +363,9 @@ instance ToHtml PageUserProfileUserAsDelegatee where
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations True delegationListsMap
 
-votesFromDelegatees :: (ActionPersist m, ActionUserHandler m)
+userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegatee
-votesFromDelegatees userId = do
+userProfileUserAsDelegatee userId = do
     ctx <- currentUserCapCtx
     equery $ do
         user <- maybe404 =<< findUser userId
