@@ -114,6 +114,9 @@ sortOn l = sortBy (compare `on` view l)
 downSortOn :: Ord b => Getter a b -> [a] -> [a]
 downSortOn l = sortOn (l . to Data.Ord.Down)
 
+countEq :: (Foldable f, Eq value) => value -> Lens' vote value -> f vote -> Int
+countEq v l = lengthOf $ folded . filtered ((== v) . view l)
+
 
 -- | Use this for storing URLs in the aula state.  Unlike 'UriPath' is serializable, has equality,
 -- and unlike "Frontend.Path", it is flexible enough to contain internal and external uris.

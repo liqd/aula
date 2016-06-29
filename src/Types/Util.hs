@@ -47,72 +47,81 @@ import Types.Prelude
 import Types.Core
 
 
--- * idea
+-- * quickcheck
 
-data ListIdeasInTopicTab =
-    ListIdeasInTopicTabAll       -- ^ feasible as well as infeasible
-  | ListIdeasInTopicTabVoting    -- ^ feasible, but not accepted (yet); see 'ideaAccepted'
-  | ListIdeasInTopicTabAccepted  -- ^ feaasible and accepted
-  | ListIdeasInTopicTabWinning   -- ^ feasible, accepted, and marked as winning
-  deriving (Eq, Ord, Show, Read, Generic)
+-- | FIXME: should either go to the test suite or go away completely.
+class Monad m => GenArbitrary m where
+    genGen :: Gen a -> m a
 
-instance SOP.Generic ListIdeasInTopicTab
-
-ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
-ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
-ideaJuryResultValueToType Feasible{}    = IdeaFeasible
-
-showJuryResultTypeUI :: IdeaJuryResultType -> ST
-showJuryResultTypeUI IdeaNotFeasible = "nicht durchführbar"
-showJuryResultTypeUI IdeaFeasible    = "durchführbar"
-
-data MoveIdea
-    = MoveIdeaToWild
-    | MoveIdeaToTopic (AUID Topic)
-  deriving (Eq, Ord, Show, Read, Generic)
-
-instance SOP.Generic MoveIdea
-
-moveIdeaElim :: forall t . t -> (AUID Topic -> t) -> MoveIdea -> t
-moveIdeaElim wild topic = \case
-    MoveIdeaToWild    -> wild
-    MoveIdeaToTopic t -> topic t
-
--- * comment
-
-data CommentNesting
-    = TopComment
-    | NestedComment
-  deriving (Eq, Show)
-
-commentNestingElim :: t -> t -> CommentNesting -> t
-commentNestingElim top nested = \case
-    TopComment    -> top
-    NestedComment -> nested
+-- | FIXME: should either go to the test suite or go away completely.
+genArbitrary :: (GenArbitrary m, Arbitrary a) => m a
+genArbitrary = genGen arbitrary
 
 
--- * idea space, topic, phase
+-- * meta info class
 
--- Edit topic description and add ideas to topic.
-data EditTopicData = EditTopicData
-    { _editTopicTitle    :: ST
-    , _editTopicDesc     :: PlainDocument
-    , _editTopicAddIdeas :: [AUID Idea]
-    }
-  deriving (Eq, Ord, Show, Read, Generic)
+class Ord (IdOf a) => HasMetaInfo a where
+    metaInfo        :: Lens' a (MetaInfo a)
+    _Key            :: Lens' a (KeyOf a)
+    _Key            = metaInfo . metaKey
+    _Id             :: Lens' a (IdOf a)
+    _Id             = _Key . idOfKey (Proxy :: Proxy a)
+    idOfKey         :: Proxy a -> Lens' (KeyOf a) (IdOf a)
+    default idOfKey :: Proxy a -> Lens' (AUID a) (AUID a)
+    idOfKey _       = id
+    createdBy       :: Lens' a (AUID User)
+    createdBy       = metaInfo . metaCreatedBy
+    createdByLogin  :: Lens' a UserLogin
+    createdByLogin  = metaInfo . metaCreatedByLogin
+    createdByAvatar :: AvatarDimension -> Getter a URL
+    createdByAvatar dim = metaInfo . metaCreatedBy . avatarUrl dim
+    createdAt       :: Lens' a Timestamp
+    createdAt       = metaInfo . metaCreatedAt
+    changedBy       :: Lens' a (AUID User)
+    changedBy       = metaInfo . metaChangedBy
+    changedAt       :: Lens' a Timestamp
+    changedAt       = metaInfo . metaChangedAt
 
-instance SOP.Generic EditTopicData
+instance HasMetaInfo Idea           where metaInfo = ideaMeta
+instance HasMetaInfo IdeaJuryResult where metaInfo = ideaJuryResultMeta
+instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
+instance HasMetaInfo Topic          where metaInfo = topicMeta
+instance HasMetaInfo User           where metaInfo = userMeta
 
-phaseLeftoverFrom :: Timestamp -> Lens' PhaseStatus Timespan
-phaseLeftoverFrom now f = \case
-    ActivePhase end      -> ActivePhase <$> fromNow now f end
-    FrozenPhase leftover -> FrozenPhase <$> f leftover
+instance HasMetaInfo Comment where
+    metaInfo  = commentMeta
+    idOfKey _ = ckCommentId
+instance HasMetaInfo CommentVote where
+    metaInfo  = commentVoteMeta
+    idOfKey _ = cvUser
+instance HasMetaInfo IdeaVote where
+    metaInfo  = ideaVoteMeta
+    idOfKey _ = ivUser
+instance HasMetaInfo IdeaLike where
+    metaInfo  = ideaLikeMeta
+    idOfKey _ = ivUser
 
-followsPhase :: Phase -> Phase -> Bool
-followsPhase PhaseJury       (PhaseRefinement _) = True
-followsPhase (PhaseVoting _) PhaseJury           = True
-followsPhase PhaseResult     (PhaseVoting _)     = True
-followsPhase _               _                   = False
+aMapFromList :: HasMetaInfo a => [a] -> AMap a
+aMapFromList = Map.fromList . map (\x -> (x ^. _Id, x))
+
+
+-- * user
+
+newtype PasswordToken = PasswordToken { unPasswordToken :: ST }
+  deriving (Eq, Generic, Ord, Read, Show)
+
+instance HasUriPart PasswordToken where
+    uriPart = fromString . cs . unPasswordToken
+
+-- | FIXME: Smart constructor for tokens
+instance FromHttpApiData PasswordToken where
+    parseUrlPiece = Right . PasswordToken . cs
+
+data PasswordTokenState
+    = Invalid
+    | TimedOut
+    | Valid
+  deriving (Eq, Generic, Ord, Read, Show)
 
 
 _GuestRole :: Prism' Role IdeaSpace
@@ -141,8 +150,6 @@ data RoleScope
   | SchoolScope
   deriving (Eq, Ord, Show, Read, Generic)
 
-instance SOP.Generic RoleScope
-
 instance Monoid RoleScope where
     mempty = ClassesScope mempty
     SchoolScope `mappend` _ = SchoolScope
@@ -157,144 +164,6 @@ verifyUserPass pwd = \case
     UserPassDeactivated                           -> False
 
 
--- | Elaboration and Voting phase durations
--- FIXME: 'elaboration' and 'refinement' are the same thing.  pick one term!
--- ('elaboration' is my preference ~~fisx)
-data Durations = Durations
-    { _elaborationPhase :: DurationDays
-    , _votingPhase      :: DurationDays
-    }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic Durations
-
-data Quorums = Quorums
-    { _schoolQuorumPercentage :: Int
-    , _classQuorumPercentage  :: Int -- (there is only one quorum for all classes, see gh#318)
-    }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic Quorums
-
-data Settings = Settings
-    { _durations :: Durations
-    , _quorums   :: Quorums
-    , _freeze    :: Freeze
-    }
-  deriving (Eq, Show, Read, Generic)
-
-instance SOP.Generic Settings
-
-defaultSettings :: Settings
-defaultSettings = Settings
-    { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
-    , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
-    , _freeze    = NotFrozen
-    }
-
-
--- * general-purpose types
-
-data PhaseChangeDir = Backward | Forward
-  deriving (Eq, Ord, Read, Show, Enum, Bounded, Generic)
-
-instance SOP.Generic PhaseChangeDir
-
-instance HasUILabel PhaseChangeDir where
-    uilabel Forward  = "vorwärts"
-    uilabel Backward = "zurück"
-
-instance ToHtml PhaseChangeDir where
-    toHtmlRaw = toHtml
-    toHtml    = toHtml . uilabelST
-
--- | FIXME: should either go to the test suite or go away completely.
-class Monad m => GenArbitrary m where
-    genGen :: Gen a -> m a
-
--- | FIXME: should either go to the test suite or go away completely.
-genArbitrary :: (GenArbitrary m, Arbitrary a) => m a
-genArbitrary = genGen arbitrary
-
-newtype PasswordToken = PasswordToken { unPasswordToken :: ST }
-  deriving (Eq, Generic, Ord, Read, Show)
-
-instance SOP.Generic PasswordToken
-
-instance HasUriPart PasswordToken where
-    uriPart = fromString . cs . unPasswordToken
-
--- FIXME: Smart constructor for tokens
-instance FromHttpApiData PasswordToken where
-    parseUrlPiece = Right . PasswordToken . cs
-
-data PasswordTokenState
-    = Invalid
-    | TimedOut
-    | Valid
-  deriving (Eq, Generic, Ord, Read, Show)
-
-instance SOP.Generic PasswordTokenState
-
-
--- * boilerplate: binary, lens (alpha order), SafeCopy
-
-makePrisms ''RoleScope
-makeLenses ''Durations
-makeLenses ''EditTopicData
-makeLenses ''Quorums
-makeLenses ''RoleScope
-makeLenses ''Settings
-
-deriveSafeCopy 0 'base ''Durations
-deriveSafeCopy 0 'base ''PasswordToken
-deriveSafeCopy 0 'base ''Settings
-deriveSafeCopy 0 'base ''Quorums
-deriveSafeCopy 0 'base ''EditTopicData
-deriveSafeCopy 0 'base ''MoveIdea
-
-
-class Ord (IdOf a) => HasMetaInfo a where
-    metaInfo        :: Lens' a (MetaInfo a)
-    _Key            :: Lens' a (KeyOf a)
-    _Key            = metaInfo . metaKey
-    _Id             :: Lens' a (IdOf a)
-    _Id             = _Key . idOfKey (Proxy :: Proxy a)
-    idOfKey         :: Proxy a -> Lens' (KeyOf a) (IdOf a)
-    default idOfKey :: Proxy a -> Lens' (AUID a) (AUID a)
-    idOfKey _       = id
-    createdBy       :: Lens' a (AUID User)
-    createdBy       = metaInfo . metaCreatedBy
-    createdByLogin  :: Lens' a UserLogin
-    createdByLogin  = metaInfo . metaCreatedByLogin
-    createdByAvatar :: AvatarDimension -> Getter a URL
-    createdByAvatar dim = metaInfo . metaCreatedBy . avatarUrl dim
-    createdAt       :: Lens' a Timestamp
-    createdAt       = metaInfo . metaCreatedAt
-    changedBy       :: Lens' a (AUID User)
-    changedBy       = metaInfo . metaChangedBy
-    changedAt       :: Lens' a Timestamp
-    changedAt       = metaInfo . metaChangedAt
-
-instance HasMetaInfo Idea where metaInfo = ideaMeta
-instance HasMetaInfo IdeaJuryResult where metaInfo = ideaJuryResultMeta
-instance HasMetaInfo IdeaVoteResult where metaInfo = ideaVoteResultMeta
-instance HasMetaInfo Topic where metaInfo = topicMeta
-instance HasMetaInfo User where metaInfo = userMeta
-instance HasMetaInfo Comment where
-    metaInfo = commentMeta
-    idOfKey _ = ckCommentId
-instance HasMetaInfo CommentVote where
-    metaInfo = commentVoteMeta
-    idOfKey _ = cvUser
-instance HasMetaInfo IdeaVote where
-    metaInfo = ideaVoteMeta
-    idOfKey _ = ivUser
-instance HasMetaInfo IdeaLike where
-    metaInfo = ideaLikeMeta
-    idOfKey _ = ivUser
-
-
 unsafeEmailAddress :: (ConvertibleStrings local SBS, ConvertibleStrings domain SBS) =>
                       local -> domain -> EmailAddress
 unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddress (cs local) (cs domain)
@@ -306,6 +175,12 @@ unsafeEmailAddress local domain = InternalEmailAddress $ Email.unsafeEmailAddres
 -}
 userEmailAddress :: CSI' s SBS => Fold User s
 userEmailAddress = userEmail . _Just . re emailAddress
+
+userPassword :: Lens' User UserPass
+userPassword = userSettings . userSettingsPassword
+
+userEmail :: Lens' User (Maybe EmailAddress)
+userEmail = userSettings . userSettingsEmail
 
 userRoles :: Fold User Role
 userRoles = userRoleSet . folded
@@ -376,44 +251,29 @@ makeUserView u =
 activeUsers :: [UserView] -> [User]
 activeUsers = mapMaybe (^? activeUser)
 
-notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
 
-ideaHasCreatorStatement :: Idea -> Bool
-ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
-
-
-showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
-showIdeaSpaceCategory SchoolSpace    = "school"
-showIdeaSpaceCategory (ClassSpace _) = "class"
-
-ideaTopicId :: Traversal' Idea (AUID Topic)
-ideaTopicId = ideaLocation . ideaLocationTopicId
-
-ideaLocationMaybeTopicId :: Lens' IdeaLocation (Maybe (AUID Topic))
-ideaLocationMaybeTopicId f = \case
-    IdeaLocationSpace spc     -> mk spc <$> f Nothing
-    IdeaLocationTopic spc tid -> mk spc <$> f (Just tid)
-  where
-    mk spc = \case
-        Nothing  -> IdeaLocationSpace spc
-        Just tid -> IdeaLocationTopic spc tid
-
-ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
-ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
-
-isPhaseFrozen :: Phase -> Bool
-isPhaseFrozen = has (phaseWildFrozen . _Frozen <> phaseStatus . _FrozenPhase . like ())
+-- * idea
 
 isFeasibleIdea :: Idea -> Bool
 isFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _Feasible
 
+-- | TODO: remove this in favour of 'isFeasibleIdea'
+notFeasibleIdea :: Idea -> Bool
+notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
+
+ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
+ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
+ideaJuryResultValueToType Feasible{}    = IdeaFeasible
+
+showJuryResultTypeUI :: IdeaJuryResultType -> ST
+showJuryResultTypeUI IdeaNotFeasible = "nicht durchführbar"
+showJuryResultTypeUI IdeaFeasible    = "durchführbar"
+
+ideaHasCreatorStatement :: Idea -> Bool
+ideaHasCreatorStatement = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning . _Just
+
 isWinning :: Idea -> Bool
 isWinning = has $ ideaVoteResult . _Just . ideaVoteResultValue . _Winning
-
-isWild :: IdeaLocation -> Bool
-isWild (IdeaLocationSpace _)   = True
-isWild (IdeaLocationTopic _ _) = False
 
 userVotedOnIdea :: User -> Idea -> Maybe IdeaVoteValue
 userVotedOnIdea user idea =
@@ -423,12 +283,18 @@ userLikesIdea :: User -> Idea -> Bool
 userLikesIdea user idea =
     isJust $ idea ^? ideaLikes . at (user ^. _Id) . _Just
 
--- | Construct an 'IdeaLocation' from a 'Topic'
-topicIdeaLocation :: Topic -> IdeaLocation
-topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
 
-aMapFromList :: HasMetaInfo a => [a] -> AMap a
-aMapFromList = Map.fromList . map (\x -> (x ^. _Id, x))
+-- * comment
+
+data CommentNesting
+    = TopComment
+    | NestedComment
+  deriving (Eq, Show)
+
+commentNestingElim :: t -> t -> CommentNesting -> t
+commentNestingElim top nested = \case
+    TopComment    -> top
+    NestedComment -> nested
 
 foldComment :: Fold Comment Comment
 foldComment = cosmosOf (commentReplies . each)
@@ -438,9 +304,6 @@ foldComments = each . foldComment
 
 commentsCount :: Getter Comments Int
 commentsCount = to $ lengthOf foldComments
-
-countEq :: (Foldable f, Eq value) => value -> Lens' vote value -> f vote -> Int
-countEq v l = lengthOf $ folded . filtered ((== v) . view l)
 
 countIdeaVotes :: IdeaVoteValue -> IdeaVotes -> Int
 countIdeaVotes v = countEq v ideaVoteValue
@@ -460,11 +323,122 @@ traverseParents :: [AUID Comment] -> Traversal' Comments Comments
 traverseParents []     = id
 traverseParents (p:ps) = at p . _Just . commentReplies . traverseParents ps
 
-userPassword :: Lens' User UserPass
-userPassword = userSettings . userSettingsPassword
 
-userEmail :: Lens' User (Maybe EmailAddress)
-userEmail = userSettings . userSettingsEmail
+-- * idea space, topic, phase
+
+-- | TODO: rename to 'showIdeaSpaceKind'
+showIdeaSpaceCategory :: IsString s => IdeaSpace -> s
+showIdeaSpaceCategory SchoolSpace    = "school"
+showIdeaSpaceCategory (ClassSpace _) = "class"
+
+-- | Construct an 'IdeaLocation' from a 'Topic'
+topicIdeaLocation :: Topic -> IdeaLocation
+topicIdeaLocation = IdeaLocationTopic <$> (^. topicIdeaSpace) <*> (^. _Id)
+
+ideaMaybeTopicId :: Lens' Idea (Maybe (AUID Topic))
+ideaMaybeTopicId = ideaLocation . ideaLocationMaybeTopicId
+
+ideaTopicId :: Traversal' Idea (AUID Topic)
+ideaTopicId = ideaLocation . ideaLocationTopicId
+
+ideaLocationMaybeTopicId :: Lens' IdeaLocation (Maybe (AUID Topic))
+ideaLocationMaybeTopicId f = \case
+    IdeaLocationSpace spc     -> mk spc <$> f Nothing
+    IdeaLocationTopic spc tid -> mk spc <$> f (Just tid)
+  where
+    mk spc = \case
+        Nothing  -> IdeaLocationSpace spc
+        Just tid -> IdeaLocationTopic spc tid
+
+isWild :: IdeaLocation -> Bool
+isWild (IdeaLocationSpace _)   = True
+isWild (IdeaLocationTopic _ _) = False
+
+-- | Edit topic description and add ideas to topic.
+data EditTopicData = EditTopicData
+    { _editTopicTitle    :: ST
+    , _editTopicDesc     :: PlainDocument
+    , _editTopicAddIdeas :: [AUID Idea]
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
+
+isPhaseFrozen :: Phase -> Bool
+isPhaseFrozen = has (phaseWildFrozen . _Frozen <> phaseStatus . _FrozenPhase . like ())
+
+phaseLeftoverFrom :: Timestamp -> Lens' PhaseStatus Timespan
+phaseLeftoverFrom now f = \case
+    ActivePhase end      -> ActivePhase <$> fromNow now f end
+    FrozenPhase leftover -> FrozenPhase <$> f leftover
+
+followsPhase :: Phase -> Phase -> Bool
+followsPhase PhaseJury       (PhaseRefinement _) = True
+followsPhase (PhaseVoting _) PhaseJury           = True
+followsPhase PhaseResult     (PhaseVoting _)     = True
+followsPhase _               _                   = False
+
+
+-- | Elaboration and Voting phase durations
+-- FIXME: 'elaboration' and 'refinement' are the same thing.  pick one term!
+-- ('elaboration' is my preference ~~fisx)
+data Durations = Durations
+    { _elaborationPhase :: DurationDays
+    , _votingPhase      :: DurationDays
+    }
+  deriving (Eq, Show, Read, Generic)
+
+data Quorums = Quorums
+    { _schoolQuorumPercentage :: Int
+    , _classQuorumPercentage  :: Int -- (there is only one quorum for all classes, see gh#318)
+    }
+  deriving (Eq, Show, Read, Generic)
+
+data Settings = Settings
+    { _durations :: Durations
+    , _quorums   :: Quorums
+    , _freeze    :: Freeze
+    }
+  deriving (Eq, Show, Read, Generic)
+
+defaultSettings :: Settings
+defaultSettings = Settings
+    { _durations = Durations { _elaborationPhase = 21, _votingPhase = 21 }
+    , _quorums   = Quorums   { _schoolQuorumPercentage = 30, _classQuorumPercentage = 30 }
+    , _freeze    = NotFrozen
+    }
+
+
+data PhaseChangeDir = Backward | Forward
+  deriving (Eq, Ord, Read, Show, Enum, Bounded, Generic)
+
+instance HasUILabel PhaseChangeDir where
+    uilabel Forward  = "vorwärts"
+    uilabel Backward = "zurück"
+
+instance ToHtml PhaseChangeDir where
+    toHtmlRaw = toHtml
+    toHtml    = toHtml . uilabelST
+
+
+data ListIdeasInTopicTab =
+    ListIdeasInTopicTabAll       -- ^ feasible as well as infeasible
+  | ListIdeasInTopicTabVoting    -- ^ feasible, but not accepted (yet); see 'ideaAccepted'
+  | ListIdeasInTopicTabAccepted  -- ^ feaasible and accepted
+  | ListIdeasInTopicTabWinning   -- ^ feasible, accepted, and marked as winning
+  deriving (Eq, Ord, Show, Read, Generic)
+
+data MoveIdea
+    = MoveIdeaToWild
+    | MoveIdeaToTopic (AUID Topic)
+  deriving (Eq, Ord, Show, Read, Generic)
+
+moveIdeaElim :: forall t . t -> (AUID Topic -> t) -> MoveIdea -> t
+moveIdeaElim wild topic = \case
+    MoveIdeaToWild    -> wild
+    MoveIdeaToTopic t -> topic t
+
+
+-- * delegations
 
 fullDScopeToDScope :: DScopeFull -> DScope
 fullDScopeToDScope = \case
@@ -472,3 +446,32 @@ fullDScopeToDScope = \case
     DScopeIdeaSpaceFull is -> DScopeIdeaSpace is
     DScopeTopicFull t      -> DScopeTopicId (t ^. _Id)
     DScopeIdeaFull i       -> DScopeIdeaId (i ^. _Id)
+
+
+-- * boilerplate instances
+
+instance SOP.Generic Durations
+instance SOP.Generic EditTopicData
+instance SOP.Generic ListIdeasInTopicTab
+instance SOP.Generic MoveIdea
+instance SOP.Generic PasswordToken
+instance SOP.Generic PasswordTokenState
+instance SOP.Generic PhaseChangeDir
+instance SOP.Generic Quorums
+instance SOP.Generic RoleScope
+instance SOP.Generic Settings
+
+makePrisms ''RoleScope
+
+makeLenses ''Durations
+makeLenses ''EditTopicData
+makeLenses ''Quorums
+makeLenses ''RoleScope
+makeLenses ''Settings
+
+deriveSafeCopy 0 'base ''Durations
+deriveSafeCopy 0 'base ''EditTopicData
+deriveSafeCopy 0 'base ''MoveIdea
+deriveSafeCopy 0 'base ''PasswordToken
+deriveSafeCopy 0 'base ''Quorums
+deriveSafeCopy 0 'base ''Settings

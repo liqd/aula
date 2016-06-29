@@ -643,7 +643,11 @@ class HasUILabel a where
 
 -- * instances
 
--- TODO: clean up this section
+instance HasUriPart (AUID a) where
+    uriPart (AUID s) = fromString . show $ s
+
+
+-- ** user, role
 
 instance CSV.FromField EmailAddress where
     parseField f = either fail (pure . InternalEmailAddress) . Email.validate =<< CSV.parseField f
@@ -653,9 +657,49 @@ instance SafeCopy EmailAddress where
     getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
     putCopy = contain . safePut . Email.toByteString . internalEmailAddress
 
-instance HasUILabel IdeaLocation where
-    uilabel (IdeaLocationSpace s) = uilabel s
-    uilabel (IdeaLocationTopic s (AUID t)) = "Thema #" <> fromString (show t) <> " in " <> uilabel s
+instance FromHttpApiData Role where
+    parseUrlPiece = parseRole . ST.splitOn "-"
+
+instance HasUILabel Role where
+    uilabel = \case
+        (Student c)
+          | nilSchoolClass c -> "Schüler"
+          | otherwise        -> "Schüler (" <> uilabel c <> ")"
+        (ClassGuest c)
+          | nilSchoolClass c -> "Gast"
+          | otherwise        -> "Gast (" <> uilabel c <> ")"
+        SchoolGuest    -> "Gast (Schule)"
+        Moderator      -> "Moderator"
+        Principal      -> "Direktor"
+        Admin          -> "Administrator"
+
+instance HasUriPart Role where
+    uriPart = \case
+        (Student c)    -> "student-" <> uriPart c
+        (ClassGuest c) -> "guest-" <> uriPart c
+        SchoolGuest    -> "guest-school"
+        Moderator      -> "moderator"
+        Principal      -> "principal"
+        Admin          -> "admin"
+
+
+-- ** idea
+
+instance HasUILabel Category where
+    uilabel = \case
+        CatRules       -> "Regeln"
+        CatEquipment   -> "Ausstattung"
+        CatTeaching    -> "Unterricht"
+        CatTime        -> "Zeit"
+        CatEnvironment -> "Umgebung"
+
+instance ToHttpApiData Category where
+    toUrlPiece = \case
+        CatRules       -> "rules"
+        CatEquipment   -> "equipment"
+        CatTeaching    -> "teaching"
+        CatTime        -> "time"
+        CatEnvironment -> "environment"
 
 instance FromHttpApiData Category where
     parseUrlPiece = \case
@@ -666,21 +710,47 @@ instance FromHttpApiData Category where
         "environment" -> Right CatEnvironment
         _             -> Left "no parse"
 
-instance ToHttpApiData Category where
-    toUrlPiece = \case
-        CatRules       -> "rules"
-        CatEquipment   -> "equipment"
-        CatTeaching    -> "teaching"
-        CatTime        -> "time"
-        CatEnvironment -> "environment"
 
-instance HasUILabel Category where
-    uilabel = \case
-        CatRules       -> "Regeln"
-        CatEquipment   -> "Ausstattung"
-        CatTeaching    -> "Unterricht"
-        CatTime        -> "Zeit"
-        CatEnvironment -> "Umgebung"
+instance HasUriPart IdeaJuryResultType where
+    uriPart = fromString . cs . toUrlPiece
+
+instance ToHttpApiData IdeaJuryResultType where
+    toUrlPiece = \case
+      IdeaNotFeasible -> "good"
+      IdeaFeasible    -> "bad"
+
+instance FromHttpApiData IdeaJuryResultType where
+    parseUrlPiece = \case
+      "good" -> Right IdeaNotFeasible
+      "bad"  -> Right IdeaFeasible
+      _      -> Left "Ill-formed idea vote value: only `good' or `bad' are allowed"
+
+
+instance HasUriPart IdeaVoteValue where
+    uriPart = fromString . lowerFirst . show
+
+instance FromHttpApiData IdeaVoteValue where
+    parseUrlPiece = \case
+        "yes"     -> Right Yes
+        "no"      -> Right No
+        _         -> Left "Ill-formed idea vote value: only `yes' or `no' are allowed"
+
+instance HasUriPart UpDown where
+    uriPart = fromString . lowerFirst . show
+
+instance FromHttpApiData UpDown where
+    parseUrlPiece = \case
+        "up"   -> Right Up
+        "down" -> Right Down
+        _      -> Left "Ill-formed comment vote value: only `up' or `down' are expected)"
+
+
+-- * location, space, topic
+
+instance HasUILabel IdeaLocation where
+    uilabel (IdeaLocationSpace s) = uilabel s
+    uilabel (IdeaLocationTopic s (AUID t)) = "Thema #" <> fromString (show t) <> " in " <> uilabel s
+
 
 -- e.g.: ["Klasse 10a", "Klasse 7b", "Klasse 7a"]
 --   ==> ["Klasse 7a", "Klasse 7b", "Klasse 10a"]
@@ -703,25 +773,20 @@ instance Ord IdeaSpace where
                             ([], zs) -> digits zs
                             (ys, zs) -> Left ys : digits zs
 
-instance FromHttpApiData Role where
-    parseUrlPiece = parseRole . ST.splitOn "-"
-
-instance FromHttpApiData IdeaSpace where
-    parseUrlPiece = parseIdeaSpaceCode . ST.splitOn "-"
-
-instance ToHttpApiData IdeaSpace where
-    toUrlPiece = cs . ideaSpaceCode
-
-instance HasUriPart IdeaSpace where
-    uriPart = fromString . ideaSpaceCode
-
-instance HasUriPart SchoolClass where
-    uriPart = fromString . schoolClassCode
-
 instance HasUILabel IdeaSpace where
     uilabel = \case
         SchoolSpace    -> "Schule"
         (ClassSpace c) -> "Klasse " <> uilabel c
+
+instance HasUriPart IdeaSpace where
+    uriPart = fromString . ideaSpaceCode
+
+instance ToHttpApiData IdeaSpace where
+    toUrlPiece = cs . ideaSpaceCode
+
+instance FromHttpApiData IdeaSpace where
+    parseUrlPiece = parseIdeaSpaceCode . ST.splitOn "-"
+
 
 -- | for the first school year, we can ignore the year.  (after that, we have different options.
 -- one would be to only show the year if it is not the current one, or always show it, or either
@@ -729,55 +794,14 @@ instance HasUILabel IdeaSpace where
 instance HasUILabel SchoolClass where
     uilabel = fromString . cs . _className
 
+instance HasUriPart SchoolClass where
+    uriPart = fromString . schoolClassCode
+
 instance FromHttpApiData SchoolClass where
     parseUrlPiece = parseSchoolClassCode . ST.splitOn "-"
 
-instance FromHttpApiData IdeaVoteValue where
-    parseUrlPiece = \case
-        "yes"     -> Right Yes
-        "no"      -> Right No
-        _         -> Left "Ill-formed idea vote value: only `yes' or `no' are allowed"
 
-instance HasUriPart IdeaVoteValue where
-    uriPart = fromString . lowerFirst . show
-
-instance FromHttpApiData IdeaJuryResultType where
-    parseUrlPiece = \case
-      "good" -> Right IdeaNotFeasible
-      "bad"  -> Right IdeaFeasible
-      _      -> Left "Ill-formed idea vote value: only `good' or `bad' are allowed"
-
-instance ToHttpApiData IdeaJuryResultType where
-    toUrlPiece = \case
-      IdeaNotFeasible -> "good"
-      IdeaFeasible    -> "bad"
-
-instance HasUriPart IdeaJuryResultType where
-    uriPart = fromString . cs . toUrlPiece
-
-instance HasUriPart UpDown where
-    uriPart = fromString . lowerFirst . show
-
-instance FromHttpApiData UpDown where
-    parseUrlPiece = \case
-        "up"   -> Right Up
-        "down" -> Right Down
-        _      -> Left "Ill-formed comment vote value: only `up' or `down' are expected)"
-
-instance FromHttpApiData DScope where
-    parseUrlPiece scope = case cs scope of
-        "global" -> Right DScopeGlobal
-        'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
-        't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
-        'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
-        _ -> Left "no parse"
-
-instance ToHttpApiData DScope where
-    toUrlPiece = (cs :: String -> ST). \case
-        DScopeGlobal -> "global"
-        (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
-        (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
-        (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
+-- ** delegations
 
 instance HasUILabel Phase where
     uilabel = \case
@@ -788,30 +812,20 @@ instance HasUILabel Phase where
         PhaseVoting{}     -> "Abstimmungsphase"
         PhaseResult       -> "Ergebnisphase"
 
-instance HasUriPart (AUID a) where
-    uriPart (AUID s) = fromString . show $ s
+instance ToHttpApiData DScope where
+    toUrlPiece = (cs :: String -> ST). \case
+        DScopeGlobal -> "global"
+        (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
+        (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
+        (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
 
-instance HasUriPart Role where
-    uriPart = \case
-        (Student c)    -> "student-" <> uriPart c
-        (ClassGuest c) -> "guest-" <> uriPart c
-        SchoolGuest    -> "guest-school"
-        Moderator      -> "moderator"
-        Principal      -> "principal"
-        Admin          -> "admin"
-
-instance HasUILabel Role where
-    uilabel = \case
-        (Student c)
-          | nilSchoolClass c -> "Schüler"
-          | otherwise        -> "Schüler (" <> uilabel c <> ")"
-        (ClassGuest c)
-          | nilSchoolClass c -> "Gast"
-          | otherwise        -> "Gast (" <> uilabel c <> ")"
-        SchoolGuest    -> "Gast (Schule)"
-        Moderator      -> "Moderator"
-        Principal      -> "Direktor"
-        Admin          -> "Administrator"
+instance FromHttpApiData DScope where
+    parseUrlPiece scope = case cs scope of
+        "global" -> Right DScopeGlobal
+        'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
+        't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
+        'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
+        _ -> Left "no parse"
 
 instance HasUILabel DScopeFull where
     uilabel = \case
