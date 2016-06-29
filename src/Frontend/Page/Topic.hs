@@ -180,10 +180,9 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
 
-            when (canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic) .
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+                if canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic then do
                     ul_ [class_ "pop-menu-list"] $ do
-                        -- FIXME: There is no EditTopic path defined.
                         when canEditTopic .
                             li_ [class_ "pop-menu-list-item"] $ do
                                 a_ [id_ "edit-topic",  href_ $ U.editTopic space topicId] $ do
@@ -205,6 +204,9 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                                         [class_ "btn-plain", jsReloadOnClick]
                                         (U.adminTopicVotingPrevPhase topicId)
                                         "Vorherige Phase"
+                else do
+                    ul_ [class_ "pop-menu-list"] $ do
+                        li_ [class_ "pop-menu-list-item"] "<Menü ist leer>"
 
         h1_ [class_ "main-heading"] $ do
             span_ [class_ "sub-heading"] $ do
