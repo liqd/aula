@@ -214,10 +214,10 @@ spec = do
 -- * delegation program
 
 data DelegationDSL where
-    SetDelegation       :: AUID User -> DScope -> AUID User         -> DelegationDSL
-    Vote                :: AUID User -> AUID Idea -> IdeaVoteValue  -> DelegationDSL
-    CheckVotingPower :: AUID User -> DScope -> Int               -> DelegationDSL
-    CheckVote           :: AUID User -> AUID Idea -> IdeaVoteValue  -> DelegationDSL
+    SetDelegation    :: AUID User -> DScope    -> AUID User     -> DelegationDSL
+    Vote             :: AUID User -> AUID Idea -> IdeaVoteValue -> DelegationDSL
+    CheckVotingPower :: AUID User -> DScope    -> Int           -> DelegationDSL
+    CheckVote        :: AUID User -> AUID Idea -> IdeaVoteValue -> DelegationDSL
 
 deriving instance Show DelegationDSL
 
@@ -274,8 +274,8 @@ interpretDelegationStep (i,step@(SetDelegation f scope t)) = do
     let holds = if f `elem` delegateesTo
                     then delegateesTo == delegatees'
                     else f `elem` delegatees' && (ds1 == ds2)
-    unless holds . fail $ show (
-        if f `elem` delegateesTo
+    unless holds . fail $ show
+       (if f `elem` delegateesTo
             then "The delegatees list has changed."
             else "The delegatees are not the sum of from and to",
         i, step, f `elem` delegateesTo, ds1, ds2)
