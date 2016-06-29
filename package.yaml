@@ -112,6 +112,7 @@ tests:
       - digestive-functors >= 0.8 && <0.9
       - free
       - hspec
+      - hspec-core
       - hspec-wai
       - HUnit >= 1.3
       - lens
