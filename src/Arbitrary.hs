@@ -288,14 +288,14 @@ instance Arbitrary DelegateeListsMap where
     shrink (DelegateeListsMap x) = DelegateeListsMap <$> shr x
 
 instance Arbitrary PageUserProfileUserAsDelegate where
-    arbitrary = PageUserProfileUserAsDelegate <$> arb <*> arb <*> arb
-    shrink (PageUserProfileUserAsDelegate x y z) =
-        PageUserProfileUserAsDelegate <$> shr x <*> shr y <*> shr z
+    arbitrary = PageUserProfileUserAsDelegate <$> arb <*> arb <*> arb <*> arb
+    shrink (PageUserProfileUserAsDelegate x y z w) =
+        PageUserProfileUserAsDelegate <$> shr x <*> shr y <*> shr z <*> shr w
 
 instance Arbitrary PageUserProfileUserAsDelegatee where
-    arbitrary = PageUserProfileUserAsDelegatee <$> arb <*> arb <*> arb
-    shrink (PageUserProfileUserAsDelegatee x y z) =
-        PageUserProfileUserAsDelegatee <$> shr x <*> shr y <*> shr z
+    arbitrary = PageUserProfileUserAsDelegatee <$> arb <*> arb <*> arb <*> arb
+    shrink (PageUserProfileUserAsDelegatee x y z w) =
+        PageUserProfileUserAsDelegatee <$> shr x <*> shr y <*> shr z <*> shr w
 
 instance Arbitrary PageUserSettings where
     arbitrary = PageUserSettings <$> arb

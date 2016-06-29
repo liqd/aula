@@ -33,6 +33,7 @@ import Persistent
     , findUser
     , findIdeasByUserId
     , getIdeaStats
+    , delegatees
     )
 
 import qualified Data.Set as Set
@@ -67,7 +68,7 @@ instance Page PageUserSettings where
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas =
-        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas DelegateeListsMap
+        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
@@ -75,7 +76,7 @@ instance Page PageUserProfileCreatedIdeas where
 
 -- | 8.2 User profile: Votes from delegatees
 data PageUserProfileUserAsDelegate =
-        PageUserProfileUserAsDelegate CapCtx UserView DelegateeListsMap
+        PageUserProfileUserAsDelegate CapCtx UserView DelegateeListsMap [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegate where
@@ -83,7 +84,7 @@ instance Page PageUserProfileUserAsDelegate where
 
 -- | 8.X User profile: Votes to delegates
 data PageUserProfileUserAsDelegatee =
-        PageUserProfileUserAsDelegatee CapCtx UserView DelegateeListsMap
+        PageUserProfileUserAsDelegatee CapCtx UserView DelegateeListsMap [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegatee where
@@ -196,7 +197,7 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
-userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, DelegateeListsMap) -> HtmlT m ()
+userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, [Delegation]) -> HtmlT m ()
 userHeaderDiv _ (Left user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -213,7 +214,7 @@ userHeaderDiv ctx (Right (user, delegations)) =
         div_ [class_ "heroic-btn-group"] $ do
             let caps = capabilities ctx
             when (CanDelegateInClass `elem` caps || CanDelegateInSchool `elem` caps) $ do
-                delegationButtons ctx user delegations
+                delegationButtons (ctx ^. capCtxUser) user delegations
             btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
                 editProfileBtn
@@ -229,10 +230,9 @@ userHeaderDivCore user = do
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
 -- philosophical, but it doesn't really matter: users can delegate to themselves
 -- just like to anybody else, and the graph will look different if they do.
-delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
-delegationButtons (view capCtxUser -> delegatee)
-                  delegate
-                  (delegatedDScopes delegatee -> dscopes) = do
+delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
+delegationButtons delegatee delegate delegations = do
+    let dscopes = view delegationScope <$> delegations
     let but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
         if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
@@ -310,29 +310,29 @@ createdIdeas userId ideasQuery = do
                     (mapM getIdeaStats
                      =<< filter visibleByCurrentUser
                          <$> findIdeasByUserId userId))
-        delegatees <- userDelegateeListsMap userId
+        ds <- delegatees userId
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)
             (makeUserView user)
             ideas
-            delegatees)
+            ds)
 
 
--- ** User Profile: User As Delegatee
+-- ** User Profile: User As Delegate
 
 instance ToHtml PageUserProfileUserAsDelegate where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileUserAsDelegate ctx (DeletedUser user) _delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegate ctx (DeletedUser user) _delegationListsMap _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Left user)
-    toHtml p@(PageUserProfileUserAsDelegate ctx (ActiveUser user) delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegate ctx (ActiveUser user) delegationListsMap delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
             userProfileTab UserDelegateesTab user
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    renderDelegations True delegations
+                    renderDelegations True delegationListsMap
 
 delegatedVotes :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegate
@@ -344,23 +344,24 @@ delegatedVotes userId = do
             (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegateeListsMap userId
+            <*> delegatees userId
 
 
--- ** User Profile: Votes from delegatees
+-- ** User Profile: User as a delegatee
 
 instance ToHtml PageUserProfileUserAsDelegatee where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileUserAsDelegatee ctx (DeletedUser user) _delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegatee ctx (DeletedUser user) _delegationListsMap _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Left user)
-    toHtml p@(PageUserProfileUserAsDelegatee ctx (ActiveUser user) delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegatee ctx (ActiveUser user) delegationListsMap delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
             userProfileTab UserDelegatesTab user
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    renderDelegations True delegations
+                    renderDelegations True delegationListsMap
 
 votesFromDelegatees :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegatee
@@ -372,6 +373,7 @@ votesFromDelegatees userId = do
             (setProfileContext user ctx)
             (makeUserView user)
             <$> userDelegateListsMap userId
+            <*> delegatees userId
 
 -- ** User Profile: Edit profile
 
