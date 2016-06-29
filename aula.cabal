@@ -134,7 +134,10 @@ library
       Persistent.Pure
       Persistent.TemplateHaskell
       Types
+      Types.Core
       Types.Prelude
+      Types.User
+      Types.Util
   other-modules:
       Paths_aula
   default-language: Haskell2010
