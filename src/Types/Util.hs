@@ -257,10 +257,6 @@ activeUsers = mapMaybe (^? activeUser)
 isFeasibleIdea :: Idea -> Bool
 isFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _Feasible
 
--- | TODO: remove this in favour of 'isFeasibleIdea'
-notFeasibleIdea :: Idea -> Bool
-notFeasibleIdea = has $ ideaJuryResult . _Just . ideaJuryResultValue . _NotFeasible
-
 ideaJuryResultValueToType :: IdeaJuryResultValue -> IdeaJuryResultType
 ideaJuryResultValueToType NotFeasible{} = IdeaNotFeasible
 ideaJuryResultValueToType Feasible{}    = IdeaFeasible
