@@ -23,6 +23,7 @@ import qualified Persistent.Api as Persistent (RunPersist)
 import qualified Persistent.Implementation.AcidState as Persistent
 
 import Control.Category ((.))
+import Control.Exception (SomeException(SomeException))
 import Test.Hspec.QuickCheck (modifyMaxSuccess)
 import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)
@@ -45,10 +46,11 @@ universeSize = UniverseSize
 
 spec :: Spec
 spec = do
-    runner   <- runIO createActionRunner
-    persist  <- runIO Persistent.mkRunPersistInMemory
-    uni      <- runIO $ unNat (runner persist) (mkUniverse universeSize)
-    snapshot <- runIO $ unNat (runner persist) getDBSnapShot
+    let catchAll (SomeException msg) = error . ("DelegationSpec.hs: " <>) . show $ msg
+    runner   <- runIO' catchAll createActionRunner
+    persist  <- runIO' catchAll Persistent.mkRunPersistInMemory
+    uni      <- runIO' catchAll $ unNat (runner persist) (mkUniverse universeSize)
+    snapshot <- runIO' catchAll $ unNat (runner persist) getDBSnapShot
     let programGen = delegationProgram
                         (QC.elements $ view _Id <$> unStudents uni)
                         (QC.elements $ view _Id <$> unIdeas    uni)

@@ -15,13 +15,14 @@ module AulaTests
 
 import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
-import Control.Exception (bracket)
+import Control.Exception (SomeException, bracket)
 import Data.String.Conversions
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
-import Test.HUnit.Lang (HUnitFailure(HUnitFailure))
+import Test.Hspec.Core.Spec (SpecM(..))
 import Test.Hspec.Wai (WaiExpectation)
+import Test.HUnit.Lang (HUnitFailure(HUnitFailure))
 import Test.QuickCheck (Gen, frequency, choose)
 
 import qualified Data.Set as Set
@@ -42,6 +43,11 @@ import Test.Hspec.Missing as X
 import Arbitrary (constantSampleTimestamp)
 import Logger (LogLevel(..), nullLog)
 import Persistent (mkMetaInfo)
+
+
+-- | 'runIO" with better errors.
+runIO' :: (SomeException -> IO a) -> IO a -> SpecM () a
+runIO' e a = runIO $ a `catch` e
 
 
 -- Be default, test cases are part of the smoke test suite.
