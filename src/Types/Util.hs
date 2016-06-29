@@ -45,6 +45,8 @@ import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
 import Types.Prelude
 import Types.Core
+import Types.Instances.Optics
+import Types.Instances.SafeCopy ()
 
 
 -- * quickcheck

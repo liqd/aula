@@ -23,14 +23,11 @@ module Types.Core
 where
 
 import Control.Lens hiding ((<.>))
-import Control.Monad
 import Data.Char
 import Data.Function (on)
-import Data.List as List (zipWith)
 import Data.Set as Set (Set)
-import Data.Map as Map (Map, lookup, unions, singleton)
+import Data.Map as Map (Map)
 import Data.Proxy (Proxy(Proxy))
-import Data.SafeCopy (base, SafeCopy(..), safeGet, safePut, contain, deriveSafeCopy)
 import Data.String
 import Data.String.Conversions
 import Data.UriPath (HasUriPart(uriPart))
@@ -43,12 +40,8 @@ import Servant.API
 import System.FilePath ((</>), (<.>))
 import Text.Read (readMaybe)
 
-import qualified Data.Aeson as Aeson
 import qualified Data.Csv as CSV
 import qualified Data.Text as ST
-import qualified Data.Vector as Vector
-import qualified Generics.Generic.Aeson as Aeson
-import qualified Generics.SOP as SOP
 import qualified Text.Email.Validate as Email
 
 import Types.Prelude
@@ -652,11 +645,6 @@ instance HasUriPart (AUID a) where
 instance CSV.FromField EmailAddress where
     parseField f = either fail (pure . InternalEmailAddress) . Email.validate =<< CSV.parseField f
 
-instance SafeCopy EmailAddress where
-    kind = base
-    getCopy = contain $ maybe mzero (pure . InternalEmailAddress) . Email.emailAddress =<< safeGet
-    putCopy = contain . safePut . Email.toByteString . internalEmailAddress
-
 instance FromHttpApiData Role where
     parseUrlPiece = parseRole . ST.splitOn "-"
 
@@ -833,268 +821,3 @@ instance HasUILabel DScopeFull where
         DScopeIdeaSpaceFull is -> "Ideenraum " <> (fromString . cs . uilabelST   $ is)
         DScopeTopicFull t      -> "Thema "     <> (fromString . cs . _topicTitle $ t)
         DScopeIdeaFull i       -> "Idee "      <> (fromString . cs . _ideaTitle  $ i)
-
-
--- ** SOP
-
-instance SOP.Generic (AUID a)
-instance SOP.Generic Category
-instance SOP.Generic Comment
-instance SOP.Generic CommentContent
-instance SOP.Generic CommentContext
-instance SOP.Generic CommentKey
-instance SOP.Generic CommentVote
-instance SOP.Generic CommentVoteKey
-instance SOP.Generic Delegation
-instance SOP.Generic DelegationNetwork
-instance SOP.Generic DScope
-instance SOP.Generic DScopeFull
-instance SOP.Generic DurationDays
-instance SOP.Generic EncryptedPassword
-instance SOP.Generic Freeze
-instance SOP.Generic id => SOP.Generic (GMetaInfo a id)
-instance SOP.Generic Idea
-instance SOP.Generic IdeaJuryResult
-instance SOP.Generic IdeaJuryResultType
-instance SOP.Generic IdeaJuryResultValue
-instance SOP.Generic IdeaLike
-instance SOP.Generic IdeaLocation
-instance SOP.Generic IdeaSpace
-instance SOP.Generic IdeaVote
-instance SOP.Generic IdeaVoteLikeKey
-instance SOP.Generic IdeaVoteResult
-instance SOP.Generic IdeaVoteResultValue
-instance SOP.Generic IdeaVoteValue
-instance SOP.Generic InitialPassword
-instance SOP.Generic Phase
-instance SOP.Generic PhaseStatus
-instance SOP.Generic ProtoIdea
-instance SOP.Generic ProtoIdeaVote
-instance SOP.Generic ProtoTopic
-instance SOP.Generic ProtoUser
-instance SOP.Generic Role
-instance SOP.Generic Topic
-instance SOP.Generic UpDown
-instance SOP.Generic User
-instance SOP.Generic UserPass
-instance SOP.Generic UserSettings
-
-
--- * safe copy
-
-deriveSafeCopy 0 'base ''AUID
-deriveSafeCopy 0 'base ''Category
-deriveSafeCopy 0 'base ''Comment
-deriveSafeCopy 0 'base ''CommentContent
-deriveSafeCopy 0 'base ''CommentKey
-deriveSafeCopy 0 'base ''CommentVote
-deriveSafeCopy 0 'base ''CommentVoteKey
-deriveSafeCopy 0 'base ''Delegation
-deriveSafeCopy 0 'base ''DelegationNetwork
-deriveSafeCopy 0 'base ''DScope
-deriveSafeCopy 0 'base ''DurationDays
-deriveSafeCopy 0 'base ''EncryptedPassword
-deriveSafeCopy 0 'base ''Freeze
-deriveSafeCopy 0 'base ''GMetaInfo
-deriveSafeCopy 0 'base ''Idea
-deriveSafeCopy 0 'base ''IdeaJuryResult
-deriveSafeCopy 0 'base ''IdeaJuryResultValue
-deriveSafeCopy 0 'base ''IdeaLike
-deriveSafeCopy 0 'base ''IdeaLocation
-deriveSafeCopy 0 'base ''IdeaSpace
-deriveSafeCopy 0 'base ''IdeaVote
-deriveSafeCopy 0 'base ''IdeaVoteLikeKey
-deriveSafeCopy 0 'base ''IdeaVoteResult
-deriveSafeCopy 0 'base ''IdeaVoteResultValue
-deriveSafeCopy 0 'base ''IdeaVoteValue
-deriveSafeCopy 0 'base ''InitialPassword
-deriveSafeCopy 0 'base ''Phase
-deriveSafeCopy 0 'base ''PhaseStatus
-deriveSafeCopy 0 'base ''ProtoIdea
-deriveSafeCopy 0 'base ''ProtoIdeaLike
-deriveSafeCopy 0 'base ''ProtoIdeaVote
-deriveSafeCopy 0 'base ''ProtoTopic
-deriveSafeCopy 0 'base ''ProtoUser
-deriveSafeCopy 0 'base ''Role
-deriveSafeCopy 0 'base ''SchoolClass
-deriveSafeCopy 0 'base ''Topic
-deriveSafeCopy 0 'base ''UpDown
-deriveSafeCopy 0 'base ''User
-deriveSafeCopy 0 'base ''UserFirstName
-deriveSafeCopy 0 'base ''UserLastName
-deriveSafeCopy 0 'base ''UserLogin
-deriveSafeCopy 0 'base ''UserPass
-deriveSafeCopy 0 'base ''UserSettings
-
-
--- * optics
-
-makePrisms ''AUID
-makePrisms ''Category
-makePrisms ''PlainDocument
-makePrisms ''DScope
-makePrisms ''Document
-makePrisms ''EmailAddress
-makePrisms ''IdeaJuryResultValue
-makePrisms ''IdeaLocation
-makePrisms ''IdeaSpace
-makePrisms ''IdeaVoteResultValue
-makePrisms ''IdeaVoteValue
-makePrisms ''Freeze
-makePrisms ''PhaseStatus
-makePrisms ''Phase
-makePrisms ''Role
-makePrisms ''Timestamp
-makePrisms ''UpDown
-makePrisms ''UserFirstName
-makePrisms ''UserLastName
-makePrisms ''UserLogin
-makePrisms ''UserPass
-makePrisms ''UserView
-
-makeLenses ''AUID
-makeLenses ''Category
-makeLenses ''Comment
-makeLenses ''CommentContext
-makeLenses ''CommentKey
-makeLenses ''CommentVote
-makeLenses ''CommentVoteKey
-makeLenses ''Delegation
-makeLenses ''DelegationNetwork
-makeLenses ''DScope
-makeLenses ''EmailAddress
-makeLenses ''EncryptedPassword
-makeLenses ''Freeze
-makeLenses ''GMetaInfo
-makeLenses ''Idea
-makeLenses ''IdeaJuryResult
-makeLenses ''IdeaLike
-makeLenses ''IdeaLocation
-makeLenses ''IdeaSpace
-makeLenses ''IdeaVote
-makeLenses ''IdeaVoteLikeKey
-makeLenses ''IdeaVoteResult
-makeLenses ''InitialPassword
-makeLenses ''Phase
-makeLenses ''PhaseStatus
-makeLenses ''PlainDocument
-makeLenses ''ProtoIdea
-makeLenses ''ProtoIdeaLike
-makeLenses ''ProtoIdeaVote
-makeLenses ''ProtoTopic
-makeLenses ''ProtoUser
-makeLenses ''Role
-makeLenses ''SchoolClass
-makeLenses ''Topic
-makeLenses ''UpDown
-makeLenses ''User
-makeLenses ''UserFirstName
-makeLenses ''UserLastName
-makeLenses ''UserLogin
-makeLenses ''UserPass
-makeLenses ''UserSettings
-makeLenses ''UserView
-
--- | Examples:
---
--- >>>    e :: EmailAddress
--- >>>    s :: ST
--- >>>    s = emailAddress # e
--- >>>
--- >>>    s :: ST
--- >>>    s = "foo@example.com"
--- >>>    e :: Maybe EmailAddress
--- >>>    e = s ^? emailAddress
---
--- These more limited type signatures are also valid:
---
--- >>>    emailAddress :: Prism' ST  EmailAddress
--- >>>    emailAddress :: Prism' LBS EmailAddress
-emailAddress :: (CSI s t SBS SBS) => Prism s t EmailAddress EmailAddress
-emailAddress = csi . prism' Email.toByteString Email.emailAddress . from _InternalEmailAddress
-
-
--- * json
-
-instance Aeson.ToJSON (AUID a) where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON CommentKey where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON DScope where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Delegation where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON EmailAddress where toJSON = Aeson.String . review emailAddress
-instance Aeson.ToJSON Freeze where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON id => Aeson.ToJSON (GMetaInfo a id) where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON IdeaJuryResultType where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON IdeaLocation where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON IdeaSpace where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON IdeaVoteValue where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Phase where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON PhaseStatus where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON Role where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON SchoolClass where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UpDown where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserFirstName where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserLastName where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserLogin where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON UserPass where toJSON _ = Aeson.String ""
-    -- FIXME: where do we need this?  think of something else!
-instance Aeson.ToJSON UserSettings where toJSON = Aeson.gtoJson
-instance Aeson.ToJSON User where toJSON = Aeson.gtoJson
-
-instance Aeson.FromJSON (AUID a) where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON CommentKey where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON DScope where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON Delegation where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON EmailAddress where parseJSON = Aeson.withText "email address" $ pure . (^?! emailAddress)
-instance Aeson.FromJSON Freeze where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON id => Aeson.FromJSON (GMetaInfo a id) where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON IdeaJuryResultType where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON IdeaLocation where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON IdeaSpace where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON IdeaVoteValue where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON Phase where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON PhaseStatus where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON Role where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON SchoolClass where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON UpDown where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON UserFirstName where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON UserLastName where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON UserLogin where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON UserPass where parseJSON _ = pure . UserPassInitial $ InitialPassword ""
-    -- FIXME: where do we need this?  think of something else!
-instance Aeson.FromJSON UserSettings where parseJSON = Aeson.gparseJson
-instance Aeson.FromJSON User where parseJSON = Aeson.gparseJson
-
-
-instance Aeson.ToJSON DelegationNetwork where
-    toJSON (DelegationNetwork nodes links) = result
-      where
-        result = Aeson.object
-            [ "nodes" Aeson..= array (renderNode <$> nodes)
-            , "links" Aeson..= array (renderLink <$> links)
-            ]
-
-        -- FIXME: It shouldn't be rendered for deleted users.
-        renderNode (u, p) = Aeson.object
-            [ "name"   Aeson..= (u ^. userLogin . unUserLogin)
-            , "avatar" Aeson..= (u ^. userAvatar avatarDefaultSize)
-            , "power"  Aeson..= p
-            ]
-
-        renderLink (Delegation _ u1 u2) = Aeson.object
-            [ "source"  Aeson..= nodeId u1
-            , "target"  Aeson..= nodeId u2
-            ]
-
-        -- the d3 edges refer to nodes by list position, not name.  this function gives the list
-        -- position.
-        nodeId :: AUID User -> Aeson.Value
-        nodeId uid = Aeson.toJSON . (\(Just pos) -> pos) $ Map.lookup uid m
-          where
-            m :: Map.Map (AUID User) Int
-            m = Map.unions $ List.zipWith f nodes [0..]
-
-            f :: (User, Int) -> Int -> Map.Map (AUID User) Int
-            f (u, _) = Map.singleton (u ^. to _userMeta . to _metaKey)
-
-        array :: Aeson.ToJSON v => [v] -> Aeson.Value
-        array = Aeson.Array . Vector.fromList . fmap Aeson.toJSON
