@@ -34,7 +34,7 @@ import Persistent
     , findUser
     , findIdeasByUserId
     , getIdeaStats
-    , scopeDelegate
+    , delegateInScope
     )
 
 import qualified Data.Set as Set
@@ -231,9 +231,9 @@ userHeaderDivCore user = do
 commonIdeaSpaceDelegations :: User -> User -> EQuery [Delegation]
 commonIdeaSpaceDelegations delegatee delegate = do
     let delegateeId = delegatee ^. _Id
-    schoolDelegation <- scopeDelegate delegateeId (DScopeIdeaSpace SchoolSpace)
+    schoolDelegation <- delegateInScope delegateeId (DScopeIdeaSpace SchoolSpace)
     classDelegations <- forM (Set.toList $ commonSchoolClasses delegatee delegate)
-        (scopeDelegate delegateeId . DScopeIdeaSpace . ClassSpace)
+        (delegateInScope delegateeId . DScopeIdeaSpace . ClassSpace)
     pure $ catMaybes (schoolDelegation:classDelegations)
 
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
