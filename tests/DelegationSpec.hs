@@ -69,7 +69,10 @@ spec = do
         (idea2, topic2) = case find isIdeaWithTopic (unIdeas uni) of
             Nothing -> error "No idea with topic is found."
             Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
-        Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
+
+        classspace = case classes uni of
+            [] -> error "No class is found"
+            (c:_) -> c
     let noChecks (CheckVotingPower{}) = False
         noChecks (CheckVote{})        = False
         noChecks _                    = True
@@ -97,13 +100,9 @@ spec = do
                 [ SetDelegation student1 (DScopeTopicId topic) student2
                 , CheckVotingPower student2 (DScopeTopicId topic) 2
                 ]
-        delegationTest "Delegation on ideaspace"
-                [ SetDelegation student1 (DScopeIdeaSpace ideaspace) student2
-                , CheckVotingPower student2 (DScopeIdeaSpace ideaspace) 2
-                ]
-        delegationTest "Delegation on schoolspace"
-                [ SetDelegation student1 (DScopeIdeaSpace SchoolSpace) student2
-                , CheckVotingPower student2 (DScopeIdeaSpace SchoolSpace) 2
+        delegationTest "Delegation on classspace"
+                [ SetDelegation student1 (DScopeClassSpace classspace) student2
+                , CheckVotingPower student2 (DScopeClassSpace classspace) 2
                 ]
         delegationTest "Delegation on global"
                 [ SetDelegation student1 DScopeGlobal student2
@@ -194,6 +193,9 @@ spec = do
         tag Large . it "Random delegation programs" . property . forAllShrinkDef programGen
             $ \(DelegationProgram program) -> monadicIO . run $ runDelegationProgram program
   where
+    classes :: Universe -> [SchoolClass]
+    classes = map _ideaSpaceSchoolClass . filter (has _ClassSpace) . unIdeaSpaces
+
     getDBSnapShot :: Action.Action Persistent.AulaData
     getDBSnapShot = query (view Persistent.dbSnapshot)
 
@@ -208,7 +210,7 @@ spec = do
     universeToDScopes :: Universe -> [DScope]
     universeToDScopes u = DScopeGlobal:(spaces <> topics <> ideas)
       where
-        spaces = DScopeIdeaSpace <$> unIdeaSpaces u
+        spaces = DScopeClassSpace <$> classes u
         topics = DScopeTopicId   . view _Id <$> unTopics     u
         ideas  = DScopeIdeaId    . view _Id <$> unIdeas      u
 

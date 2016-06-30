@@ -553,9 +553,9 @@ type instance Proto Delegation = Delegation
 -- coincidentally) constitute a subset relationship between class spaces and school space.
 data DScope =
     DScopeGlobal
-  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }
-  | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
-  | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
+  | DScopeClassSpace { _dScopeClassSpace :: SchoolClass }
+  | DScopeTopicId    { _dScopeTopicId    :: AUID Topic  }
+  | DScopeIdeaId     { _dScopeIdeaId     :: AUID Idea   }
   deriving (Eq, Ord, Show, Read, Generic)
 
 -- | 'DScope', but with the references resolved.  (We could do a more general type @DScope a@ and
@@ -563,9 +563,9 @@ data DScope =
 -- easier.)
 data DScopeFull =
     DScopeGlobalFull
-  | DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace }
-  | DScopeTopicFull     { _dScopeTopicFull     :: Topic     }
-  | DScopeIdeaFull      { _dScopeIdeaFull      :: Idea      }
+  | DScopeClassSpaceFull { _dScopeClassSpaceFull :: SchoolClass }
+  | DScopeTopicFull      { _dScopeTopicFull      :: Topic       }
+  | DScopeIdeaFull       { _dScopeIdeaFull       :: Idea        }
   deriving (Eq, Ord, Show, Read, Generic)
 
 
@@ -783,6 +783,9 @@ instance HasUILabel SchoolClass where
 instance HasUriPart SchoolClass where
     uriPart = fromString . schoolClassCode
 
+instance ToHttpApiData SchoolClass where
+    toUrlPiece = cs . schoolClassCode
+
 instance FromHttpApiData SchoolClass where
     parseUrlPiece = parseSchoolClassCode . ST.splitOn "-"
 
@@ -801,14 +804,14 @@ instance HasUILabel Phase where
 instance ToHttpApiData DScope where
     toUrlPiece = (cs :: String -> ST). \case
         DScopeGlobal -> "global"
-        (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
+        (DScopeClassSpace clss) -> "classspace-" <> cs (toUrlPiece clss)
         (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
         (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
 
 instance FromHttpApiData DScope where
     parseUrlPiece scope = case cs scope of
         "global" -> Right DScopeGlobal
-        'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
+        'c':'l':'a':'s':'s':'s':'p':'a':'c':'e':'-':clss -> DScopeClassSpace <$> parseUrlPiece (cs clss)
         't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
         'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
         _ -> Left "no parse"
@@ -816,6 +819,6 @@ instance FromHttpApiData DScope where
 instance HasUILabel DScopeFull where
     uilabel = \case
         DScopeGlobalFull       -> "Schule"
-        DScopeIdeaSpaceFull is -> "Ideenraum " <> (fromString . cs . uilabelST   $ is)
+        DScopeClassSpaceFull c -> "Ideenraum " <> (fromString . cs . uilabelST   $ c)
         DScopeTopicFull t      -> "Thema "     <> (fromString . cs . _topicTitle $ t)
         DScopeIdeaFull i       -> "Idee "      <> (fromString . cs . _ideaTitle  $ i)

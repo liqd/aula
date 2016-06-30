@@ -440,7 +440,7 @@ moveIdeaElim wild topic = \case
 fullDScopeToDScope :: DScopeFull -> DScope
 fullDScopeToDScope = \case
     DScopeGlobalFull       -> DScopeGlobal
-    DScopeIdeaSpaceFull is -> DScopeIdeaSpace is
+    DScopeClassSpaceFull c -> DScopeClassSpace c
     DScopeTopicFull t      -> DScopeTopicId (t ^. _Id)
     DScopeIdeaFull i       -> DScopeIdeaId (i ^. _Id)
 

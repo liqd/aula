@@ -62,6 +62,7 @@ spec = do
     describe "FromHttpApiData <-> ToHttpApiData" $ do
         mapM_ fromAndToHttpApiDataAreInverses
             [ H (arb :: Gen IdeaSpace)
+            , H (arb :: Gen SchoolClass)
             , H (arb :: Gen IdeaJuryResultType)
             , H (arb :: Gen DScope)
             , H (arb :: Gen Category)
