@@ -122,7 +122,6 @@
         // rootElem.append("label").text("Geltungsbereich auswählen");
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
-        //Selection.insert("div",":first-child");
         buttonDiv.append("input")
             .attr("value", "anzeigen")
             .attr("type", "submit")
