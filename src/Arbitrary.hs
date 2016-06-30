@@ -939,10 +939,6 @@ instance Arbitrary (P.Space r) where
     arbitrary = garbitrary
     shrink    = gshrink
 
-instance Arbitrary P.DelegationRole where
-    arbitrary = garbitrary
-    shrink    = gshrink
-
 instance Arbitrary (P.UserMode r) where
     arbitrary = garbitrary
     shrink    = gshrink

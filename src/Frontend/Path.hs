@@ -568,10 +568,10 @@ withdrawDelegationOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
 withdrawDelegationOnClassSpace u = UserProf (u ^. _Id) . UserWithdrawDelegationOnClassSpace
 
 userDelegationsTo :: User -> Main 'AllowGetPost
-userDelegationsTo u = UserProf (u ^. _Id) (UserDelegationsTo r)
+userDelegationsTo u = UserProf (u ^. _Id) UserDelegationsTo
 
 userDelegationsFrom :: User -> Main 'AllowGetPost
-userDelegationsFrom u = UserProf (u ^. _Id) (UserDelegationsFrom r)
+userDelegationsFrom u = UserProf (u ^. _Id) UserDelegationsFrom
 
 userIdeas' :: AUID User -> Maybe IdeasQuery -> Main 'AllowGetPost
 userIdeas' uid = UserProf uid . UserIdeas
