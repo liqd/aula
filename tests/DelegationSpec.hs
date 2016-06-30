@@ -105,10 +105,6 @@ spec = do
                 [ SetDelegation student1 (DScopeIdeaSpace SchoolSpace) student2
                 , CheckVotingPower student2 (DScopeIdeaSpace SchoolSpace) 2
                 ]
-        delegationTest "Delegation on global"
-                [ SetDelegation student1 DScopeGlobal student2
-                , CheckVotingPower student2 DScopeGlobal 2
-                ]
         delegationTest "I change my mind before"
                 [ SetDelegation student1 (DScopeIdeaId idea) student2
                 , Vote student1 idea No
@@ -167,16 +163,13 @@ spec = do
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
                     [ SetDelegation student1 (DScopeIdeaId idea2)   student2
                     , SetDelegation student2 (DScopeTopicId topic2) student3
-                    , SetDelegation student3 DScopeGlobal student1
+                    , SetDelegation student3 (DScopeTopicId topic2) student1
                     , CheckVotingPower student1 (DScopeIdeaId idea2) 3
                     , CheckVotingPower student2 (DScopeIdeaId idea2) 3
                     , CheckVotingPower student3 (DScopeIdeaId idea2) 3
                     , CheckVotingPower student1 (DScopeTopicId topic2) 3
                     , CheckVotingPower student2 (DScopeTopicId topic2) 1
                     , CheckVotingPower student3 (DScopeTopicId topic2) 2
-                    , CheckVotingPower student1 DScopeGlobal 2
-                    , CheckVotingPower student2 DScopeGlobal 1
-                    , CheckVotingPower student3 DScopeGlobal 1
                     ]
             delegationTest "Breaking Cycles"
                     [ SetDelegation student1 (DScopeIdeaId idea) student2
@@ -206,7 +199,7 @@ spec = do
         return runAction
 
     universeToDScopes :: Universe -> [DScope]
-    universeToDScopes u = DScopeGlobal:(spaces <> topics <> ideas)
+    universeToDScopes u = spaces <> topics <> ideas
       where
         spaces = DScopeIdeaSpace <$> unIdeaSpaces u
         topics = DScopeTopicId   . view _Id <$> unTopics     u

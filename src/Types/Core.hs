@@ -552,8 +552,7 @@ type instance Proto Delegation = Delegation
 -- idea spaces is explicit in the role.  However, this does not necessarily (although
 -- coincidentally) constitute a subset relationship between class spaces and school space.
 data DScope =
-    DScopeGlobal
-  | DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }
+    DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }
   | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
   | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -562,8 +561,7 @@ data DScope =
 -- introduce two synonyms for @DScope AUID@ and @DScope Identity@, but it won't make things any
 -- easier.)
 data DScopeFull =
-    DScopeGlobalFull
-  | DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace }
+    DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace }
   | DScopeTopicFull     { _dScopeTopicFull     :: Topic     }
   | DScopeIdeaFull      { _dScopeIdeaFull      :: Idea      }
   deriving (Eq, Ord, Show, Read, Generic)
@@ -800,14 +798,12 @@ instance HasUILabel Phase where
 
 instance ToHttpApiData DScope where
     toUrlPiece = (cs :: String -> ST). \case
-        DScopeGlobal -> "global"
         (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
         (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
         (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
 
 instance FromHttpApiData DScope where
     parseUrlPiece scope = case cs scope of
-        "global" -> Right DScopeGlobal
         'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
         't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
         'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
@@ -815,7 +811,6 @@ instance FromHttpApiData DScope where
 
 instance HasUILabel DScopeFull where
     uilabel = \case
-        DScopeGlobalFull       -> "Schule"
         DScopeIdeaSpaceFull is -> "Ideenraum " <> (fromString . cs . uilabelST   $ is)
         DScopeTopicFull t      -> "Thema "     <> (fromString . cs . _topicTitle $ t)
         DScopeIdeaFull i       -> "Idee "      <> (fromString . cs . _ideaTitle  $ i)

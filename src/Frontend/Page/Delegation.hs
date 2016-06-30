@@ -130,19 +130,21 @@ topicDelegation tid = formPageHandlerCalcMsgM
     pageDelegateVoteSuccessMsg
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope DScopeTree DelegationNetwork
+data PageDelegationNetwork = PageDelegationNetwork DScope DScopeForest DelegationNetwork
   deriving (Eq, Show, Read)
 
-newtype DScopeTree = DScopeTree (Tree DScopeFull)
+newtype DScopeForest = DScopeForest [Tree DScopeFull]
   deriving (Eq, Show, Read)
 
-instance Aeson.ToJSON DScopeTree where
-    toJSON (DScopeTree t) = f t
+-- TODO: Fix JSON instance
+instance Aeson.ToJSON DScopeForest where
+    toJSON (DScopeForest ts) = f ts
       where
-        f (Tree.Node dscope chldrn) = Aeson.object
+        f [] = error "impossible"
+        f (Tree.Node dscope chldrn:_) = Aeson.object
             [ "dscope"   Aeson..= toUrlPiece (fullDScopeToDScope dscope)
             , "text"     Aeson..= uilabelST dscope
-            , "children" Aeson..= (DScopeTree <$> chldrn)
+            , "children" Aeson..= (DScopeForest . pure <$> chldrn)
             ]
 
 instance Page PageDelegationNetwork where
@@ -172,10 +174,10 @@ instance ToHtml PageDelegationNetwork where
                     div_ [class_ "aula-d3-view", id_ "aula-d3-view"] nil
 
 viewDelegationNetwork :: ActionM m  => Maybe DScope -> m PageDelegationNetwork
-viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
+viewDelegationNetwork (fromMaybe (DScopeIdeaSpace SchoolSpace) -> scope) = do
     user <- currentUser
     equery $ PageDelegationNetwork scope
-                <$> (DScopeTree <$> delegationScopeTree user)
+                <$> (DScopeForest <$> delegationScopeForest user)
                 <*> delegationInfos scope
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
