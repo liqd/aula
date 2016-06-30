@@ -346,8 +346,8 @@ aulaSpace space
 
 type AulaUser =
        "ideas"       :> IdeasFilterApi :> IdeasSortApi :> GetH (Frame PageUserProfileCreatedIdeas)
-  :<|> "delegations" :> "delegate"  :> GetH (Frame PageUserProfileUserAsDelegate)
-  :<|> "delegations" :> "delegatee" :> GetH (Frame PageUserProfileUserAsDelegatee)
+  :<|> "delegations" :> "to"   :> GetH (Frame PageUserProfileUserAsDelegate)
+  :<|> "delegations" :> "from" :> GetH (Frame PageUserProfileUserAsDelegatee)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
   :<|> "delegate"    :> "school" :> PostH DelegateTo
