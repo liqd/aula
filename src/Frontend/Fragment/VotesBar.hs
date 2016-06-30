@@ -93,7 +93,7 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                 = nil
             | userLikesIdea user idea
                 = button_ [class_ "btn-cta m-selected button-group-item"] "Du willst diese Idee auf den Tisch legen"
-                  -- FIXME: make this a button and allow un-liking!
+                  -- FIXME: make this a button and allow un-liking!  see #786.
             | otherwise
                 = do
                     postButton_
