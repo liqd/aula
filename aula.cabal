@@ -135,8 +135,11 @@ library
       Persistent.TemplateHaskell
       Types
       Types.Core
+      Types.Instances.JSON
+      Types.Instances.Optics
+      Types.Instances.SafeCopy
+      Types.Instances.SOP
       Types.Prelude
-      Types.User
       Types.Util
   other-modules:
       Paths_aula
