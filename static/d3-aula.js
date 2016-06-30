@@ -139,7 +139,7 @@
 
         var tick = function() {
             // adjust positions (is there a better place for this than here in the tick function?)
-            var wallElasticity = 0;
+            var wallElasticity = 5;
             force.nodes().forEach(function(n) {
                 if (n.x < 0)      n.x = wallElasticity;
                 if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
