@@ -42,7 +42,7 @@ import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import Persistent
     ( DelegateeLists(..)
-    , DelegateeListsMap(..)
+    , DelegationListsMap(..)
     , topicDelegateeLists
     , findIdeasByTopic
     , findIdeasByTopicId
@@ -159,7 +159,7 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicDelegations now capCtx topic delegations delegation) = semanticDiv p $ do
         viewTopicHeaderDiv now capCtx topic TabDelegation delegation
-        renderDelegations False (DelegateeListsMap [(DScopeTopicFull topic, delegations)])
+        renderDelegations False (DelegationListsMap [(DScopeTopicFull topic, delegations)])
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters delegation) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab delegation

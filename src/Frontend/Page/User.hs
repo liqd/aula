@@ -26,12 +26,15 @@ import Persistent.Api
     , SetUserDesc(SetUserDesc)
     )
 import Persistent
-    ( DelegateeListsMap(..)
+    ( EQuery
+    , DelegationListsMap(..)
     , DelegateeLists(..)
-    , userDelegateeListsMap
+    , userDelegationListsMap
+    , userDelegateListsMap
     , findUser
     , findIdeasByUserId
     , getIdeaStats
+    , delegateInScope
     )
 
 import qualified Data.Set as Set
@@ -66,19 +69,27 @@ instance Page PageUserSettings where
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas =
-        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas DelegateeListsMap
+        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas [Delegation]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
-    isAuthorized = userPage -- Are profiles public?
+    isAuthorized = userPage -- profiles are public.  (see #695)
 
--- | 8.2 User profile: Delegated votes
-data PageUserProfileDelegatedVotes =
-        PageUserProfileDelegatedVotes CapCtx UserView DelegateeListsMap
+-- | 8.2 User profile: Votes from delegatees
+data PageUserProfileUserAsDelegate =
+        PageUserProfileUserAsDelegate CapCtx UserView DelegationListsMap [Delegation]
   deriving (Eq, Show, Read)
 
-instance Page PageUserProfileDelegatedVotes where
-    isAuthorized = userPage -- Are profiles public?
+instance Page PageUserProfileUserAsDelegate where
+    isAuthorized = userPage -- profiles are public.  (see #695)
+
+-- | 8.X User profile: Votes to delegates
+data PageUserProfileUserAsDelegatee =
+        PageUserProfileUserAsDelegatee CapCtx UserView DelegationListsMap [Delegation]
+  deriving (Eq, Show, Read)
+
+instance Page PageUserProfileUserAsDelegatee where
+    isAuthorized = userPage -- profiles are public.  (see #695)
 
 -- | 8.X User profile: Editing the public profile
 data EditUserProfile = EditUserProfile { _eupCapCtx :: CapCtx, _eupUser :: User }
@@ -187,7 +198,7 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
-userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, DelegateeListsMap) -> HtmlT m ()
+userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, [Delegation]) -> HtmlT m ()
 userHeaderDiv _ (Left user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -204,7 +215,7 @@ userHeaderDiv ctx (Right (user, delegations)) =
         div_ [class_ "heroic-btn-group"] $ do
             let caps = capabilities ctx
             when (CanDelegateInClass `elem` caps || CanDelegateInSchool `elem` caps) $ do
-                delegationButtons ctx user delegations
+                delegationButtons (ctx ^. capCtxUser) user delegations
             btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
                 editProfileBtn
@@ -217,23 +228,33 @@ userHeaderDivCore user = do
             forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
                 li_ [class_ "badge"] $ r ^. uilabeled
 
+commonIdeaSpaceDelegations :: User -> User -> EQuery [Delegation]
+commonIdeaSpaceDelegations delegatee delegate = do
+    let delegateeId = delegatee ^. _Id
+    schoolDelegation <- delegateInScope delegateeId (DScopeIdeaSpace SchoolSpace)
+    classDelegations <- forM (Set.toList $ commonSchoolClasses delegatee delegate)
+        (delegateInScope delegateeId . DScopeIdeaSpace . ClassSpace)
+    pure $ catMaybes (schoolDelegation:classDelegations)
+
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
 -- philosophical, but it doesn't really matter: users can delegate to themselves
 -- just like to anybody else, and the graph will look different if they do.
-delegationButtons :: Monad m => CapCtx -> User -> DelegateeListsMap -> HtmlT m ()
-delegationButtons (view capCtxUser -> delegatee)
-                  delegate
-                  (delegatedDScopes delegatee -> dscopes) = do
-    let but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
+delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
+delegationButtons delegatee delegate delegations = do
+    let isActiveDelegation dscope =
+            Delegation dscope (delegatee ^. _Id) (delegate ^. _Id)
+            `elem`
+            delegations
+        but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
-        if DScopeIdeaSpace (ClassSpace clss) `elem` dscopes
+        if isActiveDelegation (DScopeIdeaSpace (ClassSpace clss))
             then do
                 but (U.withdrawDelegationOnClassSpace delegate clss)
                     ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
                 but (U.delegateVoteOnClassSpace delegate clss)
                     ("Für Klasse " <> uilabel clss <> " beauftragen")
-    if DScopeIdeaSpace SchoolSpace `elem` dscopes
+    if isActiveDelegation (DScopeIdeaSpace SchoolSpace)
         then do
             but (U.withdrawDelegationOnSchoolSpace delegate)
                 "Schulweite beauftragung entziehen"
@@ -242,14 +263,31 @@ delegationButtons (view capCtxUser -> delegatee)
                 "Schulweit beauftragen"
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
-delegatedDScopes :: User -> DelegateeListsMap -> [DScope]
-delegatedDScopes delegatee (DelegateeListsMap xs) = fullDScopeToDScope . fst <$> filter pr xs
+delegatedDScopes :: User -> DelegationListsMap -> [DScope]
+delegatedDScopes delegatee (DelegationListsMap xs) = fullDScopeToDScope . fst <$> filter pr xs
   where
     pr :: (a, DelegateeLists) -> Bool
     pr (_, DelegateeLists ys) = delegatee `elem` (fst <$> ys)
 
 
 -- ** User Profile: Created Ideas
+
+data UserProfileTab
+    = UserIdeasTab
+    | UserDelegateesTab
+    | UserDelegatesTab
+  deriving (Eq)
+
+userProfileTab :: Monad m => UserProfileTab -> User -> HtmlT m ()
+userProfileTab activeTab user = do
+    div_ [class_ "heroic-tabs"] $ do
+        tabLink UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
+        tabLink UserDelegateesTab (U.userDelegationsFrom user) "Wer stimmt für mich ab?"
+        tabLink UserDelegatesTab  (U.userDelegationsTo user)   "Für wen stimme ich ab?"
+  where
+    tabLink t path
+        | t == activeTab = span_ [class_ "heroic-tab-item  m-active"]
+        | otherwise = a_ [class_ "heroic-tab-item", href_ path]
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
@@ -259,12 +297,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
     toHtml p@(PageUserProfileCreatedIdeas ctx (ActiveUser user) ideas delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            -- Tab selection
-            div_ [class_ "heroic-tabs"] $ do
-                span_ [class_ "heroic-tab-item m-active"]
-                    "Erstellte Ideen"
-                a_ [class_ "heroic-tab-item", href_ (U.userDelegations user)]
-                    "Erhaltene Stimmen"
+            userProfileTab UserIdeasTab user
         -- List of ideas
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ toHtml ideas
@@ -281,6 +314,7 @@ createdIdeas userId ideasQuery = do
                     case ctx ^. capCtxUser . userRoleScope of
                         SchoolScope      -> True
                         ClassesScope cls -> c `Set.member` cls
+    cUser <- currentUser
     equery (do
         user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx (IdeaInUserProfile user) ideasQuery
@@ -288,45 +322,72 @@ createdIdeas userId ideasQuery = do
                     (mapM getIdeaStats
                      =<< filter visibleByCurrentUser
                          <$> findIdeasByUserId userId))
-        delegatees <- userDelegateeListsMap userId
+        ds <- commonIdeaSpaceDelegations cUser user
         pure $ PageUserProfileCreatedIdeas
             (setProfileContext user ctx)
             (makeUserView user)
             ideas
-            delegatees)
+            ds)
 
 
--- ** User Profile: Delegated Votes
+-- ** User Profile: User As Delegate
 
-instance ToHtml PageUserProfileDelegatedVotes where
+instance ToHtml PageUserProfileUserAsDelegate where
     toHtmlRaw = toHtml
-    toHtml p@(PageUserProfileDelegatedVotes ctx (DeletedUser user) _delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegate ctx (DeletedUser user) _delegationListsMap _delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Left user)
-    toHtml p@(PageUserProfileDelegatedVotes ctx (ActiveUser user) delegations) = semanticDiv p $ do
+    toHtml p@(PageUserProfileUserAsDelegate ctx (ActiveUser user) delegationListsMap delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            div_ [class_ "heroic-tabs"] $ do
-                a_ [class_ "heroic-tab-item", href_ (U.viewUserProfile user)]
-                    "Erstellte Ideen"
-                span_ [class_ "heroic-tab-item  m-active"]
-                    "Erhaltene Stimmen"
+            userProfileTab UserDelegateesTab user
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    renderDelegations True delegations
+                    renderDelegations True delegationListsMap
 
-delegatedVotes :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileDelegatedVotes
-delegatedVotes userId = do
+userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileUserAsDelegate
+userProfileUserAsDelegate userId = do
     ctx <- currentUserCapCtx
+    cUser <- currentUser
     equery $ do
         user <- maybe404 =<< findUser userId
-        PageUserProfileDelegatedVotes
+        PageUserProfileUserAsDelegate
             (setProfileContext user ctx)
             (makeUserView user)
-            <$> userDelegateeListsMap userId
+            <$> userDelegationListsMap userId
+            <*> commonIdeaSpaceDelegations cUser user
 
+
+-- ** User Profile: User as a delegatee
+
+instance ToHtml PageUserProfileUserAsDelegatee where
+    toHtmlRaw = toHtml
+    toHtml p@(PageUserProfileUserAsDelegatee ctx (DeletedUser user) _delegationListsMap _delegations) = semanticDiv p $ do
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv ctx (Left user)
+    toHtml p@(PageUserProfileUserAsDelegatee ctx (ActiveUser user) delegationListsMap delegations) = semanticDiv p $ do
+        div_ [class_ "hero-unit"] $ do
+            userHeaderDiv ctx (Right (user, delegations))
+            userProfileTab UserDelegatesTab user
+        div_ [class_ "m-shadow"] $ do
+            div_ [class_ "grid"] $ do
+                div_ [class_ "container-narrow"] $ do
+                    renderDelegations True delegationListsMap
+
+userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileUserAsDelegatee
+userProfileUserAsDelegatee userId = do
+    ctx <- currentUserCapCtx
+    cUser <- currentUser
+    equery $ do
+        user <- maybe404 =<< findUser userId
+        PageUserProfileUserAsDelegatee
+            (setProfileContext user ctx)
+            (makeUserView user)
+            <$> userDelegateListsMap userId
+            <*> commonIdeaSpaceDelegations cUser user
 
 -- ** User Profile: Edit profile
 

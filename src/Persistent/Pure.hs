@@ -119,9 +119,12 @@ module Persistent.Pure
     , addDelegation
     , withdrawDelegation
     , delegationScopeTree
+    , dscopeFull
     , allDelegationScopes
     , Persistent.Pure.delegates
-    , Persistent.Pure.scopeDelegatees
+    , Persistent.Pure.delegateInScope
+    , Persistent.Pure.delegatees
+    , Persistent.Pure.delegateesInScope
     , Persistent.Pure.votingPower
     , Persistent.Pure.findDelegationsByScope
     , addPasswordToken
@@ -646,6 +649,13 @@ delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
     discover s@(DScopeIdeaFull{}) =
         pure (s, [])
 
+dscopeFull :: DScope -> EQuery DScopeFull
+dscopeFull = \case
+    DScopeGlobal       -> pure DScopeGlobalFull
+    DScopeIdeaSpace is -> pure $ DScopeIdeaSpaceFull is
+    DScopeTopicId tid  -> DScopeTopicFull <$> (maybe404 =<< findTopic tid)
+    DScopeIdeaId iid   -> DScopeIdeaFull <$> (maybe404 =<< findIdea iid)
+
 allDelegationScopes :: Query [DScope]
 allDelegationScopes = do
     ideas  <- getIdeas
@@ -662,11 +672,22 @@ delegates delegatee =
     (\(scope,delegate) -> Delegation scope delegatee delegate)
     <$$> views dbDelegations (Data.Delegation.delegates delegatee)
 
-scopeDelegatees :: AUID User -> DScope -> EQuery [Delegation]
-scopeDelegatees delegate scope =
+delegateInScope :: AUID User -> DScope -> EQuery (Maybe Delegation)
+delegateInScope delegatee scope =
+    Delegation scope delegatee
+    <$$> views dbDelegations (Data.Delegation.delegateInScope delegatee scope)
+
+delegatees :: AUID User -> EQuery [Delegation]
+delegatees delegate =
+    concat <$>
+    ((\(scope, delegatees') -> (\d -> Delegation scope d delegate) <$> Set.toList delegatees')
+     <$$> views dbDelegations (Data.Delegation.delegatees delegate))
+
+delegateesInScope :: AUID User -> DScope -> EQuery [Delegation]
+delegateesInScope delegate scope =
     (\delegatee -> Delegation scope delegatee delegate)
     <$$> Set.toList
-    <$> views dbDelegations (Data.Delegation.scopeDelegatees delegate scope)
+    <$> views dbDelegations (Data.Delegation.delegateesInScope delegate scope)
 
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower uid scope = do

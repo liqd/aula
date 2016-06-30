@@ -250,7 +250,7 @@ instance Arbitrary DelegationProgram where
 
 getSupporters :: ActionM m => AUID User -> DScope -> m [AUID User]
 getSupporters uid scope = equery $ do
-    _delegationFrom <$$> Persistent.scopeDelegatees uid scope
+    _delegationFrom <$$> Persistent.delegateesInScope uid scope
 
 getVote :: ActionM m => AUID User -> AUID Idea -> m (Maybe (AUID User, IdeaVoteValue))
 getVote uid iid = equery $ do

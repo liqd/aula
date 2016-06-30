@@ -12,7 +12,11 @@ module Data.Delegation
     , deleteDelegation
     , delegates
     , delegatesSafe
-    , scopeDelegatees
+    , delegateInScope
+    , scopeDelegateSafe
+    , delegatees
+    , delegateesSafe
+    , delegateesInScope
     , scopeDelegateesSafe
     , votingPower
     , findDelegationsByScope
@@ -123,13 +127,30 @@ deleteDelegation delegatee dscope delegate ds@(Delegations (DelegationMap dmap) 
 delegates :: U -> Delegations -> [(DScope, U)]
 delegates delegatee ds = over _2 unDelegate <$> delegatesSafe (Delegatee delegatee) ds
 
--- | Returns all the delegates for a given delegatee.
+-- | Returns all the direct delegates for a given delegatee.
 delegatesSafe :: Delegatee U -> Delegations -> [(DScope, Delegate U)]
 delegatesSafe delegatee (Delegations (DelegationMap dmap) _coDmap)
-  = maybe [] Map.toList $ Map.lookup delegatee dmap
+    = maybe [] Map.toList $ Map.lookup delegatee dmap
 
-scopeDelegatees :: U -> S -> Delegations -> Set U
-scopeDelegatees delegate scope =
+delegateInScope :: U -> DScope -> Delegations -> Maybe U
+delegateInScope delegatee scope ds =
+    unDelegate <$> scopeDelegateSafe (Delegatee delegatee) scope ds
+
+-- | Returns the direct delegate for a given delegatee in a scope.
+scopeDelegateSafe :: Delegatee U -> DScope -> Delegations -> Maybe (Delegate U)
+scopeDelegateSafe delegatee scope (Delegations (DelegationMap dmap) _coDmap)
+    = DMap.lookup delegatee scope dmap
+
+delegatees :: U -> Delegations -> [(DScope, Set U)]
+delegatees delegate ds = over _2 (Set.map unDelegatee) <$> delegateesSafe (Delegate delegate) ds
+
+-- | Returns all the direct delegatess for a given delegate
+delegateesSafe :: Delegate U -> Delegations -> [(DScope, Set (Delegatee U))]
+delegateesSafe delegate (Delegations _dmap (CoDelegationMap cmap))
+    = maybe [] Map.toList $ Map.lookup delegate cmap
+
+delegateesInScope :: U -> S -> Delegations -> Set U
+delegateesInScope delegate scope =
     Set.map unDelegatee . scopeDelegateesSafe (Delegate delegate) scope
 
 scopeDelegateesSafe :: Delegate U -> S -> Delegations -> Set (Delegatee U)
