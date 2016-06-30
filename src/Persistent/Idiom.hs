@@ -244,9 +244,9 @@ userDelegationListsMap uid = do
     dscopes <- delegationScopeTree =<< maybe404 =<< findUser uid
     DelegationListsMap <$> runScope `mapM` Tree.flatten dscopes
 
--- | On first level returns the delegates for the scopes which is
--- applicable to the user. On the second level the users who
--- delegated their votes to the first level user on the given scope
+-- | On first level returns the delegates for the scopes
+-- applicable to the user; on the second level the users who
+-- delegated their votes to the first level user on the given scope.
 --
 -- u0 -> (s1,u1) <- [u3,u4,u5,u0]
 --    -> (s2,u2) <- [u3,u6,u8,u0]
