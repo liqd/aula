@@ -92,14 +92,14 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
             | CanLike `notElem` caps
                 = nil
             | userLikesIdea user idea
-                = button_ [class_ "btn-cta m-selected button-group-item"] "Du hast für diese Idee gestimmt!"
+                = button_ [class_ "btn-cta m-selected button-group-item"] "Du willst diese Idee auf den Tisch legen"
                   -- FIXME: make this a button and allow un-liking!
             | otherwise
                 = do
                     postButton_
                         [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
                         (U.likeIdea idea)
-                        "Idee Auf den Tisch Bringen"
+                        "Auf den Tisch"
 
         voteButtons :: Html ()
         voteButtons
