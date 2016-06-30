@@ -199,7 +199,7 @@
         var linkArc = function(d) {
             var dx = d.target.x - d.source.x;
             var dy = d.target.y - d.source.y;
-            var dr = Math.sqrt(dx * dx + dy * dy);  // arrow length, if it's a straight line.
+            var dr = Math.max(1, Math.sqrt(dx * dx + dy * dy));  // arrow length
             var stretchFactorS = (dr - avatarRadius(d.source)) / dr;
             var stretchFactorT = (dr - avatarRadius(d.target)) / dr;
             var startx = d.target.x - (dx * stretchFactorS);
