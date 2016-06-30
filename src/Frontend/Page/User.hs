@@ -231,9 +231,9 @@ userHeaderDivCore user = do
 commonIdeaSpaceDelegations :: User -> User -> EQuery [Delegation]
 commonIdeaSpaceDelegations delegatee delegate = do
     let delegateeId = delegatee ^. _Id
-    schoolDelegation <- delegateInScope delegateeId (DScopeIdeaSpace SchoolSpace)
+    schoolDelegation <- delegateInScope delegateeId DScopeGlobal
     classDelegations <- forM (Set.toList $ commonSchoolClasses delegatee delegate)
-        (delegateInScope delegateeId . DScopeIdeaSpace . ClassSpace)
+        (delegateInScope delegateeId . DScopeClassSpace)
     pure $ catMaybes (schoolDelegation:classDelegations)
 
 -- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
@@ -247,14 +247,14 @@ delegationButtons delegatee delegate delegations = do
             delegations
         but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
-        if isActiveDelegation (DScopeIdeaSpace (ClassSpace clss))
+        if isActiveDelegation (DScopeClassSpace clss)
             then do
                 but (U.withdrawDelegationOnClassSpace delegate clss)
                     ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
                 but (U.delegateVoteOnClassSpace delegate clss)
                     ("Für Klasse " <> uilabel clss <> " beauftragen")
-    if isActiveDelegation (DScopeIdeaSpace SchoolSpace)
+    if isActiveDelegation DScopeGlobal
         then do
             but (U.withdrawDelegationOnSchoolSpace delegate)
                 "Schulweite beauftragung entziehen"

@@ -632,15 +632,21 @@ withdrawDelegation delegatee dscope delegate =
 delegationScopeTree :: User -> Query (Tree DScopeFull)
 delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
   where
+    ideasAndTopicsBySpace space = do
+        ideas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace space
+        topics <- DScopeTopicFull <$$> findTopicsBySpace space
+        pure $ ideas <> topics
+
     discover :: DScopeFull -> Query (DScopeFull, [DScopeFull])
     discover DScopeGlobalFull = do
-        ideaSpaces <- DScopeIdeaSpaceFull <$$> getSpacesForRoles (user ^. userRoleSet)
-        pure (DScopeGlobalFull, ideaSpaces)
+        ideasAndTopics <- ideasAndTopicsBySpace SchoolSpace
+        classSpaces <- catMaybes <$>
+            ((^? _ClassSpace . to DScopeClassSpaceFull)
+                <$$> getSpacesForRoles (user ^. userRoleSet))
+        pure (DScopeGlobalFull, ideasAndTopics <> classSpaces)
 
-    discover s@(DScopeIdeaSpaceFull cspace) = do
-        classIdeas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace cspace
-        classTopics <- DScopeTopicFull <$$> findTopicsBySpace cspace
-        pure (s, classIdeas <> classTopics)
+    discover s@(DScopeClassSpaceFull clss) = do
+        (,) s <$> ideasAndTopicsBySpace (ClassSpace clss)
 
     discover s@(DScopeTopicFull topic) = do
         topicIdeas <- DScopeIdeaFull <$$> findIdeasByTopic topic
@@ -652,17 +658,18 @@ delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
 dscopeFull :: DScope -> EQuery DScopeFull
 dscopeFull = \case
     DScopeGlobal       -> pure DScopeGlobalFull
-    DScopeIdeaSpace is -> pure $ DScopeIdeaSpaceFull is
+    DScopeClassSpace c -> pure $ DScopeClassSpaceFull c
     DScopeTopicId tid  -> DScopeTopicFull <$> (maybe404 =<< findTopic tid)
     DScopeIdeaId iid   -> DScopeIdeaFull <$> (maybe404 =<< findIdea iid)
 
+-- TODO: Align
 allDelegationScopes :: Query [DScope]
 allDelegationScopes = do
     ideas  <- getIdeas
     topics <- getTopics
-    spaces <- getSpaces
+    classes <- catMaybes <$> ((^? _ClassSpace) <$$> getSpaces)
     pure $ DScopeGlobal
-            : (DScopeIdeaSpace <$> spaces)
+            : (DScopeClassSpace <$> classes)
             <> (DScopeTopicId . view _Id <$> topics)
             <> (DScopeIdeaId  . view _Id <$> ideas)
 
@@ -699,14 +706,18 @@ votingPower uid scope = do
 scopeHiearchy :: DScope -> EQuery [DScope]
 scopeHiearchy = \case
     DScopeGlobal           -> pure [DScopeGlobal]
-    s@(DScopeIdeaSpace {}) -> pure [s, DScopeGlobal]
+    s@(DScopeClassSpace {}) -> pure [s, DScopeGlobal]
     t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
-        (t:) <$> scopeHiearchy (DScopeIdeaSpace space)
+        (t:) <$> scopeHiearchy (case space of
+            SchoolSpace     -> DScopeGlobal
+            ClassSpace clss -> DScopeClassSpace clss)
     i@(DScopeIdeaId iid)     -> do
         loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
         (i:) <$> scopeHiearchy (case loc of
-            IdeaLocationSpace s    -> DScopeIdeaSpace s
+            -- TODO: Align
+            IdeaLocationSpace SchoolSpace -> DScopeGlobal
+            IdeaLocationSpace (ClassSpace c) -> DScopeClassSpace c
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
 findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]

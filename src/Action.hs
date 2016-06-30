@@ -1007,7 +1007,7 @@ eventLogUserDelegates setOrWithdraw scope delegateId = do
     delegatee <- currentUser
     ispace <- case scope of
         DScopeGlobal           -> pure SchoolSpace
-        DScopeIdeaSpace ispace -> pure ispace
+        DScopeClassSpace clss  -> pure (ClassSpace clss)
         DScopeTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
         DScopeIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
                                   <$> mquery (findIdea iid)

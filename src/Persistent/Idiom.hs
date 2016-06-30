@@ -313,8 +313,8 @@ studentsInIdeaSpace spc = fltr <$> cllct spc
 studentsInDScope :: DScope -> EQuery [User]
 studentsInDScope DScopeGlobal
     = studentsInIdeaSpace SchoolSpace
-studentsInDScope (DScopeIdeaSpace spc)
-    = studentsInIdeaSpace spc
+studentsInDScope (DScopeClassSpace clss)
+    = studentsInIdeaSpace (ClassSpace clss)
 studentsInDScope (DScopeTopicId tid)
     = findTopic tid >>= maybe404 >>=
       studentsInIdeaSpace . view topicIdeaSpace

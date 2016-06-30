@@ -363,10 +363,10 @@ aulaUser userId =
   :<|> runHandler (Page.userProfileUserAsDelegatee userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
-  :<|> postDelegateTo (Action.delegateTo (DScopeIdeaSpace SchoolSpace))
-  :<|> postDelegateTo . Action.delegateTo . DScopeIdeaSpace . ClassSpace
-  :<|> postWithdraw (Action.withdrawDelegationTo (DScopeIdeaSpace SchoolSpace))
-  :<|> postWithdraw . Action.withdrawDelegationTo . DScopeIdeaSpace . ClassSpace
+  :<|> postDelegateTo (Action.delegateTo DScopeGlobal)
+  :<|> postDelegateTo . Action.delegateTo . DScopeClassSpace
+  :<|> postWithdraw (Action.withdrawDelegationTo DScopeGlobal)
+  :<|> postWithdraw . Action.withdrawDelegationTo . DScopeClassSpace
   where
     postDelegateTo :: (AUID User -> m ()) -> m (PostResult DelegateTo ())
     postDelegateTo a = runPostHandler delegateTo $ a userId
