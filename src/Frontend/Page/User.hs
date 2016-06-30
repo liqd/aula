@@ -281,10 +281,9 @@ data UserProfileTab
 userProfileTab :: Monad m => UserProfileTab -> User -> HtmlT m ()
 userProfileTab activeTab user = do
     div_ [class_ "heroic-tabs"] $ do
-        -- TODO: Translation
         tabLink UserIdeasTab      (U.viewUserProfile user) "Erstellte Ideen"
-        tabLink UserDelegateesTab (U.userDelegations user U.DelegateRole) "Delegations to me"
-        tabLink UserDelegatesTab  (U.userDelegations user U.DelegateeRole) "Delegations from me"
+        tabLink UserDelegateesTab (U.userDelegations user U.DelegateRole) "Für wen stimme ich ab?"
+        tabLink UserDelegatesTab  (U.userDelegations user U.DelegateeRole) "Wer stimmt für mich ab?"
   where
     tabLink t path
         | t == activeTab = span_ [class_ "heroic-tab-item  m-active"]
