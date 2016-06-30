@@ -38,11 +38,6 @@
         var treeix = buildDScopeTreeIndex(tree);
 
         var update = function() {
-            updateMenus();
-            updateButtons();
-        };
-
-        var updateMenus = function() {
             var mkSelects = function(ancestors) {
                 var result = [];
                 for (i in ancestors) {
@@ -83,39 +78,6 @@
                 .attr("value", function(d) { return d.dscope; })
                 .attr("selected", mkSelected)
                 .text(function(d) { return d.text; });
-        };
-
-        var updateButtons = function() {
-            var button = buttonDiv
-                .selectAll("button")
-                .data(["moreLevels", "fewerLevels"]);
-            button.enter()
-                .insert("button")
-                .attr("class", "btn-cta")
-                .text(function(d) {
-                    if (d == "moreLevels") {
-                        return "aufklappen";
-                    } else if (d == "fewerLevels") {
-                        return "zuklappen";
-                    }
-                })
-                .on("click", function(d) {
-                    if (d == "moreLevels") {
-                        current = treeix[current].subtree.children[0].dscope;
-                    } else if (d == "fewerLevels") {
-                        var ancs = treeix[current].ancestors;
-                        current = ancs[ancs.length - 2];
-                    }
-                    update();
-                });
-            button
-                .attr("disabled", function(d) {
-                    if (d == "moreLevels") {
-                        return treeix[current].subtree.children.length == 0 || undefined;
-                    } else if (d == "fewerLevels") {
-                        return treeix[current].ancestors.length == 1 || undefined;
-                    }
-                })
         };
 
         var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
