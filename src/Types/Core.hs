@@ -11,11 +11,9 @@
 {-# LANGUAGE OverloadedStrings           #-}
 {-# LANGUAGE Rank2Types                  #-}
 {-# LANGUAGE ScopedTypeVariables         #-}
-{-# LANGUAGE TemplateHaskell             #-}
 {-# LANGUAGE TypeFamilies                #-}
 {-# LANGUAGE TypeOperators               #-}
 {-# LANGUAGE TypeSynonymInstances        #-}
-{-# LANGUAGE ViewPatterns                #-}
 
 {-# OPTIONS_GHC -Wall -Werror #-}
 

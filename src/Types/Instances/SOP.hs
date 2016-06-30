@@ -1,22 +1,3 @@
-{-# LANGUAGE ConstraintKinds             #-}
-{-# LANGUAGE DataKinds                   #-}
-{-# LANGUAGE DefaultSignatures           #-}
-{-# LANGUAGE DeriveGeneric               #-}
-{-# LANGUAGE FlexibleContexts            #-}
-{-# LANGUAGE FlexibleInstances           #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving  #-}
-{-# LANGUAGE KindSignatures              #-}
-{-# LANGUAGE LambdaCase                  #-}
-{-# LANGUAGE MultiParamTypeClasses       #-}
-{-# LANGUAGE OverloadedStrings           #-}
-{-# LANGUAGE Rank2Types                  #-}
-{-# LANGUAGE ScopedTypeVariables         #-}
-{-# LANGUAGE TemplateHaskell             #-}
-{-# LANGUAGE TypeFamilies                #-}
-{-# LANGUAGE TypeOperators               #-}
-{-# LANGUAGE TypeSynonymInstances        #-}
-{-# LANGUAGE ViewPatterns                #-}
-
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
 module Types.Instances.SOP
