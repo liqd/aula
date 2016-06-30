@@ -124,7 +124,7 @@ module Persistent.Pure
     , Persistent.Pure.delegates
     , Persistent.Pure.delegateInScope
     , Persistent.Pure.delegatees
-    , Persistent.Pure.scopeDelegatees
+    , Persistent.Pure.delegateesInScope
     , Persistent.Pure.votingPower
     , Persistent.Pure.findDelegationsByScope
     , addPasswordToken
@@ -683,11 +683,11 @@ delegatees delegate =
     ((\(scope, delegatees') -> (\d -> Delegation scope d delegate) <$> Set.toList delegatees')
      <$$> views dbDelegations (Data.Delegation.delegatees delegate))
 
-scopeDelegatees :: AUID User -> DScope -> EQuery [Delegation]
-scopeDelegatees delegate scope =
+delegateesInScope :: AUID User -> DScope -> EQuery [Delegation]
+delegateesInScope delegate scope =
     (\delegatee -> Delegation scope delegatee delegate)
     <$$> Set.toList
-    <$> views dbDelegations (Data.Delegation.scopeDelegatees delegate scope)
+    <$> views dbDelegations (Data.Delegation.delegateesInScope delegate scope)
 
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower uid scope = do

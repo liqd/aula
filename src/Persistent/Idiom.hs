@@ -212,7 +212,7 @@ ideaVoteSupportByAbsDiff idea = Support $ countVotes _Yes idea - countVotes _No 
 -- | Find the delegatees of the given user for the given scope
 findDelegatees :: AUID User -> DScope -> EQuery [User]
 findDelegatees uid scope = do
-    scopeDelegatees uid scope
+    delegateesInScope uid scope
     >>= mapM (findUser . view delegationFrom)
     >>= pure . catMaybes
 

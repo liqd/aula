@@ -16,7 +16,7 @@ module Data.Delegation
     , scopeDelegateSafe
     , delegatees
     , delegateesSafe
-    , scopeDelegatees
+    , delegateesInScope
     , scopeDelegateesSafe
     , votingPower
     , findDelegationsByScope
@@ -149,8 +149,8 @@ delegateesSafe :: Delegate U -> Delegations -> [(DScope, Set (Delegatee U))]
 delegateesSafe delegate (Delegations _dmap (CoDelegationMap cmap))
     = maybe [] Map.toList $ Map.lookup delegate cmap
 
-scopeDelegatees :: U -> S -> Delegations -> Set U
-scopeDelegatees delegate scope =
+delegateesInScope :: U -> S -> Delegations -> Set U
+delegateesInScope delegate scope =
     Set.map unDelegatee . scopeDelegateesSafe (Delegate delegate) scope
 
 scopeDelegateesSafe :: Delegate U -> S -> Delegations -> Set (Delegatee U)
