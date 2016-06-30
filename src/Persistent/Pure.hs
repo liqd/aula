@@ -662,11 +662,10 @@ dscopeFull = \case
     DScopeTopicId tid  -> DScopeTopicFull <$> (maybe404 =<< findTopic tid)
     DScopeIdeaId iid   -> DScopeIdeaFull <$> (maybe404 =<< findIdea iid)
 
--- TODO: Align
 allDelegationScopes :: Query [DScope]
 allDelegationScopes = do
-    ideas  <- getIdeas
-    topics <- getTopics
+    ideas   <- getIdeas
+    topics  <- getTopics
     classes <- catMaybes <$> ((^? _ClassSpace) <$$> getSpaces)
     pure $ DScopeGlobal
             : (DScopeClassSpace <$> classes)
@@ -715,10 +714,9 @@ scopeHiearchy = \case
     i@(DScopeIdeaId iid)     -> do
         loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
         (i:) <$> scopeHiearchy (case loc of
-            -- TODO: Align
-            IdeaLocationSpace SchoolSpace -> DScopeGlobal
+            IdeaLocationSpace SchoolSpace    -> DScopeGlobal
             IdeaLocationSpace (ClassSpace c) -> DScopeClassSpace c
-            IdeaLocationTopic _s t -> DScopeTopicId   t)
+            IdeaLocationTopic _s t           -> DScopeTopicId   t)
 
 findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
 findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsByScope
