@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-incomplete-patterns #-}
 
@@ -13,17 +14,24 @@ where
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
-import Control.Monad (replicateM_, unless)
+import Control.Monad (forM_, replicateM_, unless)
 import Data.List (nub)
+import Data.Maybe (fromMaybe)
 import Data.String.Conversions ((<>))
 import Servant.Missing
+import System.Directory (doesFileExist)
+import System.Exit (ExitCode(ExitSuccess))
+import System.IO.Unsafe (unsafePerformIO)
+import System.Process (system)
 
 import Arbitrary hiding (generate)
-import Frontend.Constant (initialDemoPassword)
+import Frontend.Constant
 import Persistent
 import Persistent.Api
 import Action
 import Types
+
+import qualified Config
 
 import Test.QuickCheck.Gen hiding (generate)
 import Test.QuickCheck.Random
@@ -31,7 +39,6 @@ import Test.QuickCheck.Random
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Test.QuickCheck.Gen as QC
-import qualified Config
 
 
 -- * Constants
@@ -165,11 +172,25 @@ genCommentVote comments_in_context students = do
     let action = addWithUser . AddCommentVote $ comment ^. _Key
     action student <$> arb
 
-updateAvatar :: User -> FilePath -> forall m . ActionAvatar m => m ()
-updateAvatar user file = readImageFile file >>= \case
+-- | Consider calling 'updateAvatar' instead of this!
+updateAvatarExpensive :: User -> FilePath -> forall m . ActionAvatar m => m ()
+updateAvatarExpensive user file = readImageFile file >>= \case
     Just (Right pic) -> saveAvatar (user ^. _Id) pic
     Just (Left err)  -> fail err
     Nothing          -> fail $ "empty image file: " <> show file
+
+-- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
+-- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
+updateAvatar :: User -> Maybe FilePath -> forall m . ActionAvatar m => m ()
+updateAvatar user (fromMaybe "static/demo/avatars/test_user.png" -> spath) = do
+    () <- pure . unsafePerformIO $ do
+        forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
+            let tpath :: FilePath = user ^. _Id . avatarFile dim
+            yes <- doesFileExist tpath
+            unless yes $ do
+                ExitSuccess <- system . unwords $ ["ln -s", show spath, show tpath]
+                pure ()
+    pure ()
 
 type ProtoUserWithAvatar = (Proto User, FilePath)
 
@@ -178,14 +199,14 @@ addUserWithEmailFromConfig (protoUser, avatar) = do
     user <- setEmailFromConfig protoUser >>= addWithCurrentUser AddUser
     encryptPassword (protoUser ^. protoUserPassword . unInitialPassword)
         >>= update . SetUserPass (user ^. _Id)
-    updateAvatar user avatar
+    updateAvatar user (Just avatar)
     pure user
 
 addFirstUserWithEmailFromConfig :: ProtoUserWithAvatar -> forall m . ActionM m => m User
 addFirstUserWithEmailFromConfig (pu, avatar) = do
     now <- getCurrentTimestamp
     user <- setEmailFromConfig pu >>= update . AddFirstUser now
-    updateAvatar user avatar
+    updateAvatar user (Just avatar)
     pure user
 
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
@@ -293,7 +314,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         }
-    updateAvatar user1 "static/demo/avatars/test_user.png" -- admins could get a different default avatar
+    updateAvatar user1 Nothing
 
     user2 <- update $ AddUser (EnvWith user1 now ProtoUser
         { _protoUserLogin     = Just "godmin"
@@ -304,7 +325,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         })
-    updateAvatar user2 "static/demo/avatars/test_user.png" -- admins could get a different default avatar
+    updateAvatar user2 Nothing
 
     _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
