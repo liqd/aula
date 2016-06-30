@@ -71,8 +71,8 @@ spec = do
             Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
         Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
     let noChecks (CheckVotingPower{}) = False
-        noChecks (CheckVote{})           = False
-        noChecks _                       = True
+        noChecks (CheckVote{})        = False
+        noChecks _                    = True
     let observableBehaviour program =
             forAllShrinkDef programGen $ \(DelegationProgram prefix) ->
             forAllShrinkDef programGen $ \(DelegationProgram postfix) ->
