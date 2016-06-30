@@ -17,11 +17,14 @@
                 "ancestors": ancestors.slice(),
                 "subtree": tree,
                 "siblings": function() {
-                    return !parent
-                        ? []
-                        : dscopeix[parent].subtree.children.map(function(c) {
-                            return dscopeix[c.dscope].subtree;
-                        });
+                    var sibs = !parent ? forest : dscopeix[parent].subtree.children;
+                    var options = sibs.map(function(c) {
+                        return dscopeix[c.dscope].subtree;
+                    });
+                    if (parent) {
+                        options.unshift({"dscope": false, "text": "*"});
+                    }
+                    return options;
                 },
             }
             tree.children.map(function(d) { f(d, ancestors); });
