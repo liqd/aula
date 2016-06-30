@@ -81,7 +81,8 @@
         };
 
         var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
-        // rootElem.append("label").text("Geltungsbereich auswählen");
+        rootElem.append("h2").attr("class", "sub-heading")
+            .text("Ausgewählt: " + treeix[current].subtree.text);
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
         buttonDiv.append("input")
