@@ -6,20 +6,21 @@
     // ancestor paths.  (the siblings attribute needs to be lazified
     // by lambda abstraction because the right siblings do not exist
     // yet when it is constructed.)
-    var buildDScopeTreeIndex = function(aulaDScopeTree) {
-        var treeix = {};
+
+    var buildDScopeIndex = function(forest) {
+        var dscopeix = {};
 
         var f = function(tree, ancestors) {
             var parent = ancestors[ancestors.length - 1];
             ancestors.push(tree.dscope);
-            treeix[tree.dscope] = {
+            dscopeix[tree.dscope] = {
                 "ancestors": ancestors.slice(),
                 "subtree": tree,
                 "siblings": function() {
                     return !parent
                         ? []
-                        : treeix[parent].subtree.children.map(function(c) {
-                            return treeix[c.dscope].subtree;
+                        : dscopeix[parent].subtree.children.map(function(c) {
+                            return dscopeix[c.dscope].subtree;
                         });
                 },
             }
@@ -27,35 +28,35 @@
             ancestors.pop();
         };
 
-        f(aulaDScopeTree, []);
-        return treeix;
+        forest.map(function(tree) { f(tree, []); });
+        return dscopeix;
     };
 
 
     //////////////////////////////////////////////////////////////////////
 
-    var showNavigation = function(rootSel, current, tree) {
-        var treeix = buildDScopeTreeIndex(tree);
+    var showNavigation = function(rootSel, current, forest) {
+        var dscopeix = buildDScopeIndex(forest);
 
         var update = function() {
             var mkSelects = function(ancestors) {
                 var result = [];
                 for (i in ancestors) {
                     if (ancestors[i]) {
-                        result.push(treeix[ancestors[i]]);
+                        result.push(dscopeix[ancestors[i]]);
                     }
                 }
                 return result;
             }
 
             var mkSelected = function(d) {
-                return treeix[current].ancestors.indexOf(d.dscope) >= 0
+                return dscopeix[current].ancestors.indexOf(d.dscope) >= 0
                     ? true
                     : undefined;  // 'undefined' is the only thing that works here!
             }
 
             var select = menuDiv
-                .selectAll("select").data(mkSelects(treeix[current].ancestors));
+                .selectAll("select").data(mkSelects(dscopeix[current].ancestors));
             select.exit()
                 .remove();
             select.enter()
@@ -82,7 +83,7 @@
 
         var rootElem = d3.select(rootSel).append("header").attr("class", "delagation-header");
         rootElem.append("h2").attr("class", "sub-heading")
-            .text("Ausgewählt: " + treeix[current].subtree.text);
+            .text("Ausgewählt: " + dscopeix[current].subtree.text);
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
         buttonDiv.append("input")
@@ -401,15 +402,8 @@
 
     //////////////////////////////////////////////////////////////////////
 
-
-
-    // FIXME: see #790.
-    var aulaDScopeTree = aulaDScopeForest[0];
-
-
-
     window.onload = function() {
-        showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeTree);
+        showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeForest);
         if (d3.selectAll(".aula-d3-navig").length > 0) {
             showGraph(".aula-d3-view", aulaDelegationData);
         }
