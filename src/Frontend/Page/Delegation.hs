@@ -180,10 +180,10 @@ viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
-    delegations <- findDelegationsByScope scope
+    delegations <- findImplicitDelegationsByScope scope
 
     -- Create delegations
-    let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
+    let mkGraphNode (de, dees) = (unDelegate de, unDelegate de, (unDelegatee . snd) <$> dees)
 
     -- Build graphs and graph handler functions
     let graphNodes = fixLeaves $ mkGraphNode <$> delegations
@@ -216,8 +216,8 @@ delegationInfos scope = do
     -- Convert delegations to the needed form
     let flippedDelegations =
             [ Delegation s (unDelegatee dee) (unDelegate de)
-            | (de, s, dees) <- delegations
-            , dee <- dees
+            | (de, dees) <- delegations
+            , (s, dee)   <- dees
             ]
 
     pure $ DelegationNetwork users flippedDelegations
