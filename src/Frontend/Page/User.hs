@@ -73,7 +73,7 @@ data PageUserProfileCreatedIdeas =
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
-    isAuthorized = userPage -- Are profiles public?
+    isAuthorized = userPage -- profiles are public.  (see #695)
 
 -- | 8.2 User profile: Votes from delegatees
 data PageUserProfileUserAsDelegate =
@@ -81,7 +81,7 @@ data PageUserProfileUserAsDelegate =
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegate where
-    isAuthorized = userPage -- Are profiles public?
+    isAuthorized = userPage -- profiles are public.  (see #695)
 
 -- | 8.X User profile: Votes to delegates
 data PageUserProfileUserAsDelegatee =
@@ -89,7 +89,7 @@ data PageUserProfileUserAsDelegatee =
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegatee where
-    isAuthorized = userPage -- Are profiles public?
+    isAuthorized = userPage -- profiles are public.  (see #695)
 
 -- | 8.X User profile: Editing the public profile
 data EditUserProfile = EditUserProfile { _eupCapCtx :: CapCtx, _eupUser :: User }
