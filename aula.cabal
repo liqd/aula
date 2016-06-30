@@ -134,6 +134,13 @@ library
       Persistent.Pure
       Persistent.TemplateHaskell
       Types
+      Types.Core
+      Types.Instances.JSON
+      Types.Instances.Optics
+      Types.Instances.SafeCopy
+      Types.Instances.SOP
+      Types.Prelude
+      Types.Util
   other-modules:
       Paths_aula
   default-language: Haskell2010

@@ -5,7 +5,6 @@
 
 module TypesSpec where
 
-import Data.Binary (encode, decode)
 import Data.Maybe (isJust, isNothing)
 import Data.Monoid ((<>))
 import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
@@ -22,8 +21,6 @@ import Types
 spec :: Spec
 spec = do
     describe "Timestamp" $ do
-        it "encode and decode are inverses" . property $
-            \x -> decode (encode x) == (x :: Timestamp)
         it "read and show are inverses" . property $
             \x -> read (show x) == (x :: Timestamp)
         it "parseTimestamp and showTimestamp are inverses" . property $
