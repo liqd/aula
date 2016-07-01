@@ -82,9 +82,10 @@ instance Aeson.ToJSON DelegationNetwork where
             , "power"  Aeson..= p
             ]
 
-        renderLink (Delegation _ u1 u2) = Aeson.object
-            [ "source"  Aeson..= nodeId u1
-            , "target"  Aeson..= nodeId u2
+        renderLink (Delegation dscope u1 u2) = Aeson.object
+            [ "dscope" Aeson..= dscope
+            , "source" Aeson..= nodeId u1
+            , "target" Aeson..= nodeId u2
             ]
 
         -- the d3 edges refer to nodes by list position, not name.  this function gives the list
