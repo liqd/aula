@@ -180,10 +180,10 @@ viewDelegationNetwork (fromMaybe (DScopeIdeaSpace SchoolSpace) -> scope) = do
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
-    delegations <- findDelegationsByScope scope
+    delegations <- findImplicitDelegationsByScope scope
 
     -- Create delegations
-    let mkGraphNode (de, _s, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
+    let mkGraphNode (de, _, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
 
     -- Build graphs and graph handler functions
     let graphNodes = fixLeaves $ mkGraphNode <$> delegations

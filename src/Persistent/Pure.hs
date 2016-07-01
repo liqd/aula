@@ -127,6 +127,7 @@ module Persistent.Pure
     , Persistent.Pure.delegateesInScope
     , Persistent.Pure.votingPower
     , Persistent.Pure.findDelegationsByScope
+    , findImplicitDelegationsByScope
     , addPasswordToken
     , checkValidPasswordToken
     , Persistent.Pure.removePasswordToken
@@ -706,6 +707,10 @@ scopeAncestors = \case
 
 findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
 findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsByScope
+
+findImplicitDelegationsByScope :: DScope -> EQuery [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
+findImplicitDelegationsByScope scope =
+    mconcat <$> (scopeHiearchy scope >>= mapM Persistent.Pure.findDelegationsByScope)
 
 addPasswordToken :: AUID User -> PasswordToken -> Timestamp -> Timespan -> AUpdate ()
 addPasswordToken u token now later =
