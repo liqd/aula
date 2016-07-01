@@ -687,20 +687,20 @@ delegateesInScope delegate scope =
 
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower uid scope = do
-    hiearchy <- scopeHiearchy scope
+    ancestors <- scopeAncestors scope
     catMaybes
         <$> (mapM findUser
-             =<< views dbDelegations (Data.Delegation.votingPower uid hiearchy))
+             =<< views dbDelegations (Data.Delegation.votingPower uid ancestors))
 
-scopeHiearchy :: DScope -> EQuery [DScope]
-scopeHiearchy = \case
+scopeAncestors :: DScope -> EQuery [DScope]
+scopeAncestors = \case
     s@(DScopeIdeaSpace {}) -> pure [s]
     t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
-        (t:) <$> scopeHiearchy (DScopeIdeaSpace space)
+        (t:) <$> scopeAncestors (DScopeIdeaSpace space)
     i@(DScopeIdeaId iid)     -> do
         loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
-        (i:) <$> scopeHiearchy (case loc of
+        (i:) <$> scopeAncestors (case loc of
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
