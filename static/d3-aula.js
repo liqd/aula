@@ -21,8 +21,14 @@
                     var options = sibs.map(function(c) {
                         return dscopeix[c.dscope].subtree;
                     });
+                    // prepend the '*' entry to every menu except the top
                     if (parent) {
-                        options.unshift({"dscope": false, "text": "*"});
+                        var alloption = {
+                            "children": dscopeix[parent].subtree.children,
+                            "dscope": dscopeix[parent].subtree.dscope,
+                            "text": "*"
+                        };
+                        options.unshift(alloption);
                     }
                     return options;
                 },
@@ -49,6 +55,13 @@
                         result.push(dscopeix[ancestors[i]]);
                     }
                 }
+                // where can we go down from the current dscope?
+                var drillDownOptions = dscopeix[ancestors[i]].subtree.children;
+                if (drillDownOptions.length > 0) {
+                    // (the dscopeix has been constructed with a '*'
+                    // option that points to the parent dscope.)
+                    result.push(dscopeix[drillDownOptions[0].dscope]);
+                }
                 return result;
             }
 
@@ -62,22 +75,17 @@
                 .selectAll("select").data(mkSelects(dscopeix[current].ancestors));
             select.exit()
                 .remove();
+
+            // create <select> elems
             select.enter()
                 .append("select")
                 .attr("name", function(d) { return d.ancestors[d.ancestors.length - 1]; })
                 .on("change", function(d) { current = this.value; update(); });
 
+            // create <option> elems
             select
-                .selectAll("option").data(function(d) {
-                    if (d.siblings().length > 0) {
-                        return d.siblings();
-                    } else {
-                        // this is a bit fake; we don't really have a
-                        // menu here, there is only one "everywhere".
-                        // but symmetry-wise this works well.
-                        return [{ "dscope": "global", "text": "In allen Ideenräumen" }];
-                    }
-                }).enter()
+                .selectAll("option").data(function(d) { return d.siblings(); })
+                .enter()
                 .append("option")
                 .attr("value", function(d) { return d.dscope; })
                 .attr("selected", mkSelected)
