@@ -710,7 +710,7 @@ findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsBy
 
 findImplicitDelegationsByScope :: DScope -> EQuery [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
 findImplicitDelegationsByScope scope =
-    mconcat <$> (scopeHiearchy scope >>= mapM Persistent.Pure.findDelegationsByScope)
+    mconcat <$> (scopeAncestors scope >>= mapM Persistent.Pure.findDelegationsByScope)
 
 addPasswordToken :: AUID User -> PasswordToken -> Timestamp -> Timespan -> AUpdate ()
 addPasswordToken u token now later =
