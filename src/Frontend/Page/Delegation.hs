@@ -136,15 +136,13 @@ data PageDelegationNetwork = PageDelegationNetwork DScope DScopeForest Delegatio
 newtype DScopeForest = DScopeForest [Tree DScopeFull]
   deriving (Eq, Show, Read)
 
--- TODO: Fix JSON instance
 instance Aeson.ToJSON DScopeForest where
-    toJSON (DScopeForest ts) = f ts
+    toJSON (DScopeForest ts) = Aeson.toJSON $ treeToJSON <$> ts
       where
-        f [] = error "impossible"
-        f (Tree.Node dscope chldrn:_) = Aeson.object
+        treeToJSON (Tree.Node dscope chldrn) = Aeson.object
             [ "dscope"   Aeson..= toUrlPiece (fullDScopeToDScope dscope)
             , "text"     Aeson..= uilabelST dscope
-            , "children" Aeson..= (DScopeForest . pure <$> chldrn)
+            , "children" Aeson..= (treeToJSON <$> chldrn)
             ]
 
 instance Page PageDelegationNetwork where
@@ -161,8 +159,8 @@ instance ToHtml PageDelegationNetwork where
         div_ [class_ "container-delagation-network"] $ do
             h1_ [class_ "main-heading"] "Beauftragungsnetzwerk"
 
-            Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
-            Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeForest)
+            Lucid.script_ $ "var aulaDScopeCurrent  = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
+            Lucid.script_ $ "var aulaDScopeForest   = " <> cs (Aeson.encode dscopeForest)
             Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
             div_ [class_ "aula-d3-navig"] nil
