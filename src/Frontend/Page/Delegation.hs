@@ -157,12 +157,12 @@ instance Page PageDelegationNetwork where
 
 instance ToHtml PageDelegationNetwork where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
+    toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeForest delegations) = semanticDiv p $ do
         div_ [class_ "container-delagation-network"] $ do
             h1_ [class_ "main-heading"] "Beauftragungsnetzwerk"
 
             Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
-            Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
+            Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeForest)
             Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
             div_ [class_ "aula-d3-navig"] nil
