@@ -80,7 +80,7 @@
             select.enter()
                 .append("select")
                 .attr("name", function(d) { return d.ancestors[d.ancestors.length - 1]; })
-                .on("change", function(d) { current = this.value; update(); });
+                .on("change", function(d) { document.location.href = "/delegation/view?scope=" + this.value; });
 
             // create <option> elems
             select
@@ -97,10 +97,6 @@
             .text("Ausgewählt: " + dscopeix[current].subtree.text);
         var menuDiv = rootElem.append("div");
         var buttonDiv = rootElem.append("div").attr("class", "button-group");
-        buttonDiv.append("input")
-            .attr("value", "anzeigen")
-            .attr("type", "submit")
-            .on("click", function() { document.location.href = "/delegation/view?scope=" + current; });
         update();
     };
 
