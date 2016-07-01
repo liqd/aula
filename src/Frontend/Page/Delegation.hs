@@ -17,6 +17,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Text as ST
 import           Data.Graph
 import           Data.Graph.Missing (fixLeaves)
+import           Data.Map as Map (toList)
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
 import qualified Text.Digestive.Form as DF
@@ -181,10 +182,10 @@ viewDelegationNetwork (fromMaybe (DScopeIdeaSpace SchoolSpace) -> scope) = do
 
 delegationInfos :: DScope -> EQuery DelegationNetwork
 delegationInfos scope = do
-    delegations <- findImplicitDelegationsByScope scope
+    delegations <- Map.toList <$> findImplicitDelegationsByScope scope
 
     -- Create delegations
-    let mkGraphNode (de, _, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
+    let mkGraphNode (de, dees) = (unDelegate de, unDelegate de, unDelegatee . snd <$> dees)
 
     -- Build graphs and graph handler functions
     let graphNodes = fixLeaves $ mkGraphNode <$> delegations
@@ -192,11 +193,7 @@ delegationInfos scope = do
     let uidToVertex = fromJust . nodeToVertex
     let graphComponents = stronglyConnComp graphNodes
 
-    -- Count number of inbound delegation edges in local 'DScope'.  This is not the 'votingPower'
-    -- because it does not take into account delegations from surrounding 'DScope's, but it is much
-    -- cheaper to calculate.  (FUTUREWORK: it would be nice to have the actual voting power here,
-    -- but that should go together with showing the implicit (inherited) delegation edges in the
-    -- graph as well, e.g. as dashed lines.)
+    -- Count number of inbound delegation edges in implicit 'DScope'.
     let mkNode uid = do
             u <- maybe404 =<< findUser uid
             let p = length $ reachable delegationGraph (uidToVertex uid)
@@ -217,8 +214,8 @@ delegationInfos scope = do
     -- Convert delegations to the needed form
     let flippedDelegations =
             [ Delegation s (unDelegatee dee) (unDelegate de)
-            | (de, s, dees) <- delegations
-            , dee <- dees
+            | (de, dees) <- delegations
+            , (s, dee)   <- dees
             ]
 
     pure $ DelegationNetwork users flippedDelegations

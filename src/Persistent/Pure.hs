@@ -157,7 +157,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
-import Control.Monad (unless, when, replicateM, forM)
+import Control.Monad (foldM, unless, when, replicateM, forM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
@@ -705,12 +705,21 @@ scopeAncestors = \case
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
-findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
-findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsByScope
+findDelegationsByScope :: DScope -> Query (Map.Map (Delegate (AUID User)) [(DScope, Delegatee (AUID User))])
+findDelegationsByScope scope =
+    Map.fromList
+    <$> ((\(d,s,ds) -> (d, (,) s <$> ds))
+         <$$> views dbDelegations (Data.Delegation.findDelegationsByScope scope))
 
-findImplicitDelegationsByScope :: DScope -> EQuery [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
-findImplicitDelegationsByScope scope =
-    mconcat <$> (scopeAncestors scope >>= mapM Persistent.Pure.findDelegationsByScope)
+findImplicitDelegationsByScope :: DScope -> EQuery (Map.Map (Delegate (AUID User)) [(DScope, Delegatee (AUID User))])
+findImplicitDelegationsByScope scope = do
+    ancestors <- scopeAncestors scope
+
+    let addScopeDeleg m scope' = do
+            m' <- Persistent.Pure.findDelegationsByScope scope'
+            pure $ Map.unionWith (++) m m'
+
+    foldM addScopeDeleg Map.empty ancestors
 
 addPasswordToken :: AUID User -> PasswordToken -> Timestamp -> Timespan -> AUpdate ()
 addPasswordToken u token now later =
