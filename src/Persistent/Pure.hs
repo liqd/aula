@@ -157,7 +157,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
-import Control.Monad (foldM, unless, when, replicateM, forM)
+import Control.Monad (unless, when, replicateM, forM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
@@ -710,20 +710,12 @@ scopeHiearchy = \case
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
-findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), [(DScope, Delegatee (AUID User))])]
-findDelegationsByScope scope =
-    (\(d,s,ds) -> (d, (,) s <$> ds))
-    <$$> views dbDelegations (Data.Delegation.findDelegationsByScope scope)
+findDelegationsByScope :: DScope -> Query [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
+findDelegationsByScope = views dbDelegations . Data.Delegation.findDelegationsByScope
 
-findImplicitDelegationsByScope :: DScope -> EQuery [(Delegate (AUID User), [(DScope, Delegatee (AUID User))])]
-findImplicitDelegationsByScope scope = do
-    hiearchy <- scopeHiearchy scope
-
-    let addScopeDeleg m scope' = do
-            m' <- Map.fromList <$> Persistent.Pure.findDelegationsByScope scope'
-            pure $ Map.unionWith (++) m m'
-
-    Map.toList <$> foldM addScopeDeleg Map.empty hiearchy
+findImplicitDelegationsByScope :: DScope -> EQuery [(Delegate (AUID User), DScope, [Delegatee (AUID User)])]
+findImplicitDelegationsByScope scope =
+    mconcat <$> (scopeHiearchy scope >>= mapM Persistent.Pure.findDelegationsByScope)
 
 addPasswordToken :: AUID User -> PasswordToken -> Timestamp -> Timespan -> AUpdate ()
 addPasswordToken u token now later =

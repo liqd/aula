@@ -183,7 +183,7 @@ delegationInfos scope = do
     delegations <- findImplicitDelegationsByScope scope
 
     -- Create delegations
-    let mkGraphNode (de, dees) = (unDelegate de, unDelegate de, (unDelegatee . snd) <$> dees)
+    let mkGraphNode (de, _, dees) = (unDelegate de, unDelegate de, unDelegatee <$> dees)
 
     -- Build graphs and graph handler functions
     let graphNodes = fixLeaves $ mkGraphNode <$> delegations
@@ -216,8 +216,8 @@ delegationInfos scope = do
     -- Convert delegations to the needed form
     let flippedDelegations =
             [ Delegation s (unDelegatee dee) (unDelegate de)
-            | (de, dees) <- delegations
-            , (s, dee)   <- dees
+            | (de, s, dees) <- delegations
+            , dee <- dees
             ]
 
     pure $ DelegationNetwork users flippedDelegations
