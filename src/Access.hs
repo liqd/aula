@@ -172,7 +172,7 @@ capabilities (CapCtx u ms mp mi mc mup mdt)
     ]
   where
     userCapabilities' = userCapabilities <$> rs
-    canDelegateToUser =
+    canDelegateToUser = mp /= Just PhaseResult &&
         maybe
             False
             (\dtu -> CanDelegate `elem` concat userCapabilities'
