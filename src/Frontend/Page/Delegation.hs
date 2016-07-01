@@ -130,19 +130,19 @@ topicDelegation tid = formPageHandlerCalcMsgM
     pageDelegateVoteSuccessMsg
 
 -- | 13. Delegation network
-data PageDelegationNetwork = PageDelegationNetwork DScope DScopeTree DelegationNetwork
+data PageDelegationNetwork = PageDelegationNetwork DScope DScopeForest DelegationNetwork
   deriving (Eq, Show, Read)
 
-newtype DScopeTree = DScopeTree (Tree DScopeFull)
+newtype DScopeForest = DScopeForest [Tree DScopeFull]
   deriving (Eq, Show, Read)
 
-instance Aeson.ToJSON DScopeTree where
-    toJSON (DScopeTree t) = f t
+instance Aeson.ToJSON DScopeForest where
+    toJSON (DScopeForest ts) = Aeson.toJSON $ treeToJSON <$> ts
       where
-        f (Tree.Node dscope chldrn) = Aeson.object
+        treeToJSON (Tree.Node dscope chldrn) = Aeson.object
             [ "dscope"   Aeson..= toUrlPiece (fullDScopeToDScope dscope)
             , "text"     Aeson..= uilabelST dscope
-            , "children" Aeson..= (DScopeTree <$> chldrn)
+            , "children" Aeson..= (treeToJSON <$> chldrn)
             ]
 
 instance Page PageDelegationNetwork where
@@ -155,12 +155,12 @@ instance Page PageDelegationNetwork where
 
 instance ToHtml PageDelegationNetwork where
     toHtml = toHtmlRaw
-    toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeTree delegations) = semanticDiv p $ do
+    toHtmlRaw p@(PageDelegationNetwork dscopeCurrent dscopeForest delegations) = semanticDiv p $ do
         div_ [class_ "container-delagation-network"] $ do
             h1_ [class_ "main-heading"] "Beauftragungsnetzwerk"
 
-            Lucid.script_ $ "var aulaDScopeCurrent = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
-            Lucid.script_ $ "var aulaDScopeTree = " <> cs (Aeson.encode dscopeTree)
+            Lucid.script_ $ "var aulaDScopeCurrent  = " <> cs (Aeson.encode (toUrlPiece dscopeCurrent))
+            Lucid.script_ $ "var aulaDScopeForest   = " <> cs (Aeson.encode dscopeForest)
             Lucid.script_ $ "var aulaDelegationData = " <> cs (Aeson.encode delegations)
 
             div_ [class_ "aula-d3-navig"] nil
@@ -172,10 +172,10 @@ instance ToHtml PageDelegationNetwork where
                     div_ [class_ "aula-d3-view", id_ "aula-d3-view"] nil
 
 viewDelegationNetwork :: ActionM m  => Maybe DScope -> m PageDelegationNetwork
-viewDelegationNetwork (fromMaybe DScopeGlobal -> scope) = do
+viewDelegationNetwork (fromMaybe (DScopeIdeaSpace SchoolSpace) -> scope) = do
     user <- currentUser
     equery $ PageDelegationNetwork scope
-                <$> (DScopeTree <$> delegationScopeTree user)
+                <$> (DScopeForest <$> delegationScopeForest user)
                 <*> delegationInfos scope
 
 delegationInfos :: DScope -> EQuery DelegationNetwork

@@ -118,7 +118,7 @@ module Persistent.Pure
     , adminUsernameHack
     , addDelegation
     , withdrawDelegation
-    , delegationScopeTree
+    , delegationScopeForest
     , dscopeFull
     , allDelegationScopes
     , Persistent.Pure.delegates
@@ -629,14 +629,12 @@ withdrawDelegation :: AUID User -> DScope -> AUID User -> AUpdate ()
 withdrawDelegation delegatee dscope delegate =
     dbDelegations %= Data.Delegation.deleteDelegation delegatee dscope delegate
 
-delegationScopeTree :: User -> Query (Tree DScopeFull)
-delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
+delegationScopeForest :: User -> Query [Tree DScopeFull]
+delegationScopeForest user = do
+    ideaSpaces <- DScopeIdeaSpaceFull <$$> getSpacesForRoles (user ^. userRoleSet)
+    mapM (unfoldTreeM discover) ideaSpaces
   where
     discover :: DScopeFull -> Query (DScopeFull, [DScopeFull])
-    discover DScopeGlobalFull = do
-        ideaSpaces <- DScopeIdeaSpaceFull <$$> getSpacesForRoles (user ^. userRoleSet)
-        pure (DScopeGlobalFull, ideaSpaces)
-
     discover s@(DScopeIdeaSpaceFull cspace) = do
         classIdeas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace cspace
         classTopics <- DScopeTopicFull <$$> findTopicsBySpace cspace
@@ -651,7 +649,6 @@ delegationScopeTree user = unfoldTreeM discover DScopeGlobalFull
 
 dscopeFull :: DScope -> EQuery DScopeFull
 dscopeFull = \case
-    DScopeGlobal       -> pure DScopeGlobalFull
     DScopeIdeaSpace is -> pure $ DScopeIdeaSpaceFull is
     DScopeTopicId tid  -> DScopeTopicFull <$> (maybe404 =<< findTopic tid)
     DScopeIdeaId iid   -> DScopeIdeaFull <$> (maybe404 =<< findIdea iid)
@@ -661,8 +658,7 @@ allDelegationScopes = do
     ideas  <- getIdeas
     topics <- getTopics
     spaces <- getSpaces
-    pure $ DScopeGlobal
-            : (DScopeIdeaSpace <$> spaces)
+    pure $ (DScopeIdeaSpace <$> spaces)
             <> (DScopeTopicId . view _Id <$> topics)
             <> (DScopeIdeaId  . view _Id <$> ideas)
 
@@ -691,21 +687,20 @@ delegateesInScope delegate scope =
 
 votingPower :: AUID User -> DScope -> EQuery [User]
 votingPower uid scope = do
-    hiearchy <- scopeHiearchy scope
+    ancestors <- scopeAncestors scope
     catMaybes
         <$> (mapM findUser
-             =<< views dbDelegations (Data.Delegation.votingPower uid hiearchy))
+             =<< views dbDelegations (Data.Delegation.votingPower uid ancestors))
 
-scopeHiearchy :: DScope -> EQuery [DScope]
-scopeHiearchy = \case
-    DScopeGlobal           -> pure [DScopeGlobal]
-    s@(DScopeIdeaSpace {}) -> pure [s, DScopeGlobal]
+scopeAncestors :: DScope -> EQuery [DScope]
+scopeAncestors = \case
+    s@(DScopeIdeaSpace {}) -> pure [s]
     t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
-        (t:) <$> scopeHiearchy (DScopeIdeaSpace space)
+        (t:) <$> scopeAncestors (DScopeIdeaSpace space)
     i@(DScopeIdeaId iid)     -> do
         loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
-        (i:) <$> scopeHiearchy (case loc of
+        (i:) <$> scopeAncestors (case loc of
             IdeaLocationSpace s    -> DScopeIdeaSpace s
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 

@@ -284,7 +284,7 @@ instance Arbitrary DelegateeLists where
     shrink (DelegateeLists x) = DelegateeLists <$> shr x
 
 instance Arbitrary DelegationListsMap where
-    arbitrary = DelegationListsMap . (:[]) . (DScopeGlobalFull,) <$> arb
+    arbitrary = DelegationListsMap . pure <$> arb
     shrink (DelegationListsMap x) = DelegationListsMap <$> shr x
 
 instance Arbitrary PageUserProfileUserAsDelegate where
@@ -392,7 +392,8 @@ instance Arbitrary PageDelegateVote where
 -- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where
     shrink (PageDelegationNetwork x y z) = PageDelegationNetwork <$> shr x <*> shr y <*> shr z
-    arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> (DScopeTree <$> arbDScopeFullTree) <*> arb
+    -- FIXME: Generate other lists than length of one.
+    arbitrary = scaleDown $ PageDelegationNetwork <$> arb <*> (DScopeForest . pure <$> arbDScopeFullTree) <*> arb
       where
         -- Trees with a small max height.  (Note that the arbitrary structure allows arbitrary
         -- scopes to be contained in arbitrary other ones, so this could potentially get much deeper
@@ -411,8 +412,8 @@ instance Arbitrary DelegationNetwork where
         edges <- listOf1 $ Delegation <$> arb <*> mkNodeRef <*> mkNodeRef
         pure $ DelegationNetwork nodes edges
 
-instance Arbitrary DScopeTree where
-    arbitrary = DScopeTree <$> arb
+instance Arbitrary DScopeForest where
+    arbitrary = DScopeForest <$> arb
 
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint

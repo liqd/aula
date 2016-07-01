@@ -478,6 +478,13 @@
 
     //////////////////////////////////////////////////////////////////////
 
+
+
+    // FIXME: see #790.
+    var aulaDScopeTree = aulaDScopeForest[0];
+
+
+
     window.onload = function() {
         showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeTree);
         if (d3.selectAll(".aula-d3-navig").length > 0) {

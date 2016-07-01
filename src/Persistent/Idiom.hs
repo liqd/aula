@@ -241,8 +241,8 @@ delegateeLists omitEmpty = DelegateeLists . s . f
 userDelegationListsMap :: AUID User -> EQuery DelegationListsMap
 userDelegationListsMap uid = do
     let runScope dscope = (dscope,) <$> userDelegateeLists uid (fullDScopeToDScope dscope)
-    dscopes <- delegationScopeTree =<< maybe404 =<< findUser uid
-    DelegationListsMap <$> runScope `mapM` Tree.flatten dscopes
+    dscopes <- delegationScopeForest =<< maybe404 =<< findUser uid
+    DelegationListsMap <$> runScope `mapM` concatMap Tree.flatten dscopes
 
 -- | On first level returns the delegates for the scopes
 -- applicable to the user; on the second level the users who
@@ -311,8 +311,6 @@ studentsInIdeaSpace spc = fltr <$> cllct spc
         ClassSpace cls -> getUsersInClass cls
 
 studentsInDScope :: DScope -> EQuery [User]
-studentsInDScope DScopeGlobal
-    = studentsInIdeaSpace SchoolSpace
 studentsInDScope (DScopeIdeaSpace spc)
     = studentsInIdeaSpace spc
 studentsInDScope (DScopeTopicId tid)
