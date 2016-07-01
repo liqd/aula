@@ -147,6 +147,7 @@ instance Aeson.ToJSON DScopeForest where
 
 instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
+    isResponsive _ = False
     extraFooterElems _ = do
         script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
         -- FIXME: move the following two under static-src and sass control, resp.?
