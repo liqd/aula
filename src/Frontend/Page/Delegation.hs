@@ -193,7 +193,8 @@ delegationInfos scope = do
     let uidToVertex = fromJust . nodeToVertex
     let graphComponents = stronglyConnComp graphNodes
 
-    -- Count number of inbound delegation edges in implicit 'DScope'.
+    -- Count voting power (number of inbound delegation edges in the local 'DScope' and all its
+    -- ancestors).
     let mkNode uid = do
             u <- maybe404 =<< findUser uid
             let p = length $ reachable delegationGraph (uidToVertex uid)
