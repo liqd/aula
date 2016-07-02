@@ -233,9 +233,9 @@ semanticDiv = semanticDiv' []
 semanticDiv' :: forall m a. (Monad m, Typeable a) => [Attribute] -> a -> HtmlT m () -> HtmlT m ()
 semanticDiv' attrs t = div_ $ makeAttribute "data-aula-type" (cs . show . typeOf $ t) : attrs
 
-type FormCS m r s =
-    (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
-    => DF.Form (Html ()) m r -> DF.Form (Html ()) m s
+type FormCS m r s = forall n.
+    (Monad n, Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
+    => DF.Form (HtmlT n ()) m r -> DF.Form (HtmlT n ()) m s
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml

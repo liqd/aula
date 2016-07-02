@@ -293,7 +293,7 @@ validateTopicTitle ideaSpace mTopic =
                 then DF.Error "Es gibt in diesem Ideenraum schon ein Thema mit diesem Namen."
                 else DF.Success title
 
-validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m PlainDocument
+validateTopicDesc :: forall m n . (Monad m, Monad n) => DF.Form (HtmlT n ()) m ST -> DF.Form (HtmlT n ()) m PlainDocument
 validateTopicDesc =
     validate
         "Thema"

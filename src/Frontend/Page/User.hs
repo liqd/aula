@@ -459,7 +459,7 @@ instance FormPage EditUserProfile where
                         DF.inputSubmit "Änderungen speichern"
                         cancelButton p
 
-validateImageFile :: ActionM m => Maybe FilePath -> m (DF.Result (Html ()) (Maybe DynamicImage))
+validateImageFile :: (Monad n, ActionM m) => Maybe FilePath -> m (DF.Result (HtmlT n ()) (Maybe DynamicImage))
 validateImageFile = \case
     Nothing   -> pure $ DF.Success Nothing
     Just file -> do

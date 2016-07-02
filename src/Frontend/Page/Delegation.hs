@@ -67,7 +67,7 @@ instance FormPage PageDelegateVote where
 
         -- the error messages here are not translated because they shouldn't be user facing: the
         -- only causes for them are users messing with the page source and programming errors.
-        valid :: ST -> DF.Result (Html ()) (Maybe (AUID User))
+        valid :: Monad n => ST -> DF.Result (HtmlT n ()) (Maybe (AUID User))
         valid "" = pure Nothing
         valid (ST.commonPrefixes "page-delegate-vote-uid." -> Just ("page-delegate-vote-uid.", "", s)) =
             Just <$> case readMay $ cs s of
