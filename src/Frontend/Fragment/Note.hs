@@ -40,13 +40,13 @@ noteForm note v form header = do
                 footer_ [class_ "form-footer"] $ do
                     DF.inputSubmit "Abschicken"
 
-noteFormInput :: (Monad m) => Note t -> Maybe Document -> DF.Form (Html ()) m Document
+noteFormInput :: (Monad n, Monad m) => Note t -> Maybe Document -> DF.Form (HtmlT n ()) m Document
 noteFormInput note mdoc =
     "note-text" .: validate (cs $ noteFieldNameInValiationError note)
                             markdownV
                             (DF.text (unMarkdown <$> mdoc))
 
-noteFormOptionalInput :: (Monad m) => Note t -> Maybe Document -> DF.Form (Html ()) m (Maybe Document)
+noteFormOptionalInput :: (Monad n, Monad m) => Note t -> Maybe Document -> DF.Form (HtmlT n ()) m (Maybe Document)
 noteFormOptionalInput note mdoc =
     "note-text" .: validateOptional (cs $ noteFieldNameInValiationError note)
                                     markdownV

@@ -576,7 +576,7 @@ roleSelection = to $ \case
     Principal    -> RoleSelPrincipal
     Admin        -> RoleSelAdmin
 
-chooseRole :: Maybe Role -> Monad m => DF.Form (Html ()) m RoleSelection
+chooseRole :: (Monad n) => Maybe Role -> Monad m => DF.Form (HtmlT n ()) m RoleSelection
 chooseRole mr = DF.choice roleSelectionChoices (mr ^? _Just . roleSelection)
 
 chooseClass :: [SchoolClass] -> Maybe SchoolClass -> DfForm SchoolClass
@@ -630,10 +630,10 @@ instance FormPage AdminEditUser where
 
     makeForm (AdminEditUser user) = "login" .: validateUserLogin
       where
-        validateUserLogin :: ActionM m => DF.Form (Html ()) m (Maybe UserLogin)
+        validateUserLogin :: (Monad n, ActionM m) => DF.Form (HtmlT n ()) m (Maybe UserLogin)
         validateUserLogin = DF.validateM go . validate "Login" usernameV' $ dfTextField user userLogin _UserLogin
 
-        go :: forall m. ActionM m => UserLogin -> m (DF.Result (Html ()) (Maybe UserLogin))
+        go :: forall m n. (Monad n, ActionM m) => UserLogin -> m (DF.Result (HtmlT n ()) (Maybe UserLogin))
         go "" = pure $ DF.Error "login darf nicht leer sein"
         go lgin = if lgin == user ^. userLogin
             then pure (DF.Success Nothing)
@@ -789,7 +789,7 @@ instance FormPage PageAdminSettingsEventsProtocol where
 
     makeForm (PageAdminSettingsEventsProtocol spaces) = EventsProtocolFilter <$> ("space" .: DF.choice vs Nothing)
       where
-        vs :: [(Maybe IdeaSpace, Html ())]
+        vs :: Monad n => [(Maybe IdeaSpace, HtmlT n ())]
         vs = (Nothing, "(Alle Ideenräume)") : ((Just &&& toHtml . toUrlPiece) <$> spaces)
 
     formPage v form p@(PageAdminSettingsEventsProtocol _) = adminFrame p . semanticDiv p . form $ do

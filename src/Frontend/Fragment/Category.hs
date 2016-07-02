@@ -30,7 +30,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- | FIXME: 'makeFormSelectCategory', 'formPageSelectCategory' should be a subform.  (related: `grep
 -- subform src/Frontend/Page/Topic.hs`.)
 -- FIXME: Error and non selected category are inseparable cases.
-makeFormSelectCategory :: (Monad m) => Maybe Category -> DF.Form (Html ()) m (Maybe Category)
+makeFormSelectCategory :: (Monad n, Monad m) => Maybe Category -> DF.Form (HtmlT n ()) m (Maybe Category)
 makeFormSelectCategory mcat = formSelectorToCategory <$> DF.text (formSelectorFromCategory <$> mcat)
 
 formSelectorToCategory :: ST -> Maybe Category
