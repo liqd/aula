@@ -103,7 +103,7 @@
 
     //////////////////////////////////////////////////////////////////////
 
-    var showGraph = function(rootSel, graph) {
+    var showGraph = function(rootSel, current, graph) {
 
         // [local functions]
 
@@ -192,7 +192,7 @@
             path = svg.append("g")
                 .selectAll("path").data(force.links())
                 .enter().append("path")
-                .attr("class", function(d) { return "link default"; })
+                .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
                 .attr("marker-end", function(d) { return "url(#default)"; });
 
             avat = svg.append("g")
@@ -412,7 +412,7 @@
     window.onload = function() {
         showNavigation(".aula-d3-navig", aulaDScopeCurrent, aulaDScopeForest);
         if (d3.selectAll(".aula-d3-navig").length > 0) {
-            showGraph(".aula-d3-view", aulaDelegationData);
+            showGraph(".aula-d3-view", aulaDScopeCurrent, aulaDelegationData);
         }
     };
 
