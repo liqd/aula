@@ -8,6 +8,7 @@ where
 import Control.Lens hiding ((<.>))
 import Data.List as List (zipWith)
 import Data.Map as Map (Map, lookup, unions, singleton)
+import Servant.API (toUrlPiece)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Vector as Vector
@@ -83,7 +84,7 @@ instance Aeson.ToJSON DelegationNetwork where
             ]
 
         renderLink (Delegation dscope u1 u2) = Aeson.object
-            [ "dscope" Aeson..= dscope
+            [ "dscope" Aeson..= toUrlPiece dscope
             , "source" Aeson..= nodeId u1
             , "target" Aeson..= nodeId u2
             ]
