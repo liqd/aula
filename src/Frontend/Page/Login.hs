@@ -9,6 +9,8 @@ module Frontend.Page.Login
 where
 
 import Text.Digestive as DF hiding (validate)
+import qualified Data.Text as ST
+import qualified Lucid
 
 import Access
 import Action (ActionM, query)
@@ -16,10 +18,7 @@ import qualified Action
 import Persistent
 import Frontend.Prelude
 import Frontend.Validation
-
-import qualified Data.Text as ST
 import qualified Frontend.Path as U
-import qualified Lucid
 
 
 -- * page

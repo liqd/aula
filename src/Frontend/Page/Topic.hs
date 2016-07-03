@@ -333,7 +333,7 @@ createOrEditTopic v ideas = do
     label_ $ do
         span_ [class_ "label-text"] $ if null ideas
             then "Es stehen keine Ideen zur Auswahl."
-            else "Fügen Sie weitere wilde dem neuen Thema hinzu"
+            else "Fügen Sie weitere wilde Ideen dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
         -- topic as selected by default.  (see also: FIXME at makeFormIdeaSelection.)

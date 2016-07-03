@@ -46,7 +46,7 @@ import Logger (LogLevel(..), nullLog)
 import Persistent (mkMetaInfo)
 
 
--- | 'runIO" with better errors.
+-- | 'runIO' with better errors.
 runIO' :: (SomeException -> IO a) -> IO a -> SpecM () a
 runIO' e a = runIO $ a `catch` e
 
