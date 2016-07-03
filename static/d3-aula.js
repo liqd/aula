@@ -190,6 +190,14 @@
             svg.selectAll("g image").data([]).exit().remove();
             svg.selectAll("g text").data([]).exit().remove();
 
+            if (force.nodes().length > 0) {
+                nodePowerMax = 1;
+                nodePowerMin = force.nodes()[0].power;
+                force.nodes().forEach(function(n) {
+                    nodePowerMax = Math.max(nodePowerMax, n.power);
+                    nodePowerMin = Math.min(nodePowerMin, n.power);
+                });
+
             path = svg.append("g")
                 .selectAll("path").data(force.links())
                 .enter().append("path")
@@ -217,6 +225,8 @@
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
             force.alpha(.3);
+
+            }
         };
 
         var updateWidgetJustTitles = function() {
@@ -228,7 +238,13 @@
         };
 
         var avatarWidthHeight = function(d) {
-            return 20 + Math.min(Math.sqrt(d.power * 100), 160);
+            var low = 15;
+            var high = 120;
+            if (nodePowerMax === nodePowerMin) {
+                return high;
+            } else {
+                return low + (high - low) * (d.power - nodePowerMin) / (nodePowerMax - nodePowerMin);
+            }
         };
 
         var avatarRadius = function(d) {
@@ -323,6 +339,9 @@
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
         var globalGraphHeight = 600;
+
+        var nodePowerMax = 1;
+        var nodePowerMin = 1000;
 
         var visible = function(d) {
             return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
