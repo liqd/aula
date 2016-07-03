@@ -198,34 +198,33 @@
                     nodePowerMin = Math.min(nodePowerMin, n.power);
                 });
 
-            path = svg.append("g")
-                .selectAll("path").data(force.links())
-                .enter().append("path")
-                .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
-                .attr("marker-end", function(d) { return "url(#default)"; });
+                path = svg.append("g")
+                    .selectAll("path").data(force.links())
+                    .enter().append("path")
+                    .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
+                    .attr("marker-end", function(d) { return "url(#default)"; });
 
-            avat = svg.append("g")
-                .selectAll("image").data(force.nodes())
-                .enter().append("image")
-                .attr("class", ".node")
-                .call(force.drag)
-                .attr("width",  avatarWidthHeight)
-                .attr("height", avatarWidthHeight)
-                .attr("xlink:href", function(d) { return d.avatar; });
+                avat = svg.append("g")
+                    .selectAll("image").data(force.nodes())
+                    .enter().append("image")
+                    .attr("class", ".node")
+                    .call(force.drag)
+                    .attr("width",  avatarWidthHeight)
+                    .attr("height", avatarWidthHeight)
+                    .attr("xlink:href", function(d) { return d.avatar; });
 
-            avat.on("click",      on_click)
-                .on("dblclick",   on_dblclick)
-                .on("mouseover",  on_mouseover)
-                .on("mouseout",   on_mouseout);
+                avat.on("click",      on_click)
+                    .on("dblclick",   on_dblclick)
+                    .on("mouseover",  on_mouseover)
+                    .on("mouseout",   on_mouseout);
 
-            text = svg.append("g")
-                .selectAll("text").data(force.nodes())
-                .enter().append("text")
-                .attr("class", function(d) { return setvisibility(visibleTitle(d), this); })
-                .text(function(d) { return (d.name + " [" + d.power + "]"); });
+                text = svg.append("g")
+                    .selectAll("text").data(force.nodes())
+                    .enter().append("text")
+                    .attr("class", function(d) { return setvisibility(visibleTitle(d), this); })
+                    .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
-            force.alpha(.3);
-
+                force.alpha(.3);
             }
         };
 
