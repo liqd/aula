@@ -12,7 +12,7 @@
 module Frontend.CoreSpec where
 
 import Prelude hiding ((.))
-import Control.Arrow((&&&))
+import Control.Arrow((&&&), second)
 import Control.Category ((.))
 import Data.List
 import Data.String.Conversions
@@ -164,10 +164,9 @@ selectValue ref v xs x =
         Just (i, _, _) -> value i
         Nothing -> error $ unwords ["selectValue: no option found. Value:", show x, "in values", show xs, "and choices", show choices]
   where
-    ref'    = absoluteRef ref v
-    value i = ref' <> "." <> i
-    choices = fieldInputChoice ref v
-    test (_, sx :: Html (), _) = showValue x == renderText sx
+    value i = absoluteRef ref v <> "." <> i
+    choices = (\(t, h, b) -> (t, renderHtmlDefaultH h, b)) <$> fieldInputChoice ref v
+    test (_, h, _) = showValue x == h
     showValue ((`lookup` xs) -> Just y) = y
     showValue z = error $ unwords ["selectValue: no option found. Value:", show z, "in values", show xs]
 
@@ -302,7 +301,7 @@ data HtmlGen where
 checkToHtmlInstance :: HtmlGen -> Spec
 checkToHtmlInstance (H g) =
     it (show $ typeOf g) . property . forAllShrinkDef g $ \pageSource ->
-        LT.length (renderText (toHtml pageSource)) > 0
+        LT.length (renderHtmlDefault pageSource) > 0
 
 data FormTest where
     FormTest :: (
@@ -336,7 +335,7 @@ renderForm (FormTest g _ _) =
     it (show (typeOf g) <> " (show empty form)") . property . forAllShrinkDef g $ \page -> monadicIO $ do
         len <- runFailOnError $ do
             v <- getForm (absoluteUriPath . relPath $ formAction page) (makeForm page)
-            return . LT.length . renderText $ formPage v (DF.form v "formAction") page
+            return . LT.length . renderHtmlDefaultH $ formPage v (DF.form v "formAction") page
         assert (len > 0)
 
 simulateForm
@@ -362,9 +361,8 @@ testValidationError ::
     => page -> payloadCtx -> payload -> [String] -> Spec
 testValidationError page ctx payload expected =
     describe ("validation in form " <> show (typeOf page, payload)) . it "works" $ do
-        (v, Nothing) <- simulateForm (\_ _ -> pure ()) page ctx payload -- FIXME
-        (show . snd <$> viewErrors v) `shouldBe` expected
-            -- FIXME: render Html instead of showing it?
+        (v, Nothing) <- simulateForm (\_ _ -> pure ()) page ctx payload  -- FIXME (?)
+        (cs . renderHtmlDefaultH . snd <$> viewErrors v) `shouldBe` expected
 
 runFailOnError :: Action a -> PropertyM IO a
 runFailOnError = run . runFailOnErrorIO
@@ -396,8 +394,9 @@ postToForm (FormTest g c check) = do
         payload       <- pick (arbFormPagePayload page)
         (v, mpayload) <- run $ simulateForm c page ctx payload
         case mpayload of
-            Nothing       -> fail $ unwords
-                                ("Form validation has failed:" : map show (viewErrors v))
+            Nothing -> fail $ unwords
+                ("Form validation has failed:" :
+                    (show . Control.Arrow.second renderHtmlDefaultH <$> viewErrors v))
             Just payload' -> liftIO $ payload' `check` payload
 
     -- FIXME: Valid and invalid form data generation should
