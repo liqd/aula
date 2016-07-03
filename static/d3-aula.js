@@ -151,6 +151,7 @@
         var filterMatching = function(substring) {
             graph.nodes.forEach(function(n) {
                 n.visibleByMatching = substring === "" || n.name.indexOf(substring) >= 0;
+                n.showTitleMatching = substring !== "" && n.name.indexOf(substring) >= 0;
             });
             updateVisibility();
         };
@@ -189,33 +190,42 @@
             svg.selectAll("g image").data([]).exit().remove();
             svg.selectAll("g text").data([]).exit().remove();
 
-            path = svg.append("g")
-                .selectAll("path").data(force.links())
-                .enter().append("path")
-                .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
-                .attr("marker-end", function(d) { return "url(#default)"; });
+            if (force.nodes().length > 0) {
+                nodePowerMax = 1;
+                nodePowerMin = force.nodes()[0].power;
+                force.nodes().forEach(function(n) {
+                    nodePowerMax = Math.max(nodePowerMax, n.power);
+                    nodePowerMin = Math.min(nodePowerMin, n.power);
+                });
 
-            avat = svg.append("g")
-                .selectAll("image").data(force.nodes())
-                .enter().append("image")
-                .attr("class", ".node")
-                .call(force.drag)
-                .attr("width",  avatarWidthHeight)
-                .attr("height", avatarWidthHeight)
-                .attr("xlink:href", function(d) { return d.avatar; });
+                path = svg.append("g")
+                    .selectAll("path").data(force.links())
+                    .enter().append("path")
+                    .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
+                    .attr("marker-end", function(d) { return "url(#default)"; });
 
-            avat.on("click",      on_click)
-                .on("dblclick",   on_dblclick)
-                .on("mouseover",  on_mouseover)
-                .on("mouseout",   on_mouseout);
+                avat = svg.append("g")
+                    .selectAll("image").data(force.nodes())
+                    .enter().append("image")
+                    .attr("class", ".node")
+                    .call(force.drag)
+                    .attr("width",  avatarWidthHeight)
+                    .attr("height", avatarWidthHeight)
+                    .attr("xlink:href", function(d) { return d.avatar; });
 
-            text = svg.append("g")
-                .selectAll("text").data(force.nodes())
-                .enter().append("text")
-                .attr("class", function(d) { return setvisibility(false, this); })
-                .text(function(d) { return (d.name + " [" + d.power + "]"); });
+                avat.on("click",      on_click)
+                    .on("dblclick",   on_dblclick)
+                    .on("mouseover",  on_mouseover)
+                    .on("mouseout",   on_mouseout);
 
-            force.alpha(.3);
+                text = svg.append("g")
+                    .selectAll("text").data(force.nodes())
+                    .enter().append("text")
+                    .attr("class", function(d) { return setvisibility(visibleTitle(d), this); })
+                    .text(function(d) { return (d.name + " [" + d.power + "]"); });
+
+                force.alpha(.3);
+            }
         };
 
         var updateWidgetJustTitles = function() {
@@ -223,11 +233,18 @@
             // destroys the state if we call it from here, so we'll do
             // something simpler.
 
-            text.attr("class", function(d) { return setvisibility(d.showTitle, this); });
+            text.attr("class", function(d) { return setvisibility(visibleTitle(d), this); });
         };
 
         var avatarWidthHeight = function(d) {
-            return 20 + Math.min(Math.sqrt(d.power * 100), 160);
+            var low = 15;
+            var high = force.linkDistance() - 10;  // if you make this bigger, edges
+                                                   // won't always be visible.
+            if (nodePowerMax === nodePowerMin) {
+                return high;
+            } else {
+                return low + (high - low) * (d.power - nodePowerMin) / (nodePowerMax - nodePowerMin);
+            }
         };
 
         var avatarRadius = function(d) {
@@ -255,6 +272,18 @@
             // called the delegate here because we process its
             // delegatees.
             var newVisibilityStatus = undefined;
+            var setNewVisibilityStatus = function(n) {
+                if (newVisibilityStatus === undefined) {
+                    newVisibilityStatus = !visible(n);
+                }
+                n.visibleByClick = newVisibilityStatus;
+                // clicking overrides the other filters
+                if (newVisibilityStatus) {
+                    makeAllVisible(n);
+                }
+            };
+
+            // inbound edges (full depth)
             var visited = [];
             var traverse = function(d) {
                 if (visited.indexOf(d.name) >= 0) {
@@ -268,20 +297,21 @@
                     // the click-on node, or we won't be able to
                     // re-open it.
                     if (l.target.name === d.name && l.source.name !== delegate.name) {
-                        if (newVisibilityStatus === undefined) {
-                            newVisibilityStatus = !visible(l.source);
-                        }
-                        l.source.visibleByClick = newVisibilityStatus;
-                        // clicking overrides the other filters
-                        if (l.source.visibleByClick) {
-                            makeAllVisible(l.source);
-                        }
+                        setNewVisibilityStatus(l.source);
                         traverse(l.source);
                     }
                 });
             };
-
             traverse(delegate);
+
+            // outbound edges (only one level of delegates)
+            graph.links.forEach(function(l) {
+                if (l.source.name === delegate.name) {
+                    setNewVisibilityStatus(l.target);
+                }
+            });
+
+            // commit
             updateVisibility();
         };
 
@@ -291,13 +321,13 @@
         };
 
         var on_mouseover = function(d) {
-            d.showTitle = true;
+            d.showTitleMouseOver = true;
             updateWidgetJustTitles();
             d.fixed = true;
         };
 
         var on_mouseout = function(d) {
-            d.showTitle = false;
+            d.showTitleMouseOver = false;
             updateWidgetJustTitles();
             d.fixed = false;
         };
@@ -310,8 +340,15 @@
         var globalGraphWidth = 600;
         var globalGraphHeight = 600;
 
+        var nodePowerMax = 1;
+        var nodePowerMin = 1000;
+
         var visible = function(d) {
             return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
+        };
+
+        var visibleTitle = function(d) {
+            return d.showTitleMatching || d.showTitleMouseOver;
         };
 
         var makeAllVisible = function(d) {
