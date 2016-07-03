@@ -30,6 +30,10 @@ import Data.Markdown
 type Html = HtmlT Identity
 type HtmlT m = L.HtmlT (ReaderT Lang m)
 
+instance Monad m => MonadReader Lang (L.HtmlT (ReaderT Lang m)) where
+    ask = ask
+    local = local
+
 class ToHtml a where
     toHtmlRaw :: Monad m => a -> HtmlT m ()
     toHtml    :: Monad m => a -> HtmlT m ()

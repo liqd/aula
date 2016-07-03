@@ -1,7 +1,8 @@
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -19,6 +20,20 @@ import Persistent
 import Frontend.Prelude
 import Frontend.Validation
 import qualified Frontend.Path as U
+
+
+-- * translation keys
+
+-- this section should be auto-generated from transifex data with TH.
+
+t_forgot_passwd_reset_yourself :: Monad m => HtmlT m ()
+t_forgot_passwd_reset_yourself = do
+    _lang :: Lang <- ask
+    "Wenn Du eine email-Adresse eingegeben hast, kannst du dein Passwort hier neu setzen."
+
+t_forgot_passwd_reset_with_admin :: Monad m => HtmlT m ()
+t_forgot_passwd_reset_with_admin = do
+    "Solltest du dein Passwort nicht mehr kennen und keine email-Adresse haben, melde dich bitte bei den Admins euer Schule."
 
 
 -- * page
@@ -69,9 +84,9 @@ instance FormPage PageHomeWithLoginPrompt where
                     inputSubmit_   [] "Login"
                     p_ [class_ "text-muted login-register-form-notice"] $ do
                         a_ [href_ U.resetPasswordViaEmail]
-                            "Wenn Du eine email-Adresse eingegeben hast, kannst du dein Passwort hier neu setzen."
+                            t_forgot_passwd_reset_yourself
                         br_ nil
-                        "Solltest du dein Passwort nicht mehr kennen und keine email-Adresse haben, melde dich bitte bei den Admins euer Schule."
+                        t_forgot_passwd_reset_with_admin
             toHtml loginDemoHints
 
 
