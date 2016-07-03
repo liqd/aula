@@ -25,9 +25,11 @@ module Lucid.Missing
     , postButton_
     , nbsp
     , toHtmlGeneralizeIdentity
+    , module Lucid.I18N
     )
   where
 
+import Control.Monad.Reader
 import Data.String.Conversions
 import Thentos.Prelude
 
@@ -38,6 +40,7 @@ import qualified Text.Digestive.View as DF
 
 import Data.UriPath
 import Frontend.Path
+import Lucid.I18N
 
 
 -- | See also https://github.com/chrisdone/lucid/issues/30
@@ -134,8 +137,8 @@ nbsp = "&nbsp;"
 
 -- | (Before using this function, consider changing the type of its argument to be more general by
 -- nature.)
-toHtmlGeneralizeIdentity :: Monad m => L.HtmlT Identity () -> L.HtmlT m ()
-toHtmlGeneralizeIdentity = L.HtmlT . return . runIdentity . L.runHtmlT
+toHtmlGeneralizeIdentity :: Monad m => HtmlT Identity a -> HtmlT m a
+toHtmlGeneralizeIdentity (L.HtmlT (ReaderT r)) = L.HtmlT . ReaderT $ pure . runIdentity . r
 
 instance L.ToHtml () where
     toHtmlRaw = L.toHtml

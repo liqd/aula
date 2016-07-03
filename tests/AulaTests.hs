@@ -16,6 +16,7 @@ module AulaTests
 import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
 import Control.Exception (SomeException, bracket)
+import Control.Monad.Trans.Reader (runReaderT)
 import Data.String.Conversions
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
@@ -48,6 +49,19 @@ import Persistent (mkMetaInfo)
 -- | 'runIO" with better errors.
 runIO' :: (SomeException -> IO a) -> IO a -> SpecM () a
 runIO' e a = runIO $ a `catch` e
+
+
+-- | Transform an 'HtmlT' into an 'ST' in the default language.
+renderHtmlDefaultT :: Monad m => HtmlT m () -> m LT
+renderHtmlDefaultT = (`runReaderT` minBound) . renderTextT
+
+-- | Transform an 'Html' into an 'ST' in the default language.
+renderHtmlDefaultH :: Html () -> LT
+renderHtmlDefaultH = runIdentity . renderHtmlDefaultT
+
+-- | Transform any 'ToHtml' instance into an 'ST' in the default language.
+renderHtmlDefault :: ToHtml h => h -> LT
+renderHtmlDefault = renderHtmlDefaultH . toHtml
 
 
 -- Be default, test cases are part of the smoke test suite.
