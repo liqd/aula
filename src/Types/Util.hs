@@ -43,6 +43,7 @@ import qualified Text.Email.Validate as Email
 
 import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
+import Data.Markdown
 import Types.Prelude
 import Types.Core
 import Types.Instances.Optics
