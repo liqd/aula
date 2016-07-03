@@ -313,7 +313,7 @@ percentVotes idea numVoters vv = {- assert c -} v
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
-    extraFooterElems  :: p -> Html ()
+    extraFooterElems  :: Monad m => p -> HtmlT m ()
     extraFooterElems _ = nil
 
     extraBodyClasses  :: p -> [ST]
@@ -757,7 +757,7 @@ pageFrame frame = do
                 div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
-        footerMarkup (toHtmlGeneralizeIdentity $ extraFooterElems p)
+        footerMarkup (extraFooterElems p)
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
