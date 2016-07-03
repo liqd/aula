@@ -75,11 +75,11 @@ instance ToHtml IdeaVoteLikeBars where
                         DoNotShowNotVoted -> numVotes idea Yes + numVotes idea No
 
         div_ [class_ "sub-heading"] $ case phase of
-            PhaseWildIdea{}   -> toHtml likeBar
+            PhaseWildIdea{}   -> toHtmlGeneralizeIdentity likeBar
             PhaseRefinement{} -> nil
             PhaseJury         -> nil
-            PhaseVoting{}     -> toHtml voteBar
-            PhaseResult       -> toHtml voteBar
+            PhaseVoting{}     -> toHtmlGeneralizeIdentity voteBar
+            PhaseResult       -> toHtmlGeneralizeIdentity voteBar
 
 
 ideaVoteLikeButtons :: CapCtx -> IdeaStats -> Html ()
