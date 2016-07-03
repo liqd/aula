@@ -256,6 +256,18 @@
             // called the delegate here because we process its
             // delegatees.
             var newVisibilityStatus = undefined;
+            var setNewVisibilityStatus = function(n) {
+                if (newVisibilityStatus === undefined) {
+                    newVisibilityStatus = !visible(n);
+                }
+                n.visibleByClick = newVisibilityStatus;
+                // clicking overrides the other filters
+                if (newVisibilityStatus) {
+                    makeAllVisible(n);
+                }
+            };
+
+            // inbound edges (full depth)
             var visited = [];
             var traverse = function(d) {
                 if (visited.indexOf(d.name) >= 0) {
@@ -269,20 +281,21 @@
                     // the click-on node, or we won't be able to
                     // re-open it.
                     if (l.target.name === d.name && l.source.name !== delegate.name) {
-                        if (newVisibilityStatus === undefined) {
-                            newVisibilityStatus = !visible(l.source);
-                        }
-                        l.source.visibleByClick = newVisibilityStatus;
-                        // clicking overrides the other filters
-                        if (l.source.visibleByClick) {
-                            makeAllVisible(l.source);
-                        }
+                        setNewVisibilityStatus(l.source);
                         traverse(l.source);
                     }
                 });
             };
-
             traverse(delegate);
+
+            // outbound edges (only one level of delegates)
+            graph.links.forEach(function(l) {
+                if (l.source.name === delegate.name) {
+                    setNewVisibilityStatus(l.target);
+                }
+            });
+
+            // commit
             updateVisibility();
         };
 
