@@ -31,6 +31,7 @@ import Network.Wai.Application.Static
     )
 import Servant
 import System.FilePath (addTrailingPathSeparator)
+import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import qualified Data.ByteString.Builder as Builder
 
@@ -83,11 +84,14 @@ runFrontend' cfg log rp = do
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
+        setCookie :: SetCookie
+        setCookie = def { setCookieName = "aula", setCookiePath = Just "/" }
+
     void $ timeoutDaemon' log "background phase transition" (cfg ^. timeoutCheckInterval)
                           (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
-    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
-             runAction aulaActions
+    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy setCookie
+             extendClearanceOnSessionToken runAction aulaActions
 
     let settings :: Warp.Settings
         settings = setHost (fromString $ cfg ^. listenerInterface)
