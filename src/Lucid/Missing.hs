@@ -24,6 +24,7 @@ module Lucid.Missing
     , postLink_
     , postButton_
     , nbsp
+    , toHtmlGeneralizeIdentity
     )
   where
 
@@ -132,9 +133,10 @@ nbsp :: ST
 nbsp = "&nbsp;"
 
 
-instance Lucid.ToHtml (Lucid.HtmlT Identity ()) where
-    toHtmlRaw = toHtml
-    toHtml = Lucid.HtmlT . return . runIdentity . Lucid.runHtmlT
+-- | (Before using this function, consider changing the type of its argument to be more general by
+-- nature.)
+toHtmlGeneralizeIdentity :: Monad m => Lucid.HtmlT Identity () -> Lucid.HtmlT m ()
+toHtmlGeneralizeIdentity = Lucid.HtmlT . return . runIdentity . Lucid.runHtmlT
 
 instance Lucid.ToHtml () where
     toHtmlRaw = Lucid.toHtml

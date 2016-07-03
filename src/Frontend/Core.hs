@@ -104,7 +104,7 @@ import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
 import Frontend.Path (HasPath(..))
 import Logger.EventLog (EventLog)
-import Lucid.Missing (script_, href_, src_, nbsp)
+import Lucid.Missing (script_, href_, src_, nbsp, toHtmlGeneralizeIdentity)
 import Types
 import Thentos.Frontend.CSRF (CsrfToken(..))
 
@@ -450,7 +450,7 @@ instance Page p => Page (FormPageRep p) where
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
-    toHtml (FormPageRep t v a p) = toHtml $ formPage v frm p
+    toHtml (FormPageRep t v a p) = toHtmlGeneralizeIdentity $ formPage v frm p
       where
         frm bdy = DF.childErrorList "" v >> DF.form v a (bdy <> csrfField)
         csrfField
@@ -757,7 +757,7 @@ pageFrame frame = do
                 div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
-        footerMarkup (toHtml $ extraFooterElems p)
+        footerMarkup (toHtmlGeneralizeIdentity $ extraFooterElems p)
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do

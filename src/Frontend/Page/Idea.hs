@@ -313,7 +313,7 @@ instance ToHtml ViewIdea where
 
             div_ [class_ "button-group"] $ do
                 -- buttons
-                toHtml $ ideaVoteLikeButtons ctx stats
+                toHtmlGeneralizeIdentity $ ideaVoteLikeButtons ctx stats
                 feasibilityButtons True idea caps
 
                 when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
