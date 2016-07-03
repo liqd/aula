@@ -21,7 +21,9 @@
 
 -- | WARNING: the html scrubbing may be inaccurate and may have security issues!
 module Data.Markdown
-  ( Document, markdown, unMarkdown )
+  ( Document, markdown, unMarkdown
+  , PlainDocument(PlainDocument), unDescription
+  )
 where
 
 import Data.CaseInsensitive
@@ -112,3 +114,13 @@ instance Monoid Document where
     mappend (Markdown a) (Markdown b) = case markdown $ mappend a b of
         Right v -> v
         Left es -> error $ "instance Monoid Document: " <> show (es, a, b)
+
+
+newtype PlainDocument = PlainDocument { unDescription :: ST }
+  deriving (Eq, Ord, Show, Read, Generic, Monoid)
+
+deriveSafeCopy 0 'base ''PlainDocument
+
+instance ToHtml PlainDocument where
+    toHtmlRaw = div_ . toHtmlRaw . unDescription
+    toHtml    = div_ . toHtml    . unDescription
