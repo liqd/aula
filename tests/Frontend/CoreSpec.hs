@@ -162,7 +162,10 @@ selectValue :: (Show a, Eq a) => ST -> View (Html ()) -> [(a, LT.Text)] -> a -> 
 selectValue ref v xs x =
     case find test choices of
         Just (i, _, _) -> value i
-        Nothing -> error $ unwords ["selectValue: no option found. Value:", show x, "in values", show xs, "and choices", show choices]
+        Nothing -> error $ unwords [ "selectValue: no option found. Value:", show x
+                                   , "in values", show xs
+                                   , "and choices", show choices
+                                   ]
   where
     value i = absoluteRef ref v <> "." <> i
     choices = (\(t, h, b) -> (t, renderHtmlDefaultH h, b)) <$> fieldInputChoice ref v
