@@ -151,6 +151,7 @@
         var filterMatching = function(substring) {
             graph.nodes.forEach(function(n) {
                 n.visibleByMatching = substring === "" || n.name.indexOf(substring) >= 0;
+                n.showTitleMatching = substring !== "" && n.name.indexOf(substring) >= 0;
             });
             updateVisibility();
         };
@@ -212,7 +213,7 @@
             text = svg.append("g")
                 .selectAll("text").data(force.nodes())
                 .enter().append("text")
-                .attr("class", function(d) { return setvisibility(false, this); })
+                .attr("class", function(d) { return setvisibility(visibleTitle(d), this); })
                 .text(function(d) { return (d.name + " [" + d.power + "]"); });
 
             force.alpha(.3);
@@ -223,7 +224,7 @@
             // destroys the state if we call it from here, so we'll do
             // something simpler.
 
-            text.attr("class", function(d) { return setvisibility(d.showTitle, this); });
+            text.attr("class", function(d) { return setvisibility(visibleTitle(d), this); });
         };
 
         var avatarWidthHeight = function(d) {
@@ -291,13 +292,13 @@
         };
 
         var on_mouseover = function(d) {
-            d.showTitle = true;
+            d.showTitleMouseOver = true;
             updateWidgetJustTitles();
             d.fixed = true;
         };
 
         var on_mouseout = function(d) {
-            d.showTitle = false;
+            d.showTitleMouseOver = false;
             updateWidgetJustTitles();
             d.fixed = false;
         };
@@ -312,6 +313,10 @@
 
         var visible = function(d) {
             return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
+        };
+
+        var visibleTitle = function(d) {
+            return d.showTitleMatching || d.showTitleMouseOver;
         };
 
         var makeAllVisible = function(d) {
