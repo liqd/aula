@@ -238,7 +238,8 @@
 
         var avatarWidthHeight = function(d) {
             var low = 15;
-            var high = 120;
+            var high = force.linkDistance() - 10;  // if you make this bigger, edges
+                                                   // won't always be visible.
             if (nodePowerMax === nodePowerMin) {
                 return high;
             } else {
