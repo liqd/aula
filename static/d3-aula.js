@@ -63,13 +63,13 @@
                     result.push(dscopeix[drillDownOptions[0].dscope]);
                 }
                 return result;
-            }
+            };
 
             var mkSelected = function(d) {
                 return dscopeix[current].ancestors.indexOf(d.dscope) >= 0
                     ? true
                     : undefined;  // 'undefined' is the only thing that works here!
-            }
+            };
 
             var select = menuDiv
                 .selectAll("select").data(mkSelects(dscopeix[current].ancestors));
