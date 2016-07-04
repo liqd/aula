@@ -255,7 +255,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseVoting{}     -> t1 >> t2 >> t3       >> t5
                 PhaseResult       -> t1       >> t3 >> t4 >> t5
 
-        select_ [class_ "heroic-tabs-dropdown", onchange_ "goTab(this)"] $ do
+        select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ do
             option_ [value_ ""] "Please pick a tab"
             option_ [value_ "http://www.google.com"] "Google"
             option_ [value_ "http://www.amazon.de"] "Amazon"
