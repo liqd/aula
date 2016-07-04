@@ -324,7 +324,7 @@ instance ToHtml ViewIdea where
                         if isNothing $ creatorStatementOfIdea idea
                             then "Statement abgeben"
                             else "Statement ändern"
-                when (CanDelegate `elem` caps) $ do
+                when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
                     a_ [class_ "btn-cta voting-button button-group-item", href_ $ U.delegateVoteOnIdea idea] $ do
                         i_ [class_ "icon-bullhorn"] nil
                         if isNothing delegation
