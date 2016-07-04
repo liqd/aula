@@ -191,11 +191,8 @@
             container.selectAll("g text").data([]).exit().remove();
 
             if (force.nodes().length > 0) {
-                nodePowerMax = 1;
-                nodePowerMin = force.nodes()[0].power;
+                avatarWidthHeight.update();
                 force.nodes().forEach(function(n) {
-                    nodePowerMax = Math.max(nodePowerMax, n.power);
-                    nodePowerMin = Math.min(nodePowerMin, n.power);
                     n.fixed = false;  // (otherwise nodes sometimes
                                       // get away from under the mouse
                                       // without triggering the
@@ -213,8 +210,8 @@
                     .enter().append("image")
                     .attr("class", ".node")
                     .call(force.drag)
-                    .attr("width",  avatarWidthHeight)
-                    .attr("height", avatarWidthHeight)
+                    .attr("width",  avatarWidthHeight.get)
+                    .attr("height", avatarWidthHeight.get)
                     .attr("xlink:href", function(d) { return d.avatar; });
 
                 avat.on("click",      on_click)
@@ -254,27 +251,39 @@
             text.attr("class", function(d) { return setvisibility(visibleTitle(d), this); });
         };
 
-        var avatarWidthHeight = function(d) {
-            var low = 15;
-            var high = force.linkDistance() - 10;  // if you make this bigger, edges
-                                                   // won't always be visible.
-            if (nodePowerMax === nodePowerMin) {
-                return high;
-            } else {
-                return low + (high - low) * (d.power - nodePowerMin) / (nodePowerMax - nodePowerMin);
-            }
-        };
+        var avatarWidthHeight = (function() {
+            var state = undefined;
+
+            var update = function() {
+                state = force.nodes().slice()
+                    .sort(function(n, m) { return n.power - m.power; })
+                    .map(function(n) { return n.name; });
+            };
+
+            var get = function(d) {
+                if (!state) {
+                    update();
+                }
+
+                var low = 15;
+                var high = force.linkDistance() - 10;
+                var step = (high - low) / state.length;
+                return 15 + step * state.indexOf(d.name);
+            };
+
+            return { update: update, get: get };
+        })();
 
         var avatarRadius = function(d) {
-            return avatarWidthHeight(d) / 2;
+            return avatarWidthHeight.get(d) / 2;
         };
 
         var avatarXPos = function(d) {
-            return d.x - (avatarWidthHeight(d) / 2);
+            return d.x - (avatarWidthHeight.get(d) / 2);
         };
 
         var avatarYPos = function(d) {
-            return d.y - (avatarWidthHeight(d) / 2);
+            return d.y - (avatarWidthHeight.get(d) / 2);
         };
 
         // toggle visibility of all delegatees (recursively).
@@ -357,9 +366,6 @@
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
 
-        var nodePowerMax = 1;
-        var nodePowerMin = 1000;
-
         var visible = function(d) {
             return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
         };
@@ -382,8 +388,7 @@
             .links(graph.links)
             .on("tick", tick)
             .charge(-200)
-            .linkDistance(70)
-            .start();
+            .linkDistance(70);
 
         initializeControlPanel(rootSel, filterByPower, filterMatching);
 
@@ -418,6 +423,7 @@
         var text = undefined;
 
         updateWidget();
+        force.start();
     };
 
     var initializeControlPanel = function(rootSel, filterByPower, filterMatching) {
