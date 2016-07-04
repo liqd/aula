@@ -374,7 +374,7 @@
             d.visibleByClick = true;
         };
 
-        graph.nodes.forEach(makeAllVisible);;
+        graph.nodes.forEach(makeAllVisible);
 
         var force = d3.layout.force()
             .size([globalGraphWidth, globalGraphWidth])
