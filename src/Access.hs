@@ -82,6 +82,12 @@ import qualified Frontend.Path as P
 -- there is no hiearchy between them.
 -- The view of an idea is default and controlled by access control.
 -- FIXME: clarify relationship of 'CanEditTopic' with 'CanMoveBetweenLocations' (in the types?)
+-- FIXME: The CanDelegate and CanDelegateTo* introduces a hiearchy, whenever
+-- the CanDelegateTo is present the CanDelegate should be included, but some
+-- cases it gives extra rights to the user. It breaks the assumption we have.
+-- FIXME: CanDelegateToClass, CanDelegateToSchool are in use of decide on
+-- topic and idea delegations as the topic and idea. The two users have to be
+-- in the same idea space to be able to delegate for topic and idea.
 data Capability
     -- Idea
     = CanView
