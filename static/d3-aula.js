@@ -218,7 +218,6 @@
                     .attr("xlink:href", function(d) { return d.avatar; });
 
                 avat.on("click",      on_click)
-                    .on("dblclick",   on_dblclick)
                     .on("mouseover",  on_mouseover)
                     .on("mouseout",   on_mouseout);
 
@@ -331,11 +330,6 @@
 
             // commit
             updateVisibility();
-        };
-
-        // not sure we should use dblclick.  doesn't seem to work very
-        // well in firefox, and not sure about phones, either.
-        var on_dblclick = function(d) {
         };
 
         var on_mouseover = function(d) {
