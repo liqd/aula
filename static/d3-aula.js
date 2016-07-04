@@ -218,7 +218,6 @@
                     .attr("xlink:href", function(d) { return d.avatar; });
 
                 avat.on("click",      on_click)
-                    .on("dblclick",   on_dblclick)
                     .on("mouseover",  on_mouseover)
                     .on("mouseout",   on_mouseout);
 
@@ -333,21 +332,22 @@
             updateVisibility();
         };
 
-        // not sure we should use dblclick.  doesn't seem to work very
-        // well in firefox, and not sure about phones, either.
-        var on_dblclick = function(d) {
-        };
-
         var on_mouseover = function(d) {
             d.showTitleMouseOver = true;
             updateWidgetJustTitles();
-            d.fixed = true;
+
+            // FIXME: d.fixed doesn't work well together with the drag
+            // behavior.  fixed nodes that are dragged will be dragged
+            // into surprising locations.
+
+            // d.fixed = true;
         };
 
         var on_mouseout = function(d) {
             d.showTitleMouseOver = false;
             updateWidgetJustTitles();
-            d.fixed = false;
+
+            // d.fixed = false;  // (see comment in on_mouseover)
         };
 
 
