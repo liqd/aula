@@ -278,10 +278,9 @@ data MenuLink = MenuLink ST (U.Main 'U.AllowGetPost) ST
 menulink :: Monad m => MenuItem -> MenuItem -> HtmlT m ()
 menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of
     MenuLink ident path body ->
-        a_ [ id_ ident
-           , href_ path
-           , class_ $ tabSelected curMenuItem targetMenuItem
-           ]
+        a_ ([ id_ ident
+            , href_ path
+            ] ++ tabSelected BoolTabs curMenuItem targetMenuItem)
           $ toHtml body
 
 menulink' :: MenuItem -> MenuLink

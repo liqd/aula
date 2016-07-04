@@ -136,8 +136,8 @@ instance Page EditTopic where
 
 -- * templates
 
-tabLink :: Monad m => Bool -> Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
-tabLink mobileDropdown topic curTab targetTab =
+tabLink :: Monad m => BoolTabsOrDropdown -> Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
+tabLink tabsOrDropdown topic curTab targetTab =
   case targetTab of
     TabIdeas ListIdeasInTopicTabAll      _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
     TabIdeas ListIdeasInTopicTabVoting   _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
@@ -148,11 +148,11 @@ tabLink mobileDropdown topic curTab targetTab =
     ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
     delegLnk = lnk (U.viewTopicDelegations (topic ^. topicIdeaSpace) (topic ^. _Id))
 
-    isSelected = class_ $ tabSelected (curTab ^? topicTab) (targetTab ^? topicTab)
+    isSelected = tabSelected tabsOrDropdown (curTab ^? topicTab) (targetTab ^? topicTab)
 
-    lnk url ident
-      | mobileDropdown = option_ [id_ ident, isSelected, value_ . absoluteUriPath . U.relPath $ url]
-      | otherwise      = a_      [id_ ident, isSelected, href_ url]
+    lnk url ident = case tabsOrDropdown of
+      BoolDropdown -> option_ $ id_ ident : isSelected <> [value_ . absoluteUriPath . U.relPath $ url]
+      BoolTabs     -> a_      $ id_ ident : isSelected <> [href_ url]
 
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
@@ -254,8 +254,8 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseVoting{}     -> t1 dd >> t2 dd >> t3 dd          >> t5 dd
                 PhaseResult       -> t1 dd          >> t3 dd >> t4 dd >> t5 dd
 
-        div_ [class_ "heroic-tabs is-responsive"] $ allTabs False
-        select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs True
+        div_ [class_ "heroic-tabs is-responsive"] $ allTabs BoolTabs
+        select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs BoolDropdown
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . to info
