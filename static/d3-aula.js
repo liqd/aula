@@ -335,13 +335,19 @@
         var on_mouseover = function(d) {
             d.showTitleMouseOver = true;
             updateWidgetJustTitles();
-            d.fixed = true;
+
+            // FIXME: d.fixed doesn't work well together with the drag
+            // behavior.  fixed nodes that are dragged will be dragged
+            // into surprising locations.
+
+            // d.fixed = true;
         };
 
         var on_mouseout = function(d) {
             d.showTitleMouseOver = false;
             updateWidgetJustTitles();
-            d.fixed = false;
+
+            // d.fixed = false;  // (see comment in on_mouseover)
         };
 
 
