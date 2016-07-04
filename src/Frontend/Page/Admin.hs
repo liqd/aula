@@ -280,7 +280,7 @@ menulink curMenuItem targetMenuItem = case menulink' targetMenuItem of
     MenuLink ident path body ->
         a_ ([ id_ ident
             , href_ path
-            ] ++ tabSelected BoolTabs curMenuItem targetMenuItem)
+            ] <> tabSelected BoolTabs curMenuItem targetMenuItem)
           $ toHtml body
 
 menulink' :: MenuItem -> MenuLink
