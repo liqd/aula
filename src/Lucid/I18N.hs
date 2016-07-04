@@ -18,10 +18,11 @@ module Lucid.I18N
     )
   where
 
+import Control.Monad.Identity
+import Control.Monad.Trans
 import Control.Monad.Reader
 import Data.String.Conversions
 import qualified Lucid as L
-import Thentos.Prelude
 
 import Data.Markdown
 
