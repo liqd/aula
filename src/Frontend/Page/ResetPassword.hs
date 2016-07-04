@@ -29,6 +29,7 @@ instance Page PasswordResetViaEmail where
 data ResetPasswordFormData =
         ResetPasswordFormData
             { unResetPasswordFormData :: EmailAddress }
+  deriving (Eq, Show)
 
 instance FormPage PasswordResetViaEmail where
     type FormPagePayload PasswordResetViaEmail = ResetPasswordFormData
@@ -72,6 +73,7 @@ data FinalizePasswordViaEmailPayload = FinalizePasswordViaEmailPayload
     { newPassword1 :: ST
     , newPassword2 :: ST
     }
+  deriving (Eq, Show)
 
 instance FormPage FinalizePasswordViaEmail where
     type FormPagePayload FinalizePasswordViaEmail = FinalizePasswordViaEmailPayload

@@ -46,6 +46,7 @@ aulaTesting =
   :<|> runGetHandler (redirect ("/target" :: String))
 
 data Page404 = Page404
+  deriving (Eq, Show)
 
 instance Page Page404 where isAuthorized = publicPage
 

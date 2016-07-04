@@ -104,6 +104,7 @@ import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
 import Frontend.Prelude (set, (^.), over, (.~), (%~), (&))
+import Frontend.Testing (Page404(..))
 import Persistent
 import Types
 
@@ -178,6 +179,9 @@ instance Arbitrary PasswordTokens where
 
 
 -- * pages
+
+instance Arbitrary Page404 where
+    arbitrary = pure Page404
 
 instance Arbitrary PageOverviewOfSpaces where
     arbitrary = PageOverviewOfSpaces <$> arb
@@ -686,13 +690,14 @@ arbValidUserLogin =
                 , Frontend.Constant.maxUsernameLength)
             >>= flip replicateM (elements ['a' .. 'z']))
 
+arbValidInitialPasswordString :: Gen String
+arbValidInitialPasswordString = someOf
+    Frontend.Constant.minPasswordLength
+    Frontend.Constant.maxPasswordLength
+    arb
+
 arbValidInitialPassword :: Gen InitialPassword
-arbValidInitialPassword =
-    InitialPassword . cs
-    <$> someOf
-            Frontend.Constant.minPasswordLength
-            Frontend.Constant.maxPasswordLength
-            (arb :: Gen Char)
+arbValidInitialPassword = InitialPassword . cs <$> arbValidInitialPasswordString
 
 arbValidUserPass :: Gen UserPass
 arbValidUserPass = UserPassInitial <$> arbValidInitialPassword
@@ -772,6 +777,15 @@ instance Arbitrary UserSettingData where
     shrink (UserSettingData x y z w)
         = UserSettingData <$> shr x <*> shr y <*> shr z <*> shr w
 
+instance Arbitrary FinalizePasswordViaEmailPayload where
+    arbitrary = do
+        pwd <- cs <$> arbValidInitialPasswordString
+        pure $ FinalizePasswordViaEmailPayload pwd pwd
+    shrink (FinalizePasswordViaEmailPayload x y) = FinalizePasswordViaEmailPayload <$> shr x <*> shr y
+
+instance Arbitrary ResetPasswordFormData where
+    arbitrary = ResetPasswordFormData <$> arb
+    shrink (ResetPasswordFormData x) = ResetPasswordFormData <$> shr x
 
 -- * admin
 

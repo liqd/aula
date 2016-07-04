@@ -72,6 +72,8 @@ spec = do
         , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         , H (arb :: Gen PageDelegationNetwork)
+        , H (arb :: Gen Page404)
+        , H (arb :: Gen Redirect)
         ]
     describe "PageFormView" $ mapM_ testForm
           -- admin forms
@@ -119,6 +121,8 @@ spec = do
 --        , formTest (arb :: Gen PageUserSettings)  -- FIXME cannot fetch the password back from the payload
 --        , formTest (arb :: Gen EditUserProfile) -- FIXME the generated image path should point to a valid file
         , formTest (arb :: Gen ReportUserProfile)
+        , formTest (arb :: Gen FinalizePasswordViaEmail)
+        , formTest (arb :: Gen PasswordResetViaEmail)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -604,3 +608,16 @@ instance ArbFormPagePayload PageAdminResetPassword
 instance PayloadToEnv InitialPassword where
     payloadToEnvMapping _ _ (InitialPassword pwd) = \case
         "new-pwd" -> pure [TextInput pwd]
+
+instance ArbFormPagePayload FinalizePasswordViaEmail
+
+instance PayloadToEnv FinalizePasswordViaEmailPayload where
+    payloadToEnvMapping _ _ (FinalizePasswordViaEmailPayload pwd1 pwd2) = \case
+        "new-password1" -> pure [TextInput pwd1]
+        "new-password2" -> pure [TextInput pwd2]
+
+instance ArbFormPagePayload PasswordResetViaEmail
+
+instance PayloadToEnv ResetPasswordFormData where
+    payloadToEnvMapping _ _ (ResetPasswordFormData emailValue) = \case
+        "email" -> pure [TextInput $ emailValue ^. re emailAddress]
