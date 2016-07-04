@@ -119,6 +119,21 @@
             text-decoration: none;
         }
     }
+
+    &.is-responsive {
+        @media screen and (max-width: $mobile-breakpoint) {
+            display: none;
+        }
+    }
+}
+
+.heroic-tabs-dropdown {
+    display: none;
+    margin: 0 auto;
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        display: block;
+    }
 }
 
 .heroic-badges {

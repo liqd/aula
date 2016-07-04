@@ -211,3 +211,7 @@ function createPageSample() {
         }
     }, 50);
 }
+
+function goTab(sel) {
+    window.location = sel.value;
+}

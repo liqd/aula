@@ -237,7 +237,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseVoting{}     -> delegateVoteButton
                 PhaseResult       -> nil
 
-        div_ [class_ "heroic-tabs"] $ do
+        div_ [class_ "heroic-tabs is-responsive"] $ do
             let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll      emptyIdeasQuery)
                 t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting   emptyIdeasQuery)
                 t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAccepted emptyIdeasQuery)
@@ -254,6 +254,11 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseJury         -> t1                   >> t5
                 PhaseVoting{}     -> t1 >> t2 >> t3       >> t5
                 PhaseResult       -> t1       >> t3 >> t4 >> t5
+
+        select_ [class_ "heroic-tabs-dropdown", onchange_ "goTab(this)"] $ do
+            option_ [value_ ""] "Please pick a tab"
+            option_ [value_ "http://www.google.com"] "Google"
+            option_ [value_ "http://www.amazon.de"] "Amazon"
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . to info
