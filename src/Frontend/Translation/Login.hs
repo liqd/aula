@@ -3,7 +3,6 @@ module Frontend.Translation.Login
 where
 
 import Lucid.I18N
-import Frontend.Prelude
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
