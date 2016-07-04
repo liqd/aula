@@ -16,7 +16,6 @@ import Control.Exception (assert)
 import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
 import Control.Monad (forM_, replicateM_, unless)
 import Data.List (nub)
-import Data.Maybe (fromMaybe)
 import Data.String.Conversions ((<>))
 import Servant.Missing
 import System.Directory (doesFileExist)
@@ -181,8 +180,8 @@ updateAvatarExpensive user file = readImageFile file >>= \case
 
 -- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
 -- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
-updateAvatar :: User -> Maybe FilePath -> forall m . ActionAvatar m => m ()
-updateAvatar user (fromMaybe "static/demo/avatars/test_user.png" -> spath) = do
+updateAvatar :: User -> FilePath -> forall m . ActionAvatar m => m ()
+updateAvatar user spath = do
     () <- pure . unsafePerformIO $ do
         forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
             let tpath :: FilePath = user ^. _Id . avatarFile dim
@@ -192,6 +191,12 @@ updateAvatar user (fromMaybe "static/demo/avatars/test_user.png" -> spath) = do
                 pure ()
     pure ()
 
+-- | Call 'updateAvatar' with an arbitrary fish image.
+updateAvatar' :: User -> forall m . (ActionAvatar m, GenArbitrary m) => m ()
+updateAvatar' user = do
+    file <- genGen (elements fishAvatars)
+    updateAvatar user file
+
 type ProtoUserWithAvatar = (Proto User, FilePath)
 
 addUserWithEmailFromConfig :: ProtoUserWithAvatar -> forall m . ActionM m => m User
@@ -199,14 +204,14 @@ addUserWithEmailFromConfig (protoUser, avatar) = do
     user <- setEmailFromConfig protoUser >>= addWithCurrentUser AddUser
     encryptPassword (protoUser ^. protoUserPassword . unInitialPassword)
         >>= update . SetUserPass (user ^. _Id)
-    updateAvatar user (Just avatar)
+    updateAvatar user avatar
     pure user
 
 addFirstUserWithEmailFromConfig :: ProtoUserWithAvatar -> forall m . ActionM m => m User
 addFirstUserWithEmailFromConfig (pu, avatar) = do
     now <- getCurrentTimestamp
     user <- setEmailFromConfig pu >>= update . AddFirstUser now
-    updateAvatar user (Just avatar)
+    updateAvatar user avatar
     pure user
 
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
@@ -293,7 +298,7 @@ userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpac
 --
 -- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
 -- the event procotol for moderators.
-genInitialTestDb :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m) => m ()
+genInitialTestDb :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m, GenArbitrary m) => m ()
 genInitialTestDb = do
     noUsers <- query $ views dbUserMap Map.null
     unless noUsers $
@@ -314,7 +319,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         }
-    updateAvatar user1 Nothing
+    updateAvatar' user1
 
     user2 <- update $ AddUser (EnvWith user1 now ProtoUser
         { _protoUserLogin     = Just "godmin"
@@ -325,7 +330,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         })
-    updateAvatar user2 Nothing
+    updateAvatar' user2
 
     _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"
