@@ -136,8 +136,8 @@ instance Page EditTopic where
 
 -- * templates
 
-tabLink :: Monad m => Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
-tabLink topic curTab targetTab =
+tabLink :: Monad m => ClientDevice -> Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
+tabLink tabsOrDropdown topic curTab targetTab =
   case targetTab of
     TabIdeas ListIdeasInTopicTabAll      _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
     TabIdeas ListIdeasInTopicTabVoting   _ -> ideaLnk  "tab-voting"      "Ideen in der Abstimmung"
@@ -148,11 +148,11 @@ tabLink topic curTab targetTab =
     ideaLnk  = lnk (U.listIdeasInTopic topic (targetTab ^?! topicTab) Nothing)
     delegLnk = lnk (U.viewTopicDelegations (topic ^. topicIdeaSpace) (topic ^. _Id))
 
-    lnk url ident =
-        a_ [ id_ ident
-           , href_ url
-           , class_ $ tabSelected (curTab ^? topicTab) (targetTab ^? topicTab)
-           ]
+    isSelected = tabSelected tabsOrDropdown (curTab ^? topicTab) (targetTab ^? topicTab)
+
+    lnk url ident = case tabsOrDropdown of
+      Mobile  -> option_ $ id_ ident : isSelected <> [value_ . absoluteUriPath . U.relPath $ url]
+      Desktop -> a_      $ id_ ident : isSelected <> [href_ url]
 
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
@@ -237,23 +237,25 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseVoting{}     -> delegateVoteButton
                 PhaseResult       -> nil
 
-        div_ [class_ "heroic-tabs"] $ do
-            let t1 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAll      emptyIdeasQuery)
-                t2 = tabLink topic tab (TabIdeas ListIdeasInTopicTabVoting   emptyIdeasQuery)
-                t3 = tabLink topic tab (TabIdeas ListIdeasInTopicTabAccepted emptyIdeasQuery)
-                t4 = tabLink topic tab (TabIdeas ListIdeasInTopicTabWinning  emptyIdeasQuery)
-                t5 = tabLink topic tab TabDelegation
+        let t1 dropdown = tabLink dropdown topic tab (TabIdeas ListIdeasInTopicTabAll      emptyIdeasQuery)
+            t2 dropdown = tabLink dropdown topic tab (TabIdeas ListIdeasInTopicTabVoting   emptyIdeasQuery)
+            t3 dropdown = tabLink dropdown topic tab (TabIdeas ListIdeasInTopicTabAccepted emptyIdeasQuery)
+            t4 dropdown = tabLink dropdown topic tab (TabIdeas ListIdeasInTopicTabWinning  emptyIdeasQuery)
+            t5 dropdown = tabLink dropdown topic tab TabDelegation
 
-              -- FIXME: we could see if we have any filter settings to save from another tab here.
-              -- but if we did that, it would be nice to not lose the settings when moving back and
-              -- forth between delegation and idea tabs, either.
+          -- FIXME: we could see if we have any filter settings to save from another tab here.
+          -- but if we did that, it would be nice to not lose the settings when moving back and
+          -- forth between delegation and idea tabs, either.
 
-            case phase of
-                PhaseWildIdea{}   -> t1                   >> t5
-                PhaseRefinement{} -> t1                   >> t5
-                PhaseJury         -> t1                   >> t5
-                PhaseVoting{}     -> t1 >> t2 >> t3       >> t5
-                PhaseResult       -> t1       >> t3 >> t4 >> t5
+            allTabs dd = case phase of
+                PhaseWildIdea{}   -> t1 dd                            >> t5 dd
+                PhaseRefinement{} -> t1 dd                            >> t5 dd
+                PhaseJury         -> t1 dd                            >> t5 dd
+                PhaseVoting{}     -> t1 dd >> t2 dd >> t3 dd          >> t5 dd
+                PhaseResult       -> t1 dd          >> t3 dd >> t4 dd >> t5 dd
+
+        div_ [class_ "heroic-tabs is-responsive"] $ allTabs Desktop
+        select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs Mobile
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . to info
