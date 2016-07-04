@@ -13,6 +13,7 @@ module Lucid.I18N
     , HtmlT
     , ToHtml(..)
     , Lang(..)
+    , getLang
     , whereToGetTheLangValue
     )
   where
@@ -30,10 +31,6 @@ import Data.Markdown
 type Html = HtmlT Identity
 type HtmlT m = L.HtmlT (ReaderT Lang m)
 
-instance Monad m => MonadReader Lang (L.HtmlT (ReaderT Lang m)) where
-    ask = ask
-    local = local
-
 class ToHtml a where
     toHtmlRaw :: Monad m => a -> HtmlT m ()
     toHtml    :: Monad m => a -> HtmlT m ()
@@ -44,6 +41,8 @@ class ToHtml a where
 data Lang = DE
   deriving (Eq, Ord, Show, Read, Bounded, Enum)
 
+getLang :: Monad m => HtmlT m Lang
+getLang = lift ask
 
 -- | TODO: in some places, we don't have access to the session data yet, and cheat.  remove this and
 -- follow the type errors.
@@ -58,12 +57,12 @@ instance ToHtml () where
     toHtml () = ""
 
 instance ToHtml ST where
-    toHtmlRaw = toHtml
-    toHtml = toHtml
+    toHtmlRaw = L.toHtmlRaw
+    toHtml    = L.toHtml
 
 instance ToHtml String where
-    toHtmlRaw = toHtml
-    toHtml = toHtml
+    toHtmlRaw = L.toHtmlRaw
+    toHtml    = L.toHtml
 
 -- | Does no html escaping.  This is ok as long as we always use 'markdown' for constructing
 -- 'Document' values.

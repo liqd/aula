@@ -28,7 +28,7 @@ import qualified Frontend.Path as U
 
 t_forgot_passwd_reset_yourself :: Monad m => HtmlT m ()
 t_forgot_passwd_reset_yourself = do
-    _lang :: Lang <- ask
+    _lang :: Lang <- getLang
     "Wenn Du eine email-Adresse eingegeben hast, kannst du dein Passwort hier neu setzen."
 
 t_forgot_passwd_reset_with_admin :: Monad m => HtmlT m ()
