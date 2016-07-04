@@ -111,10 +111,10 @@
             // adjust positions (is there a better place for this than here in the tick function?)
             var wallElasticity = 5;
             force.nodes().forEach(function(n) {
-                if (n.x < 0)                 n.x = wallElasticity;
-                if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
-                if (n.y < 0)                 n.y = wallElasticity;
-                if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
+                if (n.x < 0)                n.x = wallElasticity;
+                if (n.x > globalGraphWidth) n.x = globalGraphWidth - wallElasticity;
+                if (n.y < 0)                n.y = wallElasticity;
+                if (n.y > globalGraphWidth) n.y = globalGraphWidth - wallElasticity;
             });
 
             // update elems
@@ -196,6 +196,10 @@
                 force.nodes().forEach(function(n) {
                     nodePowerMax = Math.max(nodePowerMax, n.power);
                     nodePowerMin = Math.min(nodePowerMin, n.power);
+                    n.fixed = false;  // (otherwise nodes sometimes
+                                      // get away from under the mouse
+                                      // without triggering the
+                                      // event.)
                 });
 
                 path = container.append("g")
@@ -226,6 +230,20 @@
 
                 force.alpha(.3);
             }
+
+            zoom();
+        };
+
+        var zoom = function() {
+            var calcGraphWidth = function(numNodes) {
+                var nodesPerTile = 50;
+                var tileWidth = 600;
+                return 100 + Math.sqrt(numNodes / nodesPerTile) * tileWidth;
+            };
+
+            globalGraphWidth = calcGraphWidth(force.nodes().length);
+            force.size([globalGraphWidth, globalGraphWidth]);
+            svg.attr("viewBox", "0 0 " + globalGraphWidth + " " + globalGraphWidth);
         };
 
         var updateWidgetJustTitles = function() {
@@ -338,7 +356,6 @@
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
-        var globalGraphHeight = 600;
 
         var nodePowerMax = 1;
         var nodePowerMin = 1000;
@@ -360,7 +377,7 @@
         graph.nodes.forEach(makeAllVisible);;
 
         var force = d3.layout.force()
-            .size([globalGraphWidth, globalGraphHeight])
+            .size([globalGraphWidth, globalGraphWidth])
             .nodes(graph.nodes)
             .links(graph.links)
             .on("tick", tick)
@@ -376,7 +393,7 @@
                .append("svg")
                // responsive SVG needs these 2 attributes and no width and height attr
                .attr("preserveAspectRatio", "xMinYMin meet")
-               .attr("viewBox", function() { return "0 0 " + globalGraphWidth + " " + globalGraphHeight; })
+               .attr("viewBox", "0 0 " + globalGraphWidth + " " + globalGraphWidth)
                // class to make it responsive
                .classed("svg-content-responsive", true);
 
