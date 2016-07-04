@@ -63,13 +63,13 @@
                     result.push(dscopeix[drillDownOptions[0].dscope]);
                 }
                 return result;
-            }
+            };
 
             var mkSelected = function(d) {
                 return dscopeix[current].ancestors.indexOf(d.dscope) >= 0
                     ? true
                     : undefined;  // 'undefined' is the only thing that works here!
-            }
+            };
 
             var select = menuDiv
                 .selectAll("select").data(mkSelects(dscopeix[current].ancestors));
@@ -111,10 +111,10 @@
             // adjust positions (is there a better place for this than here in the tick function?)
             var wallElasticity = 5;
             force.nodes().forEach(function(n) {
-                if (n.x < 0)                 n.x = wallElasticity;
-                if (n.x > globalGraphWidth)  n.x = globalGraphWidth - wallElasticity;
-                if (n.y < 0)                 n.y = wallElasticity;
-                if (n.y > globalGraphHeight) n.y = globalGraphHeight - wallElasticity;
+                if (n.x < 0)                n.x = wallElasticity;
+                if (n.x > globalGraphWidth) n.x = globalGraphWidth - wallElasticity;
+                if (n.y < 0)                n.y = wallElasticity;
+                if (n.y > globalGraphWidth) n.y = globalGraphWidth - wallElasticity;
             });
 
             // update elems
@@ -186,9 +186,9 @@
             // potential, should we experience low frame rates.  or it
             // may not be the bottleneck, who knows.)
 
-            svg.selectAll("g path").data([]).exit().remove();
-            svg.selectAll("g image").data([]).exit().remove();
-            svg.selectAll("g text").data([]).exit().remove();
+            container.selectAll("g path").data([]).exit().remove();
+            container.selectAll("g image").data([]).exit().remove();
+            container.selectAll("g text").data([]).exit().remove();
 
             if (force.nodes().length > 0) {
                 nodePowerMax = 1;
@@ -196,15 +196,19 @@
                 force.nodes().forEach(function(n) {
                     nodePowerMax = Math.max(nodePowerMax, n.power);
                     nodePowerMin = Math.min(nodePowerMin, n.power);
+                    n.fixed = false;  // (otherwise nodes sometimes
+                                      // get away from under the mouse
+                                      // without triggering the
+                                      // event.)
                 });
 
-                path = svg.append("g")
+                path = container.append("g")
                     .selectAll("path").data(force.links())
                     .enter().append("path")
                     .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
                     .attr("marker-end", function(d) { return "url(#default)"; });
 
-                avat = svg.append("g")
+                avat = container.append("g")
                     .selectAll("image").data(force.nodes())
                     .enter().append("image")
                     .attr("class", ".node")
@@ -218,7 +222,7 @@
                     .on("mouseover",  on_mouseover)
                     .on("mouseout",   on_mouseout);
 
-                text = svg.append("g")
+                text = container.append("g")
                     .selectAll("text").data(force.nodes())
                     .enter().append("text")
                     .attr("class", function(d) { return setvisibility(visibleTitle(d), this); })
@@ -226,6 +230,20 @@
 
                 force.alpha(.3);
             }
+
+            zoom();
+        };
+
+        var zoom = function() {
+            var calcGraphWidth = function(numNodes) {
+                var nodesPerTile = 50;
+                var tileWidth = 600;
+                return 100 + Math.sqrt(numNodes / nodesPerTile) * tileWidth;
+            };
+
+            globalGraphWidth = calcGraphWidth(force.nodes().length);
+            force.size([globalGraphWidth, globalGraphWidth]);
+            svg.attr("viewBox", "0 0 " + globalGraphWidth + " " + globalGraphWidth);
         };
 
         var updateWidgetJustTitles = function() {
@@ -338,7 +356,6 @@
         // tweak hints: width should depend on browser width; height
         // should depend on total voting power of all nodes in scope.
         var globalGraphWidth = 600;
-        var globalGraphHeight = 600;
 
         var nodePowerMax = 1;
         var nodePowerMin = 1000;
@@ -357,10 +374,10 @@
             d.visibleByClick = true;
         };
 
-        graph.nodes.forEach(makeAllVisible);;
+        graph.nodes.forEach(makeAllVisible);
 
         var force = d3.layout.force()
-            .size([globalGraphWidth, globalGraphHeight])
+            .size([globalGraphWidth, globalGraphWidth])
             .nodes(graph.nodes)
             .links(graph.links)
             .on("tick", tick)
@@ -376,7 +393,7 @@
                .append("svg")
                // responsive SVG needs these 2 attributes and no width and height attr
                .attr("preserveAspectRatio", "xMinYMin meet")
-               .attr("viewBox", function() { return "0 0 " + globalGraphWidth + " " + globalGraphHeight; })
+               .attr("viewBox", "0 0 " + globalGraphWidth + " " + globalGraphWidth)
                // class to make it responsive
                .classed("svg-content-responsive", true);
 
@@ -393,6 +410,8 @@
             .attr("orient", "auto")
             .append("path")
             .attr("d", "M0,-5L10,0L0,5");
+
+        var container = svg.append("g");
 
         var path = undefined;
         var avat = undefined;
