@@ -372,9 +372,6 @@ instance ToHtml CsrfToken where
     toHtmlRaw = toHtmlRaw . fromCsrfToken
     toHtml    = toHtml    . fromCsrfToken
 
-instance Page DelegationNetwork where
-    isAuthorized = userPage
-
 -- | Debugging page, uses the 'Show' instance of the underlying type.
 newtype PageShow a = PageShow { _unPageShow :: a }
     deriving (Show)
