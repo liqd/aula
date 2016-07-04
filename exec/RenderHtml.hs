@@ -27,6 +27,7 @@
 module Main (main, spec) where
 
 import Control.Exception (SomeException(SomeException), evaluate)
+import Control.Monad.Reader (runReader)
 import Data.String.Conversions
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import System.Directory
@@ -138,6 +139,7 @@ refreshSamples = do
 
 -- | Call tidy if available; generate either pretty-printed html or an error message if the html is
 -- invalid.
+-- FIXME: Configurable language instead of fixed `DE`
 runTidyIfAvailable :: FilePath -> IO ()
 runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
   where
@@ -155,7 +157,7 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
         (exit, out, err) <- readFile fn' >>= readProcessWithExitCode "tidy" ["-utf8", "-indent"]
         case exit of
             ExitSuccess -> ST.writeFile fn' $ cs ("tidy-good\n\n" <> out)
-            _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
+            _ -> ST.writeFile fn'' . cs . flip runReader DE . renderTextT . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for.  This is a bit hacky,
@@ -163,6 +165,7 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
 --
 -- if you want to auto-refresh the page, you could add @[meta_ [httpEquiv_ "refresh", content_
 -- "1"]]@ to the default 'extraPageHeaders' in "Frontend.Core".
+-- FIXME: Configurable language instead of fixed `DE`
 dynamicRender :: ST -> IO ST
 dynamicRender s = do
     vs <- sequence $ pagesPlain (runRW runWriteView) <> pagesForm (runRW runWriteForm)
@@ -184,7 +187,7 @@ dynamicRender s = do
       where
         runRead :: IO (Maybe ST)
         runRead = do
-            Just <$> evaluate (cs . renderText . runWrite . readWith (Proxy :: Proxy (Frame a)) . cs $ s)
+            Just <$> evaluate (cs . flip runReader DE . renderTextT . runWrite . readWith (Proxy :: Proxy (Frame a)) . cs $ s)
 
     runWriteView :: (Page a, ToHtml a) => Frame a -> Html ()
     runWriteView !p = toHtml p
