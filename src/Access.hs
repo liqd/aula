@@ -78,6 +78,8 @@ import qualified Frontend.Path as P
 
 -- | What a user can do with an idea/topic/comment/user.
 --
+-- ASSUMPTION: The capabilities don't depend on each other, meaning
+-- there is no hiearchy between them.
 -- The view of an idea is default and controlled by access control.
 -- FIXME: clarify relationship of 'CanEditTopic' with 'CanMoveBetweenLocations' (in the types?)
 data Capability
