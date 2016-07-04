@@ -278,16 +278,27 @@ data UserProfileTab
     | UserDelegatesTab
   deriving (Eq)
 
+-- | FUTUREWORK: 'Frontend.Page.Topic.tabLink' shares some non-trivial code with this function that
+-- could be factored out.
 userProfileTab :: Monad m => UserProfileTab -> User -> HtmlT m ()
 userProfileTab activeTab user = do
-    div_ [class_ "heroic-tabs"] $ do
-        tabLink UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
-        tabLink UserDelegateesTab (U.userDelegationsTo user)   "Wer stimmt für mich ab?"
-        tabLink UserDelegatesTab  (U.userDelegationsFrom user) "Für wen stimme ich ab?"
+    div_ [class_ "heroic-tabs is-responsive"] $ allTabs False
+    select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs True
   where
-    tabLink t path
-        | t == activeTab = span_ [class_ "heroic-tab-item  m-active"]
-        | otherwise = a_ [class_ "heroic-tab-item", href_ path]
+    allTabs dd = do
+        tabLink dd UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
+        tabLink dd UserDelegateesTab (U.userDelegationsTo user)   "Wer stimmt für mich ab?"
+        tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "Für wen stimme ich ab?"
+
+    tabLink True  = tabLinkDropdown
+    tabLink False = tabLinkDiv
+
+    tabLinkDropdown t path
+        = option_ $ [selected_ "true" | t == activeTab] <> [value_ . absoluteUriPath . U.relPath $ path]
+
+    tabLinkDiv t path
+        | t == activeTab = span_ [class_ "heroic-tab-item m-active"]
+        | otherwise      = a_    [class_ "heroic-tab-item", href_ path]
 
 instance ToHtml PageUserProfileCreatedIdeas where
     toHtmlRaw = toHtml
