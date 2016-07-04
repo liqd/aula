@@ -186,9 +186,9 @@
             // potential, should we experience low frame rates.  or it
             // may not be the bottleneck, who knows.)
 
-            svg.selectAll("g path").data([]).exit().remove();
-            svg.selectAll("g image").data([]).exit().remove();
-            svg.selectAll("g text").data([]).exit().remove();
+            container.selectAll("g path").data([]).exit().remove();
+            container.selectAll("g image").data([]).exit().remove();
+            container.selectAll("g text").data([]).exit().remove();
 
             if (force.nodes().length > 0) {
                 nodePowerMax = 1;
@@ -198,13 +198,13 @@
                     nodePowerMin = Math.min(nodePowerMin, n.power);
                 });
 
-                path = svg.append("g")
+                path = container.append("g")
                     .selectAll("path").data(force.links())
                     .enter().append("path")
                     .attr("class", function(d) { return "link default" + (d.dscope === current ? "" : " implicit"); })
                     .attr("marker-end", function(d) { return "url(#default)"; });
 
-                avat = svg.append("g")
+                avat = container.append("g")
                     .selectAll("image").data(force.nodes())
                     .enter().append("image")
                     .attr("class", ".node")
@@ -218,7 +218,7 @@
                     .on("mouseover",  on_mouseover)
                     .on("mouseout",   on_mouseout);
 
-                text = svg.append("g")
+                text = container.append("g")
                     .selectAll("text").data(force.nodes())
                     .enter().append("text")
                     .attr("class", function(d) { return setvisibility(visibleTitle(d), this); })
@@ -393,6 +393,8 @@
             .attr("orient", "auto")
             .append("path")
             .attr("d", "M0,-5L10,0L0,5");
+
+        var container = svg.append("g");
 
         var path = undefined;
         var avat = undefined;
