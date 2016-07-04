@@ -26,7 +26,7 @@ module Frontend.Core
     , semanticDiv, semanticDiv'
     , html
     , FormCS
-    , IsTab, BoolTabsOrDropdown(..)
+    , IsTab, ClientDevice(..)
     , tabSelected
     , redirect, redirectPath
     , avatarImg, userAvatarImg, createdByAvatarImg
@@ -242,16 +242,18 @@ html = to toHtml
 
 -- This IsTab constraint is here to prevent non-intented
 -- calls to tabSelected.
-tabSelected :: (IsTab a, Eq a) => BoolTabsOrDropdown -> a -> a -> [Attribute]
-tabSelected BoolTabs cur target
+tabSelected :: (IsTab a, Eq a) => ClientDevice -> a -> a -> [Attribute]
+tabSelected Desktop cur target
     | cur == target = [class_ "tab-selected"]
     | otherwise     = [class_ "tab-not-selected"]
-tabSelected BoolDropdown cur target
+tabSelected Mobile cur target
     | cur == target = [selected_ "true"]
     | otherwise     = nil
 
--- | (on mobile devices, we want the tabs to be in a pull-down menu.)
-data BoolTabsOrDropdown = BoolTabs | BoolDropdown
+-- | On mobile devices, we want things to behave differently, e.g. tabs should be in a pull-down
+-- menu.  This type allows to switch between generation of mobile (small-screen) and desktop
+-- devices.
+data ClientDevice = Desktop | Mobile
 
 class IsTab a
 instance IsTab ListIdeasInTopicTab

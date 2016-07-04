@@ -136,7 +136,7 @@ instance Page EditTopic where
 
 -- * templates
 
-tabLink :: Monad m => BoolTabsOrDropdown -> Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
+tabLink :: Monad m => ClientDevice -> Topic -> ViewTopicTab -> ViewTopicTab -> HtmlT m ()
 tabLink tabsOrDropdown topic curTab targetTab =
   case targetTab of
     TabIdeas ListIdeasInTopicTabAll      _ -> ideaLnk  "tab-ideas"       "Alle Ideen"
@@ -151,8 +151,8 @@ tabLink tabsOrDropdown topic curTab targetTab =
     isSelected = tabSelected tabsOrDropdown (curTab ^? topicTab) (targetTab ^? topicTab)
 
     lnk url ident = case tabsOrDropdown of
-      BoolDropdown -> option_ $ id_ ident : isSelected <> [value_ . absoluteUriPath . U.relPath $ url]
-      BoolTabs     -> a_      $ id_ ident : isSelected <> [href_ url]
+      Mobile  -> option_ $ id_ ident : isSelected <> [value_ . absoluteUriPath . U.relPath $ url]
+      Desktop -> a_      $ id_ ident : isSelected <> [href_ url]
 
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
@@ -254,8 +254,8 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseVoting{}     -> t1 dd >> t2 dd >> t3 dd          >> t5 dd
                 PhaseResult       -> t1 dd          >> t3 dd >> t4 dd >> t5 dd
 
-        div_ [class_ "heroic-tabs is-responsive"] $ allTabs BoolTabs
-        select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs BoolDropdown
+        div_ [class_ "heroic-tabs is-responsive"] $ allTabs Desktop
+        select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs Mobile
 
 displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
 displayPhaseTime now = phaseStatus . to info
