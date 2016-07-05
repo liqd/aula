@@ -139,7 +139,6 @@ refreshSamples = do
 
 -- | Call tidy if available; generate either pretty-printed html or an error message if the html is
 -- invalid.
--- FIXME: Configurable language instead of fixed `DE`
 runTidyIfAvailable :: FilePath -> IO ()
 runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
   where
@@ -165,7 +164,6 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
 --
 -- if you want to auto-refresh the page, you could add @[meta_ [httpEquiv_ "refresh", content_
 -- "1"]]@ to the default 'extraPageHeaders' in "Frontend.Core".
--- FIXME: Configurable language instead of fixed `DE`
 dynamicRender :: ST -> IO ST
 dynamicRender s = do
     vs <- sequence $ pagesPlain (runRW runWriteView) <> pagesForm (runRW runWriteForm)
