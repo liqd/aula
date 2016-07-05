@@ -2,7 +2,7 @@ module Frontend.Prelude (module X) where
 
 import Data.UriPath               as X
 import Control.Monad.Trans.Except as X (ExceptT)
-import Lucid                      as X hiding (ToHtml(..), HtmlT(..), Html, for_, script_, src_, href_, onclick_)
+import Lucid                      as X hiding (ToHtml(..), HtmlT(..), Html, for_, script_, src_, href_, onclick_, role_)
 import Lucid.Base                 as X hiding (ToHtml(..), HtmlT(..), Html)
 import Lucid.Missing              as X
 import Servant                    as X

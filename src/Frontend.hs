@@ -430,7 +430,7 @@ aulaAdmin =
   :<|> form Page.adminPhaseChange
   where
     postWithTopic a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) (a tid)
-    postAdminRemRole user role = runPostHandler (pure NeedAdmin) (Page.adminRemRole user role)
+    postAdminRemRole user = runPostHandler (pure NeedAdmin) . Page.adminRemRole user
 
 
 catch404 :: Middleware

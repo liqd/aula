@@ -287,13 +287,13 @@ isCreatorOf u = (u ==) . view createdBy
 -- ** Comment Capabilities
 
 commentCapabilities :: AUID User -> Role -> Comment -> Phase -> [Capability]
-commentCapabilities uid role comment phase
+commentCapabilities uid role_ comment phase
     | comment ^. commentDeleted = []
     | ongoingDebate phase = mconcat $
         [[CanReplyComment]] <>
-        [[CanDeleteComment, CanEditComment] | uid `isCreatorOf` comment || role == Moderator]
+        [[CanDeleteComment, CanEditComment] | uid `isCreatorOf` comment || role_ == Moderator]
     | otherwise = mconcat
-        [[CanDeleteComment, CanEditComment] | role == Moderator]
+        [[CanDeleteComment, CanEditComment] | role_ == Moderator]
   where
     ongoingDebate = \case
         PhaseWildIdea{}   -> True

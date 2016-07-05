@@ -514,10 +514,10 @@ setUserLogin uid login = do
     withUser uid . userLogin .= login
 
 addUserRole :: AUID User -> Role -> AUpdate ()
-addUserRole uid role = withUser uid . userRoleSet %= Set.insert role
+addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
 
 remUserRole :: AUID User -> Role -> AUpdate ()
-remUserRole uid role = withUser uid . userRoleSet %= Set.delete role
+remUserRole uid role_ = withUser uid . userRoleSet %= Set.delete role_
 
 -- | Update topic value.  Returns information about the ideas that have changed location.
 editTopic :: AUID Topic -> EditTopicData -> AUpdate [IdeaChangedLocation]
