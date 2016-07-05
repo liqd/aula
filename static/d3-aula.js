@@ -191,7 +191,7 @@
             container.selectAll("g text").data([]).exit().remove();
 
             if (force.nodes().length > 0) {
-                avatarWidthHeight.update();
+                avatarWidthHeight.refresh();
                 force.nodes().forEach(function(n) {
                     n.fixed = false;  // (otherwise nodes sometimes
                                       // get away from under the mouse
@@ -252,26 +252,40 @@
         };
 
         var avatarWidthHeight = (function() {
-            var state = undefined;
-
-            var update = function() {
-                state = force.nodes().slice()
-                    .sort(function(n, m) { return n.power - m.power; })
-                    .map(function(n) { return n.name; });
-            };
-
-            var get = function(d) {
-                if (!state) {
-                    update();
-                }
+            var refresh = function() {
+                var flat = force.nodes().slice()
+                                .sort(function(n, m) { return n.power - m.power; });
+                var groups = [];
+                flat.forEach(function(n) {
+                    var lastGroup = groups[groups.length - 1]
+                    if (lastGroup && lastGroup[0].power === n.power) {
+                        lastGroup.push(n);
+                    } else {
+                        groups.push([n]);
+                    }
+                });
 
                 var low = 15;
                 var high = force.linkDistance() - 10;
-                var step = (high - low) / state.length;
-                return 15 + step * state.indexOf(d.name);
+                var step = (high - low) / groups.length;
+                var cursor = low;
+
+                groups.forEach(function(g) {
+                    g.forEach(function(n) {
+                        n.powerInPixels = cursor;
+                    });
+                    cursor += step;
+                });
             };
 
-            return { update: update, get: get };
+            var get = function(d) {
+                if (!d.powerInPixels) {
+                    refresh();
+                }
+                return d.powerInPixels;
+            };
+
+            return { refresh: refresh, get: get };
         })();
 
         var avatarRadius = function(d) {
