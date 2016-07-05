@@ -232,9 +232,10 @@
 
         var zoom = function() {
             var calcGraphWidth = function(numNodes) {
-                var nodesPerTile = 50;
-                var tileWidth = 600;
-                return 100 + Math.sqrt(numNodes / nodesPerTile) * tileWidth;
+                var nodesPerTile  = 50;
+                var tileWidth     = 600;
+                var minGraphWidth = 400;
+                return Math.max(minGraphWidth, 100 + Math.sqrt(numNodes / nodesPerTile) * tileWidth);
             };
 
             globalGraphWidth = calcGraphWidth(force.nodes().length);
