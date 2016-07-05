@@ -645,7 +645,7 @@ delegationScopeForest user = do
         topicIdeas <- DScopeIdeaFull <$$> findIdeasByTopic topic
         pure (s, topicIdeas)
 
-    discover s@(DScopeIdeaFull{}) =
+    discover s@DScopeIdeaFull{} =
         pure (s, [])
 
 dscopeFull :: DScope -> EQuery DScopeFull
@@ -695,7 +695,7 @@ votingPower uid scope = do
 
 scopeAncestors :: DScope -> EQuery [DScope]
 scopeAncestors = \case
-    s@(DScopeIdeaSpace {}) -> pure [s]
+    s@DScopeIdeaSpace{}    -> pure [s]
     t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
         (t:) <$> scopeAncestors (DScopeIdeaSpace space)
