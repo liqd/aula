@@ -1,5 +1,6 @@
 module FrontendSpec where
 
+import Control.Monad.Reader
 import AulaTests
 
 spec :: Spec
@@ -35,7 +36,8 @@ spec = do
             it "bases http response on type `Page404`" $ \wreq -> do
                 get wreq "/nosuchpath" `shouldRespond`
                     [ codeShouldBe 404
-                    , bodyShouldBe . cs . renderText . toHtml $ PublicFrame Page404 []
+                    , bodyShouldBe . cs . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
+                        $ PublicFrame Page404 []
                     ]
 
     describe "formSelectorToCategory" $ do

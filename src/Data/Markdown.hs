@@ -21,7 +21,9 @@
 
 -- | WARNING: the html scrubbing may be inaccurate and may have security issues!
 module Data.Markdown
-  ( Document, markdown, unMarkdown )
+  ( Document, markdown, unMarkdown
+  , PlainDocument(PlainDocument), unDescription
+  )
 where
 
 import Data.CaseInsensitive
@@ -32,7 +34,6 @@ import Data.Maybe (catMaybes)
 import Data.SafeCopy (deriveSafeCopy, base)
 import Data.String.Conversions
 import GHC.Generics (Generic)
-import Lucid (ToHtml, toHtml, toHtmlRaw, div_, class_)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.CSS.Syntax.Tokens as CSS
@@ -43,12 +44,6 @@ import qualified Text.HTML.Parser as HTML
 
 newtype Document = Markdown { unMarkdown :: ST }
   deriving (Eq, Ord, Show, Read, Generic)
-
--- | Does no html escaping.  This is ok as long as we always use 'markdown' for constructing
--- 'Document' values.
-instance ToHtml Document where
-    toHtmlRaw = div_ [class_ "markdown"] . toHtmlRaw . unMarkdown
-    toHtml    = toHtmlRaw
 
 instance Binary Document
 
@@ -112,3 +107,9 @@ instance Monoid Document where
     mappend (Markdown a) (Markdown b) = case markdown $ mappend a b of
         Right v -> v
         Left es -> error $ "instance Monoid Document: " <> show (es, a, b)
+
+
+newtype PlainDocument = PlainDocument { unDescription :: ST }
+  deriving (Eq, Ord, Show, Read, Generic, Monoid)
+
+deriveSafeCopy 0 'base ''PlainDocument

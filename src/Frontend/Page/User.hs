@@ -222,11 +222,11 @@ userHeaderDiv ctx (Right (user, delegations)) =
 
 userHeaderDivCore :: User -> Monad m => HtmlT m ()
 userHeaderDivCore user = do
-        div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
-        h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
-        ul_ [class_ "role-badges"] $ do
-            forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
-                li_ [class_ "badge"] $ r ^. uilabeled
+    div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
+    h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
+    ul_ [class_ "role-badges"] $ do
+        forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->
+            li_ [class_ "badge"] $ r ^. uilabeled
 
 commonIdeaSpaceDelegations :: User -> User -> EQuery [Delegation]
 commonIdeaSpaceDelegations delegatee delegate = do
@@ -459,7 +459,7 @@ instance FormPage EditUserProfile where
                         DF.inputSubmit "Änderungen speichern"
                         cancelButton p
 
-validateImageFile :: ActionM m => Maybe FilePath -> m (DF.Result (Html ()) (Maybe DynamicImage))
+validateImageFile :: (Monad n, ActionM m) => Maybe FilePath -> m (DF.Result (HtmlT n ()) (Maybe DynamicImage))
 validateImageFile = \case
     Nothing   -> pure $ DF.Success Nothing
     Just file -> do

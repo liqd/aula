@@ -293,7 +293,7 @@ validateTopicTitle ideaSpace mTopic =
                 then DF.Error "Es gibt in diesem Ideenraum schon ein Thema mit diesem Namen."
                 else DF.Success title
 
-validateTopicDesc :: forall m . Monad m => DF.Form (Html ()) m ST -> DF.Form (Html ()) m PlainDocument
+validateTopicDesc :: forall m n . (Monad m, Monad n) => DF.Form (HtmlT n ()) m ST -> DF.Form (HtmlT n ()) m PlainDocument
 validateTopicDesc =
     validate
         "Thema"
@@ -335,7 +335,7 @@ createOrEditTopic v ideas = do
     label_ $ do
         span_ [class_ "label-text"] $ if null ideas
             then "Es stehen keine Ideen zur Auswahl."
-            else "Fügen Sie weitere wilde dem neuen Thema hinzu"
+            else "Fügen Sie weitere wilde Ideen dem neuen Thema hinzu"
         formPageIdeaSelection v ideas
         -- FIXME: mark the one with the quorum that triggered creating this
         -- topic as selected by default.  (see also: FIXME at makeFormIdeaSelection.)

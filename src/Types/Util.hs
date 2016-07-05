@@ -34,7 +34,7 @@ import Data.String
 import Data.String.Conversions
 import Data.UriPath (HasUriPart(uriPart))
 import GHC.Generics (Generic)
-import Lucid (ToHtml, toHtml, toHtmlRaw)
+import Lucid.I18N (ToHtml, toHtml, toHtmlRaw)
 import Network.Mail.Mime (Address(Address))
 import Servant.API (FromHttpApiData(parseUrlPiece))
 
@@ -43,6 +43,7 @@ import qualified Text.Email.Validate as Email
 
 import Test.QuickCheck (Gen, Arbitrary, arbitrary)
 
+import Data.Markdown
 import Types.Prelude
 import Types.Core
 import Types.Instances.Optics

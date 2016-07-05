@@ -17,8 +17,8 @@ import Prelude hiding (log, (.))
 import Control.Category ((.))
 import Control.Exception (assert)
 import Control.Monad.Trans.Except
+import Control.Monad.Reader
 import Data.List (partition)
-import Lucid hiding (href_)
 import Network.HTTP.Types
 import Network.Wai
     ( Application, Middleware, Response
@@ -439,7 +439,9 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
       where
         status  = responseStatus resp
         headers = responseHeaders resp
-        builder = Builder.byteString . cs . renderText . toHtml $ PublicFrame Page404 []
+        builder = Builder.byteString . cs
+                . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
+                $ PublicFrame Page404 []
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a

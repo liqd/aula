@@ -153,12 +153,12 @@ validate' n v = errorToHtml . unFieldValidator (addFieldNameToError n v)
         DF.Error es      -> DF.Error $ ((cs fieldName <> ": ") <>) <$> es
 
 validate
-    :: Monad m => FieldName -> FieldValidator s a -> Form (Html ()) m s -> Form (Html ()) m a
+    :: (Monad m, Monad n) => FieldName -> FieldValidator s a -> Form (HtmlT n ()) m s -> Form (HtmlT n ()) m a
 validate = DF.validate <..> validate'
 
 validateOptional
-    :: Monad m
-    => FieldName -> FieldValidator s a -> Form (Html ()) m (Maybe s) -> Form (Html ()) m (Maybe a)
+    :: (Monad m, Monad n)
+    => FieldName -> FieldValidator s a -> Form (HtmlT n ()) m (Maybe s) -> Form (HtmlT n ()) m (Maybe a)
 validateOptional = DF.validateOptional <..> validate'
 
 
@@ -183,7 +183,7 @@ maxLengthV mx = FieldValidator $ \xs ->
         then DF.Error ["max." <> cs (show mx) <> " Zeichen"]
         else DF.Success xs
 
-type DfForm a = forall m. Monad m => DF.Form (Html ()) m a
+type DfForm a = forall m n. (Monad m, Monad n) => DF.Form (HtmlT n ()) m a
 type DfTextField s = forall a. Getter s a -> Traversal' a ST -> DfForm a
 
 -- Usage:
@@ -248,7 +248,7 @@ optionalEmailField name emailValue =
         (checkEmail name)
         (DF.optionalText (emailValue ^? _Just . re Frontend.emailAddress))
 
-checkEmail :: FieldName -> ST -> DF.Result (Html ()) Frontend.EmailAddress
+checkEmail :: (Monad m) => FieldName -> ST -> DF.Result (HtmlT m ()) Frontend.EmailAddress
 checkEmail name value = case Email.emailAddress (cs value) of
     Nothing -> DF.Error . fromString $ unwords [name, ":", "Invalid email address"]
     Just e  -> DF.Success $ InternalEmailAddress e

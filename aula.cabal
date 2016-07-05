@@ -125,6 +125,7 @@ library
       LifeCycle
       Logger
       Logger.EventLog
+      Lucid.I18N
       Lucid.Missing
       Persistent
       Persistent.Api

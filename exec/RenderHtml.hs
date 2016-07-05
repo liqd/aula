@@ -27,6 +27,7 @@
 module Main (main, spec) where
 
 import Control.Exception (SomeException(SomeException), evaluate)
+import Control.Monad.Reader (runReader)
 import Data.String.Conversions
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import System.Directory
@@ -155,7 +156,7 @@ runTidyIfAvailable fn' = withTidy >>= (`when` doTidy)
         (exit, out, err) <- readFile fn' >>= readProcessWithExitCode "tidy" ["-utf8", "-indent"]
         case exit of
             ExitSuccess -> ST.writeFile fn' $ cs ("tidy-good\n\n" <> out)
-            _ -> ST.writeFile fn'' . cs . renderText . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
+            _ -> ST.writeFile fn'' . cs . flip runReader whereToGetTheLangValue . renderTextT . toHtmlRaw $ "<pre>\n" <> err <> "\n\n</pre>\n"
 
 
 -- | Take a binary serialization and use current 'ToHtml' instances for.  This is a bit hacky,
@@ -184,7 +185,7 @@ dynamicRender s = do
       where
         runRead :: IO (Maybe ST)
         runRead = do
-            Just <$> evaluate (cs . renderText . runWrite . readWith (Proxy :: Proxy (Frame a)) . cs $ s)
+            Just <$> evaluate (cs . flip runReader whereToGetTheLangValue . renderTextT . runWrite . readWith (Proxy :: Proxy (Frame a)) . cs $ s)
 
     runWriteView :: (Page a, ToHtml a) => Frame a -> Html ()
     runWriteView !p = toHtml p
