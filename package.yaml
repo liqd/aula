@@ -64,7 +64,7 @@ dependencies:
     - text
     - time
     - transformers
-    - vector ==0.10.12.3
+    - vector
     - wai
     - wai-app-static
     - warp

@@ -73,7 +73,7 @@ library
     , text
     , time
     , transformers
-    , vector ==0.10.12.3
+    , vector
     , wai
     , wai-app-static
     , warp
@@ -200,7 +200,7 @@ executable aula-avatars
     , text
     , time
     , transformers
-    , vector ==0.10.12.3
+    , vector
     , wai
     , wai-app-static
     , warp
@@ -265,7 +265,7 @@ executable aula-html-dummies
     , text
     , time
     , transformers
-    , vector ==0.10.12.3
+    , vector
     , wai
     , wai-app-static
     , warp
@@ -333,7 +333,7 @@ executable aula-server
     , text
     , time
     , transformers
-    , vector ==0.10.12.3
+    , vector
     , wai
     , wai-app-static
     , warp
@@ -399,7 +399,7 @@ test-suite spec
     , text
     , time
     , transformers
-    , vector ==0.10.12.3
+    , vector
     , wai
     , wai-app-static
     , warp

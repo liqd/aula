@@ -154,7 +154,7 @@ module Persistent.Pure
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
+import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
 import Control.Monad (foldM, unless, when, replicateM, forM)

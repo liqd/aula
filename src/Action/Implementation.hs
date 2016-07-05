@@ -19,7 +19,7 @@ where
 import Codec.Picture
 import Control.Exception (throwIO, try, ErrorCall(ErrorCall), SomeException(SomeException))
 import Control.Lens
-import Control.Monad.Except (MonadError, throwError, catchError)
+import Control.Monad.Except (MonadError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
