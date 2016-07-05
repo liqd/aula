@@ -26,7 +26,6 @@ import Data.SafeCopy (base, deriveSafeCopy)
 import Data.String.Conversions
 import Data.Time
 import GHC.Generics (Generic)
-import Lucid
 import Servant ((:~>)(Nat))
 import Text.Read (readEither)
 
@@ -123,16 +122,6 @@ countEq v l = lengthOf $ folded . filtered ((== v) . view l)
 -- (FUTUREWORK: the `uri-bytestring` package could be nice here, but it may require a few orphans or
 -- a newtype to prevent them; see also: #31.)
 type URL = ST
-
-
-newtype PlainDocument = PlainDocument { unDescription :: ST }
-  deriving (Eq, Ord, Show, Read, Generic, Monoid)
-
-deriveSafeCopy 0 'base ''PlainDocument
-
-instance ToHtml PlainDocument where
-    toHtmlRaw = div_ . toHtmlRaw . unDescription
-    toHtml    = div_ . toHtml    . unDescription
 
 
 -- * time

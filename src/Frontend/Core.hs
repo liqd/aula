@@ -18,8 +18,12 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Frontend.Core
-    ( -- * helpers for routing tables
-      Singular, CaptureData, (::>), Reply, GetResult(..), PostResult(..), PostResult'
+    ( -- * servant-lucid-i18n
+      IHTML
+    , ToLang(..)
+
+      -- * helpers for routing tables
+    , Singular, CaptureData, (::>), Reply, GetResult(..), PostResult(..), PostResult'
     , GetH, PostH, FormHandler, GetCSV, Redirect
 
       -- * helpers for handlers
@@ -72,6 +76,7 @@ import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
 import Control.Monad.Except (MonadError)
+import Control.Monad.Reader (runReader)
 import Control.Monad (replicateM_, when)
 import Data.Aeson (ToJSON)
 import Data.Maybe (maybeToList)
@@ -80,13 +85,13 @@ import Data.String.Conversions
 import Data.Typeable
 import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol, KnownSymbol)
-import Lucid.Base
-import Lucid hiding (href_, script_, src_, onclick_)
+import Lucid.Base hiding (ToHtml(..), HtmlT(..), Html)
+import Lucid hiding (ToHtml(..), HtmlT(..), Html, href_, script_, src_, onclick_)
 import Servant
 import Servant.HTML.Lucid (HTML)
 import Servant.Missing (getFormDataEnv, throwError500, FormReqBody)
-import Text.Digestive.View
 import Text.Digestive.Form ((.:))
+import Text.Digestive.View
 import Text.Show.Pretty (ppShow)
 
 import qualified Data.Aeson as Aeson
@@ -104,11 +109,28 @@ import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
 import Frontend.Path (HasPath(..))
 import Logger.EventLog (EventLog)
-import Lucid.Missing (script_, href_, src_, nbsp)
+import Lucid.Missing
 import Types
 import Thentos.Frontend.CSRF (CsrfToken(..))
 
 import qualified Frontend.Path as P
+
+
+-- * servant-lucid-i18n
+
+data IHTML
+
+instance  Accept IHTML where
+    contentType _ = contentType (Proxy :: Proxy HTML)
+
+instance (ToLang a, ToHtml a) => MimeRender IHTML a where
+    mimeRender _ v = runReader (renderBST $ toHtml v) (toLang v)
+
+class ToLang a where
+    toLang :: a -> Lang
+
+instance ToLang a where
+    toLang _ = whereToGetTheLangValue
 
 
 -- * helpers for routing tables
@@ -151,7 +173,7 @@ type instance CaptureData PasswordToken      = PasswordToken
 -- | FUTUREWORK: All @Unsafe*@ constructors should move to "Frontend.Core.Internal".  That move
 -- could work well together with SafeHaskell markers.
 newtype GetResult a = UnsafeGetResult { fromGetResult :: a }
-    deriving (ToHtml, ToJSON, Generic)
+    deriving (ToJSON, Generic)
 
 instance SOP.Generic (GetResult a)
 
@@ -161,11 +183,20 @@ instance MimeRender CSV a => MimeRender CSV (GetResult a) where
 instance MimeRender PlainText a => MimeRender PlainText (GetResult a) where
     mimeRender p = mimeRender p . fromGetResult
 
+instance (ToHtml a) => ToHtml (GetResult a) where
+    toHtmlRaw = toHtml
+    toHtml (UnsafeGetResult a) = toHtml a
+
 -- | 'PostResult p r' is wrapper over the type 'r' that carries authorization info on the type level.
 -- (The constructor should only be used in 'runPostHandler', where the authorization check happens
 -- before the request has any effect on the database state.)
 newtype PostResult p r = UnsafePostResult { fromPostResult :: r }
-  deriving (ToHtml, ToJSON, Generic)
+  deriving (ToJSON, Generic)
+
+instance (ToHtml r) => ToHtml (PostResult p r) where
+    toHtmlRaw = toHtml
+    toHtml (UnsafePostResult r) = toHtml r
+
 
 -- When the result type and page type are the same.
 type PostResult' p = PostResult p p
@@ -183,8 +214,8 @@ instance MimeRender PlainText r => MimeRender PlainText (PostResult p r) where
 -- Using this via `curl` is complicated by the fact that we need cookie authentication, so this
 -- feature should be used via the 'createPageSamples' mechanism (see "Frontend" and 'footerMarkup'
 -- for more details).
-type GetH p = Get '[HTML, PlainText] (GetResult p)
-type PostH' p r = Post '[HTML, PlainText] (PostResult p r)
+type GetH p = Get '[IHTML, PlainText] (GetResult p)
+type PostH' p r = Post '[IHTML, PlainText] (PostResult p r)
 type PostH p = PostH' p ()
 type FormHandler p =
        GetH (Frame (FormPageRep p))
@@ -233,9 +264,9 @@ semanticDiv = semanticDiv' []
 semanticDiv' :: forall m a. (Monad m, Typeable a) => [Attribute] -> a -> HtmlT m () -> HtmlT m ()
 semanticDiv' attrs t = div_ $ makeAttribute "data-aula-type" (cs . show . typeOf $ t) : attrs
 
-type FormCS m r s =
-    (Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
-    => DF.Form (Html ()) m r -> DF.Form (Html ()) m s
+type FormCS m r s = forall n.
+    (Monad n, Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
+    => DF.Form (HtmlT n ()) m r -> DF.Form (HtmlT n ()) m s
 
 html :: (Monad m, ToHtml a) => Getter a (HtmlT m ())
 html = to toHtml
@@ -313,7 +344,7 @@ percentVotes idea numVoters vv = {- assert c -} v
 class Page p where
     isAuthorized :: Applicative m => AccessInput p -> m AccessResult
 
-    extraFooterElems  :: p -> Html ()
+    extraFooterElems  :: Monad m => p -> HtmlT m ()
     extraFooterElems _ = nil
 
     extraBodyClasses  :: p -> [ST]
@@ -450,7 +481,7 @@ instance Page p => Page (FormPageRep p) where
 
 instance FormPage p => ToHtml (FormPageRep p) where
     toHtmlRaw = toHtml
-    toHtml (FormPageRep t v a p) = toHtml $ formPage v frm p
+    toHtml (FormPageRep t v a p) = toHtmlGeneralizeIdentity $ formPage v frm p
       where
         frm bdy = DF.childErrorList "" v >> DF.form v a (bdy <> csrfField)
         csrfField
@@ -757,7 +788,7 @@ pageFrame frame = do
                 div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
-        footerMarkup (toHtml $ extraFooterElems p)
+        footerMarkup (extraFooterElems p)
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do

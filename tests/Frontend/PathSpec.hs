@@ -18,7 +18,6 @@ import Network.HTTP.Types.Status (statusCode)
 import Network.Wai
 import Network.Wai.Test
 import Servant
-import Servant.HTML.Lucid
 import Servant.Missing hiding (redirect)
 import Servant.Mock (HasMock(..), mock)
 import Test.Hspec (Spec, beforeAll, describe, it)
@@ -176,9 +175,9 @@ mockAulaMain = do
 
 instance (Show a, FormPage a, Page a, Arbitrary a)
         => HasMock (FormReqBody :>
-                        Post '[HTML, PlainText]
+                        Post '[IHTML, PlainText]
                             (PostResult (Frame (FormPageRep a)) (Frame (FormPageRep a)))) where
-    mock _ _ = mock (Proxy :: Proxy (Post '[HTML, PlainText]
+    mock _ _ = mock (Proxy :: Proxy (Post '[IHTML, PlainText]
                                         (PostResult' (Frame (FormPageRep a)))))
 
 

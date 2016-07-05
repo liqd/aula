@@ -33,7 +33,7 @@ minBarSegmentWidth = 5
 instance ToHtml IdeaVoteLikeBars where
     toHtmlRaw = toHtml
     toHtml p@(IdeaVoteLikeBars (IdeaStats idea phase quo voters)) = semanticDiv p $ do
-        let likeBar :: Html ()
+        let likeBar :: Monad m => HtmlT m ()
             likeBar = div_ $ do
                 span_ [class_ "progress-bar"] $ do
                     span_ [ class_ "progress-bar-progress"
@@ -43,7 +43,7 @@ instance ToHtml IdeaVoteLikeBars where
                 span_ [class_ "like-bar"] $ do
                     toHtml (show (numLikes idea) <> " von " <> show quo <> " Quorum-Stimmen")
 
-            voteBar :: Html ()
+            voteBar :: Monad m => HtmlT m ()
             voteBar = div_ [class_ "voting-widget"] $ do
                 span_ [class_ "progress-bar m-show-abstain"] $ do
                     span_ [class_ "progress-bar-row"] $ do
@@ -64,7 +64,7 @@ instance ToHtml IdeaVoteLikeBars where
                                       -- FIXME: change class name above: abstain /= not-voted
                                 span_ [class_ "votes"] $ voters ^. showed . html
               where
-                cnt :: IdeaVoteValue -> Html ()
+                cnt :: Monad m => IdeaVoteValue -> HtmlT m ()
                 cnt v = numVotes idea v ^. showed . html
 
                 prcnt :: IdeaVoteValue -> ST
@@ -75,19 +75,19 @@ instance ToHtml IdeaVoteLikeBars where
                         DoNotShowNotVoted -> numVotes idea Yes + numVotes idea No
 
         div_ [class_ "sub-heading"] $ case phase of
-            PhaseWildIdea{}   -> toHtml likeBar
+            PhaseWildIdea{}   -> likeBar
             PhaseRefinement{} -> nil
             PhaseJury         -> nil
-            PhaseVoting{}     -> toHtml voteBar
-            PhaseResult       -> toHtml voteBar
+            PhaseVoting{}     -> voteBar
+            PhaseResult       -> voteBar
 
 
-ideaVoteLikeButtons :: CapCtx -> IdeaStats -> Html ()
+ideaVoteLikeButtons :: Monad m => CapCtx -> IdeaStats -> HtmlT m ()
 ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
     let caps = capabilities ctx
         user = ctx ^. capCtxUser
 
-        likeButtons :: Html ()
+        likeButtons :: Monad m => HtmlT m ()
         likeButtons
             | CanLike `notElem` caps
                 = nil
@@ -101,7 +101,7 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                         (U.likeIdea idea)
                         "Auf den Tisch"
 
-        voteButtons :: Html ()
+        voteButtons :: Monad m => HtmlT m ()
         voteButtons
             | not (isFeasibleIdea idea) || CanVote `notElem` caps
                 = nil
