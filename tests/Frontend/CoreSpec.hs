@@ -12,7 +12,7 @@
 module Frontend.CoreSpec where
 
 import Prelude hiding ((.))
-import Control.Arrow((&&&), second)
+import Control.Arrow((&&&))
 import Control.Category ((.))
 import Data.List
 import Data.String.Conversions
@@ -168,7 +168,7 @@ selectValue ref v xs x =
                                    ]
   where
     value i = absoluteRef ref v <> "." <> i
-    choices = (\(t, h, b) -> (t, renderHtmlDefaultH h, b)) <$> fieldInputChoice ref v
+    choices = (_2 %~ renderHtmlDefaultH) <$> fieldInputChoice ref v
     test (_, h, _) = showValue x == h
     showValue ((`lookup` xs) -> Just y) = y
     showValue z = error $ unwords ["selectValue: no option found. Value:", show z, "in values", show xs]
@@ -399,7 +399,7 @@ postToForm (FormTest g c check) = do
         case mpayload of
             Nothing -> fail $ unwords
                 ("Form validation has failed:" :
-                    (show . Control.Arrow.second renderHtmlDefaultH <$> viewErrors v))
+                    (show . (_2 %~ renderHtmlDefaultH) <$> viewErrors v))
             Just payload' -> liftIO $ payload' `check` payload
 
     -- FIXME: Valid and invalid form data generation should
