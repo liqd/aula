@@ -151,6 +151,7 @@ withServer' cfg action = do
         initialize q = do
             resp <- post q "/api/manage-state/create-init" ([] :: [Part])
             case resp of
+                (view (responseStatus . statusCode) -> 200) -> pure ()
                 (view (responseStatus . statusCode) -> 201) -> pure ()
                 (view (responseStatus . statusCode) -> 204) -> pure ()
                 _ -> error $ "withServer: init failed: " <> show resp
