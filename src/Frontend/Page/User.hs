@@ -357,18 +357,28 @@ instance ToHtml PageUserProfileUserAsDelegate where
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations True delegationListsMap
 
-userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileUserAsDelegate
-userProfileUserAsDelegate userId = do
+userProfileUserDelegation
+    :: (ActionPersist m, ActionUserHandler m)
+    => (CapCtx -> UserView -> DelegationListsMap -> [Delegation] -> page)
+    -> (AUID User -> EQuery DelegationListsMap)
+    -> AUID User -> m page
+userProfileUserDelegation pageConstructor userDelegationsMap userId = do
     user <- mquery $ findUser userId
     ctx  <- profileContext user
     cUser <- currentUser
     equery $ do
-        PageUserProfileUserAsDelegate
+        pageConstructor
             ctx
             (makeUserView user)
-            <$> userDelegationListsMap userId
+            <$> userDelegationsMap userId
             <*> commonIdeaSpaceDelegations cUser user
+
+userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileUserAsDelegate
+userProfileUserAsDelegate =
+    userProfileUserDelegation
+        PageUserProfileUserAsDelegate
+        userDelegationListsMap
 
 
 -- ** User Profile: User as a delegatee
@@ -389,16 +399,11 @@ instance ToHtml PageUserProfileUserAsDelegatee where
 
 userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegatee
-userProfileUserAsDelegatee userId = do
-    user <- mquery $ findUser userId
-    ctx <- profileContext user
-    cUser <- currentUser
-    equery $ do
+userProfileUserAsDelegatee =
+    userProfileUserDelegation
         PageUserProfileUserAsDelegatee
-            ctx
-            (makeUserView user)
-            <$> userDelegateListsMap userId
-            <*> commonIdeaSpaceDelegations cUser user
+        userDelegateListsMap
+
 
 -- ** User Profile: Edit profile
 
