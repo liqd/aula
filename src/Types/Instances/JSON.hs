@@ -78,7 +78,7 @@ instance Aeson.ToJSON DelegationNetwork where
 
         renderNode (u, p) = Aeson.object
             [ "name"   Aeson..= (u ^. userLogin . unUserLogin)
-            , "avatar" Aeson..= (u ^. userAvatar avatarDefaultSize)
+            , "avatar" Aeson..= (u ^. userAvatar (minimum $ avatarDefaultSize : avatarExtraSizes))
             , "power"  Aeson..= p
             ]
 
