@@ -45,11 +45,13 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , reportIdeaComment, reportIdeaCommentReply
               , eventLogUserCreatesComment, eventLogUserEditsComment
               , reportIdea, delegationInScope
+              , ActionCurrentTimestamp, getCurrentTimestamp
               )
 import Control.Arrow ((&&&))
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
 import Frontend.Fragment.Note
+import Frontend.Fragment.PhaseTime (displayPhaseWithTime)
 import Frontend.Fragment.VotesBar
 import Frontend.Prelude hiding ((<|>), MoveIdea)
 import Frontend.Validation
@@ -91,7 +93,12 @@ import qualified Lucid
 -- * 5.4 Idea detail page: Voting phase
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
-data ViewIdea = ViewIdea { _viCtx :: CapCtx, _viStats :: IdeaStats, _viDelegation :: Maybe Delegation }
+data ViewIdea = ViewIdea
+    { viNow :: Timestamp
+    , _viCtx :: CapCtx
+    , _viStats :: IdeaStats
+    , _viDelegation :: Maybe Delegation
+    }
   deriving (Eq, Show, Read, Generic)
 
 instance SOP.Generic ViewIdea
@@ -229,10 +236,10 @@ linkToIdeaLocation idea = do
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml (ViewIdea _ctx (IdeaStats idea _phase _quo _voters) _delegation)
+    toHtml (ViewIdea _now _ctx (IdeaStats idea _phase _quo _voters) _delegation)
         | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
 
-    toHtml p@(ViewIdea ctx stats@(IdeaStats idea phase _quo _voters) delegation) = semanticDiv p $ do
+    toHtml p@(ViewIdea now ctx stats@(IdeaStats idea phase _quo _voters) delegation) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -264,7 +271,9 @@ instance ToHtml ViewIdea where
                                 "melden"
 
 
-            h1_ [class_ "main-heading"] $ idea ^. ideaTitle . html
+            h1_ [class_ "main-heading"] $ do
+                displayPhaseWithTime now phase
+                idea ^. ideaTitle . html
             div_ [class_ "sub-header meta-text"] $ do
                 "von "
                 a_ [ href_ $ U.userIdeas (idea ^. createdBy)
@@ -666,13 +675,14 @@ instance FormPage ReportIdea where
 -- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
 -- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.
 -- on the bright side, it makes shorter uri paths possible.)
-viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m)
+viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m, ActionCurrentTimestamp m)
     => AUID Idea -> m ViewIdea
 viewIdea ideaId = do
+    now <- getCurrentTimestamp
     (ctx, idea) <- ideaCapCtx ideaId
     stats <- equery $ getIdeaStats idea -- FIXME ideaCapCtx' is giving the phase already
     delegation <- delegationInScope (DScopeIdeaId ideaId)
-    pure $ ViewIdea ctx stats delegation
+    pure $ ViewIdea now ctx stats delegation
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea
