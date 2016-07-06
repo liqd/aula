@@ -370,7 +370,9 @@ validUserState :: UserState -> Bool
 validUserState us = us == userLoggedOut || validLoggedIn us
 
 getSpacesForCurrentUser :: (ActionUserHandler m, ActionPersist m) => m [IdeaSpace]
-getSpacesForCurrentUser = query . getSpacesForRoles . view userRoleSet =<< currentUser
+getSpacesForCurrentUser = do
+    user <- currentUser
+    query $ getSpacesForRoles (user ^. userRoleSet)
 
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
