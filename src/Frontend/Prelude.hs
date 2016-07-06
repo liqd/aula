@@ -11,7 +11,7 @@ import Servant.Missing            as X hiding (redirect)
 import Text.Digestive.Form        as X ((.:))
 import Text.Digestive.View        as X (View)
 import Test.QuickCheck            as X (generate, arbitrary)
-import Thentos.Prelude            as X
+import AulaPrelude                as X
 import Types                      as X
 import Frontend.Constant          as X
 import Frontend.Core              as X hiding (form, runHandler)

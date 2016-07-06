@@ -142,8 +142,8 @@ where
 import Control.Exception (assert)
 import qualified Generics.SOP as SOP
 import Servant.API (toUrlPiece)
-import Thentos.Prelude
 
+import AulaPrelude
 import Data.UriPath
 import Frontend.Filter
 import Types

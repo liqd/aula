@@ -26,9 +26,7 @@
 -- data in it that you see, into a source file.
 module Main (main, spec) where
 
-import Control.Exception (SomeException(SomeException), evaluate)
 import Control.Monad.Reader (runReader)
-import Data.String.Conversions
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
 import System.Directory
 import System.Directory.Extra

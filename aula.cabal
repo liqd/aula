@@ -39,6 +39,7 @@ library
     , containers
     , cookie
     , css-syntax
+    , cryptonite >=0.6 && <0.16
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -54,6 +55,7 @@ library
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
+    , lio
     , lucid
     , mime-mail
     , mtl
@@ -62,6 +64,7 @@ library
     , process
     , QuickCheck
     , quickcheck-instances
+    , random
     , safecopy
     , scrypt
     , servant
@@ -85,6 +88,7 @@ library
       Action.Implementation
       Action.Smtp
       Arbitrary
+      AulaPrelude
       Backend
       Config
       Daemon
@@ -166,6 +170,7 @@ executable aula-avatars
     , containers
     , cookie
     , css-syntax
+    , cryptonite >=0.6 && <0.16
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -181,6 +186,7 @@ executable aula-avatars
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
+    , lio
     , lucid
     , mime-mail
     , mtl
@@ -189,6 +195,7 @@ executable aula-avatars
     , process
     , QuickCheck
     , quickcheck-instances
+    , random
     , safecopy
     , scrypt
     , servant
@@ -231,6 +238,7 @@ executable aula-html-dummies
     , containers
     , cookie
     , css-syntax
+    , cryptonite >=0.6 && <0.16
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -246,6 +254,7 @@ executable aula-html-dummies
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
+    , lio
     , lucid
     , mime-mail
     , mtl
@@ -254,6 +263,7 @@ executable aula-html-dummies
     , process
     , QuickCheck
     , quickcheck-instances
+    , random
     , safecopy
     , scrypt
     , servant
@@ -299,6 +309,7 @@ executable aula-server
     , containers
     , cookie
     , css-syntax
+    , cryptonite >=0.6 && <0.16
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -314,6 +325,7 @@ executable aula-server
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
+    , lio
     , lucid
     , mime-mail
     , mtl
@@ -322,6 +334,7 @@ executable aula-server
     , process
     , QuickCheck
     , quickcheck-instances
+    , random
     , safecopy
     , scrypt
     , servant
@@ -365,6 +378,7 @@ test-suite spec
     , containers
     , cookie
     , css-syntax
+    , cryptonite >=0.6 && <0.16
     , digestive-functors
     , digestive-functors-lucid
     , directory
@@ -380,6 +394,7 @@ test-suite spec
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
+    , lio
     , lucid
     , mime-mail
     , mtl
@@ -388,6 +403,7 @@ test-suite spec
     , process
     , QuickCheck
     , quickcheck-instances
+    , random
     , safecopy
     , scrypt
     , servant

@@ -15,12 +15,12 @@ module AulaTests
 
 import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
-import Control.Exception (SomeException, bracket)
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.String.Conversions
 import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
+import System.Random (Random)
 import Test.Hspec.Core.Spec (SpecM(..))
 import Test.Hspec.Wai (WaiExpectation)
 import Test.HUnit.Lang (HUnitFailure(HUnitFailure))

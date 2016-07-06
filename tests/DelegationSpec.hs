@@ -23,7 +23,6 @@ import qualified Persistent.Api as Persistent (RunPersist)
 import qualified Persistent.Implementation.AcidState as Persistent
 
 import Control.Category ((.))
-import Control.Exception (SomeException(SomeException))
 import Test.Hspec.QuickCheck (modifyMaxSuccess)
 import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)

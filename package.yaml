@@ -30,6 +30,7 @@ dependencies:
     - containers
     - cookie
     - css-syntax
+    - cryptonite >=0.6 && <0.16
     - digestive-functors
     - digestive-functors-lucid
     - directory
@@ -45,6 +46,7 @@ dependencies:
     - http-types
     - JuicyPixels >=3.2.6.2 && <3.3
     - lens
+    - lio
     - lucid
     - mime-mail
     - mtl
@@ -53,6 +55,7 @@ dependencies:
     - process
     - QuickCheck
     - quickcheck-instances
+    - random
     - safecopy
     - scrypt
     - servant

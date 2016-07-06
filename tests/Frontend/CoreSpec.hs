@@ -16,7 +16,6 @@ import Control.Arrow((&&&))
 import Control.Category ((.))
 import Data.List
 import Data.String.Conversions
-import Data.Typeable (typeOf)
 import Test.QuickCheck
 import Test.QuickCheck.Missing (uniqueOf)
 import Test.QuickCheck.Monadic (PropertyM, assert, monadicIO, run, pick)

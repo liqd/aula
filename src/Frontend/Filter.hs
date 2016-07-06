@@ -33,12 +33,12 @@ where
 
 import GHC.TypeLits (Symbol, KnownSymbol, symbolVal)
 import Servant.API (QueryParam, FromHttpApiData, ToHttpApiData, parseUrlPiece, toUrlPiece)
-import Thentos.Prelude
 
 import qualified Data.Ord
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 
+import AulaPrelude
 import Data.UriPath
 import Persistent.Idiom (IdeaStats(..), ideaStatsIdea, ideaSupport)
 import Types

@@ -15,8 +15,7 @@ module Data.UriPath
     , HasUriPart(..))
     where
 
-import Thentos.Prelude
-import Data.String.Conversions
+import AulaPrelude
 
 import qualified Data.Text as ST
 import qualified Network.HTTP.Types as HTTP

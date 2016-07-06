@@ -28,7 +28,6 @@ where
 
 import Control.Category ((.))
 import Control.Exception (assert)
-import Data.List (sortBy)
 import Data.Time
 import Prelude hiding ((.))
 

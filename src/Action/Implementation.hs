@@ -23,6 +23,7 @@ import Control.Monad.Except (MonadError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
+import Crypto.Random (MonadRandom(..))
 import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
 import Data.String.Conversions (LBS, cs)
@@ -33,12 +34,13 @@ import Servant.Missing
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
 import Thentos.Action (freshSessionToken)
-import Thentos.Prelude (DCLabel, MonadLIO(..), MonadRandom(..), evalLIO, LIOState(..), dcBottom)
+import LIO (MonadLIO(..), evalLIO, LIOState(..))
+import LIO.DCLabel (DCLabel, (%%))
 
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Thentos.Frontend.CSRF as CSRF
+import qualified Thentos.Frontend.CSRF as CSRF (checkCsrfToken)
 
 import Action
 import Config
@@ -110,6 +112,8 @@ instance ActionPersist Action where
 
 instance MonadLIO DCLabel Action where
     liftLIO = actionIO . (`evalLIO` LIOState dcBottom dcBottom)
+      where
+        dcBottom = True %% False
 
 instance MonadRandom Action where
     getRandomBytes = actionIO . getRandomBytes

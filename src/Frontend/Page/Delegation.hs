@@ -70,7 +70,7 @@ instance FormPage PageDelegateVote where
         valid :: Monad n => ST -> DF.Result (HtmlT n ()) (Maybe (AUID User))
         valid "" = pure Nothing
         valid (ST.commonPrefixes "page-delegate-vote-uid." -> Just ("page-delegate-vote-uid.", "", s)) =
-            Just <$> case readMay $ cs s of
+            Just <$> case readMaybe $ cs s of
                 Nothing -> DF.Error ("invalid user id: " <> fromString (show s))
                 Just (AUID -> uid)
                   | uid `elem` (view _Id <$> options) -> DF.Success uid

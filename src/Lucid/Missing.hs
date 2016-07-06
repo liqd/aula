@@ -31,13 +31,13 @@ module Lucid.Missing
 
 import Control.Monad.Reader
 import Data.String.Conversions
-import Thentos.Prelude
 
 import qualified Lucid as L
 import qualified Lucid.Base as L
 import qualified Text.Digestive.Lucid.Html5 as DF
 import qualified Text.Digestive.View as DF
 
+import AulaPrelude
 import Data.UriPath
 import Frontend.Path
 import Lucid.I18N

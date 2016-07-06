@@ -35,7 +35,7 @@ makeFormSelectCategory mcat = formSelectorToCategory <$> DF.text (formSelectorFr
 
 formSelectorToCategory :: ST -> Maybe Category
 formSelectorToCategory (ST.commonPrefixes "select-.idea-category." -> Just (_, "", s))
-                         = toEnumMay =<< readMay (cs s)
+                         = toEnumMay =<< readMaybe (cs s)
 formSelectorToCategory _ = Nothing
 
 formSelectorFromCategory :: Category -> ST

@@ -16,9 +16,8 @@ import Prelude hiding (log, (.))
 
 import Control.Category ((.))
 import Control.Exception (assert)
+import Control.Monad.Reader (runReader)
 import Control.Monad.Trans.Except
-import Control.Monad.Reader
-import Data.List (partition)
 import Network.HTTP.Types
 import Network.Wai
     ( Application, Middleware, Response
@@ -35,10 +34,10 @@ import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import qualified Data.ByteString.Builder as Builder
 
-import Thentos.Prelude hiding (logger, DEBUG)
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
+import AulaPrelude
 import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction)
