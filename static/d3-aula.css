@@ -1,6 +1,10 @@
 .node {
 }
 
+.has-hidden-edges {
+    opacity: 0.4;
+}
+
 .link {
     fill: none;
     stroke: black;

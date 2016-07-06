@@ -209,7 +209,7 @@
                 avat = container.append("g")
                     .selectAll("image").data(force.nodes())
                     .enter().append("image")
-                    .attr("class", ".node")
+                    .attr("class", function(d) { return "node" + (hasHiddenEdges(d) ? " has-hidden-edges" : ""); })
                     .call(force.drag)
                     .attr("width",  avatarWidthHeight.get)
                     .attr("height", avatarWidthHeight.get)
@@ -339,6 +339,14 @@
             updateVisibility();
         };
 
+        var hasHiddenEdges = function(d) {
+            var v = false;
+            var check = function(n) { if (!visible(n)) { v = true; }; };
+            d.delegates.forEach(check);
+            d.delegatees.forEach(check);
+            return v;
+        };
+
         var on_click = function(d) {
             unfoldNeighbours(d, undefined, 1, 1);
         };
@@ -422,8 +430,8 @@
         var avat = undefined;
         var text = undefined;
 
-        updateWidget();
         setNeighbours(graph);
+        updateWidget();
         force.start();
     };
 
