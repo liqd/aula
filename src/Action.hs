@@ -371,15 +371,9 @@ validUserState us = us == userLoggedOut || validLoggedIn us
 
 getSpacesForCurrentUser :: (ActionUserHandler m, ActionPersist m) => m [IdeaSpace]
 getSpacesForCurrentUser = do
-    -- FIXME: remove the isLoggedIn check.
-    b <- isLoggedIn
-    if b then do
-        user <- currentUser
-        query $ getSpacesForRoles (user ^. userRoleSet)
-    else
-        pure []
+    user <- currentUser
+    query $ getSpacesForRoles (user ^. userRoleSet)
 
--- FIXME: Authorization
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
 

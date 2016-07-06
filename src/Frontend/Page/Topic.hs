@@ -29,15 +29,14 @@ where
 import Control.Category ((.))
 import Control.Exception (assert)
 import Data.List (sortBy)
-import Data.Time
 import Prelude hiding ((.))
 
 import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
                spaceCapCtx, topicCapCtx, getCurrentTimestamp, delegationInScope)
-import Config (unsafeTimestampToLocalTime, aulaTimeLocale)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList as IdeaList
+import Frontend.Fragment.PhaseTime (displayPhaseWithTime)
 import Frontend.Prelude
 import Frontend.Validation hiding (space, tab)
 import Persistent
@@ -209,10 +208,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                         li_ [class_ "pop-menu-list-item"] "<Menü ist leer>"
 
         h1_ [class_ "main-heading"] $ do
-            span_ [class_ "sub-heading"] $ do
-                phase ^. uilabeledST . html
-                " "
-                phase ^. displayPhaseTime now . html
+            displayPhaseWithTime now phase
             topic ^. topicTitle . html
         div_ [class_ "sub-header"] $ topic ^. topicDesc . html
         div_ [class_ "heroic-btn-group"] $ do
@@ -256,24 +252,6 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
 
         div_ [class_ "heroic-tabs is-responsive"] $ allTabs Desktop
         select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs Mobile
-
-displayPhaseTime :: Monoid r => Timestamp -> Getting r Phase String
-displayPhaseTime now = phaseStatus . to info
-  where
-    info t@(ActivePhase stamp) =
-        "(Endet " <> displayTimespan t <> showStamp stamp <> ")"
-    info t@(FrozenPhase _) =
-        "(Endet " <> displayTimespanFrozen t <> ")"
-
-    displayTimespan st = case stampToDays st of
-        -- n | n < 0 -> assert False $ error "displayPhaseTime"  -- (this breaks the test suite)
-        0 -> "heute"
-        1 -> "morgen"
-        n -> "in " <> show n <> " Tagen"
-
-    displayTimespanFrozen st = (cs . show . stampToDays $ st) <> " Tage nach den Ferien"
-    stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1
-    showStamp = formatTime aulaTimeLocale " am %F um ca. %H Uhr %Z" . unsafeTimestampToLocalTime
 
 validateTopicTitle
     :: (ActionM m)
