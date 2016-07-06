@@ -311,9 +311,6 @@
             var visited = [];
 
             var updateVisible = function(n) {
-                if (show === undefined) {
-                    show = !visible(n);
-                }
                 n.visibleByClick = show;
                 // clicking overrides the other filters
                 if (show) {
@@ -348,7 +345,7 @@
         };
 
         var on_click = function(d) {
-            unfoldNeighbours(d, undefined, 1, 1);
+            unfoldNeighbours(d, hasHiddenEdges(d), 1, 1);
         };
 
         var on_mouseover = function(d) {
