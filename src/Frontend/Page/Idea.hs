@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Idea
-  ( ViewIdea(..), viCtx, viStats, viDelegation
+  ( ViewIdea(..), viNow, viCtx, viStats, viDelegation
   , CreateIdea(..), ciCtx, ciLoc
   , EditIdea(..), eiCtx, eiIdea
   , MoveIdea(..), miCtx, miIdea, miTopicChoices
@@ -94,7 +94,7 @@ import qualified Lucid
 -- * 5.6 Idea detail page: Feasible / not feasible
 -- * 5.7 Idea detail page: Winner
 data ViewIdea = ViewIdea
-    { viNow :: Timestamp
+    { _viNow :: Timestamp
     , _viCtx :: CapCtx
     , _viStats :: IdeaStats
     , _viDelegation :: Maybe Delegation
