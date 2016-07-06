@@ -195,10 +195,9 @@ delegationCapabilities actual _ _ _ | not (isStudent actual) = []
 
 -- delegate to other user
 delegationCapabilities actual (Just u) _ _
-  | isStudent u = concat
-        [ [CanDelegate, CanDelegateInSchool]
-        , [CanDelegateInClass | haveCommonSchoolClass actual u]
-        ]
+  | isStudent u =
+        [CanDelegate, CanDelegateInSchool] <>
+        [CanDelegateInClass | haveCommonSchoolClass actual u]
 
 -- delegation for idea and topic
 delegationCapabilities _ _ (Just SchoolSpace) _   = [CanDelegate, CanDelegateInSchool]
