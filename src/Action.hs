@@ -379,7 +379,6 @@ getSpacesForCurrentUser = do
     else
         pure []
 
--- FIXME: Authorization
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
 
