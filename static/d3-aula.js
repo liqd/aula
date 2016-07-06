@@ -26,7 +26,8 @@
                         var alloption = {
                             "children": dscopeix[parent].subtree.children,
                             "dscope": dscopeix[parent].subtree.dscope,
-                            "text": "*"
+                            "text": "[Delegation für alle Themen]"
+                                // FIXME: here we assume the aula-specific dscope hierarchy structure.
                         };
                         options.unshift(alloption);
                     }
