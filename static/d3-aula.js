@@ -26,7 +26,8 @@
                         var alloption = {
                             "children": dscopeix[parent].subtree.children,
                             "dscope": dscopeix[parent].subtree.dscope,
-                            "text": "*"
+                            "text": "[Delegation für alle Themen]"
+                                // FIXME: here we assume the aula-specific dscope hierarchy structure.
                         };
                         options.unshift(alloption);
                     }
@@ -208,7 +209,7 @@
                 avat = container.append("g")
                     .selectAll("image").data(force.nodes())
                     .enter().append("image")
-                    .attr("class", ".node")
+                    .attr("class", function(d) { return "node" + (hasHiddenEdges(d) ? " has-hidden-edges" : ""); })
                     .call(force.drag)
                     .attr("width",  avatarWidthHeight.get)
                     .attr("height", avatarWidthHeight.get)
@@ -300,60 +301,55 @@
             return d.y - (avatarWidthHeight.get(d) / 2);
         };
 
-        // toggle visibility of all delegatees (recursively).
-        //
-        // (currently, if we click around in a large delegatee tree,
-        // turning individual sub-trees off and on, and then close and
-        // open the entire tree, everything will be visible.  it would
-        // be slightly nicer to remember which nodes were invisible
-        // and recover the state before the previous click on the root
-        // node.)
-        var on_click = function(delegate) {
-            // the fun arg is the node that is clicked on.  it is
-            // called the delegate here because we process its
-            // delegatees.
-            var newVisibilityStatus = undefined;
-            var setNewVisibilityStatus = function(n) {
-                if (newVisibilityStatus === undefined) {
-                    newVisibilityStatus = !visible(n);
-                }
-                n.visibleByClick = newVisibilityStatus;
+        // toggle visibility of delegates and delegatees
+        // (recursively).  depth < 0 means unlimited recursion (only
+        // limited by graph size).
+        var unfoldNeighbours = function(node, show, downDepth, upDepth) {
+            downDepth = downDepth || -1;
+            upDepth   = upDepth   || -1;
+
+            var visited = [];
+
+            var updateVisible = function(n) {
+                n.visibleByClick = show;
                 // clicking overrides the other filters
-                if (newVisibilityStatus) {
+                if (show) {
                     makeAllVisible(n);
                 }
             };
 
-            // inbound edges (full depth)
-            var visited = [];
-            var traverse = function(d) {
-                if (visited.indexOf(d.name) >= 0) {
-                    return;
-                }
-                visited.push(d.name);
-                graph.links.forEach(function(l) {
-                    // the target of the edge needs to be in the
-                    // sub-graph, but the source must not be the one
-                    // that we just clicked on: we don't want to close
-                    // the click-on node, or we won't be able to
-                    // re-open it.
-                    if (l.target.name === d.name && l.source.name !== delegate.name) {
-                        setNewVisibilityStatus(l.source);
-                        traverse(l.source);
+            var go = function(n, depth, downNotUp) {
+                (downNotUp ? n.delegatees : n.delegates).forEach(function(m) {
+                    if (visited.indexOf(m.name) >= 0) {
+                        return;
+                    }
+                    visited.push(m.name);
+                    updateVisible(m);
+                    if (depth !== 0) {
+                        go(m, depth - 1, downNotUp);
                     }
                 });
             };
-            traverse(delegate);
 
-            // outbound edges (only one level of delegates)
-            graph.links.forEach(function(l) {
-                if (l.source.name === delegate.name) {
-                    setNewVisibilityStatus(l.target);
-                }
-            });
-
-            // commit
+            go(node, downDepth - 1, true);
+            go(node, upDepth - 1, false);
             updateVisibility();
+        };
+
+        var hasHiddenEdges = function(d) {
+            var v = false;
+            var check = function(n) { if (!visible(n)) { v = true; }; };
+            d.delegates.forEach(check);
+            d.delegatees.forEach(check);
+            return v;
+        };
+
+        var on_click = function(d) {
+            if (hasHiddenEdges(d)) {
+                unfoldNeighbours(d, true, 1, 1);
+            } else {
+                unfoldNeighbours(d, false, -1, -1);
+            }
         };
 
         var on_mouseover = function(d) {
@@ -374,13 +370,6 @@
             // d.fixed = false;  // (see comment in on_mouseover)
         };
 
-
-        // [initialization]
-
-        // tweak hints: width should depend on browser width; height
-        // should depend on total voting power of all nodes in scope.
-        var globalGraphWidth = 600;
-
         var visible = function(d) {
             return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
         };
@@ -394,6 +383,12 @@
             d.visibleByMatching = true;
             d.visibleByClick = true;
         };
+
+
+        // [initialization]
+
+        // tweak hints: width should depend on browser width.
+        var globalGraphWidth = 600;
 
         graph.nodes.forEach(makeAllVisible);
 
@@ -417,7 +412,6 @@
                // class to make it responsive
                .classed("svg-content-responsive", true);
 
-
         svg.append("defs")
             .selectAll("marker")
             .data(["default"]).enter().append("marker")
@@ -437,6 +431,7 @@
         var avat = undefined;
         var text = undefined;
 
+        setNeighbours(graph);
         updateWidget();
         force.start();
     };
@@ -481,6 +476,33 @@
             result = result + " " + "hidden";
         }
         return result;
+    };
+
+    // inject links to delegates and delegatees into each node.  the
+    // graph can either be "cold" (link source and target consisting
+    // of indices into the nodes array) or "warm" (link source and
+    // target being the actual node objects).
+    var setNeighbours = function (graph) {
+        graph.nodes.forEach(function(n) {
+            n.delegates = [];
+            n.delegatees = [];
+        });
+
+        if (!graph.links.length) {
+            return;
+        }
+
+        if (graph.links[0].target.name) {
+            graph.links.forEach(function(l) {
+                l.source.delegate.push(l.target);
+                l.target.delegatee.push(l.source);
+            });
+        } else {
+            graph.links.forEach(function(l) {
+                graph.nodes[l.source].delegates.push(graph.nodes[l.target]);
+                graph.nodes[l.target].delegatees.push(graph.nodes[l.source]);
+            });
+        }
     };
 
 
