@@ -375,13 +375,6 @@
             // d.fixed = false;  // (see comment in on_mouseover)
         };
 
-
-        // [initialization]
-
-        // tweak hints: width should depend on browser width; height
-        // should depend on total voting power of all nodes in scope.
-        var globalGraphWidth = 600;
-
         var visible = function(d) {
             return d.visibleByPower && d.visibleByMatching && d.visibleByClick;
         };
@@ -395,6 +388,12 @@
             d.visibleByMatching = true;
             d.visibleByClick = true;
         };
+
+
+        // [initialization]
+
+        // tweak hints: width should depend on browser width.
+        var globalGraphWidth = 600;
 
         graph.nodes.forEach(makeAllVisible);
 
@@ -417,7 +416,6 @@
                .attr("viewBox", "0 0 " + globalGraphWidth + " " + globalGraphWidth)
                // class to make it responsive
                .classed("svg-content-responsive", true);
-
 
         svg.append("defs")
             .selectAll("marker")
