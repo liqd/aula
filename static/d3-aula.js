@@ -345,7 +345,11 @@
         };
 
         var on_click = function(d) {
-            unfoldNeighbours(d, hasHiddenEdges(d), 1, 1);
+            if (hasHiddenEdges(d)) {
+                unfoldNeighbours(d, true, 1, 1);
+            } else {
+                unfoldNeighbours(d, false, -1, -1);
+            }
         };
 
         var on_mouseover = function(d) {
