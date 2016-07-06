@@ -2,23 +2,23 @@
 }
 
 .link {
-  fill: none;
-  stroke: black;
-  stroke-width: 2.5px;
+    fill: none;
+    stroke: black;
+    stroke-width: 2.5px;
 }
 
 .implicit {
-  stroke-dasharray: 5,5;
+    stroke-dasharray: 5,5;
 }
 
 .hidden {
-  opacity: 0;
+    opacity: 0;
 }
 
 text {
-  font: 16px sans-serif;
-  pointer-events: none;
-  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+    font: 16px sans-serif;
+    pointer-events: none;
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
 }
 
 .svg-container {
