@@ -1,57 +1,25 @@
 # For more information, see: https://github.com/commercialhaskell/stack/blob/release/doc/yaml_configuration.md
 
 # Specifies the GHC version and set of packages available (e.g., lts-3.5, nightly-2015-09-21, ghc-7.10.2)
-resolver: lts-3.20
+resolver: lts-6.3
 
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
 - ../thentos/thentos-core/
-# ../thentos/thentos-adhocracy/
-# ../thentos/thentos-tests/
 - ../thentos/servant-session/
-- ../thentos/submodules/servant/servant/
-- ../thentos/submodules/servant/servant-blaze/
-- ../thentos/submodules/servant/servant-docs/
-- ../thentos/submodules/servant/servant-foreign/
-- ../thentos/submodules/servant/servant-js/
-- ../thentos/submodules/servant/servant-lucid/
-- ../thentos/submodules/servant/servant-server/
-- ../thentos/submodules/servant/servant-mock/
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
-- functor-infix-0.0.3
-- scrypt-0.5.0
-- servant-lucid-0.5
-# for thentos-core
-- attoparsec-0.13.0.1
-- bcrypt-0.0.8
-- cassava-0.4.5.0
-- configifier-0.1.0
-- css-syntax-0.0.4
-- digestive-functors-blaze-0.6.0.6
-- elocrypt-0.4.1
-- email-validate-2.2.0
-- html-parse-0.1.0.0
-- http-api-data-0.1.1.1
-- HUnit-1.3.1.1
-- linear-1.20.3
-- lio-0.11.5.0
-- memory-0.10
-- wai-digestive-functors-0.3
-- wai-util-0.8
-- http-accept-0.2
-# for servant*
-- control-monad-omega-0.3.1
-- hspec-2.2.2
-- hspec-core-2.2.2
-- hspec-discover-2.2.2
-- hspec-expectations-0.7.2
 - basic-sop-0.2.0.0
-- generics-sop-0.2.1.0
-- acid-state-0.14.0
-- temporary-1.2.0.3
+- cond-0.4.1.1
+- configifier-0.1.1
+- elocrypt-0.4.1
+- functor-infix-0.0.3
+- html-parse-0.1.0.0
+- lio-0.11.5.0
+- uri-bytestring-0.1.9.2
+- wai-digestive-functors-0.3
 
 # Override default flag values for local packages and extra-deps
 flags: {}

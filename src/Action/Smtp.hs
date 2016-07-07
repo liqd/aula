@@ -25,7 +25,7 @@ module Action.Smtp
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Network.Mail.Mime (Address(Address), sendmailCustomCaptureOutput, simpleMail', renderMail')
-import Thentos.Prelude hiding (logger, DEBUG)
+import AulaPrelude
 
 import qualified Data.ByteString as SB
 

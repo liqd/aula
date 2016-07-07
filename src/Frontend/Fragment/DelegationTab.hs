@@ -9,7 +9,6 @@
 module Frontend.Fragment.DelegationTab
 where
 
-import Data.List (intersperse, sortBy)
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
     ( DelegationListsMap(..)

@@ -16,9 +16,8 @@ import Prelude hiding (log, (.))
 
 import Control.Category ((.))
 import Control.Exception (assert)
+import Control.Monad.Reader (runReader)
 import Control.Monad.Trans.Except
-import Control.Monad.Reader
-import Data.List (partition)
 import Network.HTTP.Types
 import Network.Wai
     ( Application, Middleware, Response
@@ -31,13 +30,14 @@ import Network.Wai.Application.Static
     )
 import Servant
 import System.FilePath (addTrailingPathSeparator)
+import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import qualified Data.ByteString.Builder as Builder
 
-import Thentos.Prelude hiding (logger, DEBUG)
 import Thentos.Types (ThentosSessionToken)
 import Thentos.Frontend.State (serveFAction)
 
+import AulaPrelude
 import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction)
@@ -83,11 +83,14 @@ runFrontend' cfg log rp = do
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
 
+        setCookie :: SetCookie
+        setCookie = def { setCookieName = "aula", setCookiePath = Just "/" }
+
     void $ timeoutDaemon' log "background phase transition" (cfg ^. timeoutCheckInterval)
                           (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
-    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy extendClearanceOnSessionToken
-             runAction aulaActions
+    app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy setCookie
+             extendClearanceOnSessionToken runAction aulaActions
 
     let settings :: Warp.Settings
         settings = setHost (fromString $ cfg ^. listenerInterface)
@@ -426,7 +429,7 @@ aulaAdmin =
   :<|> form Page.adminPhaseChange
   where
     postWithTopic a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) (a tid)
-    postAdminRemRole user role = runPostHandler (pure NeedAdmin) (Page.adminRemRole user role)
+    postAdminRemRole user = runPostHandler (pure NeedAdmin) . Page.adminRemRole user
 
 
 catch404 :: Middleware

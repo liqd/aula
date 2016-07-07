@@ -23,7 +23,6 @@ import qualified Persistent.Api as Persistent (RunPersist)
 import qualified Persistent.Implementation.AcidState as Persistent
 
 import Control.Category ((.))
-import Control.Exception (SomeException(SomeException))
 import Test.Hspec.QuickCheck (modifyMaxSuccess)
 import Test.QuickCheck (Arbitrary(..), Testable(..), Gen, frequency, listOf1)
 import Test.QuickCheck.Monadic (monadicIO, run)
@@ -70,9 +69,9 @@ spec = do
             Nothing -> error "No idea with topic is found."
             Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
         Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
-    let noChecks (CheckVotingPower{}) = False
-        noChecks (CheckVote{})        = False
-        noChecks _                    = True
+    let noChecks CheckVotingPower{} = False
+        noChecks CheckVote{}        = False
+        noChecks _                  = True
     let observableBehaviour program =
             forAllShrinkDef programGen $ \(DelegationProgram prefix) ->
             forAllShrinkDef programGen $ \(DelegationProgram postfix) ->

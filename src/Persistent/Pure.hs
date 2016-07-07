@@ -154,7 +154,7 @@ module Persistent.Pure
 where
 
 import Control.Lens
-import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT, throwError)
+import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
 import Control.Monad (foldM, unless, when, replicateM, forM, filterM)
@@ -514,10 +514,10 @@ setUserLogin uid login = do
     withUser uid . userLogin .= login
 
 addUserRole :: AUID User -> Role -> AUpdate ()
-addUserRole uid role = withUser uid . userRoleSet %= Set.insert role
+addUserRole uid role_ = withUser uid . userRoleSet %= Set.insert role_
 
 remUserRole :: AUID User -> Role -> AUpdate ()
-remUserRole uid role = withUser uid . userRoleSet %= Set.delete role
+remUserRole uid role_ = withUser uid . userRoleSet %= Set.delete role_
 
 -- | Update topic value.  Returns information about the ideas that have changed location.
 editTopic :: AUID Topic -> EditTopicData -> AUpdate [IdeaChangedLocation]
@@ -645,7 +645,7 @@ delegationScopeForest user = do
         topicIdeas <- DScopeIdeaFull <$$> findIdeasByTopic topic
         pure (s, topicIdeas)
 
-    discover s@(DScopeIdeaFull{}) =
+    discover s@DScopeIdeaFull{} =
         pure (s, [])
 
 dscopeFull :: DScope -> EQuery DScopeFull
@@ -695,7 +695,7 @@ votingPower uid scope = filter isActiveUser <$> do
 
 scopeAncestors :: DScope -> EQuery [DScope]
 scopeAncestors = \case
-    s@(DScopeIdeaSpace {}) -> pure [s]
+    s@DScopeIdeaSpace{}    -> pure [s]
     t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
         (t:) <$> scopeAncestors (DScopeIdeaSpace space)

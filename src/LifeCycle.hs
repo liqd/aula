@@ -55,15 +55,15 @@ thawPhase now = (phaseStatus     %~ thawStatus)
 phaseTrans :: Phase -> PhaseChange -> Maybe (Phase, [PhaseAction])
 phaseTrans (PhaseRefinement ActivePhase{}) PhaseTimeout
     = Just (PhaseJury, [JuryPhasePrincipalEmail])
-phaseTrans PhaseJury (AllIdeasAreMarked {_phaseChangeTimeout})
+phaseTrans PhaseJury AllIdeasAreMarked{_phaseChangeTimeout}
     = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
 phaseTrans (PhaseVoting ActivePhase{}) PhaseTimeout
     = Just (PhaseResult, [ResultPhaseModeratorEmail])
-phaseTrans (PhaseJury) (RevertJuryPhaseToRefinement {_phaseChangeTimeout})
+phaseTrans PhaseJury RevertJuryPhaseToRefinement{_phaseChangeTimeout}
     = Just (PhaseRefinement (ActivePhase _phaseChangeTimeout), [])
 phaseTrans (PhaseVoting ActivePhase{}) RevertVotingPhaseToJury
     = Just (PhaseJury, [])
-phaseTrans (PhaseResult) (RevertResultPhaseToVoting {_phaseChangeTimeout})
+phaseTrans PhaseResult RevertResultPhaseToVoting{_phaseChangeTimeout}
     = Just (PhaseVoting (ActivePhase _phaseChangeTimeout), [])
 
 -- Others considered invalid (throw an error later on).

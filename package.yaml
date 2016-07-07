@@ -30,6 +30,7 @@ dependencies:
     - containers
     - cookie
     - css-syntax
+    - cryptonite >=0.6 && <0.16
     - digestive-functors
     - digestive-functors-lucid
     - directory
@@ -45,6 +46,7 @@ dependencies:
     - http-types
     - JuicyPixels >=3.2.6.2 && <3.3
     - lens
+    - lio
     - lucid
     - mime-mail
     - mtl
@@ -53,18 +55,19 @@ dependencies:
     - process
     - QuickCheck
     - quickcheck-instances
+    - random
     - safecopy
     - scrypt
-    - servant
-    - servant-lucid
-    - servant-server
+    - servant >=0.7 && <0.8
+    - servant-lucid >=0.7 && <0.8
+    - servant-server >=0.7 && <0.8
     - stm
     - string-conversions
     - template-haskell
     - text
     - time
     - transformers
-    - vector ==0.10.12.3
+    - vector
     - wai
     - wai-app-static
     - warp
@@ -119,7 +122,7 @@ tests:
       - lucid
       - mtl
       - QuickCheck >= 2.8 && <2.9
-      - servant-mock
+      - servant-mock >=0.7 && <0.8
       - servant-server
       - string-conversions
       - temporary >=1.2.0.3 && <1.3

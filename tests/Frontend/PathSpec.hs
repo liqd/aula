@@ -1,10 +1,11 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE LambdaCase             #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeOperators          #-}
 
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-orphans #-}
 
@@ -171,14 +172,14 @@ instance (FormPage a, Arbitrary a) => Arbitrary (FormPageRep a) where
 
 mockAulaMain :: IO Application
 mockAulaMain = do
-    return $ serve (Proxy :: Proxy AulaMain) (mock (Proxy :: Proxy AulaMain))
+    return $ serve (Proxy :: Proxy AulaMain) (mock (Proxy :: Proxy AulaMain) (Proxy :: Proxy '[]))
 
 instance (Show a, FormPage a, Page a, Arbitrary a)
         => HasMock (FormReqBody :>
                         Post '[IHTML, PlainText]
-                            (PostResult (Frame (FormPageRep a)) (Frame (FormPageRep a)))) where
-    mock _ _ = mock (Proxy :: Proxy (Post '[IHTML, PlainText]
-                                        (PostResult' (Frame (FormPageRep a)))))
+                            (PostResult (Frame (FormPageRep a)) (Frame (FormPageRep a)))) context where
+    mock _ proxyContext _ = mock (Proxy :: Proxy (Post '[IHTML, PlainText]
+                                        (PostResult' (Frame (FormPageRep a))))) proxyContext
 
 
 -- * UriPath and FromHttpApiData correspondence

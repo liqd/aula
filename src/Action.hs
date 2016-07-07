@@ -139,7 +139,7 @@ import Control.Exception (SomeException, assert)
 import Control.Lens
 import Control.Monad ((>=>), filterM, void, when)
 import Control.Monad.Reader (runReader, runReaderT)
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (MonadError)
 import Control.Monad.Trans.Except (runExcept)
 import Data.Char (ord)
 import Data.List as List (find)
@@ -404,8 +404,8 @@ phaseTimeout = do
             _ -> pure ()
 
 sendMailToRole :: (ActionPersist m, ActionSendMail m) => Role -> EmailMessage -> m ()
-sendMailToRole role msg = do
-    users <- query $ findUsersByRole role
+sendMailToRole role_ msg = do
+    users <- query $ findUsersByRole role_
     forM_ users $ \user ->
         sendMailToUser [IgnoreMissingEmails] user msg
 

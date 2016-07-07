@@ -192,7 +192,7 @@ userSchoolClasses :: Fold User SchoolClass
 userSchoolClasses = userRoles . roleSchoolClass
 
 hasRole :: User -> Role -> Bool
-hasRole user role = role `Set.member` (user ^. userRoleSet)
+hasRole user role_ = role_ `Set.member` (user ^. userRoleSet)
 
 isAdmin :: User -> Bool
 isAdmin = (`hasRole` Admin)
