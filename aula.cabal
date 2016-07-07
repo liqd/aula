@@ -67,7 +67,7 @@ library
     , random
     , safecopy
     , scrypt
-    , servant
+    , servant >=0.7 && <0.8
     , servant-lucid
     , servant-server
     , stm
@@ -199,7 +199,7 @@ executable aula-avatars
     , random
     , safecopy
     , scrypt
-    , servant
+    , servant >=0.7 && <0.8
     , servant-lucid
     , servant-server
     , stm
@@ -267,7 +267,7 @@ executable aula-html-dummies
     , random
     , safecopy
     , scrypt
-    , servant
+    , servant >=0.7 && <0.8
     , servant-lucid
     , servant-server
     , stm
@@ -338,7 +338,7 @@ executable aula-server
     , random
     , safecopy
     , scrypt
-    , servant
+    , servant >=0.7 && <0.8
     , servant-lucid
     , servant-server
     , stm
@@ -407,7 +407,7 @@ test-suite spec
     , random
     , safecopy
     , scrypt
-    , servant
+    , servant >=0.7 && <0.8
     , servant-lucid
     , servant-server
     , stm

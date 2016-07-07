@@ -58,7 +58,7 @@ dependencies:
     - random
     - safecopy
     - scrypt
-    - servant
+    - servant >=0.7 && <0.8
     - servant-lucid
     - servant-server
     - stm
