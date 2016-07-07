@@ -516,16 +516,10 @@ instance Page (NeedCap 'CanPhaseBackwardTopic)  where isAuthorized = needCap Can
 instance Page NeedAdmin where isAuthorized = adminPage
 
 instance Page DelegateTo where
-    isAuthorized =
-        authNeedCaps
-            [CanDelegate]
-            delegateToCapCtx
+    isAuthorized = authNeedCaps [CanDelegate] delegateToCapCtx
 
 instance Page WithdrawDelegationFrom where
-    isAuthorized =
-        authNeedCaps
-            [CanDelegate]
-            withdrawDelegationFromCapCtx
+    isAuthorized = authNeedCaps [CanDelegate] withdrawDelegationFromCapCtx
 
 formPageHandler
     :: Applicative m
