@@ -14,6 +14,9 @@
 module Action.Implementation
     ( Action
     , mkRunAction
+
+    -- in case of emergency...
+    , actionIO
     )
 where
 
@@ -34,14 +37,12 @@ import Servant
 import Servant.Missing
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
-import Thentos.Action (freshSessionToken)
-import LIO (MonadLIO(..), evalLIO, LIOState(..))
-import LIO.DCLabel (DCLabel, (%%))
+import Thentos.Frontend.Session.Types (freshSessionToken)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Thentos.Frontend.CSRF as CSRF (checkCsrfToken)
+import qualified Thentos.Frontend.Session.CSRF as CSRF (checkCsrfToken)
 
 import Action
 import Config
@@ -110,11 +111,6 @@ instance ActionPersist Action where
     update ev =
         either (throwError . ActionPersistExcept) pure
             =<< actionIO =<< views (envRunPersist . rpUpdate) ($ ev)
-
-instance MonadLIO DCLabel Action where
-    liftLIO = actionIO . (`evalLIO` LIOState dcBottom dcBottom)
-      where
-        dcBottom = True %% False
 
 instance MonadRandom Action where
     getRandomBytes = actionIO . getRandomBytes

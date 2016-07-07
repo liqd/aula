@@ -45,7 +45,7 @@ testing.  If you want to use it, follow these steps:
 ```shell
 git clone --recursive https://github.com/hspec/sensei
 git clone --recursive https://github.com/liqd/thentos
-export THENTOS_ROOT_PATH=`pwd`/thentos/thentos-core
+export THENTOS_ROOT_PATH=`pwd`/thentos
 cd thentos
 ./misc/thentos-install.hs -p
 cd ..

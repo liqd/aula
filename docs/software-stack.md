@@ -88,6 +88,8 @@ define a monad 'AulaAction' and class 'MonadAulaAction' (or similar
 constraint type) that implies 'MonadIO', which in turn is implemented
 using 'ioTCB'.
 
+The thentos-frontend-session package has been created out of thentos-core
+to fullfil the above needs.
 
 # stm, postgresql-simple, ...
 

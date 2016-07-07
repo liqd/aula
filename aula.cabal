@@ -26,7 +26,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.5.0
+    , thentos-frontend-session >=0.8.0
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -158,7 +158,7 @@ executable aula-avatars
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.5.0
+    , thentos-frontend-session >=0.8.0
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -226,7 +226,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.5.0
+    , thentos-frontend-session >=0.8.0
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -297,7 +297,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.5.0
+    , thentos-frontend-session >=0.8.0
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -366,7 +366,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-core >=0.5.0
+    , thentos-frontend-session >=0.8.0
     , aeson
     , aeson-pretty
     , aeson-qq

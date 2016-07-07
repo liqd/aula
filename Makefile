@@ -2,14 +2,14 @@ SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -idist/build/autogen
-FULL_SOURCES=$(AULA_SOURCES) -i$(THENTOS_ROOT_PATH)/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/src/ -i$(THENTOS_ROOT_PATH)/../thentos-tests/tests/
+FULL_SOURCES=$(AULA_SOURCES) -i$(THENTOS_ROOT_PATH)/thentos-frontend-session/src/ $(THENTOS_ROOT_PATH)/thentos-frontend-session/tests/
 AULA_IMAGE=quay.io/liqd/aula
 AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 
 .phony:
 
 # use sensei if you only want to hack aula; use sensei-full if you
-# want to hack both aula and thentos.
+# want to hack both aula and thentos-frontend-session.
 #
 # [fisx] the unregister rules are a hack: i experienced problems with
 # getting changes to source files noticed when any of the packages i
@@ -22,7 +22,7 @@ AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2
 	-$(EXEC) ghc-pkg unregister $*
 
 unregister-full:
-	make thentos-adhocracy.unregister thentos-tests.unregister thentos-core.unregister aula.unregister
+	make thentos-frontend-session.unregister aula.unregister
 
 # only aware of aula sources
 sensei: .phony aula.unregister

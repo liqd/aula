@@ -3,7 +3,7 @@ services:
     - docker
 language: c
 env:
-    - AULA_IMAGE=quay.io/liqd/aula:thentos-0.7 AULA_SOURCE=/liqd/aula
+    - AULA_IMAGE=quay.io/liqd/aula:thentos-0.8 AULA_SOURCE=/liqd/aula
 
 before_install:
     - grep '\(MemTotal\|SwapTotal\)' /proc/meminfo

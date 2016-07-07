@@ -6,8 +6,7 @@ resolver: lts-6.3
 # Local packages, usually specified by relative directory name
 packages:
 - '.'
-- ../thentos/thentos-core/
-- ../thentos/servant-session/
+- ../thentos/thentos-frontend-session/
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:

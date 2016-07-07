@@ -152,8 +152,8 @@ import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
-import Thentos.Frontend.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
-import Thentos.Types (GetThentosSessionToken(..), ThentosSessionToken)
+import Thentos.Frontend.Session.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
+import Thentos.Frontend.Session.Types (GetThentosSessionToken(..), ThentosSessionToken)
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
