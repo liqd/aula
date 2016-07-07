@@ -157,7 +157,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
-import Control.Monad (foldM, unless, when, replicateM, forM)
+import Control.Monad (foldM, unless, when, replicateM, forM, filterM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
@@ -687,7 +687,7 @@ delegateesInScope delegate scope =
     <$> views dbDelegations (Data.Delegation.delegateesInScope delegate scope)
 
 votingPower :: AUID User -> DScope -> EQuery [User]
-votingPower uid scope = do
+votingPower uid scope = filter isActiveUser <$> do
     ancestors <- scopeAncestors scope
     catMaybes
         <$> (mapM findUser
@@ -706,10 +706,24 @@ scopeAncestors = \case
             IdeaLocationTopic _s t -> DScopeTopicId   t)
 
 findDelegationsByScope :: DScope -> Query (Map.Map (Delegate (AUID User)) [(DScope, Delegatee (AUID User))])
-findDelegationsByScope scope =
-    Map.fromList
-    <$> ((\(d,s,ds) -> (d, (,) s <$> ds))
-         <$$> views dbDelegations (Data.Delegation.findDelegationsByScope scope))
+findDelegationsByScope scope = do
+    delegs  <- views dbDelegations (Data.Delegation.findDelegationsByScope scope)
+    delegs' <- sequence $ f <$> delegs
+    pure . Map.fromList . catMaybes $ delegs'
+  where
+    f (d, s, ds) = do
+        yes <- isActiveDelegate d
+        if yes
+            then do
+                ds' <- filterM isActiveDelegatee ds
+                pure $ Just (d, (s,) <$> ds')
+            else pure Nothing
+
+isActiveDelegate :: Delegate (AUID User) -> Query Bool
+isActiveDelegate (Delegate u) = maybe False isActiveUser <$> findUser u
+
+isActiveDelegatee :: Delegatee (AUID User) -> Query Bool
+isActiveDelegatee (Delegatee u) = maybe False isActiveUser <$> findUser u
 
 findImplicitDelegationsByScope :: DScope -> EQuery (Map.Map (Delegate (AUID User)) [(DScope, Delegatee (AUID User))])
 findImplicitDelegationsByScope scope = do

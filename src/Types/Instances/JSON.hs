@@ -76,10 +76,9 @@ instance Aeson.ToJSON DelegationNetwork where
             , "links" Aeson..= array (renderLink <$> links)
             ]
 
-        -- FIXME: It shouldn't be rendered for deleted users.
         renderNode (u, p) = Aeson.object
             [ "name"   Aeson..= (u ^. userLogin . unUserLogin)
-            , "avatar" Aeson..= (u ^. userAvatar avatarDefaultSize)
+            , "avatar" Aeson..= (u ^. userAvatar (minimum $ avatarDefaultSize : avatarExtraSizes))
             , "power"  Aeson..= p
             ]
 

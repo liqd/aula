@@ -17,6 +17,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Text as ST
 import           Data.Graph
 import           Data.Graph.Missing (fixLeaves)
+import           Data.List (sortBy)
 import           Data.Map as Map (toList)
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
@@ -77,7 +78,16 @@ instance FormPage PageDelegateVote where
                   | otherwise                         -> DF.Error "user id not found"
         valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
-    formPage v f p@(PageDelegateVote scope options _mselected) = semanticDiv p . f $ do
+    formPage v f p@(PageDelegateVote scope options mselected) = semanticDiv p . f $ do
+        let options' = sortBy (maybe compare compareOptions mselected) options
+
+            -- always move selected user to the top.
+            compareOptions :: AUID User -> User -> User -> Ordering
+            compareOptions uid u1 u2
+                | u1 ^. _Id == uid = LT
+                | u2 ^. _Id == uid = GT
+                | otherwise        = compare (u1 ^. userLogin) (u2 ^. userLogin)
+
         h1_ [class_ "main-heading"] "Stimme beauftragen"
         div_ [class_ "sub-heading"] $ do
             let delegationText name = "Wähle einen Beauftragten für " <> show name
@@ -88,7 +98,7 @@ instance FormPage PageDelegateVote where
         ul_ $ do
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
-                ul_ . for_ options $ \user -> do
+                ul_ . for_ options' $ \user -> do
                     let url = "avatars/" <> uid <> ".png"
                         uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin

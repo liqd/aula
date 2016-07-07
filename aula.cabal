@@ -110,6 +110,7 @@ library
       Frontend.Fragment.DelegationTab
       Frontend.Fragment.IdeaList
       Frontend.Fragment.Note
+      Frontend.Fragment.PhaseTime
       Frontend.Fragment.VotesBar
       Frontend.Fragment.WhatListPage
       Frontend.Page
