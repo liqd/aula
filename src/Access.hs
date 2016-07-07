@@ -194,10 +194,10 @@ delegationCapabilities _ _ _ (Just PhaseResult)                = []
 delegationCapabilities current _ _ _ | not (isStudent current) = []
 
 -- delegate to other user
-delegationCapabilities current (Just u) _ _
-  | isStudent u =
+delegationCapabilities current (Just other) _ _
+  | isStudent other =
         [CanDelegate, CanDelegateInSchool] <>
-        [CanDelegateInClass | haveCommonSchoolClass current u]
+        [CanDelegateInClass | haveCommonSchoolClass current other]
 
 -- delegation for idea and topic
 delegationCapabilities _ _ (Just SchoolSpace) _ = [CanDelegate, CanDelegateInSchool]
