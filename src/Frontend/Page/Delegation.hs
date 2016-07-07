@@ -38,7 +38,7 @@ import qualified Frontend.Path as U
 
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote (Either Topic Idea) [User] (Maybe (AUID User))
+data PageDelegateVote = PageDelegateVote Topic [User] (Maybe (AUID User))
   deriving (Eq, Show, Read)
 
 instance Page PageDelegateVote where isAuthorized = userPage
@@ -50,13 +50,9 @@ newtype PageDelegationVotePayload = PageDelegationVotePayload
 instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
-    formAction (PageDelegateVote scope _options _mselected) = case scope of
-        Left  topic  -> U.delegateVoteOnTopic topic
-        Right idea   -> U.delegateVoteOnIdea idea
+    formAction (PageDelegateVote topic _options _mselected) = U.delegateVoteOnTopic topic
 
-    redirectOf (PageDelegateVote scope _options _mselected) _ = case scope of
-        Left  topic  -> U.viewTopic topic
-        Right idea   -> U.viewIdea idea
+    redirectOf (PageDelegateVote topic _options _mselected) _ = U.viewTopic topic
 
     makeForm (PageDelegateVote _scope options mselected) =
         PageDelegationVotePayload <$>
@@ -90,8 +86,7 @@ instance FormPage PageDelegateVote where
         h1_ [class_ "main-heading"] "Stimme beauftragen"
         div_ [class_ "sub-heading"] $ do
             let delegationText name = "Wähle einen Beauftragten für " <> show name
-            toHtml . delegationText $
-                either (view topicTitle) (view ideaTitle) scope
+            toHtml . delegationText $ view topicTitle scope
             br_ []
             "Du kannst deine Beauftragung widerrufen, indem du sie nochmal anklickst."
         ul_ $ do
@@ -112,16 +107,6 @@ instance FormPage PageDelegateVote where
                     DF.inputSubmit "beauftragen"
                     cancelButton p
 
-ideaDelegation :: ActionM m => AUID Idea -> FormPageHandler m PageDelegateVote
-ideaDelegation iid = formPageHandlerCalcMsgM
-    (do delegate <- view delegationTo <$$> delegationInScope (DScopeIdeaId iid)
-        equery $
-            do  idea <- maybe404 =<< findIdea iid
-                users <- studentsInIdeaSpace (idea ^. ideaLocation . ideaLocationSpace)
-                pure $ PageDelegateVote (Right idea) users delegate)
-    (Action.delegateOrWithdraw (DScopeIdeaId iid) . unPageDelegationVotePayload)
-    pageDelegateVoteSuccessMsg
-
 pageDelegateVoteSuccessMsg :: ActionM m => t -> PageDelegationVotePayload -> u -> m ST
 pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload Nothing)    _ =
     pure "Deine Beauftragung wurde zurückgenommen."
@@ -135,7 +120,7 @@ topicDelegation tid = formPageHandlerCalcMsgM
         equery $
             do  topic <- maybe404 =<< findTopic tid
                 users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
-                pure $ PageDelegateVote (Left topic) users delegate)
+                pure $ PageDelegateVote topic users delegate)
     (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 

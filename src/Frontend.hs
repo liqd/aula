@@ -271,8 +271,6 @@ type IdeaApi
   :<|> Idea ::> "statement" :> FormHandler CreatorStatement
        -- create idea
   :<|> "idea" :> "create" :> FormHandler CreateIdea
-       -- delegate idea
-  :<|> Idea ::> "delegate" :> FormHandler PageDelegateVote
 
 ideaApi :: ActionM m => IdeaLocation -> ServerT IdeaApi m
 ideaApi loc
@@ -291,7 +289,6 @@ ideaApi loc
   :<|> post   Action.revokeWinnerStatusOfIdea
   :<|> form . Page.creatorStatement
   :<|> form (Page.createIdea loc)
-  :<|> form . Page.ideaDelegation
 
   where
     post  a iid = runPostHandler (NeedCap . fst <$> Action.ideaCapCtx iid) $ a iid

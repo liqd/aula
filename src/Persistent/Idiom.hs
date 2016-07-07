@@ -316,6 +316,3 @@ studentsInDScope (DScopeIdeaSpace spc)
 studentsInDScope (DScopeTopicId tid)
     = findTopic tid >>= maybe404 >>=
       studentsInIdeaSpace . view topicIdeaSpace
-studentsInDScope (DScopeIdeaId iid)
-    = findIdea iid >>= maybe404 >>=
-      studentsInIdeaSpace . view (ideaLocation . ideaLocationSpace)

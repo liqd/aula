@@ -232,9 +232,9 @@ instance Arbitrary ViewTopic where
         ViewTopicIdeas <$> shr x <*> shr y <*> shr z <*> shr w <*> shr t <*> shr d
 
 instance Arbitrary ViewIdea where
-    arbitrary = ViewIdea <$> arb <*> arb <*> arb <*> arb
-    shrink (ViewIdea now ctx ideaList delegation) =
-        ViewIdea now <$> shr ctx <*> shr ideaList <*> shr delegation
+    arbitrary = ViewIdea <$> arb <*> arb <*> arb
+    shrink (ViewIdea now ctx ideaList) =
+        ViewIdea now <$> shr ctx <*> shr ideaList
 
 instance Arbitrary CreateIdea where
     arbitrary = garbitrary
