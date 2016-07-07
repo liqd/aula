@@ -40,7 +40,7 @@ import Thentos.Frontend.Session (serveFAction)
 import AulaPrelude
 import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
-import Action.Implementation (Action, mkRunAction)
+import Action.Implementation (Action, mkRunAction, actionIO)
 import Config
 import Daemon
 import Logger.EventLog
