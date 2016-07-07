@@ -47,9 +47,9 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 -- * misc
 
 profileContext :: (ActionPersist m, ActionUserHandler m) => User -> m CapCtx
-profileContext user =
-    set capCtxUserProfile (Just user) . set capCtxDelegateTo  (Just user)
-        <$> currentUserCapCtx
+profileContext user = set capCtxUserProfile (Just user)
+                    . set capCtxDelegateTo  (Just user)
+                  <$> currentUserCapCtx
 
 
 -- * page
