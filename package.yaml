@@ -59,8 +59,8 @@ dependencies:
     - safecopy
     - scrypt
     - servant >=0.7 && <0.8
-    - servant-lucid
-    - servant-server
+    - servant-lucid >=0.7 && <0.8
+    - servant-server >=0.7 && <0.8
     - stm
     - string-conversions
     - template-haskell
@@ -122,7 +122,7 @@ tests:
       - lucid
       - mtl
       - QuickCheck >= 2.8 && <2.9
-      - servant-mock
+      - servant-mock >=0.7 && <0.8
       - servant-server
       - string-conversions
       - temporary >=1.2.0.3 && <1.3
