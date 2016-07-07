@@ -37,6 +37,7 @@ module Frontend.Path
     , resetPasswordViaEmail
     , finalizePasswordViaEmail
     , listSpaces
+    , createDelegation
     , delegationView
     , delegationViewScope
     , userSettings
@@ -71,12 +72,10 @@ module Frontend.Path
     , listIdeas'
 
     -- * paths to topic
-    , delegateVoteOnTopic
     , viewTopic
     , createTopic
     , listTopics
     , editTopic
-    , createTopicDelegation
     , viewTopicDelegations
 
     -- * paths to comments
@@ -200,7 +199,7 @@ data Main (r :: AllowedMethod) =
   | UserProf (AUID User) (UserMode r)
   | UserSettings
   | Admin (AdminMode r)
-  | DelegationEdit
+  | CreateDelegation DScope
   | DelegationView (Maybe DScope)
   | Imprint
   | Terms
@@ -222,6 +221,9 @@ completeRegistration = CompleteRegistration
 
 listSpaces :: Main 'AllowGetPost
 listSpaces = ListSpaces
+
+createDelegation :: DScope -> Main 'AllowGetPost
+createDelegation = CreateDelegation
 
 delegationView :: Main 'AllowGetPost
 delegationView = DelegationView Nothing
@@ -260,7 +262,7 @@ main (IdeaPath l m)                 root = ideaPath l m root
 main (UserProf uid p)               root = user  p (root </> "user" </> uriPart uid)
 main UserSettings                   root = root </> "user" </> "settings"
 main (Admin p)                      root = adminMode p (root </> "admin")
-main DelegationEdit                 root = root </> "delegation" </> "edit"
+main (CreateDelegation s)           root = root </> "delegation" </> "edit" </> "scope" </>uriPart s
 main (DelegationView ms)            root = root </> "delegation" </> "view"
                                                 </?> ("scope", cs . toUrlPiece <$> ms)
 main Imprint                        root = root </> "imprint"
@@ -290,7 +292,6 @@ data Space (r :: AllowedMethod) =
   | CreateTopic
   | EditTopic (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
-  | CreateTopicDelegation (AUID Topic)
   deriving (Generic, Show)
 
 instance SOP.Generic (Space r)
@@ -304,9 +305,6 @@ listTopics spc = Space spc ListTopics
 editTopic :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
 editTopic spc = Space spc . EditTopic
 
-createTopicDelegation :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
-createTopicDelegation spc = Space spc . CreateTopicDelegation
-
 viewTopicDelegations :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
 viewTopicDelegations spc = Space spc . ViewTopicDelegations
 
@@ -318,7 +316,6 @@ spacePath (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
 spacePath CreateTopic                 root = root </> "topic" </> "create"
 spacePath (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
 spacePath (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
-spacePath (CreateTopicDelegation tid) root = root </> "topic" </> uriPart tid </> "delegate"
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
 topicTab = \case
@@ -326,9 +323,6 @@ topicTab = \case
     ListIdeasInTopicTabVoting   -> (</> "voting")
     ListIdeasInTopicTabAccepted -> (</> "accepted")
     ListIdeasInTopicTabWinning  -> (</> "winning")
-
-delegateVoteOnTopic :: Topic -> Main 'AllowGetPost
-delegateVoteOnTopic topic = Space (topic ^. topicIdeaSpace) (CreateTopicDelegation (topic ^. _Id))
 
 viewTopic :: Topic -> Main 'AllowGetPost
 viewTopic topic =

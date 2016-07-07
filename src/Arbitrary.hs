@@ -390,8 +390,9 @@ instance Arbitrary AdminPhaseChange where
     arbitrary = pure AdminPhaseChange
 
 instance Arbitrary PageDelegateVote where
-    arbitrary = PageDelegateVote <$> arb <*> arb <*> arb
-    shrink (PageDelegateVote x y z) = PageDelegateVote <$> shr x <*> shr y <*> shr z
+    arbitrary = PageDelegateVote <$> arb <*> arb <*> arb <*> arb
+    shrink (PageDelegateVote x y z w) =
+        PageDelegateVote <$> shr x <*> shr y <*> shr z <*> shr w
 
 -- PageDelegationNetwork is scaled down, as it generates many user and ideas
 instance Arbitrary PageDelegationNetwork where

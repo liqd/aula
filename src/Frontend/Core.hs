@@ -156,6 +156,7 @@ type instance Singular User               = "user"
 type instance Singular IdeaJuryResultType = "jury"
 type instance Singular Role               = "role"
 type instance Singular PasswordToken      = "token"
+type instance Singular DScope             = "scope"
 
 type instance CaptureData Comment            = AUID Comment
 type instance CaptureData Idea               = AUID Idea
@@ -169,6 +170,7 @@ type instance CaptureData User               = AUID User
 type instance CaptureData IdeaJuryResultType = IdeaJuryResultType
 type instance CaptureData Role               = Role
 type instance CaptureData PasswordToken      = PasswordToken
+type instance CaptureData DScope             = DScope
 
 -- | FUTUREWORK: All @Unsafe*@ constructors should move to "Frontend.Core.Internal".  That move
 -- could work well together with SafeHaskell markers.
