@@ -59,6 +59,7 @@ module Access
     where
 
 import Control.Lens
+import Data.List (find)
 import Data.Maybe
 import Data.Monoid
 import Data.String.Conversions
@@ -170,31 +171,48 @@ capabilities :: CapCtx -> [Capability]
 capabilities (CapCtx u ms mp mi mc mup mdt)
     | not . checkSpace ms $ rs ^. each . roleScope = []
     | otherwise = mconcat . mconcat $
-    [ userCapabilities'
+    [ userCapabilities <$> rs
     , [ ideaCapabilities (u ^. _Id) r i p    | r <- rs, i <- l mi, p <- l mp ]
     , [ commentCapabilities (u ^. _Id) r c p | r <- rs, c <- l mc, p <- l mp ]
     , [ topicCapabilities p r                | r <- rs, p <- l mp ]
     , [ [CanEditUser]                        | up <- l mup, isOwnProfile u up ]
-    , [ [CanDelegateInClass]                 | dtu <- l mdt, haveCommonSchoolClass u dtu, canDelegateToUser]
-    , [ [CanDelegateInSchool]                | canDelegateToUser ]
+    , [ delegationCapabilities u mdt ms mp ]
     ]
   where
-    userCapabilities' = userCapabilities <$> rs
-    canDelegateToUser = mp /= Just PhaseResult &&
-        maybe
-            False
-            (\dtu -> CanDelegate `elem` concat userCapabilities'
-                     && CanDelegate `elem` (userCapabilities =<< (dtu ^.. userRoles)))
-            mdt
     rs = u ^.. userRoles
     l  = maybeToList
+
+
+-- ** Delegation capabilities
+
+isStudent :: User -> Bool
+isStudent u = isJust $ find (has _Student) (u ^.. userRoles)
+
+delegationCapabilities :: User -> Maybe User -> Maybe IdeaSpace -> Maybe Phase -> [Capability]
+-- guards: no delegation in these situations
+delegationCapabilities _ _ _ (Just PhaseResult)                = []
+delegationCapabilities current _ _ _ | not (isStudent current) = []
+
+-- delegate to other user
+delegationCapabilities current (Just other) _ _
+  | isStudent other =
+        [CanDelegate, CanDelegateInSchool] <>
+        [CanDelegateInClass | haveCommonSchoolClass current other]
+
+-- delegation for idea and topic
+delegationCapabilities _ _ (Just SchoolSpace) _ = [CanDelegate, CanDelegateInSchool]
+delegationCapabilities current _ (Just (ClassSpace clss)) _
+  | clss `elem` (current ^.. userRoles . _Student) = [CanDelegate, CanDelegateInSchool, CanDelegateInClass]
+
+-- a student is able to delegate
+delegationCapabilities _ _ _ _ = [CanDelegate]
 
 
 -- ** User capabilities
 
 userCapabilities :: Role -> [Capability]
 userCapabilities = \case
-    Student    _clss -> [CanDelegate]
+    Student    _clss -> []
     ClassGuest _clss -> []
     SchoolGuest      -> []
     Moderator        -> [CanCreateTopic, CanEditUser]

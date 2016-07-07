@@ -46,10 +46,10 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- * misc
 
-setProfileContext :: User -> CapCtx -> CapCtx
-setProfileContext user =
-    set capCtxUserProfile (Just user) .
-    set capCtxDelegateTo  (Just user)
+profileContext :: (ActionPersist m, ActionUserHandler m) => User -> m CapCtx
+profileContext user = set capCtxUserProfile (Just user)
+                    . set capCtxDelegateTo  (Just user)
+                  <$> currentUserCapCtx
 
 
 -- * page
@@ -317,7 +317,8 @@ instance ToHtml PageUserProfileCreatedIdeas where
 createdIdeas :: (ActionPersist m, ActionUserHandler m)
     => AUID User -> IdeasQuery -> m PageUserProfileCreatedIdeas
 createdIdeas userId ideasQuery = do
-    ctx <- currentUserCapCtx
+    user <- mquery $ findUser userId
+    ctx  <- profileContext user
     let visibleByCurrentUser idea =
             case idea ^. ideaLocation . ideaLocationSpace of
                 SchoolSpace  -> True
@@ -327,7 +328,6 @@ createdIdeas userId ideasQuery = do
                         ClassesScope cls -> c `Set.member` cls
     cUser <- currentUser
     equery (do
-        user  <- maybe404 =<< findUser userId
         ideas <- ListItemIdeas ctx (IdeaInUserProfile user) ideasQuery
               <$> (applyFilter ideasQuery <$>
                     (mapM getIdeaStats
@@ -335,7 +335,7 @@ createdIdeas userId ideasQuery = do
                          <$> findIdeasByUserId userId))
         ds <- commonIdeaSpaceDelegations cUser user
         pure $ PageUserProfileCreatedIdeas
-            (setProfileContext user ctx)
+            ctx
             (makeUserView user)
             ideas
             ds)
@@ -357,18 +357,28 @@ instance ToHtml PageUserProfileUserAsDelegate where
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations True delegationListsMap
 
-userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
-      => AUID User -> m PageUserProfileUserAsDelegate
-userProfileUserAsDelegate userId = do
-    ctx <- currentUserCapCtx
+userProfileUserDelegation
+    :: (ActionPersist m, ActionUserHandler m)
+    => (CapCtx -> UserView -> DelegationListsMap -> [Delegation] -> page)
+    -> (AUID User -> EQuery DelegationListsMap)
+    -> AUID User -> m page
+userProfileUserDelegation pageConstructor userDelegationsMap userId = do
+    user <- mquery $ findUser userId
+    ctx  <- profileContext user
     cUser <- currentUser
     equery $ do
-        user <- maybe404 =<< findUser userId
-        PageUserProfileUserAsDelegate
-            (setProfileContext user ctx)
+        pageConstructor
+            ctx
             (makeUserView user)
-            <$> userDelegationListsMap userId
+            <$> userDelegationsMap userId
             <*> commonIdeaSpaceDelegations cUser user
+
+userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
+      => AUID User -> m PageUserProfileUserAsDelegate
+userProfileUserAsDelegate =
+    userProfileUserDelegation
+        PageUserProfileUserAsDelegate
+        userDelegationListsMap
 
 
 -- ** User Profile: User as a delegatee
@@ -389,16 +399,11 @@ instance ToHtml PageUserProfileUserAsDelegatee where
 
 userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegatee
-userProfileUserAsDelegatee userId = do
-    ctx <- currentUserCapCtx
-    cUser <- currentUser
-    equery $ do
-        user <- maybe404 =<< findUser userId
+userProfileUserAsDelegatee =
+    userProfileUserDelegation
         PageUserProfileUserAsDelegatee
-            (setProfileContext user ctx)
-            (makeUserView user)
-            <$> userDelegateListsMap userId
-            <*> commonIdeaSpaceDelegations cUser user
+        userDelegateListsMap
+
 
 -- ** User Profile: Edit profile
 
@@ -475,7 +480,7 @@ validateImageFile = \case
 editUserProfile :: ActionM m => AUID User -> FormPageHandler m EditUserProfile
 editUserProfile uid = formPageHandlerWithMsg
     (do user <- mquery (findUser uid)
-        ctx  <- setProfileContext user <$> currentUserCapCtx
+        ctx  <- profileContext user
         pure $ EditUserProfile ctx user
     )
     (\up -> do
