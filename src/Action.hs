@@ -537,7 +537,7 @@ delegatedOperationOnIdea
     -> m ()
 delegatedOperationOnIdea getGuyWhoDidId operation ideaId = do
     cuser <- currentUser
-    let scope = DScopeIdeaId ideaId
+    scope <- dscopeOfIdea <$> mquery (findIdea ideaId)
     operation cuser cuser  -- do it for yourself.
     equery (votingPower (cuser ^. _Id) scope)
         >>= filterM hasDoneItAlready
@@ -1002,8 +1002,6 @@ eventLogUserDelegates setOrWithdraw scope delegateId = do
     ispace <- case scope of
         DScopeIdeaSpace ispace -> pure ispace
         DScopeTopicId   tid    -> view topicIdeaSpace <$> mquery (findTopic tid)
-        DScopeIdeaId    iid    -> view (ideaLocation . ideaLocationSpace)
-                                  <$> mquery (findIdea iid)
     eventLog ispace (delegatee ^. _Key) $ event scope (delegate ^. _Key)
 
 eventLogTopicNewPhase :: (ActionCurrentTimestamp m, ActionLog m) => Topic -> Phase -> Phase -> m ()

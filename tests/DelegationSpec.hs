@@ -63,11 +63,12 @@ spec = do
         student2  = (unStudents uni !! 2) ^. _Id
         student3  = (unStudents uni !! 3) ^. _Id
         student4  = (unStudents uni !! 4) ^. _Id
-        idea      = (unIdeas    uni !! 1) ^. _Id
-        topic     = (unTopics   uni !! 1) ^. _Id
-        (idea2, topic2) = case find isIdeaWithTopic (unIdeas uni) of
+        (idea, topic, ideaSpace) = case find isIdeaWithTopic (unIdeas uni) of
             Nothing -> error "No idea with topic is found."
-            Just i  -> (i ^. _Id, fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2))
+            Just i  ->
+                ( i ^. _Id
+                , fromJust (i ^? ideaLocation . _IdeaLocationTopic . _2)
+                , fromJust (i ^? ideaLocation . ideaLocationSpace))
         Just ideaspace = find (has _ClassSpace) $ unIdeaSpaces uni
     let noChecks CheckVotingPower{} = False
         noChecks CheckVote{}        = False
@@ -84,17 +85,17 @@ spec = do
                     tag Large . it "with random contexts" $ observableBehaviour program
     describe "Delegation simulation" $ do
         delegationTest "One delegation, one vote"
-                [ SetDelegation student1 (DScopeIdeaId idea) student2
+                [ SetDelegation student1 (DScopeTopicId topic) student2
                 , Vote student1 idea Yes
                 ]
         delegationTest "Self delegation"
-                [ SetDelegation student1 (DScopeIdeaId idea) student1
-                , CheckVotingPower student1 (DScopeIdeaId idea) 1
+                [ SetDelegation student1 (DScopeTopicId topic) student1
+                , CheckVotingPower student1 (DScopeTopicId topic) 1
                 , Vote student1 idea No
                 ]
-        delegationTest "Delegation on topic"
-                [ SetDelegation student1 (DScopeTopicId topic) student2
-                , CheckVotingPower student2 (DScopeTopicId topic) 2
+        delegationTest "Delegation on topic" -- TODO: Delegation on space
+                [ SetDelegation student1 (DScopeIdeaSpace ideaSpace) student2
+                , CheckVotingPower student2 (DScopeIdeaSpace ideaSpace) 2
                 ]
         delegationTest "Delegation on ideaspace"
                 [ SetDelegation student1 (DScopeIdeaSpace ideaspace) student2
@@ -105,83 +106,83 @@ spec = do
                 , CheckVotingPower student2 (DScopeIdeaSpace SchoolSpace) 2
                 ]
         delegationTest "I change my mind before"
-                [ SetDelegation student1 (DScopeIdeaId idea) student2
+                [ SetDelegation student1 (DScopeTopicId topic) student2
                 , Vote student1 idea No
                 , Vote student2 idea Yes
                 ]
         delegationTest "I change my mind after"
-                [ SetDelegation student1 (DScopeIdeaId idea) student2
+                [ SetDelegation student1 (DScopeTopicId topic) student2
                 , Vote student2 idea Yes
                 , Vote student1 idea No
                 ]
         delegationTest "Cycle of four"
-                [ SetDelegation student1 (DScopeIdeaId idea) student4
-                , SetDelegation student4 (DScopeIdeaId idea) student2
-                , SetDelegation student2 (DScopeIdeaId idea) student3
-                , SetDelegation student3 (DScopeIdeaId idea) student1
+                [ SetDelegation student1 (DScopeTopicId topic) student4
+                , SetDelegation student4 (DScopeTopicId topic) student2
+                , SetDelegation student2 (DScopeTopicId topic) student3
+                , SetDelegation student3 (DScopeTopicId topic) student1
                 , Vote student2 idea Yes
                 , Vote student1 idea No
                 ]
         describe "No cyclical delegation" $ do
             delegationTest "I change my mind works on my delegatees"
-                    [ SetDelegation student1 (DScopeIdeaId idea) student2
-                    , SetDelegation student2 (DScopeIdeaId idea) student3
+                    [ SetDelegation student1 (DScopeTopicId topic) student2
+                    , SetDelegation student2 (DScopeTopicId topic) student3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
-                    [ SetDelegation student1 (DScopeIdeaId idea2) student2
-                    , SetDelegation student2 (DScopeTopicId topic2) student3
-                    , CheckVotingPower student1 (DScopeIdeaId idea2) 1
-                    , CheckVotingPower student2 (DScopeIdeaId idea2) 2
-                    , CheckVotingPower student3 (DScopeIdeaId idea2) 3
-                    , CheckVotingPower student3 (DScopeTopicId topic2) 2
+                    [ SetDelegation student1 (DScopeTopicId topic) student2
+                    , SetDelegation student2 (DScopeTopicId topic) student3
+                    , CheckVotingPower student1 (DScopeTopicId topic) 1
+                    , CheckVotingPower student2 (DScopeTopicId topic) 2
+                    , CheckVotingPower student3 (DScopeTopicId topic) 3
                     ]
         describe "Cyclical delegation" $ do
             delegationTest "Cycle in delegation"
-                    [ SetDelegation student1 (DScopeIdeaId idea) student2
-                    , CheckVotingPower student2 (DScopeIdeaId idea) 2
-                    , SetDelegation student2 (DScopeIdeaId idea) student1
-                    , CheckVotingPower student1 (DScopeIdeaId idea) 2
-                    , CheckVotingPower student2 (DScopeIdeaId idea) 2
+                    [ SetDelegation student1 (DScopeTopicId topic) student2
+                    , CheckVotingPower student2 (DScopeTopicId topic) 2
+                    , SetDelegation student2 (DScopeTopicId topic) student1
+                    , CheckVotingPower student1 (DScopeTopicId topic) 2
+                    , CheckVotingPower student2 (DScopeTopicId topic) 2
                     , Vote student1 idea Yes
                     , Vote student2 idea No
                     ]
             delegationTest "I change my mind only works for me not my delegatees"
-                    [ SetDelegation student1 (DScopeIdeaId idea) student2
-                    , SetDelegation student2 (DScopeIdeaId idea) student3
-                    , SetDelegation student3 (DScopeIdeaId idea) student1
-                    , CheckVotingPower student1 (DScopeIdeaId idea) 3
-                    , CheckVotingPower student2 (DScopeIdeaId idea) 3
-                    , CheckVotingPower student3 (DScopeIdeaId idea) 3
+                    [ SetDelegation student1 (DScopeTopicId topic) student2
+                    , SetDelegation student2 (DScopeTopicId topic) student3
+                    , SetDelegation student3 (DScopeTopicId topic) student1
+                    , CheckVotingPower student1 (DScopeTopicId topic) 3
+                    , CheckVotingPower student2 (DScopeTopicId topic) 3
+                    , CheckVotingPower student3 (DScopeTopicId topic) 3
                     , Vote student3 idea No
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
+            -- TODO Use class delegation
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
-                    [ SetDelegation student1 (DScopeIdeaId idea2)   student2
-                    , SetDelegation student2 (DScopeTopicId topic2) student3
-                    , SetDelegation student3 (DScopeTopicId topic2) student1
-                    , CheckVotingPower student1 (DScopeIdeaId idea2) 3
-                    , CheckVotingPower student2 (DScopeIdeaId idea2) 3
-                    , CheckVotingPower student3 (DScopeIdeaId idea2) 3
-                    , CheckVotingPower student1 (DScopeTopicId topic2) 3
-                    , CheckVotingPower student2 (DScopeTopicId topic2) 1
-                    , CheckVotingPower student3 (DScopeTopicId topic2) 2
+                    [ SetDelegation student1 (DScopeTopicId topic)   student2
+                    , SetDelegation student2 (DScopeIdeaSpace ideaSpace) student3
+                    , SetDelegation student3 (DScopeIdeaSpace ideaSpace) student1
+                    , CheckVotingPower student1 (DScopeTopicId topic) 3
+                    , CheckVotingPower student2 (DScopeTopicId topic) 3
+                    , CheckVotingPower student3 (DScopeTopicId topic) 3
+                    , CheckVotingPower student1 (DScopeIdeaSpace ideaSpace) 3
+                    , CheckVotingPower student2 (DScopeIdeaSpace ideaSpace) 1
+                    , CheckVotingPower student3 (DScopeIdeaSpace ideaSpace) 2
                     ]
             delegationTest "Breaking Cycles"
-                    [ SetDelegation student1 (DScopeIdeaId idea) student2
-                    , SetDelegation student2 (DScopeIdeaId idea) student3
-                    , SetDelegation student3 (DScopeIdeaId idea) student1
-                    , CheckVotingPower student1 (DScopeIdeaId idea) 3
-                    , CheckVotingPower student2 (DScopeIdeaId idea) 3
-                    , CheckVotingPower student3 (DScopeIdeaId idea) 3
-                    , SetDelegation student1 (DScopeIdeaId idea) student4
-                    , CheckVotingPower student1 (DScopeIdeaId idea) 3
-                    , CheckVotingPower student2 (DScopeIdeaId idea) 1
-                    , CheckVotingPower student3 (DScopeIdeaId idea) 2
-                    , CheckVotingPower student4 (DScopeIdeaId idea) 4
+                    [ SetDelegation student1 (DScopeTopicId topic) student2
+                    , SetDelegation student2 (DScopeTopicId topic) student3
+                    , SetDelegation student3 (DScopeTopicId topic) student1
+                    , CheckVotingPower student1 (DScopeTopicId topic) 3
+                    , CheckVotingPower student2 (DScopeTopicId topic) 3
+                    , CheckVotingPower student3 (DScopeTopicId topic) 3
+                    , SetDelegation student1 (DScopeTopicId topic) student4
+                    , CheckVotingPower student1 (DScopeTopicId topic) 3
+                    , CheckVotingPower student2 (DScopeTopicId topic) 1
+                    , CheckVotingPower student3 (DScopeTopicId topic) 2
+                    , CheckVotingPower student4 (DScopeTopicId topic) 4
                     ]
         tag Large . it "Random delegation programs" . property . forAllShrinkDef programGen
             $ \(DelegationProgram program) -> monadicIO . run $ runDelegationProgram program
@@ -198,11 +199,10 @@ spec = do
         return runAction
 
     universeToDScopes :: Universe -> [DScope]
-    universeToDScopes u = spaces <> topics <> ideas
+    universeToDScopes u = spaces <> topics
       where
         spaces = DScopeIdeaSpace <$> unIdeaSpaces u
         topics = DScopeTopicId   . view _Id <$> unTopics     u
-        ideas  = DScopeIdeaId    . view _Id <$> unIdeas      u
 
 
 -- * delegation program
@@ -279,7 +279,8 @@ interpretDelegationStep (j,step@(Vote v i x)) = do
     -- can always change his/her vote.
     let getVote' d = (,) d <$> getVote d i
     Action.login v
-    delegatees <- getVotingPower v (DScopeIdeaId i)
+    idea <- Action.mquery $ Persistent.findIdea i
+    delegatees <- getVotingPower v (dscopeOfIdea idea)
     votedForThemselves <- Map.fromList . filter (\(d,dv) -> Just True == (((d ==) . fst) <$> dv))
                             <$> forM (delegatees \\ [v]) getVote'
     Action.voteOnIdea i x

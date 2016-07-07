@@ -442,7 +442,11 @@ fullDScopeToDScope :: DScopeFull -> DScope
 fullDScopeToDScope = \case
     DScopeIdeaSpaceFull is -> DScopeIdeaSpace is
     DScopeTopicFull t      -> DScopeTopicId (t ^. _Id)
-    DScopeIdeaFull i       -> DScopeIdeaId (i ^. _Id)
+
+dscopeOfIdea :: Idea -> DScope
+dscopeOfIdea i = case i ^. ideaLocation of
+    IdeaLocationSpace space          -> DScopeIdeaSpace space
+    IdeaLocationTopic _space topicId -> DScopeTopicId topicId
 
 
 -- * boilerplate instances

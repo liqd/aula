@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Frontend.Page.Idea
-  ( ViewIdea(..), viNow, viCtx, viStats, viDelegation
+  ( ViewIdea(..), viNow, viCtx, viStats
   , CreateIdea(..), ciCtx, ciLoc
   , EditIdea(..), eiCtx, eiIdea
   , MoveIdea(..), miCtx, miIdea, miTopicChoices
@@ -44,7 +44,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
               , setCreatorStatement
               , reportIdeaComment, reportIdeaCommentReply
               , eventLogUserCreatesComment, eventLogUserEditsComment
-              , reportIdea, delegationInScope
+              , reportIdea
               , ActionCurrentTimestamp, getCurrentTimestamp
               )
 import Control.Arrow ((&&&))
@@ -97,7 +97,6 @@ data ViewIdea = ViewIdea
     { _viNow :: Timestamp
     , _viCtx :: CapCtx
     , _viStats :: IdeaStats
-    , _viDelegation :: Maybe Delegation
     }
   deriving (Eq, Show, Read, Generic)
 
@@ -236,10 +235,10 @@ linkToIdeaLocation idea = do
 
 instance ToHtml ViewIdea where
     toHtmlRaw = toHtml
-    toHtml (ViewIdea _now _ctx (IdeaStats idea _phase _quo _voters) _delegation)
+    toHtml (ViewIdea _now _ctx (IdeaStats idea _phase _quo _voters))
         | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
 
-    toHtml p@(ViewIdea now ctx stats@(IdeaStats idea phase _quo _voters) delegation) = semanticDiv p $ do
+    toHtml p@(ViewIdea now ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
         let totalLikes    = Map.size $ idea ^. ideaLikes
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
@@ -333,12 +332,6 @@ instance ToHtml ViewIdea where
                         if isNothing $ creatorStatementOfIdea idea
                             then "Statement abgeben"
                             else "Statement ändern"
-                when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
-                    a_ [class_ "btn-cta voting-button button-group-item", href_ $ U.delegateVoteOnIdea idea] $ do
-                        i_ [class_ "icon-bullhorn"] nil
-                        if isNothing delegation
-                            then "Stimme beauftragen"
-                            else "Beauftragung ändern"
                 -- mark winning idea
                 when (isFeasibleIdea idea) $ do
                     when (CanMarkWinner `elem` caps) $ do
@@ -681,8 +674,7 @@ viewIdea ideaId = do
     now <- getCurrentTimestamp
     (ctx, idea) <- ideaCapCtx ideaId
     stats <- equery $ getIdeaStats idea -- FIXME ideaCapCtx' is giving the phase already
-    delegation <- delegationInScope (DScopeIdeaId ideaId)
-    pure $ ViewIdea now ctx stats delegation
+    pure $ ViewIdea now ctx stats
 
 -- FIXME: ProtoIdea also holds an IdeaLocation, which can introduce inconsistency.
 createIdea :: ActionM m => IdeaLocation -> FormPageHandler m CreateIdea

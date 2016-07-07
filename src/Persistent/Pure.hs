@@ -637,31 +637,23 @@ delegationScopeForest user = do
   where
     discover :: DScopeFull -> Query (DScopeFull, [DScopeFull])
     discover s@(DScopeIdeaSpaceFull cspace) = do
-        classIdeas  <- DScopeIdeaFull  <$$> findWildIdeasBySpace cspace
         classTopics <- DScopeTopicFull <$$> findTopicsBySpace cspace
-        pure (s, classIdeas <> classTopics)
+        pure (s, classTopics)
 
-    discover s@(DScopeTopicFull topic) = do
-        topicIdeas <- DScopeIdeaFull <$$> findIdeasByTopic topic
-        pure (s, topicIdeas)
-
-    discover s@DScopeIdeaFull{} =
+    discover s@DScopeTopicFull{} = do
         pure (s, [])
 
 dscopeFull :: DScope -> EQuery DScopeFull
 dscopeFull = \case
     DScopeIdeaSpace is -> pure $ DScopeIdeaSpaceFull is
     DScopeTopicId tid  -> DScopeTopicFull <$> (maybe404 =<< findTopic tid)
-    DScopeIdeaId iid   -> DScopeIdeaFull <$> (maybe404 =<< findIdea iid)
 
 allDelegationScopes :: Query [DScope]
 allDelegationScopes = do
-    ideas  <- getIdeas
     topics <- getTopics
     spaces <- getSpaces
     pure $ (DScopeIdeaSpace <$> spaces)
             <> (DScopeTopicId . view _Id <$> topics)
-            <> (DScopeIdeaId  . view _Id <$> ideas)
 
 -- | Returns all the delegates for a given delegatee with its scope
 delegates :: AUID User -> EQuery [Delegation]
@@ -699,11 +691,6 @@ scopeAncestors = \case
     t@(DScopeTopicId tid)  -> do
         space <- _topicIdeaSpace <$> (maybe404 =<< findTopic tid)
         (t:) <$> scopeAncestors (DScopeIdeaSpace space)
-    i@(DScopeIdeaId iid)     -> do
-        loc <- _ideaLocation <$> (maybe404 =<< findIdea iid)
-        (i:) <$> scopeAncestors (case loc of
-            IdeaLocationSpace s    -> DScopeIdeaSpace s
-            IdeaLocationTopic _s t -> DScopeTopicId   t)
 
 findDelegationsByScope :: DScope -> Query (Map.Map (Delegate (AUID User)) [(DScope, Delegatee (AUID User))])
 findDelegationsByScope scope = do

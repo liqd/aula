@@ -553,7 +553,6 @@ type instance Proto Delegation = Delegation
 data DScope =
     DScopeIdeaSpace { _dScopeIdeaSpace :: IdeaSpace  }
   | DScopeTopicId   { _dScopeTopicId   :: AUID Topic }
-  | DScopeIdeaId    { _dScopeIdeaId    :: AUID Idea  }
   deriving (Eq, Ord, Show, Read, Generic)
 
 -- | 'DScope', but with the references resolved.  (We could do a more general type @DScope a@ and
@@ -562,7 +561,6 @@ data DScope =
 data DScopeFull =
     DScopeIdeaSpaceFull { _dScopeIdeaSpaceFull :: IdeaSpace }
   | DScopeTopicFull     { _dScopeTopicFull     :: Topic     }
-  | DScopeIdeaFull      { _dScopeIdeaFull      :: Idea      }
   deriving (Eq, Ord, Show, Read, Generic)
 
 
@@ -799,17 +797,14 @@ instance ToHttpApiData DScope where
     toUrlPiece = (cs :: String -> ST). \case
         (DScopeIdeaSpace space) -> "ideaspace-" <> cs (toUrlPiece space)
         (DScopeTopicId (AUID topicId)) -> "topic-" <> show topicId
-        (DScopeIdeaId (AUID ideaId)) -> "idea-" <> show ideaId
 
 instance FromHttpApiData DScope where
     parseUrlPiece scope = case cs scope of
         'i':'d':'e':'a':'s':'p':'a':'c':'e':'-':space -> DScopeIdeaSpace <$> parseUrlPiece (cs space)
         't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
-        'i':'d':'e':'a':'-':ideaId -> DScopeIdeaId . AUID <$> readEitherCS ideaId
         _ -> Left "no parse"
 
 instance HasUILabel DScopeFull where
     uilabel = \case
         DScopeIdeaSpaceFull is -> "Ideenraum " <> (fromString . cs . uilabelST   $ is)
         DScopeTopicFull t      -> "Thema "     <> (fromString . cs . _topicTitle $ t)
-        DScopeIdeaFull i       -> "Idee "      <> (fromString . cs . _ideaTitle  $ i)
