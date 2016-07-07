@@ -28,8 +28,6 @@ where
 
 import Control.Category ((.))
 import Control.Exception (assert)
-import Data.Time
-import Data.List (sortBy)
 import Prelude hiding ((.))
 
 import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)

@@ -17,7 +17,6 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Text as ST
 import           Data.Graph
 import           Data.Graph.Missing (fixLeaves)
-import           Data.List (sortBy)
 import           Data.Map as Map (toList)
 import qualified Data.Tree as Tree (Tree(Node))
 import qualified Lucid
