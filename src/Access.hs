@@ -191,18 +191,18 @@ isStudent u = isJust $ find (has _Student) (u ^.. userRoles)
 delegationCapabilities :: User -> Maybe User -> Maybe IdeaSpace -> Maybe Phase -> [Capability]
 -- guards: no delegation in these situations
 delegationCapabilities _ _ _ (Just PhaseResult)              = []
-delegationCapabilities actual _ _ _ | not (isStudent actual) = []
+delegationCapabilities current _ _ _ | not (isStudent current) = []
 
 -- delegate to other user
-delegationCapabilities actual (Just u) _ _
+delegationCapabilities current (Just u) _ _
   | isStudent u =
         [CanDelegate, CanDelegateInSchool] <>
-        [CanDelegateInClass | haveCommonSchoolClass actual u]
+        [CanDelegateInClass | haveCommonSchoolClass current u]
 
 -- delegation for idea and topic
 delegationCapabilities _ _ (Just SchoolSpace) _   = [CanDelegate, CanDelegateInSchool]
-delegationCapabilities actual _ (Just (ClassSpace clss)) _
-  | clss `elem` (actual ^.. userRoles . _Student) = [CanDelegate, CanDelegateInSchool, CanDelegateInClass]
+delegationCapabilities current _ (Just (ClassSpace clss)) _
+  | clss `elem` (current ^.. userRoles . _Student) = [CanDelegate, CanDelegateInSchool, CanDelegateInClass]
 
 -- a student is able to delegate
 delegationCapabilities _ _ _ _ = [CanDelegate]
