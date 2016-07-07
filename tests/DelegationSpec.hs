@@ -94,8 +94,8 @@ spec = do
                 , Vote student1 idea No
                 ]
         delegationTest "Delegation on topic" -- TODO: Delegation on space
-                [ SetDelegation student1 (DScopeTopicId topic) student2
-                , CheckVotingPower student2 (DScopeTopicId topic) 2
+                [ SetDelegation student1 (DScopeIdeaSpace ideaSpace) student2
+                , CheckVotingPower student2 (DScopeIdeaSpace ideaSpace) 2
                 ]
         delegationTest "Delegation on ideaspace"
                 [ SetDelegation student1 (DScopeIdeaSpace ideaspace) student2
