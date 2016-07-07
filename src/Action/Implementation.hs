@@ -44,6 +44,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Thentos.Frontend.CSRF as CSRF (checkCsrfToken)
 
 import Action
+--import Access
 import Config
 import Logger.EventLog
 import Persistent
@@ -173,7 +174,15 @@ instance ActionAvatar Action where
 mkRunAction :: ActionEnv -> Action :~> ExceptT ServantErr IO
 mkRunAction env = Nat run
   where
-    run = withExceptT runActionExcept . ExceptT . fmap (view _1) . runRWSTflip env userLoggedOut
+    handleExns m = ExceptT $ do
+        (e, s, _) <- m
+        pure $ e & _Left %~ mayRedirectToLogin s . runActionExcept
+        -- withExceptT runActionExcept . ExceptT . fmap (view _1) . _H
+    mayRedirectToLogin :: UserState -> ServantErr -> ServantErr
+    mayRedirectToLogin _s e = e {-| validLoggedIn s      = e
+                        -- | errHTTPCode e == 303 = e
+                           | otherwise            = redirectLoginErr-}
+    run = handleExns . runRWSTflip env userLoggedOut
         . runExceptT . unAction . (checkCurrentUser >>)
     runRWSTflip r s comp = runRWST comp r s
 

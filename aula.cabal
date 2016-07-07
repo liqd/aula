@@ -79,6 +79,7 @@ library
     , vector
     , wai
     , wai-app-static
+    , wai-extra
     , warp
     , yaml
   exposed-modules:
@@ -211,6 +212,7 @@ executable aula-avatars
     , vector
     , wai
     , wai-app-static
+    , wai-extra
     , warp
     , yaml
     , aula
@@ -279,6 +281,7 @@ executable aula-html-dummies
     , vector
     , wai
     , wai-app-static
+    , wai-extra
     , warp
     , yaml
     , aula
@@ -350,6 +353,7 @@ executable aula-server
     , vector
     , wai
     , wai-app-static
+    , wai-extra
     , warp
     , yaml
     , aula
@@ -419,6 +423,7 @@ test-suite spec
     , vector
     , wai
     , wai-app-static
+    , wai-extra
     , warp
     , yaml
     , aula

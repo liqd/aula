@@ -338,6 +338,7 @@ deriveSafeCopy 0 'base ''PersistExcept
 runPersistExcept :: PersistExcept -> ServantErr
 runPersistExcept (PersistError500 msg)            = err500 { errBody = cs msg }
 runPersistExcept (PersistError404 msg)            = err404 { errBody = cs msg }
+-- TODO
 runPersistExcept (PersistErrorNotImplemented msg) = err500 { errBody = cs msg }
 runPersistExcept (UserLoginInUse li) =
     err403 { errBody = "user login in use: " <> cs (show li) }
