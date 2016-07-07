@@ -515,7 +515,6 @@ instance Page (NeedCap 'CanPhaseBackwardTopic)  where isAuthorized = needCap Can
 
 instance Page NeedAdmin where isAuthorized = adminPage
 
--- FIXME: move this to the rest of the delegation logic?  (where's that?)
 instance Page DelegateTo where
     isAuthorized =
         authNeedCaps
