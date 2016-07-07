@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE PackageImports             #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -23,7 +24,7 @@ import Control.Monad.Except (MonadError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
-import Crypto.Random (MonadRandom(..))
+import "cryptonite" Crypto.Random (MonadRandom(..))
 import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
 import Data.String.Conversions (LBS, cs)
