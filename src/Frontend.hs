@@ -34,13 +34,13 @@ import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import qualified Data.ByteString.Builder as Builder
 
-import Thentos.Types (ThentosSessionToken)
-import Thentos.Frontend.State (serveFAction)
+import Thentos.Frontend.Session.Types (ThentosSessionToken)
+import Thentos.Frontend.Session (serveFAction)
 
 import AulaPrelude
 import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
-import Action.Implementation (Action, mkRunAction)
+import Action.Implementation (Action, mkRunAction, actionIO)
 import Config
 import Daemon
 import Logger.EventLog
@@ -90,7 +90,7 @@ runFrontend' cfg log rp = do
                           (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy setCookie
-             extendClearanceOnSessionToken runAction aulaActions
+             extendClearanceOnSessionToken (Nat actionIO) runAction aulaActions
 
     let settings :: Warp.Settings
         settings = setHost (fromString $ cfg ^. listenerInterface)
