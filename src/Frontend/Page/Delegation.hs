@@ -28,6 +28,7 @@ import Access
 import Action
     ( ActionM, currentUser, equery, mquery
     , delegateOrWithdraw, delegationInScope
+    , currentUserCapCtx
     )
 import Data.Delegation (unDelegate, unDelegatee)
 import Frontend.Core hiding (form)
@@ -38,7 +39,7 @@ import qualified Frontend.Path as U
 
 
 -- | 12. Delegate vote
-data PageDelegateVote = PageDelegateVote Topic [User] (Maybe (AUID User))
+data PageDelegateVote = PageDelegateVote CapCtx DScopeFull [User] (Maybe (AUID User))
   deriving (Eq, Show, Read)
 
 instance Page PageDelegateVote where isAuthorized = userPage
@@ -50,11 +51,14 @@ newtype PageDelegationVotePayload = PageDelegationVotePayload
 instance FormPage PageDelegateVote where
     type FormPagePayload PageDelegateVote = PageDelegationVotePayload
 
-    formAction (PageDelegateVote topic _options _mselected) = U.delegateVoteOnTopic topic
+    formAction (PageDelegateVote _capctx scope _options _mselected) =
+        U.createDelegation (fullDScopeToDScope scope)
 
-    redirectOf (PageDelegateVote topic _options _mselected) _ = U.viewTopic topic
+    redirectOf (PageDelegateVote capCtx scope _options _mselected) _ = case scope of
+        DScopeIdeaSpaceFull _ideaSpace -> U.viewUserProfile (capCtx ^. capCtxUser)
+        DScopeTopicFull     topic      -> U.viewTopic topic
 
-    makeForm (PageDelegateVote _scope options mselected) =
+    makeForm (PageDelegateVote _capCtx _scope options mselected) =
         PageDelegationVotePayload <$>
             "selected-delegate" .: DF.validate valid (DF.text (render <$> mselected))
       where
@@ -73,7 +77,7 @@ instance FormPage PageDelegateVote where
                   | otherwise                         -> DF.Error "user id not found"
         valid bad = DF.Error ("corrupt form data: " <> bad ^. showed . html)
 
-    formPage v f p@(PageDelegateVote scope options mselected) = semanticDiv p . f $ do
+    formPage v f p@(PageDelegateVote _capCtx scope options mselected) = semanticDiv p . f $ do
         let options' = sortBy (maybe compare compareOptions mselected) options
 
             -- always move selected user to the top.
@@ -86,7 +90,7 @@ instance FormPage PageDelegateVote where
         h1_ [class_ "main-heading"] "Stimme beauftragen"
         div_ [class_ "sub-heading"] $ do
             let delegationText name = "Wähle einen Beauftragten für " <> show name
-            toHtml . delegationText $ view topicTitle scope
+            toHtml . delegationText $ uilabelST scope
             br_ []
             "Du kannst deine Beauftragung widerrufen, indem du sie nochmal anklickst."
         ul_ $ do
@@ -114,14 +118,15 @@ pageDelegateVoteSuccessMsg _ (PageDelegationVotePayload (Just uid)) _ = do
     delegate <- mquery $ findUser uid
     pure $ "Du hast " <> delegate ^. userLogin . unUserLogin <> " mit Deiner Stimme beauftragt"
 
-topicDelegation :: ActionM m => AUID Topic -> FormPageHandler m PageDelegateVote
-topicDelegation tid = formPageHandlerCalcMsgM
-    (do delegate <- view delegationTo <$$> delegationInScope (DScopeTopicId tid)
+delegationEdit :: ActionM m => DScope -> FormPageHandler m PageDelegateVote
+delegationEdit scope = formPageHandlerCalcMsgM
+    (do delegate <- view delegationTo <$$> delegationInScope scope
+        ctx <- currentUserCapCtx
         equery $
-            do  topic <- maybe404 =<< findTopic tid
-                users <- studentsInIdeaSpace (topic ^. topicIdeaSpace)
-                pure $ PageDelegateVote topic users delegate)
-    (Action.delegateOrWithdraw (DScopeTopicId tid) . unPageDelegationVotePayload)
+            do  scopeFull <- dscopeFull scope
+                users <- studentsInDScope scope
+                pure $ PageDelegateVote ctx scopeFull users delegate)
+    (Action.delegateOrWithdraw scope . unPageDelegationVotePayload)
     pageDelegateVoteSuccessMsg
 
 -- | 13. Delegation network

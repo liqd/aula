@@ -236,30 +236,50 @@ commonIdeaSpaceDelegations delegatee delegate = do
         (delegateInScope delegateeId . DScopeIdeaSpace . ClassSpace)
     pure $ catMaybes (schoolDelegation:classDelegations)
 
--- | NOTE: reflexive delegation is a thing!  the reasons are part didactic and part
--- philosophical, but it doesn't really matter: users can delegate to themselves
--- just like to anybody else, and the graph will look different if they do.
+-- | Delegation buttons works in a different way if the user opens
+-- his/her own profile, or other users profile.
+--
+-- For the own profile clicking on the delegation button, the delegate selection
+-- page is opened.
+--
+-- For other's profile, clicking on the delegation buttons mark the owner of
+-- the profile as the delegate of the current user.
 delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
 delegationButtons delegatee delegate delegations = do
-    let isActiveDelegation dscope =
-            Delegation dscope (delegatee ^. _Id) (delegate ^. _Id)
-            `elem`
-            delegations
-        but = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
+    let ownProfile = isOwnProfile delegatee delegate
+        isActiveDelegation dscope =
+            if ownProfile
+                then any (\d -> d ^. delegationScope == dscope &&
+                                d ^. delegationFrom == delegatee ^. _Id) delegations
+                else Delegation dscope (delegatee ^. _Id) (delegate ^. _Id)
+                     `elem`
+                     delegations
+        butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
+        butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
     forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
-        if isActiveDelegation (DScopeIdeaSpace (ClassSpace clss))
+        let classScope = DScopeIdeaSpace (ClassSpace clss)
+        if isActiveDelegation classScope
             then do
-                but (U.withdrawDelegationOnClassSpace delegate clss)
+                (if ownProfile
+                    then butGet (U.createDelegation classScope)
+                    else butPost (U.withdrawDelegationOnClassSpace delegate clss))
                     ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
-                but (U.delegateVoteOnClassSpace delegate clss)
+                (if ownProfile
+                    then butGet (U.createDelegation classScope)
+                    else butPost (U.delegateVoteOnClassSpace delegate clss))
                     ("Für Klasse " <> uilabel clss <> " beauftragen")
-    if isActiveDelegation (DScopeIdeaSpace SchoolSpace)
+    let schoolScope = DScopeIdeaSpace SchoolSpace
+    if isActiveDelegation schoolScope
         then do
-            but (U.withdrawDelegationOnSchoolSpace delegate)
+            (if ownProfile
+                then butGet (U.createDelegation schoolScope)
+                else butPost (U.withdrawDelegationOnSchoolSpace delegate))
                 "Schulweite beauftragung entziehen"
         else do
-            but (U.delegateVoteOnSchoolSpace delegate)
+            (if ownProfile
+                then butGet (U.createDelegation schoolScope)
+                else butPost (U.delegateVoteOnSchoolSpace delegate))
                 "Schulweit beauftragen"
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.

@@ -804,6 +804,9 @@ instance FromHttpApiData DScope where
         't':'o':'p':'i':'c':'-':topicId -> DScopeTopicId . AUID <$> readEitherCS topicId
         _ -> Left "no parse"
 
+instance HasUriPart DScope where
+    uriPart = fromString . cs . toUrlPiece
+
 instance HasUILabel DScopeFull where
     uilabel = \case
         DScopeIdeaSpaceFull is -> "Ideenraum " <> (fromString . cs . uilabelST   $ is)

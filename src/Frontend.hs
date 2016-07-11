@@ -165,7 +165,7 @@ type AulaMain =
   :<|> "admin" :> AulaAdmin
 
        -- delegation network
-  :<|> "delegation" :> "edit" :> FormHandler PageDelegateVote
+  :<|> "delegation" :> "edit" :> DScope ::> FormHandler PageDelegateVote
   :<|> "delegation" :> "view" :> QueryParam "scope" DScope :> GetH (Frame PageDelegationNetwork)
 
        -- static content
@@ -189,7 +189,7 @@ aulaMain =
   :<|> form Page.userSettings
   :<|> aulaAdmin
 
-  :<|> error "api not implemented: \"delegation\" :> \"edit\" :> FormHandler ()"
+  :<|> form . delegationEdit
   :<|> runHandler . Page.viewDelegationNetwork
 
   :<|> runHandler (pure PageStaticImprint)
@@ -311,7 +311,6 @@ type TopicApi =
        -- create, edit, delegate topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
   :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
-  :<|> Topic  ::> "delegate"   :> FormHandler PageDelegateVote
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
@@ -328,7 +327,6 @@ topicApi space
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
-  :<|> form . Page.topicDelegation
   where
     viewTopicTab tab tid qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
