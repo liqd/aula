@@ -216,7 +216,8 @@ userHeaderDiv ctx (Right (user, delegations)) =
             let caps = capabilities ctx
             when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
                 delegationButtons (ctx ^. capCtxUser) user delegations
-            btn (U.reportUser user) "melden"
+            unless (isOwnProfile (ctx ^. capCtxUser) user) $
+                btn (U.reportUser user) "melden"
             when (CanEditUser `elem` caps) $ do
                 editProfileBtn
 
