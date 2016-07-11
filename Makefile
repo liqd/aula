@@ -2,7 +2,7 @@ SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -idist/build/autogen
-FULL_SOURCES=$(AULA_SOURCES) -i$(THENTOS_ROOT_PATH)/thentos-frontend-session/src/ $(THENTOS_ROOT_PATH)/thentos-frontend-session/tests/
+FULL_SOURCES=$(AULA_SOURCES) -i$(THENTOS_ROOT_PATH)/thentos-frontend-session/src/
 AULA_IMAGE=quay.io/liqd/aula
 AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 
