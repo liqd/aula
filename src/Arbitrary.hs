@@ -448,6 +448,10 @@ instance Arbitrary FinalizePasswordViaEmail where
     shrink (FinalizePasswordViaEmail x y z) =
             FinalizePasswordViaEmail <$> shr x <*> shr y <*> shr z
 
+instance Arbitrary PageAdminTermsOfUsePayload where
+    arbitrary = PageAdminTermsOfUsePayload <$> arb
+    shrink (PageAdminTermsOfUsePayload x) = PageAdminTermsOfUsePayload <$> shr x
+
 -- * idea
 
 instance Arbitrary ProtoIdea where

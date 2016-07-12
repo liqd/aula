@@ -976,6 +976,7 @@ adminResetPassword userId = formPageHandlerWithMsg
     ("Das Password von Nutzer #" <> userId ^. unAUID . showed . csi <> " wurde geändert!")
 
 data PageAdminTermsOfUsePayload = PageAdminTermsOfUsePayload { unTermsOfUsePayload :: Document }
+  deriving (Eq, Show)
 
 instance FormPage PageAdminTermsOfUse where
     type FormPagePayload PageAdminTermsOfUse = PageAdminTermsOfUsePayload

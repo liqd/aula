@@ -122,6 +122,7 @@ spec = do
         , formTest (arb :: Gen ReportUserProfile)
         , formTest (arb :: Gen FinalizePasswordViaEmail)
         , formTest (arb :: Gen PasswordResetViaEmail)
+        , formTest (arb :: Gen PageAdminTermsOfUse)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -622,3 +623,9 @@ instance ArbFormPagePayload PasswordResetViaEmail
 instance PayloadToEnv ResetPasswordFormData where
     payloadToEnvMapping _ _ (ResetPasswordFormData emailValue) = \case
         "email" -> pure [TextInput $ emailValue ^. re emailAddress]
+
+instance ArbFormPagePayload PageAdminTermsOfUse
+
+instance PayloadToEnv PageAdminTermsOfUsePayload where
+    payloadToEnvMapping _ _ (PageAdminTermsOfUsePayload terms) = \case
+        "terms-of-use" -> pure [TextInput $ unMarkdown terms]
