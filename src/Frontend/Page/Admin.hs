@@ -968,7 +968,7 @@ instance FormPage PageAdminResetPassword where
             div_ $ do
                 DF.inputHidden "new-pwd" v
                 DF.inputSubmit "Ja!"
-                a_ [class_ "btn", href_ $ redirectOf p ()] "Zurück"
+                cancelButton p
 
 adminResetPassword :: ActionM m => AUID User -> FormPageHandler m PageAdminResetPassword
 adminResetPassword userId = formPageHandlerWithMsg
