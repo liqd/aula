@@ -60,7 +60,7 @@ pagesPlain f =
     , f (Proxy :: Proxy PageOverviewOfWildIdeas)
     , f (Proxy :: Proxy PageOverviewOfSpaces)
     , f (Proxy :: Proxy PageStaticImprint)
-    , f (Proxy :: Proxy PageStaticTermsOfUse)
+    , f (Proxy :: Proxy PageTermsOfUse)
     , f (Proxy :: Proxy PageUserProfileCreatedIdeas)
     , f (Proxy :: Proxy PageUserProfileUserAsDelegate)
     , f (Proxy :: Proxy PageUserProfileUserAsDelegatee)
