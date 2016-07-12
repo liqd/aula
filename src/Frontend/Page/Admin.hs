@@ -267,22 +267,21 @@ adminFrame t bdy = do
     div_ [class_ "col-2-12"] $ do
         nav_ [class_ "admin-menu"] $ do
             h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
-            -- TODO: Remove empty attributes
-            ul_ [] $ do
-                li_ [] $ menulink tab MenuItemDurations
-                li_ [] $ menulink tab MenuItemQuorum
-                li_ [] $ menulink tab MenuItemFreeze
+            ul_ $ do
+                li_ $ menulink tab MenuItemDurations
+                li_ $ menulink tab MenuItemQuorum
+                li_ $ menulink tab MenuItemFreeze
                 if tab `elem` [MenuItemUsers, MenuItemClasses]
                     then do
-                        li_ [] $ do
+                        li_ $ do
                             "Gruppen & Nutzer"
                             ul_ $ do
-                                li_ [] $ menulink tab MenuItemUsers
-                                li_ [] $ menulink tab MenuItemClasses
+                                li_ $ menulink tab MenuItemUsers
+                                li_ $ menulink tab MenuItemClasses
                     else do
-                        li_ [] $ menulink tab MenuItemClassesAndUsers
-                li_ [] $ menulink tab MenuItemEventsProtocol
-                li_ [] $ menulink tab MenuItemPhaseChange
+                        li_ $ menulink tab MenuItemClassesAndUsers
+                li_ $ menulink tab MenuItemEventsProtocol
+                li_ $ menulink tab MenuItemPhaseChange
                 li_ $ menulink tab MenuItemTermsOfUse
     div_ [class_ "col-10-12 admin-body"] bdy
   where
