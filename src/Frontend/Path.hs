@@ -125,6 +125,7 @@ module Frontend.Path
     , adminDlPass
     , adminTopicNextPhase
     , adminTopicVotingPrevPhase
+    , adminTermsOfUse
 
     -- * aux predicates
     , isPostOnly
@@ -450,6 +451,7 @@ data AdminMode (r :: AllowedMethod) =
   | AdminTopicVotingPrevPhase (AUID Topic)
   | AdminChangePhase
   | AdminResetPassword (AUID User)
+  | AdminTermsOfUse
   deriving (Generic, Show)
 
 instance SOP.Generic (AdminMode r)
@@ -496,6 +498,9 @@ adminEvent = Admin AdminEvent
 adminCreateUser :: Main 'AllowGetPost
 adminCreateUser = Admin AdminCreateUser
 
+adminTermsOfUse :: Main 'AllowGetPost
+adminTermsOfUse = Admin AdminTermsOfUse
+
 adminMode :: AdminMode r -> UriPath -> UriPath
 adminMode AdminDuration         path = path </> "duration"
 adminMode AdminQuorum           path = path </> "quorum"
@@ -517,6 +522,7 @@ adminMode (AdminTopicNextPhase tid) path = path </> "topic" </> uriPart tid </> 
 adminMode (AdminTopicVotingPrevPhase tid) path = path </> "topic" </> uriPart tid </> "voting-prev-phase"
 adminMode AdminChangePhase                path = path </> "change-phase"
 adminMode (AdminResetPassword uid)        path = path </> "user" </> uriPart uid </> "reset-pwd"
+adminMode AdminTermsOfUse                 path = path </> "terms-of-use"
 
 
 -- ** UserMode

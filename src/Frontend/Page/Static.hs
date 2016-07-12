@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-# OPTIONS_GHC -Werror #-}
@@ -6,7 +7,9 @@ module Frontend.Page.Static
 where
 
 import Access (publicPage)
+import Action (ActionM, query)
 import Frontend.Prelude
+import Persistent (termsOfUse)
 
 
 -- * page
@@ -36,8 +39,9 @@ instance ToHtml PageStaticImprint where
 
 -- * page
 
+-- TODO: Rename
 -- | 15. Static page: Terms of use
-data PageStaticTermsOfUse = PageStaticTermsOfUse
+data PageStaticTermsOfUse = PageStaticTermsOfUse Document
   deriving (Eq, Show, Read)
 
 instance Page PageStaticTermsOfUse where
@@ -48,8 +52,9 @@ instance Page PageStaticTermsOfUse where
 
 instance ToHtml PageStaticTermsOfUse where
     toHtmlRaw = toHtml
-    toHtml p = semanticDiv p $ do
-        h1_ "Nutzungsbedingungen"
-        p_  "Lorem ipsum"
-        p_  "Duis aumet"
-        p_  "Ut wisi"
+    toHtml p@(PageStaticTermsOfUse terms) = semanticDiv p .
+        div_ [class_ "text-markdown"] $
+            terms ^. html
+
+termsOfUse :: ActionM m => m PageStaticTermsOfUse
+termsOfUse = PageStaticTermsOfUse <$> query Persistent.termsOfUse

@@ -144,6 +144,8 @@ module Persistent.Pure
     , saveQuorums
     , dangerousResetAulaData
     , dangerousRenameAllLogins
+    , termsOfUse
+    , setTermsOfUse
 
     , TraverseMetas
     , commentMetas
@@ -195,6 +197,7 @@ data AulaData = AulaData
     , _dbTopicMap            :: Topics
     , _dbDelegations         :: Delegations
     , _dbResetPwdTokens      :: PasswordTokens
+    , _dbTermsOfUse          :: Document
     , _dbSettings            :: Settings
     , _dbLastId              :: Integer
     }
@@ -231,6 +234,7 @@ emptyAulaData =
         nil
         emptyDelegations
         emptyPasswordTokens
+        mempty
         defaultSettings
         0
 
@@ -260,13 +264,14 @@ ideaMetas t f (Idea m title desc cat loc comments likes votes juryRes voteRes de
 
 -- This is using pattern matching on AulaData to force us to adapt this function when extending it.
 aulaMetas :: TraverseMetas a -> AulaTraversal a
-aulaMetas t f (AulaData sp is us ts ds pt st li) =
+aulaMetas t f (AulaData sp is us ts ds pt tou st li) =
     AulaData <$> pure sp                    -- No MetaInfo in dbSpaceSet
              <*> (each . ideaMetas  t) f is -- See ideaMetas
              <*> (each . metaInfo . t) f us -- Only one MetaInfo per User
              <*> (each . metaInfo . t) f ts -- Only one MetaInfo per Topic
              <*> pure ds                    -- No MetaInfo in dbDelegations
              <*> pure pt                    -- No MetaInfo in dbPasswordTokens
+             <*> pure tou                   -- No MetaInfo in dbTermsOfUse
              <*> pure st                    -- No MetaInfo in dbSettings
              <*> pure li                    -- No MetaInfo in dbListId
 
@@ -1003,6 +1008,11 @@ deleteIdea ideaId =
     withIdea ideaId %= (ideaDeleted .~ True)
                      . over ideaComments (Map.map (set commentDeleted True))
 
+termsOfUse :: Query Document
+termsOfUse = view dbTermsOfUse
+
+setTermsOfUse :: Document -> AUpdate ()
+setTermsOfUse doc = void $ dbTermsOfUse <.= doc
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums

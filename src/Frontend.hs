@@ -193,7 +193,7 @@ aulaMain =
   :<|> runHandler . Page.viewDelegationNetwork
 
   :<|> runHandler (pure PageStaticImprint)
-  :<|> runHandler (pure PageStaticTermsOfUse)
+  :<|> runHandler Page.termsOfUse
 
   :<|> form Page.login
   :<|> form Page.passwordResetViaEmail
@@ -399,6 +399,7 @@ type AulaAdmin =
   :<|> Topic ::> "next-phase" :> PostH (NeedCap 'CanPhaseForwardTopic)
   :<|> Topic ::> "voting-prev-phase" :> PostH (NeedCap 'CanPhaseBackwardTopic)
   :<|> "change-phase" :> FormHandler AdminPhaseChange
+  :<|> "terms-of-use" :> FormHandler PageAdminTermsOfUse
 
 
 aulaAdmin :: ActionM m => ServerT AulaAdmin m
@@ -422,6 +423,7 @@ aulaAdmin =
   :<|> postWithTopic (Action.topicForcePhaseChange Forward)
   :<|> postWithTopic (Action.topicForcePhaseChange Backward)
   :<|> form Page.adminPhaseChange
+  :<|> form Page.adminTermsOfUse
   where
     postWithTopic a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) (a tid)
     postAdminRemRole user = runPostHandler (pure NeedAdmin) . Page.adminRemRole user
