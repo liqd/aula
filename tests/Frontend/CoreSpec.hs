@@ -67,7 +67,7 @@ spec = do
         , H (arb :: Gen AdminViewUsers)
         , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageStaticImprint)
-        , H (arb :: Gen PageStaticTermsOfUse)
+        , H (arb :: Gen PageTermsOfUse)
         , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         , H (arb :: Gen PageDelegationNetwork)

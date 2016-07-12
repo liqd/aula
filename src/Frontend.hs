@@ -170,7 +170,7 @@ type AulaMain =
 
        -- static content
   :<|> "imprint" :> GetH (Frame PageStaticImprint)
-  :<|> "terms" :> GetH (Frame PageStaticTermsOfUse)
+  :<|> "terms" :> GetH (Frame PageTermsOfUse)
 
        -- login / logout
   :<|> "login" :> FormHandler PageHomeWithLoginPrompt

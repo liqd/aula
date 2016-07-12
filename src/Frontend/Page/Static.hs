@@ -39,22 +39,21 @@ instance ToHtml PageStaticImprint where
 
 -- * page
 
--- TODO: Rename
 -- | 15. Static page: Terms of use
-data PageStaticTermsOfUse = PageStaticTermsOfUse Document
+data PageTermsOfUse = PageTermsOfUse Document
   deriving (Eq, Show, Read)
 
-instance Page PageStaticTermsOfUse where
+instance Page PageTermsOfUse where
     isAuthorized = publicPage
 
 
 -- * template
 
-instance ToHtml PageStaticTermsOfUse where
+instance ToHtml PageTermsOfUse where
     toHtmlRaw = toHtml
-    toHtml p@(PageStaticTermsOfUse terms) = semanticDiv p .
+    toHtml p@(PageTermsOfUse terms) = semanticDiv p .
         div_ [class_ "text-markdown"] $
             terms ^. html
 
-termsOfUse :: ActionM m => m PageStaticTermsOfUse
-termsOfUse = PageStaticTermsOfUse <$> query Persistent.termsOfUse
+termsOfUse :: ActionM m => m PageTermsOfUse
+termsOfUse = PageTermsOfUse <$> query Persistent.termsOfUse

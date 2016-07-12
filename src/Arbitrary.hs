@@ -427,9 +427,9 @@ instance Arbitrary DScopeForest where
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
 
-instance Arbitrary PageStaticTermsOfUse where
-    arbitrary = PageStaticTermsOfUse <$> arb
-    shrink (PageStaticTermsOfUse x) = PageStaticTermsOfUse <$> shr x
+instance Arbitrary PageTermsOfUse where
+    arbitrary = PageTermsOfUse <$> arb
+    shrink (PageTermsOfUse x) = PageTermsOfUse <$> shr x
 
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = PageHomeWithLoginPrompt . LoginDemoHints <$> arb

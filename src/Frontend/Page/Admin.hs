@@ -984,7 +984,6 @@ instance FormPage PageAdminTermsOfUse where
     redirectOf _ _ = U.adminTermsOfUse
 
     makeForm (PageAdminTermsOfUse termsOfUseDoc) =
-        -- TODO: Use the stored value
         PageAdminTermsOfUsePayload
         <$> validate
                 "Nutzungsbedingungen"
