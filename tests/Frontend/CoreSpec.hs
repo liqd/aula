@@ -408,10 +408,11 @@ postToForm (FormTest g c check) = do
         page <- pick g
         ctx <- pick (arbFormPagePayloadCtx page)
         mpayload <- pick (arbFormPageInvalidPayload page)
-        forM_ mpayload
-            (\payload -> do
+        case mpayload of
+            Nothing -> liftIO $ pendingWith "*In*valid form input is not defined for this."
+            Just payload -> do
                 (_, mpayload') <- run $ simulateForm c page ctx payload
-                liftIO $ mpayload' `shouldBe` Nothing)
+                liftIO $ mpayload' `shouldBe` Nothing
 
 
 -- | Arbitrary test data generation of the 'FormPagePayload' associated
