@@ -190,6 +190,7 @@ isStudent u = isJust $ find (has _Student) (u ^.. userRoles)
 
 delegationCapabilities :: User -> Maybe User -> Maybe IdeaSpace -> Maybe Phase -> [Capability]
 -- guards: no delegation in these situations
+delegationCapabilities _ _ _ (Just PhaseVoting{})              = []
 delegationCapabilities _ _ _ (Just PhaseResult)                = []
 delegationCapabilities current _ _ _ | not (isStudent current) = []
 
