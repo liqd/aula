@@ -111,7 +111,7 @@ import Frontend.Path (HasPath(..))
 import Logger.EventLog (EventLog)
 import Lucid.Missing
 import Types
-import Thentos.Frontend.Session.CSRF (CsrfToken(..))
+import Thentos.CookieSession.CSRF (CsrfToken(..))
 
 import qualified Frontend.Path as P
 

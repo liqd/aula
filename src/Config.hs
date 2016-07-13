@@ -54,7 +54,7 @@ import GHC.Generics
 import System.Directory
 import System.Environment
 import System.FilePath ((</>))
-import Thentos.Frontend.Session.CSRF (GetCsrfSecret(..), CsrfSecret(..))
+import Thentos.CookieSession.CSRF (GetCsrfSecret(..), CsrfSecret(..))
 
 import qualified System.IO.Unsafe
 

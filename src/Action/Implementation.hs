@@ -37,12 +37,12 @@ import Servant
 import Servant.Missing
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
-import Thentos.Frontend.Session.Types (freshSessionToken)
+import Thentos.CookieSession.Types (freshSessionToken)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
-import qualified Thentos.Frontend.Session.CSRF as CSRF (checkCsrfToken)
+import qualified Thentos.CookieSession.CSRF as CSRF (checkCsrfToken)
 
 import Action
 import Config
