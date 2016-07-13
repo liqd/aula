@@ -1,6 +1,6 @@
 #!/bin/sh
 
-AULA_IMAGE=quay.io/liqd/aula:thentos-0.8
+AULA_IMAGE=quay.io/liqd/aula:thentos-0.8.4
 
 if [ "$1" = "--connect" ]; then
     export CONNECT_TO_RUNNING_CONTAINER=1
