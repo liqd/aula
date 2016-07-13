@@ -3,7 +3,7 @@
 
 {-# OPTIONS_GHC -Werror #-}
 
-module Frontend.Page.Static
+module Frontend.Page.Info
 where
 
 import Access (publicPage)
@@ -14,7 +14,7 @@ import Persistent (termsOfUse)
 
 -- * page
 
--- | 14. Static page: Imprint
+-- | 14. Info page: Imprint
 data PageStaticImprint = PageStaticImprint
   deriving (Eq, Show, Read)
 
@@ -39,7 +39,7 @@ instance ToHtml PageStaticImprint where
 
 -- * page
 
--- | 15. Static page: Terms of use
+-- | 15. Info page: Terms of use
 data PageTermsOfUse = PageTermsOfUse Document
   deriving (Eq, Show, Read)
 

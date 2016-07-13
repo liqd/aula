@@ -117,10 +117,10 @@ library
       Frontend.Page.Admin
       Frontend.Page.Delegation
       Frontend.Page.Idea
+      Frontend.Page.Info
       Frontend.Page.Login
       Frontend.Page.Overview
       Frontend.Page.ResetPassword
-      Frontend.Page.Static
       Frontend.Page.Topic
       Frontend.Page.User
       Frontend.Path
