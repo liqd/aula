@@ -389,6 +389,10 @@ instance Arbitrary AdminPhaseChangeForTopicData where
 instance Arbitrary AdminPhaseChange where
     arbitrary = pure AdminPhaseChange
 
+instance Arbitrary PageAdminTermsOfUse where
+    arbitrary = PageAdminTermsOfUse <$> arb
+    shrink (PageAdminTermsOfUse x) = PageAdminTermsOfUse <$> shr x
+
 instance Arbitrary PageDelegateVote where
     arbitrary = PageDelegateVote <$> arb <*> arb <*> arb <*> arb
     shrink (PageDelegateVote x y z w) =
@@ -423,8 +427,9 @@ instance Arbitrary DScopeForest where
 instance Arbitrary PageStaticImprint where
     arbitrary = pure PageStaticImprint
 
-instance Arbitrary PageStaticTermsOfUse where
-    arbitrary = pure PageStaticTermsOfUse
+instance Arbitrary PageTermsOfUse where
+    arbitrary = PageTermsOfUse <$> arb
+    shrink (PageTermsOfUse x) = PageTermsOfUse <$> shr x
 
 instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = PageHomeWithLoginPrompt . LoginDemoHints <$> arb
@@ -442,6 +447,10 @@ instance Arbitrary FinalizePasswordViaEmail where
     arbitrary = FinalizePasswordViaEmail <$> arb <*> arb <*> arb
     shrink (FinalizePasswordViaEmail x y z) =
             FinalizePasswordViaEmail <$> shr x <*> shr y <*> shr z
+
+instance Arbitrary PageAdminTermsOfUsePayload where
+    arbitrary = PageAdminTermsOfUsePayload <$> arb
+    shrink (PageAdminTermsOfUsePayload x) = PageAdminTermsOfUsePayload <$> shr x
 
 -- * idea
 

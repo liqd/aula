@@ -127,6 +127,7 @@ spec = do
         , F (arb :: Gen AdminCreateClass)
         , F (arb :: Gen AdminPhaseChange)
         , F (arb :: Gen PageAdminResetPassword)
+        , F (arb :: Gen PageAdminTermsOfUse)
 
           -- idea forms
         , F (arb :: Gen CreateIdea)

@@ -42,10 +42,12 @@ import Persistent.Api
     , SetUserLogin(SetUserLogin)
     , AddUserRole(AddUserRole)
     , RemUserRole(RemUserRole)
+    , SetTermsOfUse(SetTermsOfUse)
     )
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
     , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
+    , termsOfUse
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -164,6 +166,14 @@ instance Page PageAdminResetPassword where
     isAuthorized   = adminPage
     isResponsive _ = False
 
+data PageAdminTermsOfUse =
+    PageAdminTermsOfUse Document
+  deriving (Eq, Show, Read)
+
+instance Page PageAdminTermsOfUse where
+    isAuthorized   = adminPage
+    isResponsive _ = False
+
 data CreateUserPayload = CreateUserPayload
     { _createUserFirstName :: UserFirstName
     , _createUserLastName  :: UserLastName
@@ -189,6 +199,7 @@ data MenuItem
     | MenuItemClassesAndUsers
     | MenuItemEventsProtocol
     | MenuItemPhaseChange
+    | MenuItemTermsOfUse
   deriving (Eq, Show)
 
 instance IsTab MenuItem
@@ -243,6 +254,9 @@ instance ToMenuItem AdminPhaseChange where
 instance ToMenuItem PageAdminResetPassword where
     toMenuItem _ = MenuItemUsers
 
+instance ToMenuItem PageAdminTermsOfUse where
+    toMenuItem _ = MenuItemTermsOfUse
+
 
 -- * templates
 
@@ -253,21 +267,22 @@ adminFrame t bdy = do
     div_ [class_ "col-2-12"] $ do
         nav_ [class_ "admin-menu"] $ do
             h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
-            ul_ [] $ do
-                li_ [] $ menulink tab MenuItemDurations
-                li_ [] $ menulink tab MenuItemQuorum
-                li_ [] $ menulink tab MenuItemFreeze
+            ul_ $ do
+                li_ $ menulink tab MenuItemDurations
+                li_ $ menulink tab MenuItemQuorum
+                li_ $ menulink tab MenuItemFreeze
                 if tab `elem` [MenuItemUsers, MenuItemClasses]
                     then do
-                        li_ [] $ do
+                        li_ $ do
                             "Gruppen & Nutzer"
                             ul_ $ do
-                                li_ [] $ menulink tab MenuItemUsers
-                                li_ [] $ menulink tab MenuItemClasses
+                                li_ $ menulink tab MenuItemUsers
+                                li_ $ menulink tab MenuItemClasses
                     else do
-                        li_ [] $ menulink tab MenuItemClassesAndUsers
-                li_ [] $ menulink tab MenuItemEventsProtocol
-                li_ [] $ menulink tab MenuItemPhaseChange
+                        li_ $ menulink tab MenuItemClassesAndUsers
+                li_ $ menulink tab MenuItemEventsProtocol
+                li_ $ menulink tab MenuItemPhaseChange
+                li_ $ menulink tab MenuItemTermsOfUse
     div_ [class_ "col-10-12 admin-body"] bdy
   where
     tab = toMenuItem [t]
@@ -302,6 +317,9 @@ menulink' targetMenuItem =
         -> MenuLink "tab-events"             U.adminEvent "Protokolle"
     MenuItemPhaseChange
         -> MenuLink "tab-phase-change" U.adminChangePhase "Phasen verschieben"
+    MenuItemTermsOfUse
+        -- TODO: Appropiate texts
+        -> MenuLink "tab-terms-of-user" U.adminTermsOfUse "Nutzungsbedingungen"
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
@@ -949,13 +967,43 @@ instance FormPage PageAdminResetPassword where
             div_ $ do
                 DF.inputHidden "new-pwd" v
                 DF.inputSubmit "Ja!"
-                a_ [class_ "btn", href_ $ redirectOf p ()] "Zurück"
+                cancelButton p
 
 adminResetPassword :: ActionM m => AUID User -> FormPageHandler m PageAdminResetPassword
 adminResetPassword userId = formPageHandlerWithMsg
     (PageAdminResetPassword <$> mquery (findActiveUser userId) <*> mkRandomPassword)
     (Action.resetPassword userId)
     ("Das Password von Nutzer #" <> userId ^. unAUID . showed . csi <> " wurde geändert!")
+
+data PageAdminTermsOfUsePayload = PageAdminTermsOfUsePayload { unTermsOfUsePayload :: Document }
+  deriving (Eq, Show)
+
+instance FormPage PageAdminTermsOfUse where
+    type FormPagePayload PageAdminTermsOfUse = PageAdminTermsOfUsePayload
+
+    formAction _   = U.adminTermsOfUse
+    redirectOf _ _ = U.adminTermsOfUse
+
+    makeForm (PageAdminTermsOfUse termsOfUseDoc) =
+        PageAdminTermsOfUsePayload
+        <$> validate
+                "Nutzungsbedingungen"
+                markdownV
+                ("terms-of-use" .: DF.text (Just (unMarkdown termsOfUseDoc)))
+    formPage v form p = adminFrame p . semanticDiv p $ do
+        form $ do
+            -- TODO: Translation
+            h3_ "Set the terms of use, please"
+            inputTextArea_ [placeholder_ "..."] Nothing Nothing "terms-of-use" v
+            footer_ [class_ "form-footer"] $ do
+                DF.inputSubmit "Speichern"
+
+-- TODO: Translate
+adminTermsOfUse :: ActionM m => FormPageHandler m PageAdminTermsOfUse
+adminTermsOfUse = formPageHandlerWithMsg
+    (PageAdminTermsOfUse <$> query termsOfUse)
+    (update . SetTermsOfUse . unTermsOfUsePayload)
+    "The terms of use text is changed."
 
 
 -- * csv file handling

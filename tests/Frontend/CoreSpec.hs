@@ -67,7 +67,7 @@ spec = do
         , H (arb :: Gen AdminViewUsers)
         , H (arb :: Gen AdminViewClasses)
         , H (arb :: Gen PageStaticImprint)
-        , H (arb :: Gen PageStaticTermsOfUse)
+        , H (arb :: Gen PageTermsOfUse)
         , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         , H (arb :: Gen PageDelegationNetwork)
@@ -122,6 +122,7 @@ spec = do
         , formTest (arb :: Gen ReportUserProfile)
         , formTest (arb :: Gen FinalizePasswordViaEmail)
         , formTest (arb :: Gen PasswordResetViaEmail)
+        , formTest (arb :: Gen PageAdminTermsOfUse)
         ]
 
     -- FIXME: test this in all forms, for all validation errors.
@@ -407,10 +408,11 @@ postToForm (FormTest g c check) = do
         page <- pick g
         ctx <- pick (arbFormPagePayloadCtx page)
         mpayload <- pick (arbFormPageInvalidPayload page)
-        forM_ mpayload
-            (\payload -> do
+        case mpayload of
+            Nothing -> liftIO $ pendingWith "*In*valid form input is not defined for this."
+            Just payload -> do
                 (_, mpayload') <- run $ simulateForm c page ctx payload
-                liftIO $ mpayload' `shouldBe` Nothing)
+                liftIO $ mpayload' `shouldBe` Nothing
 
 
 -- | Arbitrary test data generation of the 'FormPagePayload' associated
@@ -622,3 +624,9 @@ instance ArbFormPagePayload PasswordResetViaEmail
 instance PayloadToEnv ResetPasswordFormData where
     payloadToEnvMapping _ _ (ResetPasswordFormData emailValue) = \case
         "email" -> pure [TextInput $ emailValue ^. re emailAddress]
+
+instance ArbFormPagePayload PageAdminTermsOfUse
+
+instance PayloadToEnv PageAdminTermsOfUsePayload where
+    payloadToEnvMapping _ _ (PageAdminTermsOfUsePayload terms) = \case
+        "terms-of-use" -> pure [TextInput $ unMarkdown terms]
