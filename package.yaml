@@ -17,7 +17,7 @@ ghc-options: -Wall
 
 dependencies:
     - base >=4.8 && <4.9
-    - thentos-frontend-session >=0.8.0
+    - thentos-cookie-session >=0.8.4
     - aeson
     - aeson-pretty
     - aeson-qq
@@ -46,7 +46,6 @@ dependencies:
     - http-types
     - JuicyPixels >=3.2.6.2 && <3.3
     - lens
-    - lio
     - lucid
     - mime-mail
     - mtl

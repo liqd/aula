@@ -1,3 +1,6 @@
+FIXME: we do not depend on the thentos git repo any more, but on some thentos packages from hackage.  this document does not reflect this change yet.
+
+
 # the aula software stack
 
 This document summarizes some of the technical decisions made for this

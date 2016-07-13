@@ -26,7 +26,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-frontend-session >=0.8.0
+    , thentos-cookie-session >=0.8.4
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -55,7 +55,6 @@ library
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
-    , lio
     , lucid
     , mime-mail
     , mtl
@@ -158,7 +157,7 @@ executable aula-avatars
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-frontend-session >=0.8.0
+    , thentos-cookie-session >=0.8.4
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -187,7 +186,6 @@ executable aula-avatars
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
-    , lio
     , lucid
     , mime-mail
     , mtl
@@ -226,7 +224,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-frontend-session >=0.8.0
+    , thentos-cookie-session >=0.8.4
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -255,7 +253,6 @@ executable aula-html-dummies
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
-    , lio
     , lucid
     , mime-mail
     , mtl
@@ -297,7 +294,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-frontend-session >=0.8.0
+    , thentos-cookie-session >=0.8.4
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -326,7 +323,6 @@ executable aula-server
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
-    , lio
     , lucid
     , mime-mail
     , mtl
@@ -366,7 +362,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-frontend-session >=0.8.0
+    , thentos-cookie-session >=0.8.4
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -395,7 +391,6 @@ test-suite spec
     , http-types
     , JuicyPixels >=3.2.6.2 && <3.3
     , lens
-    , lio
     , lucid
     , mime-mail
     , mtl
