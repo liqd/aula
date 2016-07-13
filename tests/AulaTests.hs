@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE ViewPatterns          #-}
@@ -17,7 +18,6 @@ import Control.Concurrent (forkIO, killThread, threadDelay, ThreadId)
 import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.String.Conversions
-import Network.HTTP.Client (HttpException)
 import Network.Wreq.Types (Postable, StatusChecker)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random (Random)
@@ -146,8 +146,8 @@ withServer' :: Config -> (WreqQuery -> IO a) -> IO a
 withServer' cfg action = do
     let opts = defaults & checkStatus ?~ doNotThrowExceptionsOnErrorCodes
                         & redirects   .~ 0
-        wreqQuery sess = WreqQuery (Sess.postWith opts sess . mkServerUri cfg)
-                                   (Sess.getWith opts sess . mkServerUri cfg)
+        wreqQuery sess cfg' = WreqQuery (Sess.postWith opts sess . mkServerUri cfg')
+                                        (Sess.getWith opts sess . mkServerUri cfg')
         initialize q = do
             resp <- post q "/api/manage-state/create-init" ([] :: [Part])
             case resp of
@@ -158,10 +158,10 @@ withServer' cfg action = do
 
     bracket
         (runFrontendSafeFork cfg)
-        killThread
-        (const . Sess.withSession $ \sess -> do
-            initialize $ wreqQuery sess
-            action     $ wreqQuery sess)
+        (killThread . fst)
+        (\(_, cfg') -> Sess.withSession $ \sess -> do
+            initialize $ wreqQuery sess cfg'
+            action     $ wreqQuery sess cfg')
 
 withServerAsAdmin :: (WreqQuery -> IO a) -> IO a
 withServerAsAdmin action = withServer $ \wreq -> do
@@ -175,13 +175,21 @@ mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
                           <> ":" <> show (cfg ^. listenerPort)
                           <> path
 
-runFrontendSafeFork :: Config -> IO ThreadId
-runFrontendSafeFork cfg = do
+runFrontendSafeFork :: Config -> IO (ThreadId, Config)
+runFrontendSafeFork = tryListener 37
+  where
+    tryListener :: Int -> Config -> IO (ThreadId, Config)
+    tryListener i cfg = catch ((,cfg) <$> runFrontendSafeFork' cfg)
+        (if i <= 0 then throwIO else (\(_ :: SomeException) -> threadDelay 4900 >> (tryListener (i-1) =<< testConfig)))
+
+runFrontendSafeFork' :: Config -> IO ThreadId
+runFrontendSafeFork' cfg = do
     threadId <- forkIO $ runFrontend cfg
-    let loop = catch
-          (Network.Wreq.get $ mkServerUri cfg "/")
-          (\(_ :: HttpException) -> threadDelay 4900 >> loop)
-    loop >> return threadId
+    waitForListener 37 >> return threadId
+  where
+    waitForListener :: Int -> IO ()
+    waitForListener i = catch (void . Network.Wreq.get $ mkServerUri cfg "/")
+        (if i <= 0 then throwIO else (\(_ :: SomeException) -> threadDelay 4900 >> waitForListener (i-1)))
 
 someTestUser :: User
 someTestUser = user
