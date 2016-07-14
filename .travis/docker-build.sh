@@ -2,7 +2,7 @@
 
 /liqd/aula/.travis/docker-link-stack-workdir.sh
 
-# Change to the source directory which is attacehed as docker volume
+# Change to the source directory which is attached as docker volume
 cd /liqd/aula
 
 QC_MAX_SUCCESS="100"
@@ -12,16 +12,18 @@ while [[ $# > 1 ]]
 do
 key=$1
 case $key in
-	--qc-max-success)
-	QC_MAX_SUCCESS="$2"
-	shift
-	;;
-	--qc-max-size)
-	QC_MAX_SIZE="$2"
-	shift
-	;;
-	*)
-	;;
+    --qc-max-success)
+    QC_MAX_SUCCESS="$2"
+    shift
+    ;;
+
+    --qc-max-size)
+    QC_MAX_SIZE="$2"
+    shift
+    ;;
+
+    *)
+    ;;
 esac
 shift
 done

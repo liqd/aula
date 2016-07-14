@@ -2,14 +2,12 @@ SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -idist/build/autogen
-FULL_SOURCES=$(AULA_SOURCES) -i$(THENTOS_ROOT_PATH)/thentos-frontend-session/src/
 AULA_IMAGE=quay.io/liqd/aula
 AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 
 .phony:
 
-# use sensei if you only want to hack aula; use sensei-full if you
-# want to hack both aula and thentos-frontend-session.
+# use sensei if you only want to hack aula.
 #
 # [fisx] the unregister rules are a hack: i experienced problems with
 # getting changes to source files noticed when any of the packages i
@@ -21,23 +19,14 @@ AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2
 %.unregister:
 	-$(EXEC) ghc-pkg unregister $*
 
-unregister-full:
-	make thentos-frontend-session.unregister aula.unregister
-
-# only aware of aula sources
 sensei: .phony aula.unregister
 	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large
 
+sensei-large: .phony aula.unregister
+	$(EXEC) sensei -j5 $(AULA_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
+
 stories: .phony aula.unregister
 	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/AulaTests/StoriesSpec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large
-
-# aware of aula and thentos sources
-sensei-full: .phony unregister-full
-	$(EXEC) sensei -j5 $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large
-
-# aware of aula and thentos sources
-sensei-large: .phony unregister-full
-	$(EXEC) sensei -j5 $(FULL_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
 
 seito: .phony
 	sleep 0.2 && seito

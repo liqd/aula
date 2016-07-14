@@ -12,7 +12,6 @@ in a shell:
 # install docker
 docker pull quay.io/liqd/aula
 git clone https://github.com/liqd/aula
-git clone --recursive https://github.com/liqd/thentos
 cd aula
 ./docker/run.sh
 # now you are inside the container.
@@ -43,28 +42,21 @@ testing.  If you want to use it, follow these steps:
 - in a shell:
 
 ```shell
-git clone --recursive https://github.com/hspec/sensei
-git clone --recursive https://github.com/liqd/thentos
-export THENTOS_ROOT_PATH=`pwd`/thentos
-cd thentos
-./misc/thentos-install.hs -p
-cd ..
 git clone https://github.com/liqd/aula
 export AULA_ROOT_PATH=`pwd`/aula
 cd aula
-cabal sandbox init --sandbox=../thentos/.cabal-sandbox
+cabal sandbox init
 ```
 
 Now, to have a quick look at the pages, do
 
 ```shell
 make aula-server
-make content
+make content  # (in another terminal)
 ```
 
 The second line generates some demo content, but also the initial user
-without which you can't login and create more users.  (This is work in
-progress.)
+without which you can't login and create more users.
 
 Now point your browser to localhost:8080
 
@@ -96,11 +88,6 @@ You can use seito (same git repo, different executable) to pull the
 last error report into your IDE to get pointed to the source code
 locations.
 
-Internal detail: sensei does not support multi-package development as such,
-so we simply add the source files of all packages we want to use to
-the source paths with a long list of `-i`s.  This way, any change in
-any of `thentos-*` or `aula` will trigger a re-run.
-
 
 ## HTML hacking
 
@@ -124,8 +111,8 @@ export AULA_SAMPLES=$HOME/aula-samples/
 make aula-server
 ```
 
-NOTE: `$AULA_SAMPLES` directory shouldn't be inside the `aula` or
-`thentos` repos.  If it is, a sensei re-run will be triggered by its own
+NOTE: `$AULA_SAMPLES` directory shouldn't be inside the `aula` repo.
+If it is, a sensei re-run will be triggered by its own
 changes to the html files, resulting in a very noisy loop.
 
 NOTE: docker has a VOLUME under `/root/html-templates` that
@@ -184,6 +171,13 @@ You need the sass compiler installed http://sass-lang.com/install
 ```shell
 sass --watch static-src/scss/imports.scss:static/css/all.css --style compressed
 ```
+
+...  or just run it once:
+
+```shell
+sass static-src/scss/imports.scss:static/css/all.css --style compressed
+```
+
 
 ### Creating icons
 

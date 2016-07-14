@@ -1,3 +1,6 @@
+FIXME: we do not depend on the thentos git repo any more, but on some thentos packages from hackage.  this document does not reflect this change yet.
+
+
 # thoughts on how to use docker
 
 On the one hand, docker makes it easy to handle system state; on the

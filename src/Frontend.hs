@@ -34,8 +34,8 @@ import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import qualified Data.ByteString.Builder as Builder
 
-import Thentos.Frontend.Session.Types (ThentosSessionToken)
-import Thentos.Frontend.Session (serveFAction)
+import Thentos.CookieSession.Types (ThentosSessionToken)
+import Thentos.CookieSession (serveFAction)
 
 import AulaPrelude
 import Access
