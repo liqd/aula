@@ -363,6 +363,7 @@ modifyCurrentUser ev =
 isLoggedIn :: ActionUserHandler m => m Bool
 isLoggedIn = userState $ to validLoggedIn
 
+-- TODO this is not checking much?
 validLoggedIn :: UserState -> Bool
 validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 

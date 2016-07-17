@@ -28,6 +28,8 @@ import Network.Wai.Application.Static
     ( StaticSettings
     , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
     )
+import Network.Wai.Middleware.RequestLogger -- (mkRequestLogger, OutputFormat(..))
+import Network.Wai.Middleware.RequestLogger.JSON (formatAsJSON)
 import Servant
 import System.FilePath (addTrailingPathSeparator)
 import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
@@ -51,6 +53,7 @@ import Frontend.Testing
 import Logger
 import Persistent.Api (RunPersist)
 import Persistent (withPersist, findUser)
+import System.IO
 
 import qualified Action
 import qualified Backend
@@ -97,9 +100,15 @@ runFrontend' cfg log rp = do
                  . setPort (cfg ^. listenerPort)
                  $ Warp.defaultSettings
 
+    h <- openFile "log.json" AppendMode
+    reqLogging <- mkRequestLogger def
+                    { outputFormat = CustomOutputFormatWithDetails formatAsJSON
+                    , destination = Handle h }
+
     runSettings settings
         . createPageSamples
-        . catch404
+        . catch404 -- TODO
+        . reqLogging
         . serve aulaTopProxy $ aulaTop cfg app
 
 
@@ -429,6 +438,7 @@ aulaAdmin =
     postAdminRemRole user = runPostHandler (pure NeedAdmin) . Page.adminRemRole user
 
 
+-- TODO
 catch404 :: Middleware
 catch404 app req cont = app req $ \resp -> cont $ f resp
   where

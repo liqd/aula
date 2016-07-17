@@ -69,6 +69,7 @@ dependencies:
     - vector
     - wai
     - wai-app-static
+    - wai-extra
     - warp
     - yaml
 
