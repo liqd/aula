@@ -145,14 +145,11 @@ makeLenses ''TransTableT
 -- * data extraction
 
 mkTransKey :: ST -> [TransKey]
-mkTransKey = runP' p
-  where
-    p :: Parsec ST () [TransKey]
-    p = do
-        filename :: FilePath <- manyTill anyChar (char ':')
-        linenum  :: LineNum  <- read <$> manyTill digit (char ':')
-        tkeys    :: [ST]     <- pKeys
-        pure $ TransKeyEmpty filename linenum <$> tkeys
+mkTransKey = runP' $ do
+    filename :: FilePath <- manyTill anyChar (char ':')
+    linenum  :: LineNum  <- read <$> manyTill digit (char ':')
+    tkeys    :: [ST]     <- pKeys
+    pure $ TransKeyEmpty filename linenum <$> tkeys
 
 trTransKeys :: Lang -> [TransKey] -> [ST] -> [TransKey]
 trTransKeys lang prekeys = (<> prekeys) . f . fmap cs
@@ -244,9 +241,7 @@ extractTransTableF lang wd mdiff = completeTransTableF <$> do
     pure $ fromTransKeys tkeys
 
 runGit :: [String] -> IO (Handle, Handle, Handle, ProcessHandle)
-runGit args = do
-    -- putStrLn . unwords $ "git" : (show <$> args)
-    runInteractiveProcess "git" args Nothing Nothing
+runGit args = runInteractiveProcess "git" args Nothing Nothing
 
 
 completeTransTableF :: TransTableF -> TransTableF
@@ -360,8 +355,6 @@ run wd = \case
         putStrLn "done!"
 
 
--- TODO: make this a separate package thentos-i18n
-
 t1 :: IO ()
 t1 = do
     wd <- getEnv "AULA_ROOT_PATH"
@@ -390,4 +383,5 @@ instance Aeson.ToJSON Transifex where
       gott k (TransTableT (ls, m)) = ak Aeson..= av
         where
           ak = k <> ":" <> ST.intercalate ":" (cs . show <$> Set.toAscList ls)
-          av = fromMaybe (error "Transifex: incomplete translation table") $ Map.lookup lang m
+          av = fromMaybe (error $ "Transifex: incomplete translation table for language " <> show lang)
+             $ Map.lookup lang m
