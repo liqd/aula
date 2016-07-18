@@ -9,6 +9,7 @@ packages:
 
 # Packages to be pulled from upstream that are not in the resolver (e.g., acme-missiles-0.3)
 extra-deps:
+- aeson-extra-0.3.2.0
 - basic-sop-0.2.0.0
 - cond-0.4.1.1
 - configifier-0.1.1
@@ -16,6 +17,7 @@ extra-deps:
 - functor-infix-0.0.3
 - html-parse-0.1.0.0
 - thentos-cookie-session-0.9.0
+- unordered-containers-0.2.7.0
 - uri-bytestring-0.1.9.2
 - wai-digestive-functors-0.3
 
