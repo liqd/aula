@@ -54,7 +54,7 @@
 -- * generate a module @P/X_T.hs@ for every module @P/X.hs@.  The former introduces the translation
 --   keys used in the latter.
 -- * add an import statement in @P/X.hs@ if it is missing.
-module I18N
+module Main
 where
 
 import Control.Lens

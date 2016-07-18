@@ -71,8 +71,6 @@ dependencies:
     - wai-app-static
     - warp
     - yaml
-    - aeson-extra
-    - unordered-containers
 
 library:
   source-dirs: src
@@ -118,7 +116,6 @@ tests:
     main: Spec.hs
     source-dirs:
       - tests
-      - exec
     dependencies:
       - aula
       - base >=4.8 && <4.9

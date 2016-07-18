@@ -80,8 +80,6 @@ library
     , wai-app-static
     , warp
     , yaml
-    , aeson-extra
-    , unordered-containers
   exposed-modules:
       Access
       Action
@@ -213,8 +211,6 @@ executable aula-avatars
     , wai-app-static
     , warp
     , yaml
-    , aeson-extra
-    , unordered-containers
     , aula
   other-modules:
       Aula
@@ -283,8 +279,6 @@ executable aula-html-dummies
     , wai-app-static
     , warp
     , yaml
-    , aeson-extra
-    , unordered-containers
     , aula
     , extra
     , fsnotify
@@ -296,7 +290,7 @@ executable aula-html-dummies
   default-language: Haskell2010
 
 executable aula-i18n
-  main-is: exec/I18N.hs
+  main-is: I18N.hs
   hs-source-dirs:
       exec
   ghc-options: -Wall
@@ -356,14 +350,11 @@ executable aula-i18n
     , wai-app-static
     , warp
     , yaml
-    , aeson-extra
-    , unordered-containers
     , aula
     , aeson-extra
     , unordered-containers
   other-modules:
       Aula
-      I18N
       RenderHtml
       ResizeAvatar
   default-language: Haskell2010
@@ -429,8 +420,6 @@ executable aula-server
     , wai-app-static
     , warp
     , yaml
-    , aeson-extra
-    , unordered-containers
     , aula
   other-modules:
       I18N
@@ -500,8 +489,6 @@ test-suite spec
     , wai-app-static
     , warp
     , yaml
-    , aeson-extra
-    , unordered-containers
     , aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
