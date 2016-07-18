@@ -21,6 +21,39 @@
 
 {-# OPTIONS -Wall -Werror -fno-warn-orphans -fno-warn-incomplete-patterns #-}
 
+-- | Script for collecting translation keys into translation files (json) and compiling those
+-- translation files into definitions for the translation keys.  Depends on "Lucid.I18N".
+--
+-- A translation key definition looks like this:
+--
+-- >>> t_shift_phase_forward :: (MonadReader Lang m, IsString s) => m s
+-- >>> t_shift_phase_forward = (<$> ask) $ \case
+-- >>>     DE -> "Phase weiterschieben"
+-- >>>     HU -> "Következő fázis"
+--
+-- Note that the type specializes to function, so you can use it like this:
+--
+-- >>>     lang <- getLang
+-- >>>     img_ [alt_ (t_shift_phase_forward lang)]
+--
+-- ...  or like this:
+--
+-- >>>     p_ (t_shift_phase_forward lang)
+--
+-- (I also tried to keep the call to 'getLang' contained in the language key definitions, but that
+-- will have to wait for the next release now.)
+--
+-- This module performs several tasks:
+--
+-- * scan the code base for translation keys with @git grep 't_.*'@.
+-- * find translations by heuristically scanning a diff between the git commit holding the
+--   monolingual string literals and one holding the translation keys.  (this is mostly for
+--   convenience during introduction of I18N into an existing project.)
+-- * generate a complete translation table from these findings (filling the gaps with the
+--   translation key prefixed with @*** @).
+-- * generate a module @P/X_T.hs@ for every module @P/X.hs@.  The former introduces the translation
+--   keys used in the latter.
+-- * add an import statement in @P/X.hs@ if it is missing.
 module I18N
 where
 
