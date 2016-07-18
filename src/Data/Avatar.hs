@@ -61,9 +61,8 @@ clipCircle img@(Image w h _) = generateImage f d d where
     radius = d `div` 2 - max (d `div` 80) 2
     -- x in 0..w-1
     -- y in 0..h-1
-    f x y {-| inCircle x y = pixelAt img x y
-          | otherwise    =-}
-        = changeOpacity newOpacity (pixelAt img x y)
+    f x y = -- if inCircle x y then pixelAt img x y else
+            changeOpacity newOpacity (pixelAt img x y)
       where
         z = dist center (x, y) - fromIntegral radius
         newOpacity old

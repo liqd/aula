@@ -289,7 +289,7 @@ compileTransTableF (TransTableF m) = uncurry go `mapM_` Map.toList m
             , "{-# LANGUAGE LambdaCase        #-}"
             , "{-# LANGUAGE OverloadedStrings #-}"
             , ""
-            , "-- | DO NOT EDIT!  This module has been auto-generated with `/exec/I18N.hs`!"
+            , "-- | DO NOT EDIT!  This module has been auto-generated with the @I18N.hs@ script!"
             , "module " <> moduleNameFromFilePath hsfile
             , "where"
             , ""

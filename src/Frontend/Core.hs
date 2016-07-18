@@ -770,7 +770,7 @@ pageFrame frame = do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
 
-        -- | disable the meta tag for admins, since admin pages are not working on mobile devices.
+        -- disable the meta tag for admins, since admin pages are not working on mobile devices.
         let viewport_content
                 | isResponsive p = "width=device-width, initial-scale=1"
                 | otherwise      = "width=1024"
