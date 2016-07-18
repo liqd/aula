@@ -308,7 +308,7 @@
             downDepth = downDepth || -1;
             upDepth   = upDepth   || -1;
 
-            var visited = [];
+            var visited;
 
             var updateVisible = function(n) {
                 n.visibleByClick = show;
@@ -331,7 +331,9 @@
                 });
             };
 
+            visited = [node.name];
             go(node, downDepth - 1, true);
+            visited = [node.name];
             go(node, upDepth - 1, false);
             updateVisibility();
         };
