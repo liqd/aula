@@ -32,7 +32,7 @@ seito: .phony
 	sleep 0.2 && seito
 
 aula-server: .phony
-	$(EXEC) runhaskell -j5 $(FULL_SOURCES) ./exec/Aula.hs
+	$(EXEC) runhaskell -j5 $(AULA_SOURCES) ./exec/Aula.hs
 
 click-dummies-recreate: .phony
 	@echo "*** this target is deprecated!"
@@ -40,10 +40,10 @@ click-dummies-recreate: .phony
 	@echo "*** see module docs in src/RenderHtml.hs"
 
 click-dummies-refresh: .phony aula.unregister
-	$(EXEC) sensei $(FULL_SOURCES) ./exec/RenderHtml.hs
+	$(EXEC) sensei $(AULA_SOURCES) ./exec/RenderHtml.hs
 
 test-repl:
-	$(EXEC) ghci $(FULL_SOURCES)
+	$(EXEC) ghci $(AULA_SOURCES)
 
 hlint:
 	$(HLINT) --version
@@ -55,7 +55,7 @@ test-everything:
 	cabal test
 
 ghci-no-type-errors:
-	$(EXEC) ghci $(FULL_SOURCES) -fdefer-type-errors
+	$(EXEC) ghci $(AULA_SOURCES) -fdefer-type-errors
 
 seito-docker-hack:
 	pwd > pwd.log
@@ -100,5 +100,5 @@ team-avatars: .phony
 	curl -o team-avatars/rittermo https://avatars3.githubusercontent.com/u/15341015?v=3&s=400
 	curl -o team-avatars/localgrr https://avatars1.githubusercontent.com/u/701632?v=3&s=400
 	curl -o team-avatars/mikolaj https://avatars1.githubusercontent.com/u/281893?v=3&s=400
-	$(EXEC) runhaskell -j5 $(FULL_SOURCES) ./exec/ResizeAvatar.hs 300 100 64 32 -- ./team-avatars/andorp ./team-avatars/fisx ./team-avatars/localgrr ./team-avatars/mikolaj ./team-avatars/np ./team-avatars/rittermo
+	$(EXEC) runhaskell -j5 $(AULA_SOURCES) ./exec/ResizeAvatar.hs 300 100 64 32 -- ./team-avatars/andorp ./team-avatars/fisx ./team-avatars/localgrr ./team-avatars/mikolaj ./team-avatars/np ./team-avatars/rittermo
 	@echo "Open now your web browser on: file://$$PWD/avatars.html"
