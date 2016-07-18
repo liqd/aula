@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -104,16 +105,21 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx whatPage ideasQuery []) = semanticDiv p $ do
+    toHtml p@(ListItemIdeas ctx whatPage ideasQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader whatPage ideasQuery
-        div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
+        callToActionOnList'
+            (a_ [href_ $ createIdeaLink whatPage]
+                $ toHtml $ "Keine Ideen" <> mCatInfo <> ". Click here to create a new idea.")
+            (toHtml . ListItemIdea ctx whatPage)
+            ideasAndNumVoters
       where
         mCatInfo =
             ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeledST . to (" in der Kategorie " <>)
 
-    toHtml p@(ListItemIdeas ctx whatPage ideasQuery ideasAndNumVoters) = semanticDiv p $ do
-        ideaListHeader whatPage ideasQuery
-        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
+        createIdeaLink = \case
+            IdeaInIdeasOverview loc  -> U.createIdea loc
+            IdeaInViewTopic _tab loc -> U.createIdea loc
+            IdeaInUserProfile _usr   -> U.createIdea (IdeaLocationSpace SchoolSpace)
 
 
 ideaListHeader :: Monad m => WhatListPage -> IdeasQuery -> HtmlT m ()
