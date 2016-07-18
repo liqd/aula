@@ -27,10 +27,10 @@ data WhatDelegationPage
 renderDelegations :: forall m. Monad m => WhatDelegationPage -> DelegationListsMap -> HtmlT m ()
 renderDelegations whatsPage delegations =
     callToActionOnList
-        -- TODO: Translation
-        (if CanDelegate `elem` capabilities (wdpCapCtx whatsPage)
-            then a_ [href_ delegationLink] "Keine Beauftragung. Click here to create one"
-            else "Keine Beauftragung.")
+        (do
+           "Keine Beauftragungen in diesem Geltungsbereich.  "
+           when (CanDelegate `elem` capabilities (wdpCapCtx whatsPage)) $
+               a_ [href_ delegationLink] "Beauftrage deine Stimme!")
         (ul_ [class_ "small-avatar-list"])
         renderLi
         ds

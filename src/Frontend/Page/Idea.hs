@@ -380,8 +380,9 @@ instance ToHtml ViewIdea where
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     callToActionOnList'
-                        -- TODO: Translation
-                        (when (CanComment `elem` caps) $ toHtml ("Be the first one who leaves a comment" :: String))
+                        (when (CanComment `elem` caps) .
+                            a_ [href_ $ U.commentOnIdea idea] $
+                                "Gib den ersten Verbesserungsvorschlag ab!")
                         (toHtml . CommentWidget ctx caps)
                         (idea ^. ideaComments)
 

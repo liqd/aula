@@ -123,11 +123,12 @@ instance ToHtml PageOverviewOfTopics where
                 when (CanCreateTopic `elem` caps) $
                     button_ [onclick_ (U.createTopic space), class_ "btn-cta m-large"] "+ Neues Thema"
 
-            -- TODO: Translation
             callToActionOnList'
-                (if CanCreateTopic `elem` caps
-                    then a_ [href_ $ U.createTopic space] "Keine Thema. Be the first one who creates"
-                    else "Kiene Thema.")
+                (do
+                    "Hier gibt es noch keine Themen.  "
+                    when (CanCreateTopic `elem` caps) .
+                        a_ [href_ $ U.createTopic space] $
+                            "Lege das erste Thema an!")
                 (\topic -> div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
                         a_ [ class_ "theme-grid-item-link"

@@ -108,13 +108,14 @@ instance ToHtml ListItemIdeas where
     toHtml p@(ListItemIdeas ctx whatPage ideasQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader whatPage ideasQuery
         callToActionOnList'
-            (a_ [href_ $ createIdeaLink whatPage]
-                . toHtml $ "Keine Ideen" <> mCatInfo <> ". Click here to create a new idea.")
+            (do
+                "Keine Ideen" <> mCatInfo <> ".  "
+                a_ [href_ $ createIdeaLink whatPage] "Erstelle Deine eigene Idee!")
             (toHtml . ListItemIdea ctx whatPage)
             ideasAndNumVoters
       where
         mCatInfo =
-            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeledST . to (" in der Kategorie " <>)
+            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeled . to (" in der Kategorie " <>)
 
         createIdeaLink = \case
             IdeaInIdeasOverview loc  -> U.createIdea loc
