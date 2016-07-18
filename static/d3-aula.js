@@ -305,8 +305,8 @@
         // (recursively).  depth < 0 means unlimited recursion (only
         // limited by graph size).
         var unfoldNeighbours = function(node, show, downDepth, upDepth) {
-            downDepth = downDepth || -1;
-            upDepth   = upDepth   || -1;
+            downDepth = downDepth || 0;
+            upDepth   = upDepth   || 0;
 
             var visited;
 
@@ -347,11 +347,7 @@
         };
 
         var on_click = function(d) {
-            if (hasHiddenEdges(d)) {
-                unfoldNeighbours(d, true, 1, 1);
-            } else {
-                unfoldNeighbours(d, false, -1, -1);
-            }
+            unfoldNeighbours(d, hasHiddenEdges(d));
         };
 
         var on_mouseover = function(d) {
