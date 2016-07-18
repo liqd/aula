@@ -379,8 +379,11 @@ instance ToHtml ViewIdea where
                                 "Neuer Verbesserungsvorschlag"
             div_ [class_ "comments-body grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    for_ (idea ^. ideaComments) $ \c ->
-                        CommentWidget ctx caps c ^. html
+                    callToActionOnList'
+                        -- TODO: Translation
+                        (when (CanComment `elem` caps) $ toHtml ("Be the first one who leaves a comment" :: String))
+                        (toHtml . CommentWidget ctx caps)
+                        (idea ^. ideaComments)
 
 
 feasibilityIndicator :: Monad m => Idea -> HtmlT m ()
