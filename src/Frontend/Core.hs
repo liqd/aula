@@ -345,7 +345,7 @@ callToActionOnList
     -> t a
     -> HtmlT m ()
 callToActionOnList onCta wrapItems onItem values
-  | null values = div_ [class_ "container-not-found"] $ onCta
+  | null values = div_ [class_ "container-not-found"] onCta
   | otherwise   = wrapItems $ mapM_ onItem values
 
 callToActionOnList'
@@ -354,8 +354,8 @@ callToActionOnList'
     -> (a -> HtmlT m ())
     -> t a
     -> HtmlT m ()
-callToActionOnList' onCta onItem =
-    callToActionOnList onCta id onItem
+callToActionOnList' onCta =
+    callToActionOnList onCta id
 
 
 -- * pages

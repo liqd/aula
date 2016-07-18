@@ -109,7 +109,7 @@ instance ToHtml ListItemIdeas where
         ideaListHeader whatPage ideasQuery
         callToActionOnList'
             (a_ [href_ $ createIdeaLink whatPage]
-                $ toHtml $ "Keine Ideen" <> mCatInfo <> ". Click here to create a new idea.")
+                . toHtml $ "Keine Ideen" <> mCatInfo <> ". Click here to create a new idea.")
             (toHtml . ListItemIdea ctx whatPage)
             ideasAndNumVoters
       where

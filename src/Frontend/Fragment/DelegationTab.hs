@@ -29,7 +29,7 @@ renderDelegations whatsPage delegations =
     callToActionOnList
         -- TODO: Translation
         (if CanDelegate `elem` capabilities (wdpCapCtx whatsPage)
-            then a_ [href_ delegationLink] $ "Keine Beauftragung. Click here to create one"
+            then a_ [href_ delegationLink] "Keine Beauftragung. Click here to create one"
             else "Keine Beauftragung.")
         (ul_ [class_ "small-avatar-list"])
         renderLi

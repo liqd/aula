@@ -126,7 +126,7 @@ instance ToHtml PageOverviewOfTopics where
             -- TODO: Translation
             callToActionOnList'
                 (if CanCreateTopic `elem` caps
-                    then a_ [href_ $ U.createTopic space] $ "Keine Thema. Be the first one who creates"
+                    then a_ [href_ $ U.createTopic space] "Keine Thema. Be the first one who creates"
                     else "Kiene Thema.")
                 (\topic -> div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
