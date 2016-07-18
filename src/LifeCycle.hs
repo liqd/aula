@@ -4,8 +4,8 @@
 {-# OPTIONS_GHC -Wall -Werror #-}
 
 module LifeCycle
-      -- * phase transition
-    ( PhaseChange(..)
+    ( -- * phase transition
+      PhaseChange(..)
     , PhaseAction(..)
     , phaseTrans
     , freezePhase

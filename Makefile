@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
-AULA_SOURCES=-isrc -itests -idist/build/autogen
+AULA_SOURCES=-isrc -itests -iexec -idist/build/autogen
 AULA_IMAGE=quay.io/liqd/aula
 AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 

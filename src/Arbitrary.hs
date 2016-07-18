@@ -753,7 +753,7 @@ guestOrStudent clss = elements
 
 instance Arbitrary InitialPassword where
     arbitrary = InitialPassword . fromString <$> someOf 4 8 arb
-                -- ^ if we restrict password characters to printable&ascii in the validation
+                -- if we restrict password characters to printable&ascii in the validation
                 -- rules then we change it here.
     shrink = gshrink
 

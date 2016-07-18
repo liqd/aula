@@ -946,7 +946,7 @@ mkUserLogin protoUser = pick (gen firstn lastn)
     pick :: [ST] -> AUpdate UserLogin
     pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
     pick []                    = error "impossible.  (well, unlikely.)"
-                                 -- ^ FIXME: use throwError(500) here?
+                                 -- FIXME: use throwError(500) here?
 
     gen :: ST -> ST -> [ST]
     gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise

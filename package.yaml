@@ -29,8 +29,8 @@ dependencies:
     - cassava >= 0.4.5.0
     - containers
     - cookie
-    - css-syntax
     - cryptonite >=0.6 && <0.16
+    - css-syntax
     - digestive-functors
     - digestive-functors-lucid
     - directory
@@ -101,6 +101,15 @@ executables:
     other-modules:
     dependencies:
       - aula
+
+  aula-i18n:
+    main: I18N.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+      - aeson-extra
+      - unordered-containers
 
 tests:
   spec:
