@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -20,7 +19,7 @@ where
 
 import Control.Lens
 
-import Access (CapCtx)
+import Access (CapCtx, Capability(CanCreateIdea), capabilities, capCtxUser)
 import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
@@ -110,14 +109,24 @@ instance ToHtml ListItemIdeas where
         callToActionOnList'
             (do
                 "Keine Ideen" <> mCatInfo <> ".  "
-                a_ [href_ $ createIdeaLink whatPage] "Erstelle Deine eigene Idee!")
+                when canCreateIdea $
+                    a_ [href_ createIdeaLink] "Erstelle Deine eigene Idee!")
             (toHtml . ListItemIdea ctx whatPage)
             ideasAndNumVoters
       where
+        -- FIXME: Currently only students can create ideas,
+        -- the check should be done in Access module, but it would
+        -- introduce another hiearchical capability.
+        caps = capabilities ctx
+        canCreateIdea = case whatPage of
+            IdeaInIdeasOverview _loc  -> CanCreateIdea `elem` caps
+            IdeaInViewTopic _tab _loc -> CanCreateIdea `elem` caps
+            IdeaInUserProfile _usr    -> ctx ^. capCtxUser . to isStudent
+
         mCatInfo =
             ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeled . to (" in der Kategorie " <>)
 
-        createIdeaLink = \case
+        createIdeaLink = case whatPage of
             IdeaInIdeasOverview loc  -> U.createIdea loc
             IdeaInViewTopic _tab loc -> U.createIdea loc
             IdeaInUserProfile _usr   -> U.createIdea (IdeaLocationSpace SchoolSpace)
