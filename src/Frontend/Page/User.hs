@@ -261,15 +261,17 @@ delegationButtons delegatee delegate delegations = do
         let classScope = DScopeIdeaSpace (ClassSpace clss)
         if isActiveDelegation classScope
             then do
-                (if ownProfile
+                if ownProfile
                     then butGet (U.createDelegation classScope)
-                    else butPost (U.withdrawDelegationOnClassSpace delegate clss))
-                    ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
+                           ("Deine Beauftragung für Klasse " <> uilabel clss)
+                    else butPost (U.withdrawDelegationOnClassSpace delegate clss)
+                           ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
             else do
-                (if ownProfile
+                if ownProfile
                     then butGet (U.createDelegation classScope)
-                    else butPost (U.delegateVoteOnClassSpace delegate clss))
-                    ("Für Klasse " <> uilabel clss <> " beauftragen")
+                           ("Deine Beauftragung für Klasse " <> uilabel clss)
+                    else butPost (U.delegateVoteOnClassSpace delegate clss)
+                           ("Für Klasse " <> uilabel clss <> " beauftragen")
     let schoolScope = DScopeIdeaSpace SchoolSpace
     if isActiveDelegation schoolScope
         then do
