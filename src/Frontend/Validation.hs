@@ -180,7 +180,7 @@ nonEmptyV = FieldValidator $ \xs ->
 maxLengthV :: Int -> FieldValidator' ST
 maxLengthV mx = FieldValidator $ \xs ->
     if ST.length xs > mx
-        then DF.Error ["max." <> cs (show mx) <> " Zeichen"]
+        then DF.Error ["max. " <> cs (show mx) <> " Zeichen"]
         else DF.Success xs
 
 type DfForm a = forall m n. (Monad m, Monad n) => DF.Form (HtmlT n ()) m a

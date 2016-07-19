@@ -988,7 +988,7 @@ instance FormPage PageAdminTermsOfUse where
         <$> validate
                 "Nutzungsbedingungen"
                 markdownV
-                ("terms-of-use" .: DF.text (Just (unMarkdown termsOfUseDoc)))
+                ("terms-of-use" .: (DF.text . Just . unMarkdown $ termsOfUseDoc))
     formPage v form p = adminFrame p . semanticDiv p $ do
         form $ do
             h3_ "Bitte passen Sie hier die Nutzungsbedingungen an"
