@@ -162,7 +162,7 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters delegation) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab delegation
-        unless (topic ^. topicDeleted) $ div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
+        unless (topic ^. topicDeleted) . div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
 viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe DelegationFull -> HtmlT m ()
@@ -266,7 +266,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
         div_ [class_ "heroic-tabs is-responsive"] $ allTabs Desktop
         select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs Mobile
 
-    when deleted . div_ [class_ $ "topic-header phase-" <> cs (show phase)] $
+    when deleted . div_ [class_ $ "topic-header phase-" <> cs (show phase)] .
         -- TODO: Translation
         div_ $ p_ "THIS TOPIC IS DELETED!"
 
