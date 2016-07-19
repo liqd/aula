@@ -216,7 +216,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                        , href_ . U.createIdea $ IdeaLocationTopic space topicId
                        ] $
                       "+ Neue Idee"
-                delegateVoteButton = when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) .
+                delegateVoteButton = when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
                     a_ [ class_ "btn-cta heroic-cta m-large"
                        , href_ $ U.createDelegation (DScopeTopicId topicId)
                        ] $ do
@@ -224,6 +224,8 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                       if isNothing delegation
                             then "Stimme beauftragen"
                             else "Beauftragung ändern"
+                    unless (isNothing delegation) . p_ $
+                        "Derzeit beauftragt: " <> delegation ^. _Just . delegationTo . unAUID . showed . html  -- TODO: introduce DelegationFull
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
