@@ -221,9 +221,7 @@ passwordV = fieldParser
             , show maxPasswordLength, " Zeichen"])
 
 titleV :: StringFieldValidator
-titleV = fieldParser
-    (cs <$> many1 (alphaNum <|> space))
-    "Buchstaben, Ziffern, oder Leerzeichen"
+titleV = fieldParser (cs <$> many1 anyChar) "nicht leer"
 
 markdownV :: FieldValidator ST Document
 markdownV = nonEmptyV >>> fieldEither markdown

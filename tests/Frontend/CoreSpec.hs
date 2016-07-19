@@ -130,9 +130,9 @@ spec = do
         let spc = IdeaLocationSpace SchoolSpace
             ctx = userOnlyCapCtx (error "CoreSpec: IMPOSSIBLE")
             page = CreateIdea ctx spc
-            payload = ProtoIdea "!@" (unsafeMarkdown "lorem ipsidiorum!") Nothing spc
+            payload = ProtoIdea "" (unsafeMarkdown "lorem ipsidiorum!") Nothing spc
           in testValidationError page EmptyPayloadContext payload
-            ["Titel der Idee: ung\252ltige Eingabe: &quot;!&quot; (erwartet: Buchstaben, Ziffern, oder Leerzeichen)"]
+            ["Titel der Idee: ung\252ltige Eingabe: zu wenig Input (erwartet: nicht leer)"]
 
 -- Limit for 'uniqueOf' combinator.
 numOfUniqueTries :: Int

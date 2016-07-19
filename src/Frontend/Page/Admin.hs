@@ -504,9 +504,8 @@ instance FormPage AdminCreateUser where
             <*> optionalEmailField "Email" Nothing
             <*> (Set.singleton <$> roleForm Nothing Nothing classes)
         where
-            -- FIXME: Users with more than one name?
-            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter) "nur Buchstaben")
-            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 letter) "nur Buchstaben")
+            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 anyChar) "nicht leer")
+            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 anyChar) "nicht leer")
             loginName = validateOptional "Login" (UserLogin <$> usernameV)
 
     formPage v form p =
