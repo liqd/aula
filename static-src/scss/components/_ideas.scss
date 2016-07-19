@@ -165,6 +165,14 @@
         @include svg(nay);
     }
 
+    .icon-winner .indicator-icon {
+        @include svg(winner);
+    }
+
+    .icon-hourglass .indicator-icon {
+        @include svg(hourglass);
+    }
+
     .m-table .indicator-icon {
         background-image: url(../images/badge_aufdemtisch.png);
         min-width: 40px;
