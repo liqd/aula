@@ -529,12 +529,12 @@ instance ArbFormPagePayload ReportUserProfile
 instance ArbFormPagePayload EditUserProfile where
     arbFormPagePayload _ =
         UserProfileUpdate
-        <$> oneof [pure Nothing] -- TODO discuss , Just . (cs :: String -> ST) . getNonEmpty <$> arb]
+        <$> oneof [pure Nothing] -- FIXME: @<> [Just . (cs :: String -> ST) . getNonEmpty <$> arb]@?
         <*> arb
 
 instance PayloadToEnv UserProfileUpdate where
     payloadToEnvMapping _ _ (UserProfileUpdate _murl (unMarkdown -> desc)) = \case
-        "avatar" -> pure [] -- TODO discuss $ FileInput . cs <$> maybeToList murl
+        "avatar" -> pure [] -- FIXME: @$ FileInput . cs <$> maybeToList murl@?
         "desc"   -> pure [TextInput desc]
 
 -- FIXME: Move ideas to wild is not generated
