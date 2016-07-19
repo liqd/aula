@@ -322,11 +322,11 @@ quoteString = ("\"" <>) . (<> "\"") . ST.replace "\"" "\\\""
 -- * main
 
 translationsFile :: FilePath
-translationsFile = "./aula-i18n.json"  -- TODO: make this configurable?
+translationsFile = "./aula-i18n.json"  -- FIXME: make this configurable?
 
 main :: IO ()
 main = do
-    wd <- getEnv "AULA_ROOT_PATH"  -- TODO: get rid of this, too.
+    wd <- getEnv "AULA_ROOT_PATH"  -- FIXME: get rid of this, too.
     args <- getArgs
     run wd args
 
