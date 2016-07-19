@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE Rank2Types          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -225,8 +226,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                       if isNothing delegation
                             then "Stimme beauftragen"
                             else "Beauftragung ändern"
-                    unless (isNothing delegation) $ do
-                        let delegate = delegation ^?! _Just . delegationFullTo
+                    forM_ delegation $ \(view delegationFullTo -> delegate) -> do
                         p_ . a_ [href_ $ U.viewUserProfile delegate] $
                             "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
 

@@ -15,7 +15,6 @@ where
 import Access
 import Action
 import Codec.Picture (DynamicImage)
-import Data.Maybe (listToMaybe)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
@@ -253,7 +252,7 @@ delegationButtons :: Monad m => User -> User -> [DelegationFull] -> HtmlT m ()
 delegationButtons visiting visited delegations = do
     let ownProfile = isOwnProfile visiting visited
         isActiveDelegation = isJust . activeDelegation
-        activeDelegation dscope = listToMaybe . (`filter` delegations) $
+        activeDelegation dscope = (`find` delegations) $
             (\d -> d ^. delegationFullScope == dscope &&
                    d ^. delegationFullFrom . _Id == visiting ^. _Id &&
                    (ownProfile || d ^. delegationFullTo . _Id ==  visited ^. _Id))
@@ -275,7 +274,7 @@ delegationButtons visiting visited delegations = do
                 butPost (U.delegateVoteOnIdeaSpace visited ispace)
                     ("Für " <> uilabel ispace <> " beauftragen")
         br_ []
-        (`mapM_` activeDelegation dscope) $ \(DelegationFull _ _ delegate) ->
+        forM_ (activeDelegation dscope) $ \(DelegationFull _ _ delegate) ->
             p_ . a_ [href_ $ U.viewUserProfile delegate] $
                 "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
 
