@@ -33,7 +33,7 @@ module Frontend.Core
     , IsTab, ClientDevice(..)
     , tabSelected
     , redirect, redirectPath
-    , avatarImg, userAvatarImg, createdByAvatarImg
+    , userAvatarImg, userAvatarImg'
     , numLikes, percentLikes, numVotes, percentVotes
     , callToActionOnList, callToActionOnList'
 
@@ -298,14 +298,11 @@ redirect = throwServantErr . err303With
 redirectPath :: (MonadServantErr err m, HasPath p) => p 'P.AllowGetPost -> m a
 redirectPath = redirect . absoluteUriPath . relPath
 
-avatarImg :: Monad m => AvatarDimension -> Getter (AUID User) (HtmlT m ())
-avatarImg dim = avatarUrl dim . to (img_ . pure . Lucid.src_)
+userAvatarImg :: Monad m => AvatarDimension -> User -> HtmlT m ()
+userAvatarImg dim user = userAvatarImg' dim (user ^. _Id) (user ^. userLogin)
 
-createdByAvatarImg :: (Monad m, HasMetaInfo a) => AvatarDimension -> Getter a (HtmlT m ())
-createdByAvatarImg dim = createdBy . avatarImg dim
-
-userAvatarImg :: Monad m => AvatarDimension -> Getter User (HtmlT m ())
-userAvatarImg dim = _Id . avatarImg dim
+userAvatarImg' :: Monad m => AvatarDimension -> AUID User -> UserLogin -> HtmlT m ()
+userAvatarImg' dim uid ul = img_ [Lucid.src_ $ uid ^. avatarUrl dim, alt_ $ "avatar: " <> ul ^. unUserLogin]
 
 numLikes :: Idea -> Int
 numLikes idea = Map.size $ idea ^. ideaLikes
@@ -818,7 +815,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                     div_ [class_ "pop-menu"] $ do
                         -- FIXME: please add class m-selected to currently selected menu item
                         div_ [class_ "user-avatar"] $
-                            mUser ^. _Just . userAvatarImg avatarDefaultSize
+                            userAvatarImg avatarDefaultSize `mapM_` mUser
                         span_ [class_ "user-name"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
