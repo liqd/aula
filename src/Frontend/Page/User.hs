@@ -262,7 +262,7 @@ delegationButtons visiting visited delegations = do
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
         ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses visiting visited))
 
-    forM_ ispaces $ \ispace -> do
+    forM_ ispaces $ \ispace -> div_ $ do  -- FIXME: styling
         let dscope = DScopeIdeaSpace ispace
         case (ownProfile, isActiveDelegation dscope) of
             (True, _) ->
@@ -274,13 +274,10 @@ delegationButtons visiting visited delegations = do
             (False, False) ->
                 butPost (U.delegateVoteOnIdeaSpace visited ispace)
                     ("Für " <> uilabel ispace <> " beauftragen")
-
-    forM_ ispaces $ \ispace -> do
-        let dscope = DScopeIdeaSpace ispace
+        br_ []
         (`mapM_` activeDelegation dscope) $ \(Delegation _ _ t) -> do
             "Derzeit beauftragt: " <> t ^. unAUID . showed . html
 
--- TODO: styling
 -- TODO: use DelegationFull
 
 
