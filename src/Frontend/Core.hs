@@ -76,15 +76,11 @@ module Frontend.Core
 import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
-import Control.Monad.Except (MonadError)
 import Control.Monad.Reader (runReader)
-import Control.Monad (replicateM_, when)
 import Data.Aeson (ToJSON)
-import Data.Maybe (maybeToList)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
-import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol, KnownSymbol)
 import Lucid.Base hiding (ToHtml(..), HtmlT(..), Html)
 import Lucid hiding (ToHtml(..), HtmlT(..), Html, href_, script_, src_, onclick_)
@@ -93,7 +89,6 @@ import Servant.HTML.Lucid (HTML)
 import Servant.Missing (getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.Form ((.:))
 import Text.Digestive.View
-import Text.Show.Pretty (ppShow)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
@@ -105,6 +100,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
 import Action
+import AulaPrelude
 import Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
@@ -549,7 +545,7 @@ formPageHandler
     => m p
     -> (FormPagePayload p -> m (FormPageResult p))
     -> FormPageHandler m p
-formPageHandler get processor = FormPageHandler True get processor noMsg
+formPageHandler gt processor = FormPageHandler True gt processor noMsg
   where
     noMsg _ _ _ = pure Nothing
 
@@ -559,7 +555,7 @@ formPageHandlerWithMsg
     -> (FormPagePayload p -> m (FormPageResult p))
     -> ST
     -> FormPageHandler m p
-formPageHandlerWithMsg get processor msg = FormPageHandler True get processor (\_ _ _ -> pure . Just . cs $ msg)
+formPageHandlerWithMsg gt processor msg = FormPageHandler True gt processor (\_ _ _ -> pure . Just . cs $ msg)
 
 formPageHandlerCalcMsg
     :: (Applicative m, ConvertibleStrings s StatusMessage)
@@ -567,7 +563,7 @@ formPageHandlerCalcMsg
     -> (FormPagePayload p -> m (FormPageResult p))
     -> (p -> FormPagePayload p -> FormPageResult p -> s)
     -> FormPageHandler m p
-formPageHandlerCalcMsg get processor msg = FormPageHandler True get processor ((pure . Just . cs) <...> msg)
+formPageHandlerCalcMsg gt processor msg = FormPageHandler True gt processor ((pure . Just . cs) <...> msg)
 
 formPageHandlerCalcMsgM
     :: (Applicative m, ConvertibleStrings s StatusMessage)
@@ -575,14 +571,14 @@ formPageHandlerCalcMsgM
     -> (FormPagePayload p -> m (FormPageResult p))
     -> (p -> FormPagePayload p -> FormPageResult p -> m s)
     -> FormPageHandler m p
-formPageHandlerCalcMsgM get processor msg = FormPageHandler True get processor (fmap (Just . cs) <...> msg)
+formPageHandlerCalcMsgM gt processor msg = FormPageHandler True gt processor (fmap (Just . cs) <...> msg)
 
 formPageHandlerWithoutCsrf
     :: Applicative m
     => m p
     -> (FormPagePayload p -> m (FormPageResult p))
     -> FormPageHandler m p
-formPageHandlerWithoutCsrf get processor = FormPageHandler False get processor noMsg
+formPageHandlerWithoutCsrf gt processor = FormPageHandler False gt processor noMsg
   where
     noMsg _ _ _ = pure Nothing
 
