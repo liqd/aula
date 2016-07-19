@@ -36,7 +36,7 @@ class ToHtml a where
     toHtmlRaw :: Monad m => a -> HtmlT m ()
     toHtml    :: Monad m => a -> HtmlT m ()
 
--- | TODO: 'Lang' is not lucid-specific.  make types here polymorphic in it, move to Types.*, and
+-- | FIXME: 'Lang' is not lucid-specific.  make types here polymorphic in it, move to Types.*, and
 -- also find a better name.  (it should be a project-specific type because it decides which
 -- languages are supported.)
 data Lang = DE
@@ -45,7 +45,7 @@ data Lang = DE
 getLang :: Monad m => HtmlT m Lang
 getLang = lift ask
 
--- | TODO: in some places, we don't have access to the session data yet, and cheat.  remove this and
+-- | FIXME: in some places, we don't have access to the session data yet, and cheat.  remove this and
 -- follow the type errors.
 whereToGetTheLangValue :: Lang
 whereToGetTheLangValue = DE

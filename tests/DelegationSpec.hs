@@ -93,7 +93,7 @@ spec = do
                 , CheckVotingPower student1 (DScopeTopicId topic) 1
                 , Vote student1 idea No
                 ]
-        delegationTest "Delegation on topic" -- TODO: Delegation on space
+        delegationTest "Delegation on topic" -- FIXME: Delegation on space
                 [ SetDelegation student1 (DScopeIdeaSpace ideaSpace) student2
                 , CheckVotingPower student2 (DScopeIdeaSpace ideaSpace) 2
                 ]
@@ -159,7 +159,7 @@ spec = do
                     , Vote student2 idea Yes
                     , Vote student1 idea No
                     ]
-            -- TODO Use class delegation
+            -- FIXME: Use class delegation
             delegationTest "Transitive delegation paths work accross different hierarchy levels"
                     [ SetDelegation student1 (DScopeTopicId topic)   student2
                     , SetDelegation student2 (DScopeIdeaSpace ideaSpace) student3
