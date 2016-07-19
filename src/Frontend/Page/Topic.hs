@@ -225,9 +225,10 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                       if isNothing delegation
                             then "Stimme beauftragen"
                             else "Beauftragung ändern"
-                    unless (isNothing delegation) . p_ $
-                        "Derzeit beauftragt: " <>
-                        delegation ^. _Just . delegationFullTo . userLogin . unUserLogin . html
+                    unless (isNothing delegation) $ do
+                        let delegate = delegation ^?! _Just . delegationFullTo
+                        p_ . a_ [href_ $ U.viewUserProfile delegate] $
+                            "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton

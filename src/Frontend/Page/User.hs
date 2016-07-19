@@ -275,8 +275,9 @@ delegationButtons visiting visited delegations = do
                 butPost (U.delegateVoteOnIdeaSpace visited ispace)
                     ("Für " <> uilabel ispace <> " beauftragen")
         br_ []
-        (`mapM_` activeDelegation dscope) $ \(DelegationFull _ _ t) ->
-            "Derzeit beauftragt: " <> t ^. userLogin . unUserLogin . html
+        (`mapM_` activeDelegation dscope) $ \(DelegationFull _ _ delegate) ->
+            p_ . a_ [href_ $ U.viewUserProfile delegate] $
+                "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegationListsMap -> [DScope]
