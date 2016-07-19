@@ -522,6 +522,7 @@ instance Page (NeedCap 'CanVoteComment)         where isAuthorized = needCap Can
 instance Page (NeedCap 'CanDeleteComment)       where isAuthorized = needCap CanDeleteComment
 instance Page (NeedCap 'CanLike)                where isAuthorized = needCap CanLike
 instance Page (NeedCap 'CanEditAndDeleteIdea)   where isAuthorized = needCap CanEditAndDeleteIdea
+instance Page (NeedCap 'CanDeleteTopic)         where isAuthorized = needCap CanDeleteTopic
 instance Page (NeedCap 'CanVote)                where isAuthorized = needCap CanVote
 instance Page (NeedCap 'CanMarkWinner)          where isAuthorized = needCap CanMarkWinner
 instance Page (NeedCap 'CanDelegateInSchool)    where isAuthorized = needCap CanDelegateInSchool

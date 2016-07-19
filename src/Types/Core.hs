@@ -476,6 +476,7 @@ data Topic = Topic
     , _topicImage     :: URL
     , _topicIdeaSpace :: IdeaSpace
     , _topicPhase     :: Phase
+    , _topicDeleted   :: Bool
     }
   deriving (Eq, Ord, Show, Read, Generic)
 

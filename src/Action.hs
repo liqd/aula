@@ -74,6 +74,7 @@ module Action
     , Action.setCreatorStatement
     , revokeWinnerStatusOfIdea
     , Action.deleteIdea
+    , Action.deleteTopic
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -627,6 +628,9 @@ unvoteOnIdea ideaId = do
 deleteIdea :: AUID Idea -> ActionPersist m => m ()
 deleteIdea = update . DeleteIdea
 
+deleteTopic :: AUID Topic -> ActionPersist m => m ()
+deleteTopic = update . DeleteTopic
+
 
 -- * Reporting and deleting comments
 
@@ -1121,7 +1125,7 @@ topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
             => AUID Topic -> m (CapCtx, Topic)
 topicCapCtx topicId = do
     userCtx <- currentUserCapCtx
-    topic <- mquery $ findTopic topicId
+    topic <- mquery $ findTopic' topicId
     let ctx = userCtx & capCtxSpace ?~ (topic ^. topicIdeaSpace)
                       & capCtxPhase ?~ (topic ^. topicPhase)
     pure (ctx, topic)

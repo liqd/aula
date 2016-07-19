@@ -156,6 +156,11 @@ tabLink tabsOrDropdown topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
+    toHtml p@(ViewTopicDelegations _ _ topic _ _) | topic ^. topicDeleted = semanticDiv p $ do
+        div_ [class_ "topic-header"] $ p_ "Dieses Thema wurde gelöscht!"
+    toHtml p@(ViewTopicIdeas _ _ _ topic _ _) | topic ^. topicDeleted = semanticDiv p $ do
+        div_ [class_ "topic-header"] $ p_ "Dieses Thema wurde gelöscht!"
+
     toHtml p@(ViewTopicDelegations now capCtx topic delegations delegation) = semanticDiv p $ do
         viewTopicHeaderDiv now capCtx topic TabDelegation delegation
         renderDelegations (TopicDelegationPage capCtx topic) (DelegationListsMap [(DScopeTopicFull topic, delegations)])
@@ -178,6 +183,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
             let canEditTopic          = CanEditTopic          `elem` caps
                 canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
+                canDeleteTopic        = CanDeleteTopic        `elem` caps
 
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 if canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic then do
@@ -187,6 +193,14 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                                 a_ [id_ "edit-topic",  href_ $ U.editTopic space topicId] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "Thema bearbeiten"
+                        when canDeleteTopic .
+                            li_ [class_ "pop-menu-list-item m-form"] .
+                                div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                    i_ [class_ "icon-step-delete"] nil
+                                    postLink_
+                                        [class_ "btn-plain", jsReloadOnClick]
+                                        (U.deleteTopic space topicId)
+                                        "Thema löschen"
                         when canPhaseForwardTopic .
                             li_ [class_ "pop-menu-list-item m-form"] .
                                 div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
