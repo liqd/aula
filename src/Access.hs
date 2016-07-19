@@ -110,6 +110,7 @@ data Capability
     | CanPhaseBackwardTopic
     | CanViewTopic
     | CanEditTopic
+    | CanDeleteTopic
     | CanCreateIdea
     -- User
     | CanCreateTopic
@@ -340,7 +341,7 @@ topicRefinementCaps = \case
     Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanCreateIdea, CanEditTopic, CanPhaseForwardTopic]
+    Moderator        -> [CanDeleteTopic, CanCreateIdea, CanEditTopic, CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> thereIsAGod [CanPhaseForwardTopic]
 
