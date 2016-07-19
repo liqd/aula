@@ -260,19 +260,16 @@ delegationButtons delegatee delegate delegations = do
         ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses delegatee delegate))
     forM_ ispaces $ \ispace -> do
         let dscope = DScopeIdeaSpace ispace
-        if isActiveDelegation dscope
-            then do
-                if ownProfile
-                    then butGet (U.createDelegation dscope)
-                           ("Deine Beauftragung für " <> uilabel ispace)
-                    else butPost (U.withdrawDelegationOnIdeaSpace delegate ispace)
-                           ("Beauftragung für " <> uilabel ispace <> " entziehen")
-            else do
-                if ownProfile
-                    then butGet (U.createDelegation dscope)
-                           ("Deine Beauftragung für " <> uilabel ispace)
-                    else butPost (U.delegateVoteOnIdeaSpace delegate ispace)
-                           ("Für " <> uilabel ispace <> " beauftragen")
+        case (ownProfile, isActiveDelegation dscope) of
+            (True, _) ->
+                butGet (U.createDelegation dscope)
+                    ("Deine Beauftragung für " <> uilabel ispace)
+            (False, True) ->
+                butPost (U.withdrawDelegationOnIdeaSpace delegate ispace)
+                    ("Beauftragung für " <> uilabel ispace <> " entziehen")
+            (False, False) ->
+                butPost (U.delegateVoteOnIdeaSpace delegate ispace)
+                    ("Für " <> uilabel ispace <> " beauftragen")
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegationListsMap -> [DScope]
