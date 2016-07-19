@@ -16,7 +16,7 @@ packages/
 /pwd.log
 *.tix
 /aula.yaml
-/state/*
+/state*
 aula.yaml*
 /TAGS
 /tags
