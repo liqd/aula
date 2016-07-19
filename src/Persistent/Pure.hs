@@ -120,6 +120,7 @@ module Persistent.Pure
     , withdrawDelegation
     , delegationScopeForest
     , dscopeFull
+    , delegationFull
     , allDelegationScopes
     , Persistent.Pure.delegates
     , Persistent.Pure.delegateInScope
@@ -652,6 +653,11 @@ dscopeFull :: DScope -> EQuery DScopeFull
 dscopeFull = \case
     DScopeIdeaSpace is -> pure $ DScopeIdeaSpaceFull is
     DScopeTopicId tid  -> DScopeTopicFull <$> (maybe404 =<< findTopic tid)
+
+delegationFull :: Delegation -> EQuery DelegationFull
+delegationFull (Delegation dscope f t) = DelegationFull dscope
+    <$> (maybe404 =<< findUser f)
+    <*> (maybe404 =<< findUser t)
 
 allDelegationScopes :: Query [DScope]
 allDelegationScopes = do

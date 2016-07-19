@@ -530,6 +530,10 @@ instance Arbitrary Delegation where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary DelegationFull where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary ListIdeasInTopicTab where
     arbitrary = garbitrary
     shrink    = gshrink

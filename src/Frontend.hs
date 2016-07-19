@@ -348,11 +348,9 @@ type AulaUser =
   :<|> "delegations" :> "from" :> GetH (Frame PageUserProfileUserAsDelegatee)
   :<|> "edit"        :> FormHandler EditUserProfile
   :<|> "report"      :> FormHandler ReportUserProfile
-  :<|> "delegate"    :> "school" :> PostH DelegateTo
-  :<|> "delegate"    :> "class"  :> Capture "schoolclass" SchoolClass :> PostH DelegateTo
+  :<|> "delegate"    :> "ispace"  :> Capture "ispace" IdeaSpace :> PostH DelegateTo
   -- (arguably the following could also be done with a DELETE end-point)
-  :<|> "withdraw"    :> "school" :> PostH WithdrawDelegationFrom
-  :<|> "withdraw"    :> "class"  :> Capture "schoolclass" SchoolClass :> PostH WithdrawDelegationFrom
+  :<|> "withdraw"    :> "ispace"  :> Capture "ispace" IdeaSpace :> PostH WithdrawDelegationFrom
 
 aulaUser :: forall m. ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
@@ -361,10 +359,8 @@ aulaUser userId =
   :<|> runHandler (Page.userProfileUserAsDelegatee userId)
   :<|> form (Page.editUserProfile userId)
   :<|> form (Page.reportUser userId)
-  :<|> postDelegateTo (Action.delegateTo (DScopeIdeaSpace SchoolSpace))
-  :<|> postDelegateTo . Action.delegateTo . DScopeIdeaSpace . ClassSpace
-  :<|> postWithdraw (Action.withdrawDelegationTo (DScopeIdeaSpace SchoolSpace))
-  :<|> postWithdraw . Action.withdrawDelegationTo . DScopeIdeaSpace . ClassSpace
+  :<|> postDelegateTo . Action.delegateTo . DScopeIdeaSpace
+  :<|> postWithdraw . Action.withdrawDelegationTo . DScopeIdeaSpace
   where
     postDelegateTo :: (AUID User -> m ()) -> m (PostResult DelegateTo ())
     postDelegateTo a = runPostHandler delegateTo $ a userId

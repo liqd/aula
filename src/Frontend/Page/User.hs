@@ -35,6 +35,7 @@ import Persistent
     , findIdeasByUserId
     , getIdeaStats
     , delegateInScope
+    , delegationFull
     )
 
 import qualified Data.Set as Set
@@ -69,7 +70,7 @@ instance Page PageUserSettings where
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas =
-        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas [Delegation]
+        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas [DelegationFull]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
@@ -77,7 +78,7 @@ instance Page PageUserProfileCreatedIdeas where
 
 -- | 8.2 User profile: Votes from delegatees
 data PageUserProfileUserAsDelegate =
-        PageUserProfileUserAsDelegate CapCtx UserView DelegationListsMap [Delegation]
+        PageUserProfileUserAsDelegate CapCtx UserView DelegationListsMap [DelegationFull]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegate where
@@ -85,7 +86,7 @@ instance Page PageUserProfileUserAsDelegate where
 
 -- | 8.X User profile: Votes to delegates
 data PageUserProfileUserAsDelegatee =
-        PageUserProfileUserAsDelegatee CapCtx UserView DelegationListsMap [Delegation]
+        PageUserProfileUserAsDelegatee CapCtx UserView DelegationListsMap [DelegationFull]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegatee where
@@ -198,7 +199,7 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
-userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, [Delegation]) -> HtmlT m ()
+userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, [DelegationFull]) -> HtmlT m ()
 userHeaderDiv _ (Left user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -238,52 +239,44 @@ commonIdeaSpaceDelegations delegatee delegate = do
     pure $ catMaybes (schoolDelegation:classDelegations)
 
 -- | Delegation buttons works in a different way if the user opens
--- his/her own profile, or other users profile.
+-- his/her own profile, or other users profile.  First argument
+-- (`visiting`) is the (potential) delegatee, second argument (`visited`) the
+-- (potential) delegate.
 --
 -- For the own profile clicking on the delegation button, the delegate selection
 -- page is opened.
 --
 -- For other's profile, clicking on the delegation buttons mark the owner of
 -- the profile as the delegate of the current user.
-delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
-delegationButtons delegatee delegate delegations = do
-    let ownProfile = isOwnProfile delegatee delegate
-        isActiveDelegation dscope =
-            if ownProfile
-                then any (\d -> d ^. delegationScope == dscope &&
-                                d ^. delegationFrom == delegatee ^. _Id) delegations
-                else Delegation dscope (delegatee ^. _Id) (delegate ^. _Id)
-                     `elem`
-                     delegations
+delegationButtons :: Monad m => User -> User -> [DelegationFull] -> HtmlT m ()
+delegationButtons visiting visited delegations = do
+    let ownProfile = isOwnProfile visiting visited
+        isActiveDelegation = isJust . activeDelegation
+        activeDelegation dscope = (`find` delegations)
+            (\d -> d ^. delegationFullScope == dscope &&
+                   d ^. delegationFullFrom . _Id == visiting ^. _Id &&
+                   (ownProfile || d ^. delegationFullTo . _Id ==  visited ^. _Id))
+
         butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
-    forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
-        let classScope = DScopeIdeaSpace (ClassSpace clss)
-        if isActiveDelegation classScope
-            then do
-                if ownProfile
-                    then butGet (U.createDelegation classScope)
-                           ("Deine Beauftragung für Klasse " <> uilabel clss)
-                    else butPost (U.withdrawDelegationOnClassSpace delegate clss)
-                           ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
-            else do
-                if ownProfile
-                    then butGet (U.createDelegation classScope)
-                           ("Deine Beauftragung für Klasse " <> uilabel clss)
-                    else butPost (U.delegateVoteOnClassSpace delegate clss)
-                           ("Für Klasse " <> uilabel clss <> " beauftragen")
-    let schoolScope = DScopeIdeaSpace SchoolSpace
-    if isActiveDelegation schoolScope
-        then do
-            (if ownProfile
-                then butGet (U.createDelegation schoolScope)
-                else butPost (U.withdrawDelegationOnSchoolSpace delegate))
-                "Schulweite beauftragung entziehen"
-        else do
-            (if ownProfile
-                then butGet (U.createDelegation schoolScope)
-                else butPost (U.delegateVoteOnSchoolSpace delegate))
-                "Schulweit beauftragen"
+        ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses visiting visited))
+
+    forM_ ispaces $ \ispace -> div_ $ do  -- FIXME: styling
+        let dscope = DScopeIdeaSpace ispace
+        case (ownProfile, isActiveDelegation dscope) of
+            (True, _) ->
+                butGet (U.createDelegation dscope)
+                    ("Deine Beauftragung für " <> uilabel ispace)
+            (False, True) ->
+                butPost (U.withdrawDelegationOnIdeaSpace visited ispace)
+                    ("Beauftragung für " <> uilabel ispace <> " entziehen")
+            (False, False) ->
+                butPost (U.delegateVoteOnIdeaSpace visited ispace)
+                    ("Für " <> uilabel ispace <> " beauftragen")
+        br_ []
+        forM_ (activeDelegation dscope) $ \(DelegationFull _ _ delegate) ->
+            p_ . a_ [href_ $ U.viewUserProfile delegate] $
+                "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegationListsMap -> [DScope]
@@ -356,7 +349,7 @@ createdIdeas userId ideasQuery = do
                     (mapM getIdeaStats
                      =<< filter visibleByCurrentUser
                          <$> findIdeasByUserId userId))
-        ds <- commonIdeaSpaceDelegations cUser user
+        ds <- commonIdeaSpaceDelegations cUser user >>= mapM delegationFull
         pure $ PageUserProfileCreatedIdeas
             ctx
             (makeUserView user)
@@ -382,7 +375,7 @@ instance ToHtml PageUserProfileUserAsDelegate where
 
 userProfileUserDelegation
     :: (ActionPersist m, ActionUserHandler m)
-    => (CapCtx -> UserView -> DelegationListsMap -> [Delegation] -> page)
+    => (CapCtx -> UserView -> DelegationListsMap -> [DelegationFull] -> page)
     -> (AUID User -> EQuery DelegationListsMap)
     -> AUID User -> m page
 userProfileUserDelegation pageConstructor userDelegationsMap userId = do
@@ -394,7 +387,7 @@ userProfileUserDelegation pageConstructor userDelegationsMap userId = do
             ctx
             (makeUserView user)
             <$> userDelegationsMap userId
-            <*> commonIdeaSpaceDelegations cUser user
+            <*> (commonIdeaSpaceDelegations cUser user >>= mapM delegationFull)
 
 userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegate

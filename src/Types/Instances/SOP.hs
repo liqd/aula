@@ -17,6 +17,7 @@ instance SOP.Generic CommentKey
 instance SOP.Generic CommentVote
 instance SOP.Generic CommentVoteKey
 instance SOP.Generic Delegation
+instance SOP.Generic DelegationFull
 instance SOP.Generic DelegationNetwork
 instance SOP.Generic DScope
 instance SOP.Generic DScopeFull
