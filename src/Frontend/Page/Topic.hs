@@ -217,9 +217,9 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                        ] $
                       "+ Neue Idee"
                 delegateVoteButton = when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) .
-                    a_  [ class_ "btn-cta heroic-cta m-large"
-                        , href_ $ U.createDelegation (DScopeTopicId topicId)
-                        ] $ do
+                    a_ [ class_ "btn-cta heroic-cta m-large"
+                       , href_ $ U.createDelegation (DScopeTopicId topicId)
+                       ] $ do
                       i_ [class_ "icon-bullhorn"] nil
                       if isNothing delegation
                             then "Stimme beauftragen"
