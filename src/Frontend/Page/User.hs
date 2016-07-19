@@ -36,6 +36,7 @@ import Persistent
     , findIdeasByUserId
     , getIdeaStats
     , delegateInScope
+    , delegationFull
     )
 
 import qualified Data.Set as Set
@@ -70,7 +71,7 @@ instance Page PageUserSettings where
 
 -- | 8.1 User profile: Created ideas
 data PageUserProfileCreatedIdeas =
-        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas [Delegation]
+        PageUserProfileCreatedIdeas CapCtx UserView ListItemIdeas [DelegationFull]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileCreatedIdeas where
@@ -78,7 +79,7 @@ instance Page PageUserProfileCreatedIdeas where
 
 -- | 8.2 User profile: Votes from delegatees
 data PageUserProfileUserAsDelegate =
-        PageUserProfileUserAsDelegate CapCtx UserView DelegationListsMap [Delegation]
+        PageUserProfileUserAsDelegate CapCtx UserView DelegationListsMap [DelegationFull]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegate where
@@ -86,7 +87,7 @@ instance Page PageUserProfileUserAsDelegate where
 
 -- | 8.X User profile: Votes to delegates
 data PageUserProfileUserAsDelegatee =
-        PageUserProfileUserAsDelegatee CapCtx UserView DelegationListsMap [Delegation]
+        PageUserProfileUserAsDelegatee CapCtx UserView DelegationListsMap [DelegationFull]
   deriving (Eq, Show, Read)
 
 instance Page PageUserProfileUserAsDelegatee where
@@ -199,7 +200,7 @@ userSettings =
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
-userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, [Delegation]) -> HtmlT m ()
+userHeaderDiv :: (Monad m) => CapCtx -> Either User (User, [DelegationFull]) -> HtmlT m ()
 userHeaderDiv _ (Left user) =
     div_ $ do
         h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
@@ -248,15 +249,17 @@ commonIdeaSpaceDelegations delegatee delegate = do
 --
 -- For other's profile, clicking on the delegation buttons mark the owner of
 -- the profile as the delegate of the current user.
-delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
+delegationButtons :: Monad m => User -> User -> [DelegationFull] -> HtmlT m ()
 delegationButtons visiting visited delegations = do
     let ownProfile = isOwnProfile visiting visited
         isActiveDelegation = isJust . activeDelegation
         activeDelegation dscope = listToMaybe . (`filter` delegations) $
             if ownProfile
-                then (\d -> d ^. delegationScope == dscope &&
-                            d ^. delegationFrom == visiting ^. _Id)
-                else (== Delegation dscope (visiting ^. _Id) (visited ^. _Id))
+                then (\d -> d ^. delegationFullScope == dscope &&
+                            d ^. delegationFullFrom . _Id == visiting ^. _Id)
+                else (\d -> d ^. delegationFullScope == dscope &&
+                            d ^. delegationFullFrom . _Id ==  visiting ^. _Id &&
+                            d ^. delegationFullTo . _Id ==  visited ^. _Id)  -- TODO: simplify!
 
         butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
@@ -275,11 +278,8 @@ delegationButtons visiting visited delegations = do
                 butPost (U.delegateVoteOnIdeaSpace visited ispace)
                     ("Für " <> uilabel ispace <> " beauftragen")
         br_ []
-        (`mapM_` activeDelegation dscope) $ \(Delegation _ _ t) -> do
-            "Derzeit beauftragt: " <> t ^. unAUID . showed . html
-
--- TODO: use DelegationFull
-
+        (`mapM_` activeDelegation dscope) $ \(DelegationFull _ _ t) ->
+            "Derzeit beauftragt: " <> t ^. userLogin . unUserLogin . html
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegationListsMap -> [DScope]
@@ -352,7 +352,7 @@ createdIdeas userId ideasQuery = do
                     (mapM getIdeaStats
                      =<< filter visibleByCurrentUser
                          <$> findIdeasByUserId userId))
-        ds <- commonIdeaSpaceDelegations cUser user
+        ds <- commonIdeaSpaceDelegations cUser user >>= mapM delegationFull
         pure $ PageUserProfileCreatedIdeas
             ctx
             (makeUserView user)
@@ -378,7 +378,7 @@ instance ToHtml PageUserProfileUserAsDelegate where
 
 userProfileUserDelegation
     :: (ActionPersist m, ActionUserHandler m)
-    => (CapCtx -> UserView -> DelegationListsMap -> [Delegation] -> page)
+    => (CapCtx -> UserView -> DelegationListsMap -> [DelegationFull] -> page)
     -> (AUID User -> EQuery DelegationListsMap)
     -> AUID User -> m page
 userProfileUserDelegation pageConstructor userDelegationsMap userId = do
@@ -390,7 +390,7 @@ userProfileUserDelegation pageConstructor userDelegationsMap userId = do
             ctx
             (makeUserView user)
             <$> userDelegationsMap userId
-            <*> commonIdeaSpaceDelegations cUser user
+            <*> (commonIdeaSpaceDelegations cUser user >>= mapM delegationFull)
 
 userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegate

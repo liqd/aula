@@ -52,6 +52,7 @@ import Persistent
     , getIdeaStats
     , phaseEndRefinement
     , ideaAccepted
+    , delegationFull
     )
 
 import qualified Action (createTopic, editTopic)
@@ -85,14 +86,14 @@ data ViewTopic
     , _vtTab         :: ViewTopicTab
     , _vtTopic       :: Topic
     , _vtIdeas       :: ListItemIdeas
-    , _vtDelegation  :: Maybe Delegation
+    , _vtDelegation  :: Maybe DelegationFull
     }
   | ViewTopicDelegations
     { _vtNow         :: Timestamp
     , _vtCtx         :: CapCtx
     , _vtTopic       :: Topic
     , _vtDelegations :: DelegateeLists
-    , _vtDelegation  :: Maybe Delegation
+    , _vtDelegation  :: Maybe DelegationFull
     }
   deriving (Eq, Show, Read)
 
@@ -164,7 +165,7 @@ instance ToHtml ViewTopic where
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
-viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe Delegation -> HtmlT m ()
+viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe DelegationFull -> HtmlT m ()
 viewTopicHeaderDiv now ctx topic tab delegation = do
     let caps    = capabilities ctx
         phase   = topic ^. topicPhase
@@ -225,7 +226,8 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                             then "Stimme beauftragen"
                             else "Beauftragung ändern"
                     unless (isNothing delegation) . p_ $
-                        "Derzeit beauftragt: " <> delegation ^. _Just . delegationTo . unAUID . showed . html  -- TODO: introduce DelegationFull
+                        "Derzeit beauftragt: " <>
+                        delegation ^. _Just . delegationFullTo . userLogin . unUserLogin . html
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
@@ -392,12 +394,13 @@ viewTopic tab topicId = do
     now <- getCurrentTimestamp
     delegation <- delegationInScope (DScopeTopicId topicId)
     (ctx, topic) <- topicCapCtx topicId
-    equery $
+    equery $ do
+        delegationf <- delegationFull `mapM` delegation
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> topicDelegateeLists topicId
-                    <*> pure delegation
+                    <*> pure delegationf
             TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
@@ -406,7 +409,7 @@ viewTopic tab topicId = do
                 let listItemIdeas =
                         ListItemIdeas ctx (IdeaInViewTopic ideasTab loc) ideasQuery ideas
 
-                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas delegation
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas delegationf
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic
