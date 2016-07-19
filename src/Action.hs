@@ -74,6 +74,7 @@ module Action
     , Action.setCreatorStatement
     , revokeWinnerStatusOfIdea
     , Action.deleteIdea
+    , Action.deleteTopic
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -627,6 +628,8 @@ unvoteOnIdea ideaId = do
 deleteIdea :: AUID Idea -> ActionPersist m => m ()
 deleteIdea = update . DeleteIdea
 
+deleteTopic :: AUID Topic -> ActionPersist m => m ()
+deleteTopic = update . DeleteTopic
 
 -- * Reporting and deleting comments
 

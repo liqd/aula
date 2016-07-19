@@ -178,6 +178,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
             let canEditTopic          = CanEditTopic          `elem` caps
                 canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
+                canDeleteTopic        = CanDeleteTopic        `elem` caps
 
             nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
                 if canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic then do
@@ -187,6 +188,14 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                                 a_ [id_ "edit-topic",  href_ $ U.editTopic space topicId] $ do
                                     i_ [class_ "icon-pencil"] nil
                                     "Thema bearbeiten"
+                        when canDeleteTopic .
+                            li_ [class_ "pop-menu-list-item m-form"] .
+                                div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
+                                    i_ [class_ "icon-step-delete"] nil
+                                    postLink_
+                                        [class_ "btn-plain", jsReloadOnClick]
+                                        (U.deleteTopic space topicId)
+                                        "Thema loschen" -- TODO: Translation
                         when canPhaseForwardTopic .
                             li_ [class_ "pop-menu-list-item m-form"] .
                                 div_ [class_ "pop-menu-list-item-form-wrapper"] $ do

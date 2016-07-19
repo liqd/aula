@@ -139,6 +139,7 @@ module Persistent.Pure
     , revokeWinnerStatus
     , editIdea
     , deleteIdea
+    , deleteTopic
     , moveIdeaToTopic
     , deleteComment
     , saveDurations
@@ -1013,6 +1014,10 @@ deleteIdea :: AUID Idea -> AUpdate ()
 deleteIdea ideaId =
     withIdea ideaId %= (ideaDeleted .~ True)
                      . over ideaComments (Map.map (set commentDeleted True))
+
+-- TODO: Implement
+deleteTopic :: AUID Topic -> AUpdate ()
+deleteTopic _topicId = pure ()
 
 termsOfUse :: Query Document
 termsOfUse = view dbTermsOfUse

@@ -77,6 +77,7 @@ module Frontend.Path
     , listTopics
     , editTopic
     , viewTopicDelegations
+    , deleteTopic
 
     -- * paths to comments
     , replyToComment
@@ -289,6 +290,7 @@ data Space (r :: AllowedMethod) =
   | ListIdeasInSpace (Maybe IdeasQuery)
   | ListIdeasInTopic (AUID Topic) ListIdeasInTopicTab (Maybe IdeasQuery)
   | CreateTopic
+  | DeleteTopic (AUID Topic)
   | EditTopic (AUID Topic)
   | ViewTopicDelegations (AUID Topic)
   deriving (Generic, Show)
@@ -304,6 +306,9 @@ listTopics spc = Space spc ListTopics
 editTopic :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
 editTopic spc = Space spc . EditTopic
 
+deleteTopic :: IdeaSpace -> AUID Topic -> Main 'AllowPost
+deleteTopic spc = Space spc . DeleteTopic
+
 viewTopicDelegations :: IdeaSpace -> AUID Topic -> Main 'AllowGetPost
 viewTopicDelegations spc = Space spc . ViewTopicDelegations
 
@@ -314,6 +319,7 @@ spacePath (ListIdeasInTopic t tab mq) root = topicTab tab . renderFilter mq
                                            $ root </> "topic" </> uriPart t </> "ideas"
 spacePath CreateTopic                 root = root </> "topic" </> "create"
 spacePath (EditTopic tid)             root = root </> "topic" </> uriPart tid </> "edit"
+spacePath (DeleteTopic tid)           root = root </> "topic" </> uriPart tid </> "delete"
 spacePath (ViewTopicDelegations tid)  root = root </> "topic" </> uriPart tid </> "delegations"
 
 topicTab :: ListIdeasInTopicTab -> UriPath -> UriPath
@@ -737,6 +743,10 @@ isPostOnly = \case
           (UserDelegateVoteOnIdeaSpace _)       -> True
           (UserWithdrawDelegationOnIdeaSpace _) -> True
           _                                     -> False
+    Space _ m ->
+        case m of
+            DeleteTopic _ -> True
+            _             -> False
     -- FIXME[#312] Logout -> True
     _ -> False
 
