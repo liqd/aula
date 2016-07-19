@@ -990,6 +990,7 @@ instance FromProto Topic where
         , _topicImage     = t ^. protoTopicImage
         , _topicIdeaSpace = t ^. protoTopicIdeaSpace
         , _topicPhase     = PhaseRefinement . ActivePhase $ t ^. protoTopicRefPhaseEnd
+        , _topicDeleted   = False
         }
 
 mkMetaInfo :: User -> Timestamp -> KeyOf a -> MetaInfo a
@@ -1015,9 +1016,12 @@ deleteIdea ideaId =
     withIdea ideaId %= (ideaDeleted .~ True)
                      . over ideaComments (Map.map (set commentDeleted True))
 
--- TODO: Implement
 deleteTopic :: AUID Topic -> AUpdate ()
-deleteTopic _topicId = pure ()
+deleteTopic topicId = do
+    topic <- maybe404 =<< liftAQuery (findTopic topicId)
+    previouslyInTopic :: [AUID Idea] <- view _Id <$$> liftAQuery (findIdeasByTopicId topicId)
+    void $ moveIdeasToLocation previouslyInTopic (IdeaLocationSpace (topic ^. topicIdeaSpace))
+    withTopic topicId %= (topicDeleted .~ True)
 
 termsOfUse :: Query Document
 termsOfUse = view dbTermsOfUse
