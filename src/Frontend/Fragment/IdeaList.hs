@@ -84,11 +84,9 @@ instance ToHtml ListItemIdea where
                             div_ [class_ "m-table indicator-item"] $ do
                                   div_ [class_ "indicator-icon"] "Kann auf den Tisch"
 
-                    -- FIXME - add some logic pls :) #859
-                    div_ [class_ "icon-winner indicator-item m-inline m-display-only"] $ do
-                        div_ [class_ "indicator-icon"] "gewonnen"
-                    div_ [class_ "icon-hourglass indicator-item m-inline m-display-only"] $ do
-                        div_ [class_ "indicator-icon"] "nicht gewonnen"
+                    when (isWinning idea) $ do
+                        div_ [class_ "icon-winner indicator-item m-inline m-display-only"] $ do
+                            div_ [class_ "indicator-icon"] "gewonnen"
 
                     case idea ^? ideaJuryResult . _Just . ideaJuryResultValue . to ideaJuryResultValueToType of
                         Nothing              -> nil  -- (not judged)
