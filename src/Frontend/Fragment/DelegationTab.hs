@@ -9,6 +9,7 @@
 module Frontend.Fragment.DelegationTab
 where
 
+import Access (CapCtx, Capability(CanDelegate), capabilities)
 import Frontend.Prelude hiding ((</>), (<.>))
 import Persistent
     ( DelegationListsMap(..)
@@ -17,10 +18,33 @@ import Persistent
 import qualified Frontend.Path as U
 
 
-renderDelegations :: forall m. Monad m => Bool -> DelegationListsMap -> HtmlT m ()
-renderDelegations showScope delegations = do
-    ul_ [class_ "small-avatar-list"] $ renderLi `mapM_` sortBy orddeleg (flatten delegations)
+data WhatDelegationPage
+    = TopicDelegationPage { wdpCapCtx :: CapCtx, wdpTopic :: Topic }
+    | UserDelegationPage  { wdpCapCtx :: CapCtx }
+  deriving (Eq, Show)
+
+
+renderDelegations :: forall m. Monad m => WhatDelegationPage -> DelegationListsMap -> HtmlT m ()
+renderDelegations whatsPage delegations =
+    callToActionOnList
+        (do
+           "Keine Beauftragungen in diesem Geltungsbereich.  "
+           when (CanDelegate `elem` capabilities (wdpCapCtx whatsPage)) $
+               a_ [href_ delegationLink] "Beauftrage deine Stimme!")
+        (ul_ [class_ "small-avatar-list"])
+        renderLi
+        ds
   where
+    delegationLink = case whatsPage of
+        TopicDelegationPage _ctx topic -> topic ^. _Id . to DScopeTopicId . to U.createDelegation
+        UserDelegationPage  _ctx       -> U.createDelegation $ DScopeIdeaSpace SchoolSpace
+
+    showScope = case whatsPage of
+        TopicDelegationPage _ctx _topic -> False
+        UserDelegationPage  _ctx        -> True
+
+    ds = sortBy orddeleg (flatten delegations)
+
     flatten :: DelegationListsMap -> [(DScopeFull, (User, [User]))]
     flatten (DelegationListsMap xs) = concat $ f <$> xs
       where f (dscope, DelegateeLists lists) = (dscope,) <$> lists

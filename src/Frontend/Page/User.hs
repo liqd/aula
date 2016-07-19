@@ -378,7 +378,7 @@ instance ToHtml PageUserProfileUserAsDelegate where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    renderDelegations True delegationListsMap
+                    renderDelegations (UserDelegationPage ctx) delegationListsMap
 
 userProfileUserDelegation
     :: (ActionPersist m, ActionUserHandler m)
@@ -418,7 +418,7 @@ instance ToHtml PageUserProfileUserAsDelegatee where
         div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
-                    renderDelegations True delegationListsMap
+                    renderDelegations (UserDelegationPage ctx) delegationListsMap
 
 userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
       => AUID User -> m PageUserProfileUserAsDelegatee

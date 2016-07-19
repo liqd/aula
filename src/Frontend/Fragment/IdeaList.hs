@@ -19,7 +19,7 @@ where
 
 import Control.Lens
 
-import Access (CapCtx)
+import Access (CapCtx, Capability(CanCreateIdea), capabilities, capCtxUser)
 import Types
 import Frontend.Prelude
 import Frontend.Fragment.Category
@@ -104,16 +104,32 @@ instance ToHtml ListItemIdea where
 
 instance ToHtml ListItemIdeas where
     toHtmlRaw = toHtml
-    toHtml p@(ListItemIdeas _ctx whatPage ideasQuery []) = semanticDiv p $ do
-        ideaListHeader whatPage ideasQuery
-        div_ [class_ "container-not-found"] . toHtml $ "Keine Ideen" <> mCatInfo <> "."
-      where
-        mCatInfo =
-            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeledST . to (" in der Kategorie " <>)
-
     toHtml p@(ListItemIdeas ctx whatPage ideasQuery ideasAndNumVoters) = semanticDiv p $ do
         ideaListHeader whatPage ideasQuery
-        for_ ideasAndNumVoters $ toHtml . ListItemIdea ctx whatPage
+        callToActionOnList'
+            (do
+                "Keine Ideen" <> mCatInfo <> ".  "
+                when canCreateIdea $
+                    a_ [href_ createIdeaLink] "Erstelle Deine eigene Idee!")
+            (toHtml . ListItemIdea ctx whatPage)
+            ideasAndNumVoters
+      where
+        -- FIXME: Currently only students can create ideas,
+        -- the check should be done in Access module, but it would
+        -- introduce another hiearchical capability.
+        caps = capabilities ctx
+        canCreateIdea = case whatPage of
+            IdeaInIdeasOverview _loc  -> CanCreateIdea `elem` caps
+            IdeaInViewTopic _tab _loc -> CanCreateIdea `elem` caps
+            IdeaInUserProfile _usr    -> ctx ^. capCtxUser . to isStudent
+
+        mCatInfo =
+            ideasQuery ^. ideasQueryF . _IdeasWithCat . uilabeled . to (" in der Kategorie " <>)
+
+        createIdeaLink = case whatPage of
+            IdeaInIdeasOverview loc  -> U.createIdea loc
+            IdeaInViewTopic _tab loc -> U.createIdea loc
+            IdeaInUserProfile _usr   -> U.createIdea (IdeaLocationSpace SchoolSpace)
 
 
 ideaListHeader :: Monad m => WhatListPage -> IdeasQuery -> HtmlT m ()

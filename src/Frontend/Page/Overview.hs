@@ -70,14 +70,14 @@ viewTopics space =
 
 instance ToHtml PageOverviewOfSpaces where
     toHtmlRaw = toHtml
-    toHtml p@(PageOverviewOfSpaces spaces) = semanticDiv' [class_ "container-main grid-view"] p $ f spaces
+    toHtml p@(PageOverviewOfSpaces spaces) = semanticDiv' [class_ "container-main grid-view"] p $
+        callToActionOnList'
+            (p_ [class_ "container-not-found"] "Keine Ideenräume")
+            ideaSpaceBox
+            spaces
       where
-        f :: forall m. (Monad m) => [IdeaSpace] -> HtmlT m ()
-        f []       = p_ "Keine Ideenräume"
-        f rs@(_:_) = forM_ rs g
-
-        g :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
-        g ispace = div_ [class_ "col-1-3"] $ do
+        ideaSpaceBox :: forall m. (Monad m) => IdeaSpace -> HtmlT m ()
+        ideaSpaceBox ispace = div_ [class_ "col-1-3"] $ do
             div_ [class_ ("item-room is-" <> showIdeaSpaceKind ispace)] $ do
                 a_ [href_ $ U.listIdeas (IdeaLocationSpace ispace)] $ do
                     span_ [class_ "item-room-image"] nil
@@ -116,15 +116,20 @@ instance ToHtml PageOverviewOfTopics where
         toHtml $ Tabs Topics space
 
         div_ [class_ "theme-grid"] $ do
-
+            let caps = capabilities ctx
             header_ [class_ "themes-header"] $ do
                 -- WARNING: This button is not in the design. But it should be here for
                 -- user experience reasons.
-                when (CanCreateTopic `elem` capabilities ctx) $
+                when (CanCreateTopic `elem` caps) $
                     button_ [onclick_ (U.createTopic space), class_ "btn-cta m-large"] "+ Neues Thema"
 
-            forM_ topics $ \topic -> do
-                div_ [class_ "col-1-3 theme-grid-col"] $ do
+            callToActionOnList'
+                (do
+                    "Hier gibt es noch keine Themen.  "
+                    when (CanCreateTopic `elem` caps) .
+                        a_ [href_ $ U.createTopic space] $
+                            "Lege das erste Thema an!")
+                (\topic -> div_ [class_ "col-1-3 theme-grid-col"] $ do
                     div_ [class_ ("theme-grid-item phase-" <> cs (show (topic ^. topicPhase)))] $ do
                         a_ [ class_ "theme-grid-item-link"
                            , href_ $ U.listIdeas (IdeaLocationTopic space (topic ^. _Id))
@@ -146,7 +151,8 @@ instance ToHtml PageOverviewOfTopics where
                                     topic ^. topicDesc  . html
 
                                 span_ [class_ "theme-grid-item-link"]
-                                    "view topic"
+                                    "view topic")
+                topics
 
 instance Page PageOverviewOfTopics where
     -- Any logged in user is authorized since findTopicsBySpace is already selecting the right view.

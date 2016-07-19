@@ -35,6 +35,7 @@ module Frontend.Core
     , redirect, redirectPath
     , avatarImg, userAvatarImg, createdByAvatarImg
     , numLikes, percentLikes, numVotes, percentVotes
+    , callToActionOnList, callToActionOnList'
 
       -- * pages
     , Page(..)
@@ -335,6 +336,26 @@ percentVotes idea numVoters vv = {- assert c -} v
     v = if numVoters == 0
           then 100
           else (numVotes idea vv * 100) `div` numVoters
+
+callToActionOnList
+    :: (Foldable t, Monad m)
+    => HtmlT m ()
+    -> (HtmlT m () -> HtmlT m ())
+    -> (a -> HtmlT m ())
+    -> t a
+    -> HtmlT m ()
+callToActionOnList onCta wrapItems onItem values
+  | null values = div_ [class_ "container-not-found"] onCta
+  | otherwise   = wrapItems $ mapM_ onItem values
+
+callToActionOnList'
+    :: (Foldable t, Monad m)
+    => HtmlT m ()
+    -> (a -> HtmlT m ())
+    -> t a
+    -> HtmlT m ()
+callToActionOnList' onCta =
+    callToActionOnList onCta id
 
 
 -- * pages
@@ -833,7 +854,6 @@ renderStatusMessages msgs = do
 renderStatusMessage :: (Monad m) => StatusMessage -> HtmlT m ()
 renderStatusMessage msg = do
     li_ (msg ^. html)
-
 
 footerMarkup :: (Monad m) => HtmlT m () -> HtmlT m ()
 footerMarkup extra = do

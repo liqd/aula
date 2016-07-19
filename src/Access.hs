@@ -59,7 +59,6 @@ module Access
     where
 
 import Control.Lens
-import Data.List (find)
 import Data.Maybe
 import Data.Monoid
 import Data.String.Conversions
@@ -184,9 +183,6 @@ capabilities (CapCtx u ms mp mi mc mup mdt)
 
 
 -- ** Delegation capabilities
-
-isStudent :: User -> Bool
-isStudent u = isJust $ find (has _Student) (u ^.. userRoles)
 
 delegationCapabilities :: User -> Maybe User -> Maybe IdeaSpace -> Maybe Phase -> [Capability]
 -- guards: no delegation in these situations

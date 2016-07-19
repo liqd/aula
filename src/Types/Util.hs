@@ -25,6 +25,7 @@ where
 import Control.Lens hiding ((<.>))
 import Data.Set.Lens (setOf)
 import Crypto.Scrypt
+import Data.List (find)
 import Data.Set as Set (Set, intersection, singleton, member)
 import Data.Map as Map (fromList)
 import Data.Maybe (isJust, mapMaybe)
@@ -196,6 +197,9 @@ hasRole user role_ = role_ `Set.member` (user ^. userRoleSet)
 
 isAdmin :: User -> Bool
 isAdmin = (`hasRole` Admin)
+
+isStudent :: User -> Bool
+isStudent u = isJust $ find (has _Student) (u ^.. userRoles)
 
 roleScope :: Getter Role RoleScope
 roleScope = to $ \r ->
