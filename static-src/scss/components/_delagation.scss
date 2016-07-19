@@ -51,6 +51,10 @@ body .delagation-header {
     .controls {
         @include rem(margin-top, 15px);
     }
+
+    .sub-heading {
+        text-align: left;
+    }
 }
 
 .delegate-image-select {
