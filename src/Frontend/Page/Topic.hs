@@ -196,7 +196,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                                     postLink_
                                         [class_ "btn-plain", jsReloadOnClick]
                                         (U.deleteTopic space topicId)
-                                        "Thema loschen" -- TODO: Translation
+                                        "Thema löschen"
                         when canPhaseForwardTopic .
                             li_ [class_ "pop-menu-list-item m-form"] .
                                 div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
@@ -267,8 +267,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
         select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs Mobile
 
     when deleted . div_ [class_ $ "topic-header phase-" <> cs (show phase)] .
-        -- TODO: Translation
-        div_ $ p_ "THIS TOPIC IS DELETED!"
+        div_ $ p_ "Dieses Thema wurde gelöscht!"
 
 validateTopicTitle
     :: (ActionM m)
