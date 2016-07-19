@@ -105,6 +105,7 @@ module Persistent.Pure
     , ideaChangedLocationIdea, ideaChangedLocationFrom, ideaChangedLocationTo
     , moveIdeasToLocation
     , findTopic
+    , findTopic'
     , findTopicBy
     , findTopicsBySpace
     , dbElaborationDuration
@@ -222,7 +223,7 @@ dbUsers :: AulaGetter [User]
 dbUsers = dbUserMap . to Map.elems
 
 dbTopics :: AulaGetter [Topic]
-dbTopics = dbTopicMap . to Map.elems
+dbTopics = dbTopicMap . to Map.elems . to (filter (not . _topicDeleted))
 
 dbSnapshot :: AulaGetter AulaData
 dbSnapshot = to id
@@ -536,7 +537,7 @@ editTopic topicId (EditTopicData title desc ideas) = do
          <*> moveIdeasToLocation ideas (IdeaLocationTopic space topicId)
 
 withTopic :: AUID Topic -> AulaTraversal Topic
-withTopic = withRecord dbTopicMap
+withTopic t = withRecord dbTopicMap t . filtered (not . _topicDeleted)
 
 findUser :: AUID User -> MQuery User
 findUser = findInById dbUserMap
@@ -758,8 +759,17 @@ findUsersByEmail e =
         dbUsers
         (\u -> u ^? (userSettings . userSettingsEmail . _Just) == Just e)
 
+-- FIXME: Unify deleted topic/idea/user handling
 findTopic :: AUID Topic -> MQuery Topic
-findTopic = findInById dbTopicMap
+findTopic tid = (hideDeleted =<<) <$> findTopic' tid
+  where
+    hideDeleted t
+        | _topicDeleted t = Nothing
+        | otherwise       = Just t
+
+-- | Finds a topic even if it is marked as deleted.
+findTopic' :: AUID Topic -> MQuery Topic
+findTopic' = findInById dbTopicMap
 
 findTopicBy :: Eq a => Fold Topic a -> a -> MQuery Topic
 findTopicBy = findInBy dbTopics

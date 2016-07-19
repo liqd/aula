@@ -1124,7 +1124,7 @@ topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
             => AUID Topic -> m (CapCtx, Topic)
 topicCapCtx topicId = do
     userCtx <- currentUserCapCtx
-    topic <- mquery $ findTopic topicId
+    topic <- mquery $ findTopic' topicId
     let ctx = userCtx & capCtxSpace ?~ (topic ^. topicIdeaSpace)
                       & capCtxPhase ?~ (topic ^. topicPhase)
     pure (ctx, topic)

@@ -158,11 +158,11 @@ instance ToHtml ViewTopic where
 
     toHtml p@(ViewTopicDelegations now capCtx topic delegations delegation) = semanticDiv p $ do
         viewTopicHeaderDiv now capCtx topic TabDelegation delegation
-        renderDelegations (TopicDelegationPage capCtx topic) (DelegationListsMap [(DScopeTopicFull topic, delegations)])
+        unless (topic ^. topicDeleted) $ renderDelegations (TopicDelegationPage capCtx topic) (DelegationListsMap [(DScopeTopicFull topic, delegations)])
 
     toHtml p@(ViewTopicIdeas now scope tab topic ideasAndNumVoters delegation) = semanticDiv p $ do
         assert (tab /= TabDelegation) $ viewTopicHeaderDiv now scope topic tab delegation
-        div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
+        unless (topic ^. topicDeleted) $ div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
 viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe DelegationFull -> HtmlT m ()
@@ -171,8 +171,9 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
         phase   = topic ^. topicPhase
         topicId = topic ^. _Id
         space   = topic ^. topicIdeaSpace
+        deleted = topic ^. topicDeleted
 
-    div_ [class_ $ "topic-header phase-" <> cs (show phase)] $ do
+    unless deleted . div_ [class_ $ "topic-header phase-" <> cs (show phase)] $ do
         header_ [class_ "detail-header"] $ do
             a_ [class_ "btn m-back detail-header-back", href_ $ U.listTopics space] "Zu Allen Themen"
             let canEditTopic          = CanEditTopic          `elem` caps
@@ -264,6 +265,10 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
 
         div_ [class_ "heroic-tabs is-responsive"] $ allTabs Desktop
         select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs Mobile
+
+    when deleted . div_ [class_ $ "topic-header phase-" <> cs (show phase)] $
+        -- TODO: Translation
+        div_ $ p_ "THIS TOPIC IS DELETED!"
 
 validateTopicTitle
     :: (ActionM m)
