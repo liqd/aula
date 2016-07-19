@@ -363,7 +363,10 @@ formPageIdeaSelection v ideaStats =
                 span_ $ do
                     ideaStat ^. ideaStatsIdea . ideaTitle . html
                     when (ideaReachedQuorum ideaStat) $ do
-                        img_ [src_ . U.TopStatic $ "images/badge_aufdemtisch.png", width_ "31"]
+                        img_ [ src_ . U.TopStatic $ "images/badge_aufdemtisch.png"
+                             , width_ "31"
+                             , alt_ "Idee ist auf dem Tisch"
+                             ]
 
 
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)

@@ -481,7 +481,7 @@ instance ToHtml AdminViewUsers where
                         td_ "[gelöscht]"
 
                     renderUserRow (ActiveUser user) = tr_ $ do
-                        td_ . span_ [class_ "img-container"] $ user ^. userAvatarImg avatarDefaultSize
+                        td_ . span_ [class_ "img-container"] $ userAvatarImg avatarDefaultSize user
                         renderUserInfoRow user
                         td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
 
@@ -700,7 +700,7 @@ instance ToHtml AdminEditClass where
                     th_ "Name"
                     th_ nil
                 tbody_ . forM_ (activeUsers users) $ \user -> tr_ $ do
-                    td_ . span_ [class_ "img-container"] $ user ^. userAvatarImg avatarDefaultSize
+                    td_ . span_ [class_ "img-container"] $ userAvatarImg avatarDefaultSize user
                     td_ $ user ^. userLogin . unUserLogin . html
                     td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
 

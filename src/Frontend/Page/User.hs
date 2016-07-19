@@ -224,7 +224,7 @@ userHeaderDiv ctx (Right (user, delegations)) =
 
 userHeaderDivCore :: User -> Monad m => HtmlT m ()
 userHeaderDivCore user = do
-    div_ [class_ "heroic-avatar"] $ user ^. userAvatarImg avatarDefaultSize
+    div_ [class_ "heroic-avatar"] $ userAvatarImg avatarDefaultSize user
     h1_ [class_ "main-heading"] $ user ^. userLogin . _UserLogin . html
     ul_ [class_ "role-badges"] $ do
         forM_ (user ^. userRoleSet . to Set.toList) $ \(r :: Role) ->

@@ -33,7 +33,7 @@ module Frontend.Core
     , IsTab, ClientDevice(..)
     , tabSelected
     , redirect, redirectPath
-    , avatarImg, userAvatarImg, createdByAvatarImg
+    , userAvatarImg, userAvatarImg'
     , numLikes, percentLikes, numVotes, percentVotes
     , callToActionOnList, callToActionOnList'
 
@@ -76,15 +76,11 @@ module Frontend.Core
 import Control.Arrow ((&&&))
 import Control.Lens
 import Control.Monad.Except.Missing (finally)
-import Control.Monad.Except (MonadError)
 import Control.Monad.Reader (runReader)
-import Control.Monad (replicateM_, when)
 import Data.Aeson (ToJSON)
-import Data.Maybe (maybeToList)
 import Data.Monoid
 import Data.String.Conversions
 import Data.Typeable
-import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol, KnownSymbol)
 import Lucid.Base hiding (ToHtml(..), HtmlT(..), Html)
 import Lucid hiding (ToHtml(..), HtmlT(..), Html, href_, script_, src_, onclick_)
@@ -93,7 +89,6 @@ import Servant.HTML.Lucid (HTML)
 import Servant.Missing (getFormDataEnv, throwError500, FormReqBody)
 import Text.Digestive.Form ((.:))
 import Text.Digestive.View
-import Text.Show.Pretty (ppShow)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Map as Map
@@ -105,6 +100,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 import Access
 import Action
+import AulaPrelude
 import Config
 import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
@@ -302,14 +298,11 @@ redirect = throwServantErr . err303With
 redirectPath :: (MonadServantErr err m, HasPath p) => p 'P.AllowGetPost -> m a
 redirectPath = redirect . absoluteUriPath . relPath
 
-avatarImg :: Monad m => AvatarDimension -> Getter (AUID User) (HtmlT m ())
-avatarImg dim = avatarUrl dim . to (img_ . pure . Lucid.src_)
+userAvatarImg :: Monad m => AvatarDimension -> User -> HtmlT m ()
+userAvatarImg dim user = userAvatarImg' dim (user ^. _Id) (user ^. userLogin)
 
-createdByAvatarImg :: (Monad m, HasMetaInfo a) => AvatarDimension -> Getter a (HtmlT m ())
-createdByAvatarImg dim = createdBy . avatarImg dim
-
-userAvatarImg :: Monad m => AvatarDimension -> Getter User (HtmlT m ())
-userAvatarImg dim = _Id . avatarImg dim
+userAvatarImg' :: Monad m => AvatarDimension -> AUID User -> UserLogin -> HtmlT m ()
+userAvatarImg' dim uid ul = img_ [Lucid.src_ $ uid ^. avatarUrl dim, alt_ $ "avatar: " <> ul ^. unUserLogin]
 
 numLikes :: Idea -> Int
 numLikes idea = Map.size $ idea ^. ideaLikes
@@ -549,7 +542,7 @@ formPageHandler
     => m p
     -> (FormPagePayload p -> m (FormPageResult p))
     -> FormPageHandler m p
-formPageHandler get processor = FormPageHandler True get processor noMsg
+formPageHandler gt processor = FormPageHandler True gt processor noMsg
   where
     noMsg _ _ _ = pure Nothing
 
@@ -559,7 +552,7 @@ formPageHandlerWithMsg
     -> (FormPagePayload p -> m (FormPageResult p))
     -> ST
     -> FormPageHandler m p
-formPageHandlerWithMsg get processor msg = FormPageHandler True get processor (\_ _ _ -> pure . Just . cs $ msg)
+formPageHandlerWithMsg gt processor msg = FormPageHandler True gt processor (\_ _ _ -> pure . Just . cs $ msg)
 
 formPageHandlerCalcMsg
     :: (Applicative m, ConvertibleStrings s StatusMessage)
@@ -567,7 +560,7 @@ formPageHandlerCalcMsg
     -> (FormPagePayload p -> m (FormPageResult p))
     -> (p -> FormPagePayload p -> FormPageResult p -> s)
     -> FormPageHandler m p
-formPageHandlerCalcMsg get processor msg = FormPageHandler True get processor ((pure . Just . cs) <...> msg)
+formPageHandlerCalcMsg gt processor msg = FormPageHandler True gt processor ((pure . Just . cs) <...> msg)
 
 formPageHandlerCalcMsgM
     :: (Applicative m, ConvertibleStrings s StatusMessage)
@@ -575,14 +568,14 @@ formPageHandlerCalcMsgM
     -> (FormPagePayload p -> m (FormPageResult p))
     -> (p -> FormPagePayload p -> FormPageResult p -> m s)
     -> FormPageHandler m p
-formPageHandlerCalcMsgM get processor msg = FormPageHandler True get processor (fmap (Just . cs) <...> msg)
+formPageHandlerCalcMsgM gt processor msg = FormPageHandler True gt processor (fmap (Just . cs) <...> msg)
 
 formPageHandlerWithoutCsrf
     :: Applicative m
     => m p
     -> (FormPagePayload p -> m (FormPageResult p))
     -> FormPageHandler m p
-formPageHandlerWithoutCsrf get processor = FormPageHandler False get processor noMsg
+formPageHandlerWithoutCsrf gt processor = FormPageHandler False gt processor noMsg
   where
     noMsg _ _ _ = pure Nothing
 
@@ -822,7 +815,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                     div_ [class_ "pop-menu"] $ do
                         -- FIXME: please add class m-selected to currently selected menu item
                         div_ [class_ "user-avatar"] $
-                            mUser ^. _Just . userAvatarImg avatarDefaultSize
+                            userAvatarImg avatarDefaultSize `mapM_` mUser
                         span_ [class_ "user-name"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
                         ul_ [class_ "pop-menu-list"] $ do
