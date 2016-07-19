@@ -382,6 +382,9 @@ data AccessResult
   = AccessGranted
   | AccessDenied { _accessDeniedMsg :: ST, _accessDeniedRedirect :: Maybe URL }
   | AccessDeferred
+  deriving (Eq, Show, Generic)
+
+instance SOP.Generic AccessResult
 
 instance Monoid AccessResult where
     mempty = AccessGranted

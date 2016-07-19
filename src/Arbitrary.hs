@@ -593,6 +593,9 @@ instance Arbitrary Types.MoveIdea where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary AccessResult where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * comment
 
