@@ -784,6 +784,7 @@ pageFrame frame = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        link_ [rel_ "icon", href_ $ P.TopStatic "favicon.ico"]
 
         -- disable the meta tag for admins, since admin pages are not working on mobile devices.
         let viewport_content
