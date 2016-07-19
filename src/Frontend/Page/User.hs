@@ -254,12 +254,9 @@ delegationButtons visiting visited delegations = do
     let ownProfile = isOwnProfile visiting visited
         isActiveDelegation = isJust . activeDelegation
         activeDelegation dscope = listToMaybe . (`filter` delegations) $
-            if ownProfile
-                then (\d -> d ^. delegationFullScope == dscope &&
-                            d ^. delegationFullFrom . _Id == visiting ^. _Id)
-                else (\d -> d ^. delegationFullScope == dscope &&
-                            d ^. delegationFullFrom . _Id ==  visiting ^. _Id &&
-                            d ^. delegationFullTo . _Id ==  visited ^. _Id)  -- TODO: simplify!
+            (\d -> d ^. delegationFullScope == dscope &&
+                   d ^. delegationFullFrom . _Id == visiting ^. _Id &&
+                   (ownProfile || d ^. delegationFullTo . _Id ==  visited ^. _Id))
 
         butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
