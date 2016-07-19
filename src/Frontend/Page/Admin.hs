@@ -318,8 +318,7 @@ menulink' targetMenuItem =
     MenuItemPhaseChange
         -> MenuLink "tab-phase-change" U.adminChangePhase "Phasen verschieben"
     MenuItemTermsOfUse
-        -- TODO: Appropiate texts
-        -> MenuLink "tab-terms-of-user" U.adminTermsOfUse "Nutzungsbedingungen"
+        -> MenuLink "tab-terms-of-user" U.adminTermsOfUse "Nutzungsbedingungen ändern"
 
 instance FormPage PageAdminSettingsDurations where
     type FormPagePayload PageAdminSettingsDurations = Durations
@@ -482,7 +481,7 @@ instance ToHtml AdminViewUsers where
                         td_ "[gelöscht]"
 
                     renderUserRow (ActiveUser user) = tr_ $ do
-                        td_ . span_ [class_ "img-container"] $ user ^. userAvatarImg avatarDefaultSize
+                        td_ . span_ [class_ "img-container"] $ userAvatarImg avatarDefaultSize user
                         renderUserInfoRow user
                         td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
 
@@ -701,7 +700,7 @@ instance ToHtml AdminEditClass where
                     th_ "Name"
                     th_ nil
                 tbody_ . forM_ (activeUsers users) $ \user -> tr_ $ do
-                    td_ . span_ [class_ "img-container"] $ user ^. userAvatarImg avatarDefaultSize
+                    td_ . span_ [class_ "img-container"] $ userAvatarImg avatarDefaultSize user
                     td_ $ user ^. userLogin . unUserLogin . html
                     td_ $ a_ [href_ $ U.adminEditUser user] "bearbeiten"
 
@@ -992,18 +991,16 @@ instance FormPage PageAdminTermsOfUse where
                 ("terms-of-use" .: DF.text (Just (unMarkdown termsOfUseDoc)))
     formPage v form p = adminFrame p . semanticDiv p $ do
         form $ do
-            -- TODO: Translation
-            h3_ "Set the terms of use, please"
+            h3_ "Bitte passen Sie hier die Nutzungsbedingungen an"
             inputTextArea_ [placeholder_ "..."] Nothing Nothing "terms-of-use" v
             footer_ [class_ "form-footer"] $ do
                 DF.inputSubmit "Speichern"
 
--- TODO: Translate
 adminTermsOfUse :: ActionM m => FormPageHandler m PageAdminTermsOfUse
 adminTermsOfUse = formPageHandlerWithMsg
     (PageAdminTermsOfUse <$> query termsOfUse)
     (update . SetTermsOfUse . unTermsOfUsePayload)
-    "The terms of use text is changed."
+    "Die Änderungen der Nutzungsbedingungen wurden gespeichert."
 
 
 -- * csv file handling

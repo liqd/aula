@@ -52,6 +52,7 @@ import Persistent
     , getIdeaStats
     , phaseEndRefinement
     , ideaAccepted
+    , delegationFull
     )
 
 import qualified Action (createTopic, editTopic)
@@ -85,14 +86,14 @@ data ViewTopic
     , _vtTab         :: ViewTopicTab
     , _vtTopic       :: Topic
     , _vtIdeas       :: ListItemIdeas
-    , _vtDelegation  :: Maybe Delegation
+    , _vtDelegation  :: Maybe DelegationFull
     }
   | ViewTopicDelegations
     { _vtNow         :: Timestamp
     , _vtCtx         :: CapCtx
     , _vtTopic       :: Topic
     , _vtDelegations :: DelegateeLists
-    , _vtDelegation  :: Maybe Delegation
+    , _vtDelegation  :: Maybe DelegationFull
     }
   deriving (Eq, Show, Read)
 
@@ -164,7 +165,7 @@ instance ToHtml ViewTopic where
         div_ [class_ "ideas-list"] $ toHtml ideasAndNumVoters
 
 
-viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe Delegation -> HtmlT m ()
+viewTopicHeaderDiv :: Monad m => Timestamp -> CapCtx -> Topic -> ViewTopicTab -> Maybe DelegationFull -> HtmlT m ()
 viewTopicHeaderDiv now ctx topic tab delegation = do
     let caps    = capabilities ctx
         phase   = topic ^. topicPhase
@@ -216,14 +217,17 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                        , href_ . U.createIdea $ IdeaLocationTopic space topicId
                        ] $
                       "+ Neue Idee"
-                delegateVoteButton = when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) .
-                    a_  [ class_ "btn-cta heroic-cta m-large"
-                        , href_ $ U.createDelegation (DScopeTopicId topicId)
-                        ] $ do
+                delegateVoteButton = when (any (`elem` caps) [CanDelegateInClass, CanDelegateInSchool]) $ do
+                    a_ [ class_ "btn-cta heroic-cta m-large"
+                       , href_ $ U.createDelegation (DScopeTopicId topicId)
+                       ] $ do
                       i_ [class_ "icon-bullhorn"] nil
                       if isNothing delegation
                             then "Stimme beauftragen"
                             else "Beauftragung ändern"
+                    forM_ delegation $ \(view delegationFullTo -> delegate) -> do
+                        p_ . a_ [href_ $ U.viewUserProfile delegate] $
+                            "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
@@ -359,7 +363,10 @@ formPageIdeaSelection v ideaStats =
                 span_ $ do
                     ideaStat ^. ideaStatsIdea . ideaTitle . html
                     when (ideaReachedQuorum ideaStat) $ do
-                        img_ [src_ . U.TopStatic $ "images/badge_aufdemtisch.png", width_ "31"]
+                        img_ [ src_ . U.TopStatic $ "images/badge_aufdemtisch.png"
+                             , width_ "31"
+                             , alt_ "Idee ist auf dem Tisch"
+                             ]
 
 
 makeFormIdeaSelection :: forall m v . (Monad m, Monoid v)
@@ -390,12 +397,13 @@ viewTopic tab topicId = do
     now <- getCurrentTimestamp
     delegation <- delegationInScope (DScopeTopicId topicId)
     (ctx, topic) <- topicCapCtx topicId
-    equery $
+    equery $ do
+        delegationf <- delegationFull `mapM` delegation
         case tab of
             TabDelegation ->
                 ViewTopicDelegations now ctx topic
                     <$> topicDelegateeLists topicId
-                    <*> pure delegation
+                    <*> pure delegationf
             TabIdeas ideasTab ideasQuery -> do
                 let loc = topicIdeaLocation topic
                 ideas <- applyFilter ideasQuery . ideaFilterForTab ideasTab
@@ -404,7 +412,7 @@ viewTopic tab topicId = do
                 let listItemIdeas =
                         ListItemIdeas ctx (IdeaInViewTopic ideasTab loc) ideasQuery ideas
 
-                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas delegation
+                pure $ ViewTopicIdeas now ctx tab topic listItemIdeas delegationf
 
 -- FIXME: ProtoTopic also holds an IdeaSpace, which can introduce inconsistency.
 createTopic :: ActionM m => IdeaSpace -> FormPageHandler m CreateTopic

@@ -109,5 +109,7 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
     toHtml p@(AuthorWidget mi) = semanticDiv p . span_ $ do
         div_ [class_ "author"] .
             a_ [href_ $ U.viewUserIdProfile (mi ^. metaCreatedBy)] $ do
-                span_ [class_ "author-image"] $ mi ^. metaCreatedBy . avatarImg avatarDefaultSize
-                span_ [class_ "author-text"] $ mi ^. metaCreatedByLogin . unUserLogin . html
+                span_ [class_ "author-image"] $
+                    userAvatarImg' avatarDefaultSize (mi ^. metaCreatedBy) (mi ^. metaCreatedByLogin)
+                span_ [class_ "author-text"] $
+                    mi ^. metaCreatedByLogin . unUserLogin . html

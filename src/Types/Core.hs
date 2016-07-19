@@ -531,6 +531,13 @@ data Delegation = Delegation
     }
   deriving (Eq, Ord, Show, Read, Generic)
 
+data DelegationFull = DelegationFull
+    { _delegationFullScope :: DScope
+    , _delegationFullFrom  :: User
+    , _delegationFullTo    :: User
+    }
+  deriving (Eq, Ord, Show, Read, Generic)
+
 type instance Proto Delegation = Delegation
 
 -- | Node type for the delegation scope hierarchy DAG.  The four levels are 'Idea', 'Topic',

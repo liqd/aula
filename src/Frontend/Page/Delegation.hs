@@ -104,7 +104,7 @@ instance FormPage PageDelegateVote where
                           , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
                         img_ [ src_ . U.TopStatic $ fromString url
-                             , alt_ $ cs uid
+                             , alt_ $ user ^. userLogin . unUserLogin
                              ]
                         span_ $ toHtml unm
                 div_ [class_ "button-group clearfix"] $ do

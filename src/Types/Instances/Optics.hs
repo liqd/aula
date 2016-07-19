@@ -63,6 +63,7 @@ makeLenses ''CommentKey
 makeLenses ''CommentVote
 makeLenses ''CommentVoteKey
 makeLenses ''Delegation
+makeLenses ''DelegationFull
 makeLenses ''DelegationNetwork
 makeLenses ''DScope
 makeLenses ''EmailAddress
