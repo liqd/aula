@@ -15,6 +15,7 @@ where
 import Access
 import Action
 import Codec.Picture (DynamicImage)
+import Data.Maybe (listToMaybe)
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList
 import Frontend.Fragment.Note
@@ -248,16 +249,17 @@ commonIdeaSpaceDelegations delegatee delegate = do
 delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
 delegationButtons delegatee delegate delegations = do
     let ownProfile = isOwnProfile delegatee delegate
-        isActiveDelegation dscope =
+        isActiveDelegation = isJust . activeDelegation
+        activeDelegation dscope = listToMaybe . (`filter` delegations) $
             if ownProfile
-                then any (\d -> d ^. delegationScope == dscope &&
-                                d ^. delegationFrom == delegatee ^. _Id) delegations
-                else Delegation dscope (delegatee ^. _Id) (delegate ^. _Id)
-                     `elem`
-                     delegations
+                then (\d -> d ^. delegationScope == dscope &&
+                            d ^. delegationFrom == delegatee ^. _Id)
+                else (== Delegation dscope (delegatee ^. _Id) (delegate ^. _Id))
+
         butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
         ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses delegatee delegate))
+
     forM_ ispaces $ \ispace -> do
         let dscope = DScopeIdeaSpace ispace
         case (ownProfile, isActiveDelegation dscope) of
