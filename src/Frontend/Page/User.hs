@@ -257,33 +257,22 @@ delegationButtons delegatee delegate delegations = do
                      delegations
         butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
-    forM_ (commonSchoolClasses delegatee delegate) $ \clss -> do
-        let classScope = DScopeIdeaSpace (ClassSpace clss)
-        if isActiveDelegation classScope
+        ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses delegatee delegate))
+    forM_ ispaces $ \ispace -> do
+        let dscope = DScopeIdeaSpace ispace
+        if isActiveDelegation dscope
             then do
                 if ownProfile
-                    then butGet (U.createDelegation classScope)
-                           ("Deine Beauftragung für Klasse " <> uilabel clss)
-                    else butPost (U.withdrawDelegationOnClassSpace delegate clss)
-                           ("Beauftragung für Klasse " <> uilabel clss <> " entziehen")
+                    then butGet (U.createDelegation dscope)
+                           ("Deine Beauftragung für " <> uilabel ispace)
+                    else butPost (U.withdrawDelegationOnIdeaSpace delegate ispace)
+                           ("Beauftragung für " <> uilabel ispace <> " entziehen")
             else do
                 if ownProfile
-                    then butGet (U.createDelegation classScope)
-                           ("Deine Beauftragung für Klasse " <> uilabel clss)
-                    else butPost (U.delegateVoteOnClassSpace delegate clss)
-                           ("Für Klasse " <> uilabel clss <> " beauftragen")
-    let schoolScope = DScopeIdeaSpace SchoolSpace
-    if isActiveDelegation schoolScope
-        then do
-            (if ownProfile
-                then butGet (U.createDelegation schoolScope)
-                else butPost (U.withdrawDelegationOnSchoolSpace delegate))
-                "Schulweite beauftragung entziehen"
-        else do
-            (if ownProfile
-                then butGet (U.createDelegation schoolScope)
-                else butPost (U.delegateVoteOnSchoolSpace delegate))
-                "Schulweit beauftragen"
+                    then butGet (U.createDelegation dscope)
+                           ("Deine Beauftragung für " <> uilabel ispace)
+                    else butPost (U.delegateVoteOnIdeaSpace delegate ispace)
+                           ("Für " <> uilabel ispace <> " beauftragen")
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegationListsMap -> [DScope]

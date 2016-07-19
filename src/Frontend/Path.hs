@@ -101,10 +101,8 @@ module Frontend.Path
     , reportUser
 
     -- * user profile
-    , delegateVoteOnSchoolSpace
-    , delegateVoteOnClassSpace
-    , withdrawDelegationOnSchoolSpace
-    , withdrawDelegationOnClassSpace
+    , delegateVoteOnIdeaSpace
+    , withdrawDelegationOnIdeaSpace
     , userDelegationsTo
     , userDelegationsFrom
     , userIdeas'
@@ -531,10 +529,8 @@ data UserMode (r :: AllowedMethod) =
     UserIdeas (Maybe IdeasQuery)
   | UserDelegationsTo
   | UserDelegationsFrom
-  | UserDelegateVoteOnSchoolSpace
-  | UserDelegateVoteOnClassSpace SchoolClass
-  | UserWithdrawDelegationOnSchoolSpace
-  | UserWithdrawDelegationOnClassSpace SchoolClass
+  | UserDelegateVoteOnIdeaSpace IdeaSpace
+  | UserWithdrawDelegationOnIdeaSpace IdeaSpace
   | UserEdit
   | ReportUser
   deriving (Generic, Show)
@@ -542,27 +538,19 @@ data UserMode (r :: AllowedMethod) =
 instance SOP.Generic (UserMode r)
 
 user :: UserMode r -> UriPath -> UriPath
-user (UserIdeas mq)                          path = renderFilter mq $ path </> "ideas"
-user UserDelegationsTo                       path = path </> "delegations" </> "to"
-user UserDelegationsFrom                     path = path </> "delegations" </> "from"
-user UserDelegateVoteOnSchoolSpace           path = path </> "delegate" </> "school"
-user (UserDelegateVoteOnClassSpace c)        path = path </> "delegate" </> "class" </> uriPart c
-user UserWithdrawDelegationOnSchoolSpace     path = path </> "withdraw" </> "school"
-user (UserWithdrawDelegationOnClassSpace c)  path = path </> "withdraw" </> "class" </> uriPart c
-user UserEdit                                path = path </> "edit"
-user ReportUser                              path = path </> "report"
+user (UserIdeas mq)                        path = renderFilter mq $ path </> "ideas"
+user UserDelegationsTo                     path = path </> "delegations" </> "to"
+user UserDelegationsFrom                   path = path </> "delegations" </> "from"
+user (UserDelegateVoteOnIdeaSpace s)       path = path </> "delegate" </> "ispace" </> uriPart s
+user (UserWithdrawDelegationOnIdeaSpace s) path = path </> "withdraw" </> "ispace" </> uriPart s
+user UserEdit                              path = path </> "edit"
+user ReportUser                            path = path </> "report"
 
-delegateVoteOnSchoolSpace :: User -> Main 'AllowPost
-delegateVoteOnSchoolSpace u = UserProf (u ^. _Id) UserDelegateVoteOnSchoolSpace
+delegateVoteOnIdeaSpace :: User -> IdeaSpace -> Main 'AllowPost
+delegateVoteOnIdeaSpace u = UserProf (u ^. _Id) . UserDelegateVoteOnIdeaSpace
 
-delegateVoteOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
-delegateVoteOnClassSpace u = UserProf (u ^. _Id) . UserDelegateVoteOnClassSpace
-
-withdrawDelegationOnSchoolSpace :: User -> Main 'AllowPost
-withdrawDelegationOnSchoolSpace u = UserProf (u ^. _Id) UserWithdrawDelegationOnSchoolSpace
-
-withdrawDelegationOnClassSpace :: User -> SchoolClass -> Main 'AllowPost
-withdrawDelegationOnClassSpace u = UserProf (u ^. _Id) . UserWithdrawDelegationOnClassSpace
+withdrawDelegationOnIdeaSpace :: User -> IdeaSpace -> Main 'AllowPost
+withdrawDelegationOnIdeaSpace u = UserProf (u ^. _Id) . UserWithdrawDelegationOnIdeaSpace
 
 userDelegationsTo :: User -> Main 'AllowGetPost
 userDelegationsTo u = UserProf (u ^. _Id) UserDelegationsTo
@@ -746,11 +734,9 @@ isPostOnly = \case
           _                           -> False
     UserProf _ m ->
       case m of
-          UserDelegateVoteOnSchoolSpace    -> True
-          (UserDelegateVoteOnClassSpace _) -> True
-          UserWithdrawDelegationOnSchoolSpace    -> True
-          (UserWithdrawDelegationOnClassSpace _) -> True
-          _                                -> False
+          (UserDelegateVoteOnIdeaSpace _)       -> True
+          (UserWithdrawDelegationOnIdeaSpace _) -> True
+          _                                     -> False
     -- FIXME[#312] Logout -> True
     _ -> False
 
