@@ -252,7 +252,7 @@ delegationButtons :: Monad m => User -> User -> [DelegationFull] -> HtmlT m ()
 delegationButtons visiting visited delegations = do
     let ownProfile = isOwnProfile visiting visited
         isActiveDelegation = isJust . activeDelegation
-        activeDelegation dscope = (`find` delegations) $
+        activeDelegation dscope = (`find` delegations)
             (\d -> d ^. delegationFullScope == dscope &&
                    d ^. delegationFullFrom . _Id == visiting ^. _Id &&
                    (ownProfile || d ^. delegationFullTo . _Id ==  visited ^. _Id))
