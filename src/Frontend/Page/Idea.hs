@@ -305,7 +305,7 @@ instance ToHtml ViewIdea where
                         feasibilityIndicator idea
                     if isWinning idea
                         then li_ [class_ "icon-winner"] $ span_ "gewonnen"
-                        else li_ [class_ "icon-hourglass"] $ span_ "hourglass"
+                        else li_ [class_ "icon-hourglass"] $ span_ "nicht gewonnen"
 
 
             -- explanation by the dean why the idea is feasible or not (if available)
