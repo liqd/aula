@@ -504,9 +504,8 @@ instance FormPage AdminCreateUser where
             <*> optionalEmailField "Email" Nothing
             <*> (Set.singleton <$> roleForm Nothing Nothing classes)
         where
-            -- FIXME: Users with more than one name?
-            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 letter) "nur Buchstaben")
-            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 letter) "nur Buchstaben")
+            firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 anyChar) "nicht leer")
+            lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 anyChar) "nicht leer")
             loginName = validateOptional "Login" (UserLogin <$> usernameV)
 
     formPage v form p =
@@ -988,7 +987,7 @@ instance FormPage PageAdminTermsOfUse where
         <$> validate
                 "Nutzungsbedingungen"
                 markdownV
-                ("terms-of-use" .: DF.text (Just (unMarkdown termsOfUseDoc)))
+                ("terms-of-use" .: (DF.text . Just . unMarkdown $ termsOfUseDoc))
     formPage v form p = adminFrame p . semanticDiv p $ do
         form $ do
             h3_ "Bitte passen Sie hier die Nutzungsbedingungen an"

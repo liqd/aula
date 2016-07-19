@@ -151,7 +151,7 @@ instance ToHtml PageOverviewOfTopics where
                                     topic ^. topicDesc  . html
 
                                 span_ [class_ "theme-grid-item-link"]
-                                    "view topic")
+                                    "aufklappen")
                 topics
 
 instance Page PageOverviewOfTopics where

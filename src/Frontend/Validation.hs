@@ -180,7 +180,7 @@ nonEmptyV = FieldValidator $ \xs ->
 maxLengthV :: Int -> FieldValidator' ST
 maxLengthV mx = FieldValidator $ \xs ->
     if ST.length xs > mx
-        then DF.Error ["max." <> cs (show mx) <> " Zeichen"]
+        then DF.Error ["max. " <> cs (show mx) <> " Zeichen"]
         else DF.Success xs
 
 type DfForm a = forall m n. (Monad m, Monad n) => DF.Form (HtmlT n ()) m a
@@ -221,9 +221,7 @@ passwordV = fieldParser
             , show maxPasswordLength, " Zeichen"])
 
 titleV :: StringFieldValidator
-titleV = fieldParser
-    (cs <$> many1 (alphaNum <|> space))
-    "Buchstaben, Ziffern, oder Leerzeichen"
+titleV = fieldParser (cs <$> many1 anyChar) "nicht leer"
 
 markdownV :: FieldValidator ST Document
 markdownV = nonEmptyV >>> fieldEither markdown

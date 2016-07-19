@@ -275,10 +275,7 @@ validateTopicTitle ideaSpace mTopic =
                 else DF.Success title
 
 validateTopicDesc :: forall m n . (Monad m, Monad n) => DF.Form (HtmlT n ()) m ST -> DF.Form (HtmlT n ()) m PlainDocument
-validateTopicDesc =
-    validate
-        "Thema"
-        (PlainDocument <$> (maxLengthV Constant.topicDescMaxLength . nonEmptyV))
+validateTopicDesc = validate "Thema" (PlainDocument <$> (maxLengthV Constant.topicDescMaxLength . nonEmptyV))
 
 instance FormPage CreateTopic where
     type FormPagePayload CreateTopic = ProtoTopic

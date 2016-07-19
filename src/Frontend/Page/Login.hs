@@ -57,7 +57,7 @@ instance FormPage PageHomeWithLoginPrompt where
         LoginFormData
         <$> ("user" .: validate "Login" usernameV (DF.string Nothing))
         <*> ("pass" .: DF.text Nothing)
-            -- No validation is needed when login only when setting/changing passwords.
+            -- FIXME: No validation is needed when login only when setting/changing passwords.
 
     formPage v form p@(PageHomeWithLoginPrompt loginDemoHints) =
         semanticDiv p $ do
