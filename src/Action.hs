@@ -631,6 +631,7 @@ deleteIdea = update . DeleteIdea
 deleteTopic :: AUID Topic -> ActionPersist m => m ()
 deleteTopic = update . DeleteTopic
 
+
 -- * Reporting and deleting comments
 
 -- ASSUMPTION: Idea is in the given idea location.
