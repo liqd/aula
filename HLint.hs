@@ -17,3 +17,5 @@ ignore "Use fmap"
 ignore "Use list literal"
 ignore "Use record patterns"
 ignore "Use =<<"
+
+warn = listToMaybe (filter f xs) ==> find f xs
