@@ -54,6 +54,9 @@ module Action
     , Action.checkValidPasswordToken
     , finalizePasswordViaEmail
 
+      -- * config
+    , Action.devMode
+
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
 
@@ -161,7 +164,14 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), exposedUrl, delegateLikes)
+import Config
+    ( Config
+    , GetConfig(..)
+    , MonadReaderConfig
+    , exposedUrl
+    , delegateLikes
+    , devMode
+    )
 import Data.Avatar
 import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
@@ -377,6 +387,12 @@ getSpacesForCurrentUser = do
 
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
+
+
+-- * config
+
+devMode :: MonadReaderConfig r m => m Bool
+devMode = view (getConfig . Config.devMode)
 
 
 -- * Phase Transitions

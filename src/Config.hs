@@ -32,6 +32,7 @@ module Config
     , snapshotInterval
     , delegateLikes
     , timeoutCheckInterval
+    , devMode
     , logging
     , logLevel
     , eventLogPath
@@ -122,6 +123,7 @@ data Config = Config
     -- * once per day would be the minmum
     -- * 4 times a day (every 6 hours) would ensures that
     --   all the topics are ready at least at 6am.
+    , _devMode              :: Bool
     }
   deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
 
@@ -176,6 +178,7 @@ defaultConfig = Config
     , _smtpConfig           = defaultSmtpConfig
     , _delegateLikes        = True
     , _timeoutCheckInterval = TimespanHours 6
+    , _devMode              = False
     }
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
