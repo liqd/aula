@@ -328,9 +328,9 @@ topicApi space
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
-  :<|> post Action.deleteTopic
+  :<|> postH Action.deleteTopic
   where
-    post a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) $ a tid
+    postH action tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) $ action tid
 
     viewTopicTab tab tid qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
