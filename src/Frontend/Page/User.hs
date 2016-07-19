@@ -239,7 +239,9 @@ commonIdeaSpaceDelegations delegatee delegate = do
     pure $ catMaybes (schoolDelegation:classDelegations)
 
 -- | Delegation buttons works in a different way if the user opens
--- his/her own profile, or other users profile.
+-- his/her own profile, or other users profile.  First argument
+-- (`visiting`) is the (potential) delegatee, second argument (`visited`) the
+-- (potential) delegate.
 --
 -- For the own profile clicking on the delegation button, the delegate selection
 -- page is opened.
@@ -247,18 +249,18 @@ commonIdeaSpaceDelegations delegatee delegate = do
 -- For other's profile, clicking on the delegation buttons mark the owner of
 -- the profile as the delegate of the current user.
 delegationButtons :: Monad m => User -> User -> [Delegation] -> HtmlT m ()
-delegationButtons delegatee delegate delegations = do
-    let ownProfile = isOwnProfile delegatee delegate
+delegationButtons visiting visited delegations = do
+    let ownProfile = isOwnProfile visiting visited
         isActiveDelegation = isJust . activeDelegation
         activeDelegation dscope = listToMaybe . (`filter` delegations) $
             if ownProfile
                 then (\d -> d ^. delegationScope == dscope &&
-                            d ^. delegationFrom == delegatee ^. _Id)
-                else (== Delegation dscope (delegatee ^. _Id) (delegate ^. _Id))
+                            d ^. delegationFrom == visiting ^. _Id)
+                else (== Delegation dscope (visiting ^. _Id) (visited ^. _Id))
 
         butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
         butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
-        ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses delegatee delegate))
+        ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses visiting visited))
 
     forM_ ispaces $ \ispace -> do
         let dscope = DScopeIdeaSpace ispace
@@ -267,10 +269,10 @@ delegationButtons delegatee delegate delegations = do
                 butGet (U.createDelegation dscope)
                     ("Deine Beauftragung für " <> uilabel ispace)
             (False, True) ->
-                butPost (U.withdrawDelegationOnIdeaSpace delegate ispace)
+                butPost (U.withdrawDelegationOnIdeaSpace visited ispace)
                     ("Beauftragung für " <> uilabel ispace <> " entziehen")
             (False, False) ->
-                butPost (U.delegateVoteOnIdeaSpace delegate ispace)
+                butPost (U.delegateVoteOnIdeaSpace visited ispace)
                     ("Für " <> uilabel ispace <> " beauftragen")
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
