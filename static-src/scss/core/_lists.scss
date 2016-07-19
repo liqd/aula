@@ -101,8 +101,12 @@
             }
 
             &.icon-winner {
-                @include svg(trophy);
+                @include svg(winner);
                 background-size: contain;
+            }
+
+            &.icon-hourglass {
+                @include svg(hourglass);
             }
 
             &.icon-table {

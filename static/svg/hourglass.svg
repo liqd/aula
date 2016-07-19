@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="38px" height="44px" viewBox="0 0 38 44" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 3.8.3 (29802) - http://www.bohemiancoding.com/sketch -->
+    <title>hourglass</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Klickdummy-Moderator" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="5.7-Idea-detail-page:-Winner-1-" transform="translate(-191.000000, -228.000000)">
+            <g id="hourglass" transform="translate(191.000000, 228.000000)">
+                <rect id="Rectangle-5530" fill="#69970B" x="0.365384615" y="0" width="37.6346154" height="3.66666667"></rect>
+                <rect id="Rectangle-5530" fill="#69970B" x="0" y="40.3333333" width="37.6346154" height="3.66666667"></rect>
+                <path d="M19.3653846,40.3333333 C28.4462209,40.3333333 35.8076923,32.1252209 35.8076923,22 C30.6184101,22.0000001 7.1441256,22.0000003 2.92307692,22 C2.92307692,32.1252209 10.2845484,40.3333333 19.3653846,40.3333333 Z" id="Oval-16" fill="#8CB735" transform="translate(19.365385, 31.166667) rotate(-180.000000) translate(-19.365385, -31.166667) "></path>
+                <path d="M19.3653846,40.3333333 C19.3653846,40.3333333 35.8076923,38.1467918 35.8076923,30.5827623 C30.6184101,30.5827624 7.1441256,30.5827627 2.92307692,30.5827623 C3.23405177,37.8070282 19.3653846,40.3333333 19.3653846,40.3333333 Z" id="Oval-16" fill="#DCEEC1" transform="translate(19.365385, 35.458048) rotate(-180.000000) translate(-19.365385, -35.458048) "></path>
+                <path d="M19.3653846,22 C28.4462209,22 35.8076923,13.7918876 35.8076923,3.66666667 C30.6184101,3.66666672 7.1441256,3.66666698 2.92307692,3.66666667 C2.92307692,13.7918876 10.2845484,22 19.3653846,22 Z" id="Oval-16" fill="#8CB735"></path>
+                <ellipse id="Oval-20" fill="#DCEEC1" cx="19.3607741" cy="26.2333333" rx="0.730769231" ry="0.733333333"></ellipse>
+                <ellipse id="Oval-20-copy" fill="#DCEEC1" cx="19.3607741" cy="23.2666667" rx="0.730769231" ry="0.733333333"></ellipse>
+                <ellipse id="Oval-20-copy" fill="#DCEEC1" cx="19.3653846" cy="29.2333333" rx="0.730769231" ry="0.733333333"></ellipse>
+            </g>
+        </g>
+    </g>
+</svg>

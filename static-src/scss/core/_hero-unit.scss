@@ -45,6 +45,10 @@
         color: $color-positive;
         display: inline-block;
     }
+
+    .button-group {
+        @include rem(margin-top, 20px);
+    }
 }
 
 .heroic-cta {
