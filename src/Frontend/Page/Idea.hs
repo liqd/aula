@@ -303,10 +303,9 @@ instance ToHtml ViewIdea where
                     when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                         feasibilityIndicator idea
-                    when (isWinning idea) .
-                        li_ [class_ "icon-winner"] $ span_ "gewonnen"
-                    -- FIXME - when 'when voting has ended but idea was not marked as winning' #608
-                    -- li_ [class_ "icon-hourglass"] $ span_ "hourglass"
+                    if isWinning idea
+                        then li_ [class_ "icon-winner"] $ span_ "gewonnen"
+                        else li_ [class_ "icon-hourglass"] $ span_ "hourglass"
 
 
             -- explanation by the dean why the idea is feasible or not (if available)
