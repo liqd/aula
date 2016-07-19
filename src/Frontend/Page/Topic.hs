@@ -226,8 +226,10 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                             then "Stimme beauftragen"
                             else "Beauftragung ändern"
                     forM_ delegation $ \(view delegationFullTo -> delegate) -> do
-                        p_ . a_ [href_ $ U.viewUserProfile delegate] $
-                            "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
+                        p_ $ do
+                            "Derzeit beauftragt: "
+                            a_ [href_ $ U.viewUserProfile delegate] $ do
+                                delegate ^. userLogin . unUserLogin . html
 
             case phase of
                 PhaseWildIdea{}   -> createIdeaButton
