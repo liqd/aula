@@ -157,7 +157,9 @@ instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
     toHtml p@(ViewTopicDelegations _ _ topic _ _) | topic ^. topicDeleted = semanticDiv p $ do
-        div_ $ p_ "Dieses Thema wurde gelöscht!"
+        div_ [class_ "topic-header"] $ p_ "Dieses Thema wurde gelöscht!"
+    toHtml p@(ViewTopicIdeas _ _ _ topic _ _) | topic ^. topicDeleted = semanticDiv p $ do
+        div_ [class_ "topic-header"] $ p_ "Dieses Thema wurde gelöscht!"
 
     toHtml p@(ViewTopicDelegations now capCtx topic delegations delegation) = semanticDiv p $ do
         viewTopicHeaderDiv now capCtx topic TabDelegation delegation
