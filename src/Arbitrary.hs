@@ -471,6 +471,10 @@ instance Arbitrary Category where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary IdeaLikeValue where
+    arbitrary = garbitrary
+    shrink    = gshrink
+
 instance Arbitrary IdeaLike where
     arbitrary = garbitrary
     shrink    = gshrink

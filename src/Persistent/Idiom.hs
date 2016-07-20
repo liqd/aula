@@ -198,7 +198,7 @@ ideaSupport = \case
     PhaseResult{}     -> ideaVoteSupport
 
 ideaLikeSupport :: Idea -> Support
-ideaLikeSupport = Support . length . view ideaLikes
+ideaLikeSupport = Support . numLikes
 
 ideaVoteSupport :: Idea -> Support
 ideaVoteSupport = ideaVoteSupportByAbsDiff

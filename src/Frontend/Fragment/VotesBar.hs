@@ -94,7 +94,7 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
             | userLikesIdea user idea
                 = postButton_
                     [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
-                    (U.revokeLikeOnIdea idea)
+                    (U.dislikeIdea idea)
                     "Du willst diese Idee auf den Tisch legen"
             | otherwise
                 = postButton_

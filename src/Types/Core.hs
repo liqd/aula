@@ -289,9 +289,15 @@ data Category =
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
+data IdeaLikeValue =
+    Like
+  | Dislike
+  deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
+
 -- | endorsement, or interest.
 data IdeaLike = IdeaLike
     { _ideaLikeMeta     :: MetaInfo IdeaLike
+    , _ideaLikeValue    :: IdeaLikeValue
     , _ideaLikeDelegate :: AUID User
     }
   deriving (Eq, Ord, Show, Read, Generic)

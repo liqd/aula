@@ -27,7 +27,7 @@ import Data.Set.Lens (setOf)
 import Crypto.Scrypt
 import Data.List (find)
 import Data.Set as Set (Set, intersection, singleton, member)
-import Data.Map as Map (fromList)
+import Data.Map as Map (filter, fromList, size)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, deriveSafeCopy)
@@ -284,8 +284,10 @@ userVotedOnIdea user idea =
 
 userLikesIdea :: User -> Idea -> Bool
 userLikesIdea user idea =
-    isJust $ idea ^? ideaLikes . at (user ^. _Id) . _Just
+    (Just Like ==) $ idea ^? ideaLikes . at (user ^. _Id) . _Just . ideaLikeValue
 
+numLikes :: Idea -> Int
+numLikes idea = Map.size . Map.filter ((Like ==) . _ideaLikeValue) $ idea ^. ideaLikes
 
 -- * comment
 

@@ -596,7 +596,7 @@ likeIdea ideaId = do
 revokeLikeOnIdea :: ActionM m => AUID Idea -> m ()
 revokeLikeOnIdea ideaId = do
     user <- currentUserId
-    update $ RemoveLikeFromIdea ideaId user
+    update $ DislikeIdea ideaId user
 
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do

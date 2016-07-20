@@ -249,8 +249,8 @@ type IdeaApi
   :<|> Idea ::> "move" :> FormHandler Page.MoveIdea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH (NeedCap 'CanLike)
-       -- revoke like on an idea
-  :<|> Idea ::> "revoke-like" :> PostH (NeedCap 'CanLike)
+       -- dislike on an idea
+  :<|> Idea ::> "dislike" :> PostH (NeedCap 'CanLike)
        -- delete an idea
   :<|> Idea ::> "delete" :> PostH (NeedCap 'CanEditAndDeleteIdea)
        -- report an idea
