@@ -284,6 +284,7 @@ type instance Proto Idea = ProtoIdea
 data Category =
     CatRules        -- ^ "Regel"
   | CatEquipment    -- ^ "Ausstattung"
+  | CatActivities   -- ^ "Aktivitäten"
   | CatTeaching     -- ^ "Unterricht"
   | CatTime         -- ^ "Zeit"
   | CatEnvironment  -- ^ "Umgebung"
@@ -678,6 +679,7 @@ instance HasUILabel Category where
     uilabel = \case
         CatRules       -> "Regeln"
         CatEquipment   -> "Ausstattung"
+        CatActivities  -> "Aktivitäten"
         CatTeaching    -> "Unterricht"
         CatTime        -> "Zeit"
         CatEnvironment -> "Umgebung"
@@ -686,6 +688,7 @@ instance ToHttpApiData Category where
     toUrlPiece = \case
         CatRules       -> "rules"
         CatEquipment   -> "equipment"
+        CatActivities  -> "activities"
         CatTeaching    -> "teaching"
         CatTime        -> "time"
         CatEnvironment -> "environment"
@@ -694,6 +697,7 @@ instance FromHttpApiData Category where
     parseUrlPiece = \case
         "rules"       -> Right CatRules
         "equipment"   -> Right CatEquipment
+        "activities"  -> Right CatActivities
         "teaching"    -> Right CatTeaching
         "time"        -> Right CatTime
         "environment" -> Right CatEnvironment
