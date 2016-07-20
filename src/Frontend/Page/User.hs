@@ -261,7 +261,7 @@ delegationButtons visiting visited delegations = do
         butPost = postButton_ [class_ "btn-cta heroic-cta m-large", jsReloadOnClick]
         ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses visiting visited))
 
-    forM_ ispaces $ \ispace -> do  -- FIXME: styling
+    forM_ ispaces $ \ispace -> do
         let dscope = DScopeIdeaSpace ispace
         div_ [class_ "heroic-cta-group"] $ do
             case (ownProfile, isActiveDelegation dscope) of
