@@ -201,6 +201,9 @@ isAdmin = (`hasRole` Admin)
 isStudent :: User -> Bool
 isStudent u = isJust $ find (has _Student) (u ^.. userRoles)
 
+canCreateIdeas :: User -> Bool
+canCreateIdeas = isStudent
+
 roleScope :: Getter Role RoleScope
 roleScope = to $ \r ->
     case r ^? roleSchoolClass of
