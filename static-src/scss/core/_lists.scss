@@ -75,6 +75,10 @@
                 @include svg(icon_ausstattung);
             }
 
+            &.icon-activities {
+                @include svg(icon_aktivitaeten);
+            }
+
             &.icon-teaching {
                 @include svg(icon_unterricht);
             }
