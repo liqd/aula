@@ -20,7 +20,10 @@ AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2
 	-$(EXEC) ghc-pkg unregister $*
 
 sensei: .phony aula.unregister
-	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large
+	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large --skip @Selenium
+
+selenium: .phony aula.unregister
+	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --match @Selenium
 
 sensei-large: .phony aula.unregister
 	$(EXEC) sensei -j5 $(AULA_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
