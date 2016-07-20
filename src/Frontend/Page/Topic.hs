@@ -193,7 +193,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                       "Thema bearbeiten"
                   )
                 , ( canDeleteTopic
-                  , "icon-step-delete"  -- FIXME: missing icon
+                  , "icon-trash-o"
                   , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.deleteTopic space topicId)
                       "Thema löschen"
                   )
