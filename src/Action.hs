@@ -65,6 +65,7 @@ module Action
 
       -- * vote handling
     , likeIdea
+    , revokeLikeOnIdea
     , voteOnIdea
     , delegationInScope
     , delegateOrWithdraw
@@ -590,6 +591,13 @@ likeIdea ideaId = do
             (AddLikeToIdea ideaId delegatee)
             (ProtoIdeaLike (liker' ^. _Id))
 
+-- TODO: Log event?
+-- TODO: Dislike idea instead of removing
+revokeLikeOnIdea :: ActionM m => AUID Idea -> m ()
+revokeLikeOnIdea ideaId = do
+    user <- currentUserId
+    update $ RemoveLikeFromIdea ideaId user
+
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
     delegatedOperationOnIdea getVote voteFor ideaId
@@ -635,6 +643,7 @@ voteIdeaComment ck voteVal = do
     eventLogUserVotesOnComment ck voteVal
 
 -- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
+-- FIXME: Should the delegatees of the current user unvote the idea too?
 unvoteOnIdea :: (ActionM m) => AUID Idea -> m ()
 unvoteOnIdea ideaId = do
     user <- currentUserId

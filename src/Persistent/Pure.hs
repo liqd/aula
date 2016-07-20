@@ -68,6 +68,7 @@ module Persistent.Pure
     , findComment
     , findComment'
     , addLikeToIdea
+    , removeLikeFromIdea
     , addVoteToIdea
     , removeVoteFromIdea
     , addCommentToIdea
@@ -807,6 +808,10 @@ addLikeToIdea :: AUID Idea -> User -> AddDb IdeaLike
 addLikeToIdea iid delegatee =
     addDb' (const (mkIdeaVoteLikeKey iid delegatee))
            (dbIdeaMap . at iid . _Just . ideaLikes)
+
+-- | Removes the like of the given user
+removeLikeFromIdea :: AUID Idea -> AUID User -> AUpdate ()
+removeLikeFromIdea iid uid = withIdea iid . ideaLikes . at uid .= Nothing
 
 mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
 mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)

@@ -58,6 +58,7 @@ module Frontend.Path
     , reportIdea
     , commentOnIdea
     , likeIdea
+    , revokeLikeOnIdea
     , judgeIdea
     , voteOnIdea
     , unvoteOnIdea
@@ -342,6 +343,7 @@ data IdeaMode (r :: AllowedMethod) =
     | EditIdea (AUID Idea)
     | MoveIdea (AUID Idea)
     | LikeIdea (AUID Idea)
+    | RevokeLikeOnIdea (AUID Idea)
     | VoteOnIdea (AUID Idea) IdeaVoteValue
     | UnvoteOnIdea (AUID Idea)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
@@ -365,6 +367,7 @@ ideaMode (ViewIdea i mc)        root = maybe id (flip (</#>) . anchor) mc $
 ideaMode (EditIdea i)           root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (MoveIdea i)           root = root </> "idea" </> uriPart i </> "move"
 ideaMode (LikeIdea i)           root = root </> "idea" </> uriPart i </> "like"
+ideaMode (RevokeLikeOnIdea i)   root = root </> "idea" </> uriPart i </> "revoke-like"
 ideaMode (VoteOnIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
                                             </> uriPart v
 ideaMode (UnvoteOnIdea i)       root = root </> "idea" </> uriPart i </> "remove"
@@ -608,6 +611,9 @@ commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _I
 
 likeIdea :: Idea -> Main 'AllowPost
 likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
+
+revokeLikeOnIdea :: Idea -> Main 'AllowPost
+revokeLikeOnIdea idea = IdeaPath (idea ^. ideaLocation) $ RevokeLikeOnIdea (idea ^. _Id)
 
 judgeIdea :: Idea -> IdeaJuryResultType -> Main 'AllowGetPost
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
