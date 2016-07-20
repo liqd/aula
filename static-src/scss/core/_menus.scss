@@ -118,7 +118,7 @@ $arrow-width: 6px;
     border-bottom: 1px solid $color-grey-light;
     line-height: 1.4;
 
-    a, .pop-menu-list-item-form-wrapper {
+    .pop-menu-list-item-form-wrapper {
         @include rem(padding, 5px 10px);
         color: $color-text;
         display: block;
@@ -130,12 +130,11 @@ $arrow-width: 6px;
             text-decoration: underline;
         }
 
-        form {
+        i, form, * {
             display: inline-block;
         }
 
         i {
-            display: inline-block;
             vertical-align: middle;
             min-width: 15px;
         }
