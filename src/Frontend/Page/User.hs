@@ -210,7 +210,7 @@ userHeaderDiv ctx (Right (user, delegations)) =
         userHeaderDivCore user
         div_ [class_ "sub-header"] $ user ^. userDesc . html
 
-        let btn lnk = a_ [class_ "btn-cta heroic-cta", href_ lnk]
+        let btn lnk = a_ [class_ "btn-cta heroic-cta m-large", href_ lnk]
             editProfileBtn = btn (U.editUserProfile user) "+ Profil bearbeiten"
 
         div_ [class_ "heroic-btn-group"] $ do
@@ -257,11 +257,11 @@ delegationButtons visiting visited delegations = do
                    d ^. delegationFullFrom . _Id == visiting ^. _Id &&
                    (ownProfile || d ^. delegationFullTo . _Id ==  visited ^. _Id))
 
-        butGet path = a_ [class_ "btn-cta heroic-cta", href_ path]
-        butPost = postButton_ [class_ "btn-cta heroic-cta", jsReloadOnClick]
+        butGet path = a_ [class_ "btn-cta heroic-cta m-large", href_ path]
+        butPost = postButton_ [class_ "btn-cta heroic-cta m-large", jsReloadOnClick]
         ispaces = SchoolSpace : (ClassSpace <$> Set.toList (commonSchoolClasses visiting visited))
 
-    forM_ ispaces $ \ispace -> div_ $ do  -- FIXME: styling
+    forM_ ispaces $ \ispace -> do  -- FIXME: styling
         let dscope = DScopeIdeaSpace ispace
         case (ownProfile, isActiveDelegation dscope) of
             (True, _) ->
@@ -273,10 +273,14 @@ delegationButtons visiting visited delegations = do
             (False, False) ->
                 butPost (U.delegateVoteOnIdeaSpace visited ispace)
                     ("Für " <> uilabel ispace <> " beauftragen")
-        br_ []
-        forM_ (activeDelegation dscope) $ \(DelegationFull _ _ delegate) ->
-            p_ . a_ [href_ $ U.viewUserProfile delegate] $
-                "Derzeit beauftragt: " <> delegate ^. userLogin . unUserLogin . html
+
+        -- display names of delegates (but only on own, not on delegate's profile)
+        when (visiting ^. _Id == visited ^. _Id) $ do
+            forM_ (activeDelegation dscope) $ \(DelegationFull _ _ delegate) -> do
+                p_ [class_ "sub-heading"] $ do
+                    "Derzeit beauftragt: "
+                    a_ [href_ $ U.viewUserProfile delegate] $ do
+                        delegate ^. userLogin . unUserLogin . html
 
 -- | All 'DScopes' in which user watching the profile has delegated to the profile owner.
 delegatedDScopes :: User -> DelegationListsMap -> [DScope]
