@@ -19,3 +19,4 @@ ignore "Use record patterns"
 ignore "Use =<<"
 
 warn = listToMaybe (filter f xs) ==> find f xs
+warn = isJust $ find f xs ==> any f xs
