@@ -135,6 +135,7 @@ $arrow-width: 6px;
         }
 
         i {
+            @include rem(margin-right, 10px);
             vertical-align: middle;
             min-width: 15px;
         }
