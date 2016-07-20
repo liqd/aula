@@ -256,11 +256,11 @@ instance ToHtml ViewIdea where
                       , a_ [href_ $ U.editIdea idea] "bearbeiten"
                       )
                     , ( ideaReachedQuorum stats && CanCreateTopic `elem` caps
-                      , "icon-pencil"  -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                      , "icon-asterisk"
                       , a_ [href_ $ U.createTopic spc] "Thema erstellen"
                       )
                     , ( CanMoveBetweenLocations `elem` caps
-                      , "icon-pencil"  -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                      , "icon-sign-in"
                       , a_ [href_ $ U.moveIdea idea] "Idee verschieben"
                       )
                     , ( True
