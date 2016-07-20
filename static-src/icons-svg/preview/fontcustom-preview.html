@@ -141,11 +141,11 @@
 
       @font-face {
   font-family: "fontcustom";
-  src: url("../../../static/icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.eot");
-  src: url("../../../static/icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.eot?#iefix") format("embedded-opentype"),
-       url("../../../static/icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.woff") format("woff"),
-       url("../../../static/icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.ttf") format("truetype"),
-       url("../../../static/icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.svg#fontcustom") format("svg");
+  src: url("../../../static/icons/fontcustom_593fa061554926f6c86d54fed2b39d26.eot");
+  src: url("../../../static/icons/fontcustom_593fa061554926f6c86d54fed2b39d26.eot?#iefix") format("embedded-opentype"),
+       url("../../../static/icons/fontcustom_593fa061554926f6c86d54fed2b39d26.woff") format("woff"),
+       url("../../../static/icons/fontcustom_593fa061554926f6c86d54fed2b39d26.ttf") format("truetype"),
+       url("../../../static/icons/fontcustom_593fa061554926f6c86d54fed2b39d26.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -153,14 +153,15 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../../../static/icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.svg#fontcustom") format("svg");
+    src: url("../../../static/icons/fontcustom_593fa061554926f6c86d54fed2b39d26.svg#fontcustom") format("svg");
   }
 }
 
       [data-icon]:before { content: attr(data-icon); }
 
       [data-icon]:before,
-      .icon-bars:before,
+      .icon-asterisk:before,
+.icon-bars:before,
 .icon-bolt:before,
 .icon-bullhorn:before,
 .icon-camera:before,
@@ -174,6 +175,7 @@
 .icon-power-off:before,
 .icon-reply:before,
 .icon-search:before,
+.icon-sign-in:before,
 .icon-sign-out:before,
 .icon-sort:before,
 .icon-step-backward:before,
@@ -199,7 +201,8 @@
   font-smoothing: antialiased;
       }
 
-      .icon-bars:before { content: "\f100"; }
+      .icon-asterisk:before { content: "\f119"; }
+.icon-bars:before { content: "\f100"; }
 .icon-bolt:before { content: "\f101"; }
 .icon-bullhorn:before { content: "\f102"; }
 .icon-camera:before { content: "\f103"; }
@@ -213,6 +216,7 @@
 .icon-power-off:before { content: "\f10b"; }
 .icon-reply:before { content: "\f10c"; }
 .icon-search:before { content: "\f10d"; }
+.icon-sign-in:before { content: "\f11a"; }
 .icon-sign-out:before { content: "\f10e"; }
 .icon-sort:before { content: "\f10f"; }
 .icon-step-backward:before { content: "\f118"; }
@@ -239,10 +243,23 @@
   <body class="characters-off">
     <div id="page" class="container">
       <header>
-        <h1>fontcustom contains 25 glyphs:</h1>
+        <h1>fontcustom contains 27 glyphs:</h1>
         <a onclick="toggleCharacters(); return false;" href="#">Toggle Preview Characters</a>
       </header>
 
+      
+      <div class="glyph">
+        <div class="preview-glyphs">
+          <span class="step size-12"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-14"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-16"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-18"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-21"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-24"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-36"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-48"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-60"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span><span class="step size-72"><span class="letters">Pp</span><i id="icon-asterisk" class="icon-asterisk"></i></span>
+        </div>
+        <div class="preview-scale">
+          <span class="step">12</span><span class="step">14</span><span class="step">16</span><span class="step">18</span><span class="step">21</span><span class="step">24</span><span class="step">36</span><span class="step">48</span><span class="step">60</span><span class="step">72</span>
+        </div>
+        <div class="usage">
+          <input class="class" type="text" readonly="readonly" onClick="this.select();" value=".icon-asterisk" />
+          <input class="point" type="text" readonly="readonly" onClick="this.select();" value="&amp;#xf119;" />
+        </div>
+      </div>
       
       <div class="glyph">
         <div class="preview-glyphs">
@@ -423,6 +440,19 @@
         <div class="usage">
           <input class="class" type="text" readonly="readonly" onClick="this.select();" value=".icon-search" />
           <input class="point" type="text" readonly="readonly" onClick="this.select();" value="&amp;#xf10d;" />
+        </div>
+      </div>
+      
+      <div class="glyph">
+        <div class="preview-glyphs">
+          <span class="step size-12"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-14"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-16"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-18"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-21"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-24"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-36"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-48"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-60"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span><span class="step size-72"><span class="letters">Pp</span><i id="icon-sign-in" class="icon-sign-in"></i></span>
+        </div>
+        <div class="preview-scale">
+          <span class="step">12</span><span class="step">14</span><span class="step">16</span><span class="step">18</span><span class="step">21</span><span class="step">24</span><span class="step">36</span><span class="step">48</span><span class="step">60</span><span class="step">72</span>
+        </div>
+        <div class="usage">
+          <input class="class" type="text" readonly="readonly" onClick="this.select();" value=".icon-sign-in" />
+          <input class="point" type="text" readonly="readonly" onClick="this.select();" value="&amp;#xf11a;" />
         </div>
       </div>
       

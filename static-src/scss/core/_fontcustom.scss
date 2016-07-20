@@ -4,11 +4,11 @@
 
 @font-face {
   font-family: "fontcustom";
-  src: url("../icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.eot");
-  src: url("../icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.eot?#iefix") format("embedded-opentype"),
-       url("../icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.woff") format("woff"),
-       url("../icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.ttf") format("truetype"),
-       url("../icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.svg#fontcustom") format("svg");
+  src: url("../icons/fontcustom_593fa061554926f6c86d54fed2b39d26.eot");
+  src: url("../icons/fontcustom_593fa061554926f6c86d54fed2b39d26.eot?#iefix") format("embedded-opentype"),
+       url("../icons/fontcustom_593fa061554926f6c86d54fed2b39d26.woff") format("woff"),
+       url("../icons/fontcustom_593fa061554926f6c86d54fed2b39d26.ttf") format("truetype"),
+       url("../icons/fontcustom_593fa061554926f6c86d54fed2b39d26.svg#fontcustom") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -16,13 +16,14 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: "fontcustom";
-    src: url("../icons/fontcustom_1c1b0b881a4b7f2001b940b85d1a0222.svg#fontcustom") format("svg");
+    src: url("../icons/fontcustom_593fa061554926f6c86d54fed2b39d26.svg#fontcustom") format("svg");
   }
 }
 
 [data-icon]:before { content: attr(data-icon); }
 
 [data-icon]:before,
+.icon-asterisk:before,
 .icon-bars:before,
 .icon-bolt:before,
 .icon-bullhorn:before,
@@ -37,6 +38,7 @@
 .icon-power-off:before,
 .icon-reply:before,
 .icon-search:before,
+.icon-sign-in:before,
 .icon-sign-out:before,
 .icon-sort:before,
 .icon-step-backward:before,
@@ -62,6 +64,7 @@
   font-smoothing: antialiased;
 }
 
+.icon-asterisk:before { content: "\f119"; }
 .icon-bars:before { content: "\f100"; }
 .icon-bolt:before { content: "\f101"; }
 .icon-bullhorn:before { content: "\f102"; }
@@ -76,6 +79,7 @@
 .icon-power-off:before { content: "\f10b"; }
 .icon-reply:before { content: "\f10c"; }
 .icon-search:before { content: "\f10d"; }
+.icon-sign-in:before { content: "\f11a"; }
 .icon-sign-out:before { content: "\f10e"; }
 .icon-sort:before { content: "\f10f"; }
 .icon-step-backward:before { content: "\f118"; }
@@ -88,6 +92,7 @@
 .icon-trophy:before { content: "\f116"; }
 .icon-voting:before { content: "\f117"; }
 
+$font-fontcustom-asterisk: "\f119";
 $font-fontcustom-bars: "\f100";
 $font-fontcustom-bolt: "\f101";
 $font-fontcustom-bullhorn: "\f102";
@@ -102,6 +107,7 @@ $font-fontcustom-pencil: "\f10a";
 $font-fontcustom-power-off: "\f10b";
 $font-fontcustom-reply: "\f10c";
 $font-fontcustom-search: "\f10d";
+$font-fontcustom-sign-in: "\f11a";
 $font-fontcustom-sign-out: "\f10e";
 $font-fontcustom-sort: "\f10f";
 $font-fontcustom-step-backward: "\f118";
