@@ -121,7 +121,7 @@
                 margin-right: 0;
             }
 
-            @media screen and (max-width: $mobile-breakpoint) {
+            @media screen and (max-width: $tablet-breakpoint) {
                 @include rem(min-width, 43px);
                 @include rem(margin-right, 15px);
                 @include rem(margin-bottom, 20px);
