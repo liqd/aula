@@ -435,6 +435,7 @@ instance Arbitrary PageHomeWithLoginPrompt where
     arbitrary = PageHomeWithLoginPrompt . LoginDemoHints <$> arb
     shrink (PageHomeWithLoginPrompt (LoginDemoHints x)) =
         PageHomeWithLoginPrompt . LoginDemoHints <$> shr x
+    shrink _ = []
 
 instance Arbitrary LoginFormData where
     arbitrary = LoginFormData <$> arbWord <*> arbWord
@@ -593,6 +594,9 @@ instance Arbitrary Types.MoveIdea where
     arbitrary = garbitrary
     shrink    = gshrink
 
+instance Arbitrary AccessResult where
+    arbitrary = garbitrary
+    shrink    = gshrink
 
 -- * comment
 
@@ -993,9 +997,9 @@ instance Arbitrary Redirect where
 -- * servant-mock
 
 instance Arbitrary a => Arbitrary (Frame a) where
-    arbitrary = oneof [ Frame <$> arb <*> arb <*> arb, PublicFrame <$> arb <*> arb ]
-    shrink (Frame x y z) = Frame <$> shr x <*> shr y <*> shr z
-    shrink (PublicFrame x y) = PublicFrame <$> shr x <*> shr y
+    arbitrary = oneof [ Frame <$> arb <*> arb <*> arb <*> arb, PublicFrame <$> arb <*> arb <*> arb ]
+    shrink (Frame x y z w) = Frame <$> shr x <*> shr y <*> shr z <*> shr w
+    shrink (PublicFrame x y z) = PublicFrame <$> shr x <*> shr y <*> shr z
 
 
 -- * general-purpose helpers

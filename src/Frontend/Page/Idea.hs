@@ -50,6 +50,7 @@ import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
 import Control.Arrow ((&&&))
 import Frontend.Fragment.Category
 import Frontend.Fragment.Comment
+import Frontend.Fragment.ContextMenu
 import Frontend.Fragment.Note
 import Frontend.Fragment.PhaseTime (displayPhaseWithTime)
 import Frontend.Fragment.VotesBar
@@ -249,26 +250,24 @@ instance ToHtml ViewIdea where
             header_ [class_ "detail-header"] $ do
                 linkToIdeaLocation idea
 
-                nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] $ do
-                            when (CanEditAndDeleteIdea `elem` caps) . a_ [href_ $ U.editIdea idea] $ do
-                                i_ [class_ "icon-pencil"] nil
-                                "bearbeiten"
-                            when (ideaReachedQuorum stats && CanCreateTopic `elem` caps) .
-                                a_ [href_ $ U.createTopic spc] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                        -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                    "Thema erstellen"
-                            when (CanMoveBetweenLocations `elem` caps) .
-                                a_ [href_ $ U.moveIdea idea] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                        -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
-                                    "Idee verschieben"
-                            a_ [href_ (U.reportIdea idea)] $ do
-                                i_ [class_ "icon-flag"] nil
-                                "melden"
-
+                contextMenu
+                    [ ( CanEditAndDeleteIdea `elem` caps
+                      , "icon-pencil"
+                      , a_ [href_ $ U.editIdea idea] "bearbeiten"
+                      )
+                    , ( ideaReachedQuorum stats && CanCreateTopic `elem` caps
+                      , "icon-pencil"  -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                      , a_ [href_ $ U.createTopic spc] "Thema erstellen"
+                      )
+                    , ( CanMoveBetweenLocations `elem` caps
+                      , "icon-pencil"  -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                      , a_ [href_ $ U.moveIdea idea] "Idee verschieben"
+                      )
+                    , ( True
+                      , "icon-flag"
+                      , a_ [href_ (U.reportIdea idea)] "melden"
+                      )
+                    ]
 
             h1_ [class_ "main-heading"] $ do
                 displayPhaseWithTime now phase

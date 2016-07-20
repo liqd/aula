@@ -13,6 +13,7 @@ import Test.QuickCheck (Arbitrary, Gen, property)
 
 import Data.UriPath
 
+import Access (AccessResult)
 import Arbitrary (arb, forAllShrinkDef)
 import AulaTests
 
@@ -24,6 +25,7 @@ spec = tag Large $ do
 --        , Proxy :: Proxy UriPath -- FIXME
         , M (arb :: Gen UriPart')
         , M (arb :: Gen RoleScope)
+        , M (arb :: Gen AccessResult)
         ]
 
 newtype UriPart' = UriPart' UriPart

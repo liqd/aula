@@ -54,6 +54,9 @@ module Action
     , Action.checkValidPasswordToken
     , finalizePasswordViaEmail
 
+      -- * config
+    , Action.devMode
+
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
 
@@ -74,6 +77,7 @@ module Action
     , Action.setCreatorStatement
     , revokeWinnerStatusOfIdea
     , Action.deleteIdea
+    , Action.deleteTopic
 
       -- * reporting and deleting comments
     , deleteIdeaComment
@@ -160,7 +164,14 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
-import Config (Config, GetConfig(..), exposedUrl, delegateLikes)
+import Config
+    ( Config
+    , GetConfig(..)
+    , MonadReaderConfig
+    , exposedUrl
+    , delegateLikes
+    , devMode
+    )
 import Data.Avatar
 import Data.UriPath (absoluteUriPath)
 import Frontend.Constant
@@ -376,6 +387,12 @@ getSpacesForCurrentUser = do
 
 deleteUser :: (ActionPersist m) => AUID User -> m ()
 deleteUser = update . DeactivateUser
+
+
+-- * config
+
+devMode :: MonadReaderConfig r m => m Bool
+devMode = view (getConfig . Config.devMode)
 
 
 -- * Phase Transitions
@@ -626,6 +643,9 @@ unvoteOnIdea ideaId = do
 
 deleteIdea :: AUID Idea -> ActionPersist m => m ()
 deleteIdea = update . DeleteIdea
+
+deleteTopic :: AUID Topic -> ActionPersist m => m ()
+deleteTopic = update . DeleteTopic
 
 
 -- * Reporting and deleting comments
@@ -1121,7 +1141,7 @@ topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
             => AUID Topic -> m (CapCtx, Topic)
 topicCapCtx topicId = do
     userCtx <- currentUserCapCtx
-    topic <- mquery $ findTopic topicId
+    topic <- mquery $ findTopic' topicId
     let ctx = userCtx & capCtxSpace ?~ (topic ^. topicIdeaSpace)
                       & capCtxPhase ?~ (topic ^. topicPhase)
     pure (ctx, topic)

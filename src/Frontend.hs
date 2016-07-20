@@ -311,6 +311,7 @@ type TopicApi =
        -- create, edit, delegate topic
   :<|> "topic" :> "create"     :> FormHandler CreateTopic
   :<|> Topic  ::> "edit"       :> FormHandler Page.EditTopic
+  :<|> Topic  ::> "delete"     :> PostH (NeedCap 'CanDeleteTopic)
 
 topicApi :: ActionM m => IdeaSpace -> ServerT TopicApi m
 topicApi space
@@ -327,7 +328,10 @@ topicApi space
 
   :<|> form (Page.createTopic space)
   :<|> form . Page.editTopic
+  :<|> postH Action.deleteTopic
   where
+    postH action tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) $ action tid
+
     viewTopicTab tab tid qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
 
 type AulaSpace
@@ -437,7 +441,8 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
         headers = responseHeaders resp
         builder = Builder.byteString . cs
                 . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
-                $ PublicFrame Page404 []
+                -- FIXME: The dev mode parameter should come from the config
+                $ PublicFrame Page404 [] False
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a

@@ -522,6 +522,7 @@ instance Page (NeedCap 'CanVoteComment)         where isAuthorized = needCap Can
 instance Page (NeedCap 'CanDeleteComment)       where isAuthorized = needCap CanDeleteComment
 instance Page (NeedCap 'CanLike)                where isAuthorized = needCap CanLike
 instance Page (NeedCap 'CanEditAndDeleteIdea)   where isAuthorized = needCap CanEditAndDeleteIdea
+instance Page (NeedCap 'CanDeleteTopic)         where isAuthorized = needCap CanDeleteTopic
 instance Page (NeedCap 'CanVote)                where isAuthorized = needCap CanVote
 instance Page (NeedCap 'CanMarkWinner)          where isAuthorized = needCap CanMarkWinner
 instance Page (NeedCap 'CanDelegateInSchool)    where isAuthorized = needCap CanDelegateInSchool
@@ -641,8 +642,8 @@ cancelButton p = a_ [class_ "btn", href_ $ redirectOf p ()] "Abbrechen"
 -- the entire sequence of requests the client presents the same cookie, not only over those
 -- sub-sequences where the user is logged-in.)
 data Frame body
-    = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage] }
-    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage] }
+    = Frame { _frameUser :: User, _frameBody :: body, _frameMessages :: [StatusMessage], _frameDevMode :: Bool }
+    | PublicFrame               { _frameBody :: body, _frameMessages :: [StatusMessage], _frameDevMode :: Bool }
   deriving (Show, Read, Functor)
 
 -- | Check authorization of a page action.  Returns a new action.
@@ -687,11 +688,11 @@ completeRegistration = do
                 redirectPath P.userSettings
         else redirectPath P.listSpaces
 
-makeFrame :: ActionUserHandler m => Maybe User -> p -> m (Frame p)
-makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages
+makeFrame :: (MonadReaderConfig r m, ActionUserHandler m) => Maybe User -> p -> m (Frame p)
+makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages <*> Action.devMode
 
 -- | Call 'coreRunHandler' on a handler that has no effect on the database state, and 'Frame' the result.
-runHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+runHandler :: (MonadReaderConfig r m, ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
            => m p -> m (GetResult (Frame p))
 runHandler mp = coreRunHandler (const mp) (\mu p -> UnsafeGetResult <$> makeFrame mu p)
 
@@ -783,6 +784,7 @@ pageFrame frame = do
     head_ $ do
         title_ "AuLA"
         link_ [rel_ "stylesheet", href_ $ P.TopStatic "css/all.css"]
+        link_ [rel_ "icon", href_ $ P.TopStatic "favicon.ico"]
 
         -- disable the meta tag for admins, since admin pages are not working on mobile devices.
         let viewport_content
@@ -796,7 +798,7 @@ pageFrame frame = do
                 div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
-        footerMarkup (extraFooterElems p)
+        footerMarkup (frame ^. frameDevMode) (extraFooterElems p)
 
 headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
@@ -848,8 +850,8 @@ renderStatusMessage :: (Monad m) => StatusMessage -> HtmlT m ()
 renderStatusMessage msg = do
     li_ (msg ^. html)
 
-footerMarkup :: (Monad m) => HtmlT m () -> HtmlT m ()
-footerMarkup extra = do
+footerMarkup :: (Monad m) => Bool -> HtmlT m () -> HtmlT m ()
+footerMarkup devmode extra = do
     footer_ [class_ "main-footer"] $ do
         div_ [class_ "grid"] $ do
             ul_ [class_ "main-footer-menu"] $ do
@@ -857,11 +859,12 @@ footerMarkup extra = do
                 li_ $ a_ [href_ P.imprint] "Impressum"
             span_ [class_ "main-footer-blurb"] $ do
                 "Made with \x2665 by Liqd"
-                replicateM_ 5 $ toHtmlRaw nbsp
-                toHtml Config.releaseVersion
-                replicateM_ 5 $ toHtmlRaw nbsp
-                a_ [Lucid.onclick_ "createPageSample()"]
-                    "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
+                when devmode $ do
+                    replicateM_ 5 $ toHtmlRaw nbsp
+                    toHtml Config.releaseVersion
+                    replicateM_ 5 $ toHtmlRaw nbsp
+                    a_ [Lucid.onclick_ "createPageSample()"]
+                        "[create page sample]"  -- see 'Frontend.createPageSamples" for an explanation.
     script_ [src_ $ P.TopStatic "third-party/modernizr/modernizr-custom.js"]
     script_ [src_ $ P.TopStatic "third-party/showdown/dist/showdown.min.js"]
     script_ [src_ $ P.TopStatic "js/custom.js"]

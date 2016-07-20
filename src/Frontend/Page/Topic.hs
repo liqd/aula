@@ -33,6 +33,7 @@ import Prelude hiding ((.))
 import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)
 import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
                spaceCapCtx, topicCapCtx, getCurrentTimestamp, delegationInScope)
+import Frontend.Fragment.ContextMenu
 import Frontend.Fragment.DelegationTab
 import Frontend.Fragment.IdeaList as IdeaList
 import Frontend.Fragment.PhaseTime (displayPhaseWithTime)
@@ -156,6 +157,11 @@ tabLink tabsOrDropdown topic curTab targetTab =
 instance ToHtml ViewTopic where
     toHtmlRaw = toHtml
 
+    toHtml p@(ViewTopicDelegations _ _ topic _ _) | topic ^. topicDeleted = semanticDiv p $ do
+        div_ [class_ "topic-header"] $ p_ "Dieses Thema wurde gelöscht!"
+    toHtml p@(ViewTopicIdeas _ _ _ topic _ _) | topic ^. topicDeleted = semanticDiv p $ do
+        div_ [class_ "topic-header"] $ p_ "Dieses Thema wurde gelöscht!"
+
     toHtml p@(ViewTopicDelegations now capCtx topic delegations delegation) = semanticDiv p $ do
         viewTopicHeaderDiv now capCtx topic TabDelegation delegation
         renderDelegations (TopicDelegationPage capCtx topic) (DelegationListsMap [(DScopeTopicFull topic, delegations)])
@@ -178,34 +184,30 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
             let canEditTopic          = CanEditTopic          `elem` caps
                 canPhaseForwardTopic  = CanPhaseForwardTopic  `elem` caps
                 canPhaseBackwardTopic = CanPhaseBackwardTopic `elem` caps
+                canDeleteTopic        = CanDeleteTopic        `elem` caps
 
-            nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
-                if canEditTopic || canPhaseForwardTopic || canPhaseBackwardTopic then do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        when canEditTopic .
-                            li_ [class_ "pop-menu-list-item"] $ do
-                                a_ [id_ "edit-topic",  href_ $ U.editTopic space topicId] $ do
-                                    i_ [class_ "icon-pencil"] nil
-                                    "Thema bearbeiten"
-                        when canPhaseForwardTopic .
-                            li_ [class_ "pop-menu-list-item m-form"] .
-                                div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
-                                    i_ [class_ "icon-step-forward"] nil
-                                    postLink_
-                                        [class_ "btn-plain", jsReloadOnClick]
-                                        (U.adminTopicNextPhase topicId)
-                                        "Nächste Phase"
-                        when canPhaseBackwardTopic .
-                            li_ [class_ "pop-menu-list-item m-form"] .
-                                div_ [class_ "pop-menu-list-item-form-wrapper"] $ do
-                                    i_ [class_ "icon-step-backward"] nil
-                                    postLink_
-                                        [class_ "btn-plain", jsReloadOnClick]
-                                        (U.adminTopicVotingPrevPhase topicId)
-                                        "Vorherige Phase"
-                else do
-                    ul_ [class_ "pop-menu-list"] $ do
-                        li_ [class_ "pop-menu-list-item"] "<Menü ist leer>"
+            contextMenu
+                [ ( canEditTopic
+                  , "icon-pencil"
+                  , a_ [id_ "edit-topic", href_ $ U.editTopic space topicId]
+                      "Thema bearbeiten"
+                  )
+                , ( canDeleteTopic
+                  , "icon-trash-o"
+                  , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.deleteTopic space topicId)
+                      "Thema löschen"
+                  )
+                , ( canPhaseForwardTopic
+                  , "icon-step-forward"
+                  , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.adminTopicNextPhase topicId)
+                      "Nächste Phase"
+                  )
+                , ( canPhaseBackwardTopic
+                  , "icon-step-backward"
+                  , postLink_ [class_ "btn-plain", jsReloadOnClick] (U.adminTopicVotingPrevPhase topicId)
+                      "Vorherige Phase"
+                  )
+                ]
 
         h1_ [class_ "main-heading"] $ do
             displayPhaseWithTime now phase

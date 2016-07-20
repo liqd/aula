@@ -110,6 +110,7 @@ data Capability
     | CanPhaseBackwardTopic
     | CanViewTopic
     | CanEditTopic
+    | CanDeleteTopic
     | CanCreateIdea
     -- User
     | CanCreateTopic
@@ -340,7 +341,7 @@ topicRefinementCaps = \case
     Student    _clss -> [CanCreateIdea]
     ClassGuest _clss -> []
     SchoolGuest      -> []
-    Moderator        -> [CanCreateIdea, CanEditTopic, CanPhaseForwardTopic]
+    Moderator        -> [CanDeleteTopic, CanCreateIdea, CanEditTopic, CanPhaseForwardTopic]
     Principal        -> []
     Admin            -> thereIsAGod [CanPhaseForwardTopic]
 
@@ -382,6 +383,9 @@ data AccessResult
   = AccessGranted
   | AccessDenied { _accessDeniedMsg :: ST, _accessDeniedRedirect :: Maybe URL }
   | AccessDeferred
+  deriving (Eq, Show, Generic)
+
+instance SOP.Generic AccessResult
 
 instance Monoid AccessResult where
     mempty = AccessGranted

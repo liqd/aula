@@ -30,8 +30,9 @@ data PageHomeWithLoginPrompt = PageHomeWithLoginPrompt LoginDemoHints
 instance Page PageHomeWithLoginPrompt where
     isAuthorized = loginPage
 
--- FIXME: remove (or otherwise protect) this type before going to production!
-data LoginDemoHints = LoginDemoHints { unLoginDemoHints :: [User] }
+data LoginDemoHints
+    = LoginDemoHints { unLoginDemoHints :: [User] }
+    | NoLoginDemoHints
   deriving (Eq, Show, Read)
 
 
@@ -77,6 +78,7 @@ instance FormPage PageHomeWithLoginPrompt where
 
 instance ToHtml LoginDemoHints where
     toHtmlRaw = toHtml
+    toHtml NoLoginDemoHints = nil
     toHtml (LoginDemoHints users) = do
         hr_ []
         div_ $ do
@@ -119,4 +121,8 @@ instance ToHtml LoginDemoHints where
 login :: ActionM m => FormPageHandler m PageHomeWithLoginPrompt
 login = formPageHandlerWithoutCsrf getPage Action.loginByUser
   where
-    getPage = PageHomeWithLoginPrompt . LoginDemoHints <$> query getActiveUsers
+    getPage = do
+        dmode <- Action.devMode
+        PageHomeWithLoginPrompt <$> if dmode
+            then LoginDemoHints <$> query getActiveUsers
+            else pure NoLoginDemoHints
