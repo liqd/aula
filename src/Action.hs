@@ -637,9 +637,12 @@ voteIdeaComment ck voteVal = do
 -- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
 unvoteOnIdea :: (ActionM m) => AUID Idea -> m ()
 unvoteOnIdea ideaId = do
-    user <- currentUserId
-    update $ RemoveVoteFromIdea ideaId user
+    delegatedOperationOnIdea getVote unvoteIdeaFor ideaId
     (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
+  where
+    unvoteIdeaFor :: ActionM m => User -> User -> m ()
+    unvoteIdeaFor _liker' delegatee =
+        update $ RemoveVoteFromIdea ideaId (delegatee ^. _Id)
 
 deleteIdea :: AUID Idea -> ActionPersist m => m ()
 deleteIdea = update . DeleteIdea
