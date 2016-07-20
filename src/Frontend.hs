@@ -249,8 +249,8 @@ type IdeaApi
   :<|> Idea ::> "move" :> FormHandler Page.MoveIdea
        -- `like' on an idea
   :<|> Idea ::> "like" :> PostH (NeedCap 'CanLike)
-       -- dislike on an idea
-  :<|> Idea ::> "dislike" :> PostH (NeedCap 'CanLike)
+       -- delike on an idea
+  :<|> Idea ::> "delike" :> PostH (NeedCap 'CanLike)
        -- delete an idea
   :<|> Idea ::> "delete" :> PostH (NeedCap 'CanEditAndDeleteIdea)
        -- report an idea
@@ -280,7 +280,7 @@ ideaApi loc
   :<|> form . Page.editIdea
   :<|> form . Page.moveIdea
   :<|> post   Action.likeIdea
-  :<|> post   Action.revokeLikeOnIdea
+  :<|> post   Action.delikeIdea
   :<|> post   Action.deleteIdea
   :<|> form . Page.reportIdea
   :<|> post2  Action.voteOnIdea

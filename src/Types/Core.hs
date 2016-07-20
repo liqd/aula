@@ -291,7 +291,7 @@ data Category =
 
 data IdeaLikeValue =
     Like
-  | Dislike
+  | Delike -- ^ Like taken back
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
 -- | endorsement, or interest.

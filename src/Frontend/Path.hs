@@ -58,7 +58,7 @@ module Frontend.Path
     , reportIdea
     , commentOnIdea
     , likeIdea
-    , dislikeIdea
+    , delikeIdea
     , judgeIdea
     , voteOnIdea
     , unvoteOnIdea
@@ -343,7 +343,7 @@ data IdeaMode (r :: AllowedMethod) =
     | EditIdea (AUID Idea)
     | MoveIdea (AUID Idea)
     | LikeIdea (AUID Idea)
-    | DislikeIdea (AUID Idea)
+    | DelikeIdea (AUID Idea)
     | VoteOnIdea (AUID Idea) IdeaVoteValue
     | UnvoteOnIdea (AUID Idea)
     | JudgeIdea (AUID Idea) IdeaJuryResultType
@@ -367,7 +367,7 @@ ideaMode (ViewIdea i mc)        root = maybe id (flip (</#>) . anchor) mc $
 ideaMode (EditIdea i)           root = root </> "idea" </> uriPart i </> "edit"
 ideaMode (MoveIdea i)           root = root </> "idea" </> uriPart i </> "move"
 ideaMode (LikeIdea i)           root = root </> "idea" </> uriPart i </> "like"
-ideaMode (DislikeIdea i)        root = root </> "idea" </> uriPart i </> "dislike"
+ideaMode (DelikeIdea i)         root = root </> "idea" </> uriPart i </> "delike"
 ideaMode (VoteOnIdea i v)       root = root </> "idea" </> uriPart i </> "vote"
                                             </> uriPart v
 ideaMode (UnvoteOnIdea i)       root = root </> "idea" </> uriPart i </> "remove"
@@ -612,8 +612,8 @@ commentOnIdea idea = IdeaPath (idea ^. ideaLocation) $ CommentOnIdea (idea ^. _I
 likeIdea :: Idea -> Main 'AllowPost
 likeIdea idea = IdeaPath (idea ^. ideaLocation) $ LikeIdea (idea ^. _Id)
 
-dislikeIdea :: Idea -> Main 'AllowPost
-dislikeIdea idea = IdeaPath (idea ^. ideaLocation) $ DislikeIdea (idea ^. _Id)
+delikeIdea :: Idea -> Main 'AllowPost
+delikeIdea idea = IdeaPath (idea ^. ideaLocation) $ DelikeIdea (idea ^. _Id)
 
 judgeIdea :: Idea -> IdeaJuryResultType -> Main 'AllowGetPost
 judgeIdea idea = IdeaPath (idea ^. ideaLocation) . JudgeIdea (idea ^. _Id)
@@ -727,7 +727,7 @@ isPostOnly = \case
     IdeaPath _ m ->
         case m of
             LikeIdea{}           -> True
-            DislikeIdea{}        -> True
+            DelikeIdea{}         -> True
             VoteOnIdea{}         -> True
             UnvoteOnIdea{}       -> True
             MarkIdeaAsWinner{}   -> True

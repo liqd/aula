@@ -68,7 +68,7 @@ module Persistent.Pure
     , findComment
     , findComment'
     , addLikeToIdea
-    , dislikeIdea
+    , delikeIdea
     , addVoteToIdea
     , removeVoteFromIdea
     , addCommentToIdea
@@ -810,10 +810,10 @@ addLikeToIdea iid delegatee =
     addDb' (const (mkIdeaVoteLikeKey iid delegatee))
            (dbIdeaMap . at iid . _Just . ideaLikes)
 
--- | Changes the existing like value to dislike
-dislikeIdea :: AUID Idea -> AUID User -> AUpdate ()
-dislikeIdea iid uid =
-    withIdea iid . ideaLikes . at uid . _Just . ideaLikeValue .= Dislike
+-- | Taking back a like for the given user
+delikeIdea :: AUID Idea -> AUID User -> AUpdate ()
+delikeIdea iid uid =
+    withIdea iid . ideaLikes . at uid . _Just . ideaLikeValue .= Delike
 
 mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
 mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)

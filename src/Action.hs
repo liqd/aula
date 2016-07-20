@@ -65,7 +65,7 @@ module Action
 
       -- * vote handling
     , likeIdea
-    , revokeLikeOnIdea
+    , Action.delikeIdea
     , voteOnIdea
     , delegationInScope
     , delegateOrWithdraw
@@ -592,11 +592,11 @@ likeIdea ideaId = do
             (ProtoIdeaLike (liker' ^. _Id))
 
 -- TODO: Log event?
--- TODO: Dislike idea instead of removing
-revokeLikeOnIdea :: ActionM m => AUID Idea -> m ()
-revokeLikeOnIdea ideaId = do
+-- TODO: Delike for delegatees
+delikeIdea :: ActionM m => AUID Idea -> m ()
+delikeIdea ideaId = do
     user <- currentUserId
-    update $ DislikeIdea ideaId user
+    update $ DelikeIdea ideaId user
 
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
