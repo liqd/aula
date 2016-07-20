@@ -37,7 +37,7 @@ spec = do
                 get wreq "/nosuchpath" `shouldRespond`
                     [ codeShouldBe 404
                     , bodyShouldBe . cs . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
-                        $ PublicFrame Page404 []
+                        $ PublicFrame Page404 [] False
                     ]
 
     describe "formSelectorToCategory" $ do

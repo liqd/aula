@@ -441,7 +441,8 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
         headers = responseHeaders resp
         builder = Builder.byteString . cs
                 . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
-                $ PublicFrame Page404 []
+                -- FIXME: The dev mode parameter should come from the config
+                $ PublicFrame Page404 [] False
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a
