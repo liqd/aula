@@ -233,12 +233,11 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
                 PhaseVoting{}     -> delegateVoteButton
                 PhaseResult       -> nil
 
-        when True $ do -- FIXME !
-            forM_ delegation $ \(view delegationFullTo -> delegate) -> do
-                p_ [class_ "sub-heading"] $ do
-                    "Derzeit beauftragt: "
-                    a_ [href_ $ U.viewUserProfile delegate] $ do
-                        delegate ^. userLogin . unUserLogin . html
+        forM_ delegation $ \(view delegationFullTo -> delegate) -> do
+            p_ [class_ "sub-heading"] $ do
+                "Derzeit beauftragt: "
+                a_ [href_ $ U.viewUserProfile delegate] $ do
+                    delegate ^. userLogin . unUserLogin . html
 
         let t1 dropdown = tabLink dropdown topic tab (TabIdeas ListIdeasInTopicTabAll      emptyIdeasQuery)
             t2 dropdown = tabLink dropdown topic tab (TabIdeas ListIdeasInTopicTabVoting   emptyIdeasQuery)
