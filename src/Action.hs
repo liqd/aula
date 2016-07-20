@@ -564,8 +564,8 @@ delegatedOperationOnIdea getGuyWhoDidId operation ideaId = do
     hasDoneItAlready :: ActionM m => User -> m Bool
     hasDoneItAlready delegatee = equery $ do
         let delegateeId = delegatee ^. _Id
-        mlike <- getGuyWhoDidId delegateeId ideaId
-        pure $ case mlike of
+        mguy <- getGuyWhoDidId delegateeId ideaId
+        pure $ case mguy of
             Nothing -> True
             Just (user', _result) -> delegateeId /= (user' ^. _Id)
 
