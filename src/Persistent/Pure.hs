@@ -798,7 +798,6 @@ findComment :: CommentKey -> MQuery Comment
 findComment ck = findComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
 
 instance FromProto IdeaLike where
-    -- The default value is 'Like'
     fromProto p m = IdeaLike m Like (_protoIdeaLikeDelegate p)
 
 -- | The user whose vote is cast is passed is given as an explicit arg.  The user who actually casts

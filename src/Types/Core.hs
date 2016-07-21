@@ -289,6 +289,10 @@ data Category =
   | CatEnvironment  -- ^ "Umgebung"
   deriving (Eq, Ord, Bounded, Enum, Show, Read, Generic)
 
+-- | With delegation of likes, a unit type isn't enough for this, we need a boolean.  If a delegate
+-- de-likes an idea, the delegatees should only follow if they haven't made up their own mind
+-- earlier.  In order to make this distinction, we need to store the delegate together with each
+-- delegatee and like value.
 data IdeaLikeValue =
     Like
   | Delike -- ^ Like taken back
