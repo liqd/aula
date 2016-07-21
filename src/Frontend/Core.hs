@@ -91,7 +91,6 @@ import Text.Digestive.Form ((.:))
 import Text.Digestive.View
 
 import qualified Data.Aeson as Aeson
-import qualified Data.Map as Map
 import qualified Data.Text as ST
 import qualified Generics.SOP as SOP
 import qualified Lucid
@@ -303,9 +302,6 @@ userAvatarImg dim user = userAvatarImg' dim (user ^. _Id) (user ^. userLogin)
 
 userAvatarImg' :: Monad m => AvatarDimension -> AUID User -> UserLogin -> HtmlT m ()
 userAvatarImg' dim uid ul = img_ [Lucid.src_ $ uid ^. avatarUrl dim, alt_ $ "avatar: " <> ul ^. unUserLogin]
-
-numLikes :: Idea -> Int
-numLikes idea = Map.size $ idea ^. ideaLikes
 
 -- div by zero is caught silently: if there are no voters, the quorum is 100% (no likes is enough
 -- likes in that case).

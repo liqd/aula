@@ -30,6 +30,7 @@ instance SOP.Generic IdeaJuryResult
 instance SOP.Generic IdeaJuryResultType
 instance SOP.Generic IdeaJuryResultValue
 instance SOP.Generic IdeaLike
+instance SOP.Generic IdeaLikeValue
 instance SOP.Generic IdeaLocation
 instance SOP.Generic IdeaSpace
 instance SOP.Generic IdeaVote

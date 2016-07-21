@@ -76,7 +76,7 @@ getIdeaStats idea = do
 ideaReachedQuorum :: IdeaStats -> Bool
 ideaReachedQuorum i = reached >= needed
   where
-    reached = length . view ideaLikes $ _ideaStatsIdea i
+    reached = numLikes $ _ideaStatsIdea i
     needed  = _ideaStatsQuorum i
 
 quorumForSpace :: IdeaSpace -> Query Percent
@@ -198,7 +198,7 @@ ideaSupport = \case
     PhaseResult{}     -> ideaVoteSupport
 
 ideaLikeSupport :: Idea -> Support
-ideaLikeSupport = Support . length . view ideaLikes
+ideaLikeSupport = Support . numLikes
 
 ideaVoteSupport :: Idea -> Support
 ideaVoteSupport = ideaVoteSupportByAbsDiff
