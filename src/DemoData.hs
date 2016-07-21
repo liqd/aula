@@ -18,7 +18,6 @@ import Data.List (nub)
 import Data.String.Conversions ((<>))
 import Servant.Missing
 import System.Directory (doesFileExist)
-import System.Exit (ExitCode(ExitSuccess))
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (system)
 
@@ -186,7 +185,7 @@ updateAvatar user spath = do
             let tpath :: FilePath = user ^. _Id . avatarFile dim
             yes <- doesFileExist tpath
             unless yes $ do
-                ExitSuccess <- system . unwords $ ["ln -s", show spath, show tpath]
+                _ <- system . unwords $ ["ln -s", show spath, show tpath]
                 pure ()
     pure ()
 
