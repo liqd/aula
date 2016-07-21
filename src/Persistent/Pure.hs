@@ -810,7 +810,8 @@ addLikeToIdea iid delegatee =
     addDb' (const (mkIdeaVoteLikeKey iid delegatee))
            (dbIdeaMap . at iid . _Just . ideaLikes)
 
--- | Taking back a like for the given user
+-- | Taking back a like for the given user.  (If there is no 'IdeaLikeValue' for this user, none
+-- will be created.)
 delikeIdea :: AUID Idea -> AUID User -> AUpdate ()
 delikeIdea iid uid =
     withIdea iid . ideaLikes . at uid . _Just . ideaLikeValue .= Delike
