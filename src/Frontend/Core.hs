@@ -810,7 +810,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                     li_ $ a_ [href_ P.delegationView] "Beauftragungsnetzwerk"
 
                 div_ [class_ "main-header-user"] $ do
-                    div_ [class_ "pop-menu"] $ do
+                    div_ [class_ "pop-menu", title_ "Optionen"] $ do
                         -- FIXME: please add class m-selected to currently selected menu item
                         div_ [class_ "user-avatar"] $
                             userAvatarImg avatarDefaultSize `mapM_` mUser
