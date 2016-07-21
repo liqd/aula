@@ -128,6 +128,10 @@
     left: -999999px;
 }
 
+.creator-statement {
+    @include rem(margin-top, 15px);
+}
+
 .ideas-list-meta-container {
     @media screen and (max-width: $tablet-breakpoint) {
         @include rem(padding-left, 80px);

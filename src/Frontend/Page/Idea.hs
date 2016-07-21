@@ -326,6 +326,12 @@ instance ToHtml ViewIdea where
                 ideaVoteLikeButtons ctx stats
                 feasibilityButtons True idea caps
 
+            -- creator statement
+            mapM_
+                (div_ [class_ "creator-statement"] . view html)
+                (creatorStatementOfIdea idea)
+
+            div_ [class_ "button-group"] $ do
                 when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
                     button_ [ class_ "button-group-item btn-cta m-valid"
                             , onclick_ $ U.creatorStatement idea
@@ -347,11 +353,6 @@ instance ToHtml ViewIdea where
                             winnerButton (U.markIdeaAsWinner idea) "als \"gewonnen\" markieren"
                         when (isWinning idea) $
                             winnerButton (U.unmarkIdeaAsWinner idea) "\"gewonnen\" zurücknehmen"
-
-            -- creator statement
-            mapM_
-                (div_ [class_ "creator-statement"] . view html)
-                (creatorStatementOfIdea idea)
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do
