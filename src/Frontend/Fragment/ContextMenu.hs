@@ -11,7 +11,7 @@ import Frontend.Prelude
 
 contextMenu :: Monad m => [(Bool, ST, HtmlT m ())] -> HtmlT m ()
 contextMenu (filter (view _1) -> entries) = do
-    nav_ [class_ "pop-menu m-dots detail-header-menu"] $ do
+    nav_ [class_ "pop-menu m-dots detail-header-menu", title_ "Optionen"] $ do
         ul_ [class_ "pop-menu-list"] $ do
             if null entries
                 then li_ [class_ "pop-menu-list-item"] "<Menü ist leer>"
