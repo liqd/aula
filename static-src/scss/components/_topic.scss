@@ -3,31 +3,51 @@
     min-height: 337px;
 
     @media screen and (max-width: $tablet-breakpoint) {
-        background: none !important;
+        background: #fff !important;
     }
 
     &.phase-PhaseRefinement {
         background:     url(/static/images/ausarbeitungsphase_l.png) no-repeat left bottom,
                         url(/static/images/ausarbeitungsphase_r.png) no-repeat right bottom,
                         white;
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-refinement;
+            }
+        }
     }
 
     &.phase-PhaseJury {
         background:     url(/static/images/prufungsphase_l.png) no-repeat left bottom,
                         url(/static/images/prufungsphase_r.png) no-repeat right bottom,
                         white;
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-jury;
+            }
+        }
     }
 
     &.phase-PhaseVoting {
         background:     url(/static/images/header_vote_left.png) no-repeat left bottom,
                         url(/static/images/header_vote_right.png) no-repeat right bottom,
                         white;
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-voting;
+            }
+        }
     }
 
     &.phase-PhaseResult {
         background:     url(/static/images/ergebnisphase_l.png) no-repeat left bottom,
                         url(/static/images/ergebnisphase_r.png) no-repeat right bottom,
                         white;
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-result;
+            }
+        }
     }
 }
 
