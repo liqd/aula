@@ -27,7 +27,7 @@ import Data.Set.Lens (setOf)
 import Crypto.Scrypt
 import Data.Set as Set (Set, intersection, singleton, member)
 import Data.Map as Map (filter, fromList, size)
-import Data.Maybe (isJust, mapMaybe)
+import Data.Maybe (mapMaybe)
 import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.String
