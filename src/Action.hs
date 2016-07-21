@@ -65,6 +65,7 @@ module Action
 
       -- * vote handling
     , likeIdea
+    , Action.delikeIdea
     , voteOnIdea
     , delegationInScope
     , delegateOrWithdraw
@@ -564,8 +565,8 @@ delegatedOperationOnIdea getGuyWhoDidId operation ideaId = do
     hasDoneItAlready :: ActionM m => User -> m Bool
     hasDoneItAlready delegatee = equery $ do
         let delegateeId = delegatee ^. _Id
-        mlike <- getGuyWhoDidId delegateeId ideaId
-        pure $ case mlike of
+        mguy <- getGuyWhoDidId delegateeId ideaId
+        pure $ case mguy of
             Nothing -> True
             Just (user', _result) -> delegateeId /= (user' ^. _Id)
 
@@ -589,6 +590,20 @@ likeIdea ideaId = do
         addWithCurrentUser_
             (AddLikeToIdea ideaId delegatee)
             (ProtoIdeaLike (liker' ^. _Id))
+
+delikeIdea :: ActionM m => AUID Idea -> m ()
+delikeIdea ideaId = do
+    cfg <- viewConfig
+    if cfg ^. delegateLikes
+        then delegatedOperationOnIdea getLike delikeIdeaFor ideaId
+        else do
+            user <- currentUser
+            delikeIdeaFor user user
+  where
+    delikeIdeaFor :: ActionM m => User -> User -> m ()
+    delikeIdeaFor _liker' delegatee = do
+        update $ DelikeIdea ideaId (delegatee ^. _Id)
+
 
 voteOnIdea :: ActionM m => AUID Idea -> IdeaVoteValue -> m ()
 voteOnIdea ideaId voteVal = do
@@ -635,11 +650,15 @@ voteIdeaComment ck voteVal = do
     eventLogUserVotesOnComment ck voteVal
 
 -- | FIXME: don't pass user as an explicit argument here.  do it like voteOnIdea.
+-- FIXME: Should the delegatees of the current user unvote the idea too?
 unvoteOnIdea :: (ActionM m) => AUID Idea -> m ()
 unvoteOnIdea ideaId = do
-    user <- currentUserId
-    update $ RemoveVoteFromIdea ideaId user
+    delegatedOperationOnIdea getVote unvoteIdeaFor ideaId
     (`eventLogUserVotesOnIdea` Nothing) =<< mquery (findIdea ideaId)
+  where
+    unvoteIdeaFor :: ActionM m => User -> User -> m ()
+    unvoteIdeaFor _liker' delegatee =
+        update $ RemoveVoteFromIdea ideaId (delegatee ^. _Id)
 
 deleteIdea :: AUID Idea -> ActionPersist m => m ()
 deleteIdea = update . DeleteIdea

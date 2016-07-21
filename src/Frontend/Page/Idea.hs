@@ -240,7 +240,7 @@ instance ToHtml ViewIdea where
         | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
 
     toHtml p@(ViewIdea now ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
-        let totalLikes    = Map.size $ idea ^. ideaLikes
+        let totalLikes    = numLikes idea
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
@@ -302,9 +302,10 @@ instance ToHtml ViewIdea where
                     when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                         feasibilityIndicator idea
-                    if isWinning idea
-                        then li_ [class_ "icon-winner"] $ span_ "gewonnen"
-                        else li_ [class_ "icon-hourglass"] $ span_ "nicht gewonnen"
+                    when (has _PhaseResult phase) $
+                        if isWinning idea
+                            then li_ [class_ "icon-winner"] $ span_ "gewonnen"
+                            else li_ [class_ "icon-hourglass"] $ span_ "nicht gewonnen"
 
 
             -- explanation by the dean why the idea is feasible or not (if available)

@@ -68,6 +68,7 @@ module Persistent.Pure
     , findComment
     , findComment'
     , addLikeToIdea
+    , delikeIdea
     , addVoteToIdea
     , removeVoteFromIdea
     , addCommentToIdea
@@ -797,7 +798,7 @@ findComment :: CommentKey -> MQuery Comment
 findComment ck = findComment' (ck ^. ckIdeaId) (ck ^. ckParents) (ck ^. ckCommentId)
 
 instance FromProto IdeaLike where
-    fromProto p m = IdeaLike m (_protoIdeaLikeDelegate p)
+    fromProto p m = IdeaLike m Like (_protoIdeaLikeDelegate p)
 
 -- | The user whose vote is cast is passed is given as an explicit arg.  The user who actually casts
 -- it for her is hidden in the 'IdeaLikeProto'.
@@ -807,6 +808,12 @@ addLikeToIdea :: AUID Idea -> User -> AddDb IdeaLike
 addLikeToIdea iid delegatee =
     addDb' (const (mkIdeaVoteLikeKey iid delegatee))
            (dbIdeaMap . at iid . _Just . ideaLikes)
+
+-- | Taking back a like for the given user.  (If there is no 'IdeaLikeValue' for this user, none
+-- will be created.)
+delikeIdea :: AUID Idea -> AUID User -> AUpdate ()
+delikeIdea iid uid =
+    withIdea iid . ideaLikes . at uid . _Just . ideaLikeValue .= Delike
 
 mkIdeaVoteLikeKey :: Applicative f => AUID Idea -> User -> f IdeaVoteLikeKey
 mkIdeaVoteLikeKey i u = pure $ IdeaVoteLikeKey i (u ^. _Id)
