@@ -6,6 +6,8 @@ export SELENIUM_HUB_PORT=4444
 export SELENIUM_NODE_PORT=5555
 export LOG_PATH=/log
 export DISPLAY=:1
+export VNC_PORT=5900
+export VNC_DIMS=800x600x8
 
 export SELENIUM_HUB_ARGS=
 export SELENIUM_NODE_ARGS=-Dwebdriver.chrome.driver=/usr/lib/chromium-browser/chromedriver
@@ -16,7 +18,11 @@ case "$1" in
     mkdir -p $LOG_PATH
 
     echo -n "starting Xvfb..."
-    nohup Xvfb $DISPLAY > $LOG_PATH/selenium-xvfb.log 2>&1 &
+    nohup Xvfb $DISPLAY -screen 0 $VNC_DIMS > $LOG_PATH/selenium-xvfb.log 2>&1 &
+    echo " ok"
+
+    echo -n "starting vnc..."
+    nohup x11vnc -forever -usepw -shared -rfbport $VNC_PORT -display $DISPLAY > $LOG_PATH/selenium-x11vnc.log 2>&1 &
     echo " ok"
 
     echo -n "starting hub"
