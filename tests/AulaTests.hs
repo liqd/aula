@@ -126,9 +126,9 @@ bodyShouldSatisfy :: (Show body, Eq body) => (body -> Bool) -> Response body -> 
 bodyShouldSatisfy bodyP l = l ^. responseBody `shouldSatisfy` bodyP
 
 data WreqQuery = WreqQuery
-    { post :: forall a. Postable a => String -> a -> IO (Response LBS)
-    , get  :: String -> IO (Response LBS)
-    , site :: String  -- (e.g., for selenium)
+    { post  :: forall a. Postable a => String -> a -> IO (Response LBS)
+    , get   :: String -> IO (Response LBS)
+    , mkUri :: String -> String  -- (e.g., for selenium)
     }
 
 doNotThrowExceptionsOnErrorCodes :: StatusChecker
@@ -150,7 +150,7 @@ withServer' cfg action = do
         wreqQuery :: Sess.Session -> Config -> WreqQuery
         wreqQuery sess cfg' = WreqQuery (Sess.postWith opts sess . mkServerUri cfg')
                                         (Sess.getWith opts sess . mkServerUri cfg')
-                                        (mkServerUri cfg' "")
+                                        (mkServerUri cfg')
         initialize q = do
             resp <- post q "/api/manage-state/create-init" ([] :: [Part])
             case resp of

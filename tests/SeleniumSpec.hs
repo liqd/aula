@@ -1,5 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -14,18 +14,23 @@ import AulaTests
 
 
 wdConfig :: WDConfig
-wdConfig = useBrowser (chrome { chromeBinary = Just "/usr/bin/chromium-browser", chromeOptions = ["--no-sandbox"] }) defaultConfig
+wdConfig = useChrome defaultConfig
+  where
+    useChrome = useBrowser (chrome { chromeBinary = Just "/usr/bin/chromium-browser"
+                                   , chromeOptions = ["--no-sandbox"]
+                                   })
+
+runWDAula :: (MonadIO m) => WD a -> m (Maybe a)
+runWDAula = liftIO . timeout (1000 * globalTimeout) . runSession wdConfig . finallyClose
 
 -- | in ms
 globalTimeout :: Num n => n
-globalTimeout = 55300
+globalTimeout = 10300
 
 
 spec :: Spec
 spec = do
     describe "@Selenium" . around withServer $ do
-        it "works" $ \wreq -> do
-            title <- liftIO . timeout (1000 * globalTimeout) . runSession wdConfig $ do
-                openPage (site wreq)
-                getText =<< findElem (ByTag "h1")
-            title `shouldBe` Just "Willkommen bei Aula"
+        it "works" $ \wreq ->
+            runWDAula (openPage (mkUri wreq "") >> findElem (ByTag "h1") >>= getText)
+              `shouldReturn` Just "Willkommen bei Aula"
