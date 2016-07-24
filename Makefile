@@ -34,6 +34,10 @@ stories: .phony aula.unregister
 seito: .phony
 	sleep 0.2 && seito
 
+seito-docker: .phony
+	pwd > pwd.log
+	docker exec -it `docker ps -q --filter="ancestor=$(AULA_IMAGE)"` /liqd/aula/docker/make-seito.sh
+
 aula-server: .phony
 	$(EXEC) runhaskell -j5 $(AULA_SOURCES) ./exec/Aula.hs
 
@@ -59,10 +63,6 @@ test-everything:
 
 ghci-no-type-errors:
 	$(EXEC) ghci $(AULA_SOURCES) -fdefer-type-errors
-
-seito-docker-hack:
-	pwd > pwd.log
-	docker exec -it `docker ps -q --filter="ancestor=$(AULA_IMAGE)"` /liqd/aula/docker/make-seito.sh
 
 wc:
 	find src tests -name '*.hs' | xargs wc
