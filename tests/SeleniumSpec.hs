@@ -3,6 +3,16 @@
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
+-- | selenium tests.
+--
+-- run these by running `make selenium` in a terminal in the aula-docker image.
+--
+-- for debugging, you have two options:
+--
+-- 1. sprinkle @getSource >>= writeFile "/page.html"@, @saveScreenshot "/screenshot.png"@
+--    over your 'WD' monads.
+-- 2. run find out the IP address of your docker image (run `ifconfig` in a terminal), and
+--    run `vncviewer 172.17.0.5:5900` from your host.
 module SeleniumSpec where
 
 import System.Timeout
