@@ -25,6 +25,7 @@ import Data.Proxy (Proxy(Proxy))
 import Data.SafeCopy (base, deriveSafeCopy)
 import Data.String.Conversions
 import Data.Time
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import GHC.Generics (Generic)
 import Servant ((:~>)(Nat))
 import Text.Read (readEither)
@@ -128,6 +129,9 @@ type URL = ST
 
 newtype Timestamp = Timestamp { unTimestamp :: UTCTime }
   deriving (Eq, Ord, Generic)
+
+timestampToEpoch :: Timestamp -> Integer
+timestampToEpoch = round . utcTimeToPOSIXSeconds . unTimestamp
 
 data Timespan =  -- FIXME: import this from thentos?  create a package thentos-base?
     TimespanUs    Integer
