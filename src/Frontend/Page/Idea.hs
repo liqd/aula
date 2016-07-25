@@ -246,7 +246,7 @@ instance ToHtml ViewIdea where
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
             caps          = capabilities ctx
 
-        div_ [class_ "hero-unit narrow-container"] $ do
+        div_ [class_ $ "hero-unit narrow-container phase-" <> cs (show phase)] $ do
             header_ [class_ "detail-header"] $ do
                 linkToIdeaLocation idea
 
