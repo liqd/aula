@@ -1,6 +1,6 @@
 #!/bin/sh
 
-AULA_IMAGE=quay.io/liqd/aula
+AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.2
 
 if [ "$1" = "--connect" ]; then
     export CONNECT_TO_RUNNING_CONTAINER=1
@@ -15,5 +15,5 @@ fi
 if [ "$CONNECT_TO_RUNNING_CONTAINER" = "1" ]; then
     docker exec -it `docker ps -q --filter="ancestor=$AULA_IMAGE"` /bin/bash
 else
-    docker run -it --rm -p 8080:8080 $VOLUMES $AULA_IMAGE /bin/bash
+    docker run -it --rm -p 8080:8080 -p 5900:5900 $VOLUMES $AULA_IMAGE /bin/bash
 fi
