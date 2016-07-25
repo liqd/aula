@@ -12,7 +12,7 @@ before_install:
 
 script:
     - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-hlint.sh"
-    - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-build.sh --qc-max-success 100 --qc-max-size 100"
+    - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-build.sh --qc-max-success 100 --qc-max-size 150"
 
 #after_script:
 #    - docker run -e "TRAVIS=$TRAVIS" -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID" --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-coveralls.sh"
