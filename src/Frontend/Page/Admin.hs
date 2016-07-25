@@ -506,7 +506,7 @@ instance FormPage AdminCreateUser where
         where
             firstName = validate "Vorname"  (fieldParser (UserFirstName . cs <$> many1 anyChar) "nicht leer")
             lastName  = validate "Nachname" (fieldParser (UserLastName  . cs <$> many1 anyChar) "nicht leer")
-            loginName = validateOptional "Login" (UserLogin <$> usernameV)
+            loginName = validateOptional "Login" (mkUserLogin <$> usernameV)
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
@@ -1056,7 +1056,7 @@ instance Csv.FromRecord CsvUserRecord where
         parseMLogin i
             | length v < i + 1 = Nothing
             | v !! i == ""     = Nothing
-            | otherwise        = Just . UserLogin $ v !! i
+            | otherwise        = Just . mkUserLogin $ v !! i
 
 instance Csv.ToRecord CsvUserRecord where
     toRecord (CsvUserRecord fn ln em li pw) = Csv.toRecord

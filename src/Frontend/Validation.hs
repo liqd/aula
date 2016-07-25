@@ -201,7 +201,7 @@ type StringFieldValidator = forall r s . (ConvertibleStrings r String, Convertib
 
 -- See `usernameV`
 usernameV' :: FieldValidator' UserLogin
-usernameV' = dimap (view _UserLogin) UserLogin usernameV
+usernameV' = dimap (view _UserLogin) mkUserLogin usernameV
 
 -- WARNING: we also apply the validation rules on the login page.
 -- As long as we do not change the validation rules this is not a problem.

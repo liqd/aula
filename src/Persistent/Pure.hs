@@ -87,7 +87,6 @@ module Persistent.Pure
     , addUser
     , addFirstUser
     , mkMetaInfo
-    , mkUserLogin
     , withUser
     , setUserDesc
     , setUserEmail
@@ -943,7 +942,7 @@ addUser :: AddDb User
 addUser (EnvWith cUser now proto) = do
     metainfo <- nextMetaInfo cUser now
     uLogin <- case proto ^. protoUserLogin of
-        Nothing -> mkUserLogin proto
+        Nothing -> mkUserLoginFromProto proto
         Just li -> checkLoginIsAvailable li $> li
     let user = userFromProto metainfo uLogin (proto ^. protoUserPassword) proto
     dbUserMap . at (user ^. _Id) <?= user
@@ -961,15 +960,15 @@ addFirstUser now proto = do
 
     dbUserMap . at (user ^. _Id) <?= user
 
-mkUserLogin :: ProtoUser -> AUpdate UserLogin
-mkUserLogin protoUser = pick (gen firstn lastn)
+mkUserLoginFromProto :: ProtoUser -> AUpdate UserLogin
+mkUserLoginFromProto protoUser = pick (gen firstn lastn)
   where
     firstn :: ST = protoUser ^. protoUserFirstName . unUserFirstName
     lastn  :: ST = protoUser ^. protoUserLastName  . unUserLastName
 
     pick :: [ST] -> AUpdate UserLogin
-    pick ((UserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
-    pick []                    = error "impossible.  (well, unlikely.)"
+    pick ((mkUserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
+    pick []                      = error "impossible.  (well, unlikely.)"
                                  -- FIXME: use throwError(500) here?
 
     gen :: ST -> ST -> [ST]
