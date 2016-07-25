@@ -49,6 +49,38 @@
     .button-group {
         @include rem(margin-top, 20px);
     }
+
+    &.phase-PhaseRefinement {
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-refinement;
+            }
+        }
+    }
+
+    &.phase-PhaseJury {
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-jury;
+            }
+        }
+    }
+
+    &.phase-PhaseVoting {
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-voting;
+            }
+        }
+    }
+
+    &.phase-PhaseResult {
+        .main-heading {
+            .sub-heading {
+                color: $color-phase-result;
+            }
+        }
+    }
 }
 
 .heroic-cta {
