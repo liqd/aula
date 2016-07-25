@@ -84,10 +84,11 @@ instance ActionLog Action where
 
     readEventLog = do
         cfg <- viewConfig
+        now <- getCurrentTimestamp
         erows <- actionIO . try $ rd cfg
         case erows of
             Left err   -> throwError $ ActionEventLogExcept err
-            Right rows -> (EventLog (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows))
+            Right rows -> (EventLog now (cs $ cfg ^. exposedUrl) <$> (warmUp `mapM` rows))
                 `catchError` (throwError . ActionEventLogExcept . otherErr)
       where
         rd :: Config -> IO [EventLogItemCold]

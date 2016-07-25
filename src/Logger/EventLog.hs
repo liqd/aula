@@ -18,12 +18,13 @@ where
 
 import Control.Lens
 import Data.Maybe (fromMaybe)
-import Data.List (intercalate)
+import Data.String (IsString)
 import Data.String.Conversions
 import GHC.Generics (Generic)
 import Servant
 
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Csv as CSV
 import qualified Data.Text as ST
 import qualified Generics.Generic.Aeson as Aeson
@@ -36,7 +37,11 @@ import Types
 
 -- * types
 
-data EventLog = EventLog URL [EventLogItemWarm]
+data EventLog = EventLog
+    { _eventLogTimestamp :: Timestamp
+    , _eventLogURL       :: URL
+    , _eventLogItems     :: [EventLogItemWarm]
+    }
   deriving (Generic)
 
 -- | This type is migration-critial: we may need to support parting old values if we change it in
@@ -88,22 +93,25 @@ instance Aeson.FromJSON EventLogItemValueCold      where parseJSON = Aeson.gpars
 -- * delivering the event log
 
 filterEventLog :: IdeaSpace -> EventLog -> EventLog
-filterEventLog spc (EventLog domainUrl rows) = EventLog domainUrl $ filter f rows
+filterEventLog spc (EventLog now domainUrl rows) = EventLog now domainUrl $ filter f rows
   where
     f (EventLogItem spc' _ _ _) = spc' == spc
 
 
-eventLogItemCsvHeaders :: [String]
+eventLogItemCsvHeaders :: IsString s => [s]
 eventLogItemCsvHeaders = ["Ideenraum", "Zeitstempel", "Login", "Event", "Link"]
 
 
 data WithURL a = WithURL URL a
 
-instance MimeRender CSV EventLog where
-    mimeRender Proxy (EventLog _ []) = "[Keine Daten]"
-    mimeRender Proxy (EventLog domainUrl rows) =
-        cs (intercalate "," eventLogItemCsvHeaders <> "\n")
-        <> CSV.encode (WithURL domainUrl <$> rows)
+instance MimeRender CSVZIP EventLog where
+    mimeRender Proxy elog = zipLbs (_eventLogTimestamp elog) "Protokoll.csv" content
+      where
+        content = case elog of
+            (EventLog _ _ []) -> "[Keine Daten]"
+            (EventLog _ domainUrl rows) ->
+                LBS.intercalate "," eventLogItemCsvHeaders <> "\n"
+                <> CSV.encode (WithURL domainUrl <$> rows)
 
 instance CSV.ToRecord (WithURL EventLogItemWarm) where
     toRecord (WithURL domainUrl (EventLogItem ispace timestamp user ev)) = CSV.toRecord

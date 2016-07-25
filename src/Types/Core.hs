@@ -37,6 +37,7 @@ import Servant.API
 import System.FilePath ((</>), (<.>))
 import Text.Read (readMaybe)
 
+import qualified Codec.Archive.Zip as Zip
 import qualified Data.Csv as CSV
 import qualified Data.Text as ST
 import qualified Text.Email.Validate as Email
@@ -604,19 +605,26 @@ userAvatar dim = to _userMeta . to _metaKey . avatarUrl dim
 
 -- * csv helpers
 
-data CSV
+-- | since some browsers try to be difficult about downloading csv files as files (rather than
+-- displaying them as text), always deliver them wrapped in a zip file.
+data CSVZIP
 
-instance Accept CSV where
-    contentType Proxy = "text" // "csv"
+instance Accept CSVZIP where
+    contentType Proxy = "application" // "zip"  -- (without zip: "text" // "csv")
 
 type CsvHeaders a = Headers '[CsvHeadersContentDisposition] a
 type CsvHeadersContentDisposition = Header "Content-Disposition" String  -- appease hlint v1.9.22
 
-instance MimeRender CSV a => MimeRender CSV (CsvHeaders a) where
+instance MimeRender CSVZIP a => MimeRender CSVZIP (CsvHeaders a) where
     mimeRender proxy (Headers v _) = mimeRender proxy v
 
-csvHeaders :: String -> a -> CsvHeaders a
-csvHeaders filename = addHeader $ "attachment; filename=" <> filename <> ".csv"
+csvZipHeaders :: String -> a -> CsvHeaders a
+csvZipHeaders filename = addHeader $ "attachment; filename=" <> filename <> ".zip"
+
+zipLbs :: Timestamp -> FilePath -> LBS -> LBS
+zipLbs now fname content =
+    Zip.fromArchive $ Zip.Archive
+        [Zip.toEntry fname (timestampToEpoch now) content] Nothing ""
 
 
 -- * misc

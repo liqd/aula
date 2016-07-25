@@ -76,6 +76,7 @@ import Data.Maybe (catMaybes)
 import Data.String (fromString)
 import Data.String.Conversions (ST, cs, (<>))
 import Data.Text as ST
+import Data.Time.Clock (getCurrentTime)
 import Data.Tree as Tree (Tree)
 import Generics.SOP
 import System.Directory (getCurrentDirectory, getDirectoryContents)
@@ -1183,10 +1184,10 @@ fishAvatars = unsafePerformIO fishAvatarsIO
 -- * event log
 
 instance Arbitrary EventLog where
-    arbitrary = EventLog <$> arbWord <*> nonEmpty
+    arbitrary = EventLog <$> arb <*> arbWord <*> nonEmpty
       where
         nonEmpty = (:) <$> garbitrary <*> garbitrary
-    shrink (EventLog x y) = EventLog <$> shr x <*> shr y
+    shrink (EventLog now x y) = EventLog now <$> shr x <*> shr y
 
 instance ( Arbitrary u, Arbitrary t, Arbitrary i, Arbitrary c
          , Generic u, Generic t, Generic i, Generic c
@@ -1207,7 +1208,9 @@ sampleEventLog :: Config -> EventLog
 sampleEventLog = unsafePerformIO . sampleEventLogIO
 
 sampleEventLogIO :: Config -> IO EventLog
-sampleEventLogIO cfg = EventLog (cs $ cfg ^. exposedUrl) <$> generate (vectorOf 1000 arbitrary)
+sampleEventLogIO cfg = do
+    now <- Timestamp <$> getCurrentTime
+    EventLog now (cs $ cfg ^. exposedUrl) <$> generate (vectorOf 1000 arbitrary)
 
 
 -- * constant sample values

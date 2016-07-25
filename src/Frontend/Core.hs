@@ -175,7 +175,7 @@ newtype GetResult a = UnsafeGetResult { fromGetResult :: a }
 
 instance SOP.Generic (GetResult a)
 
-instance MimeRender CSV a => MimeRender CSV (GetResult a) where
+instance MimeRender CSVZIP a => MimeRender CSVZIP (GetResult a) where
     mimeRender p = mimeRender p . fromGetResult
 
 instance MimeRender PlainText a => MimeRender PlainText (GetResult a) where
@@ -219,7 +219,7 @@ type FormHandler p =
        GetH (Frame (FormPageRep p))
   :<|> FormReqBody :> PostH' (Frame (FormPageRep p)) (Frame (FormPageRep p)) -- Redirect
 
-type GetCSV a = Get '[CSV] (GetResult (CsvHeaders a))
+type GetCSV a = Get '[CSVZIP] (GetResult (CsvHeaders a))
 
 instance Page () where
     isAuthorized = publicPage

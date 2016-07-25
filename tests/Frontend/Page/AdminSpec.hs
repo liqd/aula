@@ -14,16 +14,27 @@ where
 import System.IO (hClose)
 import System.IO.Temp (withSystemTempFile)
 
+import qualified Data.ByteString.Lazy as LBS
+import qualified Codec.Archive.Zip as Zip
+
 import Logger.EventLog
 import Config
 import AulaTests
 
 
+-- | Unpack a zip archive, read the only file contained therein, and call argument on the body.
+zipArchiveShouldContain :: String -> Response LBS -> Expectation
+zipArchiveShouldContain needle resp = extract resp `shouldContain` needle
+  where
+    extract :: Response LBS -> String
+    extract = cs . Zip.fromEntry . (\(Zip.Archive [es] _ _) -> es) . Zip.toArchive . view responseBody
+
+
 spec :: Spec
 spec = do
     describe "EventLog" . around withServerWithEventLog $ do
-        let shouldHaveHeaders = bodyShouldContain $
-              intercalate ("," :: String) eventLogItemCsvHeaders
+        let shouldHaveHeaders = zipArchiveShouldContain . cs $
+                LBS.intercalate "," eventLogItemCsvHeaders
             trigger wreq = post wreq "/admin/topic/5/next-phase" ([] :: [Part])
 
         context "unfiltered" . it "responds with data" $ \wreq -> do
@@ -39,7 +50,7 @@ spec = do
         context "filtered on non-existent idea space" . it "responds with empty" $ \wreq -> do
             _ <- trigger wreq
             get wreq "/admin/downloads/events?space=2016-980917"
-                `shouldRespond` [codeShouldBe 200, bodyShouldBe "[Keine Daten]"]
+                `shouldRespond` [codeShouldBe 200, zipArchiveShouldContain "[Keine Daten]"]
                 -- (it would be nicer to respond with 404 here, but nothing bad should happen with
                 -- the status quo either, and as long as the admin uses the UI, this shouldn't ever
                 -- happen.)

@@ -71,6 +71,7 @@ dependencies:
     - wai-app-static
     - warp
     - yaml
+    - zip-archive
 
 library:
   source-dirs: src

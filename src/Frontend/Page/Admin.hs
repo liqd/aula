@@ -823,7 +823,7 @@ adminEventsProtocol = formPageHandler (PageAdminSettingsEventsProtocol <$> query
 adminEventLogCsv :: ActionM m => Maybe IdeaSpace -> m (CsvHeaders EventLog)
 adminEventLogCsv mspc = hdrs . maybe id filterEventLog mspc <$> readEventLog
   where
-    hdrs = csvHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
+    hdrs = csvZipHeaders $ "EventLog " <> maybe "alle Ideenräume" uilabel mspc
 
 
 -- * Classes Create
@@ -1015,7 +1015,7 @@ data CsvUserRecord = CsvUserRecord
 
 instance SOP.Generic CsvUserRecord
 
-data InitialPasswordsCsv = InitialPasswordsCsv [CsvUserRecord]
+data InitialPasswordsCsv = InitialPasswordsCsv Timestamp [CsvUserRecord]
   deriving (Eq, Ord, Show, Read, Generic)
 
 instance SOP.Generic InitialPasswordsCsv
@@ -1068,8 +1068,8 @@ instance Csv.ToRecord CsvUserRecord where
         ]
 
 
-instance MimeRender CSV InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
-    mimeRender Proxy (InitialPasswordsCsv rows) =
+instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case like with 'EventLog'?
+    mimeRender Proxy (InitialPasswordsCsv fileAge rows) = zipLbs fileAge "Passwörter.csv" $
         cs (intercalate "," csvUserRecordHeaders <> "\n")
         <> Csv.encode rows
 
@@ -1077,9 +1077,10 @@ csvUserRecordHeaders :: [String]
 csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
 
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
-adminInitialPasswordsCsv clss =
-    csvHeaders ("Passwortliste " <> clss ^. uilabeled) .
-    InitialPasswordsCsv . catMaybes . fmap mk <$> query (getUsersInClass clss)
+adminInitialPasswordsCsv clss = do
+    now <- getCurrentTimestamp
+    csvZipHeaders ("Passwortliste " <> clss ^. uilabeled) .
+        InitialPasswordsCsv now . catMaybes . fmap mk <$> query (getUsersInClass clss)
   where
     mk u = case u ^. userPassword of
         UserPassInitial (InitialPassword ps) -> Just $ CsvUserRecord

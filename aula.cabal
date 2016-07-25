@@ -80,6 +80,7 @@ library
     , wai-app-static
     , warp
     , yaml
+    , zip-archive
   exposed-modules:
       Access
       Action
@@ -212,6 +213,7 @@ executable aula-avatars
     , wai-app-static
     , warp
     , yaml
+    , zip-archive
     , aula
   other-modules:
       Aula
@@ -280,6 +282,7 @@ executable aula-html-dummies
     , wai-app-static
     , warp
     , yaml
+    , zip-archive
     , aula
     , extra
     , fsnotify
@@ -351,6 +354,7 @@ executable aula-i18n
     , wai-app-static
     , warp
     , yaml
+    , zip-archive
     , aula
     , aeson-extra
     , unordered-containers
@@ -421,6 +425,7 @@ executable aula-server
     , wai-app-static
     , warp
     , yaml
+    , zip-archive
     , aula
   other-modules:
       I18N
@@ -490,6 +495,7 @@ test-suite spec
     , wai-app-static
     , warp
     , yaml
+    , zip-archive
     , aula
     , base >=4.8 && <4.9
     , binary >= 0.7.5 && <0.8
