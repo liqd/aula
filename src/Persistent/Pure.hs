@@ -116,7 +116,6 @@ module Persistent.Pure
     , dbQuorums
     , dbFreeze
     , dbUserMap
-    , adminUsernameHack
     , addDelegation
     , withdrawDelegation
     , delegationScopeForest
@@ -979,9 +978,6 @@ mkUserLoginFromProto protoUser = pick (gen firstn lastn)
 
     noise :: [ST]
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
-
-adminUsernameHack :: UserLogin
-adminUsernameHack = UserLogin "admin"
 
 instance FromProto Idea where
     fromProto i m = Idea
