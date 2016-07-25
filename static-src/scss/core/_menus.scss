@@ -72,6 +72,13 @@ $arrow-width: 6px;
             }
         }
     }
+
+    &.m-cta {
+        .pop-menu-list {
+            @include rem(top, 35px);
+            right: 0;
+        }
+    }
 }
 
 .pop-menu-list {
