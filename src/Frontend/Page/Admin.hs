@@ -264,7 +264,7 @@ instance ToMenuItem PageAdminTermsOfUse where
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [class_ "col-2-12"] $ do
+    div_ [class_ "col-3-12"] $ do
         nav_ [class_ "admin-menu"] $ do
             h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
             ul_ $ do
@@ -283,7 +283,7 @@ adminFrame t bdy = do
                 li_ $ menulink tab MenuItemEventsProtocol
                 li_ $ menulink tab MenuItemPhaseChange
                 li_ $ menulink tab MenuItemTermsOfUse
-    div_ [class_ "col-10-12 admin-body"] bdy
+    div_ [class_ "col-9-12 admin-body"] bdy
   where
     tab = toMenuItem [t]
 
