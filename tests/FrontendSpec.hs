@@ -43,6 +43,6 @@ spec = do
     describe "formSelectorToCategory" $ do
         it "works" $ do
             fromEnum <$> ([minBound..] :: [Category])
-                `shouldBe` [0..4]
-            (toEnumMay <$> ([0..5] :: [Int]) :: [Maybe Category])
+                `shouldBe` [0..5]
+            (toEnumMay <$> ([0..6] :: [Int]) :: [Maybe Category])
                 `shouldBe` (Just <$> [minBound..]) <> [Nothing]
