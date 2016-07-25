@@ -44,4 +44,4 @@ displayPhaseTime now = phaseStatus . to info
 
     displayTimespanFrozen st = (cs . show . stampToDays $ st) <> " Tage nach den Ferien"
     stampToDays st = timespanDays (st ^. phaseLeftoverFrom now) + 1
-    showStamp = formatTime aulaTimeLocale " am %F um ca. %H Uhr %Z" . unsafeTimestampToLocalTime
+    showStamp = formatTime aulaTimeLocale " am %d.%m.%Y um ca. %H Uhr" . unsafeTimestampToLocalTime

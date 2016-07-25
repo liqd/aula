@@ -2,7 +2,7 @@ SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -iexec -idist/build/autogen
-AULA_IMAGE=quay.io/liqd/aula
+AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.2
 AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 
 .phony:
@@ -20,7 +20,10 @@ AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2
 	-$(EXEC) ghc-pkg unregister $*
 
 sensei: .phony aula.unregister
-	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large
+	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --skip @Large --skip @Selenium
+
+selenium: .phony aula.unregister
+	$(EXEC) sensei -j5 $(AULA_SOURCES) tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS) --match @Selenium
 
 sensei-large: .phony aula.unregister
 	$(EXEC) sensei -j5 $(AULA_SOURCES) -optP-DDEVELOPMENT ./tests/Spec.hs $(SENSEI_DEFAULT_ARGS) $(SENSEI_ARGS)
@@ -30,6 +33,10 @@ stories: .phony aula.unregister
 
 seito: .phony
 	sleep 0.2 && seito
+
+seito-docker: .phony
+	pwd > pwd.log
+	docker exec -it `docker ps -q --filter="ancestor=$(AULA_IMAGE)"` /liqd/aula/docker/make-seito.sh
 
 aula-server: .phony
 	$(EXEC) runhaskell -j5 $(AULA_SOURCES) ./exec/Aula.hs
@@ -56,10 +63,6 @@ test-everything:
 
 ghci-no-type-errors:
 	$(EXEC) ghci $(AULA_SOURCES) -fdefer-type-errors
-
-seito-docker-hack:
-	pwd > pwd.log
-	docker exec -it `docker ps -q --filter="ancestor=$(AULA_IMAGE)"` /liqd/aula/docker/make-seito.sh
 
 wc:
 	find src tests -name '*.hs' | xargs wc

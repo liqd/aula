@@ -48,6 +48,7 @@ deriveSafeCopy 0 'base ''Idea
 deriveSafeCopy 0 'base ''IdeaJuryResult
 deriveSafeCopy 0 'base ''IdeaJuryResultValue
 deriveSafeCopy 0 'base ''IdeaLike
+deriveSafeCopy 0 'base ''IdeaLikeValue
 deriveSafeCopy 0 'base ''IdeaLocation
 deriveSafeCopy 0 'base ''IdeaSpace
 deriveSafeCopy 0 'base ''IdeaVote

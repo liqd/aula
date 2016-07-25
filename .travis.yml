@@ -3,7 +3,7 @@ services:
     - docker
 language: c
 env:
-    - AULA_IMAGE=quay.io/liqd/aula AULA_SOURCE=/liqd/aula
+    - AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.2 AULA_SOURCE=/liqd/aula
 
 before_install:
     - grep '\(MemTotal\|SwapTotal\)' /proc/meminfo
@@ -12,7 +12,7 @@ before_install:
 
 script:
     - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-hlint.sh"
-    - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-build.sh --qc-max-success 1000 --qc-max-size 150"
+    - docker run --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-build.sh --qc-max-success 100 --qc-max-size 100"
 
 #after_script:
 #    - docker run -e "TRAVIS=$TRAVIS" -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID" --rm -it -v `pwd`:$AULA_SOURCE $AULA_IMAGE /bin/sh -c "$AULA_SOURCE/.travis/docker-coveralls.sh"

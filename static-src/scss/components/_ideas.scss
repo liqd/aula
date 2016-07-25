@@ -128,24 +128,44 @@
     left: -999999px;
 }
 
+.creator-statement {
+    @include rem(margin-top, 15px);
+}
+
+.ideas-list-meta-container {
+    @media screen and (max-width: $tablet-breakpoint) {
+        @include rem(padding-left, 80px);
+    }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        float: left;
+        margin: 0;
+        padding: 0;
+
+        .icon-list-indicator-item span {
+            padding-top: 0;
+        }
+    }
+}
+
 .ideas-list-indicator-container {
     .indicator-item {
         @include rem(margin-right, 10px);
         float: right;
 
         ul li, .indicator-icon {
-            @include rem(width, 32px);
+            @include rem(height, 32px);
+            @include rem(width, 42px);
             background-position: center center;
             background-repeat: no-repeat;
             background-size: contain;
-            min-width: 32px;
             text-indent: -9999px;
         }
 
         ul li>a,
         ul li>span,
         .indicator-icon {
-            @include rem(padding-top, 40px);
+            @include rem(padding-top, 0);
         }
 
         &:first-child {
@@ -153,7 +173,7 @@
         }
 
         @media screen and (max-width: $tablet-breakpoint) {
-            float: none;
+            float: right;
         }
     }
 
@@ -176,6 +196,10 @@
     .m-table .indicator-icon {
         background-image: url(../images/badge_aufdemtisch.png);
         min-width: 40px;
+    }
+
+    @media screen and (max-width: $mobile-breakpoint) {
+        margin: 0;
     }
 }
 

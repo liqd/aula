@@ -240,7 +240,7 @@ instance ToHtml ViewIdea where
         | idea ^. ideaDeleted = toHtml $ ViewDeletedIdea idea
 
     toHtml p@(ViewIdea now ctx stats@(IdeaStats idea phase _quo _voters)) = semanticDiv p $ do
-        let totalLikes    = Map.size $ idea ^. ideaLikes
+        let totalLikes    = numLikes idea
             totalVotes    = Map.size $ idea ^. ideaVotes
             totalComments = idea ^. ideaComments . commentsCount
             spc           = idea ^. ideaLocation ^. ideaLocationSpace
@@ -256,11 +256,11 @@ instance ToHtml ViewIdea where
                       , a_ [href_ $ U.editIdea idea] "bearbeiten"
                       )
                     , ( ideaReachedQuorum stats && CanCreateTopic `elem` caps
-                      , "icon-pencil"  -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                      , "icon-asterisk"
                       , a_ [href_ $ U.createTopic spc] "Thema erstellen"
                       )
                     , ( CanMoveBetweenLocations `elem` caps
-                      , "icon-pencil"  -- FIXME: wrong icon; see https://marvelapp.com/ehhb43#10108433
+                      , "icon-sign-in"
                       , a_ [href_ $ U.moveIdea idea] "Idee verschieben"
                       )
                     , ( True
@@ -302,9 +302,10 @@ instance ToHtml ViewIdea where
                     when (has _PhaseWildIdea phase && ideaReachedQuorum stats) $ do
                         li_ [class_ "icon-table"] $ span_ "Kann auf den Tisch"
                         feasibilityIndicator idea
-                    if isWinning idea
-                        then li_ [class_ "icon-winner"] $ span_ "gewonnen"
-                        else li_ [class_ "icon-hourglass"] $ span_ "nicht gewonnen"
+                    when (has _PhaseResult phase) $
+                        if isWinning idea
+                            then li_ [class_ "icon-winner"] $ span_ "gewonnen"
+                            else li_ [class_ "icon-hourglass"] $ span_ "nicht gewonnen"
 
 
             -- explanation by the dean why the idea is feasible or not (if available)
@@ -325,6 +326,12 @@ instance ToHtml ViewIdea where
                 ideaVoteLikeButtons ctx stats
                 feasibilityButtons True idea caps
 
+            -- creator statement
+            mapM_
+                (div_ [class_ "creator-statement"] . view html)
+                (creatorStatementOfIdea idea)
+
+            div_ [class_ "button-group"] $ do
                 when (any (`elem` caps) [CanAddCreatorStatement, CanEditCreatorStatement]) $ do
                     button_ [ class_ "button-group-item btn-cta m-valid"
                             , onclick_ $ U.creatorStatement idea
@@ -346,11 +353,6 @@ instance ToHtml ViewIdea where
                             winnerButton (U.markIdeaAsWinner idea) "als \"gewonnen\" markieren"
                         when (isWinning idea) $
                             winnerButton (U.unmarkIdeaAsWinner idea) "\"gewonnen\" zurücknehmen"
-
-            -- creator statement
-            mapM_
-                (div_ [class_ "creator-statement"] . view html)
-                (creatorStatementOfIdea idea)
 
         -- article
         div_ [class_ "container-narrow text-markdown"] $ do

@@ -73,18 +73,17 @@ categoryFilterButtons whatListPage q = div_ [class_ "icon-list"] $ do
     p_ $ b_ "Filtere nach Kategorie"
     br_ []
     ul_ $ do
+        li_ [ class_ . ST.unwords $
+                "icon-all-cats" : [ "m-active" | q ^. ideasQueryF == AllIdeas ]
+            ] .
+            a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF .~ AllIdeas)] $
+                "Alle Kategorien"
         for_ [minBound..] $ \cat -> do
             li_ [ class_ . ST.unwords $
                     ("icon-" <> toUrlPiece cat) : [ "m-active" | q ^. ideasQueryF == IdeasWithCat cat ]
                 ] .
                 a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF %~ toggleIdeasFilter cat)] $
                     uilabel cat
-        li_ [ class_ . ST.unwords $
-                "icon-all-cats" : [ "m-active" | q ^. ideasQueryF == AllIdeas ]
-            ] .
-            a_ [href_ $ pathToIdeaListPage whatListPage (Just $ q & ideasQueryF .~ AllIdeas)] $
-                "Alle Kategorien"
-
 
 -- * local types
 

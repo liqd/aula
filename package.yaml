@@ -137,3 +137,4 @@ tests:
       - text
       - wai-extra
       - wreq
+      - webdriver

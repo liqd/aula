@@ -510,6 +510,7 @@ test-suite spec
     , text
     , wai-extra
     , wreq
+    , webdriver
   other-modules:
       AllModulesSpec
       AulaTests
@@ -528,6 +529,7 @@ test-suite spec
       FrontendSpec
       MonoidSpec
       Persistent.ApiSpec
+      SeleniumSpec
       Test.Hspec.Missing
       Test.QuickCheck.Missing
       TypesSpec

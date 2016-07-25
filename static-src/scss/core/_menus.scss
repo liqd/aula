@@ -118,9 +118,8 @@ $arrow-width: 6px;
     border-bottom: 1px solid $color-grey-light;
     line-height: 1.4;
 
-    .pop-menu-list-item-form-wrapper {
+    .pop-menu-list-item-form-wrapper, > a {
         @include rem(padding, 5px 10px);
-        color: $color-text;
         display: block;
         text-decoration: none;
         white-space: nowrap;
@@ -135,8 +134,13 @@ $arrow-width: 6px;
         }
 
         i {
+            @include rem(margin-right, 10px);
             vertical-align: middle;
             min-width: 15px;
+        }
+
+        &, a {
+            color: $color-text;
         }
     }
 

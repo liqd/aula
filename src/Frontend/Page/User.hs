@@ -47,6 +47,9 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 
 -- * misc
 
+canDelegate :: CapCtx -> Bool
+canDelegate ctx = CanDelegate `elem` capabilities ctx
+
 profileContext :: (ActionPersist m, ActionUserHandler m) => User -> m CapCtx
 profileContext user = set capCtxUserProfile (Just user)
                     . set capCtxDelegateTo  (Just user)
@@ -301,15 +304,18 @@ data UserProfileTab
 
 -- | FUTUREWORK: 'Frontend.Page.Topic.tabLink' shares some non-trivial code with this function that
 -- could be factored out.
-userProfileTab :: Monad m => UserProfileTab -> User -> HtmlT m ()
-userProfileTab activeTab user = do
+userProfileTab :: Monad m => CapCtx -> UserProfileTab -> User -> HtmlT m ()
+userProfileTab ctx activeTab user = when (canCreateIdeas' || canDelegate') $ do
     div_ [class_ "heroic-tabs is-responsive"] $ allTabs False
     select_ [class_ "heroic-tabs-dropdown", onchange_ "window.location = this.value"] $ allTabs True
   where
+    canCreateIdeas' = canCreateIdeas user
+    canDelegate'    = canDelegate ctx
+
     allTabs dd = do
-        tabLink dd UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
-        tabLink dd UserDelegateesTab (U.userDelegationsTo user)   "Wer stimmt für mich ab?"
-        tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "Für wen stimme ich ab?"
+        when canCreateIdeas' $ tabLink dd UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
+        when canDelegate'    $ tabLink dd UserDelegateesTab (U.userDelegationsTo user)   "Wer stimmt für mich ab?"
+        when canDelegate'    $ tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "Für wen stimme ich ab?"
 
     tabLink True  = tabLinkDropdown
     tabLink False = tabLinkDiv
@@ -329,9 +335,9 @@ instance ToHtml PageUserProfileCreatedIdeas where
     toHtml p@(PageUserProfileCreatedIdeas ctx (ActiveUser user) ideas delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            userProfileTab UserIdeasTab user
+            userProfileTab ctx UserIdeasTab user
         -- List of ideas
-        div_ [class_ "m-shadow"] $ do
+        when (canCreateIdeas user) . div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ toHtml ideas
 
 -- | List all the created ideas for the given user.
@@ -372,8 +378,8 @@ instance ToHtml PageUserProfileUserAsDelegate where
     toHtml p@(PageUserProfileUserAsDelegate ctx (ActiveUser user) delegationListsMap delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            userProfileTab UserDelegateesTab user
-        div_ [class_ "m-shadow"] $ do
+            userProfileTab ctx UserDelegateesTab user
+        when (canDelegate ctx) . div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations (UserDelegationPage ctx) delegationListsMap
@@ -412,8 +418,8 @@ instance ToHtml PageUserProfileUserAsDelegatee where
     toHtml p@(PageUserProfileUserAsDelegatee ctx (ActiveUser user) delegationListsMap delegations) = semanticDiv p $ do
         div_ [class_ "hero-unit"] $ do
             userHeaderDiv ctx (Right (user, delegations))
-            userProfileTab UserDelegatesTab user
-        div_ [class_ "m-shadow"] $ do
+            userProfileTab ctx UserDelegatesTab user
+        when (canDelegate ctx) . div_ [class_ "m-shadow"] $ do
             div_ [class_ "grid"] $ do
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations (UserDelegationPage ctx) delegationListsMap
