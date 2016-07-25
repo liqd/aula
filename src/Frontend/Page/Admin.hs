@@ -1074,7 +1074,7 @@ instance MimeRender CSVZIP InitialPasswordsCsv where  -- FIXME: handle null case
         <> Csv.encode rows
 
 csvUserRecordHeaders :: [String]
-csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Passwort (falls initial)"]
+csvUserRecordHeaders = ["Vorname", "Nachname", "email", "login", "Initiales Passwort"]
 
 adminInitialPasswordsCsv :: ActionM m => SchoolClass -> m (CsvHeaders InitialPasswordsCsv)
 adminInitialPasswordsCsv clss = do
