@@ -60,19 +60,6 @@ $arrow-width: 6px;
         }
     }
 
-    &.m-dots {
-        &:before {
-            @extend .icon-ellipsis-h;
-            @include rem(font-size, 20px);
-            color: $color-text;
-            line-height: 25px;
-
-            @media screen and (max-width: $mobile-breakpoint) {
-                font-size: 50px;
-            }
-        }
-    }
-
     &.m-cta {
         .pop-menu-list {
             @include rem(top, 35px);
