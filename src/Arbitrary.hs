@@ -69,12 +69,12 @@ module Arbitrary
 import Control.Applicative ((<**>))
 import Control.Monad (replicateM)
 import Crypto.Scrypt
-import Data.Functor.Infix ((<$$>))
 import Data.Char
+import Data.Functor.Infix ((<$$>))
 import Data.List as List
 import Data.Maybe (catMaybes)
-import Data.String (fromString)
 import Data.String.Conversions (ST, cs, (<>))
+import Data.String (fromString)
 import Data.Text as ST
 import Data.Time.Clock (getCurrentTime)
 import Data.Tree as Tree (Tree)
