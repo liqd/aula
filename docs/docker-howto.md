@@ -1,6 +1,51 @@
 FIXME: we do not depend on the thentos git repo any more, but on some thentos packages from hackage.  this document does not reflect this change yet.
 
 
+# new process
+
+This section describes a simpler process for keeping updates in
+`github.com/liqd/aula{,-docker}` in sync.  The following sections may
+be outdated.
+
+quay.io builts images from branches and tags them with the branch
+name, so we can pin the image to that branch in aula.  The tricky part
+is to merge and refresh everything in the right order.  (For instance,
+we shouldn't leave the aula submodule in aula-docker pinned to the
+branch, but move it back to master.)
+
+The new branch in aula is called `<aula-branch>` in the following; the
+new aula-docker branch is called `<aula-docker-branch>` and should
+have the form `aula-docker-0.<i>`, where `<i>` is a fresh integer.
+
+This is the story of updating aula and aula-docker in sync:
+
+In aula:
+
+- `git checkout -b <aula-branch>`
+- `find docker/ .travis* Makefile -type f -exec perl -i -pe 's!quay.io/liqd/aula\S+!quay.io/liqd/aula:<aula-branch>!' {} \;`
+- make your changes, commit.
+
+in aula-docker:
+
+- make sure that all previous aula-docker releases have been merged.
+- `git checkout master; git checkout -b <aula-docker-branch>`
+- `cd aula; git fetch; git checkout <aula-branch>; cd ..; git add aula; git commit -m 'bump aula; move to branch'`
+- make your changes, commit, push.
+- review
+- wait for quay.io to build image successfully and tag it with `<aula-branch>`.
+- clear for merge.  (but do not merge yet!)
+
+in aula:
+
+- push your changes.
+- review, merge.
+
+in aula-docker:
+
+- `cd aula; git fetch; git checkout master; cd ..; git add aula; git commit -m 'dump aula; move back to master'`
+- merge.
+
+
 # thoughts on how to use docker
 
 On the one hand, docker makes it easy to handle system state; on the
