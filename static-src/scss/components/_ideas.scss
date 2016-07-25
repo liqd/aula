@@ -61,6 +61,10 @@
             @include rem(font-size, 11px);
         }
     }
+
+    .icon-list span {
+        display: none;
+    }
 }
 
 .ideas-list {
