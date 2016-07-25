@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="67px" height="45px" viewBox="0 0 67 45" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 39 (31667) - http://www.bohemiancoding.com/sketch -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="21.5316456" y="15.3947368" width="20.7341772" height="17.7631579"></rect>
+        <mask id="mask-2" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="20.7341772" height="17.7631579" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+        <rect id="path-3" x="1.19620253" y="0" width="60.6075949" height="37.1052632"></rect>
+        <mask id="mask-4" maskContentUnits="userSpaceOnUse" maskUnits="objectBoundingBox" x="0" y="0" width="60.6075949" height="37.1052632" fill="white">
+            <use xlink:href="#path-3"></use>
+        </mask>
+    </defs>
+    <g id="Klickdummy-Moderator" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="2.-Ideas-overview" transform="translate(-660.000000, -421.000000)">
+            <g id="Group" transform="translate(662.000000, 421.000000)">
+                <rect id="Rectangle-86" fill="#F7FFE6" x="2.39240506" y="1.97368421" width="57.4177215" height="34.7368421"></rect>
+                <polygon id="Rectangle-86" fill="#DCEEC1" points="59.8101266 1.97368421 59.8101266 35.5263158 2.79113924 35.5263158"></polygon>
+                <use id="Rectangle-88" stroke="#659A12" mask="url(#mask-2)" stroke-width="6" xlink:href="#path-1"></use>
+                <use id="Rectangle-88" stroke="#8CB735" mask="url(#mask-4)" stroke-width="8" xlink:href="#path-3"></use>
+                <polyline id="Path-302" stroke="#69970B" stroke-width="4" points="4.42683864e-17 20.9210526 0 38.2917866 62.7640304 37.8800884 62.677586 20.9210526"></polyline>
+                <rect id="Rectangle-91" fill="#364E10" x="27.1139241" y="29.6052632" width="9.96835443" height="9.86842105"></rect>
+                <g id="Icon-Regeln" transform="translate(23.126582, 31.184211)" stroke="#A5C77D">
+                    <polyline id="Path-303" points="0.182526021 0.0580155222 2.90853998 3.48425614 3.00286942 9.57419948 4.34037143 13.4230282 5.97458774 9.62421618 4.6321697 5.7811215 4.6321697 3.38899311 2.90853998 0.315423263 2.90853998 3.54593377"></polyline>
+                    <path d="M3.0298346,9.53227796 L4.65825875,5.66904168" id="Path-304"></path>
+                    <polyline id="Path-305" points="4.60608065 3.39997944 6.0556293 0.0892398232 7.42291955 3.39997944 7.42291955 5.65121299 8.6568928 9.19844778 10.2029125 13.4181615 11.6470097 9.1809082 10.2029125 5.68301552 10.2029125 3.39997944 11.847399 0.277934827 13.121966 3.33242316 13.121966 5.84732859 14.7468857 9.11817049 13.2884297 13.4181615 11.6470097 9.0466148"></polyline>
+                    <polyline id="Path-306" points="7.38602496 3.35521497 8.81946264 0.316868832 10.2190722 3.35521497"></polyline>
+                    <polyline id="Path-307" points="13.1372495 3.20415296 14.6527022 0.528885691 14.7513636 9.12255538"></polyline>
+                    <polyline id="Path-308" points="10.2326034 5.67121004 7.4335304 13.4661062 5.98042857 9.3971654"></polyline>
+                    <path d="M6.01834531,9.41297029 L7.44399522,5.61960321" id="Path-309"></path>
+                    <path d="M11.7264937,9.21728837 L13.1226961,5.74647602" id="Path-310"></path>
+                    <path d="M14.704783,3.12026174 L17.4226198,0.213558799" id="Path-312"></path>
+                </g>
+                <rect id="Rectangle-90" fill="#4B6615" x="22.3291139" y="29.6052632" width="19.5379747" height="2.36842105" rx="1.18421053"></rect>
+            </g>
+        </g>
+    </g>
+</svg>
