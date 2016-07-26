@@ -15,40 +15,32 @@ where
 import Prelude hiding (log, (.))
 
 import Control.Category ((.))
-import Control.Exception (assert)
-import Control.Monad.Reader (runReader)
 import Control.Monad.Trans.Except
-import Network.HTTP.Types
-import Network.Wai
-    ( Application, Middleware, Response
-    , responseStatus, responseHeaders, responseBuilder, queryString, requestHeaders
-    )
-import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort, defaultSettings)
+import Network.Wai (Application)
 import Network.Wai.Application.Static
     ( StaticSettings
     , ssRedirectToIndex, ssAddTrailingSlash, ssGetMimeType, defaultFileServerSettings, staticApp
     )
+import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort, defaultSettings)
 import Servant
 import System.FilePath (addTrailingPathSeparator)
+import Thentos.CookieSession (serveFAction)
+import Thentos.CookieSession.Types (ThentosSessionToken)
 import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
-import qualified Data.ByteString.Builder as Builder
-
-import Thentos.CookieSession.Types (ThentosSessionToken)
-import Thentos.CookieSession (serveFAction)
-
-import AulaPrelude
 import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction, actionIO)
+import AulaPrelude
 import Config
 import Daemon
-import Logger.EventLog
 import Frontend.Core
+import Frontend.Middleware
 import Frontend.Page as Page
 import Frontend.Prelude
 import Frontend.Testing
 import Logger
+import Logger.EventLog
 import Persistent.Api (RunPersist)
 import Persistent (withPersist, findUser)
 
@@ -430,32 +422,3 @@ aulaAdmin =
   where
     postWithTopic a tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) (a tid)
     postAdminRemRole user = runPostHandler (pure NeedAdmin) . Page.adminRemRole user
-
-
-catch404 :: Middleware
-catch404 app req cont = app req $ \resp -> cont $ f resp
-  where
-    f :: Response -> Response
-    f resp = if statusCode status /= 404
-        then resp
-        else responseBuilder status headers builder
-      where
-        status  = responseStatus resp
-        headers = responseHeaders resp
-        builder = Builder.byteString . cs
-                . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
-                -- FIXME: The dev mode parameter should come from the config
-                $ PublicFrame Page404 [] False
-
-
--- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a
--- way to extract page samples to feed to @src/RenderHtml.hs@.
-createPageSamples :: Middleware
-createPageSamples app req = app req'
-  where
-    req' = case partition (== ("create_page_sample", Just "true")) $ queryString req of
-        ([], _)      -> req
-        ([_], query) -> req { queryString = query
-                            , requestHeaders = ("Accept", "text/plain") : requestHeaders req
-                            }
-        bad -> assert False $ error ("createPageSamples: impossible: " <> show bad)
