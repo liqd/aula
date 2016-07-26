@@ -264,7 +264,7 @@ instance ToMenuItem PageAdminTermsOfUse where
 
 adminFrame :: (Monad m, ToMenuItem tab) => tab -> HtmlT m () -> HtmlT m ()
 adminFrame t bdy = do
-    div_ [class_ "col-2-12"] $ do
+    div_ [class_ "col-3-12"] $ do
         nav_ [class_ "admin-menu"] $ do
             h2_ [class_ "admin-menu-header"] "Prozessverwaltung"
             ul_ $ do
@@ -283,7 +283,7 @@ adminFrame t bdy = do
                 li_ $ menulink tab MenuItemEventsProtocol
                 li_ $ menulink tab MenuItemPhaseChange
                 li_ $ menulink tab MenuItemTermsOfUse
-    div_ [class_ "col-10-12 admin-body"] bdy
+    div_ [class_ "col-9-12 admin-body"] bdy
   where
     tab = toMenuItem [t]
 
@@ -510,7 +510,7 @@ instance FormPage AdminCreateUser where
 
     formPage v form p =
         adminFrame p . semanticDiv p . div_ [class_ "admin-container"] . form $ do
-            div_ [class_ "col-9-12"] $ do
+            div_ [class_ "col-9-12 admin-body"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     label_ [class_ "input-append"] $ do
                         span_ [class_ "label-text col-6-12"] "Vorname:"
@@ -615,7 +615,7 @@ instance FormPage AdminAddRole where
 
     formPage v form p@(AdminAddRole user _classes) =
         adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
-            div_ [class_ "col-9-12"] $ do
+            div_ [class_ "col-9-12 admin-body"] $ do
                 h1_ [class_ "admin-main-heading"] $ toHtml (userFullName user :: ST)
                 div_ [class_ "clearfix"] $ do
                     label_ [class_ "col-6-12"] $ do
@@ -660,7 +660,7 @@ instance FormPage AdminEditUser where
 
     formPage v form p@(AdminEditUser user) =
         adminFrame p . semanticDiv' [class_ "admin-container"] p . form $ do
-            div_ [class_ "col-9-12"] $ do
+            div_ [class_ "col-9-12 admin-body"] $ do
                 h1_ [class_ "admin-main-heading"] $ do
                     span_ [class_ "label-text"] "Login"
                     inputText_ [class_ "m-stretch"] "login" v
