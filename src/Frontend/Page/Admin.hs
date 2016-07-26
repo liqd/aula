@@ -283,7 +283,7 @@ adminFrame t bdy = do
                 li_ $ menulink tab MenuItemEventsProtocol
                 li_ $ menulink tab MenuItemPhaseChange
                 li_ $ menulink tab MenuItemTermsOfUse
-    div_ [class_ "col-9-12 admin-body"] bdy
+    div_ [class_ "col-9-12"] bdy
   where
     tab = toMenuItem [t]
 

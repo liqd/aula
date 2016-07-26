@@ -12,6 +12,10 @@ body, html {
         display: block;
         height: $main-menu-height;
     }
+
+    &.is-not-responsive {
+        width: 1024px;
+    }
 }
 
 .container-main {

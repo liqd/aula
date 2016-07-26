@@ -5,10 +5,6 @@
 
     .admin-menu-header, > ul {
         @include rem(padding, 20px 25px);
-
-        @media screen and (max-width: $tablet-breakpoint) {
-            padding: 0;
-        }
     }
 
     > ul li {
@@ -30,20 +26,6 @@
                 @include rem(margin, 5px 0 0 20px);
             }
         }
-
-        @media screen and (max-width: $tablet-breakpoint) {
-            @include rem(margin-right, 15px);
-            display: inline-block;
-            margin-bottom: 0;
-        }
-    }
-
-    @media screen and (max-width: $tablet-breakpoint) {
-        @include rem(margin-bottom, 20px);
-        @include rem(padding-bottom, 10px);
-        background: transparent;
-        border-bottom: 2px solid $color-grey-light;
-        height: auto;
     }
 }
 
