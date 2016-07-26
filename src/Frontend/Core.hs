@@ -789,9 +789,9 @@ pageFrame frame = do
         meta_ [name_ "viewport", content_ viewport_content]
     body_ [class_ . ST.intercalate " " $ "no-js" : bodyClasses] $ do
         headerMarkup (frame ^? frameUser)
-        div_ [class_ "page-wrapper is-not-responsive"] $ do
-             div_ [class_ "main-grid-container"] $ do
-                 div_ [class_ "grid main-grid"] $ do
+        div_ [class_ $ "page-wrapper " <> if isResponsive p then nil else " is-not-responsive"] $ do
+            div_ [class_ "main-grid-container"] $ do
+                div_ [class_ "grid main-grid"] $ do
                     renderStatusMessages `mapM_` (frame ^? frameMessages)
                     frame ^. frameBody . html
         footerMarkup (frame ^. frameDevMode) (extraFooterElems p)
