@@ -91,6 +91,7 @@ runFrontend' cfg log rp = do
 
     runSettings settings
         . createPageSamples
+        . disableCaching
         . catch404
         . serve aulaTopProxy $ aulaTop cfg app
 
