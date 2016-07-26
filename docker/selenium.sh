@@ -46,6 +46,7 @@ case "$1" in
   stop)
     killall -q -9 java
     killall -q -9 Xvfb
+    killall -q -9 x11vnc
     ;;
 
   restart)

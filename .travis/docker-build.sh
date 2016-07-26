@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 /liqd/aula/.travis/docker-link-stack-workdir.sh
-/liqd/aula/docker/selenium.sh start
+/liqd/aula/docker/selenium.sh restart
 
 # Change to the source directory which is attached as docker volume
 cd /liqd/aula
