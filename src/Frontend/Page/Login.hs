@@ -43,7 +43,7 @@ data LoginFormData = LoginFormData ST ST
 
 checkLogin :: (Monad n, v ~ HtmlT n (), ActionM m) => LoginFormData -> m (Result v User)
 checkLogin (LoginFormData uLogin pass) = do
-    muser <- query $ findUserByLogin (UserLogin uLogin)
+    muser <- query $ findUserByLogin (mkUserLogin uLogin)
     pure $ case muser of
         Just user | verifyUserPass pass (user ^. userPassword) -> pure user
         _ -> Error $ span_ [class_ "form-error"] "Falscher Nutzername und/oder falsches Passwort."

@@ -708,7 +708,7 @@ instance Arbitrary ProtoUser where
 
 arbValidUserLogin :: Gen UserLogin
 arbValidUserLogin =
-    UserLogin . cs <$>
+    mkUserLogin . cs <$>
         (choose ( Frontend.Constant.minUsernameLength
                 , Frontend.Constant.maxUsernameLength)
             >>= flip replicateM (elements ['a' .. 'z']))
