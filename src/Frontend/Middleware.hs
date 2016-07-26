@@ -93,4 +93,4 @@ addHeadersToResponse extraHeaders resp = case resp of
     ResponseRaw action resp'               -> ResponseRaw action $
                                                   addHeadersToResponse extraHeaders resp'
   where
-    updH hdrs = nubBy ((==) `on` fst) $ extraHeaders ++ hdrs
+    updH hdrs = nubBy ((==) `on` fst) $ extraHeaders <> hdrs
