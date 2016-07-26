@@ -90,7 +90,7 @@ runFrontend' cfg log rp = do
                  $ Warp.defaultSettings
 
     runSettings settings
-        . createPageSamples
+        . (if cfg ^. devMode then createPageSamples else id)
         . disableCaching
         . catch404
         . serve aulaTopProxy $ aulaTop cfg app
