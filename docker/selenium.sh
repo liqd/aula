@@ -17,12 +17,14 @@ case "$1" in
     cd /tmp/  # this is all dumping a lot of cores...
     mkdir -p $LOG_PATH
 
-    echo -n "starting Xvfb..."
+    echo -n "starting Xvfb"
     nohup Xvfb $DISPLAY -screen 0 $VNC_DIMS > $LOG_PATH/selenium-xvfb.log 2>&1 &
+    until (xdpyinfo -display $DISPLAY >/dev/null 2>&1); do echo -n "."; sleep .$RANDOM; done
     echo " ok"
 
-    echo -n "starting vnc..."
+    echo -n "starting vnc"
     nohup x11vnc -forever -usepw -shared -rfbport $VNC_PORT -display $DISPLAY > $LOG_PATH/selenium-x11vnc.log 2>&1 &
+    until (nc -z $SELENIUM_HOST $VNC_PORT); do echo -n "."; sleep .$RANDOM; done
     echo " ok"
 
     echo -n "starting hub"
@@ -44,6 +46,7 @@ case "$1" in
   stop)
     killall -q -9 java
     killall -q -9 Xvfb
+    killall -q -9 x11vnc
     ;;
 
   restart)

@@ -156,6 +156,9 @@ data User = User
 newtype UserLogin     = UserLogin     { _unUserLogin     :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 
+mkUserLogin :: ST -> UserLogin
+mkUserLogin = UserLogin . ST.toLower
+
 newtype UserFirstName = UserFirstName { _unUserFirstName :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 

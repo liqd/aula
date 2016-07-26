@@ -11,8 +11,7 @@
 --
 -- 1. sprinkle @getSource >>= writeFile "/page.html"@, @saveScreenshot "/screenshot.png"@
 --    over your 'WD' monads.
--- 2. run find out the IP address of your docker image (run `ifconfig` in a terminal), and
---    run `vncviewer 172.17.0.5:5900` from your host.
+-- 2. watch with vncviewer (see `/docs/testing.md`).
 module SeleniumSpec where
 
 import System.Timeout
