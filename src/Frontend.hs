@@ -73,15 +73,6 @@ runFrontend cfg = do
     let logMsg = log ^. msgDaemonSend
     withPersist logMsg cfg (runFrontend' cfg logMsg)
 
-runBoostrap :: Config -> Action () -> IO ()
-runBoostrap cfg action = do
-    log <- logDaemon (cfg ^. logging)
-    void $ log ^. start
-    let logMsg = log ^. msgDaemonSend
-    withPersist logMsg cfg $ \rp -> do
-        let runAction = mkRunAction (ActionEnv rp cfg logMsg)
-        unNat (exceptToFail . runAction) action
-
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
 runFrontend' :: Config -> SendLogMsg -> RunPersist -> IO ()

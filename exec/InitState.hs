@@ -4,20 +4,29 @@
 
 module Main where
 
+import Prelude hiding (log, id, (.))
+import Control.Category
+
+import Control.Lens
+import Control.Monad (void)
 import Data.List
 import Data.String.Conversions
+import Servant (unNat)
 import System.Directory
 import System.Environment (getArgs)
 import System.Exit
 import System.IO
 import Text.Show.Pretty
 
-import Frontend
 import Config
+import Daemon (logDaemon, msgDaemonSend, start)
 import DemoData (genSchoolSpace, genAdminUser)
+import Types.Prelude (exceptToFail)
 
-import Action (update)
+import Action (ActionEnv(..), update)
+import Action.Implementation
 import Data.Markdown (markdown)
+import Persistent (withPersist)
 import Persistent.Api
 
 
@@ -47,6 +56,15 @@ usage = unlines
 
 
 -- * initialize state
+
+runBoostrap :: Config -> Action () -> IO ()
+runBoostrap cfg action = do
+    log <- logDaemon (cfg ^. logging)
+    void $ log ^. start
+    let logMsg = log ^. msgDaemonSend
+    withPersist logMsg cfg $ \rp -> do
+        let runAction = mkRunAction (ActionEnv rp cfg logMsg)
+        unNat (exceptToFail . runAction) action
 
 createInitState :: Config -> Options -> IO ()
 createInitState cfg o = do
