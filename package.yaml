@@ -112,6 +112,13 @@ executables:
       - aeson-extra
       - unordered-containers
 
+  aula-init-state:
+    main: InitState.hs
+    source-dirs: exec
+    other-modules:
+    dependencies:
+      - aula
+
 tests:
   spec:
     main: Spec.hs

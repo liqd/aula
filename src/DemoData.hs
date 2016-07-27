@@ -15,7 +15,7 @@ import Control.Exception (assert)
 import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
 import Control.Monad (forM_, replicateM_, unless)
 import Data.List (nub)
-import Data.String.Conversions ((<>))
+import Data.String.Conversions ((<>), ST)
 import Servant.Missing
 import System.Directory (doesFileExist)
 import System.IO.Unsafe (unsafePerformIO)
@@ -290,6 +290,35 @@ userIdeaLocations = userRoles . _Student . re _ClassSpace . re _IdeaLocationSpac
 
 
 -- * initial DB state
+
+checkEmptyDB :: ActionPersist m => m ()
+checkEmptyDB = do
+    noUsers <- query $ views dbUserMap Map.null
+    unless noUsers $
+        throwError500 "Stopping: users are in the database!"
+
+genSchoolSpace :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m) => m ()
+genSchoolSpace = do
+    checkEmptyDB
+    update $ AddIdeaSpaceIfNotExists SchoolSpace
+
+genAdminUser
+    :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m, GenArbitrary m)
+    => ST -> ST -> m ()
+genAdminUser adminUsr adminPwd = do
+    checkEmptyDB
+    now <- getCurrentTimestamp
+    admin <- update $ AddFirstUser now ProtoUser
+        { _protoUserLogin     = Just $ mkUserLogin adminUsr
+        , _protoUserFirstName = UserFirstName adminUsr
+        , _protoUserLastName  = UserLastName adminUsr
+        , _protoUserRoleSet   = Set.singleton Admin
+        , _protoUserPassword  = InitialPassword adminPwd
+        , _protoUserEmail     = Nothing
+        , _protoUserDesc      = nil
+        }
+    updateAvatar' admin
+
 
 -- | Generate one arbitrary item of each type (idea, user, ...)
 -- plus one extra user for logging test.
