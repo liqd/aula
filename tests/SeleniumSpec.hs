@@ -60,7 +60,7 @@ spec = do
                 jsGetBase64Image "//img"
 
             -- liftIO $ print imgdata
-            -- Just (Object (fromList [("value",String "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAAV0lEQVRYR+3SsQ0AMAgEMdh/aYZwQ3HpT0LO7zx/+/y+6UD9oQQTVAHt22CCKqB9G0xQBbRvgwmqgPZtMEEV0L4NJqgC2rfBBFVA+zaYoApo3wYTVAHtDxz6ACmSkz/0AAAAAElFTkSuQmCC")]))
+            -- Just (Object (fromList [("value",String "data:image/png;base64,[...]")]))
 
             case imgdata of
                 Just (Object (HM.toList -> [("value", String value)])) ->
