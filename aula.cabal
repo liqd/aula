@@ -219,6 +219,7 @@ executable aula-avatars
   other-modules:
       Aula
       I18N
+      InitState
       RenderHtml
   default-language: Haskell2010
 
@@ -291,6 +292,7 @@ executable aula-html-dummies
   other-modules:
       Aula
       I18N
+      InitState
       ResizeAvatar
   default-language: Haskell2010
 
@@ -361,6 +363,77 @@ executable aula-i18n
     , unordered-containers
   other-modules:
       Aula
+      InitState
+      RenderHtml
+      ResizeAvatar
+  default-language: Haskell2010
+
+executable aula-init-state
+  main-is: InitState.hs
+  hs-source-dirs:
+      exec
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <4.9
+    , thentos-cookie-session >=0.9.0 && <0.10
+    , aeson
+    , aeson-pretty
+    , aeson-qq
+    , acid-state >=0.14
+    , basic-sop
+    , binary
+    , bytestring
+    , case-insensitive
+    , cassava >= 0.4.5.0
+    , containers
+    , cookie
+    , cryptonite >=0.6 && <0.16
+    , css-syntax
+    , digestive-functors
+    , digestive-functors-lucid
+    , directory
+    , elocrypt >=0.4.1 && <0.5
+    , email-validate
+    , filepath
+    , functor-infix
+    , generic-aeson
+    , generics-sop
+    , html-parse >= 0.1
+    , http-client
+    , http-media
+    , http-types
+    , JuicyPixels >=3.2.6.2 && <3.3
+    , lens
+    , lucid
+    , mime-mail
+    , mtl
+    , parsec
+    , pretty-show
+    , process
+    , QuickCheck
+    , quickcheck-instances
+    , random
+    , safecopy
+    , scrypt
+    , servant >=0.7 && <0.8
+    , servant-lucid >=0.7 && <0.8
+    , servant-server >=0.7 && <0.8
+    , stm
+    , string-conversions
+    , template-haskell
+    , text
+    , time
+    , transformers
+    , vector
+    , wai
+    , wai-app-static
+    , warp
+    , yaml
+    , zip-archive
+    , aula
+  other-modules:
+      Aula
+      I18N
       RenderHtml
       ResizeAvatar
   default-language: Haskell2010
@@ -430,6 +503,7 @@ executable aula-server
     , aula
   other-modules:
       I18N
+      InitState
       RenderHtml
       ResizeAvatar
   default-language: Haskell2010
