@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE ViewPatterns         #-}
 
-{-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-incomplete-patterns #-}
 
 -- | selenium tests.
 --
@@ -15,12 +16,12 @@
 module SeleniumSpec where
 
 import Data.Aeson
+import qualified Data.HashMap.Strict as HM
+import Data.Text as ST
 import System.Timeout
 import Test.Hspec
 import Test.WebDriver
 import Test.WebDriver.Class
-
-import Data.Text as ST
 
 import Arbitrary ()
 import AulaTests
@@ -58,8 +59,12 @@ spec = do
                 click            =<< findElem (ByXPath ".//span[@class='user-name']")
                 jsGetBase64Image "//img"
 
-            liftIO $ print imgdata
-            passes
+            -- liftIO $ print imgdata
+            -- Just (Object (fromList [("value",String "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAAV0lEQVRYR+3SsQ0AMAgEMdh/aYZwQ3HpT0LO7zx/+/y+6UD9oQQTVAHt22CCKqB9G0xQBbRvgwmqgPZtMEEV0L4NJqgC2rfBBFVA+zaYoApo3wYTVAHtDxz6ACmSkz/0AAAAAElFTkSuQmCC")]))
+
+            case imgdata of
+                Just (Object (HM.toList -> [("value", String value)])) ->
+                    ST.unpack value `shouldContain` "data:image/png;base64,"
 
 -- | Get the data of the first image we find from out of the dom.  (It would be nice to pass the
 -- result of 'findElem' to this function, but that's just a pointer into some webdriver dictionary,
