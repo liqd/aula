@@ -174,8 +174,7 @@ defaultConfig = Config
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"
     , _avatars              = "./avatars"
-    -- FIXME: BEWARE, this "secret" is hardcoded and public.
-    , _cfgCsrfSecret        = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _cfgCsrfSecret        = CsrfSecret "please-add-random-secret-here"
     , _logging              = defaultLogConfig
     , _persistConfig        = defaultPersistConfig
     , _smtpConfig           = defaultSmtpConfig
