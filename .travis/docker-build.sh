@@ -9,29 +9,34 @@ cd /liqd/aula
 QC_MAX_SUCCESS="100"
 QC_MAX_SIZE="30"
 
-while [[ $# > 1 ]]
-do
-key=$1
-case $key in
-    --qc-max-success)
-    QC_MAX_SUCCESS="$2"
-    shift
-    ;;
+while [[ $# > 1 ]]; do
+    key=$1
+    case $key in
+        --qc-max-success)
+            QC_MAX_SUCCESS="$2"
+            shift
+            ;;
 
-    --qc-max-size)
-    QC_MAX_SIZE="$2"
-    shift
-    ;;
+        --qc-max-size)
+            QC_MAX_SIZE="$2"
+            shift
+            ;;
 
-    *)
-    ;;
-esac
-shift
+        *)
+            ;;
+    esac
+    shift
 done
 
-stack install --fast --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" --coverage --allow-different-user --pedantic aula
+stack install --fast --pedantic --allow-different-user \
+    --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" \
+    aula
 
 # FIXME: Coveralls coverage
+#
+# for this to work, call stack above with extra `--coverage`.  but i
+# think there used to be a bug in stack around here somewhere.
+#
 # # Test
 # set +e
 # run-cabal-test spec --show-details=never
