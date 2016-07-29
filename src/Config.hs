@@ -17,6 +17,7 @@ module Config
     , exposedUrl
     , getSamplesPath
     , htmlStatic
+    , avatars
     , listenerInterface
     , listenerPort
     , persistConfig
@@ -112,6 +113,7 @@ data Config = Config
     , _listenerInterface    :: String
     , _listenerPort         :: Int
     , _htmlStatic           :: FilePath
+    , _avatars              :: FilePath -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
     , _persistConfig        :: PersistConfig
@@ -171,6 +173,7 @@ defaultConfig = Config
     , _listenerInterface    = "0.0.0.0"
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"
+    , _avatars              = "./static/avatars"
     -- FIXME: BEWARE, this "secret" is hardcoded and public.
     , _cfgCsrfSecret        = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
     , _logging              = defaultLogConfig
