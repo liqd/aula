@@ -72,12 +72,12 @@ data TestSuite
 instance Tag TestSuite where
     tagText = cs . show
 
+-- (In case somebody accidentally tests on a production system: change dbPath, avatars path etc.)
 testConfig :: IO Config
 testConfig = do
     cfg <- readConfig nullLog DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
-    cfg & listenerPort   .~ pop
-              -- (in case somebody accidentally tests on a production system: change dbPath.)
+    cfg & listenerPort                    .~ pop
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
