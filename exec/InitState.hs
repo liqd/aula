@@ -82,6 +82,7 @@ main = do
     setCurrentDirectoryToAulaRoot
     -- FIXME: Do not use print.
     cfg <- readConfig print CrashMissing
+    checkAvatarPathExistsAndIsEmpty cfg
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines
         [ ""

@@ -40,6 +40,7 @@ module Config
     , unsafeTimestampToLocalTime
     , aulaTimeLocale
     , checkAvatarPathExists
+    , checkAvatarPathExistsAndIsEmpty
     )
 where
 
@@ -259,3 +260,11 @@ checkAvatarPathExists cfg = do
     exists <- doesDirectoryExist $ cfg ^. avatarPath
     unless exists . throwIO . ErrorCall $
         "bad avatar directory " <> show (cfg ^. avatarPath) <> "."
+
+checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
+checkAvatarPathExistsAndIsEmpty cfg = do
+    checkAvatarPathExists cfg
+    isempty <- null . filter (not . (`elem` [".", ".."]))
+        <$> getDirectoryContents (cfg ^. avatarPath)
+    unless isempty . throwIO . ErrorCall $
+        "non-empty avatar directory " <> show (cfg ^. avatarPath) <> "."
