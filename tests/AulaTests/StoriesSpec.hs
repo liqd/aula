@@ -24,9 +24,10 @@ import qualified Action
 import qualified Persistent
 import qualified Persistent.Api as Persistent
 
-import AulaTests (testConfig)
+import AulaTests (testConfig, withServer)
 import AulaTests.Stories.DSL
 import AulaTests.Stories.Interpreter.Action
+import qualified AulaTests.Stories.Interpreter.WebDriver as WDA
 import AulaTests.Stories.Tests
 
 
@@ -38,6 +39,7 @@ spec = describe "stories" $ do
     -- the following tests that when you revert to jury phase to fix an idea and fix it, the change
     -- in the idea verdict will trigger a phase transition back to voting phase.
     story_ "Mark idea not feasable after it is marked" markIdeaAsNotFeasableAfterMarked
+    wdStory_ "Edit profile test" $ editProfile
 
 
 -- | Runs the 'Behavior' represented story with the 'Action' interpreter,
@@ -58,3 +60,13 @@ story name program expected = it name $ do
 
 story_ :: String -> Behavior () -> Spec
 story_ msg program = story msg program ()
+
+wdStory :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
+wdStory name program expected = do
+    describe "@Selenium" . around withServer $ it name $ \wreq -> do
+        x <- WDA.run wreq program
+        x `shouldBe` (Just expected)
+
+wdStory_ :: String -> Behavior () -> Spec
+wdStory_ msg program = story' msg program ()
+
