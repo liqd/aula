@@ -393,6 +393,7 @@ deleteUser = update . DeactivateUser
 
 -- * config
 
+-- FIXME: i think this is more confusing than helpful.  remove / inline?
 devMode :: MonadReaderConfig r m => m Bool
 devMode = view (getConfig . Config.devMode)
 
