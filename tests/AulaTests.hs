@@ -93,7 +93,7 @@ testConfig = do
         & persistConfig . persistenceImpl .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
-        & avatars                         .~ avt
+        & avatarPath                      .~ avt
         & pure
 
 

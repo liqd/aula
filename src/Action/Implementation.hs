@@ -205,9 +205,9 @@ runActionExcept (ActionIOExcept e) = error500 # show e
 -- NOTE: The there is a versy similar function to this one in DemoData generation.
 updateAvatarByCopy :: User -> FilePath -> Action ()
 updateAvatarByCopy user spath = do
-    avatarDir <- view (Config.getConfig . Config.avatars)
+    apath <- view (Config.getConfig . Config.avatarPath)
     actionIO $ do
         forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
-            let tpath :: FilePath = user ^. _Id . avatarFile avatarDir dim
+            let tpath :: FilePath = user ^. _Id . avatarFile apath dim
             yes <- doesFileExist tpath
             unless yes $ copyFile spath tpath

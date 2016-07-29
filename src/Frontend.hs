@@ -110,7 +110,7 @@ aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
-  :<|> waiServeDirectory (cfg ^. avatars)
+  :<|> waiServeDirectory (cfg ^. avatarPath)
   :<|> redirectPath U.listSpaces
   :<|> app
   where

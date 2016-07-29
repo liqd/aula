@@ -17,7 +17,7 @@ module Config
     , exposedUrl
     , getSamplesPath
     , htmlStatic
-    , avatars
+    , avatarPath
     , listenerInterface
     , listenerPort
     , persistConfig
@@ -113,7 +113,7 @@ data Config = Config
     , _listenerInterface    :: String
     , _listenerPort         :: Int
     , _htmlStatic           :: FilePath
-    , _avatars              :: FilePath -- avatars are stored in this directory
+    , _avatarPath           :: FilePath -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
     , _persistConfig        :: PersistConfig
@@ -173,7 +173,7 @@ defaultConfig = Config
     , _listenerInterface    = "0.0.0.0"
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"
-    , _avatars              = "./avatars"
+    , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-add-random-secret-here"
     , _logging              = defaultLogConfig
     , _persistConfig        = defaultPersistConfig

@@ -172,7 +172,7 @@ import Config
     , exposedUrl
     , delegateLikes
     , devMode
-    , avatars
+    , avatarPath
     )
 import Data.Avatar
 import Data.UriPath (absoluteUriPath)
@@ -938,11 +938,11 @@ saveAvatar
     => AUID User -> DynamicImage -> m ()
 saveAvatar uid pic = do
     let defaultAvatar = makeAvatar avatarDefaultSize pic
-    avatarDir <- view (getConfig . avatars)
-    savePngImageFile (uid ^. avatarFile avatarDir Nothing)                  defaultAvatar
-    savePngImageFile (uid ^. avatarFile avatarDir (Just avatarDefaultSize)) defaultAvatar
+    apath <- view (getConfig . avatarPath)
+    savePngImageFile (uid ^. avatarFile apath Nothing)                  defaultAvatar
+    savePngImageFile (uid ^. avatarFile apath (Just avatarDefaultSize)) defaultAvatar
     forM_ avatarExtraSizes $ \dim ->
-        savePngImageFile (uid ^. avatarFile avatarDir (Just dim)) $ makeAvatar dim pic
+        savePngImageFile (uid ^. avatarFile apath (Just dim)) $ makeAvatar dim pic
 
 class Monad m => ReadTempFile m where
     readTempFile :: FilePath -> m LBS

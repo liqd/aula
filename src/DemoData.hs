@@ -186,10 +186,10 @@ updateAvatarExpensive user file = readImageFile file >>= \case
 -- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
 updateAvatarByCopy :: User -> FilePath -> forall m . ActionM m => m ()
 updateAvatarByCopy user spath = do
-    avatarDir <- view (Config.getConfig . Config.avatars)
+    apath <- view (Config.getConfig . Config.avatarPath)
     () <- pure . unsafePerformIO $ do
         forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
-            let tpath :: FilePath = user ^. _Id . avatarFile avatarDir dim
+            let tpath :: FilePath = user ^. _Id . avatarFile apath dim
             yes <- doesFileExist tpath
             -- TODO: use system directory to copy file
             unless yes . void . system . unwords $ ["cp", show spath, show tpath]
