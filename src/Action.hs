@@ -114,7 +114,7 @@ module Action
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
     , decodeCsv
-    , ActionAvatar(readImageFile, savePngImageFile)
+    , ActionAvatar(readImageFile, savePngImageFile, addInitialAvatarImage)
     , saveAvatar
 
     , MonadServantErr, ThrowServantErr(..)
@@ -930,6 +930,7 @@ class Monad m => ActionAvatar m where
     -- FIXME: use an ADT here for the three cases (unless it gets easier again once we've hacked DF).
     readImageFile :: FilePath -> m (Maybe (Either String DynamicImage))
     savePngImageFile :: FilePath -> DynamicImage -> m ()
+    addInitialAvatarImage :: User -> m ()
 
 saveAvatar
     :: (MonadReaderConfig r m, ActionAvatar m)

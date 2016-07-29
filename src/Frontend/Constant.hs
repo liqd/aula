@@ -50,3 +50,6 @@ avatarExtraSizes = [64, 100, 300]
 -- in Config.hs so changing nginx config doesn't make recompilation necessary.
 avatarMaxByteSize :: ST
 avatarMaxByteSize = "10MB"
+
+initialAvatarsPath :: String
+initialAvatarsPath = "static/init/avatars"

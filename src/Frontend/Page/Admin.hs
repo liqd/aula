@@ -859,8 +859,9 @@ instance FormPage AdminCreateClass where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
-adminCreateClass :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m)
-                              => FormPageHandler m AdminCreateClass
+adminCreateClass
+    :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m, ActionAvatar m)
+    => FormPageHandler m AdminCreateClass
 adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
   where
     q :: BatchCreateUsersFormData -> m ()
@@ -882,7 +883,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
     p roles (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
       void $ do
         pwd <- mkRandomPassword
-        addWithCurrentUser AddUser ProtoUser
+        user <- addWithCurrentUser AddUser ProtoUser
             { _protoUserLogin     = mLogin
             , _protoUserFirstName = firstName
             , _protoUserLastName  = lastName
@@ -891,6 +892,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             , _protoUserEmail     = mEmail
             , _protoUserDesc      = nil
             }
+        addInitialAvatarImage user
 
     msgOk :: ST
     msgOk = "Die Klasse wurde angelegt."
