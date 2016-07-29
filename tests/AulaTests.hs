@@ -19,7 +19,10 @@ import Control.Concurrent.MVar (MVar, newMVar, modifyMVar)
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.String.Conversions
 import Network.Wreq.Types (Postable, StatusChecker)
+import System.Directory (getTemporaryDirectory)
+import System.IO.Temp (createTempDirectory)
 import System.IO.Unsafe (unsafePerformIO)
+import System.Process (system)
 import System.Random (Random)
 import Test.Hspec.Core.Spec (SpecM(..))
 import Test.Hspec.Wai (WaiExpectation)
@@ -77,11 +80,20 @@ testConfig :: IO Config
 testConfig = do
     cfg <- readConfig nullLog DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
+    avt <- do
+        -- each test suite run accumulates a few MB of avatar images; since using
+        -- 'withSystemTempDirectory' would require significant refactorings of the test suite, we
+        -- simply remove all avatar test locations ever created here.  note that this is not good
+        -- for concurrent testing.
+        tmpPool <- (<> "aula-test-avatar-static") <$> getTemporaryDirectory
+        void . system . unwords $ ["rm -rf", tmpPool, "; mkdir -p", tmpPool]
+        createTempDirectory tmpPool "d"
     cfg & listenerPort                    .~ pop
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
+        & avatars                         .~ avt
         & pure
 
 
