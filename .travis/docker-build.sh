@@ -14,10 +14,12 @@ while [[ $# > 1 ]]; do
     case $key in
         --qc-max-success)
             QC_MAX_SUCCESS="$2"
+            shift
             ;;
 
         --qc-max-size)
             QC_MAX_SIZE="$2"
+            shift
             ;;
 
         *)
