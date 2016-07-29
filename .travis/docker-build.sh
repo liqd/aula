@@ -28,10 +28,13 @@ done
 
 stack install --fast --pedantic --allow-different-user \
     --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" \
-    --coverage \
     aula
 
 # FIXME: Coveralls coverage
+#
+# for this to work, call stack above with extra `--coverage`.  but i
+# think there used to be a bug in stack around here somewhere.
+#
 # # Test
 # set +e
 # run-cabal-test spec --show-details=never
