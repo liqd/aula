@@ -10,3 +10,6 @@
 [submodule "static/third-party/showdown"]
 	path = static/third-party/showdown
 	url = https://github.com/showdownjs/showdown.git
+[submodule "submodules/hs-webdriver"]
+	path = submodules/hs-webdriver
+	url = https://github.com/zerobuzz/hs-webdriver
