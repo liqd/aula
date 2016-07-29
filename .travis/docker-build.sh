@@ -26,7 +26,10 @@ while [[ $# > 1 ]]; do
     shift
 done
 
-stack install --fast --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" --coverage --allow-different-user --pedantic aula
+stack install --fast --pedantic --allow-different-user \
+    --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" \
+    --coverage \
+    aula
 
 # FIXME: Coveralls coverage
 # # Test
