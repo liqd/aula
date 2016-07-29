@@ -17,6 +17,7 @@ main = do
     -- FIXME: Do not use print.
     cfg <- readConfig print CrashMissing
     checkSendMail cfg
+    checkAvatarPathExists cfg
 
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines

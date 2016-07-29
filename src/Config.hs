@@ -39,11 +39,13 @@ module Config
     , eventLogPath
     , unsafeTimestampToLocalTime
     , aulaTimeLocale
+    , checkAvatarPathExists
     )
 where
 
 import Control.Exception (throwIO, ErrorCall(ErrorCall))
 import Control.Lens
+import Control.Monad (unless)
 import Control.Monad.Reader (MonadReader)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
@@ -250,3 +252,10 @@ aulaTimeLocale :: TimeLocale
 aulaTimeLocale = defaultTimeLocale
   { knownTimeZones = knownTimeZones defaultTimeLocale
                   <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
+
+
+checkAvatarPathExists :: Config -> IO ()
+checkAvatarPathExists cfg = do
+    exists <- doesDirectoryExist $ cfg ^. avatarPath
+    unless exists . throwIO . ErrorCall $
+        "bad avatar directory " <> show (cfg ^. avatarPath) <> "."
