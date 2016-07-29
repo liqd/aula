@@ -264,7 +264,7 @@ checkAvatarPathExists cfg = do
 checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
 checkAvatarPathExistsAndIsEmpty cfg = do
     checkAvatarPathExists cfg
-    isempty <- null . filter (not . (`elem` [".", ".."]))
+    isempty <- all (`elem` [".", ".."])
         <$> getDirectoryContents (cfg ^. avatarPath)
     unless isempty . throwIO . ErrorCall $
         "non-empty avatar directory " <> show (cfg ^. avatarPath) <> "."
