@@ -43,6 +43,7 @@ instance Monad m => CleanupTempFiles (DummyT ActionExcept m) where
 instance Monad m => ActionAvatar (DummyT ActionExcept m) where
     readImageFile _      = notImplemented "ActionAvatar" "readImageFile"
     savePngImageFile _ _ = notImplemented "ActionAvatar" "savePngImageFile"
+    addInitialAvatarImage _ = notImplemented "ActionAvatar" "addInitialAvatarImage"
 
 instance Monad m => ActionLog (DummyT ActionExcept m) where
     log _ = pure ()

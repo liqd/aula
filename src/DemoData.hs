@@ -12,8 +12,12 @@ where
 
 import Control.Applicative ((<**>))
 import Control.Exception (assert)
-import Control.Lens ((^.), (^..), (^?), (.~), (&), each, set, re, _Just, elemOf, Fold, views)
-import Control.Monad (forM_, replicateM_, unless)
+import Control.Lens
+    ( (^.), (^..), (^?), (.~), (&)
+    , each, set, re, _Just, elemOf, Fold
+    , view, views
+    )
+import Control.Monad (forM_, replicateM_, unless, void)
 import Data.List (nub)
 import Data.String.Conversions ((<>), ST)
 import Servant.Missing
@@ -170,7 +174,9 @@ genCommentVote comments_in_context students = do
     action student <$> arb
 
 -- | Consider calling 'updateAvatar' instead of this!
-updateAvatarExpensive :: User -> FilePath -> forall m . ActionAvatar m => m ()
+updateAvatarExpensive
+    :: User -> FilePath
+    -> forall m r . (Config.MonadReaderConfig r m, ActionAvatar m) => m ()
 updateAvatarExpensive user file = readImageFile file >>= \case
     Just (Right pic) -> saveAvatar (user ^. _Id) pic
     Just (Left err)  -> fail err
@@ -178,22 +184,17 @@ updateAvatarExpensive user file = readImageFile file >>= \case
 
 -- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
 -- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
-updateAvatar :: User -> FilePath -> forall m . ActionAvatar m => m ()
-updateAvatar user spath = do
+updateAvatarByCopy :: User -> FilePath -> forall m . ActionM m => m ()
+updateAvatarByCopy user spath = do
+    apath <- view (Config.getConfig . Config.avatarPath)
     () <- pure . unsafePerformIO $ do
         forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
-            let tpath :: FilePath = user ^. _Id . avatarFile dim
+            let tpath :: FilePath = user ^. _Id . avatarFile apath dim
             yes <- doesFileExist tpath
-            unless yes $ do
-                _ <- system . unwords $ ["ln -s", show spath, show tpath]
-                pure ()
+            -- TODO: use system directory to copy file
+            unless yes . void . system . unwords $ ["cp", show spath, show tpath]
+        pure ()
     pure ()
-
--- | Call 'updateAvatar' with an arbitrary fish image.
-updateAvatar' :: User -> forall m . (ActionAvatar m, GenArbitrary m) => m ()
-updateAvatar' user = do
-    file <- genGen (elements fishAvatars)
-    updateAvatar user file
 
 type ProtoUserWithAvatar = (Proto User, FilePath)
 
@@ -202,14 +203,14 @@ addUserWithEmailFromConfig (protoUser, avatar) = do
     user <- setEmailFromConfig protoUser >>= addWithCurrentUser AddUser
     encryptPassword (protoUser ^. protoUserPassword . unInitialPassword)
         >>= update . SetUserPass (user ^. _Id)
-    updateAvatar user avatar
+    updateAvatarByCopy user avatar
     pure user
 
 addFirstUserWithEmailFromConfig :: ProtoUserWithAvatar -> forall m . ActionM m => m User
 addFirstUserWithEmailFromConfig (pu, avatar) = do
     now <- getCurrentTimestamp
     user <- setEmailFromConfig pu >>= update . AddFirstUser now
-    updateAvatar user avatar
+    updateAvatarByCopy user avatar
     pure user
 
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
@@ -303,7 +304,8 @@ genSchoolSpace = do
     update $ AddIdeaSpaceIfNotExists SchoolSpace
 
 genAdminUser
-    :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m, GenArbitrary m)
+    :: ( ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m
+       , GenArbitrary m, Config.MonadReaderConfig r m)
     => ST -> ST -> m ()
 genAdminUser adminUsr adminPwd = do
     checkEmptyDB
@@ -317,7 +319,7 @@ genAdminUser adminUsr adminPwd = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         }
-    updateAvatar' admin
+    addInitialAvatarImage admin
 
 
 -- | Generate one arbitrary item of each type (idea, user, ...)
@@ -325,7 +327,10 @@ genAdminUser adminUsr adminPwd = do
 --
 -- Note that no user is getting logged in by this code.  Some or all events may not be recorded in
 -- the event procotol for moderators.
-genInitialTestDb :: (ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m, GenArbitrary m) => m ()
+genInitialTestDb
+    :: ( ActionPersist m, ActionAvatar m, ActionCurrentTimestamp m
+       , GenArbitrary m, Config.MonadReaderConfig r m)
+    => m ()
 genInitialTestDb = do
     noUsers <- query $ views dbUserMap Map.null
     unless noUsers $
@@ -346,7 +351,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         }
-    updateAvatar' user1
+    addInitialAvatarImage user1
 
     user2 <- update $ AddUser (EnvWith user1 now ProtoUser
         { _protoUserLogin     = Just "godmin"
@@ -357,7 +362,7 @@ genInitialTestDb = do
         , _protoUserEmail     = Nothing
         , _protoUserDesc      = nil
         })
-    updateAvatar' user2
+    addInitialAvatarImage user2
 
     _wildIdea <- update $ AddIdea (EnvWith user1 now ProtoIdea
             { _protoIdeaTitle    = "wild-idea-title"

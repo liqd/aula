@@ -17,6 +17,7 @@ module Config
     , exposedUrl
     , getSamplesPath
     , htmlStatic
+    , avatarPath
     , listenerInterface
     , listenerPort
     , persistConfig
@@ -38,11 +39,14 @@ module Config
     , eventLogPath
     , unsafeTimestampToLocalTime
     , aulaTimeLocale
+    , checkAvatarPathExists
+    , checkAvatarPathExistsAndIsEmpty
     )
 where
 
 import Control.Exception (throwIO, ErrorCall(ErrorCall))
 import Control.Lens
+import Control.Monad (unless)
 import Control.Monad.Reader (MonadReader)
 import Data.Functor.Infix ((<$$>))
 import Data.Maybe (fromMaybe)
@@ -112,6 +116,7 @@ data Config = Config
     , _listenerInterface    :: String
     , _listenerPort         :: Int
     , _htmlStatic           :: FilePath
+    , _avatarPath           :: FilePath -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
     , _persistConfig        :: PersistConfig
@@ -171,8 +176,8 @@ defaultConfig = Config
     , _listenerInterface    = "0.0.0.0"
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"
-    -- FIXME: BEWARE, this "secret" is hardcoded and public.
-    , _cfgCsrfSecret        = CsrfSecret "1daf3741e8a9ae1b39fd7e9cc7bab44ee31b6c3119ab5c3b05ac33cbb543289c"
+    , _avatarPath           = "./avatars"
+    , _cfgCsrfSecret        = CsrfSecret "please-add-random-secret-here"
     , _logging              = defaultLogConfig
     , _persistConfig        = defaultPersistConfig
     , _smtpConfig           = defaultSmtpConfig
@@ -248,3 +253,18 @@ aulaTimeLocale :: TimeLocale
 aulaTimeLocale = defaultTimeLocale
   { knownTimeZones = knownTimeZones defaultTimeLocale
                   <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
+
+
+checkAvatarPathExists :: Config -> IO ()
+checkAvatarPathExists cfg = do
+    exists <- doesDirectoryExist $ cfg ^. avatarPath
+    unless exists . throwIO . ErrorCall $
+        "bad avatar directory " <> show (cfg ^. avatarPath) <> "."
+
+checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
+checkAvatarPathExistsAndIsEmpty cfg = do
+    checkAvatarPathExists cfg
+    isempty <- all (`elem` [".", ".."])
+        <$> getDirectoryContents (cfg ^. avatarPath)
+    unless isempty . throwIO . ErrorCall $
+        "non-empty avatar directory " <> show (cfg ^. avatarPath) <> "."

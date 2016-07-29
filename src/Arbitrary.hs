@@ -1167,13 +1167,9 @@ someOf n m g = (`replicateM` g) =<< elements [n..m]
 topLevelDomains :: [ST]
 topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 
-
-fishAvatarsPath :: FilePath
-fishAvatarsPath = "static/demo/avatars"
-
 fishAvatarsIO :: IO [FilePath]
 fishAvatarsIO = do
-    dir <- (</> fishAvatarsPath) <$> getCurrentDirectory
+    dir <- (</> Frontend.Constant.initialAvatarsPath) <$> getCurrentDirectory
     fmap (dir </>) . List.filter (\(h:_) -> h /= '.') <$> getDirectoryContents dir
 
 {-# NOINLINE fishAvatars #-}

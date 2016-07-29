@@ -114,7 +114,7 @@ module Action
     , ReadTempFile(readTempFile), readTempCsvFile
     , CleanupTempFiles(cleanupTempFiles)
     , decodeCsv
-    , ActionAvatar(readImageFile, savePngImageFile)
+    , ActionAvatar(readImageFile, savePngImageFile, addInitialAvatarImage)
     , saveAvatar
 
     , MonadServantErr, ThrowServantErr(..)
@@ -172,6 +172,7 @@ import Config
     , exposedUrl
     , delegateLikes
     , devMode
+    , avatarPath
     )
 import Data.Avatar
 import Data.UriPath (absoluteUriPath)
@@ -392,6 +393,7 @@ deleteUser = update . DeactivateUser
 
 -- * config
 
+-- FIXME: i think this is more confusing than helpful.  remove / inline?
 devMode :: MonadReaderConfig r m => m Bool
 devMode = view (getConfig . Config.devMode)
 
@@ -929,14 +931,18 @@ class Monad m => ActionAvatar m where
     -- FIXME: use an ADT here for the three cases (unless it gets easier again once we've hacked DF).
     readImageFile :: FilePath -> m (Maybe (Either String DynamicImage))
     savePngImageFile :: FilePath -> DynamicImage -> m ()
+    addInitialAvatarImage :: User -> m ()
 
-saveAvatar :: ActionAvatar m => AUID User -> DynamicImage -> m ()
+saveAvatar
+    :: (MonadReaderConfig r m, ActionAvatar m)
+    => AUID User -> DynamicImage -> m ()
 saveAvatar uid pic = do
     let defaultAvatar = makeAvatar avatarDefaultSize pic
-    savePngImageFile (uid ^. avatarFile Nothing)                  defaultAvatar
-    savePngImageFile (uid ^. avatarFile (Just avatarDefaultSize)) defaultAvatar
+    apath <- view (getConfig . avatarPath)
+    savePngImageFile (uid ^. avatarFile apath Nothing)                  defaultAvatar
+    savePngImageFile (uid ^. avatarFile apath (Just avatarDefaultSize)) defaultAvatar
     forM_ avatarExtraSizes $ \dim ->
-        savePngImageFile (uid ^. avatarFile (Just dim)) $ makeAvatar dim pic
+        savePngImageFile (uid ^. avatarFile apath (Just dim)) $ makeAvatar dim pic
 
 class Monad m => ReadTempFile m where
     readTempFile :: FilePath -> m LBS

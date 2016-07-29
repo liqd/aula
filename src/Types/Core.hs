@@ -591,14 +591,17 @@ data DScopeFull =
 
 type AvatarDimension = Int
 
-avatarFile :: Maybe AvatarDimension -> Getter (AUID a) FilePath
-avatarFile mdim = to $ \uid -> "static" </> "avatars" </> cs (uriPart uid) <> sdim <.> "png"
+avatarPng :: Maybe AvatarDimension -> AUID a -> FilePath
+avatarPng mdim uid = cs (uriPart uid) <> sdim <.> "png"
   where
     sdim = mdim ^. _Just . showed . to ("-" <>)
 
+avatarFile :: FilePath -> Maybe AvatarDimension -> Getter (AUID a) FilePath
+avatarFile avatarsDir mdim = to $ \uid -> avatarsDir </> avatarPng mdim uid
+
 -- | See "Frontend.Constant.avatarDefaultSize"
 avatarUrl :: AvatarDimension -> Getter (AUID a) URL
-avatarUrl dim = to $ \uid -> "/" <> uid ^. avatarFile mdim . csi
+avatarUrl dim = to (\uid -> "/avatar" </> avatarPng mdim uid) . csi
   where
     mdim | dim == avatarDefaultSize = Nothing
          | otherwise                = Just dim

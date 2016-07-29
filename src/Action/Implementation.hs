@@ -31,10 +31,13 @@ import "cryptonite" Crypto.Random (MonadRandom(..))
 import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
 import Data.String.Conversions (LBS, cs)
+import Data.List as List (filter)
 import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
+import System.Directory (copyFile, doesFileExist, getCurrentDirectory, getDirectoryContents)
+import System.FilePath hiding (isValid)
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
 import Thentos.CookieSession.Types (freshSessionToken)
@@ -46,6 +49,7 @@ import qualified Thentos.CookieSession.CSRF as CSRF (checkCsrfToken)
 
 import Action
 import Config
+import Frontend.Constant
 import Logger.EventLog
 import Persistent
 import Persistent.Api
@@ -164,6 +168,14 @@ instance ActionAvatar Action where
             else pure Nothing
 
     savePngImageFile p = actionIO . savePngImage p
+    addInitialAvatarImage user = do
+        initialAvatars <- actionIO $ do
+            dir <- (</> initialAvatarsPath) <$> getCurrentDirectory
+            fmap (dir </>) . List.filter (\(h:_) -> h /= '.') <$> getDirectoryContents dir
+
+        file <- genGen (Test.QuickCheck.elements initialAvatars)
+        updateAvatarByCopy user file
+
 
 -- | Creates a natural transformation from Action to the servant handler monad.
 -- See Frontend.runFrontend for the persistency of @UserState@.
@@ -186,3 +198,16 @@ runActionExcept (ActionPersistExcept pe) = runPersistExcept pe
 runActionExcept (ActionSendMailExcept e) = error500 # show e
 runActionExcept (ActionEventLogExcept e) = error500 # show e
 runActionExcept (ActionIOExcept e) = error500 # show e
+
+
+-- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
+-- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
+-- NOTE: The there is a versy similar function to this one in DemoData generation.
+updateAvatarByCopy :: User -> FilePath -> Action ()
+updateAvatarByCopy user spath = do
+    apath <- view (Config.getConfig . Config.avatarPath)
+    actionIO $ do
+        forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
+            let tpath :: FilePath = user ^. _Id . avatarFile apath dim
+            yes <- doesFileExist tpath
+            unless yes $ copyFile spath tpath

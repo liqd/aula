@@ -101,6 +101,7 @@ runFrontend' cfg log rp = do
 type AulaTop
     =  "samples" :> Raw
   :<|> "static"  :> Raw
+  :<|> "avatar"  :> Raw
   :<|> GetH Redirect
   :<|> Raw
 
@@ -109,6 +110,7 @@ aulaTop cfg app =
        (\req cont -> getSamplesPath >>= \path ->
           waiServeDirectory path req cont)
   :<|> waiServeDirectory (cfg ^. htmlStatic)
+  :<|> waiServeDirectory (cfg ^. avatarPath)
   :<|> redirectPath U.listSpaces
   :<|> app
   where
