@@ -9,24 +9,23 @@ cd /liqd/aula
 QC_MAX_SUCCESS="100"
 QC_MAX_SIZE="30"
 
-while [[ $# > 1 ]]
-do
-key=$1
-case $key in
-    --qc-max-success)
-    QC_MAX_SUCCESS="$2"
-    shift
-    ;;
+while [[ $# > 1 ]]; do
+    key=$1
+    case $key in
+        --qc-max-success)
+            QC_MAX_SUCCESS="$2"
+            shift
+            ;;
 
-    --qc-max-size)
-    QC_MAX_SIZE="$2"
-    shift
-    ;;
+        --qc-max-size)
+            QC_MAX_SIZE="$2"
+            shift
+            ;;
 
-    *)
-    ;;
-esac
-shift
+        *)
+            ;;
+    esac
+    shift
 done
 
 stack install --fast --test --test-arguments "--qc-max-success=${QC_MAX_SUCCESS} --qc-max-size=${QC_MAX_SIZE}" --coverage --allow-different-user --pedantic aula
