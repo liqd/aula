@@ -89,7 +89,7 @@ main = do
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines
         [ ""
-        , "this is aula!"
+        , "this is aula-init-state!"
         , "\nrelease:"
         , Config.releaseVersion
         , "\nroot path:"
