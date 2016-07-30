@@ -22,7 +22,7 @@ module Config
     , listenerPort
     , persistConfig
     , persistenceImpl
-    , readConfig
+    , readConfig, configFilePath
     , releaseVersion
     , senderEmail
     , senderName
@@ -41,6 +41,7 @@ module Config
     , aulaTimeLocale
     , checkAvatarPathExists
     , checkAvatarPathExistsAndIsEmpty
+    , cfgCsrfSecret
     )
 where
 
@@ -177,7 +178,7 @@ defaultConfig = Config
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
-    , _cfgCsrfSecret        = CsrfSecret "please-add-random-secret-here"
+    , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"
     , _logging              = defaultLogConfig
     , _persistConfig        = defaultPersistConfig
     , _smtpConfig           = defaultSmtpConfig

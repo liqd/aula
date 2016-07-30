@@ -9,6 +9,7 @@ import Control.Lens
 import Control.Monad (void)
 import Data.List
 import Data.String.Conversions
+import Data.Yaml
 import Prelude hiding (log, id, (.))
 import Servant (unNat)
 import System.Directory
@@ -16,6 +17,9 @@ import System.Environment (getArgs)
 import System.Exit
 import System.IO
 import Text.Show.Pretty
+import Thentos.CookieSession.CSRF
+
+import qualified Data.ByteString as BS
 
 import Action (ActionEnv(..), update)
 import Action.Implementation
@@ -73,6 +77,19 @@ createInitState cfg o = do
         update $ SetTermsOfUse terms
 
 
+-- * initialize csrf token in aula.yaml
+
+initCsrfToken :: IO ()
+initCsrfToken = do
+    cfg <- readConfig print CrashMissing
+    rnd <- genCsrfSecret
+    writeConfig . (cfgCsrfSecret .~ rnd) $ cfg
+
+-- | Overwrites all manual changes.  use with care!
+writeConfig :: Config -> IO ()
+writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode cfg)
+
+
 -- * main
 
 main :: IO ()
@@ -98,4 +115,7 @@ main = do
     args <- getArgs
     case options args of
         Nothing -> putStrLn usage >> exitFailure
-        Just o  -> createInitState cfg o >> putStrLn "DONE!"
+        Just o  -> do
+            createInitState cfg o
+            initCsrfToken
+            putStrLn "DONE!"
