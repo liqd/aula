@@ -586,7 +586,7 @@ judgeIdeaNote juryType = Note
         IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
     labelText = case juryType of
         IdeaFeasible    -> "Möchten Sie die Idee kommentieren?"
-        IdeaNotFeasible -> "Bitte formulieren Sie eine Begründung!"
+        IdeaNotFeasible -> "Idee ist nicht durchführbar. Begründung:"
 
 instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue
