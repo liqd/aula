@@ -4,13 +4,12 @@
 
 module Main where
 
-import Prelude hiding (log, id, (.))
 import Control.Category
-
 import Control.Lens
 import Control.Monad (void)
 import Data.List
 import Data.String.Conversions
+import Prelude hiding (log, id, (.))
 import Servant (unNat)
 import System.Directory
 import System.Environment (getArgs)
@@ -18,16 +17,15 @@ import System.Exit
 import System.IO
 import Text.Show.Pretty
 
-import Config
-import Daemon (logDaemon, msgDaemonSend, start)
-import DemoData (genSchoolSpace, genAdminUser)
-import Types.Prelude (exceptToFail)
-
 import Action (ActionEnv(..), update)
 import Action.Implementation
+import Config
+import Daemon (logDaemon, msgDaemonSend, start)
 import Data.Markdown (markdown)
-import Persistent (withPersist)
+import DemoData (genSchoolSpace, genAdminUser)
 import Persistent.Api
+import Persistent (withPersist)
+import Types.Prelude (exceptToFail)
 
 
 -- * options
