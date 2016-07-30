@@ -544,7 +544,7 @@ commentIdeaNote :: Note Idea
 commentIdeaNote = Note
     { noteHeaderText                = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
     , noteExplanation               = Nothing
-    , noteLabelText                 = "Was möchtest du sagen?"
+    , noteLabelText                 = "Was möchtest du sagen? Hast du Fragen?"
     , noteFieldNameInValiationError = "Verbesserungsvorschlag"
     }
 
