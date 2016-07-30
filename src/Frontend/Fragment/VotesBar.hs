@@ -95,7 +95,7 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                 = postButton_
                     [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
                     (U.delikeIdea idea)
-                    "Du willst diese Idee auf den Tisch legen"
+                    "Doch nicht auf den Tisch"
             | otherwise
                 = postButton_
                     [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
