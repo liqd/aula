@@ -15,8 +15,9 @@ import Data.Proxy
 import Data.Time
 import Data.String.Conversions (ST, cs)
 import Data.Typeable (Typeable, typeOf)
+import Lucid.Base (Attribute(Attribute))
 
-import Frontend.Core (aulaTypeAttr)
+import Frontend.Core (semanticDivAttr)
 import qualified Frontend.Page as Page
 import Types.Instances.Optics
 
@@ -201,7 +202,7 @@ oneOf ps = do
 
 semanticDivSelector :: (Typeable p) => Proxy p -> Selector
 semanticDivSelector p =
-    let (dataAttr, value) = aulaTypeAttr (unProxy p)
+    let Attribute dataAttr value = semanticDivAttr (unProxy p)
     in ByXPath $ ".//div[@" <> dataAttr <> "='" <> value <> "']"
 
 unProxy :: (Typeable p) => Proxy p -> p

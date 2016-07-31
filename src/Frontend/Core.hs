@@ -27,7 +27,7 @@ module Frontend.Core
     , GetH, PostH, FormHandler, GetCSV, Redirect
 
       -- * helpers for handlers
-    , semanticDiv, semanticDiv', aulaTypeAttr
+    , semanticDiv, semanticDiv', semanticDivAttr
     , html
     , FormCS
     , IsTab, ClientDevice(..)
@@ -260,10 +260,10 @@ semanticDiv :: forall m a. (Monad m, Typeable a) => a -> HtmlT m () -> HtmlT m (
 semanticDiv = semanticDiv' []
 
 semanticDiv' :: forall m a. (Monad m, Typeable a) => [Attribute] -> a -> HtmlT m () -> HtmlT m ()
-semanticDiv' attrs t = div_ $ uncurry makeAttribute (aulaTypeAttr t) : attrs
+semanticDiv' attrs t = div_ $ semanticDivAttr t : attrs
 
-aulaTypeAttr :: forall a . Typeable a => a -> (ST, ST)
-aulaTypeAttr t = ("data-aula-type", cs . show $ typeOf t)
+semanticDivAttr :: forall a . Typeable a => a -> Attribute
+semanticDivAttr = makeAttribute "data-aula-type" . cs . show . typeOf
 
 type FormCS m r s = forall n.
     (Monad n, Monad m, ConvertibleStrings r String, ConvertibleStrings String s)
