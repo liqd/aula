@@ -31,13 +31,14 @@ import AulaTests.Stories.DSL
 
 import Types.Core
 
-{-
-IDEAS:
+{- FUTUREWORK:
+
  * Page controller objects could use the digestive functors library
    to generate WebDriver controls.
  * Should we navigate to the page if we are not there?
  * Check the state changes after an effect
  * Implement more steps
+
 -}
 
 wdConfig :: WDConfig

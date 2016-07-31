@@ -323,6 +323,7 @@ runClient (Free (EditProfile _img _desc k)) = do
     -- FIXME: Implement
     runClient k
 
+
 -- * helpers
 
 findIdeaByTitle :: (ActionM m) => IdeaTitle -> ActionClient m (Maybe Idea)

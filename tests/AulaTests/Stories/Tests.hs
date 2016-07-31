@@ -79,13 +79,13 @@ someUserBehavior = do
     deleteIdea idea1
     logout
 
-
 editUserProfile :: Behavior ()
 editUserProfile = do
     login "admin" "pssst"
     checkProfile
     editProfile (createImage "me" 0 True) "I am the new admin user."
     logout
+
 
 -- * snippets
 
