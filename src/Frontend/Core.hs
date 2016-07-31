@@ -807,7 +807,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
             Just usr -> do
                 ul_ [class_ "main-header-menu"] $ do
                     li_ $ a_ [href_ P.listSpaces] "Start"
-                    li_ $ a_ [href_ P.delegationView] "Beauftragungsnetzwerk"
+                    li_ $ a_ [href_ P.delegationView] "Beauftragungen"
 
                 div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu", title_ "Optionen"] $ do

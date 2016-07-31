@@ -544,7 +544,7 @@ commentIdeaNote :: Note Idea
 commentIdeaNote = Note
     { noteHeaderText                = ("Verbesserungsvorschlag zu " <>) . view ideaTitle
     , noteExplanation               = Nothing
-    , noteLabelText                 = "Was möchtest du sagen?"
+    , noteLabelText                 = "Was möchtest du sagen? Hast du Fragen?"
     , noteFieldNameInValiationError = "Verbesserungsvorschlag"
     }
 
@@ -586,7 +586,7 @@ judgeIdeaNote juryType = Note
         IdeaNotFeasible -> "[Abgelehnt als nicht umsetzbar] "
     labelText = case juryType of
         IdeaFeasible    -> "Möchten Sie die Idee kommentieren?"
-        IdeaNotFeasible -> "Bitte formulieren Sie eine Begründung!"
+        IdeaNotFeasible -> "Idee ist nicht durchführbar. Begründung:"
 
 instance FormPage JudgeIdea where
     type FormPagePayload JudgeIdea = IdeaJuryResultValue

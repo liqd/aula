@@ -151,7 +151,7 @@ instance ToHtml PageOverviewOfTopics where
                                     topic ^. topicDesc  . html
 
                                 span_ [class_ "theme-grid-item-link"]
-                                    "aufklappen")
+                                    "Thema anzeigen")
                 topics
 
 instance Page PageOverviewOfTopics where
@@ -170,7 +170,7 @@ instance ToHtml Tabs where
         li_ [class_ . ST.unwords $
              "tab-item tab-item-topics" : ["m-active" | activeTab == Topics]] $ do
             a_ [href_ $ U.listTopics space] $ do
-                "Ideen auf dem Tisch " >> toHtml (spaceDesc space)
+                "Themen auf dem Tisch " >> toHtml (spaceDesc space)
       where
         spaceDesc ispace = "der " <> uilabelST ispace
         loc              = IdeaLocationSpace space

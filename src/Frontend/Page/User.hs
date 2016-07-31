@@ -480,7 +480,7 @@ instance FormPage EditUserProfile where
                         p_ $ do
                             "Es darf nicht größer sein als " >> avatarMaxByteSize ^. html >> "."
                     label_ $ do
-                        span_ [class_ "label-text"] "Avatar"
+                        span_ [class_ "label-text"] "Profilbild"
                         DF.inputFile "avatar" v
                         br_ nil
                         br_ nil
