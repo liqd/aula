@@ -664,6 +664,12 @@ instance FormPage AdminEditUser where
                 h1_ [class_ "admin-main-heading"] $ do
                     span_ [class_ "label-text"] "Login"
                     inputText_ [class_ "m-stretch"] "login" v
+
+                -- For some reason the first form element inside another
+                -- form element is not rendered in the HTML DOM. This is
+                -- a hack make the first remove role element a rendered one.
+                postButton_ [hidden_ ""] U.Broken ""
+
                 table_ [class_ "admin-roles"] $ do
                     thead_ . tr_ $ do
                         th_ "Nutzerrolle"
