@@ -5,8 +5,8 @@
 module Main where
 
 import Control.Category
-import Control.Lens
-import Control.Monad (void)
+import Control.Lens ((^.), (.~))
+import Control.Monad (filterM, void)
 import Data.List
 import Data.String.Conversions
 import Data.Yaml
@@ -14,6 +14,7 @@ import Prelude hiding (log, id, (.))
 import Servant (unNat)
 import System.Directory
 import System.Environment (getArgs)
+import System.FilePath ((</>))
 import System.Exit
 import System.IO
 import Text.Show.Pretty
@@ -31,6 +32,8 @@ import Persistent.Api
 import Persistent (withPersist)
 import Types.Prelude (exceptToFail)
 
+import Paths_aula
+import Data.Tree
 
 -- * options
 
@@ -68,6 +71,28 @@ runBoostrap cfg action = do
         let runAction = mkRunAction (ActionEnv rp cfg logMsg)
         unNat (exceptToFail . runAction) action
 
+copyDir :: FilePath -> FilePath -> IO ()
+copyDir from to = unfoldTreeM dirTree (Left "") >>= copyTree
+  where
+    usefull = not . (`elem` [".", ".."])
+    dirTree f@(Right _path) = pure (f, [])
+    dirTree d@(Left path) = do
+        contents <- (map (path </>) . filter usefull) <$> getDirectoryContents (from </> path)
+        dirs  <- filterM (doesDirectoryExist . (from </>)) contents
+        files <- filterM (doesFileExist      . (from </>)) contents
+        pure (d, map Left dirs <> map Right files)
+
+    copyTree (Node (Right file) []) = copyFile (from </> file) (to </> file)
+    copyTree (Node (Right _file) _) = error "copyDir: impossible case."
+    copyTree (Node (Left dir) contents) = do
+        createDirectoryIfMissing True (to </> dir)
+        mapM_ copyTree contents
+
+copyStaticDir :: Config -> IO ()
+copyStaticDir cfg = do
+    staticSrc <- fmap (</> "static") Paths_aula.getDataDir
+    copyDir staticSrc (cfg ^. htmlStatic)
+
 createInitState :: Config -> Options -> IO ()
 createInitState cfg o = do
     terms <- either (error . show) id . markdown . cs <$> readFile (opTermFile o)
@@ -99,7 +124,9 @@ main = do
     cfg <- readConfig print CrashMissing
 
     createDirectoryIfMissing True (cfg ^. avatarPath)
-    checkAvatarPathExistsAndIsEmpty cfg
+    createDirectoryIfMissing True (cfg ^. htmlStatic)
+    checkAvatarPathExistsAndIsEmpty     cfg
+    checkStaticHtmlPathExistsAndIsEmpty cfg
 
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines

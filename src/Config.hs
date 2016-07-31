@@ -41,6 +41,7 @@ module Config
     , aulaTimeLocale
     , checkAvatarPathExists
     , checkAvatarPathExistsAndIsEmpty
+    , checkStaticHtmlPathExistsAndIsEmpty
     , cfgCsrfSecret
     )
 where
@@ -255,17 +256,29 @@ aulaTimeLocale = defaultTimeLocale
   { knownTimeZones = knownTimeZones defaultTimeLocale
                   <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
 
+checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
+checkAvatarPathExistsAndIsEmpty cfg =
+    checkPathExistsAndIsEmpty "avatar" (cfg ^. avatarPath)
+
+checkStaticHtmlPathExistsAndIsEmpty :: Config -> IO ()
+checkStaticHtmlPathExistsAndIsEmpty cfg =
+    checkPathExistsAndIsEmpty "static-html" (cfg ^. htmlStatic)
 
 checkAvatarPathExists :: Config -> IO ()
-checkAvatarPathExists cfg = do
-    exists <- doesDirectoryExist $ cfg ^. avatarPath
-    unless exists . throwIO . ErrorCall $
-        "bad avatar directory " <> show (cfg ^. avatarPath) <> "."
+checkAvatarPathExists cfg = checkPathExists "avatar" (cfg ^. avatarPath)
 
-checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
-checkAvatarPathExistsAndIsEmpty cfg = do
-    checkAvatarPathExists cfg
-    isempty <- all (`elem` [".", ".."])
-        <$> getDirectoryContents (cfg ^. avatarPath)
+checkPathExists :: String -> FilePath -> IO ()
+checkPathExists name path = do
+    exists <- doesDirectoryExist path
+    unless exists . throwIO . ErrorCall $
+        "bad " <> name <> " directory " <> show path <> "."
+
+checkPathExistsAndIsEmpty :: String -> FilePath -> IO ()
+checkPathExistsAndIsEmpty name path = do
+    checkPathExists name path
+    contents <- getDirectoryContents path
+    print path
+    print contents
+    let isempty = all (`elem` [".", ".."]) contents
     unless isempty . throwIO . ErrorCall $
-        "non-empty avatar directory " <> show (cfg ^. avatarPath) <> "."
+        "non-empty " <> name <> " directory " <> show path <> "."
