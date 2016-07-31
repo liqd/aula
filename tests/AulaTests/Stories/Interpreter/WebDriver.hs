@@ -21,6 +21,7 @@ import Frontend.Core (semanticDivAttr)
 import qualified Frontend.Page as Page
 import Types.Instances.Optics
 
+import Test.Hspec (shouldNotBe)
 import Test.WebDriver
 import Test.WebDriver.Class
 import Test.WebDriver.Missing
@@ -140,7 +141,7 @@ wdStep (Free (EditProfile img desc k)) = do
     currentPage (Proxy :: Proxy Page.PageUserProfileCreatedIdeas)
     imageAfter <- jsGetBase64Image "(//img)[2]"
 
-    imageBefore `shouldNotBe` imageAfter
+    liftIO $ imageBefore `shouldNotBe` imageAfter
     wdStep k
 
 submitIdea :: (MonadIO m, WebDriver m) => Behavior b -> m b
@@ -193,17 +194,3 @@ semanticDivSelector p =
 
 unProxy :: (Typeable p) => Proxy p -> p
 unProxy t = error $ "unProxy got evaluated for " <> show (typeOf t)
-
--- FIXME: Remove or deduplicate
-assert :: (Show msg, Monad m) => msg -> Bool -> m ()
-assert _ True  = return ()
-assert msg False = error $ "assertion failed: " <> show msg
-    -- FIXME: give source code location of the call.
-
--- FIXME: Remove or deduplicate
-shouldNotBe :: (Monad m, Eq a, Show a) => a -> a -> m ()
-shouldNotBe actual expected =
-    assert
-        (unwords [show actual, "should not be", show expected])
-        (actual /= expected)
-    -- FIXME: give source code location of the call.
