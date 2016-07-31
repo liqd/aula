@@ -11,6 +11,7 @@ module AulaTests.Stories.DSL where
 
 import Control.Monad.Free
 import Codec.Picture
+import Codec.Picture.Types
 import Data.ByteString.Lazy
 import Data.String.Conversions
 import System.FilePath
@@ -167,10 +168,9 @@ editProfile img desc = liftF $ EditProfile img desc ()
 data Img = Img { imgFilePath :: FilePath, imgModTime :: Integer, imgContent :: ByteString }
 
 createJpeg :: Bool -> ByteString
-createJpeg white = encodeJpeg $ generateImage (\_ _ -> PixelYCbCr8 c c c) 1 1
+createJpeg white = encodeJpeg $ generateImage (\_ _ -> convertPixel $ PixelRGB8 c c c) 1 1
   where
     c = if white then 255 else 0
 
 createImage :: FilePath -> Integer -> Bool -> Img
 createImage fp modt white = Img (fp <.> "jpg") modt $ createJpeg white
-
