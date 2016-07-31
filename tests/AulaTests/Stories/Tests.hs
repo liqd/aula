@@ -80,8 +80,8 @@ someUserBehavior = do
     logout
 
 
-editProfile :: Behavior ()
-editProfile = do
+editUserProfile :: Behavior ()
+editUserProfile = do
     login "admin" "pssst"
     checkProfile
     editProfile (createImage "me" 0 True) "I am the new admin user."

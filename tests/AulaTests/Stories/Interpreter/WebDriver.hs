@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-{-# OPTIONS_GHC -Werror -Wall #-}
+{-# OPTIONS_GHC -Werror -Wall -fno-warn-incomplete-patterns #-}
 
 module AulaTests.Stories.Interpreter.WebDriver
 where
@@ -60,9 +60,9 @@ wdStep (Pure r) = pure r
 
 wdStep (Free (Login l p k)) = do
     currentPage (Proxy :: Proxy Page.PageHomeWithLoginPrompt)
-    sendKeys (l ^. unUserLogin) =<< (byXPath "//input[@id='/login.user']")
-    sendKeys p =<< (byXPath "//input[@id='/login.pass']")
-    submit =<< (byXPath ".//input[@type='submit']")
+    sendKeys (l ^. unUserLogin) =<< byXPath "//input[@id='/login.user']"
+    sendKeys p                  =<< byXPath "//input[@id='/login.pass']"
+    submit                      =<< byXPath ".//input[@type='submit']"
     oneOf [ isPage (Proxy :: Proxy Page.PageOverviewOfSpaces)
           , isPage (Proxy :: Proxy Page.PageUserSettings)
           ]
@@ -71,30 +71,27 @@ wdStep (Free (Login l p k)) = do
 
 wdStep (Free (Logout k)) = do
     openUserMenu
-    click =<< (byXPath ".//a[@href='/logout']")
+    click =<< byXPath ".//a[@href='/logout']"
     currentPage (Proxy :: Proxy Page.PageHomeWithLoginPrompt)
     wdStep k
 
 wdStep (Free (SelectIdeaSpace s k)) = do
     currentPage (Proxy :: Proxy Page.PageOverviewOfSpaces)
-    click =<< (byXPath $ "//*[@class='item-room-title'][text()='" <> s <> "']")
+    click =<< byXPath ("//*[@class='item-room-title'][text()='" <> s <> "']")
     currentPage (Proxy :: Proxy Page.PageOverviewOfWildIdeas)
-    void . byXPath $ "//*[text()='Wilde Ideen der " <> s <> "']"
+    void (byXPath $ "//*[text()='Wilde Ideen der " <> s <> "']")
     wdStep k
 
 wdStep (Free (CreateIdea title desc cat k)) = do
     oneOf [ isPage (Proxy :: Proxy Page.PageOverviewOfWildIdeas)
           , isPage (Proxy :: Proxy Page.ViewTopic)
           ]
-    click =<< (byXPath "//button[contains(text(),'Neue Idee')]")
+    click =<< byXPath "//button[contains(text(),'Neue Idee')]"
     currentPage (Proxy :: Proxy Page.CreateIdea)
-    sendKeys title =<< (byXPath "//input[contains(@name, 'title')]")
-    sendKeys desc =<< (byXPath "//textarea[contains(@name, 'idea-text')]")
-    click =<< (byXPath $ "//*[contains(@id,'.idea-category." <> (cs . show $ fromEnum cat) <> "')]")
-    submit =<< (byXPath ".//input[@type='submit']")
-    currentPage (Proxy :: Proxy Page.ViewIdea)
-    -- FIXME: Check if the idea is created with the right text
-    wdStep k
+    sendKeys title =<< byXPath "//input[contains(@name, 'title')]"
+    sendKeys desc  =<< byXPath "//textarea[contains(@name, 'idea-text')]"
+    click          =<< byXPath ("//*[contains(@id,'.idea-category." <> (cs . show $ fromEnum cat) <> "')]")
+    submitIdea k
 
 -- TODO: Check
 wdStep (Free (EditIdea _ot nt d c k)) = do
@@ -106,10 +103,8 @@ wdStep (Free (EditIdea _ot nt d c k)) = do
     -- FIXME: Check the old title
     clearAndSendKeys nt =<< byXPath "//input[contains(@name, 'title')]"
     clearAndSendKeys d =<< byXPath "//textarea[contains(@name, 'idea-text')]"
-    click =<< (byXPath $ "//*[contains(@id,'.idea-category." <> (cs . show $ fromEnum c) <> "')]")
-    submit =<< (byXPath ".//input[@type='submit']")
-    currentPage (Proxy :: Proxy Page.ViewIdea)
-    wdStep k
+    click  =<< byXPath ("//*[contains(@id,'.idea-category." <> (cs . show $ fromEnum c) <> "')]")
+    submitIdea k
 
 wdStep (Free (LikeIdea _t k)) = do
     -- find idea
@@ -136,7 +131,7 @@ wdStep (Free (VoteOnIdea _t v k)) = do
 
 wdStep (Free (CheckProfile k)) = do
     openUserMenu
-    click =<< (byXPath "//a[text()='Profil anzeigen']")
+    click =<< byXPath "//a[text()='Profil anzeigen']"
     wdStep k
 
 wdStep (Free (EditProfile img desc k)) = do
@@ -157,7 +152,12 @@ wdStep (Free (EditProfile img desc k)) = do
     imageBefore `shouldNotBe` imageAfter
     wdStep k
 
-wdStep _ = error $ "undefined step"
+submitIdea :: (MonadIO m, WebDriver m) => Behavior b -> m b
+submitIdea k = do
+    submit =<< byXPath ".//input[@type='submit']"
+    currentPage (Proxy :: Proxy Page.ViewIdea)
+    -- FIXME: Check if the idea is created with the right text
+    wdStep k
 
 -- FIXME: Implement
 judgeIdea' :: WebDriver wd => IdeaJuryResultValue -> wd ()
@@ -169,7 +169,7 @@ markIdea' _value = pure ()
 
 openOverviewOfSpaces :: WebDriver wd => wd ()
 openOverviewOfSpaces = do
-    click =<< (byXPath "//a[@href='/space']")
+    click =<< byXPath "//a[@href='/space']"
     currentPage (Proxy :: Proxy Page.PageOverviewOfSpaces)
 
 openUserMenu :: WebDriver wd => wd ()
@@ -195,7 +195,7 @@ oneOf :: (MonadIO wd, WebDriver wd) => [wd Bool] -> wd ()
 oneOf ps = do
     vs <- or <$> sequence ps
     unless vs $ do
-        now <- liftIO $ getCurrentTime
+        now <- liftIO getCurrentTime
         saveScreenshot $ "oneOf-" <> show now <> ".png"
         fail "oneOf: None of the predicates get satisfied."
 
@@ -205,7 +205,7 @@ semanticDivSelector p =
     in ByXPath $ ".//div[@" <> dataAttr <> "='" <> value <> "']"
 
 unProxy :: (Typeable p) => Proxy p -> p
-unProxy t = error $ "unProxy got evaluated for " <> (show $ typeOf t)
+unProxy t = error $ "unProxy got evaluated for " <> show (typeOf t)
 
 -- FIXME: Remove or deduplicate
 assert :: (Show msg, Monad m) => msg -> Bool -> m ()
