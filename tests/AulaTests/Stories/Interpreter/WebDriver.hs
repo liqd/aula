@@ -151,6 +151,8 @@ submitIdea k = do
     -- FIXME: Check if the idea is created with the right text
     wdStep k
 
+-- FIXME: do not prime the name.  name conflicts of this kind should be resolved by qualified
+-- imports.  (same goes for 'markIdea''.)
 -- FIXME: Implement
 judgeIdea' :: WebDriver wd => IdeaJuryResultValue -> wd ()
 judgeIdea' _value = pure ()
