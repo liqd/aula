@@ -598,6 +598,7 @@ test-suite spec
       AulaTests
       AulaTests.Stories.DSL
       AulaTests.Stories.Interpreter.Action
+      AulaTests.Stories.Interpreter.WebDriver
       AulaTests.Stories.Tests
       AulaTests.StoriesSpec
       Data.MarkdownSpec
@@ -614,5 +615,6 @@ test-suite spec
       SeleniumSpec
       Test.Hspec.Missing
       Test.QuickCheck.Missing
+      Test.WebDriver.Missing
       TypesSpec
   default-language: Haskell2010

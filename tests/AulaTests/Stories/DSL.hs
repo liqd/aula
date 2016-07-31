@@ -10,7 +10,11 @@
 module AulaTests.Stories.DSL where
 
 import Control.Monad.Free
+import Codec.Picture
+import Codec.Picture.Types
+import Data.ByteString.Lazy
 import Data.String.Conversions
+import System.FilePath
 
 import Types
 
@@ -25,13 +29,15 @@ type TopicDescription = ST
 type CommentText = ST
 type Statement = ST
 type ReportText = ST
+type Password   = ST
+type Description = ST
 
 
 -- * the dsl ("the action sentences")
 
 data Step a where
     -- User actions
-    Login               :: UserLogin -> a -> Step a
+    Login               :: UserLogin -> Password -> a -> Step a
     Logout              :: a -> Step a
     SelectIdeaSpace     :: IdeaSpaceName -> a -> Step a
     CreateIdea          :: IdeaTitle -> IdeaDescription -> Category -> a -> Step a
@@ -61,12 +67,16 @@ data Step a where
 
     -- Check voting phase
     CheckTopicPhaseVoting :: TopicTitle -> a -> Step a
+
+    -- User profile
+    CheckProfile :: a -> Step a
+    EditProfile :: Img -> Description -> a -> Step a
   deriving Functor
 
 type Behavior = Free Step
 
-login :: UserLogin -> Behavior ()
-login l = liftF $ Login l ()
+login :: UserLogin -> Password -> Behavior ()
+login l p = liftF $ Login l p ()
 
 logout :: Behavior ()
 logout = liftF $ Logout ()
@@ -145,3 +155,22 @@ setFreeze shouldBeFrozenOrNot = liftF $ SetFreeze shouldBeFrozenOrNot ()
 
 checkTopicPhaseVoting :: TopicTitle -> Behavior ()
 checkTopicPhaseVoting title = liftF $ CheckTopicPhaseVoting title ()
+
+checkProfile :: Behavior ()
+checkProfile = liftF $ CheckProfile ()
+
+editProfile :: Img -> Description -> Behavior ()
+editProfile img desc = liftF $ EditProfile img desc ()
+
+
+-- * Image
+
+data Img = Img { imgFilePath :: FilePath, imgModTime :: Integer, imgContent :: ByteString }
+
+createJpeg :: Bool -> ByteString
+createJpeg white = encodeJpeg $ generateImage (\_ _ -> convertPixel $ PixelRGB8 c c c) 1 1
+  where
+    c = if white then 255 else 0
+
+createImage :: FilePath -> Integer -> Bool -> Img
+createImage fp modt white = Img (fp <.> "jpg") modt $ createJpeg white

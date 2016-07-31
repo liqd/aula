@@ -25,7 +25,7 @@ comment2 = "This is the comment 2"
 -- FIXME: Idea, Topic creation should be done by different users.
 topicTimeoutStory :: Behavior ()
 topicTimeoutStory = do
-    login "admin"
+    login "admin" "pssst"
     selectIdeaSpace "school"
     createIdea idea1a "desc" CatRules
     editIdea idea1a idea1 "desc1" CatRules
@@ -67,7 +67,7 @@ markIdeaAsNotFeasableAfterMarked = do
 -- Collection of steps under development, no test design involved.
 someUserBehavior :: Behavior ()
 someUserBehavior = do
-    login "admin"
+    login "admin" "pssst"
     selectIdeaSpace "school"
     createIdea idea1 "desc" CatRules
     commentOnIdea idea1 comment1
@@ -79,12 +79,19 @@ someUserBehavior = do
     deleteIdea idea1
     logout
 
+editUserProfile :: Behavior ()
+editUserProfile = do
+    login "admin" "pssst"
+    checkProfile
+    editProfile (createImage "me" 0 True) "I am the new admin user."
+    logout
+
 
 -- * snippets
 
 bumpTopicBackAndForth :: Behavior ()
 bumpTopicBackAndForth = do
-    login "admin"
+    login "admin" "pssst"
     selectIdeaSpace "school"
     createIdea idea1 "description" CatTime
     createTopic idea1 topic1a "description"  -- start in refinement

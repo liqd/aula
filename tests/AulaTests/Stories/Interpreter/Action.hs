@@ -62,7 +62,8 @@ type ActionClient m a = StateT ClientState m a
 runClient :: (ActionM m) => Behavior a -> ActionClient m a
 runClient (Pure r) = pure r
 
-runClient (Free (Login l k)) = do
+-- FIXME: Use the given password
+runClient (Free (Login l _p k)) = do
     join . lift $ do
         u <- mquery $ findUserByLogin l
         step (Page.login ^. formProcessor $ u)
@@ -313,6 +314,15 @@ runClient (Free (CheckTopicPhaseVoting t k)) = do
         let phase = topic' ^. topicPhase
         unless (has _PhaseVoting phase) . fail . ("runClient: " ++) $ show phase
     runClient k
+
+runClient (Free (CheckProfile k)) = do
+    -- FIXME: Implement
+    runClient k
+
+runClient (Free (EditProfile _img _desc k)) = do
+    -- FIXME: Implement
+    runClient k
+
 
 -- * helpers
 
