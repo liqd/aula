@@ -21,12 +21,11 @@ import Frontend.Core (semanticDivAttr)
 import qualified Frontend.Page as Page
 import Types.Instances.Optics
 
-import System.Timeout
 import Test.WebDriver
 import Test.WebDriver.Class
 import Test.WebDriver.Missing
 
-import AulaTests (WreqQuery, mkUri)
+import AulaTests (WreqQuery, mkUri, runWDAula)
 import AulaTests.Stories.DSL
 
 import Types.Core
@@ -41,21 +40,11 @@ import Types.Core
 
 -}
 
-wdConfig :: WDConfig
-wdConfig = useChrome defaultConfig
-  where
-    useChrome = useBrowser (chrome { chromeBinary = Just "/usr/bin/chromium-browser"
-                                   , chromeOptions = ["--no-sandbox"]
-                                   })
-
 run :: (MonadIO m) => WreqQuery -> Behavior a -> m (Maybe a)
 run wreq program = do
     runWDAula $ do
         openPage (mkUri wreq "")
         wdStep program
-
-runWDAula :: (MonadIO m) => WD a -> m (Maybe a)
-runWDAula = liftIO . timeout (1000000 * globalTimeout) . runSession wdConfig . finallyClose
 
 wdStep :: (MonadIO wd, WebDriver wd) => Behavior a -> wd a
 wdStep (Pure r) = pure r
@@ -176,10 +165,6 @@ openOverviewOfSpaces = do
 
 openUserMenu :: WebDriver wd => wd ()
 openUserMenu = click =<< byXPath ".//span[@class='user-name']"
-
--- | in ms
-globalTimeout :: Num n => n
-globalTimeout = 10300
 
 byXPath :: WebDriver wd => ST -> wd Element
 byXPath = findElem . ByXPath

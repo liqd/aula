@@ -18,28 +18,12 @@ module SeleniumSpec where
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import Data.Text as ST
-import System.Timeout
 import Test.Hspec
 import Test.WebDriver
 import Test.WebDriver.Missing
 
 import Arbitrary ()
 import AulaTests
-
-
-wdConfig :: WDConfig
-wdConfig = useChrome defaultConfig
-  where
-    useChrome = useBrowser (chrome { chromeBinary = Just "/usr/bin/chromium-browser"
-                                   , chromeOptions = ["--no-sandbox"]
-                                   })
-
-runWDAula :: (MonadIO m) => WD a -> m (Maybe a)
-runWDAula = liftIO . timeout (1000 * globalTimeout) . runSession wdConfig . finallyClose
-
--- | in ms
-globalTimeout :: Num n => n
-globalTimeout = 10300
 
 
 spec :: Spec

@@ -24,6 +24,7 @@ import System.IO.Temp (createTempDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Process (system)
 import System.Random (Random)
+import System.Timeout (timeout)
 import Test.Hspec.Core.Spec (SpecM(..))
 import Test.Hspec.Wai (WaiExpectation)
 import Test.HUnit.Lang (HUnitFailure(HUnitFailure))
@@ -32,6 +33,7 @@ import Test.QuickCheck (Gen, frequency, choose)
 import qualified Data.Set as Set
 import qualified Network.Wreq
 import qualified Network.Wreq.Session as Sess
+import qualified Test.WebDriver as WD
 
 import Config
 
@@ -246,3 +248,20 @@ boundary mn mx = frequency
     , (1, pure mx)
     , (98, choose (mn, mx))
     ]
+
+
+-- * selenium webdriver
+
+wdConfig :: WD.WDConfig
+wdConfig = useChrome WD.defaultConfig
+  where
+    useChrome = WD.useBrowser (WD.chrome { WD.chromeBinary = Just "/usr/bin/chromium-browser"
+                                   , WD.chromeOptions = ["--no-sandbox"]
+                                   })
+
+runWDAula :: (MonadIO m) => WD.WD a -> m (Maybe a)
+runWDAula = liftIO . timeout (1000 * globalTimeout) . WD.runSession wdConfig . WD.finallyClose
+
+-- | in ms
+globalTimeout :: Num n => n
+globalTimeout = 10300
