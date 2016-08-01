@@ -17,18 +17,6 @@ if [ "$AULA_NEW_RELEASE" == "" ]; then
     echo "AULA_NEW_RELEASE not defined"; bad=1
 fi
 
-if [ "$AULA_INIT_ADMIN" == "" ]; then
-    echo "AULA_INIT_ADMIN not defined"; bad=1
-fi
-
-if [ "$AULA_INIT_ADMIN_PWD" == "" ]; then
-    echo "AULA_INIT_ADMIN_PWD not defined"; bad=1
-fi
-
-if [ "$AULA_INIT_TERMS_OF_USE" == "" ]; then
-    echo "AULA_INIT_TERMS_OF_USE not defined"; bad=1
-fi
-
 if [ "$bad" == "1" ]; then
     exit 1
 fi
@@ -60,21 +48,6 @@ if [ -f $AULA_ROOT_PATH/run/* ]; then
     exit 1
 else
     echo " ok"
-fi
-
-if [ -d ./static ]; then
-    echo "server is already initialized: not running aula-init-state."
-else
-    echo "running aula-init-state."
-    $AULA_EXEC_PATH/aula-init-state \
-        --admin=$AULA_INIT_ADMIN_LOGIN \
-        --admin-pwd=$AULA_INIT_ADMIN_LOGIN_PWD \
-        --terms-of-use=$AULA_INIT_TERMS_OF_USE \
-        >> $AULA_ROOT_PATH/log 2>&1
-    if [ $? ]; then
-        echo "failed: not starting server!"
-        exit 1
-    fi
 fi
 
 echo "starting $AULA_NEW_RELEASE in $AULA_ROOT_PATH"
