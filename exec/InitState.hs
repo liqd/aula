@@ -122,10 +122,11 @@ main = do
     -- FIXME: Do not use print.
     cfg <- readConfig print CrashMissing
 
+    copyStaticDir cfg
+    checkStaticHtmlPathExists cfg
+
     createDirectoryIfMissing True (cfg ^. avatarPath)
-    createDirectoryIfMissing True (cfg ^. htmlStatic)
     checkAvatarPathExistsAndIsEmpty     cfg
-    checkStaticHtmlPathExistsAndIsEmpty cfg
 
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines
