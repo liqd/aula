@@ -161,7 +161,7 @@ import Servant
 import Servant.Missing hiding (throwError500)
 import qualified Servant.Missing (throwError500)
 import Thentos.CookieSession.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
-import Thentos.CookieSession.Types (GetThentosSessionToken(..), ThentosSessionToken)
+import Thentos.CookieSession.Types (GetThentosSessionToken(..), ThentosSessionToken(..))
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
@@ -328,8 +328,8 @@ type ActionSessionLog m = (ActionLog m, ActionUserHandler m)
 
 logEvent :: ActionSessionLog m => LogLevel -> ST -> m ()
 logEvent l m = do
-    session <- userState getThentosSessionToken
-    log (LogEntry l (cshow session <> " " <> m))
+    session <- maybe "anonym" fromThentosSessionToken <$> userState getThentosSessionToken
+    log (LogEntry l ("[" <> cs session <> "] " <> m))
 
 throwError500 :: ActionSessionLog m => String -> m a
 throwError500 msg = do

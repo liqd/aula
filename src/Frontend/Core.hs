@@ -661,7 +661,7 @@ coreRunHandler
             )
     => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
 coreRunHandler mp mr = do
-    let mpp = Proxy :: Proxy p
+    let mpp = typeOf (error "coreRunHandler: mpp" :: p)
     isli <- isLoggedIn
     if isli
         then do
@@ -669,14 +669,16 @@ coreRunHandler mp mr = do
             access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
             case access0 of
                 AccessGranted -> do
-                    logEvent INFO $ "gets access to " <> cshow (typeOf mpp)
+                    logEvent INFO $ "gets access to " <> cshow mpp
                     mr (Just user) =<< mp (Just user)
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> do
                     p <- mp (Just user)
                     access1 <- isAuthorized (LoggedIn user (Just p))
                     case access1 of
-                        AccessGranted -> mr (Just user) p
+                        AccessGranted -> do
+                            logEvent INFO $ "gets access to " <> cshow mpp
+                            mr (Just user) p
                         AccessDenied s u -> handleDenied s u
                         AccessDeferred ->
                             throwError500 "AccessDeferred should not be used with LoggedIn"
