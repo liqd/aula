@@ -257,25 +257,25 @@ aulaTimeLocale = defaultTimeLocale
                   <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
 
 checkAvatarPathExists :: Config -> IO ()
-checkAvatarPathExists cfg = checkPathExists "avatar" (cfg ^. avatarPath)
+checkAvatarPathExists cfg = checkPathExists (cfg ^. avatarPath)
 
 checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
 checkAvatarPathExistsAndIsEmpty cfg =
-    checkPathExistsAndIsEmpty "avatar" (cfg ^. avatarPath)
+    checkPathExistsAndIsEmpty (cfg ^. avatarPath)
 
 checkStaticHtmlPathExistsAndIsEmpty :: Config -> IO ()
 checkStaticHtmlPathExistsAndIsEmpty cfg =
-    checkPathExistsAndIsEmpty "static html" (cfg ^. htmlStatic)
+    checkPathExistsAndIsEmpty (cfg ^. htmlStatic)
 
-checkPathExists :: String -> FilePath -> IO ()
-checkPathExists name path = do
+checkPathExists :: FilePath -> IO ()
+checkPathExists path = do
     exists <- doesDirectoryExist path
     unless exists . throwIO . ErrorCall $
-        "bad " <> name <> " directory " <> show path <> "."
+        show path <> " does not exist or is not a directory."
 
-checkPathExistsAndIsEmpty :: String -> FilePath -> IO ()
-checkPathExistsAndIsEmpty name path = do
-    checkPathExists name path
+checkPathExistsAndIsEmpty :: FilePath -> IO ()
+checkPathExistsAndIsEmpty path = do
+    checkPathExists path
     isempty <- null <$> getDirectoryContentsNoDots path
     unless isempty . throwIO . ErrorCall $
-        "non-empty " <> name <> " directory " <> show path <> "."
+        show path <> " does not exist, is not a directory, or is not empty."
