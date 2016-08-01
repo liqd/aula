@@ -265,7 +265,7 @@ checkAvatarPathExistsAndIsEmpty cfg =
 
 checkStaticHtmlPathExists :: Config -> IO ()
 checkStaticHtmlPathExists cfg =
-    checkPathExistsAndIsEmpty (cfg ^. htmlStatic)
+    checkPathExists (cfg ^. htmlStatic)
 
 checkPathExists :: FilePath -> IO ()
 checkPathExists path = do
