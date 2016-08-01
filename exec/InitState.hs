@@ -7,6 +7,7 @@ module Main where
 import Control.Category
 import Control.Lens ((^.), (.~))
 import Control.Monad (filterM, void)
+import Data.Functor.Infix ((<$$>))
 import Data.List
 import Data.String.Conversions
 import Data.Yaml
@@ -30,7 +31,7 @@ import Data.Markdown (markdown)
 import DemoData (genSchoolSpace, genAdminUser)
 import Persistent.Api
 import Persistent (withPersist)
-import Types.Prelude (exceptToFail)
+import Types.Prelude (exceptToFail, getDirectoryContentsNoDots)
 
 import Paths_aula
 import Data.Tree
