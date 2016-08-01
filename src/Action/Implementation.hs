@@ -200,7 +200,7 @@ runActionExcept (ActionIOExcept e) = error500 # show e
 
 
 -- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
--- NOTE: The there is a versy similar function to this one in DemoData generation.
+-- NOTE: The there is a very similar function to this one in DemoData generation.
 updateAvatarByCopy :: User -> FilePath -> Action ()
 updateAvatarByCopy user spath = do
     apath <- view (Config.getConfig . Config.avatarPath)
