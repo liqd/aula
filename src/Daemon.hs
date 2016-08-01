@@ -20,6 +20,7 @@ import Control.Concurrent.STM
 import Control.Exception hiding (handle)
 import Control.Lens
 import Control.Monad (forever, join, when)
+import Data.Time.Clock (getCurrentTime)
 import Data.String.Conversions (cs, (<>))
 import System.IO (hPutStrLn, stderr)
 
@@ -134,5 +135,7 @@ logDaemon cfg =
     msgDaemon logMsg "logger" logMsg (const $ pure ())
   where
     logMsg (LogEntry NOLOG _)        = pure ()
-    logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ hPutStrLn stderr (cs msg)
+    logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ do
+                                            now <- getCurrentTime
+                                            hPutStrLn stderr (cshow now <> " [" <> cshow level <> "] " <> cs msg)
     logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
