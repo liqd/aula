@@ -256,16 +256,16 @@ aulaTimeLocale = defaultTimeLocale
   { knownTimeZones = knownTimeZones defaultTimeLocale
                   <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
 
+checkAvatarPathExists :: Config -> IO ()
+checkAvatarPathExists cfg = checkPathExists "avatar" (cfg ^. avatarPath)
+
 checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
 checkAvatarPathExistsAndIsEmpty cfg =
     checkPathExistsAndIsEmpty "avatar" (cfg ^. avatarPath)
 
 checkStaticHtmlPathExistsAndIsEmpty :: Config -> IO ()
 checkStaticHtmlPathExistsAndIsEmpty cfg =
-    checkPathExistsAndIsEmpty "static-html" (cfg ^. htmlStatic)
-
-checkAvatarPathExists :: Config -> IO ()
-checkAvatarPathExists cfg = checkPathExists "avatar" (cfg ^. avatarPath)
+    checkPathExistsAndIsEmpty "static html" (cfg ^. htmlStatic)
 
 checkPathExists :: String -> FilePath -> IO ()
 checkPathExists name path = do
@@ -276,9 +276,6 @@ checkPathExists name path = do
 checkPathExistsAndIsEmpty :: String -> FilePath -> IO ()
 checkPathExistsAndIsEmpty name path = do
     checkPathExists name path
-    contents <- getDirectoryContents path
-    print path
-    print contents
-    let isempty = all (`elem` [".", ".."]) contents
+    isempty <- all (`elem` [".", ".."]) <$> getDirectoryContents path
     unless isempty . throwIO . ErrorCall $
         "non-empty " <> name <> " directory " <> show path <> "."
