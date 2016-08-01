@@ -230,7 +230,7 @@ commentApi loc iid cid
   where
     ck = commentKey loc iid cid
     rk = replyKey   loc iid cid
-    commentHandler :: forall cap. Page (NeedCap cap)
+    commentHandler :: forall cap. (Page (NeedCap cap), Typeable cap)
                    => CommentKey -> m () -> m (PostResult (NeedCap cap) ())
     commentHandler = runPostHandler . fmap (NeedCap . fst) . Action.commentCapCtx
 

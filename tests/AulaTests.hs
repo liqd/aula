@@ -47,7 +47,6 @@ import Frontend.Prelude as X hiding (get, put)
 import Test.Hspec.Missing as X
 
 import Arbitrary (constantSampleTimestamp)
-import Logger (LogLevel(..), nullLog)
 import Persistent (mkMetaInfo)
 
 

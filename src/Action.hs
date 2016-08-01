@@ -41,6 +41,7 @@ module Action
     , addWithUser_
     , addWithCurrentUser
     , addWithCurrentUser_
+    , logEvent
     , currentUser
     , currentUserId
     , modifyCurrentUser
@@ -122,6 +123,7 @@ module Action
     , module Action.Smtp
     , sendMailToRole
 
+    , module Logger
     -- * moderator's event log (FIXME: this section should all be local to this module)
     , eventLogUserCreatesTopic
     , eventLogUserCreatesIdea

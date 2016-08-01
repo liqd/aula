@@ -38,7 +38,6 @@ import Frontend.Fragment.Comment
 import Frontend.Page
 import Frontend.Path (relPath)
 import Access (userOnlyCapCtx)
-import Logger (nullLog)
 import Persistent.Implementation (mkRunPersist)
 import Persistent.Idiom (ideaStatsIdea)
 import Persistent.Api (AddFirstUser(..))
