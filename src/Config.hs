@@ -41,7 +41,7 @@ module Config
     , aulaTimeLocale
     , checkAvatarPathExists
     , checkAvatarPathExistsAndIsEmpty
-    , checkStaticHtmlPathExistsAndIsEmpty
+    , checkStaticHtmlPathExists
     , cfgCsrfSecret
     )
 where
@@ -263,8 +263,8 @@ checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
 checkAvatarPathExistsAndIsEmpty cfg =
     checkPathExistsAndIsEmpty (cfg ^. avatarPath)
 
-checkStaticHtmlPathExistsAndIsEmpty :: Config -> IO ()
-checkStaticHtmlPathExistsAndIsEmpty cfg =
+checkStaticHtmlPathExists :: Config -> IO ()
+checkStaticHtmlPathExists cfg =
     checkPathExistsAndIsEmpty (cfg ^. htmlStatic)
 
 checkPathExists :: FilePath -> IO ()
