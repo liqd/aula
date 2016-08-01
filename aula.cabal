@@ -21,6 +21,13 @@ data-files:
     docker/make-seito.sh
     docker/run.sh
     docker/selenium.sh
+    docs/deployment.md
+    docs/docker-howto.md
+    docs/future-work.md
+    docs/page-creator-howto.md
+    docs/software-stack.md
+    docs/styleguide.md
+    docs/testing.md
     README.md
     scripts/run.sh
     scripts/run.sh~

@@ -15,7 +15,7 @@ category:    Web
 
 data-files:
     - README.md
-    - docks/*
+    - docs/*
     - scripts/*
     - docker/*
     - static/*
