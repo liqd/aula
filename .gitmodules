@@ -8,5 +8,5 @@
 	path = submodules/d3
 	url = https://github.com/mbostock/d3
 [submodule "static/third-party/showdown"]
-	path = static/third-party/showdown
+	path = submodules/showdown
 	url = https://github.com/showdownjs/showdown.git
