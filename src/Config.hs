@@ -22,7 +22,7 @@ module Config
     , listenerPort
     , persistConfig
     , persistenceImpl
-    , readConfig
+    , readConfig, configFilePath
     , releaseVersion
     , senderEmail
     , senderName
@@ -41,6 +41,8 @@ module Config
     , aulaTimeLocale
     , checkAvatarPathExists
     , checkAvatarPathExistsAndIsEmpty
+    , checkStaticHtmlPathExists
+    , cfgCsrfSecret
     )
 where
 
@@ -90,7 +92,7 @@ data SmtpConfig = SmtpConfig
     , _sendmailArgs     :: [String]
    -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''SmtpConfig
 
@@ -99,7 +101,7 @@ data PersistConfig = PersistConfig
     , _persistenceImpl  :: PersistenceImpl
     , _snapshotInterval :: Timespan
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''PersistConfig
 
@@ -107,7 +109,7 @@ data LogConfig = LogConfig
     { _logLevel     :: LogLevel
     , _eventLogPath :: FilePath
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''LogConfig
 
@@ -116,7 +118,7 @@ data Config = Config
     , _listenerInterface    :: String
     , _listenerPort         :: Int
     , _htmlStatic           :: FilePath
-    , _avatarPath           :: FilePath -- avatars are stored in this directory
+    , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
     , _persistConfig        :: PersistConfig
@@ -130,7 +132,7 @@ data Config = Config
     --   all the topics are ready at least at 6am.
     , _devMode              :: Bool
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)  -- FIXME: make nicer JSON field names.
 
 makeLenses ''Config
 
@@ -177,7 +179,7 @@ defaultConfig = Config
     , _listenerPort         = 8080
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
-    , _cfgCsrfSecret        = CsrfSecret "please-add-random-secret-here"
+    , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"
     , _logging              = defaultLogConfig
     , _persistConfig        = defaultPersistConfig
     , _smtpConfig           = defaultSmtpConfig
@@ -254,17 +256,26 @@ aulaTimeLocale = defaultTimeLocale
   { knownTimeZones = knownTimeZones defaultTimeLocale
                   <> [TimeZone (1 * 60) False "CET", TimeZone (2 * 60) True "CEST"] }
 
-
 checkAvatarPathExists :: Config -> IO ()
-checkAvatarPathExists cfg = do
-    exists <- doesDirectoryExist $ cfg ^. avatarPath
-    unless exists . throwIO . ErrorCall $
-        "bad avatar directory " <> show (cfg ^. avatarPath) <> "."
+checkAvatarPathExists cfg = checkPathExists (cfg ^. avatarPath)
 
 checkAvatarPathExistsAndIsEmpty :: Config -> IO ()
-checkAvatarPathExistsAndIsEmpty cfg = do
-    checkAvatarPathExists cfg
-    isempty <- all (`elem` [".", ".."])
-        <$> getDirectoryContents (cfg ^. avatarPath)
+checkAvatarPathExistsAndIsEmpty cfg =
+    checkPathExistsAndIsEmpty (cfg ^. avatarPath)
+
+checkStaticHtmlPathExists :: Config -> IO ()
+checkStaticHtmlPathExists cfg =
+    checkPathExists (cfg ^. htmlStatic)
+
+checkPathExists :: FilePath -> IO ()
+checkPathExists path = do
+    exists <- doesDirectoryExist path
+    unless exists . throwIO . ErrorCall $
+        show path <> " does not exist or is not a directory."
+
+checkPathExistsAndIsEmpty :: FilePath -> IO ()
+checkPathExistsAndIsEmpty path = do
+    checkPathExists path
+    isempty <- null <$> getDirectoryContentsNoDots path
     unless isempty . throwIO . ErrorCall $
-        "non-empty avatar directory " <> show (cfg ^. avatarPath) <> "."
+        show path <> " does not exist, is not a directory, or is not empty."

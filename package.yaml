@@ -13,6 +13,22 @@ maintainer:  matthias.fischmann@liqd.net
 github:      liqd/aula
 category:    Web
 
+data-files:
+    - README.md
+    - docs/*
+    - scripts/*
+    - docker/*
+    - default-avatars/*
+    - static/*
+    - static/js/*
+    - static/css/*
+    - static/fonts/*
+    - static/icons/*
+    - static/images/*
+    - static/third-party/modernizr/modernizr-custom.js
+    - static/third-party/showdown/dist/*
+    - static/third-party/d3/d3.*js
+
 ghc-options: -Wall
 
 dependencies:

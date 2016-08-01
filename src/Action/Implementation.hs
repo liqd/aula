@@ -30,13 +30,13 @@ import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
 import "cryptonite" Crypto.Random (MonadRandom(..))
 import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
+import Data.Functor.Infix ((<$$>))
 import Data.String.Conversions (LBS, cs)
-import Data.List as List (filter)
 import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
-import System.Directory (copyFile, doesFileExist, getCurrentDirectory, getDirectoryContents)
+import System.Directory (copyFile, doesFileExist, getCurrentDirectory)
 import System.FilePath hiding (isValid)
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
@@ -171,7 +171,7 @@ instance ActionAvatar Action where
     addInitialAvatarImage user = do
         initialAvatars <- actionIO $ do
             dir <- (</> initialAvatarsPath) <$> getCurrentDirectory
-            fmap (dir </>) . List.filter (\(h:_) -> h /= '.') <$> getDirectoryContents dir
+            (dir </>) <$$> getDirectoryContentsNoDots dir
 
         file <- genGen (Test.QuickCheck.elements initialAvatars)
         updateAvatarByCopy user file

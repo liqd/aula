@@ -150,7 +150,7 @@ instance Page PageDelegationNetwork where
     isAuthorized = userPage -- FIXME who needs to see this
     isResponsive _ = False
     extraFooterElems _ = do
-        script_ [src_ $ U.TopStatic "third-party/d3/d3.js"]
+        script_ [src_ $ U.TopStatic "third-party/d3/d3.min.js"]
         -- FIXME: move the following two under static-src and sass control, resp.?
         script_ [src_ $ U.TopStatic "d3-aula.js"]
         link_ [rel_ "stylesheet", href_ $ U.TopStatic "d3-aula.css"]

@@ -28,6 +28,7 @@ import Data.Time
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import GHC.Generics (Generic)
 import Servant ((:~>)(Nat))
+import System.Directory (getDirectoryContents)
 import Text.Read (readEither)
 
 import qualified Data.Aeson as Aeson
@@ -231,3 +232,7 @@ addTimespan tdiff (Timestamp tfrom) = Timestamp $
 
 fromNow :: Timestamp -> Iso' Timestamp Timespan
 fromNow now = iso (`diffTimestamps` now) (`addTimespan` now)
+
+
+getDirectoryContentsNoDots :: FilePath -> IO [FilePath]
+getDirectoryContentsNoDots path = filter (not . (`elem` [".", ".."])) <$> getDirectoryContents path

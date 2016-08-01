@@ -4,30 +4,36 @@
 
 module Main where
 
-import Prelude hiding (log, id, (.))
 import Control.Category
-
-import Control.Lens
+import Control.Lens ((^.), (.~))
 import Control.Monad (void)
 import Data.List
 import Data.String.Conversions
+import Data.Yaml
+import Prelude hiding (log, id, (.))
 import Servant (unNat)
 import System.Directory
 import System.Environment (getArgs)
+import System.FilePath ((</>))
 import System.Exit
 import System.IO
-import Text.Show.Pretty
+import System.Process (system)
+import Text.Show.Pretty (ppShow)
+import Thentos.CookieSession.CSRF
 
-import Config
-import Daemon (logDaemon, msgDaemonSend, start)
-import DemoData (genSchoolSpace, genAdminUser)
-import Types.Prelude (exceptToFail)
+import qualified Data.ByteString as BS
 
 import Action (ActionEnv(..), update)
 import Action.Implementation
+import Config
+import Daemon (logDaemon, msgDaemonSend, start)
 import Data.Markdown (markdown)
-import Persistent (withPersist)
+import DemoData (genSchoolSpace, genAdminUser)
 import Persistent.Api
+import Persistent (withPersist)
+import Types.Prelude (exceptToFail)
+
+import Paths_aula
 
 
 -- * options
@@ -50,8 +56,8 @@ options os = Options <$> arg adminArg <*> arg adminPwdArg <*> arg termsFileArg
 usage :: String
 usage = unlines
     [ "Usage: aula-init-state --admin=username --admin-pwd=password --terms-of-use=terms.md"
-    , ""
-    , "       The aula.yaml should be present."
+    , "       $AULA_ROOT_PATH must be set to target directory."
+    , "       Config file $AULA_ROOT_PATH/aula.yaml must exist."
     ]
 
 
@@ -75,21 +81,44 @@ createInitState cfg o = do
         update $ SetTermsOfUse terms
 
 
+-- * initialize csrf token in aula.yaml
+
+initCsrfToken :: IO ()
+initCsrfToken = do
+    cfg <- readConfig print CrashMissing
+    rnd <- genCsrfSecret
+    writeConfig . (cfgCsrfSecret .~ rnd) $ cfg
+
+-- | Overwrites all manual changes.  use with care!
+writeConfig :: Config -> IO ()
+writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode cfg)
+
+
 -- * main
 
 main :: IO ()
 main = do
+    opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
+    dataDir <- Paths_aula.getDataDir
+
     setCurrentDirectoryToAulaRoot
     -- FIXME: Do not use print.
     cfg <- readConfig print CrashMissing
 
+    let cloneDir item = copyDir item "."
+        copyDir item to = do
+            ExitSuccess <- system $ unwords ["cp -r", dataDir </> item, to]
+            pure ()
+
+    cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
+    copyDir "static" (cfg ^. htmlStatic)
     createDirectoryIfMissing True (cfg ^. avatarPath)
     checkAvatarPathExistsAndIsEmpty cfg
 
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines
         [ ""
-        , "this is aula!"
+        , "this is aula-init-state!"
         , "\nrelease:"
         , Config.releaseVersion
         , "\nroot path:"
@@ -97,7 +126,7 @@ main = do
         , "\nsetup:", ppShow cfg
         , ""
         ]
-    args <- getArgs
-    case options args of
-        Nothing -> putStrLn usage >> exitFailure
-        Just o  -> createInitState cfg o >> putStrLn "DONE!"
+
+    createInitState cfg opts
+    initCsrfToken
+    putStrLn "DONE!"

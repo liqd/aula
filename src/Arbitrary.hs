@@ -79,7 +79,7 @@ import Data.Text as ST
 import Data.Time.Clock (getCurrentTime)
 import Data.Tree as Tree (Tree)
 import Generics.SOP
-import System.Directory (getCurrentDirectory, getDirectoryContents)
+import System.Directory (getCurrentDirectory)
 import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
@@ -940,7 +940,7 @@ arbMarkdownList' sze = do
 arbMarkdownImage :: Gen ST
 arbMarkdownImage = render <$> elements samples
   where
-    render s = "![" <> s <> "](/static/images/" <> s <> ")\n\n"
+    render s = "![" <> s <> "](/static/images/" <> s <> ")\n\n"  -- (this assumes @(cfg ^. htmlPath == "./static"@)
     samples = [ "login_owl.png"
               , "icon_ausstattung.png"
               , "icon_bulb_grey.png"
@@ -1170,7 +1170,7 @@ topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 fishAvatarsIO :: IO [FilePath]
 fishAvatarsIO = do
     dir <- (</> Frontend.Constant.initialAvatarsPath) <$> getCurrentDirectory
-    fmap (dir </>) . List.filter (\(h:_) -> h /= '.') <$> getDirectoryContents dir
+    (dir </>) <$$> getDirectoryContentsNoDots dir
 
 {-# NOINLINE fishAvatars #-}
 fishAvatars :: [FilePath]
