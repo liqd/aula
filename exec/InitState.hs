@@ -107,7 +107,7 @@ main = do
 
     let cloneDir item = copyDir item "."
         copyDir item to = do
-            ExitSuccess <- system $ unwords ["cp -r", dataDir </> item, to]
+            ExitSuccess <- system $ unwords ["cp -a", dataDir </> item, to]
             pure ()
 
     cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
