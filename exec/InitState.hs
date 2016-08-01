@@ -97,6 +97,7 @@ copyStaticDir :: Config -> IO ()
 copyStaticDir cfg = do
     staticSrc <- fmap (</> "static") Paths_aula.getDataDir
     copyDir staticSrc (cfg ^. htmlStatic)
+    checkStaticHtmlPathExists cfg
 
 createInitState :: Config -> Options -> IO ()
 createInitState cfg o = do
@@ -129,12 +130,10 @@ main = do
     cfg <- readConfig print CrashMissing
 
     copyStaticDir cfg
-    checkStaticHtmlPathExists cfg
-
     cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
 
     createDirectoryIfMissing True (cfg ^. avatarPath)
-    checkAvatarPathExistsAndIsEmpty     cfg
+    checkAvatarPathExistsAndIsEmpty cfg
 
     wd <- getCurrentDirectory
     hPutStrLn stderr $ unlines
