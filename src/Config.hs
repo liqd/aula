@@ -92,7 +92,7 @@ data SmtpConfig = SmtpConfig
     , _sendmailArgs     :: [String]
    -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''SmtpConfig
 
@@ -101,7 +101,7 @@ data PersistConfig = PersistConfig
     , _persistenceImpl  :: PersistenceImpl
     , _snapshotInterval :: Timespan
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''PersistConfig
 
@@ -109,7 +109,7 @@ data LogConfig = LogConfig
     { _logLevel     :: LogLevel
     , _eventLogPath :: FilePath
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''LogConfig
 
@@ -118,7 +118,7 @@ data Config = Config
     , _listenerInterface    :: String
     , _listenerPort         :: Int
     , _htmlStatic           :: FilePath
-    , _avatarPath           :: FilePath -- avatars are stored in this directory
+    , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
     , _persistConfig        :: PersistConfig
@@ -132,7 +132,7 @@ data Config = Config
     --   all the topics are ready at least at 6am.
     , _devMode              :: Bool
     }
-  deriving (Show, Generic, ToJSON, FromJSON) -- FIXME,JSON: customize the field names
+  deriving (Show, Generic, ToJSON, FromJSON)  -- FIXME: make nicer JSON field names.
 
 makeLenses ''Config
 
