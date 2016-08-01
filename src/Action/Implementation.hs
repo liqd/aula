@@ -36,7 +36,7 @@ import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
-import System.Directory (copyFile, doesFileExist, getCurrentDirectory)
+import System.Directory (copyFile, doesFileExist)
 import System.FilePath hiding (isValid)
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
@@ -170,8 +170,7 @@ instance ActionAvatar Action where
     savePngImageFile p = actionIO . savePngImage p
     addInitialAvatarImage user = do
         initialAvatars <- actionIO $ do
-            dir <- (</> initialAvatarsPath) <$> getCurrentDirectory
-            (dir </>) <$$> getDirectoryContentsNoDots dir
+            (initialAvatarsPath </>) <$$> getDirectoryContentsNoDots initialAvatarsPath
 
         file <- genGen (Test.QuickCheck.elements initialAvatars)
         updateAvatarByCopy user file
