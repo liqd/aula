@@ -31,7 +31,7 @@ import Control.Exception (assert)
 import Prelude hiding ((.))
 
 import Access (Capability(..), CapCtx(..), capabilities, authNeedCaps)
-import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp,
+import Action (ActionM, ActionPersist(..), ActionUserHandler, ActionCurrentTimestamp, ActionLog,
                spaceCapCtx, topicCapCtx, getCurrentTimestamp, delegationInScope)
 import Frontend.Fragment.ContextMenu
 import Frontend.Fragment.DelegationTab
@@ -393,7 +393,7 @@ ideaFilterForTab = \case
     fea = isFeasibleIdea . view ideaStatsIdea
     acc = ideaAccepted
 
-viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m)
+viewTopic :: (ActionPersist m, ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
     => ViewTopicTab -> AUID Topic -> m ViewTopic
 viewTopic tab topicId = do
     now <- getCurrentTimestamp

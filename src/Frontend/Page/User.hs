@@ -50,7 +50,7 @@ import qualified Text.Digestive.Lucid.Html5 as DF
 canDelegate :: CapCtx -> Bool
 canDelegate ctx = CanDelegate `elem` capabilities ctx
 
-profileContext :: (ActionPersist m, ActionUserHandler m) => User -> m CapCtx
+profileContext :: (ActionPersist m, ActionUserHandler m, ActionLog m) => User -> m CapCtx
 profileContext user = set capCtxUserProfile (Just user)
                     . set capCtxDelegateTo  (Just user)
                   <$> currentUserCapCtx
@@ -341,7 +341,7 @@ instance ToHtml PageUserProfileCreatedIdeas where
             div_ [class_ "grid"] $ toHtml ideas
 
 -- | List all the created ideas for the given user.
-createdIdeas :: (ActionPersist m, ActionUserHandler m)
+createdIdeas :: (ActionPersist m, ActionUserHandler m, ActionLog m)
     => AUID User -> IdeasQuery -> m PageUserProfileCreatedIdeas
 createdIdeas userId ideasQuery = do
     user <- mquery $ findUser userId
@@ -385,7 +385,7 @@ instance ToHtml PageUserProfileUserAsDelegate where
                     renderDelegations (UserDelegationPage ctx) delegationListsMap
 
 userProfileUserDelegation
-    :: (ActionPersist m, ActionUserHandler m)
+    :: (ActionPersist m, ActionUserHandler m, ActionLog m)
     => (CapCtx -> UserView -> DelegationListsMap -> [DelegationFull] -> page)
     -> (AUID User -> EQuery DelegationListsMap)
     -> AUID User -> m page
@@ -400,7 +400,7 @@ userProfileUserDelegation pageConstructor userDelegationsMap userId = do
             <$> userDelegationsMap userId
             <*> (commonIdeaSpaceDelegations cUser user >>= mapM delegationFull)
 
-userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m)
+userProfileUserAsDelegate :: (ActionPersist m, ActionUserHandler m, ActionLog m)
       => AUID User -> m PageUserProfileUserAsDelegate
 userProfileUserAsDelegate =
     userProfileUserDelegation
@@ -424,7 +424,7 @@ instance ToHtml PageUserProfileUserAsDelegatee where
                 div_ [class_ "container-narrow"] $ do
                     renderDelegations (UserDelegationPage ctx) delegationListsMap
 
-userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m)
+userProfileUserAsDelegatee :: (ActionPersist m, ActionUserHandler m, ActionLog m)
       => AUID User -> m PageUserProfileUserAsDelegatee
 userProfileUserAsDelegatee =
     userProfileUserDelegation

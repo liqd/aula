@@ -650,7 +650,7 @@ data Frame body
 -- The first function 'mp' computes the page from the current logged in user.  WARNING, 'mp' CAN be
 -- run before authorization, this 'mp' SHOULD NOT modify the state.  The second function 'mr'
 -- computes the result and performs the necessary action on the state.
-coreRunHandler :: forall m p r. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+coreRunHandler :: forall m p r. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p, ActionLog m)
                => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
 coreRunHandler mp mr = do
     isli <- isLoggedIn
@@ -691,19 +691,19 @@ makeFrame :: (MonadReaderConfig r m, ActionUserHandler m) => Maybe User -> p -> 
 makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages <*> Action.devMode
 
 -- | Call 'coreRunHandler' on a handler that has no effect on the database state, and 'Frame' the result.
-runHandler :: (MonadReaderConfig r m, ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+runHandler :: (MonadReaderConfig r m, ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p, ActionLog m)
            => m p -> m (GetResult (Frame p))
 runHandler mp = coreRunHandler (const mp) (\mu p -> UnsafeGetResult <$> makeFrame mu p)
 
 -- | Like 'runHandler', but do not 'Frame' the result.
-runGetHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+runGetHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p, ActionLog m)
                  => m p -> m (GetResult p)
 runGetHandler action = coreRunHandler (\_ -> action) (\_ -> pure . UnsafeGetResult)
 
 -- | Call 'coreRunHandler' on a post handler, and 'Frame' the result.  In contrast to 'runHandler',
 -- this case requires distinguishing between the action that promises not to modify the database
 -- state and the action that is supposed to do just that.
-runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
+runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p, ActionLog m)
                => m p -> m r -> m (PostResult p r)
 runPostHandler mp mr = coreRunHandler (const mp) $ \_ _ -> UnsafePostResult <$> mr
 

@@ -49,10 +49,10 @@ data ActiveTab = WildIdeas | Topics
 
 -- * actions
 
-viewRooms :: (ActionPersist m, ActionUserHandler m) => m PageOverviewOfSpaces
+viewRooms :: (ActionPersist m, ActionUserHandler m, ActionLog m) => m PageOverviewOfSpaces
 viewRooms = PageOverviewOfSpaces . sort <$> getSpacesForCurrentUser
 
-viewIdeas :: (ActionPersist m, ActionUserHandler m)
+viewIdeas :: (ActionPersist m, ActionUserHandler m, ActionLog m)
     => IdeaSpace -> IdeasQuery -> m PageOverviewOfWildIdeas
 viewIdeas space ideasQuery = do
     mphase <- Just . PhaseWildIdea <$> query (view dbFreeze)
@@ -61,7 +61,7 @@ viewIdeas space ideasQuery = do
         is <- applyFilter ideasQuery <$> (findWildIdeasBySpace space >>= mapM getIdeaStats)
         pure $ ListItemIdeas ctx (IdeaInIdeasOverview (IdeaLocationSpace space)) ideasQuery is)
 
-viewTopics :: (ActionPersist m, ActionUserHandler m) => IdeaSpace -> m PageOverviewOfTopics
+viewTopics :: (ActionPersist m, ActionUserHandler m, ActionLog m) => IdeaSpace -> m PageOverviewOfTopics
 viewTopics space =
     PageOverviewOfTopics <$> spaceCapCtx space <*> pure space <*> query (findTopicsBySpace space)
 

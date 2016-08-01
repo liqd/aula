@@ -14,10 +14,10 @@ import Logger.EventLog
 
 
 data LogLevel
-    = DEBUG
-    | INFO
-    | WARN
-    | ERROR
+    = DEBUG -- Too much noise
+    | INFO  -- Regular system behavior
+    | WARN  -- Bad smells, login errors, authentication error
+    | ERROR -- Exceptions, requires investigation, 404
     | NOLOG
   deriving (Eq, Generic, Ord, Show, FromJSON, ToJSON)
 

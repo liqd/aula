@@ -714,7 +714,7 @@ adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m
 adminViewUsers qf qs = AdminViewUsers (mkUsersQuery qf qs) <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
-                    ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
+                    ActionCurrentTimestamp m, ActionLog m) => FormPageHandler m AdminCreateUser
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
@@ -866,7 +866,7 @@ instance FormPage AdminCreateClass where
             DF.inputSubmit "upload!"
 
 adminCreateClass
-    :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m, ActionAvatar m)
+    :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m, ActionAvatar m, ActionLog m)
     => FormPageHandler m AdminCreateClass
 adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
   where
