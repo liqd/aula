@@ -56,8 +56,8 @@ options os = Options <$> arg adminArg <*> arg adminPwdArg <*> arg termsFileArg
 usage :: String
 usage = unlines
     [ "Usage: aula-init-state --admin=username --admin-pwd=password --terms-of-use=terms.md"
-    , ""
-    , "       The aula.yaml should be present."
+    , "       $AULA_ROOT_PATH must be set to target directory."
+    , "       Config file $AULA_ROOT_PATH/aula.yaml must exist."
     ]
 
 
