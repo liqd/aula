@@ -111,7 +111,6 @@ main = do
             pure ()
 
     cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
-    print "noise!!"
     ExitSuccess <- system "chmod +x ./scripts/* ./docker/*"
     copyDir "static" (cfg ^. htmlStatic)
     createDirectoryIfMissing True (cfg ^. avatarPath)
