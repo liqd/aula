@@ -200,7 +200,6 @@ runActionExcept (ActionIOExcept e) = error500 # show e
 
 
 -- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
--- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
 -- NOTE: The there is a versy similar function to this one in DemoData generation.
 updateAvatarByCopy :: User -> FilePath -> Action ()
 updateAvatarByCopy user spath = do
