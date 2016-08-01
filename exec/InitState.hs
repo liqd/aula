@@ -6,8 +6,7 @@ module Main where
 
 import Control.Category
 import Control.Lens ((^.), (.~))
-import Control.Monad (filterM, void)
-import Data.Functor.Infix ((<$$>))
+import Control.Monad (void)
 import Data.List
 import Data.String.Conversions
 import Data.Yaml
@@ -18,7 +17,8 @@ import System.Environment (getArgs)
 import System.FilePath ((</>))
 import System.Exit
 import System.IO
-import Text.Show.Pretty
+import System.Process (system)
+import Text.Show.Pretty (ppShow)
 import Thentos.CookieSession.CSRF
 
 import qualified Data.ByteString as BS
@@ -31,10 +31,10 @@ import Data.Markdown (markdown)
 import DemoData (genSchoolSpace, genAdminUser)
 import Persistent.Api
 import Persistent (withPersist)
-import Types.Prelude (exceptToFail, getDirectoryContentsNoDots)
+import Types.Prelude (exceptToFail)
 
 import Paths_aula
-import Data.Tree
+
 
 -- * options
 
@@ -72,33 +72,6 @@ runBoostrap cfg action = do
         let runAction = mkRunAction (ActionEnv rp cfg logMsg)
         unNat (exceptToFail . runAction) action
 
-copyDir :: FilePath -> FilePath -> IO ()
-copyDir from to = unfoldTreeM dirTree (Left "") >>= copyTree
-  where
-    dirTree f@(Right _path) = pure (f, [])
-    dirTree d@(Left path) = do
-        contents <- (path </>) <$$> getDirectoryContentsNoDots (from </> path)
-        dirs  <- filterM (doesDirectoryExist . (from </>)) contents
-        files <- filterM (doesFileExist      . (from </>)) contents
-        pure (d, map Left dirs <> map Right files)
-
-    copyTree (Node (Right file) []) = copyFile (from </> file) (to </> file)
-    copyTree (Node (Right _file) _) = error "copyDir: impossible case."
-    copyTree (Node (Left dir) contents) = do
-        createDirectoryIfMissing True (to </> dir)
-        mapM_ copyTree contents
-
-cloneDir :: FilePath -> IO ()
-cloneDir item = do
-    src <- fmap (</> item) Paths_aula.getDataDir
-    copyDir src "."
-
-copyStaticDir :: Config -> IO ()
-copyStaticDir cfg = do
-    staticSrc <- fmap (</> "static") Paths_aula.getDataDir
-    copyDir staticSrc (cfg ^. htmlStatic)
-    checkStaticHtmlPathExists cfg
-
 createInitState :: Config -> Options -> IO ()
 createInitState cfg o = do
     terms <- either (error . show) id . markdown . cs <$> readFile (opTermFile o)
@@ -126,14 +99,19 @@ writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode c
 main :: IO ()
 main = do
     opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
+    dataDir <- Paths_aula.getDataDir
 
     setCurrentDirectoryToAulaRoot
     -- FIXME: Do not use print.
     cfg <- readConfig print CrashMissing
 
-    copyStaticDir cfg
-    cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
+    let cloneDir item = copyDir item "."
+        copyDir item to = do
+            ExitSuccess <- system $ unwords ["cp -r", dataDir </> item, to]
+            pure ()
 
+    cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
+    copyDir "static" (cfg ^. htmlStatic)
     createDirectoryIfMissing True (cfg ^. avatarPath)
     checkAvatarPathExistsAndIsEmpty cfg
 
