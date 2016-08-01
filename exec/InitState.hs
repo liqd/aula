@@ -125,6 +125,8 @@ writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode c
 
 main :: IO ()
 main = do
+    opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
+
     setCurrentDirectoryToAulaRoot
     -- FIXME: Do not use print.
     cfg <- readConfig print CrashMissing
@@ -146,10 +148,7 @@ main = do
         , "\nsetup:", ppShow cfg
         , ""
         ]
-    args <- getArgs
-    case options args of
-        Nothing -> putStrLn usage >> exitFailure
-        Just o  -> do
-            createInitState cfg o
-            initCsrfToken
-            putStrLn "DONE!"
+
+    createInitState cfg opts
+    initCsrfToken
+    putStrLn "DONE!"
