@@ -18,6 +18,7 @@ data-files:
     - docs/*
     - scripts/*
     - docker/*
+    - default-avatars/*
     - static/*
     - static/js/*
     - static/css/*

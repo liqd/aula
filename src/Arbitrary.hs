@@ -940,7 +940,7 @@ arbMarkdownList' sze = do
 arbMarkdownImage :: Gen ST
 arbMarkdownImage = render <$> elements samples
   where
-    render s = "![" <> s <> "](/static/images/" <> s <> ")\n\n"
+    render s = "![" <> s <> "](/static/images/" <> s <> ")\n\n"  -- (this assumes @(cfg ^. htmlPath == "./static"@)
     samples = [ "login_owl.png"
               , "icon_ausstattung.png"
               , "icon_bulb_grey.png"

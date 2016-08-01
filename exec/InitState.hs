@@ -87,6 +87,11 @@ copyDir from to = unfoldTreeM dirTree (Left "") >>= copyTree
         createDirectoryIfMissing True (to </> dir)
         mapM_ copyTree contents
 
+cloneDir :: FilePath -> IO ()
+cloneDir item = do
+    src <- fmap (</> item) Paths_aula.getDataDir
+    copyDir src "."
+
 copyStaticDir :: Config -> IO ()
 copyStaticDir cfg = do
     staticSrc <- fmap (</> "static") Paths_aula.getDataDir
@@ -124,6 +129,8 @@ main = do
 
     copyStaticDir cfg
     checkStaticHtmlPathExists cfg
+
+    cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
 
     createDirectoryIfMissing True (cfg ^. avatarPath)
     checkAvatarPathExistsAndIsEmpty     cfg
