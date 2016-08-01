@@ -248,7 +248,7 @@ optionalEmailField name emailValue =
 
 checkEmail :: (Monad m) => FieldName -> ST -> DF.Result (HtmlT m ()) Frontend.EmailAddress
 checkEmail name value = case Email.emailAddress (cs value) of
-    Nothing -> DF.Error . fromString $ unwords [name, ":", "Ungültige email-Adresse"]
+    Nothing -> DF.Error . fromString $ unwords [name, ":", "Emailadresse ungültig"]
     Just e  -> DF.Success $ InternalEmailAddress e
 
 -- Same as 'optionalEmailField' but the email value is required.
