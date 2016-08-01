@@ -26,7 +26,8 @@ import Control.Lens
 import Control.Monad.Except (MonadError, catchError)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Lazy
-import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT)
+import Control.Monad.Trans.Reader (runReaderT)
+import Control.Monad.Trans.Except (ExceptT(..), runExceptT, withExceptT, runExcept)
 import "cryptonite" Crypto.Random (MonadRandom(..))
 import Crypto.Scrypt (getEncryptedPass, Pass(Pass), encryptPassIO')
 import Data.Elocrypt (mkPassword)
@@ -114,12 +115,23 @@ instance ActionLog Action where
           where
             ourMsg = "\nthis could be caused by a stale event log file with dangling references."
 
+throwPersistError
+    :: forall m b . (ActionUserHandler m, ActionLog m)
+    => PersistExcept -> m b
+throwPersistError e = do
+    logEvent ERROR (cshow e)
+    throwError $ ActionPersistExcept e
+
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
     queryDb = actionIO =<< view (envRunPersist . rpQuery)
 
-    update ev =
-        either (throwError . ActionPersistExcept) pure
+    equery q = do
+        db <- queryDb
+        either throwPersistError pure $ runExcept (runReaderT q db)
+
+    update ev = do
+        either throwPersistError pure
             =<< actionIO =<< views (envRunPersist . rpUpdate) ($ ev)
 
 instance MonadRandom Action where
