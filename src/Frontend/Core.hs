@@ -604,6 +604,7 @@ form formHandler = getH :<|> postH
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         t <- getCsrfToken
+        logEvent INFO $ "access to page " <> cshow (typeOf page)
         pure $ FormPageRep t v fa page
 
     -- If form is not filled out successfully, 'postH' responds with a new page to render.  This
@@ -616,8 +617,10 @@ form formHandler = getH :<|> postH
         (case mpayload of
             Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
+                               logEvent DEBUG $ "form processed for " <> cshow (typeOf page)
                                redirectPath newPath
             Nothing      -> do t <- getCsrfToken
+                               logEvent INFO $ "form errors on " <> cshow (typeOf page)
                                UnsafePostResult <$> makeFrame mu (FormPageRep t v fa page))
             `finally` cleanupTempFiles formData
 
