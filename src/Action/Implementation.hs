@@ -84,7 +84,12 @@ instance HasSendMail ActionExcept ActionEnv Action where
         sendMailToAddressIO logger addr msg
 
 instance ActionLog Action where
-    log msg = actionIO =<< views envLogger ($ msg)
+    log msg = do
+        level <- view (Config.getConfig . Config.logging . Config.logLevel)
+        case msg of
+            LogEntry level' _st
+                | level' <= level -> pure ()
+            _                     -> actionIO =<< views envLogger ($ msg)
 
     readEventLog = do
         cfg <- viewConfig
