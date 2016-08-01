@@ -276,6 +276,6 @@ checkPathExists name path = do
 checkPathExistsAndIsEmpty :: String -> FilePath -> IO ()
 checkPathExistsAndIsEmpty name path = do
     checkPathExists name path
-    isempty <- all (`elem` [".", ".."]) <$> getDirectoryContents path
+    isempty <- null <$> getDirectoryContentsNoDots path
     unless isempty . throwIO . ErrorCall $
         "non-empty " <> name <> " directory " <> show path <> "."

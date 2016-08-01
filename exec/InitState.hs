@@ -74,10 +74,9 @@ runBoostrap cfg action = do
 copyDir :: FilePath -> FilePath -> IO ()
 copyDir from to = unfoldTreeM dirTree (Left "") >>= copyTree
   where
-    usefull = not . (`elem` [".", ".."])
     dirTree f@(Right _path) = pure (f, [])
     dirTree d@(Left path) = do
-        contents <- (map (path </>) . filter usefull) <$> getDirectoryContents (from </> path)
+        contents <- (path </>) <$$> getDirectoryContentsNoDots (from </> path)
         dirs  <- filterM (doesDirectoryExist . (from </>)) contents
         files <- filterM (doesFileExist      . (from </>)) contents
         pure (d, map Left dirs <> map Right files)

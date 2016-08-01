@@ -79,7 +79,7 @@ import Data.Text as ST
 import Data.Time.Clock (getCurrentTime)
 import Data.Tree as Tree (Tree)
 import Generics.SOP
-import System.Directory (getCurrentDirectory, getDirectoryContents)
+import System.Directory (getCurrentDirectory)
 import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
 import Test.QuickCheck
@@ -1170,7 +1170,7 @@ topLevelDomains = ["com", "net", "org", "info", "de", "fr", "ru", "co.uk"]
 fishAvatarsIO :: IO [FilePath]
 fishAvatarsIO = do
     dir <- (</> Frontend.Constant.initialAvatarsPath) <$> getCurrentDirectory
-    fmap (dir </>) . List.filter (\(h:_) -> h /= '.') <$> getDirectoryContents dir
+    (dir </>) <$$> getDirectoryContentsNoDots dir
 
 {-# NOINLINE fishAvatars #-}
 fishAvatars :: [FilePath]
