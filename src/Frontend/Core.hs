@@ -604,7 +604,7 @@ form formHandler = getH :<|> postH
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         t <- getCsrfToken
-        logEvent INFO $ "access to page " <> cshow (typeOf page)
+        logEvent INFO $ "render form " <> cshow (typeOf page)
         pure $ FormPageRep t v fa page
 
     -- If form is not filled out successfully, 'postH' responds with a new page to render.  This
@@ -617,10 +617,10 @@ form formHandler = getH :<|> postH
         (case mpayload of
             Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
-                               logEvent DEBUG $ "form processed for " <> cshow (typeOf page)
+                               logEvent DEBUG $ "process form " <> cshow (typeOf page)
                                redirectPath newPath
             Nothing      -> do t <- getCsrfToken
-                               logEvent INFO $ "form errors on " <> cshow (typeOf page)
+                               logEvent INFO $ "user errors on form " <> cshow (typeOf page)
                                UnsafePostResult <$> makeFrame mu (FormPageRep t v fa page))
             `finally` cleanupTempFiles formData
 
@@ -669,7 +669,7 @@ coreRunHandler mp mr = do
             access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
             case access0 of
                 AccessGranted -> do
-                    logEvent INFO $ "gets access to " <> cshow mpp
+                    logEvent INFO $ "access page " <> cshow mpp
                     mr (Just user) =<< mp (Just user)
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> do
@@ -677,7 +677,7 @@ coreRunHandler mp mr = do
                     access1 <- isAuthorized (LoggedIn user (Just p))
                     case access1 of
                         AccessGranted -> do
-                            logEvent INFO $ "gets access to " <> cshow mpp
+                            logEvent INFO $ "access page " <> cshow mpp
                             mr (Just user) p
                         AccessDenied s u -> handleDenied s u
                         AccessDeferred ->

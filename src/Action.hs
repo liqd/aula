@@ -325,7 +325,7 @@ type ActionSessionLog m = (ActionLog m, ActionUserHandler m)
 
 logEvent :: ActionSessionLog m => LogLevel -> ST -> m ()
 logEvent l m = do
-    session <- maybe "anonym" fromThentosSessionToken <$> userState getThentosSessionToken
+    session <- maybe "anonymous" fromThentosSessionToken <$> userState getThentosSessionToken
     log (LogEntry l ("[" <> cs session <> "] " <> m))
 
 throwError500 :: ActionSessionLog m => String -> m a
@@ -401,7 +401,7 @@ getSpacesForCurrentUser = do
 
 deleteUser :: (ActionSessionLog m, ActionPersist m) => AUID User -> m ()
 deleteUser uid = do
-    logEvent INFO $ cshow uid <> " is deactivated"
+    logEvent INFO $ "delete " <> cshow uid
     update $ DeactivateUser uid
 
 
