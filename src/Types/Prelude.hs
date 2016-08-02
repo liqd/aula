@@ -112,6 +112,11 @@ infixr 9 <...>
 (<...>) :: (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
 (<...>) f g x y z = f $ g x y z
 
+infixr 9 <....>
+
+(<....>) :: (e -> f) -> (a -> b -> c -> d -> e) -> a -> b -> c -> d -> f
+(<....>) f g x y z w = f $ g x y z w
+
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
 
