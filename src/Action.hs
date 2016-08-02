@@ -117,10 +117,11 @@ module Action
 
     , MonadServantErr, ThrowServantErr(..)
 
-    , module Action.Smtp
     , sendMailToRole
 
+    , module Action.Smtp  -- FIXME: can we do less of these re-exports?
     , module Logger
+
     -- * moderator's event log (FIXME: this section should all be local to this module)
     , eventLogUserCreatesTopic
     , eventLogUserCreatesIdea

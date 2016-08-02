@@ -14,11 +14,11 @@ import Logger.EventLog
 
 
 data LogLevel
-    = DEBUG -- Too much noise
-    | INFO  -- Regular system behavior
-    | WARN  -- Bad smells, login errors, authentication error
-    | ERROR -- Exceptions, requires investigation, 404
-    | NOLOG
+    = DEBUG  -- ^ Too much noise
+    | INFO   -- ^ Regular system behavior
+    | WARN   -- ^ Bad smells, login errors, authentication error
+    | ERROR  -- ^ Exceptions, requires investigation, 404
+    | NOLOG  -- ^ Utter silence (do not log any messages with this level!)
   deriving (Eq, Generic, Ord, Show, FromJSON, ToJSON)
 
 -- FIXME: EventLog should be merged with this module and everything in it renamed to something

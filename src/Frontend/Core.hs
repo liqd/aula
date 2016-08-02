@@ -692,7 +692,6 @@ coreRunHandler mp mr = do
     handleDenied s u = do
         logEvent WARN $ cs s
         throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
-        -- FIXME log these events as INFO, should we do this here or more globally for servant errors.
 
 completeRegistration :: ActionM m => m a
 completeRegistration = do
