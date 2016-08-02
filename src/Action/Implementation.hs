@@ -37,7 +37,7 @@ import Data.Time.Clock (getCurrentTime)
 import Prelude
 import Servant
 import Servant.Missing
-import System.Directory (copyFile, doesFileExist, getCurrentDirectory)
+import System.Directory (copyFile, doesFileExist)
 import System.FilePath hiding (isValid)
 import System.IO (IOMode(ReadMode), openFile, hClose, hFileSize)
 import Test.QuickCheck  -- FIXME: remove
@@ -187,8 +187,7 @@ instance ActionAvatar Action where
     savePngImageFile p = actionIO . savePngImage p
     addInitialAvatarImage user = do
         initialAvatars <- actionIO $ do
-            dir <- (</> initialAvatarsPath) <$> getCurrentDirectory
-            (dir </>) <$$> getDirectoryContentsNoDots dir
+            (initialAvatarsPath </>) <$$> getDirectoryContentsNoDots initialAvatarsPath
 
         file <- genGen (Test.QuickCheck.elements initialAvatars)
         updateAvatarByCopy user file
@@ -218,8 +217,7 @@ runActionExcept (ActionIOExcept e) = error500 # show e
 
 
 -- | Do not call 'saveAvatar', but check if target files exist, and only if not, *copy* the source.
--- The fact that we are using 'unsafePerformIO' requires some trickery to get this started.
--- NOTE: The there is a versy similar function to this one in DemoData generation.
+-- NOTE: The there is a very similar function to this one in DemoData generation.
 updateAvatarByCopy :: User -> FilePath -> Action ()
 updateAvatarByCopy user spath = do
     apath <- view (Config.getConfig . Config.avatarPath)

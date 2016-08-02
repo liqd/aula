@@ -191,7 +191,6 @@ updateAvatarByCopy user spath = do
         forM_ (Nothing : (Just <$> (avatarDefaultSize : avatarExtraSizes))) $ \dim -> do
             let tpath :: FilePath = user ^. _Id . avatarFile apath dim
             yes <- doesFileExist tpath
-            -- TODO: use system directory to copy file
             unless yes . void . system . unwords $ ["cp", show spath, show tpath]
         pure ()
     pure ()
