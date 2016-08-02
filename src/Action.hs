@@ -55,6 +55,9 @@ module Action
     , Action.checkValidPasswordToken
     , finalizePasswordViaEmail
 
+      -- * config
+    , Action.devMode
+
       -- * user state
     , UserState(..), usUserId, usCsrfToken, usSessionToken, usMessages
 
@@ -172,6 +175,7 @@ import Config
     , MonadReaderConfig
     , exposedUrl
     , delegateLikes
+    , devMode
     , avatarPath
     )
 import Data.Avatar
@@ -403,6 +407,13 @@ deleteUser :: (ActionSessionLog m, ActionPersist m) => AUID User -> m ()
 deleteUser uid = do
     logEvent INFO $ "delete " <> cshow uid
     update $ DeactivateUser uid
+
+
+-- * config
+
+-- FIXME: i think this is more confusing than helpful.  remove / inline?
+devMode :: MonadReaderConfig r m => m Bool
+devMode = view (getConfig . Config.devMode)
 
 
 -- * Phase Transitions
