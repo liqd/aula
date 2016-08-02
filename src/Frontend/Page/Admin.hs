@@ -714,14 +714,14 @@ adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m
 adminViewUsers qf qs = AdminViewUsers (mkUsersQuery qf qs) <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
-                    ActionCurrentTimestamp m) => FormPageHandler m AdminCreateUser
+                    ActionCurrentTimestamp m, ActionAvatar m) => FormPageHandler m AdminCreateUser
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
         forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
         pwd <- mkRandomPassword
-        addWithCurrentUser_ AddUser ProtoUser
+        user <- addWithCurrentUser AddUser ProtoUser
             { _protoUserLogin     = up ^. createUserLogin
             , _protoUserFirstName = up ^. createUserFirstName
             , _protoUserLastName  = up ^. createUserLastName
@@ -730,6 +730,7 @@ adminCreateUser = formPageHandlerCalcMsg
             , _protoUserEmail     = up ^. createUserEmail
             , _protoUserDesc      = nil
             }
+        addInitialAvatarImage user
     )
     (\_ u _ -> unwords ["Nutzer", createUserFullName u, "wurde angelegt."])
   where
