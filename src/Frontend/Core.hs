@@ -703,7 +703,7 @@ completeRegistration = do
         else redirectPath P.listSpaces
 
 makeFrame :: (MonadReaderConfig r m, ActionUserHandler m) => Maybe User -> p -> m (Frame p)
-makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages <*> Action.devMode
+makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages <*> view (getConfig . Config.devMode)
 
 -- | Call 'coreRunHandler' on a handler that has no effect on the database state, and 'Frame' the result.
 runHandler

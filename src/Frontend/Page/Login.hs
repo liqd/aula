@@ -15,6 +15,7 @@ import qualified Lucid
 import Access
 import Action (ActionM, query)
 import qualified Action
+import Config
 import Persistent
 import Frontend.Prelude
 import Frontend.Validation
@@ -122,7 +123,7 @@ login :: ActionM m => FormPageHandler m PageHomeWithLoginPrompt
 login = formPageHandlerWithoutCsrf getPage Action.loginByUser
   where
     getPage = do
-        dmode <- Action.devMode
+        dmode <- view (getConfig . Config.devMode)
         PageHomeWithLoginPrompt <$> if dmode
             then LoginDemoHints <$> query getActiveUsers
             else pure NoLoginDemoHints
