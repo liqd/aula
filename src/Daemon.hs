@@ -74,11 +74,7 @@ msgDaemon logger name computation handleException = do
     let sendMsg = atomically . writeTChan chan
         loop = forkIO . forever $ run `catch` handle
           where
-            run = join . atomically $ do
-                x <- readTChan chan
-                return $ do
-                    logger . LogEntry DEBUG . cs $ concat ["daemon [", name, "] recieved a message."]
-                    computation x
+            run = join . atomically $ computation <$> readTChan chan
 
             handle e@(SomeException e') = do
                 logger . LogEntry ERROR . cs $ concat ["daemon [", name, "] ", show e']
