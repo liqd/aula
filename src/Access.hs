@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -62,6 +63,7 @@ import Control.Lens
 import Data.Maybe
 import Data.Monoid
 import Data.String.Conversions
+import Data.Typeable
 import GHC.Generics (Generic)
 
 import qualified Data.Set as Set
@@ -414,7 +416,7 @@ instance Functor AccessInput where
 --
 -- >>>   :<|> UpDown ::> PostH (NeedCap 'CanVoteComment)
 data NeedCap (cap :: Capability) = NeedCap { _needCapCtx :: CapCtx }
-  deriving (Eq, Ord, Show, Read, Generic)
+  deriving (Eq, Ord, Show, Read, Generic, Typeable)
 
 data NeedAdmin = NeedAdmin
 

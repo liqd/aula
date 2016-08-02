@@ -591,7 +591,7 @@ formPageHandlerWithoutCsrf gt processor = FormPageHandler False gt processor noM
 -- places (e.g., a parent thread of all potentially file-opening threads, after they all
 -- terminate), we don't need to use `resourceForkIO`, which is one of the main complexities of
 -- the `resourcet` engine and it's use pattern.
-form :: (FormPage p, Page p, ActionM m) => FormPageHandler m p -> ServerT (FormHandler p) m
+form :: (FormPage p, Page p, ActionM m, Typeable p) => FormPageHandler m p -> ServerT (FormHandler p) m
 form formHandler = getH :<|> postH
   where
     csrfRequired = _formRequireCsrf formHandler
@@ -604,6 +604,7 @@ form formHandler = getH :<|> postH
         let fa = absoluteUriPath . relPath $ formAction page
         v <- getForm fa (processor1 page)
         t <- getCsrfToken
+        logEvent INFO $ "render form " <> cshow (typeOf page)
         pure $ FormPageRep t v fa page
 
     -- If form is not filled out successfully, 'postH' responds with a new page to render.  This
@@ -616,8 +617,10 @@ form formHandler = getH :<|> postH
         (case mpayload of
             Just payload -> do (newPath, msg) <- processor2 page payload
                                msg >>= mapM_ addMessage
+                               logEvent DEBUG $ "process form " <> cshow (typeOf page)
                                redirectPath newPath
             Nothing      -> do t <- getCsrfToken
+                               logEvent INFO $ "user errors on form " <> cshow (typeOf page)
                                UnsafePostResult <$> makeFrame mu (FormPageRep t v fa page))
             `finally` cleanupTempFiles formData
 
@@ -650,22 +653,32 @@ data Frame body
 -- The first function 'mp' computes the page from the current logged in user.  WARNING, 'mp' CAN be
 -- run before authorization, this 'mp' SHOULD NOT modify the state.  The second function 'mr'
 -- computes the result and performs the necessary action on the state.
-coreRunHandler :: forall m p r. (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-               => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
+coreRunHandler
+    :: forall m p r.
+            ( ActionPersist m, ActionUserHandler m
+            , MonadError ActionExcept m, ActionLog m
+            , Page p, Typeable p
+            )
+    => (Maybe User -> m p) -> (Maybe User -> p -> m r) -> m r
 coreRunHandler mp mr = do
+    let mpp = typeOf (error "coreRunHandler: mpp" :: p)
     isli <- isLoggedIn
     if isli
         then do
             user <- currentUser
             access0 <- isAuthorized (LoggedIn user Nothing :: AccessInput p)
             case access0 of
-                AccessGranted -> mr (Just user) =<< mp (Just user)
+                AccessGranted -> do
+                    logEvent INFO $ "access page " <> cshow mpp
+                    mr (Just user) =<< mp (Just user)
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> do
                     p <- mp (Just user)
                     access1 <- isAuthorized (LoggedIn user (Just p))
                     case access1 of
-                        AccessGranted -> mr (Just user) p
+                        AccessGranted -> do
+                            logEvent INFO $ "access page " <> cshow mpp
+                            mr (Just user) p
                         AccessDenied s u -> handleDenied s u
                         AccessDeferred ->
                             throwError500 "AccessDeferred should not be used with LoggedIn"
@@ -676,8 +689,9 @@ coreRunHandler mp mr = do
                 AccessDenied s u -> handleDenied s u
                 AccessDeferred -> throwError500 "AccessDeferred should not be used with NotLoggedIn"
   where
-    handleDenied s u = throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
-        -- FIXME log these events as INFO, should we do this here or more globally for servant errors.
+    handleDenied s u = do
+        logEvent WARN $ cs s
+        throwServantErr $ (maybe Servant.err403 err303With u) { errBody = cs s }
 
 completeRegistration :: ActionM m => m a
 completeRegistration = do
@@ -691,20 +705,26 @@ makeFrame :: (MonadReaderConfig r m, ActionUserHandler m) => Maybe User -> p -> 
 makeFrame mu p = maybe PublicFrame Frame mu p <$> flushMessages <*> Action.devMode
 
 -- | Call 'coreRunHandler' on a handler that has no effect on the database state, and 'Frame' the result.
-runHandler :: (MonadReaderConfig r m, ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-           => m p -> m (GetResult (Frame p))
+runHandler
+    :: ( MonadReaderConfig r m, ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, ActionLog m
+       , Typeable p, Page p)
+    => m p -> m (GetResult (Frame p))
 runHandler mp = coreRunHandler (const mp) (\mu p -> UnsafeGetResult <$> makeFrame mu p)
 
 -- | Like 'runHandler', but do not 'Frame' the result.
-runGetHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-                 => m p -> m (GetResult p)
+runGetHandler
+    :: ( ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, ActionLog m
+       , Page p, Typeable p)
+    => m p -> m (GetResult p)
 runGetHandler action = coreRunHandler (\_ -> action) (\_ -> pure . UnsafeGetResult)
 
 -- | Call 'coreRunHandler' on a post handler, and 'Frame' the result.  In contrast to 'runHandler',
 -- this case requires distinguishing between the action that promises not to modify the database
 -- state and the action that is supposed to do just that.
-runPostHandler :: (ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, Page p)
-               => m p -> m r -> m (PostResult p r)
+runPostHandler
+    :: ( ActionPersist m, ActionUserHandler m, MonadError ActionExcept m, ActionLog m
+       , Page p, Typeable p)
+    => m p -> m r -> m (PostResult p r)
 runPostHandler mp mr = coreRunHandler (const mp) $ \_ _ -> UnsafePostResult <$> mr
 
 

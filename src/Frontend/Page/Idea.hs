@@ -37,7 +37,7 @@ module Frontend.Page.Idea
 where
 
 import Access
-import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept
+import Action ( ActionM, ActionPersist, ActionUserHandler, ActionExcept, ActionLog
               , addWithCurrentUser, equery, mquery, update
               , locationCapCtx, ideaCapCtx, ideaCapCtx', commentCapCtx, commentCapCtx'
               , markIdeaInJuryPhase
@@ -675,7 +675,7 @@ instance FormPage ReportIdea where
 -- | FIXME: 'viewIdea' and 'editIdea' do not take an 'IdeaSpace' or @'AUID' 'Topic'@ param from the
 -- uri path, but use the idea location instead.  (this may potentially hide data inconsistencies.
 -- on the bright side, it makes shorter uri paths possible.)
-viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m, ActionCurrentTimestamp m)
+viewIdea :: (ActionPersist m, MonadError ActionExcept m, ActionUserHandler m, ActionCurrentTimestamp m, ActionLog m)
     => AUID Idea -> m ViewIdea
 viewIdea ideaId = do
     now <- getCurrentTimestamp

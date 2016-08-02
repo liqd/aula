@@ -41,6 +41,7 @@ module Action
     , addWithUser_
     , addWithCurrentUser
     , addWithCurrentUser_
+    , logEvent
     , currentUser
     , currentUserId
     , modifyCurrentUser
@@ -119,8 +120,10 @@ module Action
 
     , MonadServantErr, ThrowServantErr(..)
 
-    , module Action.Smtp
     , sendMailToRole
+
+    , module Action.Smtp  -- FIXME: can we do less of these re-exports?
+    , module Logger
 
     -- * moderator's event log (FIXME: this section should all be local to this module)
     , eventLogUserCreatesTopic
@@ -156,9 +159,10 @@ import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
-import Servant.Missing
+import Servant.Missing hiding (throwError500)
+import qualified Servant.Missing (throwError500)
 import Thentos.CookieSession.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
-import Thentos.CookieSession.Types (GetThentosSessionToken(..), ThentosSessionToken)
+import Thentos.CookieSession.Types (GetThentosSessionToken(..), ThentosSessionToken(..))
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
@@ -321,20 +325,32 @@ type ActionError m = (MonadError ActionExcept m)
 
 -- * User Handling
 
-checkActiveUser :: ActionUserHandler m => User -> m User
+type ActionSessionLog m = (ActionLog m, ActionUserHandler m)
+
+logEvent :: ActionSessionLog m => LogLevel -> ST -> m ()
+logEvent l m = do
+    session <- maybe "anonymous" fromThentosSessionToken <$> userState getThentosSessionToken
+    log (LogEntry l ("[" <> cs session <> "] " <> m))
+
+throwError500 :: ActionSessionLog m => String -> m a
+throwError500 msg = do
+    logEvent ERROR (cs msg)
+    Servant.Missing.throwError500 msg
+
+checkActiveUser :: (ActionSessionLog m, ActionUserHandler m) => User -> m User
 checkActiveUser user =
     if isDeletedUser user
         then logout >> throwError500 "Unknown user identitifer"
         else pure user
 
-loginByUser :: ActionUserHandler m => User -> m ()
+loginByUser :: (ActionSessionLog m, ActionUserHandler m) => User -> m ()
 loginByUser = checkActiveUser >=> login . view _Id
 
-loginByName :: (ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
+loginByName :: (ActionSessionLog m, ActionPersist m, ActionUserHandler m) => UserLogin -> m ()
 loginByName u = loginByUser =<< mquery (findUserByLogin u)
 
 -- | Returns the current user ID
-currentUserId :: ActionUserHandler m => m (AUID User)
+currentUserId :: (ActionSessionLog m, ActionUserHandler m) => m (AUID User)
 currentUserId = userState usUserId >>= \case
     Nothing -> throwError500 "User is logged out"
     Just uid -> pure uid
@@ -349,16 +365,16 @@ addWithUser_ :: (HasAUpdate ev a, ActionPersist m, ActionCurrentTimestamp m) =>
                (EnvWithProto a -> ev) -> User -> Proto a -> m ()
 addWithUser_ addA user protoA = void $ addWithUser addA user protoA
 
-addWithCurrentUser :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m a
+addWithCurrentUser :: (HasAUpdate ev a, ActionAddDb m, ActionLog m) => (EnvWithProto a -> ev) -> Proto a -> m a
 addWithCurrentUser addA protoA = do
     cUser <- currentUser
     addWithUser addA cUser protoA
 
-addWithCurrentUser_ :: (HasAUpdate ev a, ActionAddDb m) => (EnvWithProto a -> ev) -> Proto a -> m ()
+addWithCurrentUser_ :: (HasAUpdate ev a, ActionAddDb m, ActionLog m) => (EnvWithProto a -> ev) -> Proto a -> m ()
 addWithCurrentUser_ addA protoA = void $ addWithCurrentUser addA protoA
 
 -- | Returns the current user
-currentUser :: (ActionPersist m, ActionUserHandler m) => m User
+currentUser :: (ActionSessionLog m, ActionPersist m, ActionUserHandler m) => m User
 currentUser = do
     uid <- currentUserId
     muser <- query (findUser uid)
@@ -368,7 +384,7 @@ currentUser = do
         _   -> logout >> throwError500 "Unknown user identitifer"
 
 -- | Modify the current user.
-modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a)
+modifyCurrentUser :: (ActionPersist m, ActionUserHandler m, HasAUpdate ev a, ActionLog m)
                   => (AUID User -> ev) -> m a
 modifyCurrentUser ev =
     currentUser >>= checkActiveUser >>= update . ev . view _Id
@@ -382,13 +398,15 @@ validLoggedIn us = isJust (us ^. usUserId) && isJust (us ^. usSessionToken)
 validUserState :: UserState -> Bool
 validUserState us = us == userLoggedOut || validLoggedIn us
 
-getSpacesForCurrentUser :: (ActionUserHandler m, ActionPersist m) => m [IdeaSpace]
+getSpacesForCurrentUser :: (ActionUserHandler m, ActionPersist m, ActionLog m) => m [IdeaSpace]
 getSpacesForCurrentUser = do
     user <- currentUser
     query $ getSpacesForRoles (user ^. userRoleSet)
 
-deleteUser :: (ActionPersist m) => AUID User -> m ()
-deleteUser = update . DeactivateUser
+deleteUser :: (ActionSessionLog m, ActionPersist m) => AUID User -> m ()
+deleteUser uid = do
+    logEvent INFO $ "delete " <> cshow uid
+    update $ DeactivateUser uid
 
 
 -- * config
@@ -620,7 +638,7 @@ voteOnIdea ideaId voteVal = do
 -- | Returns `Just delegation` if the current user has
 -- explicit delegation in the given scope.
 delegationInScope
-    :: (ActionPersist m, ActionUserHandler m)
+    :: (ActionPersist m, ActionUserHandler m, ActionLog m)
     => DScope -> m (Maybe Delegation)
 delegationInScope scope = do
     delegatee <- currentUser
@@ -1134,20 +1152,20 @@ instance ActionM m => WarmUp' m Idea where
 instance ActionM m => WarmUp' m Comment where
     warmUp' k = mquery (findComment k)
 
-currentUserCapCtx :: (ActionPersist m, ActionUserHandler m) => m CapCtx
+currentUserCapCtx :: (ActionPersist m, ActionUserHandler m, ActionLog m) => m CapCtx
 currentUserCapCtx = userOnlyCapCtx <$> currentUser
 
-spaceCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+spaceCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
             => IdeaSpace -> m CapCtx
 spaceCapCtx space = do
     userCtx <- currentUserCapCtx
     pure $ userCtx & capCtxSpace ?~ space
 
-locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+locationCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
                => IdeaLocation -> m CapCtx
 locationCapCtx loc = view _1 <$> locationCapCtx' loc
 
-locationCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
+locationCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
                 => IdeaLocation -> m (CapCtx, Maybe Topic, Phase)
 locationCapCtx' loc = do
     (mtopic, phase) <-
@@ -1162,7 +1180,7 @@ locationCapCtx' loc = do
     let ctx = spaceCtx & capCtxPhase ?~ phase
     pure (ctx, mtopic, phase)
 
-topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+topicCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
             => AUID Topic -> m (CapCtx, Topic)
 topicCapCtx topicId = do
     userCtx <- currentUserCapCtx
@@ -1171,26 +1189,26 @@ topicCapCtx topicId = do
                       & capCtxPhase ?~ (topic ^. topicPhase)
     pure (ctx, topic)
 
-ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+ideaCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
            => AUID Idea -> m (CapCtx, Idea)
 ideaCapCtx iid = do
     (ctx, _, _, idea) <- ideaCapCtx' iid
     pure (ctx, idea)
 
-ideaCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
+ideaCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
             => AUID Idea -> m (CapCtx, Maybe Topic, Phase, Idea)
 ideaCapCtx' iid = do
     idea <- mquery $ findIdea iid
     (ctx, mtopic, phase) <- locationCapCtx' $ idea ^. ideaLocation
     pure (ctx & capCtxIdea ?~ idea, mtopic, phase, idea)
 
-commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m)
+commentCapCtx :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
               => CommentKey -> m (CapCtx, Comment)
 commentCapCtx ck = do
     (ctx, _, _, _, c) <- commentCapCtx' ck
     pure (ctx, c)
 
-commentCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m)
+commentCapCtx' :: (ActionPersist m, ActionError m, ActionUserHandler m, ActionLog m)
                => CommentKey -> m (CapCtx, Maybe Topic, Phase, Idea, Comment)
 commentCapCtx' ck = do
     (ctx, mtopic, phase, idea) <- ideaCapCtx' $ ck ^. ckIdeaId

@@ -15,7 +15,6 @@ import Prelude hiding ((.))
 import Arbitrary
 import AulaTests
 import DemoData
-import Logger (nullLog)
 import qualified Action
 import qualified Action.Implementation as Action
 import qualified Persistent

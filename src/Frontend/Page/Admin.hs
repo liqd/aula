@@ -714,23 +714,19 @@ adminViewUsers :: ActionPersist m => Maybe SearchUsers -> Maybe SortUsersBy -> m
 adminViewUsers qf qs = AdminViewUsers (mkUsersQuery qf qs) <$> query getUserViews
 
 adminCreateUser :: (ActionPersist m, ActionUserHandler m, ActionRandomPassword m,
-                    ActionCurrentTimestamp m, ActionAvatar m) => FormPageHandler m AdminCreateUser
+                    ActionCurrentTimestamp m, ActionLog m, ActionAvatar m)
+                => FormPageHandler m AdminCreateUser
 adminCreateUser = formPageHandlerCalcMsg
     (AdminCreateUser <$> query getSchoolClasses)
     (\up -> do
         forM_ (up ^.. createUserRoleSet . folded . roleSchoolClass) $
             update . AddIdeaSpaceIfNotExists . ClassSpace
-        pwd <- mkRandomPassword
-        user <- addWithCurrentUser AddUser ProtoUser
-            { _protoUserLogin     = up ^. createUserLogin
-            , _protoUserFirstName = up ^. createUserFirstName
-            , _protoUserLastName  = up ^. createUserLastName
-            , _protoUserRoleSet   = up ^. createUserRoleSet
-            , _protoUserPassword  = pwd
-            , _protoUserEmail     = up ^. createUserEmail
-            , _protoUserDesc      = nil
-            }
-        addInitialAvatarImage user
+        adminCreateUserHelper
+            (up ^. createUserLogin)
+            (up ^. createUserFirstName)
+            (up ^. createUserLastName)
+            (up ^. createUserEmail)
+            (up ^. createUserRoleSet)
     )
     (\_ u _ -> unwords ["Nutzer", createUserFullName u, "wurde angelegt."])
   where
@@ -738,6 +734,28 @@ adminCreateUser = formPageHandlerCalcMsg
     createUserFullName :: CreateUserPayload -> String
     createUserFullName u = unwords $ cs <$>
         [u ^. createUserFirstName . _UserFirstName, u ^. createUserLastName . _UserLastName]
+
+-- | Deduplicates code from 'adminCreateClass' and 'adminCreateUser' (which led to a bug that was
+-- fixed in #938).
+adminCreateUserHelper :: forall m. (ActionAddDb m, ActionRandomPassword m, ActionAvatar m, ActionLog m)
+    => Maybe UserLogin
+    -> UserFirstName
+    -> UserLastName
+    -> Maybe EmailAddress
+    -> Set Role
+    -> m ()
+adminCreateUserHelper mLogin firstName lastName mEmail roles = void $ do
+    pwd <- mkRandomPassword
+    user <- addWithCurrentUser AddUser ProtoUser
+        { _protoUserLogin     = mLogin
+        , _protoUserFirstName = firstName
+        , _protoUserLastName  = lastName
+        , _protoUserRoleSet   = roles
+        , _protoUserPassword  = pwd
+        , _protoUserEmail     = mEmail
+        , _protoUserDesc      = nil
+        }
+    addInitialAvatarImage user
 
 adminViewClasses :: ActionPersist m => Maybe SearchClasses -> m AdminViewClasses
 adminViewClasses qf = AdminViewClasses (mkClassesQuery qf) <$> query getSchoolClasses
@@ -867,7 +885,7 @@ instance FormPage AdminCreateClass where
             DF.inputSubmit "upload!"
 
 adminCreateClass
-    :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m, ActionAvatar m)
+    :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m, ActionAvatar m, ActionLog m)
     => FormPageHandler m AdminCreateClass
 adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
   where
@@ -888,18 +906,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
     p _     (CsvUserRecord _ _ _ _                          (Just _)) = do
         throwError500 "upload FAILED: internal error!"
     p roles (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
-      void $ do
-        pwd <- mkRandomPassword
-        user <- addWithCurrentUser AddUser ProtoUser
-            { _protoUserLogin     = mLogin
-            , _protoUserFirstName = firstName
-            , _protoUserLastName  = lastName
-            , _protoUserRoleSet   = roles
-            , _protoUserPassword  = pwd
-            , _protoUserEmail     = mEmail
-            , _protoUserDesc      = nil
-            }
-        addInitialAvatarImage user
+      adminCreateUserHelper mLogin firstName lastName mEmail roles
 
     msgOk :: ST
     msgOk = "Die Klasse wurde angelegt."
