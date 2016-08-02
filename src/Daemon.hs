@@ -36,7 +36,7 @@ type SystemLogger = LogEntry -> IO ()
 
 -- | The daemon is implemented as a thread.  `_msgDaemonStart` starts a new daemon.
 --
--- All implementations of `_msgDaemonStart` can be called several times.  The deamon threads thus
+-- All implementations of `_msgDaemonStart` can be called several times.  The daemon threads thus
 -- created share one channel and will race each other for the messages.  Use this to start up
 -- concurrent threads if message handling takes a long time, and would otherwise block the channel.
 data MsgDaemon a = MsgDaemon
@@ -59,8 +59,8 @@ instance Daemon (MsgDaemon a) where
 instance Daemon TimeoutDaemon where
     start = timeoutDaemonStart
 
--- | Message deamons receive typed messages over a 'Chan'.  Two example applications are logger
--- deamon (receive log messages and append them to a log file) and sendmail deamon (receive typed
+-- | Message daemons receive typed messages over a 'Chan'.  Two example applications are logger
+-- daemon (receive log messages and append them to a log file) and sendmail daemon (receive typed
 -- emails over 'Chan' and deliver them).
 msgDaemon
     :: SystemLogger
@@ -81,7 +81,7 @@ msgDaemon logger name computation handleException = do
                     computation x
 
             handle e@(SomeException e') = do
-                logger . LogEntry ERROR . cs $ concat ["error occured in daemon [", name, "] ", show e']
+                logger . LogEntry ERROR . cs $ concat ["daemon [", name, "] ", show e']
                 handleException e
 
     return $ MsgDaemon loop sendMsg
@@ -98,12 +98,12 @@ timeoutDaemon
 timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
     let run = do
             logger . LogEntry INFO . cs $
-                concat ["daemon [", name, "] timed out after ", showTimespan delay, "."]
+                concat ["daemon [", name, "] triggered (at frequency ", showTimespan delay, ")."]
             computation `catch` handle
 
         handle e@(SomeException e') = do
             logger . LogEntry ERROR . cs $
-                concat ["error occured in daemon [", name, "] ", show e']
+                concat ["daemon [", name, "] ", show e']
             handleException e
 
     forkIO . forever $ do
@@ -129,7 +129,7 @@ timeoutDaemon' logger name delay computation =
 
 -- * Log Daemon
 
--- | Create a log deamon
+-- | Create a log daemon
 logDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
 logDaemon cfg =
     msgDaemon logMsg "logger" logMsg (const $ pure ())
