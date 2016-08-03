@@ -117,7 +117,7 @@ library
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -251,7 +251,7 @@ executable aula-avatars
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -321,7 +321,7 @@ executable aula-html-dummies
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -394,7 +394,7 @@ executable aula-i18n
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -466,7 +466,7 @@ executable aula-init-state
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -536,7 +536,7 @@ executable aula-server
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq
@@ -607,7 +607,7 @@ test-suite spec
   ghc-options: -Wall
   build-depends:
       base >=4.8 && <4.9
-    , thentos-cookie-session >=0.9.0 && <0.10
+    , thentos-cookie-session >=0.9.1 && <0.10
     , aeson
     , aeson-pretty
     , aeson-qq

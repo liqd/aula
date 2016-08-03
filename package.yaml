@@ -33,7 +33,7 @@ ghc-options: -Wall
 
 dependencies:
     - base >=4.8 && <4.9
-    - thentos-cookie-session >=0.9.0 && <0.10
+    - thentos-cookie-session >=0.9.1 && <0.10
     - aeson
     - aeson-pretty
     - aeson-qq
