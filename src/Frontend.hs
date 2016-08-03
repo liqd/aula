@@ -55,13 +55,15 @@ runFrontend :: Config -> IO ()
 runFrontend cfg = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
-    let logMsg = log ^. msgDaemonSend
-    withPersist logMsg cfg (runFrontend' cfg logMsg)
+    runFrontendWithLogger cfg (log ^. msgDaemonSend)
+
+runFrontendWithLogger :: Config -> SendLogMsg -> IO ()
+runFrontendWithLogger cfg log = withPersist log cfg (runFrontendWithLoggerAndPersist cfg log)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
-runFrontend' :: Config -> SendLogMsg -> RunPersist -> IO ()
-runFrontend' cfg log rp = do
+runFrontendWithLoggerAndPersist :: Config -> SendLogMsg -> RunPersist -> IO ()
+runFrontendWithLoggerAndPersist cfg log rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv rp cfg log)
 

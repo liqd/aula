@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -12,6 +13,7 @@ module Daemon
     , timeoutDaemon
     , timeoutDaemon'
     , logDaemon
+    , unsafeLogDaemon
     )
 where
 
@@ -23,6 +25,7 @@ import Control.Monad (forever, join, when)
 import Data.Time.Clock (getCurrentTime)
 import Data.String.Conversions (cs, (<>))
 import System.IO (hPutStrLn, stderr)
+import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
@@ -67,13 +70,28 @@ msgDaemon
     -> String
     -> (a -> IO ())
     -> (SomeException -> IO ())
+    -> Bool
     -> IO (MsgDaemon a)
-msgDaemon logger name computation handleException = do
+msgDaemon logger name computation handleException threadSafe = do
     chan <- newTChanIO
+    alreadyRunningRef :: MVar (Maybe ThreadId) <- newMVar Nothing
 
     let sendMsg = atomically . writeTChan chan
-        loop = forkIO . forever $ run `catch` handle
+        loop = do
+            alreadyRunning <- takeMVar alreadyRunningRef
+            case (threadSafe, alreadyRunning) of
+                (False, Just tid) -> do
+                    logger . LogEntry WARN . cs $
+                        "no fork of thread-unsafe msgDaemon (using original thread): " <> name
+                    return tid
+                (False, Nothing) -> do
+                    tid <- new
+                    putMVar alreadyRunningRef (Just tid)
+                    return tid
+                _ -> do
+                    new
           where
+            new = forkIO . forever $ run `catch` handle
             run = join . atomically $ computation <$> readTChan chan
 
             handle e@(SomeException e') = do
@@ -125,10 +143,27 @@ timeoutDaemon' logger name delay computation =
 
 -- * Log Daemon
 
--- | Create a log daemon
+-- | Create a log daemon.  This is both responsible for the moderator's event log (file location
+-- given in Config.hs) and system log messages (stderr).
+--
+-- NOTE: 'logDaemon' can only be called once, and only have one thread.  Multiple calls to 'start'
+-- will return the same 'ThreadId', multiple calls to 'logDaemon' will crash.  (What would go wrong?
+-- If too many `logDaemon`s are running concurrently, they might undo each others moderator event
+-- log entries, or enter an inconsistent state.  also, stderr could be garbled if two lines are
+-- printed concurrently.)
 logDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
-logDaemon cfg =
-    msgDaemon logMsg "logger" logMsg (const $ pure ())
+logDaemon cfg = do
+    alreadyRunning <- modifyMVar logDaemonLock $ \b -> pure (True, b)
+    when alreadyRunning $ error "FATAL: tried to call logDaemon twice!"
+    unsafeLogDaemon cfg
+
+{-# NOINLINE logDaemonLock #-}
+logDaemonLock :: MVar Bool
+logDaemonLock = unsafePerformIO $ newMVar False
+
+unsafeLogDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
+unsafeLogDaemon cfg = do
+    msgDaemon logMsg "logger" logMsg (const $ pure ()) False
   where
     logMsg (LogEntry NOLOG _)        = pure ()
     logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ do
