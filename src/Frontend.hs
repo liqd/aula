@@ -24,8 +24,7 @@ import Network.Wai.Application.Static
 import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort, defaultSettings)
 import Servant
 import System.FilePath (addTrailingPathSeparator)
-import Thentos.CookieSession (serveFAction)
-import Thentos.CookieSession.Types (ThentosSessionToken)
+import Thentos.CookieSession (serveFAction, noopExtendClearanceOnSessionToken)
 import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import Access
@@ -50,12 +49,6 @@ import qualified Frontend.Path as U
 
 
 -- * driver
-
--- FIXME: not implemented.  i'm also not sure what this was supposed to do any more.  perhaps this
--- has been obsoleted by the 'isAuthorized' code and can be removed?  or is it intended to renew the
--- session so it won't time out unless the user is inactive for the timeout period?
-extendClearanceOnSessionToken :: Applicative m => ThentosSessionToken -> m ()
-extendClearanceOnSessionToken _ = pure ()
 
 -- | Call 'runFrontend'' with the persitence implementation chosen in the config.
 runFrontend :: Config -> IO ()
@@ -82,7 +75,7 @@ runFrontend' cfg log rp = do
                           (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy setCookie
-             extendClearanceOnSessionToken (Nat actionIO) runAction aulaActions
+             noopExtendClearanceOnSessionToken (Nat actionIO) runAction aulaActions
 
     let settings :: Warp.Settings
         settings = setHost (fromString $ cfg ^. listenerInterface)
