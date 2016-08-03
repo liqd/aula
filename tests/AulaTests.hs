@@ -36,6 +36,7 @@ import qualified Network.Wreq.Session as Sess
 import qualified Test.WebDriver as WD
 
 import Config
+import Daemon (unsafeLogDaemon, msgDaemonSend, start)
 
 import Network.Wreq     as X hiding (get, post, put, head_, Proxy, Link)
 import Test.Hspec       as X
@@ -200,7 +201,9 @@ runFrontendSafeFork = tryListener 37
 
 runFrontendSafeFork' :: Config -> IO ThreadId
 runFrontendSafeFork' cfg = do
-    threadId <- forkIO $ runFrontendWithLogger cfg (\_ -> pure ())
+    logger <- unsafeLogDaemon (cfg ^. logging)
+    void $ logger ^. start
+    threadId <- forkIO $ runFrontendWithLogger cfg (logger ^. msgDaemonSend)
     waitForListener 37 >> return threadId
   where
     waitForListener :: Int -> IO ()

@@ -13,6 +13,7 @@ module Daemon
     , timeoutDaemon
     , timeoutDaemon'
     , logDaemon
+    , unsafeLogDaemon
     )
 where
 
@@ -154,6 +155,14 @@ logDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
 logDaemon cfg = do
     alreadyRunning <- modifyMVar logDaemonLock $ \b -> pure (True, b)
     when alreadyRunning $ error "FATAL: tried to call logDaemon twice!"
+    unsafeLogDaemon cfg
+
+{-# NOINLINE logDaemonLock #-}
+logDaemonLock :: MVar Bool
+logDaemonLock = unsafePerformIO $ newMVar False
+
+unsafeLogDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
+unsafeLogDaemon cfg = do
     msgDaemon logMsg "logger" logMsg (const $ pure ()) False
   where
     logMsg (LogEntry NOLOG _)        = pure ()
@@ -161,8 +170,3 @@ logDaemon cfg = do
                                             now <- getCurrentTime
                                             hPutStrLn stderr (cshow now <> " [" <> cshow level <> "] " <> cs msg)
     logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
-
-
-{-# NOINLINE logDaemonLock #-}
-logDaemonLock :: MVar Bool
-logDaemonLock = unsafePerformIO $ newMVar False
