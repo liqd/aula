@@ -200,7 +200,7 @@ runFrontendSafeFork = tryListener 37
 
 runFrontendSafeFork' :: Config -> IO ThreadId
 runFrontendSafeFork' cfg = do
-    threadId <- forkIO $ runFrontend cfg
+    threadId <- forkIO $ runFrontendWithLogger cfg (\_ -> pure ())
     waitForListener 37 >> return threadId
   where
     waitForListener :: Int -> IO ()
