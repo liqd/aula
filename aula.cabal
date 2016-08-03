@@ -17,7 +17,7 @@ build-type:     Simple
 cabal-version:  >= 1.10
 
 data-files:
-    default-avatars/test_user.png
+    default-avatars/default-profile-image.png
     docker/get-ip.sh
     docker/make-seito.sh
     docker/run.sh
