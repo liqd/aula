@@ -25,7 +25,6 @@ import Network.Wai.Handler.Warp as Warp (Settings, runSettings, setHost, setPort
 import Servant
 import System.FilePath (addTrailingPathSeparator)
 import Thentos.CookieSession (serveFAction, noopExtendClearanceOnSessionToken)
-import Thentos.CookieSession.Types (ThentosSessionToken)
 import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 
 import Access
