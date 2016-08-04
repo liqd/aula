@@ -11,7 +11,7 @@ in a shell:
 ```shell
 # install docker
 docker pull quay.io/liqd/aula
-git clone https://github.com/liqd/aula
+git clone --recursive https://github.com/liqd/aula
 cd aula
 ./docker/run.sh
 # now you are inside the container.
