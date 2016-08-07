@@ -42,7 +42,7 @@ testing.  If you want to use it, follow these steps:
 - in a shell:
 
 ```shell
-git clone https://github.com/liqd/aula
+git clone --recursive https://github.com/liqd/aula
 export AULA_ROOT_PATH=`pwd`/aula
 cd aula
 cabal sandbox init
