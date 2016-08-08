@@ -96,7 +96,7 @@ runFrontendWithLoggerAndPersist cfg log waiMetrics rp = do
         . (if cfg ^. devMode then createPageSamples else id)
         . disableCaching
         . catch404
-        . (maybe id EKG.metrics waiMetrics)
+        . maybe id EKG.metrics waiMetrics
         . serve aulaTopProxy $ aulaTop cfg app
 
 
