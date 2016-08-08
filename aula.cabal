@@ -17,7 +17,7 @@ build-type:     Simple
 cabal-version:  >= 1.10
 
 data-files:
-    default-avatars/test_user.png
+    default-avatars/default-profile-image.png
     docker/get-ip.sh
     docker/make-seito.sh
     docker/run.sh
@@ -102,10 +102,6 @@ data-files:
     static/third-party/d3/d3.js
     static/third-party/d3/d3.min.js
     static/third-party/modernizr/modernizr-custom.js
-    static/third-party/showdown/dist/showdown.js
-    static/third-party/showdown/dist/showdown.js.map
-    static/third-party/showdown/dist/showdown.min.js
-    static/third-party/showdown/dist/showdown.min.js.map
 
 source-repository head
   type: git
@@ -148,6 +144,7 @@ library
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show
@@ -227,6 +224,7 @@ library
       Lucid.Missing
       Persistent
       Persistent.Api
+      Persistent.Facade
       Persistent.Idiom
       Persistent.Implementation
       Persistent.Implementation.AcidState
@@ -282,6 +280,7 @@ executable aula-avatars
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show
@@ -352,6 +351,7 @@ executable aula-html-dummies
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show
@@ -425,6 +425,7 @@ executable aula-i18n
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show
@@ -497,6 +498,7 @@ executable aula-init-state
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show
@@ -567,6 +569,7 @@ executable aula-server
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show
@@ -638,6 +641,7 @@ test-suite spec
     , lens
     , lucid
     , mime-mail
+    , monad-param
     , mtl
     , parsec
     , pretty-show

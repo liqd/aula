@@ -1,30 +1,98 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE RebindableSyntax           #-}
 module Persistent.Facade
 where
 
+import Prelude
+import Control.Lens (uses)
+import Control.Monad.Except
+import Control.Monad.Identity
+import Control.Monad.Reader
+import Control.Monad.State
 import Data.String.Conversions (ST)
 
 import Types
-import Types.Prelude ((<...>))
 
 import qualified Persistent.Api  as Api
 import qualified Persistent.Pure as Pure
 
-data Persist a = Persist
 
-instance Functor Persist where
-    fmap f Persist = Persist
+data PersistMode
+    = Query
+    | Update
 
-instance Applicative Persist where
-    pure    = const Persist
-    f <*> x = Persist
+-- The StateT is used as a reader, to keep the compatibility with the previous api.
+newtype Persist (m :: PersistMode) a = Persist (ExceptT Pure.PersistExcept (StateT Api.RunPersist (ReaderT Pure.AulaData IO)) a)
+  deriving (Functor, Applicative, Monad, MonadError Pure.PersistExcept, MonadState Api.RunPersist, MonadReader Pure.AulaData)
 
-instance Monad Persist where
-    return  = pure
-    m >>= k = Persist
+persistIO :: IO a -> Persist m a
+persistIO = Persist . liftIO
 
+update :: Pure.HasAUpdate ev a => ev -> Persist 'Update a
+update ev = do
+    either (error . show) pure
+    =<< persistIO =<< uses Api.rpUpdate ($ ev)
+
+runPersistQuery :: Persist 'Query a -> IO a
+runPersistQuery = undefined
+
+runPersistUpdate :: Persist 'Update a -> IO a
+runPersistUpdate = undefined
+
+{-
+instance Functor (Persist m) where
+    fmap _f Persist = Persist
+
+instance Applicative (Persist m) where
+    pure      = const $ Persist
+    _f <*> _x = Persist
+
+instance Monad (Persist m) where
+    return    = pure
+    _m >>= _k = Persist
+
+getIdeas :: Persist 'Query [Idea]
+getIdeas = undefined
+
+saveIdea :: Idea -> Persist 'Update ()
+saveIdea = undefined
+
+liftQuery :: Persist 'Query a -> Persist 'Update a
+liftQuery = undefined
+
+runPersistQuery :: Persist 'Query a -> IO a
+runPersistQuery = undefined
+
+runPersistUpdate :: Persist 'Update a -> IO a
+runPersistUpdate = undefined
+
+x :: Persist 'Update ()
+x = do
+    ideas <- liftQuery getIdeas
+    saveIdea (ideas !! 0)
+
+
+
+instance MonadReader Pure.AulaData (Persist m) where
+    ask               = Persist
+    local  _f Persist = Persist
+    reader _r         = Persist
+
+instance MonadError Pure.PersistExcept (Persist m) where
+    throwError _   = Persist
+    catchError _ _ = Persist
+-}
+
+{-
 update :: Pure.HasAUpdate ev a => ev -> Persist a
-update = undefined
+update = do
+        either throwPersistError pure
+            =<< actionIO =<< views (envRunPersist . rpUpdate) ($ ev)undefined
 
 addCommentToIdea :: IdeaLocation -> AUID Idea -> Pure.EnvWith CommentContent -> Persist Comment
 addCommentToIdea = update <...> Api.AddCommentToIdea
@@ -160,3 +228,8 @@ deactivateUser = update . Api.DeactivateUser
 
 setTermsOfUse :: Document -> Persist ()
 setTermsOfUse = update . Api.SetTermsOfUse
+-}
+
+
+getIdeas :: Persist 'Query [Idea]
+getIdeas = Pure.getIdeas

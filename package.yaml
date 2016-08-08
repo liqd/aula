@@ -64,6 +64,7 @@ dependencies:
     - lens
     - lucid
     - mime-mail
+    - monad-param
     - mtl
     - parsec
     - pretty-show
