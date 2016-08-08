@@ -99,6 +99,22 @@ data-files:
     static/images/winner.png
     static/images/yay.png
     static/js/custom.js
+    static/svg/aula-logo.svg
+    static/svg/badge_aufdemtisch.svg
+    static/svg/hourglass.svg
+    static/svg/icon_aktivitaeten.svg
+    static/svg/icon_all_cats.svg
+    static/svg/icon_ausstattung.svg
+    static/svg/icon_bulb_grey.svg
+    static/svg/icon_regeln.svg
+    static/svg/icon_umgebung.svg
+    static/svg/icon_unterricht.svg
+    static/svg/icon_zeit.svg
+    static/svg/nay.svg
+    static/svg/school_teaser.svg
+    static/svg/winner.svg
+    static/svg/yay.svg
+    static/templates/student_upload.csv
     static/third-party/d3/d3.js
     static/third-party/d3/d3.min.js
     static/third-party/modernizr/modernizr-custom.js

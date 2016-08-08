@@ -20,11 +20,13 @@ data-files:
     - docker/*
     - default-avatars/*
     - static/*
-    - static/js/*
     - static/css/*
     - static/fonts/*
     - static/icons/*
     - static/images/*
+    - static/js/*
+    - static/svg/*
+    - static/templates/*
     - static/third-party/modernizr/modernizr-custom.js
     - static/third-party/showdown/dist/*
     - static/third-party/d3/d3.*js
