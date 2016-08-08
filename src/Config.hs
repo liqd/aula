@@ -20,6 +20,8 @@ module Config
     , avatarPath
     , listenerInterface
     , listenerPort
+    , monitoringInterface
+    , monitoringPort
     , persistConfig
     , persistenceImpl
     , readConfig, configFilePath
@@ -117,6 +119,8 @@ data Config = Config
     { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
     , _listenerInterface    :: String
     , _listenerPort         :: Int
+    , _monitoringInterface  :: String
+    , _monitoringPort       :: Int
     , _htmlStatic           :: FilePath
     , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
@@ -177,6 +181,8 @@ defaultConfig = Config
     { _exposedUrl           = "http://localhost:8080"
     , _listenerInterface    = "0.0.0.0"
     , _listenerPort         = 8080
+    , _monitoringInterface  = "0.0.0.0"
+    , _monitoringPort       = 8888
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"
