@@ -423,11 +423,17 @@ instance Page CsrfToken where
 data Page404 = Page404
   deriving (Eq, Show)
 
-instance Page Page404 where isAuthorized = publicPage
+instance Page Page404 where
+    isAuthorized = publicPage
 
+-- TODO: Check page layout
+-- TODO: Translation
 instance ToHtml Page404 where
     toHtmlRaw = toHtml
-    toHtml Page404 = div_ $ p_ "404"
+    toHtml p@Page404 = semanticDiv p $ do
+        div_ [class_ "login-register-form"] $ do
+            h1_ [class_ "main-heading"] "404 missing data"
+            div_ $ a_ [class_ "btn-cta", href_ P.login] "Login"
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken
