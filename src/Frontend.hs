@@ -58,13 +58,15 @@ runFrontend cfg = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
     waiMetrics <- startEKG cfg
-    runFrontendWithLogger cfg (log ^. msgDaemonSend) (Just waiMetrics)
+    runFrontendWithLogger cfg (log ^. msgDaemonSend) waiMetrics
 
-startEKG :: Config -> IO EKG.WaiMetrics
-startEKG cfg = do
-    store <- EKG.serverMetricStore
-             <$> EKG.forkServer (cfg ^. monitoringInterface . csi) (cfg ^. monitoringPort)
-    EKG.registerWaiMetrics store
+startEKG :: Config -> IO (Maybe EKG.WaiMetrics)
+startEKG cfg =
+    forM (cfg ^. monitoringConfig) $ \mcfg -> do
+        store <- EKG.serverMetricStore
+                 <$> EKG.forkServer (mcfg ^. monitoringInterface . csi)
+                                    (mcfg ^. monitoringPort)
+        EKG.registerWaiMetrics store
 
 runFrontendWithLogger :: Config -> SendLogMsg -> Maybe EKG.WaiMetrics -> IO ()
 runFrontendWithLogger cfg log metrics = withPersist log cfg (runFrontendWithLoggerAndPersist cfg log metrics)

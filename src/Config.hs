@@ -20,6 +20,7 @@ module Config
     , avatarPath
     , listenerInterface
     , listenerPort
+    , monitoringConfig
     , monitoringInterface
     , monitoringPort
     , persistConfig
@@ -115,12 +116,19 @@ data LogConfig = LogConfig
 
 makeLenses ''LogConfig
 
+data MonitoringConfig = MonitoringConfig
+    { _monitoringPort      :: Int
+    , _monitoringInterface :: String
+    }
+  deriving (Show, Generic, ToJSON, FromJSON)
+
+makeLenses ''MonitoringConfig
+
 data Config = Config
     { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
     , _listenerInterface    :: String
     , _listenerPort         :: Int
-    , _monitoringInterface  :: String
-    , _monitoringPort       :: Int
+    , _monitoringConfig     :: Maybe MonitoringConfig
     , _htmlStatic           :: FilePath
     , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
@@ -176,13 +184,18 @@ defaultLogConfig = LogConfig
     , _eventLogPath = "./aulaEventLog.json"
     }
 
+defaultMonitoringConfig :: MonitoringConfig
+defaultMonitoringConfig = MonitoringConfig
+    { _monitoringInterface  = "0.0.0.0"
+    , _monitoringPort       = 8888
+    }
+
 defaultConfig :: Config
 defaultConfig = Config
     { _exposedUrl           = "http://localhost:8080"
     , _listenerInterface    = "0.0.0.0"
     , _listenerPort         = 8080
-    , _monitoringInterface  = "0.0.0.0"
-    , _monitoringPort       = 8888
+    , _monitoringConfig     = Just defaultMonitoringConfig
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"
