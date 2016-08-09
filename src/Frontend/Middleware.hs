@@ -25,7 +25,6 @@ import qualified Data.ByteString.Builder as Builder
 import AulaPrelude
 import Frontend.Core
 import Frontend.Prelude
-import Frontend.Testing
 
 
 catch404 :: Bool -> Middleware

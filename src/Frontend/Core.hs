@@ -40,6 +40,7 @@ module Frontend.Core
       -- * pages
     , Page(..)
     , PageShow(..)
+    , Page404(..)
 
       -- * forms
     , FormPage
@@ -418,6 +419,15 @@ instance Page CsrfToken where
     -- This could be lowered to userPage as anyone able to request any form can see his/her CSRF
     -- token. However since this is just used for testing purposes so far there is no need to allow
     -- that.
+
+data Page404 = Page404
+  deriving (Eq, Show)
+
+instance Page Page404 where isAuthorized = publicPage
+
+instance ToHtml Page404 where
+    toHtmlRaw = toHtml
+    toHtml Page404 = div_ $ p_ "404"
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken

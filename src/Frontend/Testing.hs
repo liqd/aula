@@ -11,7 +11,6 @@ where
 
 import Servant
 
-import Access (publicPage)
 import Frontend.Core
 import Frontend.Prelude
 import Persistent
@@ -42,12 +41,3 @@ aulaTesting =
   :<|> runGetHandler undefined  -- (intentional)
   :<|> runGetHandler (throwError500 "testing error500")
   :<|> runGetHandler (redirect ("/target" :: String))
-
-data Page404 = Page404
-  deriving (Eq, Show)
-
-instance Page Page404 where isAuthorized = publicPage
-
-instance ToHtml Page404 where
-    toHtmlRaw = toHtml
-    toHtml Page404 = div_ $ p_ "404"
