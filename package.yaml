@@ -53,6 +53,7 @@ dependencies:
     - digestive-functors-lucid
     - directory
     - ekg
+    - ekg-core
     - elocrypt >=0.4.1 && <0.5
     - email-validate
     - filepath
