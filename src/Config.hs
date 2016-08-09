@@ -12,15 +12,25 @@ module Config
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , aulaRoot
+    , aulaTimeLocale
+    , avatarPath
+    , cfgCsrfSecret
+    , checkAvatarPathExists
+    , checkAvatarPathExistsAndIsEmpty
+    , checkStaticHtmlPathExists
     , dbPath
     , defaultRecipient
+    , delegateLikes
+    , devMode
+    , eventLogPath
     , exposedUrl
     , getSamplesPath
     , htmlStatic
-    , avatarPath
     , listener
     , listenerInterface
     , listenerPort
+    , logging
+    , logLevel
     , monitoring
     , persistConfig
     , persistenceImpl
@@ -33,18 +43,8 @@ module Config
     , setCurrentDirectoryToAulaRoot
     , smtpConfig
     , snapshotInterval
-    , delegateLikes
     , timeoutCheckInterval
-    , devMode
-    , logging
-    , logLevel
-    , eventLogPath
     , unsafeTimestampToLocalTime
-    , aulaTimeLocale
-    , checkAvatarPathExists
-    , checkAvatarPathExistsAndIsEmpty
-    , checkStaticHtmlPathExists
-    , cfgCsrfSecret
     )
 where
 
