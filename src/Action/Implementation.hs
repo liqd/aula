@@ -47,8 +47,10 @@ import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as LBS (lines)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Thentos.CookieSession.CSRF as CSRF (checkCsrfToken)
+import qualified System.Metrics.Gauge as Gauge (Gauge, inc, dec)
 
 import Action
+import AulaMetrics
 import Config
 import Frontend.Constant
 import Logger.EventLog
@@ -148,11 +150,17 @@ instance ActionEncryptPassword Action where
 instance ActionCurrentTimestamp Action where
     getCurrentTimestamp = actionIO $ Timestamp <$> getCurrentTime
 
+withUsersGauge :: (Gauge.Gauge -> IO ()) -> Action ()
+withUsersGauge action = do
+    mUserGauge <- asks (^? (envMetrics . _Just . aulaUsersGauge))
+    forM_ mUserGauge (actionIO . action)
+
 instance ActionUserHandler Action where
     login uid = do
         usUserId .= Just uid
         sessionToken <- freshSessionToken
         usSessionToken .= Just sessionToken
+        withUsersGauge Gauge.inc
 
     addMessage msg = usMessages %= (msg:)
 
@@ -163,7 +171,10 @@ instance ActionUserHandler Action where
 
     userState = use
 
-    logout = put userLoggedOut >> addMessage "Danke fürs Mitmachen!"
+    logout = do
+        -- decrement only if there is a user logged in
+        use usSessionToken >>= mapM_ (const (withUsersGauge Gauge.dec))
+        put userLoggedOut >> addMessage "Danke fürs Mitmachen!"
 
 instance ActionCsrfToken Action where
     getCsrfToken   = use usCsrfToken
