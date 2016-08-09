@@ -32,7 +32,7 @@ module Config
     , logging
     , logLevel
     , monitoring
-    , persistConfig
+    , persist
     , persistenceImpl
     , readConfig, configFilePath
     , releaseVersion
@@ -41,7 +41,7 @@ module Config
     , sendmailArgs
     , sendmailPath
     , setCurrentDirectoryToAulaRoot
-    , smtpConfig
+    , smtp
     , snapshotInterval
     , timeoutCheckInterval
     , unsafeTimestampToLocalTime
@@ -131,8 +131,8 @@ data Config = Config
     , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
-    , _persistConfig        :: PersistConfig
-    , _smtpConfig           :: SmtpConfig
+    , _persist              :: PersistConfig
+    , _smtp                 :: SmtpConfig
     , _delegateLikes        :: Bool
     , _timeoutCheckInterval :: Timespan
     -- ^ Topics which needs to change phase due to a timeout will
@@ -191,8 +191,8 @@ defaultConfig = Config
     , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"
     , _logging              = defaultLogConfig
-    , _persistConfig        = defaultPersistConfig
-    , _smtpConfig           = defaultSmtpConfig
+    , _persist              = defaultPersistConfig
+    , _smtp                 = defaultSmtpConfig
     , _delegateLikes        = True
     , _timeoutCheckInterval = TimespanHours 6
     , _devMode              = False

@@ -54,8 +54,8 @@ mkRunPersistOnDisk logger cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
     opn aulaData = do
-        st <- explainException $ openLocalStateFrom (cfg ^. persistConfig . dbPath) aulaData
-        let delay = cfg ^. persistConfig . snapshotInterval
+        st <- explainException $ openLocalStateFrom (cfg ^. persist . dbPath) aulaData
+        let delay = cfg ^. persist . snapshotInterval
             checkpoint = createCheckpoint st >> createArchive st
             daemon = timeoutDaemon' logger "create acid-state checkpoint, archive" delay checkpoint
         tid <- daemon ^. start

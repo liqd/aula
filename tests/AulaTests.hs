@@ -91,8 +91,8 @@ testConfig = do
         void . system . unwords $ ["rm -rf", tmpPool, "; mkdir -p", tmpPool]
         createTempDirectory tmpPool "d"
     cfg & listener . listenerPort         .~ pop
-        & persistConfig . dbPath          .~ "./state/AulaData_Tests"
-        & persistConfig . persistenceImpl .~ AcidStateInMem
+        & persist . dbPath                .~ "./state/AulaData_Tests"
+        & persist . persistenceImpl       .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
         & avatarPath                      .~ avt
