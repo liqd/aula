@@ -37,10 +37,13 @@ catch404 devMode app req cont = app req $ \resp -> cont $ f resp
         else responseBuilder status headers builder
       where
         status  = responseStatus resp
-        headers = responseHeaders resp
         builder = Builder.byteString . cs
                 . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
                 $ PublicFrame Page404 [] devMode
+
+        setContentType ("Content-Type", "text/plain") = ("Content-Type", "text/html;charset=utf-8")
+        setContentType h = h
+        headers = map setContentType $ responseHeaders resp
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a
