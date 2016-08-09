@@ -69,7 +69,7 @@ runBoostrap cfg action = do
     void $ log ^. start
     let logMsg = log ^. msgDaemonSend
     withPersist logMsg cfg $ \rp -> do
-        let runAction = mkRunAction (ActionEnv rp cfg logMsg)
+        let runAction = mkRunAction (ActionEnv rp cfg logMsg Nothing)
         unNat (exceptToFail . runAction) action
 
 createInitState :: Config -> Options -> IO ()

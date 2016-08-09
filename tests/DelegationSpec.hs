@@ -193,7 +193,7 @@ spec = do
     createActionRunner = do
         cfg <- testConfig
         let runAction :: Persistent.RunPersist -> (Action.Action :~> IO)
-            runAction persist = exceptToFail . Action.mkRunAction (Action.ActionEnv persist cfg nullLog)
+            runAction persist = exceptToFail . Action.mkRunAction (Action.ActionEnv persist cfg nullLog Nothing)
 
         return runAction
 

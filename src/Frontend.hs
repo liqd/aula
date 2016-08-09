@@ -30,6 +30,7 @@ import Web.Cookie (SetCookie, def, setCookieName, setCookiePath)
 import Access
 import Action (ActionM, UserState, ActionEnv(..), logout, phaseTimeout)
 import Action.Implementation (Action, mkRunAction, actionIO)
+import AulaMetrics (AulaMetrics, registerAulaMetrics)
 import AulaPrelude
 import Config
 import Daemon
@@ -57,24 +58,26 @@ runFrontend :: Config -> IO ()
 runFrontend cfg = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
-    waiMetrics <- startEKG cfg
-    runFrontendWithLogger cfg (log ^. msgDaemonSend) waiMetrics
+    metrics <- startEKG cfg
+    runFrontendWithLogger cfg (log ^. msgDaemonSend) metrics
 
-startEKG :: Config -> IO (Maybe EKG.WaiMetrics)
+startEKG :: Config -> IO (Maybe (EKG.WaiMetrics, AulaMetrics))
 startEKG cfg =
     forM (cfg ^. monitoring) $ \(ListenerConfig host port) -> do
         store <- EKG.serverMetricStore <$> EKG.forkServer (cs host) port
-        EKG.registerWaiMetrics store
 
-runFrontendWithLogger :: Config -> SendLogMsg -> Maybe EKG.WaiMetrics -> IO ()
+        (,) <$> EKG.registerWaiMetrics store
+            <*> registerAulaMetrics store
+
+runFrontendWithLogger :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> IO ()
 runFrontendWithLogger cfg log metrics = withPersist log cfg (runFrontendWithLoggerAndPersist cfg log metrics)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
-runFrontendWithLoggerAndPersist :: Config -> SendLogMsg -> Maybe EKG.WaiMetrics -> RunPersist -> IO ()
-runFrontendWithLoggerAndPersist cfg log waiMetrics rp = do
+runFrontendWithLoggerAndPersist :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> RunPersist -> IO ()
+runFrontendWithLoggerAndPersist cfg log metrics rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
-        runAction = mkRunAction (ActionEnv rp cfg log)
+        runAction = mkRunAction (ActionEnv rp cfg log (snd <$> metrics))
 
         aulaTopProxy = Proxy :: Proxy AulaTop
         stateProxy   = Proxy :: Proxy UserState
@@ -97,7 +100,7 @@ runFrontendWithLoggerAndPersist cfg log waiMetrics rp = do
         . (if cfg ^. devMode then createPageSamples else id)
         . disableCaching
         . catch404
-        . maybe id EKG.metrics waiMetrics
+        . maybe id EKG.metrics (fst <$> metrics)
         . serve aulaTopProxy $ aulaTop cfg app
 
 
