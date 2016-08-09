@@ -87,7 +87,7 @@ sendMailToAddressIO logger receiver msg = do
     -- It would be actually even nicer to un-tangle the logger using a MonadWriter.
     -- Then only the SmtpConfig would be pulled in.
     cfg <- viewConfig
-    let scfg   = cfg ^. smtpConfig
+    let scfg   = cfg ^. smtp
         sender = Address (Just $ scfg ^. senderName . to cs) (scfg ^. senderEmail . to cs)
         subj   = "[" <> subjectLabel <> "] " <> msg ^. msgSubjectText
         mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody)

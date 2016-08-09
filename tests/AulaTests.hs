@@ -90,9 +90,9 @@ testConfig = do
         tmpPool <- (<> "aula-test-avatar-static") <$> getTemporaryDirectory
         void . system . unwords $ ["rm -rf", tmpPool, "; mkdir -p", tmpPool]
         createTempDirectory tmpPool "d"
-    cfg & listenerPort                    .~ pop
-        & persistConfig . dbPath          .~ "./state/AulaData_Tests"
-        & persistConfig . persistenceImpl .~ AcidStateInMem
+    cfg & listener . listenerPort         .~ pop
+        & persist . dbPath                .~ "./state/AulaData_Tests"
+        & persist . persistenceImpl       .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
         & avatarPath                      .~ avt
@@ -188,8 +188,8 @@ withServerAsAdmin action = withServer $ \wreq -> do
     action wreq
 
 mkServerUri :: Config -> String -> String
-mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
-                          <> ":" <> show (cfg ^. listenerPort)
+mkServerUri cfg path = "http://" <> cs (cfg ^. listener . listenerInterface)
+                          <> ":" <> show (cfg ^. listener . listenerPort)
                           <> path
 
 runFrontendSafeFork :: Config -> IO (ThreadId, Config)
@@ -203,7 +203,7 @@ runFrontendSafeFork' :: Config -> IO ThreadId
 runFrontendSafeFork' cfg = do
     logger <- unsafeLogDaemon (cfg ^. logging)
     void $ logger ^. start
-    threadId <- forkIO $ runFrontendWithLogger cfg (logger ^. msgDaemonSend)
+    threadId <- forkIO $ runFrontendWithLogger cfg (logger ^. msgDaemonSend) Nothing
     waitForListener 37 >> return threadId
   where
     waitForListener :: Int -> IO ()

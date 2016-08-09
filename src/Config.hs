@@ -7,20 +7,32 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Config
-    ( Config(Config), SmtpConfig(SmtpConfig), LogConfig(..)
+    ( Config(Config), ListenerConfig(..), SmtpConfig(SmtpConfig), LogConfig(..)
     , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
     , aulaRoot
+    , aulaTimeLocale
+    , avatarPath
+    , cfgCsrfSecret
+    , checkAvatarPathExists
+    , checkAvatarPathExistsAndIsEmpty
+    , checkStaticHtmlPathExists
     , dbPath
     , defaultRecipient
+    , delegateLikes
+    , devMode
+    , eventLogPath
     , exposedUrl
     , getSamplesPath
     , htmlStatic
-    , avatarPath
+    , listener
     , listenerInterface
     , listenerPort
-    , persistConfig
+    , logging
+    , logLevel
+    , monitoring
+    , persist
     , persistenceImpl
     , readConfig, configFilePath
     , releaseVersion
@@ -29,20 +41,10 @@ module Config
     , sendmailArgs
     , sendmailPath
     , setCurrentDirectoryToAulaRoot
-    , smtpConfig
+    , smtp
     , snapshotInterval
-    , delegateLikes
     , timeoutCheckInterval
-    , devMode
-    , logging
-    , logLevel
-    , eventLogPath
     , unsafeTimestampToLocalTime
-    , aulaTimeLocale
-    , checkAvatarPathExists
-    , checkAvatarPathExistsAndIsEmpty
-    , checkStaticHtmlPathExists
-    , cfgCsrfSecret
     )
 where
 
@@ -113,16 +115,24 @@ data LogConfig = LogConfig
 
 makeLenses ''LogConfig
 
+data ListenerConfig = ListenerConfig
+    { _listenerInterface :: String
+    , _listenerPort      :: Int
+    }
+  deriving (Show, Generic, ToJSON, FromJSON)
+
+makeLenses ''ListenerConfig
+
 data Config = Config
     { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
-    , _listenerInterface    :: String
-    , _listenerPort         :: Int
+    , _listener             :: ListenerConfig
+    , _monitoring           :: Maybe ListenerConfig
     , _htmlStatic           :: FilePath
     , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
-    , _persistConfig        :: PersistConfig
-    , _smtpConfig           :: SmtpConfig
+    , _persist              :: PersistConfig
+    , _smtp                 :: SmtpConfig
     , _delegateLikes        :: Bool
     , _timeoutCheckInterval :: Timespan
     -- ^ Topics which needs to change phase due to a timeout will
@@ -175,14 +185,14 @@ defaultLogConfig = LogConfig
 defaultConfig :: Config
 defaultConfig = Config
     { _exposedUrl           = "http://localhost:8080"
-    , _listenerInterface    = "0.0.0.0"
-    , _listenerPort         = 8080
+    , _listener             = ListenerConfig "0.0.0.0" 8080
+    , _monitoring           = Just (ListenerConfig "0.0.0.0" 8888)
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"
     , _logging              = defaultLogConfig
-    , _persistConfig        = defaultPersistConfig
-    , _smtpConfig           = defaultSmtpConfig
+    , _persist              = defaultPersistConfig
+    , _smtp                 = defaultSmtpConfig
     , _delegateLikes        = True
     , _timeoutCheckInterval = TimespanHours 6
     , _devMode              = False

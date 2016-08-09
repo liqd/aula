@@ -31,7 +31,7 @@ data-files:
     - static/third-party/showdown/dist/*
     - static/third-party/d3/d3.*js
 
-ghc-options: -Wall
+ghc-options: -Wall -with-rtsopts=-T
 
 dependencies:
     - base >=4.8 && <4.9
@@ -52,6 +52,7 @@ dependencies:
     - digestive-functors
     - digestive-functors-lucid
     - directory
+    - ekg
     - elocrypt >=0.4.1 && <0.5
     - email-validate
     - filepath
@@ -87,6 +88,7 @@ dependencies:
     - vector
     - wai
     - wai-app-static
+    - wai-middleware-metrics
     - warp
     - yaml
     - zip-archive

@@ -47,6 +47,8 @@ import qualified Action
 import qualified Backend
 import qualified Frontend.Path as U
 
+import qualified System.Remote.Monitoring as EKG
+import qualified Network.Wai.Metrics      as EKG
 
 -- * driver
 
@@ -55,15 +57,22 @@ runFrontend :: Config -> IO ()
 runFrontend cfg = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
-    runFrontendWithLogger cfg (log ^. msgDaemonSend)
+    waiMetrics <- startEKG cfg
+    runFrontendWithLogger cfg (log ^. msgDaemonSend) waiMetrics
 
-runFrontendWithLogger :: Config -> SendLogMsg -> IO ()
-runFrontendWithLogger cfg log = withPersist log cfg (runFrontendWithLoggerAndPersist cfg log)
+startEKG :: Config -> IO (Maybe EKG.WaiMetrics)
+startEKG cfg =
+    forM (cfg ^. monitoring) $ \(ListenerConfig host port) -> do
+        store <- EKG.serverMetricStore <$> EKG.forkServer (cs host) port
+        EKG.registerWaiMetrics store
+
+runFrontendWithLogger :: Config -> SendLogMsg -> Maybe EKG.WaiMetrics -> IO ()
+runFrontendWithLogger cfg log metrics = withPersist log cfg (runFrontendWithLoggerAndPersist cfg log metrics)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
-runFrontendWithLoggerAndPersist :: Config -> SendLogMsg -> RunPersist -> IO ()
-runFrontendWithLoggerAndPersist cfg log rp = do
+runFrontendWithLoggerAndPersist :: Config -> SendLogMsg -> Maybe EKG.WaiMetrics -> RunPersist -> IO ()
+runFrontendWithLoggerAndPersist cfg log waiMetrics rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv rp cfg log)
 
@@ -80,14 +89,15 @@ runFrontendWithLoggerAndPersist cfg log rp = do
              noopExtendClearanceOnSessionToken (Nat actionIO) runAction aulaActions
 
     let settings :: Warp.Settings
-        settings = setHost (fromString $ cfg ^. listenerInterface)
-                 . setPort (cfg ^. listenerPort)
+        settings = setHost (fromString $ cfg ^. listener . listenerInterface)
+                 . setPort (cfg ^. listener . listenerPort)
                  $ Warp.defaultSettings
 
     runSettings settings
         . (if cfg ^. devMode then createPageSamples else id)
         . disableCaching
         . catch404
+        . maybe id EKG.metrics waiMetrics
         . serve aulaTopProxy $ aulaTop cfg app
 
 

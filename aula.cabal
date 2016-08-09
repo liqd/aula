@@ -130,7 +130,7 @@ source-repository head
 library
   hs-source-dirs:
       src
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -150,6 +150,7 @@ library
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -185,6 +186,7 @@ library
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive
@@ -264,7 +266,7 @@ executable aula-avatars
   main-is: ResizeAvatar.hs
   hs-source-dirs:
       exec
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -284,6 +286,7 @@ executable aula-avatars
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -319,6 +322,7 @@ executable aula-avatars
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive
@@ -334,7 +338,7 @@ executable aula-html-dummies
   main-is: RenderHtml.hs
   hs-source-dirs:
       exec
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -354,6 +358,7 @@ executable aula-html-dummies
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -389,6 +394,7 @@ executable aula-html-dummies
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive
@@ -407,7 +413,7 @@ executable aula-i18n
   main-is: I18N.hs
   hs-source-dirs:
       exec
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -427,6 +433,7 @@ executable aula-i18n
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -462,6 +469,7 @@ executable aula-i18n
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive
@@ -479,7 +487,7 @@ executable aula-init-state
   main-is: InitState.hs
   hs-source-dirs:
       exec
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -499,6 +507,7 @@ executable aula-init-state
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -534,6 +543,7 @@ executable aula-init-state
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive
@@ -549,7 +559,7 @@ executable aula-server
   main-is: Aula.hs
   hs-source-dirs:
       exec
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -569,6 +579,7 @@ executable aula-server
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -604,6 +615,7 @@ executable aula-server
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive
@@ -620,7 +632,7 @@ test-suite spec
   main-is: Spec.hs
   hs-source-dirs:
       tests
-  ghc-options: -Wall
+  ghc-options: -Wall -with-rtsopts=-T
   build-depends:
       base >=4.8 && <4.9
     , thentos-cookie-session >=0.9.1 && <0.10
@@ -640,6 +652,7 @@ test-suite spec
     , digestive-functors
     , digestive-functors-lucid
     , directory
+    , ekg
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -675,6 +688,7 @@ test-suite spec
     , vector
     , wai
     , wai-app-static
+    , wai-middleware-metrics
     , warp
     , yaml
     , zip-archive

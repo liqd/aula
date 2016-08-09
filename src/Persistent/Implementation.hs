@@ -26,6 +26,6 @@ withPersist' mkRunP m = do
 
 mkRunPersist :: SendLogMsg -> Config -> IO RunPersist
 mkRunPersist logger cfg =
-    case cfg ^. persistConfig . persistenceImpl of
+    case cfg ^. persist . persistenceImpl of
         AcidStateInMem  -> mkRunPersistInMemory
         AcidStateOnDisk -> mkRunPersistOnDisk logger cfg
