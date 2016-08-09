@@ -62,10 +62,8 @@ runFrontend cfg = do
 
 startEKG :: Config -> IO (Maybe EKG.WaiMetrics)
 startEKG cfg =
-    forM (cfg ^. monitoringConfig) $ \mcfg -> do
-        store <- EKG.serverMetricStore
-                 <$> EKG.forkServer (mcfg ^. monitoringInterface . csi)
-                                    (mcfg ^. monitoringPort)
+    forM (cfg ^. monitoring) $ \(ListenerConfig host port) -> do
+        store <- EKG.serverMetricStore <$> EKG.forkServer (cs host) port
         EKG.registerWaiMetrics store
 
 runFrontendWithLogger :: Config -> SendLogMsg -> Maybe EKG.WaiMetrics -> IO ()
@@ -91,8 +89,8 @@ runFrontendWithLoggerAndPersist cfg log waiMetrics rp = do
              noopExtendClearanceOnSessionToken (Nat actionIO) runAction aulaActions
 
     let settings :: Warp.Settings
-        settings = setHost (fromString $ cfg ^. listenerInterface)
-                 . setPort (cfg ^. listenerPort)
+        settings = setHost (fromString $ cfg ^. listener . listenerInterface)
+                 . setPort (cfg ^. listener . listenerPort)
                  $ Warp.defaultSettings
 
     runSettings settings

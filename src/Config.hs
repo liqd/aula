@@ -7,7 +7,7 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Config
-    ( Config(Config), SmtpConfig(SmtpConfig), LogConfig(..)
+    ( Config(Config), ListenerConfig(..), SmtpConfig(SmtpConfig), LogConfig(..)
     , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
@@ -18,11 +18,10 @@ module Config
     , getSamplesPath
     , htmlStatic
     , avatarPath
+    , listener
     , listenerInterface
     , listenerPort
-    , monitoringConfig
-    , monitoringInterface
-    , monitoringPort
+    , monitoring
     , persistConfig
     , persistenceImpl
     , readConfig, configFilePath
@@ -116,19 +115,18 @@ data LogConfig = LogConfig
 
 makeLenses ''LogConfig
 
-data MonitoringConfig = MonitoringConfig
-    { _monitoringPort      :: Int
-    , _monitoringInterface :: String
+data ListenerConfig = ListenerConfig
+    { _listenerInterface :: String
+    , _listenerPort      :: Int
     }
   deriving (Show, Generic, ToJSON, FromJSON)
 
-makeLenses ''MonitoringConfig
+makeLenses ''ListenerConfig
 
 data Config = Config
     { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
-    , _listenerInterface    :: String
-    , _listenerPort         :: Int
-    , _monitoringConfig     :: Maybe MonitoringConfig
+    , _listener             :: ListenerConfig
+    , _monitoring           :: Maybe ListenerConfig
     , _htmlStatic           :: FilePath
     , _avatarPath           :: FilePath  -- avatars are stored in this directory
     , _cfgCsrfSecret        :: CsrfSecret
@@ -184,18 +182,11 @@ defaultLogConfig = LogConfig
     , _eventLogPath = "./aulaEventLog.json"
     }
 
-defaultMonitoringConfig :: MonitoringConfig
-defaultMonitoringConfig = MonitoringConfig
-    { _monitoringInterface  = "0.0.0.0"
-    , _monitoringPort       = 8888
-    }
-
 defaultConfig :: Config
 defaultConfig = Config
     { _exposedUrl           = "http://localhost:8080"
-    , _listenerInterface    = "0.0.0.0"
-    , _listenerPort         = 8080
-    , _monitoringConfig     = Just defaultMonitoringConfig
+    , _listener             = ListenerConfig "0.0.0.0" 8080
+    , _monitoring           = Just (ListenerConfig "0.0.0.0" 8888)
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"

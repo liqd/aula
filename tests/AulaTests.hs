@@ -90,7 +90,7 @@ testConfig = do
         tmpPool <- (<> "aula-test-avatar-static") <$> getTemporaryDirectory
         void . system . unwords $ ["rm -rf", tmpPool, "; mkdir -p", tmpPool]
         createTempDirectory tmpPool "d"
-    cfg & listenerPort                    .~ pop
+    cfg & listener . listenerPort         .~ pop
         & persistConfig . dbPath          .~ "./state/AulaData_Tests"
         & persistConfig . persistenceImpl .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
@@ -188,8 +188,8 @@ withServerAsAdmin action = withServer $ \wreq -> do
     action wreq
 
 mkServerUri :: Config -> String -> String
-mkServerUri cfg path = "http://" <> cs (cfg ^. listenerInterface)
-                          <> ":" <> show (cfg ^. listenerPort)
+mkServerUri cfg path = "http://" <> cs (cfg ^. listener . listenerInterface)
+                          <> ":" <> show (cfg ^. listener . listenerPort)
                           <> path
 
 runFrontendSafeFork :: Config -> IO (ThreadId, Config)
