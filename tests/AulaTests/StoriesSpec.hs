@@ -51,7 +51,7 @@ story msg program expected = it msg $ do
         Persistent.withPersist nullLog cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO
-                runAction = exceptToFail . mkRunAction (Action.ActionEnv persist cfg nullLog)
+                runAction = exceptToFail . mkRunAction (Action.ActionEnv persist cfg nullLog Nothing)
 
             a <- unNat runAction $ do
                   genInitialTestDb

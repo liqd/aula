@@ -151,6 +151,7 @@ library
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -197,6 +198,7 @@ library
       Action.Implementation
       Action.Smtp
       Arbitrary
+      AulaMetrics
       AulaPrelude
       Backend
       Config
@@ -287,6 +289,7 @@ executable aula-avatars
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -359,6 +362,7 @@ executable aula-html-dummies
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -434,6 +438,7 @@ executable aula-i18n
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -508,6 +513,7 @@ executable aula-init-state
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -580,6 +586,7 @@ executable aula-server
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath
@@ -653,6 +660,7 @@ test-suite spec
     , digestive-functors-lucid
     , directory
     , ekg
+    , ekg-core
     , elocrypt >=0.4.1 && <0.5
     , email-validate
     , filepath

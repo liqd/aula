@@ -55,7 +55,7 @@ mkState setup impl k = do
         k rp
 
 runA :: Config -> RunPersist -> Action.Action a -> IO a
-runA cfg rp = unNat (exceptToFail . Action.mkRunAction (Action.ActionEnv rp cfg nullLog))
+runA cfg rp = unNat (exceptToFail . Action.mkRunAction (Action.ActionEnv rp cfg nullLog Nothing))
 
 runQ :: (MonadIO m) => RunPersist -> Query a -> m a
 runQ rp q = liftIO $ runReader q <$> rp ^. rpQuery

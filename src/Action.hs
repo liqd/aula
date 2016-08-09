@@ -31,7 +31,7 @@ module Action
     , ActionAddDb
     , ActionError
     , ActionExcept(..)
-    , ActionEnv(..), envRunPersist, envConfig, envLogger
+    , ActionEnv(..), envRunPersist, envConfig, envLogger, envMetrics
     , StatusMessage
 
       -- * user handling
@@ -169,6 +169,7 @@ import qualified Data.Text as ST
 import qualified Data.Vector as V
 
 import Action.Smtp
+import AulaMetrics
 import Config
     ( Config
     , GetConfig(..)
@@ -214,6 +215,7 @@ data ActionEnv = ActionEnv
     { _envRunPersist :: RunPersist
     , _envConfig     :: Config
     , _envLogger     :: SendLogMsg
+    , _envMetrics    :: Maybe AulaMetrics
     }
 
 makeLenses ''ActionEnv

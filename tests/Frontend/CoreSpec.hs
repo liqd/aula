@@ -373,7 +373,7 @@ runFailOnErrorIO :: Action a -> IO a
 runFailOnErrorIO action = do
     cfg <- testConfig
     persist <- mkRunPersist nullLog cfg
-    let env = ActionEnv persist cfg nullLog
+    let env = ActionEnv persist cfg nullLog Nothing
     unNat (exceptToFail . mkRunAction env) action
 
 -- | Checks if the form processes valid and invalid input a valid output and an error page, resp.
