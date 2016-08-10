@@ -40,6 +40,7 @@ module Frontend.Core
       -- * pages
     , Page(..)
     , PageShow(..)
+    , Page404(..)
 
       -- * forms
     , FormPage
@@ -418,6 +419,19 @@ instance Page CsrfToken where
     -- This could be lowered to userPage as anyone able to request any form can see his/her CSRF
     -- token. However since this is just used for testing purposes so far there is no need to allow
     -- that.
+
+data Page404 = Page404
+  deriving (Eq, Show)
+
+instance Page Page404 where
+    isAuthorized = publicPage
+
+instance ToHtml Page404 where
+    toHtmlRaw = toHtml
+    toHtml p@Page404 = semanticDiv p $ do
+        h1_ [class_ "main-heading"] "404"
+        h2_ [class_ "sub-header"] "Diese Seite gibt es leider nicht."
+        div_ $ a_ [class_ "btn-cta", href_ P.login] "Start"
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken

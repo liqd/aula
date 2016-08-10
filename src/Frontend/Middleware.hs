@@ -2,10 +2,11 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -25,11 +26,10 @@ import qualified Data.ByteString.Builder as Builder
 import AulaPrelude
 import Frontend.Core
 import Frontend.Prelude
-import Frontend.Testing
 
 
-catch404 :: Middleware
-catch404 app req cont = app req $ \resp -> cont $ f resp
+catch404 :: Bool -> Middleware
+catch404 devMode app req cont = app req $ \resp -> cont $ f resp
   where
     f :: Response -> Response
     f resp = if statusCode status /= 404
@@ -37,11 +37,21 @@ catch404 app req cont = app req $ \resp -> cont $ f resp
         else responseBuilder status headers builder
       where
         status  = responseStatus resp
-        headers = responseHeaders resp
         builder = Builder.byteString . cs
                 . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
-                -- FIXME: The dev mode parameter should come from the config
-                $ PublicFrame Page404 [] False
+                $ PublicFrame Page404 [] devMode
+
+        htmlContentType = ("Content-Type", "text/html;charset=utf-8")
+
+        repairContentType =
+            \case ("Content-Type", "text/plain") -> htmlContentType
+                  h                              -> h
+
+        addContentType hs
+            | any (view (_1 . to (== "Content-Type"))) hs = hs
+            | otherwise = htmlContentType : hs
+
+        headers = addContentType . map repairContentType $ responseHeaders resp
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a

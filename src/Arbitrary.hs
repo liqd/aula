@@ -105,7 +105,6 @@ import Frontend.Fragment.Comment
 import Frontend.Fragment.IdeaList
 import Frontend.Page
 import Frontend.Prelude (set, (^.), over, (.~), (%~), (&))
-import Frontend.Testing (Page404(..))
 import Persistent
 import Types
 

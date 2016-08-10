@@ -19,6 +19,7 @@ module Config
     , checkAvatarPathExistsAndIsEmpty
     , checkStaticHtmlPathExists
     , dbPath
+    , defaultConfig
     , defaultRecipient
     , delegateLikes
     , devMode
