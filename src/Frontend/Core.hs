@@ -435,12 +435,12 @@ instance ToHtml HttpErrorPage where
       where
         errorTitle = case p of
             Page404 -> "404"
-            Page4xx -> "400"
-            Page5xx -> "500"
+            Page4xx -> "4xx"
+            Page5xx -> "5xx"
         errorDesc = case p of
             Page404 -> "Diese Seite gibt es leider nicht."
-            Page4xx -> "Interner Serverfehler"
-            Page5xx -> "Interner Serverfehler"
+            Page4xx -> "Diese Seite gibt es leider nicht."
+            Page5xx -> "Interner Serverfehler."
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken
