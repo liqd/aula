@@ -420,7 +420,7 @@ instance Page CsrfToken where
     -- token. However since this is just used for testing purposes so far there is no need to allow
     -- that.
 
-data HttpErrorPage = Page4xx | Page404 | Page5xx
+data HttpErrorPage = Page404 | Page4xx Int | Page5xx Int
   deriving (Eq, Show)
 
 instance Page HttpErrorPage where
@@ -434,13 +434,13 @@ instance ToHtml HttpErrorPage where
         div_ $ a_ [class_ "btn-cta", href_ P.login] "Start"
       where
         errorTitle = case p of
-            Page404 -> "404"
-            Page4xx -> "4xx"
-            Page5xx -> "5xx"
+            Page404   -> "404"
+            Page4xx s -> s ^. showed . html
+            Page5xx s -> s ^. showed . html
         errorDesc = case p of
-            Page404 -> "Diese Seite gibt es leider nicht."
-            Page4xx -> "Diese Seite gibt es leider nicht."
-            Page5xx -> "Interner Serverfehler."
+            Page404   -> "Diese Seite gibt es leider nicht."
+            Page4xx _ -> "Diese Seite gibt es leider nicht."
+            Page5xx _ -> "Interner Serverfehler."
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken

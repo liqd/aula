@@ -36,7 +36,7 @@ catchHttpErrors devMode app req cont = app req $ \resp -> cont $ f resp
                 404                     -> responseBuilder status headers body404
                 n | n >= 400 && n < 500 -> responseBuilder status headers body4xx
                 n | n >= 500            -> responseBuilder status headers body5xx
-                _            -> resp
+                _                       -> resp
       where
         status  = responseStatus resp
         builder page =
@@ -45,8 +45,8 @@ catchHttpErrors devMode app req cont = app req $ \resp -> cont $ f resp
                 $ PublicFrame page [] devMode
 
         body404 = builder Page404
-        body4xx = builder Page4xx
-        body5xx = builder Page5xx
+        body4xx = builder (Page4xx $ statusCode status)
+        body5xx = builder (Page5xx $ statusCode status)
 
         htmlContentType = ("Content-Type", "text/html;charset=utf-8")
 

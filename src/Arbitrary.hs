@@ -181,7 +181,7 @@ instance Arbitrary PasswordTokens where
 -- * pages
 
 instance Arbitrary HttpErrorPage where
-    arbitrary = elements [Page4xx, Page404, Page5xx]
+    arbitrary = elements [Page404, Page4xx 400, Page5xx 500]
 
 instance Arbitrary PageOverviewOfSpaces where
     arbitrary = PageOverviewOfSpaces <$> arb
