@@ -88,6 +88,8 @@ runFrontendWithLoggerAndPersist cfg log metrics rp = do
     void $ timeoutDaemon' log "background phase transition" (cfg ^. timeoutCheckInterval)
                           (unNat (exceptToFail . runAction) phaseTimeout) ^. start
 
+    void $ cleanUpDaemon log (cfg ^. cleanUp) ^. start
+
     app <- serveFAction (Proxy :: Proxy AulaActions) stateProxy setCookie
              noopExtendClearanceOnSessionToken (Nat actionIO) runAction aulaActions
 

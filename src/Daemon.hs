@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
@@ -14,6 +15,7 @@ module Daemon
     , timeoutDaemon'
     , logDaemon
     , unsafeLogDaemon
+    , cleanUpDaemon
     )
 where
 
@@ -21,9 +23,13 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Exception hiding (handle)
 import Control.Lens
-import Control.Monad (forever, join, when)
+import Control.Monad (filterM, forever, forM_, join, when)
+import Data.Functor.Infix ((<$$>))
+import Data.List (isPrefixOf)
 import Data.Time.Clock (getCurrentTime)
 import Data.String.Conversions (cs, (<>))
+import System.Directory
+import System.FilePath
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -170,3 +176,18 @@ unsafeLogDaemon cfg = do
                                             now <- getCurrentTime
                                             hPutStrLn stderr (cshow now <> " [" <> cshow level <> "] " <> cs msg)
     logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
+
+cleanUpDaemon :: SystemLogger -> CleanUpConfig -> TimeoutDaemon
+cleanUpDaemon logger CleanUpConfig{..} =
+    timeoutDaemon' logger "CLEANUP" _cleanUpInterval (mapM_ (cleanUpDir logger) _cleanUpRules)
+
+cleanUpDir :: SystemLogger -> CleanUpRule -> IO ()
+cleanUpDir logger CleanUpRule{..} = do
+    let basePath = _cleanUpDirectory
+    files <- filterM doesFileExist =<< (basePath </>) <$$> filter (_cleanUpPrefix `isPrefixOf`)
+             <$> getDirectoryContents basePath
+    mods  <- mapM getModificationTime files
+    let files' = drop _cleanUpKeepnum $ fst <$> reverseSortOn (to snd) (files `zip` mods)
+    forM_ files' $ \file -> do
+        logger . LogEntry INFO . cs $ "deleting file " <> file
+        removeFile file
