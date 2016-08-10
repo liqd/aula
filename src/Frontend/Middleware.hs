@@ -5,8 +5,8 @@
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -50,7 +50,7 @@ catch404 devMode app req cont = app req $ \resp -> cont $ f resp
 
         addContentType hs
             | any (view (_1 . to (== "Content-Type"))) hs = hs
-            | otherwise = htmlContentType:hs
+            | otherwise = htmlContentType : hs
 
         headers = addContentType . map repairContentType $ responseHeaders resp
 
