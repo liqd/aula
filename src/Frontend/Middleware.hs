@@ -28,13 +28,14 @@ import Frontend.Core
 import Frontend.Prelude
 
 
-catchErrors :: Bool -> Middleware
-catchErrors devMode app req cont = app req $ \resp -> cont $ f resp
+catchHttpErrors :: Bool -> Middleware
+catchHttpErrors devMode app req cont = app req $ \resp -> cont $ f resp
   where
     f :: Response -> Response
     f resp = case statusCode status of
-                404          -> responseBuilder status headers body404
-                n | n >= 500 -> responseBuilder status headers body5xx
+                404                     -> responseBuilder status headers body404
+                n | n >= 400 && n < 500 -> responseBuilder status headers body4xx
+                n | n >= 500            -> responseBuilder status headers body5xx
                 _            -> resp
       where
         status  = responseStatus resp
@@ -44,6 +45,7 @@ catchErrors devMode app req cont = app req $ \resp -> cont $ f resp
                 $ PublicFrame page [] devMode
 
         body404 = builder Page404
+        body4xx = builder Page4xx
         body5xx = builder Page5xx
 
         htmlContentType = ("Content-Type", "text/html;charset=utf-8")
