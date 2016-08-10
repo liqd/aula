@@ -80,7 +80,6 @@ instance Tag TestSuite where
 -- (In case somebody accidentally tests on a production system: change dbPath, avatars path etc.)
 testConfig :: IO Config
 testConfig = do
-    cfg <- readConfig nullLog DontWarnMissing
     pop <- modifyMVar testConfigPortSource $ \(h:t) -> pure (t, h)
     avt <- do
         -- each test suite run accumulates a few MB of avatar images; since using
@@ -90,12 +89,14 @@ testConfig = do
         tmpPool <- (<> "aula-test-avatar-static") <$> getTemporaryDirectory
         void . system . unwords $ ["rm -rf", tmpPool, "; mkdir -p", tmpPool]
         createTempDirectory tmpPool "d"
-    cfg & listener . listenerPort         .~ pop
+    defaultConfig
+        & listener . listenerPort         .~ pop
         & persist . dbPath                .~ "./state/AulaData_Tests"
         & persist . persistenceImpl       .~ AcidStateInMem
         & logging . logLevel              .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
         & avatarPath                      .~ avt
+        & Config.devMode                  .~ True
         & pure
 
 
