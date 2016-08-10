@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -43,14 +44,15 @@ catch404 devMode app req cont = app req $ \resp -> cont $ f resp
 
         htmlContentType = ("Content-Type", "text/html;charset=utf-8")
 
-        setContentType ("Content-Type", "text/plain") = htmlContentType
-        setContentType h = h
+        repairContentType =
+            \case ("Content-Type", "text/plain") -> htmlContentType
+                  h                              -> h
 
         addContentType hs
             | any (view (_1 . to (== "Content-Type"))) hs = hs
             | otherwise = htmlContentType:hs
 
-        headers = addContentType . map setContentType $ responseHeaders resp
+        headers = addContentType . map repairContentType $ responseHeaders resp
 
 
 -- | If query contains @create_page_sample=true@, set header @Accept: text/plain@.  This provides a
