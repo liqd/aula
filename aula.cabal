@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.24.4
+version:        v0.24.5
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -31,6 +31,7 @@ data-files:
     docs/testing.md
     README.md
     scripts/run.sh
+    scripts/shutdown.sh
     static/css/all.css
     static/css/all.css.map
     static/d3-aula.css
