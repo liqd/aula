@@ -7,10 +7,17 @@
 {-# OPTIONS_GHC -Werror -Wall -fno-warn-orphans #-}
 
 module Config
-    ( Config(Config), ListenerConfig(..), SmtpConfig(SmtpConfig), LogConfig(..)
+    ( Config(Config)
+    , ListenerConfig(..)
+    , SmtpConfig(SmtpConfig)
+    , LogConfig(..)
+    , CleanUpConfig(..)
+    , CleanUpRule(..)
+
     , GetConfig(..), MonadReaderConfig
     , WarnMissing(DontWarnMissing, WarnMissing, CrashMissing)
     , PersistenceImpl(..)
+
     , aulaRoot
     , aulaTimeLocale
     , avatarPath
@@ -18,6 +25,12 @@ module Config
     , checkAvatarPathExists
     , checkAvatarPathExistsAndIsEmpty
     , checkStaticHtmlPathExists
+    , cleanUp
+    , cleanUpDirectory
+    , cleanUpKeepnum
+    , cleanUpInterval
+    , cleanUpPrefix
+    , cleanUpRules
     , dbPath
     , defaultConfig
     , defaultRecipient
@@ -124,6 +137,24 @@ data ListenerConfig = ListenerConfig
 
 makeLenses ''ListenerConfig
 
+data CleanUpRule = CleanUpRule
+    { _cleanUpDirectory :: FilePath
+    , _cleanUpPrefix    :: String
+    , _cleanUpKeepnum   :: Int
+    }
+  deriving (Show, Generic, ToJSON, FromJSON)
+
+makeLenses ''CleanUpRule
+
+data CleanUpConfig = CleanUpConfig
+    { _cleanUpInterval :: Timespan
+    , _cleanUpRules    :: [CleanUpRule]
+    }
+
+  deriving (Show, Generic, ToJSON, FromJSON)
+
+makeLenses ''CleanUpConfig
+
 data Config = Config
     { _exposedUrl           :: String  -- e.g. https://aula-stage.liqd.net
     , _listener             :: ListenerConfig
@@ -136,6 +167,7 @@ data Config = Config
     , _smtp                 :: SmtpConfig
     , _delegateLikes        :: Bool
     , _timeoutCheckInterval :: Timespan
+    , _cleanUp              :: CleanUpConfig
     -- ^ Topics which needs to change phase due to a timeout will
     -- be checked at this interval.
     -- * once per day would be the minmum
@@ -183,6 +215,19 @@ defaultLogConfig = LogConfig
     , _eventLogPath = "./aulaEventLog.json"
     }
 
+defaultCleanUpRule :: CleanUpRule
+defaultCleanUpRule = CleanUpRule
+    { _cleanUpDirectory = "./state/AulaData/Archive"
+    , _cleanUpPrefix    = "events"
+    , _cleanUpKeepnum   = 5
+    }
+
+defaulCleanUpConfig :: CleanUpConfig
+defaulCleanUpConfig = CleanUpConfig
+    { _cleanUpInterval = TimespanMins 45
+    , _cleanUpRules    = [defaultCleanUpRule]
+    }
+
 defaultConfig :: Config
 defaultConfig = Config
     { _exposedUrl           = "http://localhost:8080"
@@ -196,8 +241,10 @@ defaultConfig = Config
     , _smtp                 = defaultSmtpConfig
     , _delegateLikes        = True
     , _timeoutCheckInterval = TimespanHours 6
+    , _cleanUp              = defaulCleanUpConfig
     , _devMode              = False
     }
+
 
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
