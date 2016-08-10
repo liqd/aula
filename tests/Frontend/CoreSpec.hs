@@ -70,7 +70,7 @@ spec = do
         , H (arb :: Gen AdminEditClass)
         , H (arb :: Gen CommentWidget)
         , H (arb :: Gen PageDelegationNetwork)
-        , H (arb :: Gen Page404)
+        , H (arb :: Gen ServerErrorPage)
         , H (arb :: Gen Redirect)
         ]
     describe "PageFormView" $ mapM_ testForm
