@@ -426,14 +426,12 @@ data Page404 = Page404
 instance Page Page404 where
     isAuthorized = publicPage
 
--- TODO: Check page layout
--- TODO: Translation
 instance ToHtml Page404 where
     toHtmlRaw = toHtml
     toHtml p@Page404 = semanticDiv p $ do
-        div_ [class_ "login-register-form"] $ do
-            h1_ [class_ "main-heading"] "404 missing data"
-            div_ $ a_ [class_ "btn-cta", href_ P.login] "Login"
+        h1_ [class_ "main-heading"] "404"
+        h2_ [class_ "sub-header"] "Diese Seite gibt es leider nicht."
+        div_ $ a_ [class_ "btn-cta", href_ P.login] "Start"
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken

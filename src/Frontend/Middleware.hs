@@ -41,7 +41,6 @@ catch404 devMode app req cont = app req $ \resp -> cont $ f resp
                 . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
                 $ PublicFrame Page404 [] devMode
 
-
         htmlContentType = ("Content-Type", "text/html;charset=utf-8")
 
         repairContentType =
