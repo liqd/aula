@@ -3,7 +3,6 @@ EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -iexec -idist/build/autogen
 AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.2
-AULA_URL=http://localhost:$(shell grep _listenerPort < aula.yaml | cut -d' ' -f2)
 
 .phony:
 
@@ -67,18 +66,21 @@ ghci-no-type-errors:
 wc:
 	find src tests -name '*.hs' | xargs wc
 
-content:
+content-login: .phony
 	rm -f cookie-jar
-	curl -XPOST $(AULA_URL)/api/manage-state/create-init
-	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
-	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-demo
-	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-votes
+	[ "$(AULA_MK_CONTENT_URL)" != "" ] || ( echo "set to e.g. 'http://localhost:8080'"; false )
+	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_MK_CONTENT_URL)/login
+
+content: content-login
+	curl -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-init
+	make content-login
+	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-demo
+	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-votes
 	rm -f cookie-jar
 
-content-deleg:
-	rm -f cookie-jar
-	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_URL)/login
-	curl -b cookie-jar -XPOST $(AULA_URL)/api/manage-state/create-delegations
+content-deleg: content-loging
+	make content-login
+	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-delegations
 	rm -f cookie-jar
 
 tags: .phony
