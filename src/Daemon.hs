@@ -183,9 +183,8 @@ cleanUpDaemon logger CleanUpConfig{..} =
 
 cleanUpDir :: SystemLogger -> CleanUpRule -> IO ()
 cleanUpDir logger CleanUpRule{..} = do
-    let basePath = _cleanUpDirectory
-    files <- filterM doesFileExist =<< (basePath </>) <$$> filter (_cleanUpPrefix `isPrefixOf`)
-             <$> getDirectoryContents basePath
+    files <- filterM doesFileExist =<< (_cleanUpDirectory </>) <$$> filter (_cleanUpPrefix `isPrefixOf`)
+             <$> getDirectoryContents _cleanUpDirectory
     mods  <- mapM getModificationTime files
     let files' = drop _cleanUpKeepnum $ fst <$> reverseSortOn (to snd) (files `zip` mods)
     forM_ files' $ \file -> do
