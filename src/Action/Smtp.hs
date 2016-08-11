@@ -44,6 +44,10 @@ instance Show SendMailError where
         NoEmailAddressForUser user -> "No email address for user: " <> show (user ^. userLogin)
         IOErrorRunningSendMail exn -> "IO error running sendmail: " <> show exn
 
+instance LogMessage SendMailError where
+    logLevel _ = ERROR
+    logMessage = cshow
+
 class ThrowSendMailError err where
     _SendMailError :: Prism' err SendMailError
 

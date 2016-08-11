@@ -159,8 +159,7 @@ import Data.Typeable (Typeable)
 import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
-import Servant.Missing hiding (throwError500)
-import qualified Servant.Missing (throwError500)
+import Servant.Missing
 import Thentos.CookieSession.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 import Thentos.CookieSession.Types (GetThentosSessionToken(..), ThentosSessionToken(..))
 
@@ -238,6 +237,19 @@ data ActionExcept
     deriving (Show)
 
 makePrisms ''ActionExcept
+
+instance LogMessage ActionExcept where
+    logLevel = \case
+        ActionExcept e
+          | errHTTPCode e < 500 -> NOLOG
+        ActionPersistExcept persistExcept  -> logLevel persistExcept
+        _                                  -> ERROR
+    logMessage = \case
+        ActionExcept servantErr            -> cs $ cshow (errHTTPCode servantErr) <> " " <> errBody servantErr
+        ActionPersistExcept persistExcept  -> cs $ "Action Persist " <> logMessage persistExcept
+        ActionSendMailExcept sendMailError -> cs $ "Action SendMail " <> logMessage sendMailError
+        ActionEventLogExcept someException -> cs $ "Action EventLog " <> show someException
+        ActionIOExcept someException       -> cs $ "Action IO " <> show someException
 
 instance ThrowSendMailError ActionExcept where
     _SendMailError = _ActionSendMailExcept
@@ -333,11 +345,6 @@ logEvent :: ActionSessionLog m => LogLevel -> ST -> m ()
 logEvent l m = do
     session <- maybe "anonymous" fromThentosSessionToken <$> userState getThentosSessionToken
     log (LogEntry l ("[" <> cs session <> "] " <> m))
-
-throwError500 :: ActionSessionLog m => String -> m a
-throwError500 msg = do
-    logEvent ERROR (cs msg)
-    Servant.Missing.throwError500 msg
 
 checkActiveUser :: (ActionSessionLog m, ActionUserHandler m) => User -> m User
 checkActiveUser user =
