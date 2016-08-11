@@ -1,21 +1,11 @@
-body, html {
-    height: 100%;
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
 }
 
 .page-wrapper {
-    @include rem(margin-bottom, -$main-menu-height);
-    @include rem(margin-top, -$main-menu-height);
-    min-height: 100%;
-
-    &:after, &:before {
-        content: "";
-        display: block;
-        height: $main-menu-height;
-    }
-
-    &.is-not-responsive {
-        width: 1024px;
-    }
+    flex: 1;
 }
 
 .container-main {
@@ -43,14 +33,8 @@ body.m-shadow {
     }
 }
 
-.main-grid-container {
-    @include rem(margin, -57px auto);
-}
-
 .main-grid {
-    @include rem(margin, 57px auto);
     overflow: visible;
-    min-height: 100%;
     position: relative;
 
     @media screen and (max-width: $desktop-breakpoint) {
