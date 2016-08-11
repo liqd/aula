@@ -215,17 +215,13 @@ defaultLogConfig = LogConfig
     , _eventLogPath = "./aulaEventLog.json"
     }
 
-defaultCleanUpRule :: CleanUpRule
-defaultCleanUpRule = CleanUpRule
-    { _cleanUpDirectory = "./state/AulaData/Archive"
-    , _cleanUpPrefix    = "events"
-    , _cleanUpKeepnum   = 5
-    }
-
 defaulCleanUpConfig :: CleanUpConfig
 defaulCleanUpConfig = CleanUpConfig
     { _cleanUpInterval = TimespanMins 45
-    , _cleanUpRules    = [defaultCleanUpRule]
+    , _cleanUpRules    =
+        [ CleanUpRule "./state/AulaData/Archive" "events" 0
+        , CleanUpRule "./state/AulaData/Archive" "checkpoints" 10
+        ]
     }
 
 defaultConfig :: Config
