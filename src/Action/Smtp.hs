@@ -95,7 +95,8 @@ sendMailToAddressIO logger receiver msg = do
         logger . LogEntry DEBUG . cs $ "sending email: " <> ppShow (receiver, msg)
         when (isJust $ msg ^. msgHtml) . logger . LogEntry WARN $ "No support for the optional HTML part"
         renderedMail <- renderMail' mail
-        logger . LogEntry DEBUG . cs $ show (scfg, renderedMail)
+        logger . LogEntry DEBUG . cs $ "smtp config: " <> show scfg
+        logger . LogEntry DEBUG . cs $ "rendered email: " <> show renderedMail
         try $ sendmailCustomCaptureOutput (scfg ^. sendmailPath) (scfg ^. sendmailArgs) renderedMail
     case r of
         Right (out, err) -> do
