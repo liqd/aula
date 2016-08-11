@@ -30,6 +30,7 @@ data-files:
     - static/third-party/modernizr/modernizr-custom.js
     - static/third-party/showdown/dist/*
     - static/third-party/d3/d3.*js
+    - null-terms-of-use.md
 
 ghc-options: -Wall -with-rtsopts=-T
 

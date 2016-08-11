@@ -227,8 +227,8 @@ defaulCleanUpConfig = CleanUpConfig
 defaultConfig :: Config
 defaultConfig = Config
     { _exposedUrl           = "http://localhost:8080"
-    , _listener             = ListenerConfig "0.0.0.0" 8080
-    , _monitoring           = Just (ListenerConfig "0.0.0.0" 8888)
+    , _listener             = ListenerConfig "127.0.0.1" 8080
+    , _monitoring           = Just (ListenerConfig "127.0.0.1" 8888)
     , _htmlStatic           = "./static"
     , _avatarPath           = "./avatars"
     , _cfgCsrfSecret        = CsrfSecret "please-replace-this-with-random-secret"

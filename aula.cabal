@@ -29,6 +29,7 @@ data-files:
     docs/software-stack.md
     docs/styleguide.md
     docs/testing.md
+    null-terms-of-use.md
     README.md
     scripts/run.sh
     scripts/shutdown.sh
