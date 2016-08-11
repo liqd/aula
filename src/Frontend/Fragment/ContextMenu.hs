@@ -15,7 +15,7 @@ contextMenu (filter (view _1) -> entries) = do
         span_ [class_ "btn-cta"] "Optionen"
         ul_ [class_ "pop-menu-list"] $ do
             if null entries
-                then li_ [class_ "pop-menu-list-item"] "<Menü ist leer>"
+                then li_ [class_ "pop-menu-list-item"] "(Keine weiteren Optionen)"
                 else go `mapM_` entries
   where
     go :: Monad m => (Bool, ST, HtmlT m ()) -> HtmlT m ()

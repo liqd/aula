@@ -282,7 +282,7 @@ delegationButtons visiting visited delegations = do
             when (visiting ^. _Id == visited ^. _Id) $ do
                 forM_ (activeDelegation dscope) $ \(DelegationFull _ _ delegate) -> do
                     p_ [class_ "sub-heading"] $ do
-                        "Derzeit beauftragt: "
+                        "Derzeit stimmt für dich ab: "
                         a_ [href_ $ U.viewUserProfile delegate] $ do
                             delegate ^. userLogin . unUserLogin . html
 

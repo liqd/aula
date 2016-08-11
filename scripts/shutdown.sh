@@ -20,3 +20,10 @@ for i in `ls $AULA_ROOT_PATH/run`; do
     done
     rm -f $pidfile
 done
+
+if [ -f $AULA_ROOT_PATH/run/* ]; then
+    echo " failed!"
+    exit 1
+else
+    echo " ok"
+fi

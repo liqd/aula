@@ -95,12 +95,12 @@ ideaVoteLikeButtons ctx (IdeaStats idea phase _quo _voters) = do
                 = postButton_
                     [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
                     (U.delikeIdea idea)
-                    "Doch nicht auf den Tisch"
+                    "Doch nicht auf den Tisch?"
             | otherwise
                 = postButton_
                     [class_ "btn-cta voting-button button-group-item", jsReloadOnClick]
                     (U.likeIdea idea)
-                    "Auf den Tisch"
+                    "Auf den Tisch!"
 
         voteButtons :: Monad m => HtmlT m ()
         voteButtons

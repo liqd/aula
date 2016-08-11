@@ -33,13 +33,6 @@ fi
 
 ./scripts/shutdown.sh
 
-if [ -f $AULA_ROOT_PATH/run/* ]; then
-    echo " failed!"
-    exit 1
-else
-    echo " ok"
-fi
-
 echo "starting $AULA_NEW_RELEASE in $AULA_ROOT_PATH"
 echo "writing stdout/err to $AULA_ROOT_PATH/log"
 nohup $AULA_EXEC_PATH/aula-server >> $AULA_ROOT_PATH/log 2>&1 & pid=$!

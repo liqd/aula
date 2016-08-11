@@ -237,7 +237,7 @@ viewTopicHeaderDiv now ctx topic tab delegation = do
 
         forM_ delegation $ \(view delegationFullTo -> delegate) -> do
             p_ [class_ "sub-heading"] $ do
-                "Derzeit beauftragt: "
+                "Derzeit Stimmt für dich ab: "
                 a_ [href_ $ U.viewUserProfile delegate] $ do
                     delegate ^. userLogin . unUserLogin . html
 
