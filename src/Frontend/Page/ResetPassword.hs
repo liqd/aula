@@ -59,6 +59,7 @@ passwordResetViaEmail =
         (pure PasswordResetViaEmail)
         (Action.resetPasswordViaEmail . unResetPasswordFormData)
         "Die email mit dem Link wurde versendet."
+    & formRequireCsrf .~ False
 
 
 -- * finalize password via email
