@@ -139,7 +139,7 @@ makeLenses ''ListenerConfig
 
 data CleanUpRule = CleanUpRule
     { _cleanUpDirectory :: FilePath
-    , _cleanUpPrefix    :: String
+    , _cleanUpPrefix    :: FilePath
     , _cleanUpKeepnum   :: Int
     }
   deriving (Show, Generic, ToJSON, FromJSON)
