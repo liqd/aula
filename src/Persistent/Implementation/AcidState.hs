@@ -34,6 +34,7 @@ import Daemon
 import Logger
 import Persistent.Api
 import Persistent.Pure
+import Types.Log (LogLevel(..))
 
 
 mkRunPersistGeneric :: String

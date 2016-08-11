@@ -9,4 +9,5 @@ import Types.Instances.Optics as X
 import Types.Instances.SafeCopy as X ()
 import Types.Instances.JSON as X ()
 import Types.Instances.SOP as X ()
+import Types.Log  as X
 import Types.Util as X

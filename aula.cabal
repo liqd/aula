@@ -259,6 +259,7 @@ library
       Types.Instances.Optics
       Types.Instances.SafeCopy
       Types.Instances.SOP
+      Types.Log
       Types.Prelude
       Types.Util
   other-modules:

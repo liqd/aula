@@ -37,7 +37,7 @@ import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as LBS
 
 import Logger
-import Types
+import Types hiding (logLevel)
 import Config
 
 

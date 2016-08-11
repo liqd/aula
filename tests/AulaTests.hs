@@ -44,7 +44,7 @@ import Action           as X hiding (setCreatorStatement)
 import Servant          as X
 import Frontend         as X
 import Frontend.Testing as X
-import Frontend.Prelude as X hiding (get, put)
+import Frontend.Prelude as X hiding (get, put, logLevel)
 import Test.Hspec.Missing as X
 
 import Arbitrary (constantSampleTimestamp)
