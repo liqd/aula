@@ -14,7 +14,7 @@ import Control.Applicative ((<**>))
 import Control.Exception (assert)
 import Control.Lens
     ( (^.), (^..), (^?), (.~), (&)
-    , each, set, re, _Just, elemOf, Fold
+    , each, set, re, elemOf, Fold
     , view, views
     )
 import Control.Monad (forM_, replicateM_, unless, void)
@@ -215,7 +215,7 @@ addFirstUserWithEmailFromConfig (pu, avatar) = do
 setEmailFromConfig :: Proto User -> forall m . ActionM m => m (Proto User)
 setEmailFromConfig puser = do
     cfg <- Config.viewConfig
-    let em = cfg ^? Config.smtp . Config.defaultRecipient . _Just . emailAddress
+    let em = cfg ^? Config.smtp . Config.defaultRecipient . emailAddress
     pure $ puser & protoUserEmail .~ em
 
 

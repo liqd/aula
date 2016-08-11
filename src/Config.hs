@@ -90,7 +90,7 @@ data PersistenceImpl = AcidStateInMem | AcidStateOnDisk
 data SmtpConfig = SmtpConfig
     { _senderName       :: String
     , _senderEmail      :: String
-    , _defaultRecipient :: Maybe String  -- (e.g. for use in demo data.)
+    , _defaultRecipient :: String  -- (will receive a test email on start, but also for e.g. for use in demo data.)
     , _sendmailPath     :: String
     , _sendmailArgs     :: [String]
    -- ^ Not using 'ST' here since Network.Mail.Mime wants 'String' anyway.
@@ -165,7 +165,7 @@ defaultSmtpConfig :: SmtpConfig
 defaultSmtpConfig = SmtpConfig
     { _senderName       = "Aula Notifications"
     , _senderEmail      = "aula@example.com"
-    , _defaultRecipient = Nothing
+    , _defaultRecipient = "postmaster@localhost"
     , _sendmailPath     = "/usr/sbin/sendmail"
     , _sendmailArgs     = ["-t"]
     }

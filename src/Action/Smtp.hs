@@ -25,13 +25,14 @@ module Action.Smtp
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Network.Mail.Mime (Address(Address), sendmailCustomCaptureOutput, simpleMail', renderMail')
-import AulaPrelude
 
 import qualified Data.ByteString as SB
 
+import AulaPrelude
 import Config
 import Logger
 import Types
+
 
 data SendMailError
   = IOErrorRunningSendMail IOException
@@ -126,8 +127,9 @@ sendMailToUser flags user msg = do
 -- is not available or doesn't work.
 checkSendMail :: Config -> IO ()
 checkSendMail cfg = do
-    let address = Address Nothing "user@example.com"
-        msg     = EmailMessage (IdeaSpaceSubject SchoolSpace) "Test Mail" "This is a test" Nothing
+    let address = Address Nothing (cfg ^. smtp . defaultRecipient . csi)
+        msg     = EmailMessage (IdeaSpaceSubject SchoolSpace) "[starting aula-server]" msgbody Nothing
+        msgbody = "config:\n\n" <> cs (ppShow cfg)
 
         action :: ReaderT Config (ExceptT SendMailError IO) ()
         action = sendMailToAddressIO print address msg
