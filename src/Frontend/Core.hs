@@ -846,8 +846,6 @@ headerMarkup :: (Monad m) => Maybe User -> HtmlT m ()
 headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
     div_ [class_ "grid"] $ do
         a_ [class_ "site-logo", title_ "aula", href_ P.Top] nil
-        button_ [id_ "mobile-menu-button"] $ do
-            i_ [class_ "icon-bars", title_ "Menu"] nil
         case mUser of
             Nothing -> nil
             Just usr -> do
@@ -858,10 +856,18 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                 div_ [class_ "main-header-user"] $ do
                     div_ [class_ "pop-menu", title_ "Optionen"] $ do
                         -- FIXME: please add class m-selected to currently selected menu item
+
+                        -- mobile menu button
+                        button_ [id_ "mobile-menu-button"] $ do
+                            i_ [class_ "icon-bars", title_ "Menu"] nil
+
+                        -- desktop menu button
                         div_ [class_ "user-avatar"] $
                             userAvatarImg avatarDefaultSize `mapM_` mUser
                         span_ [class_ "user-name"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
+
+                        -- menu entries
                         ul_ [class_ "pop-menu-list"] $ do
                             li_ [class_ "pop-menu-list-item"]
                                 . a_ [href_ $ P.viewUserProfile usr] $ do
