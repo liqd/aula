@@ -28,18 +28,25 @@ import Frontend.Core
 import Frontend.Prelude
 
 
-catch404 :: Bool -> Middleware
-catch404 devMode app req cont = app req $ \resp -> cont $ f resp
+catchHttpErrors :: Bool -> Middleware
+catchHttpErrors devMode app req cont = app req $ \resp -> cont $ f resp
   where
     f :: Response -> Response
-    f resp = if statusCode status /= 404
-        then resp
-        else responseBuilder status headers builder
+    f resp = case statusCode status of
+                404                     -> responseBuilder status headers body404
+                n | n >= 400 && n < 500 -> responseBuilder status headers body4xx
+                n | n >= 500            -> responseBuilder status headers body5xx
+                _                       -> resp
       where
         status  = responseStatus resp
-        builder = Builder.byteString . cs
+        builder page =
+                  Builder.byteString . cs
                 . (`runReader` whereToGetTheLangValue) . renderTextT . toHtml
-                $ PublicFrame Page404 [] devMode
+                $ PublicFrame page [] devMode
+
+        body404 = builder Page404
+        body4xx = builder (Page4xx $ statusCode status)
+        body5xx = builder (Page5xx $ statusCode status)
 
         htmlContentType = ("Content-Type", "text/html;charset=utf-8")
 

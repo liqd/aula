@@ -40,7 +40,7 @@ module Frontend.Core
       -- * pages
     , Page(..)
     , PageShow(..)
-    , Page404(..)
+    , HttpErrorPage(..)
 
       -- * forms
     , FormPage
@@ -420,18 +420,27 @@ instance Page CsrfToken where
     -- token. However since this is just used for testing purposes so far there is no need to allow
     -- that.
 
-data Page404 = Page404
+data HttpErrorPage = Page404 | Page4xx Int | Page5xx Int
   deriving (Eq, Show)
 
-instance Page Page404 where
+instance Page HttpErrorPage where
     isAuthorized = publicPage
 
-instance ToHtml Page404 where
+instance ToHtml HttpErrorPage where
     toHtmlRaw = toHtml
-    toHtml p@Page404 = semanticDiv p $ do
-        h1_ [class_ "main-heading"] "404"
-        h2_ [class_ "sub-header"] "Diese Seite gibt es leider nicht."
+    toHtml p = semanticDiv p $ do
+        h1_ [class_ "main-heading"] errorTitle
+        h2_ [class_ "sub-header"] errorDesc
         div_ $ a_ [class_ "btn-cta", href_ P.login] "Start"
+      where
+        errorTitle = case p of
+            Page404   -> "404"
+            Page4xx s -> s ^. showed . html
+            Page5xx s -> s ^. showed . html
+        errorDesc = case p of
+            Page404   -> "Diese Seite gibt es leider nicht."
+            Page4xx _ -> "Diese Seite gibt es leider nicht."
+            Page5xx _ -> "Interner Serverfehler."
 
 instance MimeRender PlainText CsrfToken where
     mimeRender Proxy = cs . fromCsrfToken
