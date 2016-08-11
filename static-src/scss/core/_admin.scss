@@ -1,7 +1,5 @@
 .admin-menu {
-    @include rem(margin-bottom, -($main-menu-height * 2));
     background: $color-grey-light;
-    height: 100%;
 
     .admin-menu-header, > ul {
         @include rem(padding, 20px 25px);
