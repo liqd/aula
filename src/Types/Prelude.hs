@@ -115,9 +115,6 @@ infixr 9 <...>
 sortOn :: Ord b => Getter a b -> [a] -> [a]
 sortOn l = sortBy (compare `on` view l)
 
-reverseSortOn :: Ord b => Getter a b -> [a] -> [a]
-reverseSortOn l = sortBy (flip compare `on` view l)
-
 downSortOn :: Ord b => Getter a b -> [a] -> [a]
 downSortOn l = sortOn (l . to Data.Ord.Down)
 

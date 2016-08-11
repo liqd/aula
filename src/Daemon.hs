@@ -186,7 +186,7 @@ cleanUpDir logger CleanUpRule{..} = do
     files <- filterM doesFileExist =<< (_cleanUpDirectory </>) <$$> filter (_cleanUpPrefix `isPrefixOf`)
              <$> getDirectoryContents _cleanUpDirectory
     mods  <- mapM getModificationTime files
-    let files' = drop _cleanUpKeepnum $ fst <$> reverseSortOn (to snd) (files `zip` mods)
+    let files' = drop _cleanUpKeepnum $ fst <$> downSortOn (to snd) (files `zip` mods)
     forM_ files' $ \file -> do
         logger . LogEntry INFO . cs $ "deleting file " <> file
         removeFile file
