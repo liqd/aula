@@ -421,6 +421,7 @@ deleteUser uid = do
 updateUserEmail :: (HasSendMail ActionExcept r m, ActionSessionLog m, ActionPersist m) => AUID User -> EmailAddress -> m ()
 updateUserEmail uid email = do
     logEvent INFO $ "change email address of " <> cshow uid
+    update $ SetUserEmail uid email
     do user <- mquery $ findUser uid
        let msg = EmailMessage
              { _msgSubjectLabel = UserLoginSubject (user ^. userLogin)
@@ -429,7 +430,6 @@ updateUserEmail uid email = do
              , _msgHtml         = Nothing
              }
        sendMailToUser [] user msg
-    update $ SetUserEmail uid email
 
 
 -- * config
