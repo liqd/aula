@@ -241,7 +241,7 @@ makePrisms ''ActionExcept
 instance LogMessage ActionExcept where
     logLevel = \case
         ActionExcept e
-          | errHTTPCode e < 500 -> NOLOG
+          | errHTTPCode e < 500            -> DEBUG
         ActionPersistExcept persistExcept  -> logLevel persistExcept
         _                                  -> ERROR
     logMessage = \case
