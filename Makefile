@@ -2,7 +2,7 @@ SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
 AULA_SOURCES=-isrc -itests -iexec -idist/build/autogen
-AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.2
+AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.3
 
 .phony:
 
