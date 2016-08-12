@@ -67,6 +67,7 @@ import Control.Lens
 import Control.Monad (unless)
 import Control.Monad.Reader (MonadReader)
 import Data.Functor.Infix ((<$$>))
+import Data.List (isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String.Conversions (SBS, cs)
@@ -242,11 +243,15 @@ defaultConfig = Config
     }
 
 
+sanitize :: Config -> Config
+sanitize = exposedUrl %~ (\u -> if "/" `isSuffixOf` u then init u else u)
+
+
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
 readConfig :: SendLogMsg -> WarnMissing -> IO Config
-readConfig logger warnMissing = configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt
+readConfig logger warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt)
   where
     dflt :: IO Config
     dflt = pure defaultConfig
