@@ -96,6 +96,7 @@ writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode c
 
 -- * main
 
+-- FIXME: write test script that is run as part of the release process.
 main :: IO ()
 main = do
     opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
@@ -110,7 +111,7 @@ main = do
             ExitSuccess <- system $ unwords ["cp -a", dataDir </> item, to]
             pure ()
 
-    cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars"]
+    cloneDir `mapM_` ["README.md", "docs", "scripts", "docker", "default-avatars", "null-terms-of-use.md"]
     ExitSuccess <- system "chmod +x ./scripts/* ./docker/*"
     copyDir "static" (cfg ^. htmlStatic)
     createDirectoryIfMissing True (cfg ^. avatarPath)
