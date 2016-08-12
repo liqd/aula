@@ -3,7 +3,7 @@ services:
     - docker
 language: c
 env:
-    - AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.2 AULA_SOURCE=/liqd/aula
+    - AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.3 AULA_SOURCE=/liqd/aula
 
 before_install:
     - grep '\(MemTotal\|SwapTotal\)' /proc/meminfo
