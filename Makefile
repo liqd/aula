@@ -68,7 +68,7 @@ wc:
 
 content-login: .phony
 	rm -f cookie-jar
-	[ "$(AULA_MK_CONTENT_URL)" != "" ] || ( echo "set to e.g. 'http://localhost:8080'"; false )
+	[ "$(AULA_MK_CONTENT_URL)" != "" ] || ( echo "set with e.g. 'export AULA_MK_CONTENT_URL=http://localhost:8080'"; false )
 	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_MK_CONTENT_URL)/login
 
 content: content-login

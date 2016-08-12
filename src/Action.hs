@@ -925,7 +925,7 @@ resetPassword uid pwd = do
             , _msgSubjectText  = "Dein Passwort wurde von einem Adminstrator zurückgesetzt"
             , _msgBody    = ST.unlines
                 [ "Das Passwort für Dein Aula-Konto wurde von der Administration zurückgesetzt."
-                , "Wenn Du nicht dabei warst, liegt wahrscheinlich ein Fehler vor.  In dem Fall sprich bitte mit eine Lehrer."
+                , "Wenn Du nicht dabei warst, liegt wahrscheinlich ein Fehler vor.  In dem Fall sprich bitte mit einer Lehrkraft."
                 , ""
                 , "Viel Spass!"
                 , "Dein AuLA-Team."

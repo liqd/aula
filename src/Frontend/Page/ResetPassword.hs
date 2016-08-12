@@ -96,7 +96,7 @@ instance FormPage FinalizePasswordViaEmail where
 
     formPage v form p@(FinalizePasswordViaEmail user _token Valid) = do
         semanticDiv' [class_ "container-main container-narrow popup-page"] p $ do
-            h1_ [class_ "main-heading"] $ "Neues Passwort fuer " <> (user ^. userLogin . unUserLogin . html)
+            h1_ [class_ "main-heading"] $ "Neues Passwort für " <> (user ^. userLogin . unUserLogin . html)
             form $ do
                 label_ $ do
                     span_ [class_ "label-text"] "Neues Passwort"
@@ -124,3 +124,4 @@ finalizePasswordViaEmail uid tkn =
             <*> pure tkn
             <*> Action.checkValidPasswordToken uid tkn)
         (Action.finalizePasswordViaEmail uid tkn . newPassword1)
+    & formRequireCsrf .~ False
