@@ -124,3 +124,4 @@ finalizePasswordViaEmail uid tkn =
             <*> pure tkn
             <*> Action.checkValidPasswordToken uid tkn)
         (Action.finalizePasswordViaEmail uid tkn . newPassword1)
+    & formRequireCsrf .~ False
