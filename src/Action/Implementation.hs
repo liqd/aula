@@ -79,15 +79,12 @@ actionIO action = do
 
 instance MonadError ActionExcept Action where
     throwError e = do
-        -- Errors will be logged 2 times. Something cathces and
-        -- rethrows errors 1 times.
+        -- FIXME: errors are logged twice, as something catches and rethrows errors once.
         logEvent (Types.logLevel e) (logMessage e)
         MkAction $ throwError e
 
     catchError (MkAction m) h =
         MkAction $ catchError m (unAction . h)
-
-
 
 instance GenArbitrary Action where  -- FIXME: remove
     genGen = actionIO . generate
