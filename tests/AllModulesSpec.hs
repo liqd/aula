@@ -73,6 +73,7 @@ import Types.Instances.JSON ()
 import Types.Instances.Optics ()
 import Types.Instances.SafeCopy ()
 import Types.Instances.SOP ()
+import Types.Log ()
 import Types.Prelude ()
 import Types.Util ()
 

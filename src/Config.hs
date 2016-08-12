@@ -82,7 +82,7 @@ import Thentos.CookieSession.CSRF (GetCsrfSecret(..), CsrfSecret(..))
 import qualified System.IO.Unsafe
 
 import Logger
-import Types
+import Types hiding (logLevel)
 
 
 import qualified Paths_aula as Paths

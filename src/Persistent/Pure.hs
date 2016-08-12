@@ -337,6 +337,16 @@ data PersistExcept
 
 makePrisms ''PersistExcept
 
+instance LogMessage PersistExcept where
+    logLevel = \case
+        PersistError404 _ -> DEBUG
+        _                 -> ERROR
+    logMessage = \case
+        PersistError500 msg            -> cs $ "500 " <> msg
+        PersistError404 msg            -> cs $ "404 " <> msg
+        PersistErrorNotImplemented msg -> cs $ "Not implemented: " <> msg
+        UserLoginInUse ul              -> cs $ "User login in use: " <> ul ^. unUserLogin
+
 instance ThrowError500 PersistExcept where
     error500 = _PersistError500
 

@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
@@ -7,19 +6,9 @@ module Logger
 where
 
 import Data.String.Conversions (ST)
-import Data.Yaml
-import GHC.Generics
 
 import Logger.EventLog
-
-
-data LogLevel
-    = DEBUG  -- ^ Too much noise
-    | INFO   -- ^ Regular system behavior
-    | WARN   -- ^ Bad smells, login errors, authentication error
-    | ERROR  -- ^ Exceptions, requires investigation, 404
-    | NOLOG  -- ^ Utter silence (do not log any messages with this level!)
-  deriving (Eq, Generic, Ord, Show, FromJSON, ToJSON)
+import Types.Log (LogLevel)
 
 -- FIXME: EventLog should be merged with this module and everything in it renamed to something
 -- saying `moderator`; ST should change into an ADT that has a constructor for EventLogItems, but

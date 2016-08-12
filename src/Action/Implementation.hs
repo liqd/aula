@@ -66,7 +66,6 @@ newtype Action a = MkAction { unAction :: ExceptT ActionExcept (RWST ActionEnv (
     deriving ( Functor
              , Applicative
              , Monad
-             , MonadError ActionExcept
              , MonadReader ActionEnv
              , MonadState UserState
              )
@@ -77,6 +76,18 @@ actionIO action = do
     case eval of
         Left msg  -> throwError $ ActionIOExcept msg
         Right val -> pure val
+
+instance MonadError ActionExcept Action where
+    throwError e = do
+        -- Errors will be logged 2 times. Something cathces and
+        -- rethrows errors 1 times.
+        logEvent (Types.logLevel e) (logMessage e)
+        MkAction $ throwError e
+
+    catchError (MkAction m) h =
+        MkAction $ catchError m (unAction . h)
+
+
 
 instance GenArbitrary Action where  -- FIXME: remove
     genGen = actionIO . generate
@@ -120,9 +131,7 @@ instance ActionLog Action where
 throwPersistError
     :: forall m b . (ActionUserHandler m, ActionLog m)
     => PersistExcept -> m b
-throwPersistError e = do
-    logEvent ERROR (cshow e)
-    throwError $ ActionPersistExcept e
+throwPersistError e = throwError $ ActionPersistExcept e
 
 -- | FIXME: test this (particularly strictness and exceptions)
 instance ActionPersist Action where
