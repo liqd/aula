@@ -50,6 +50,7 @@ module Action
     , validLoggedIn
     , getSpacesForCurrentUser
     , deleteUser
+    , updateUserEmail
     , reportUser
     , resetPasswordViaEmail
     , Action.checkValidPasswordToken
@@ -416,6 +417,19 @@ deleteUser :: (ActionSessionLog m, ActionPersist m) => AUID User -> m ()
 deleteUser uid = do
     logEvent INFO $ "delete " <> cshow uid
     update $ DeactivateUser uid
+
+updateUserEmail :: (HasSendMail ActionExcept r m, ActionSessionLog m, ActionPersist m) => AUID User -> EmailAddress -> m ()
+updateUserEmail uid email = do
+    logEvent INFO $ "change email address of " <> cshow uid
+    do user <- mquery $ findUser uid
+       let msg = EmailMessage
+             { _msgSubjectLabel = UserLoginSubject (user ^. userLogin)
+             , _msgSubjectText  = "Deine Email-Addresse wurde erfolgreich geändert."
+             , _msgBody         = "Diese Bestätigung wurde an die neue in Aula eingetragene Adresse geschickt."
+             , _msgHtml         = Nothing
+             }
+       sendMailToUser [] user msg
+    update $ SetUserEmail uid email
 
 
 -- * config

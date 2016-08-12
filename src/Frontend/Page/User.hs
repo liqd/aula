@@ -21,8 +21,7 @@ import Frontend.Fragment.Note
 import Frontend.Prelude hiding ((</>), (<.>))
 import Frontend.Validation
 import Persistent.Api
-    ( SetUserEmail(SetUserEmail)
-    , SetUserPass(SetUserPass)
+    ( SetUserPass(SetUserPass)
     , SetUserDesc(SetUserDesc)
     )
 import Persistent
@@ -198,7 +197,7 @@ userSettings =
     changeUser :: UserSettingData -> m ()
     changeUser (UserSettingData memail _moldPass mnewPass1 mnewPass2) = do
         uid <- currentUserId
-        (update . SetUserEmail uid) `mapM_` memail
+        updateUserEmail uid `mapM_` memail
         when (mnewPass1 /= mnewPass2) $ throwError500 "passwords do not match!"
         forM_ mnewPass1 $ encryptPassword >=> update . SetUserPass uid
 
