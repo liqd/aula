@@ -47,7 +47,8 @@ import Persistent.Api
 import Persistent
     ( dbDurations, dbQuorums, dbFreeze, loginIsAvailable, getUserViews, getSchoolClasses
     , findActiveUser, getUsersInClass, findActiveUser, getSpaces, getUsersInClass
-    , termsOfUse
+    , termsOfUse, findUserByLogin
+    , PersistExcept(UserLoginInUse)
     )
 import Frontend.Prelude
 import Frontend.Validation hiding (tab, spaces)
@@ -884,6 +885,8 @@ instance FormPage AdminCreateClass where
                 DF.inputFile "file" v
             DF.inputSubmit "upload!"
 
+-- | creates a class and all users listed in the csv file that comes with the request that do not
+-- exist yet.  if they exist, they are just added to the class.
 adminCreateClass
     :: forall m. (ReadTempFile m, ActionAddDb m, ActionRandomPassword m, ActionAvatar m, ActionLog m)
     => FormPageHandler m AdminCreateClass
@@ -900,13 +903,18 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
             Right records -> do
                 let schoolcl = SchoolClass theOnlySchoolYearHack clname
                 update . AddIdeaSpaceIfNotExists $ ClassSpace schoolcl
-                forM_ records . p . Set.singleton $ Student schoolcl
+                forM_ records . p $ Student schoolcl
 
-    p :: Set Role -> CsvUserRecord -> m ()
+    p :: Role -> CsvUserRecord -> m ()
     p _     (CsvUserRecord _ _ _ _                          (Just _)) = do
         throwError500 "upload FAILED: internal error!"
-    p roles (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
-      adminCreateUserHelper mLogin firstName lastName mEmail roles
+    p role (CsvUserRecord firstName lastName mEmail mLogin Nothing) = do
+      adminCreateUserHelper mLogin firstName lastName mEmail (Set.singleton role)
+          `catchError` \case
+              (ActionPersistExcept (UserLoginInUse ul)) -> do
+                  user <- mquery $ findUserByLogin ul
+                  update $ AddUserRole (user ^. _Id) role
+              e -> throwError e
 
     msgOk :: ST
     msgOk = "Die Klasse wurde angelegt."
