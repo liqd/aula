@@ -22,6 +22,7 @@ import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStr
 import Prelude hiding (log, (.))
 
 import qualified Data.ByteString.Builder as Builder
+import qualified Data.Text as ST
 
 import AulaPrelude
 import Frontend.Core
@@ -76,11 +77,14 @@ createPageSamples app req = app req'
 
 -- * Cache control
 
--- | Disable response caching. The wrapped handler can overwrite this by setting its own cache
--- control headers.
+-- | Configure response caching in the browser. The wrapped handler can overwrite this by setting
+-- its own cache control headers.
+--
+-- The policy argument is scanned from left to right for a matching path prefix, or a nothing.  The
+-- first match is used for this request.
 --
 -- Cache-control headers are only added to GET and HEAD responses since other request methods
--- are considered uncachable by default.
+-- are considered uncacheable.
 --
 -- According to the HTTP 1.1 Spec, GET/HEAD responses with the following error codes (>= 400) may
 -- be cached unless forbidded by cache-control headers:
@@ -90,17 +94,29 @@ createPageSamples app req = app req'
 -- * 410 Gone
 -- * 414 Request-URI Too Long
 -- * 501 Not Implemented
-disableCaching :: Middleware
-disableCaching app req cont = app req $
+cacheControlHeader :: [(Maybe ST, ResponseHeaders)] -> Middleware
+cacheControlHeader policy app req cont = app req $
     cont . if cacheRelevantMethod (requestMethod req)
-        then addHeadersToResponse cacheHeadersNoCache
+        then maybe id addHeadersToResponse matchingPolicy
         else id
+  where
+    matchingPolicy :: Maybe ResponseHeaders
+    matchingPolicy = f policy
+      where
+        f ((Just prefix, plc) : _)
+          | prefix `ST.isPrefixOf` p
+          = Just plc  where p = ("/" <>) . ST.intercalate "/" . pathInfo $ req
+        f ((Nothing, plc) : _) = Just plc
+        f []                   = Nothing
+        f (_ : ps)             = f ps
 
-cacheHeadersNoCache :: ResponseHeaders
+cacheHeadersNoCache :: [(Maybe ST, ResponseHeaders)]
 cacheHeadersNoCache =
-        [ ("Cache-Control", "no-cache, no-store, must-revalidate")
-        , ("Expires", "0")
-        ]
+    [(Nothing, [("Cache-Control", "no-cache, no-store, must-revalidate"), ("Expires", "0")])]
+
+cacheHeadersCacheStatic :: [(Maybe ST, ResponseHeaders)]
+cacheHeadersCacheStatic =
+    [(Just "/static", [("Cache-Control", "public")])] <> cacheHeadersNoCache
 
 cacheRelevantMethod :: Method -> Bool
 cacheRelevantMethod = (`elem` ["GET", "HEAD"])

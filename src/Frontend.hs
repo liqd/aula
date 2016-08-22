@@ -101,7 +101,7 @@ runFrontendWithLoggerAndPersist cfg log metrics rp = do
 
     runSettings settings
         . (if cfg ^. devMode then createPageSamples else id)
-        . disableCaching
+        . cacheControlHeader cacheHeadersCacheStatic
         . catchHttpErrors (cfg ^. devMode)
         . maybe id EKG.metrics (fst <$> metrics)
         . serve aulaTopProxy $ aulaTop cfg app
