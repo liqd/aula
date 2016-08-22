@@ -92,15 +92,18 @@ createPageSamples app req = app req'
 -- * 501 Not Implemented
 disableCaching :: Middleware
 disableCaching app req cont = app req $
-    cont . if relevantMeth then addHeadersToResponse cacheHeaders else id
-  where
-    cacheHeaders =
+    cont . if cacheRelevantMethod (requestMethod req)
+        then addHeadersToResponse cacheHeadersNoCache
+        else id
+
+cacheHeadersNoCache :: ResponseHeaders
+cacheHeadersNoCache =
         [ ("Cache-Control", "no-cache, no-store, must-revalidate")
         , ("Expires", "0")
         ]
 
-    relevantMeth :: Bool
-    relevantMeth = requestMethod req `elem` ["GET", "HEAD"]
+cacheRelevantMethod :: Method -> Bool
+cacheRelevantMethod = (`elem` ["GET", "HEAD"])
 
 addHeadersToResponse ::  ResponseHeaders -> Response -> Response
 addHeadersToResponse extraHeaders resp = case resp of
