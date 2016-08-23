@@ -16,7 +16,6 @@ where
 import Control.Category ((.))
 import Control.Exception (assert)
 import Control.Monad.Reader (runReader)
-import Data.Maybe (listToMaybe)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
@@ -102,12 +101,15 @@ cacheControlHeader policy app req cont = app req $
         else id
   where
     matchingPolicy :: Maybe ResponseHeaders
-    matchingPolicy = listToMaybe . catMaybes $ f <$> policy
+    matchingPolicy = firstJust $ f <$> policy
       where
         f (prefix, plc) =
             if prefix `ST.isPrefixOf` (("/" <>) . ST.intercalate "/" . pathInfo $ req)
                 then Just plc
                 else Nothing
+
+        firstJust :: [Maybe a] -> Maybe a
+        firstJust = join . find isJust
 
 cacheHeadersNoCache :: [(ST, ResponseHeaders)]
 cacheHeadersNoCache =
