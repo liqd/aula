@@ -16,6 +16,7 @@ where
 import Control.Category ((.))
 import Control.Exception (assert)
 import Control.Monad.Reader (runReader)
+import Data.Maybe (listToMaybe)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStream, ResponseRaw))
@@ -94,29 +95,27 @@ createPageSamples app req = app req'
 -- * 410 Gone
 -- * 414 Request-URI Too Long
 -- * 501 Not Implemented
-cacheControlHeader :: [(Maybe ST, ResponseHeaders)] -> Middleware
+cacheControlHeader :: [(ST, ResponseHeaders)] -> Middleware
 cacheControlHeader policy app req cont = app req $
     cont . if cacheRelevantMethod (requestMethod req)
         then maybe id addHeadersToResponse matchingPolicy
         else id
   where
     matchingPolicy :: Maybe ResponseHeaders
-    matchingPolicy = f policy
+    matchingPolicy = listToMaybe . catMaybes $ f <$> policy
       where
-        f ((Just prefix, plc) : _)
-          | prefix `ST.isPrefixOf` p
-          = Just plc  where p = ("/" <>) . ST.intercalate "/" . pathInfo $ req
-        f ((Nothing, plc) : _) = Just plc
-        f []                   = Nothing
-        f (_ : ps)             = f ps
+        f (prefix, plc) =
+            if prefix `ST.isPrefixOf` (("/" <>) . ST.intercalate "/" . pathInfo $ req)
+                then Just plc
+                else Nothing
 
-cacheHeadersNoCache :: [(Maybe ST, ResponseHeaders)]
+cacheHeadersNoCache :: [(ST, ResponseHeaders)]
 cacheHeadersNoCache =
-    [(Nothing, [("Cache-Control", "no-cache, no-store, must-revalidate"), ("Expires", "0")])]
+    [(nil, [("Cache-Control", "no-cache, no-store, must-revalidate"), ("Expires", "0")])]
 
-cacheHeadersCacheStatic :: [(Maybe ST, ResponseHeaders)]
+cacheHeadersCacheStatic :: [(ST, ResponseHeaders)]
 cacheHeadersCacheStatic =
-    [(Just "/static", [("Cache-Control", "public")])] <> cacheHeadersNoCache
+    ("/static", [("Cache-Control", "public")]) : cacheHeadersNoCache
 
 cacheRelevantMethod :: Method -> Bool
 cacheRelevantMethod = (`elem` ["GET", "HEAD"])
