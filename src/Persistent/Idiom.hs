@@ -116,6 +116,16 @@ ideaTopic idea = case idea ^. ideaLocation of
 ideaPhase :: Idea -> MQuery Phase
 ideaPhase = (view topicPhase <$$>) . ideaTopic
 
+-- | FIXME:
+--
+-- 1. this function is only called with predicates of the form @(PhaseConstructor ==)@, so the error
+--    message could be much more helpful if we used a type @Phase@ instead of @Phase -> Bool@ as a
+--    check.
+-- 2. naming convention (needs to be introduced in coding style): @check...@ does not crash if
+--    something goes wrong.  use @assert...@ for that.
+-- 3. the calls to this function have been witnessed to crash on demo systems, most likely due to
+--    the fact that admin-as-god can see buttons that trigger this.  this is nothing to worry about
+--    too much, but it's quite ugly conceptually.  admin-as-god is ugly.
 checkInPhase :: (Phase -> Bool) -> Idea -> Topic -> EQuery ()
 checkInPhase isPhase idea topic =
     unless (isPhase phase) $ throwError500 msg

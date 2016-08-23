@@ -22,6 +22,7 @@ import Network.Wai.Internal (Response(ResponseFile, ResponseBuilder, ResponseStr
 import Prelude hiding (log, (.))
 
 import qualified Data.ByteString.Builder as Builder
+import qualified Data.Text as ST
 
 import AulaPrelude
 import Frontend.Core
@@ -76,11 +77,14 @@ createPageSamples app req = app req'
 
 -- * Cache control
 
--- | Disable response caching. The wrapped handler can overwrite this by setting its own cache
--- control headers.
+-- | Configure response caching in the browser. The wrapped handler can overwrite this by setting
+-- its own cache control headers.
+--
+-- The policy argument is scanned from left to right for a matching path prefix, or a nothing.  The
+-- first match is used for this request.
 --
 -- Cache-control headers are only added to GET and HEAD responses since other request methods
--- are considered uncachable by default.
+-- are considered uncacheable.
 --
 -- According to the HTTP 1.1 Spec, GET/HEAD responses with the following error codes (>= 400) may
 -- be cached unless forbidded by cache-control headers:
@@ -90,17 +94,33 @@ createPageSamples app req = app req'
 -- * 410 Gone
 -- * 414 Request-URI Too Long
 -- * 501 Not Implemented
-disableCaching :: Middleware
-disableCaching app req cont = app req $
-    cont . if relevantMeth then addHeadersToResponse cacheHeaders else id
+cacheControlHeader :: [(ST, ResponseHeaders)] -> Middleware
+cacheControlHeader policy app req cont = app req $
+    cont . if cacheRelevantMethod (requestMethod req)
+        then maybe id addHeadersToResponse matchingPolicy
+        else id
   where
-    cacheHeaders =
-        [ ("Cache-Control", "no-cache, no-store, must-revalidate")
-        , ("Expires", "0")
-        ]
+    matchingPolicy :: Maybe ResponseHeaders
+    matchingPolicy = firstJust $ f <$> policy
+      where
+        f (prefix, plc) =
+            if prefix `ST.isPrefixOf` (("/" <>) . ST.intercalate "/" . pathInfo $ req)
+                then Just plc
+                else Nothing
 
-    relevantMeth :: Bool
-    relevantMeth = requestMethod req `elem` ["GET", "HEAD"]
+        firstJust :: [Maybe a] -> Maybe a
+        firstJust = join . find isJust
+
+cacheHeadersNoCache :: [(ST, ResponseHeaders)]
+cacheHeadersNoCache =
+    [(nil, [("Cache-Control", "no-cache, no-store, must-revalidate"), ("Expires", "0")])]
+
+cacheHeadersCacheStatic :: [(ST, ResponseHeaders)]
+cacheHeadersCacheStatic =
+    ("/static", [("Cache-Control", "public")]) : cacheHeadersNoCache
+
+cacheRelevantMethod :: Method -> Bool
+cacheRelevantMethod = (`elem` ["GET", "HEAD"])
 
 addHeadersToResponse ::  ResponseHeaders -> Response -> Response
 addHeadersToResponse extraHeaders resp = case resp of
