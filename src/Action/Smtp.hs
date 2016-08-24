@@ -80,10 +80,6 @@ data SendMailFlag = IgnoreMissingEmails
 class (MonadSendMailError e m, MonadReaderConfig r m) => HasSendMail e r m where
     sendMailToAddress :: Address -> EmailMessage -> m ()
 
-    default sendMailToAddress :: MonadIO m => Address -> EmailMessage -> m ()
-    -- FIXME: Do not use print.
-    sendMailToAddress = sendMailToAddressIO print
-
 sendMailToAddressIO
     :: (MonadSendMailError e m, MonadReaderConfig r m, MonadIO m)
     => (LogEntry -> IO ()) -> Address -> EmailMessage -> m ()
