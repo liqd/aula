@@ -11,10 +11,9 @@ where
 import Control.Lens (makeLenses)
 import Control.Monad (when)
 import Data.Aeson
-import Data.Time (getCurrentTime)
-import Data.String.Conversions (cs)
 import Data.Monoid ((<>))
-import Data.String.Conversions (ST)
+import Data.String.Conversions (ST, cs)
+import Data.Time (getCurrentTime)
 import GHC.Generics
 import System.IO (stderr)
 

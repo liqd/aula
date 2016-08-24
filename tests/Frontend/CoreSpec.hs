@@ -372,7 +372,7 @@ runFailOnError = run . runFailOnErrorIO
 runFailOnErrorIO :: Action a -> IO a
 runFailOnErrorIO action = do
     cfg <- testConfig
-    persist <- mkRunPersist nullLog cfg
+    persist <- mkRunPersist cfg
     let env = ActionEnv persist cfg nullLog Nothing
     unNat (exceptToFail . mkRunAction env) action
 

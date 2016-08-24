@@ -50,10 +50,12 @@ mkRunPersistGeneric desc openState closeState initialState = do
                     , _rpClose  = closeState st h
                     }
 
-mkRunPersistOnDisk :: (LogEntry -> IO ()) -> Config -> IO RunPersist
-mkRunPersistOnDisk logger cfg =
+mkRunPersistOnDisk :: Config -> IO RunPersist
+mkRunPersistOnDisk cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
+    logger = aulaLog (cfg ^. logging) . LogEntry ERROR . cs
+
     opn aulaData = do
         st <- explainException $ openLocalStateFrom (cfg ^. persist . dbPath) aulaData
         let delay = cfg ^. persist . snapshotInterval
@@ -68,10 +70,7 @@ mkRunPersistOnDisk logger cfg =
 
     explainException :: IO a -> IO a
     explainException = handle $ \(SomeException e) -> do
-        let msg = "openLocalStateFrom failed: " <> show e
-        logger . LogEntry ERROR . cs $ msg
-        putStrLn msg  -- if we write this to stderr and a `print` logger is running, the
-                      -- output will be interleaved byte-by-byte.
+        logger $ "openLocalStateFrom failed: " <> show e
         exitWith $ ExitFailure 1
 
 mkRunPersistInMemory :: IO RunPersist

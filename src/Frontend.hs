@@ -73,7 +73,7 @@ startEKG cfg =
 runFrontendWithLogger
     :: Config -> (LogEntry -> IO ()) -> Maybe (EKG.WaiMetrics, AulaMetrics) -> IO ()
 runFrontendWithLogger cfg log metrics =
-    withPersist log cfg (runFrontendWithLoggerAndPersist cfg log metrics)
+    withPersist cfg (runFrontendWithLoggerAndPersist cfg log metrics)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)

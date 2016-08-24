@@ -183,7 +183,7 @@ withServer' cfg action = do
 
 withServerAsAdmin :: (WreqQuery -> IO a) -> IO a
 withServerAsAdmin action = withServer $ \wreq -> do
-    putStrLn "logging in as admin"
+    putStrLn "logging in as admin"  -- FIXME: use Logger?
     loginAsAdmin wreq
     putStrLn "logged in as admin"
     action wreq
