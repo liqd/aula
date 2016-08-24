@@ -30,9 +30,11 @@ import Config
 import Daemon (logDaemon, msgDaemonSend, start)
 import Data.Markdown (markdown)
 import DemoData (genSchoolSpace, genAdminUser)
+import Logger
 import Persistent.Api
 import Persistent (withPersist)
 import Types.Prelude (exceptToFail)
+import Types.Log
 
 import Paths_aula
 
