@@ -60,7 +60,7 @@ runFrontend cfg = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
     metrics <- startEKG cfg
-    runFrontendWithLogger cfg (log ^. msgDaemonSend) metrics
+    runFrontendWithLogger cfg (SendLogMsg $ log ^. msgDaemonSend) metrics
 
 startEKG :: Config -> IO (Maybe (EKG.WaiMetrics, AulaMetrics))
 startEKG cfg =

@@ -204,7 +204,7 @@ runFrontendSafeFork' :: Config -> IO ThreadId
 runFrontendSafeFork' cfg = do
     logger <- unsafeLogDaemon (cfg ^. logging)
     void $ logger ^. start
-    threadId <- forkIO $ runFrontendWithLogger cfg (logger ^. msgDaemonSend) Nothing
+    threadId <- forkIO $ runFrontendWithLogger cfg (SendLogMsg $ logger ^. msgDaemonSend) Nothing
     waitForListener 37 >> return threadId
   where
     waitForListener :: Int -> IO ()

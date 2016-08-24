@@ -125,4 +125,4 @@ main = do
 
     createInitState cfg opts
     initCsrfToken
-    (unSendLogMsg $ aulaLog (cfg ^. logging)) $ LogEntry INFO "done."
+    unSendLogMsg (aulaLog (cfg ^. logging)) $ LogEntry INFO "done."

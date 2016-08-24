@@ -1,28 +1,21 @@
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 
+{-# OPTIONS_GHC -Wall -Werror #-}
+
 module Main where
 
-import Data.Time
 import System.Directory
-import Text.Show.Pretty
-
-import qualified Data.Text as ST
 
 import Action.Smtp
-import AulaPrelude
 import Config
-import Daemon
 import Frontend
-import Logger
-import Types
 
 
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
     cfg <- readConfig CrashMissing
-    now <- getCurrentTime
     checkSendMail cfg
     checkAvatarPathExists cfg
 

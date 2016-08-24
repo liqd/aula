@@ -344,7 +344,7 @@ checkPathExistsAndIsEmpty path = do
 logmotd :: Config -> FilePath -> IO ()
 logmotd cfg wd = do
     name <- getProgName
-    (unSendLogMsg $ aulaLog (cfg ^. logging)) . LogEntry INFO . ST.unlines $
+    unSendLogMsg (aulaLog (cfg ^. logging)) . LogEntry INFO . ST.unlines $
         [ "starting " <> cs name
         , ""
         , "\nrelease:"
