@@ -21,7 +21,7 @@ withPersist config = withPersist' config (mkRunPersist config)
 -- explicit as parameter.
 withPersist' :: Config -> IO RunPersist -> (RunPersist -> IO a) -> IO a
 withPersist' cfg mkRunP m = do
-    let logger = aulaLog (cfg ^. logging) . LogEntry INFO . cs
+    let logger = (unSendLogMsg $ aulaLog (cfg ^. logging)) . LogEntry INFO . cs
     rp@(RunPersist desc _ _ close) <- mkRunP  -- initialization happens here
     logger $ "persistence: " <> desc
     m rp `finally` close  -- closing happens here

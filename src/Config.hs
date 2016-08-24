@@ -273,7 +273,7 @@ readConfig warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPat
     errr :: [String] -> IO ()
     errr msgH = case warnMissing of
         DontWarnMissing -> pure ()
-        WarnMissing     -> stderrLog . LogEntry ERROR $ cs msgs
+        WarnMissing     -> unSendLogMsg stderrLog . LogEntry ERROR $ cs msgs
         CrashMissing    -> throwIO . ErrorCall $ msgs
       where
         msgs = unlines $ [""] <> msgH <> ["", cs $ encode defaultConfig]
@@ -344,7 +344,7 @@ checkPathExistsAndIsEmpty path = do
 logmotd :: Config -> FilePath -> IO ()
 logmotd cfg wd = do
     name <- getProgName
-    aulaLog (cfg ^. logging) . LogEntry INFO . ST.unlines $
+    (unSendLogMsg $ aulaLog (cfg ^. logging)) . LogEntry INFO . ST.unlines $
         [ "starting " <> cs name
         , ""
         , "\nrelease:"

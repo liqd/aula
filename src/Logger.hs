@@ -44,15 +44,17 @@ data LogConfig = LogConfig
 
 makeLenses ''LogConfig
 
+newtype SendLogMsg = SendLogMsg { unSendLogMsg :: LogEntry -> IO () }
 
-nullLog :: LogEntry -> IO ()
-nullLog _ = pure ()
 
-stderrLog :: LogEntry -> IO ()
-stderrLog = ST.hPutStrLn stderr . cshow
+nullLog :: SendLogMsg
+nullLog = SendLogMsg $ \_ -> pure ()
 
-aulaLog :: LogConfig -> LogEntry -> IO ()
-aulaLog cfg = \case
+stderrLog :: SendLogMsg
+stderrLog = SendLogMsg $ ST.hPutStrLn stderr . cshow
+
+aulaLog :: LogConfig -> SendLogMsg
+aulaLog cfg = SendLogMsg $ \case
     (LogEntry NOLOG _) ->
         pure ()
     (LogEntry level msg) ->

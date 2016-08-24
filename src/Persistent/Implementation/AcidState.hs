@@ -53,7 +53,7 @@ mkRunPersistOnDisk :: Config -> IO RunPersist
 mkRunPersistOnDisk cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
-    logger :: LogEntry -> IO ()
+    logger :: SendLogMsg
     logger = aulaLog (cfg ^. logging)
 
     opn aulaData = do
@@ -70,7 +70,7 @@ mkRunPersistOnDisk cfg =
 
     explainException :: IO a -> IO a
     explainException = handle $ \(SomeException e) -> do
-        logger . LogEntry ERROR . cs $ "openLocalStateFrom failed: " <> show e
+        unSendLogMsg logger . LogEntry ERROR . cs $ "openLocalStateFrom failed: " <> show e
         exitWith $ ExitFailure 1
 
 mkRunPersistInMemory :: IO RunPersist

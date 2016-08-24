@@ -71,14 +71,14 @@ startEKG cfg =
             <*> registerAulaMetrics store
 
 runFrontendWithLogger
-    :: Config -> (LogEntry -> IO ()) -> Maybe (EKG.WaiMetrics, AulaMetrics) -> IO ()
+    :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> IO ()
 runFrontendWithLogger cfg log metrics =
     withPersist cfg (runFrontendWithLoggerAndPersist cfg log metrics)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
 runFrontendWithLoggerAndPersist
-    :: Config -> (LogEntry -> IO ()) -> Maybe (EKG.WaiMetrics, AulaMetrics) -> RunPersist -> IO ()
+    :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> RunPersist -> IO ()
 runFrontendWithLoggerAndPersist cfg log metrics rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv rp cfg log (snd <$> metrics))

@@ -101,7 +101,7 @@ instance ActionLog Action where
         case msg of
             LogEntry level' _st
                 | level' < level -> pure ()
-            _                    -> actionIO =<< views envLogger ($ msg)
+            _                    -> actionIO =<< views envLogger (($ msg) . unSendLogMsg)
 
     readEventLog = do
         cfg <- viewConfig

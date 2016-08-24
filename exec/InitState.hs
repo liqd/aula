@@ -55,7 +55,7 @@ options os = Options <$> arg adminArg <*> arg adminPwdArg <*> arg termsFileArg
             in stripPrefix a' =<< find (a' `isPrefixOf`) os
 
 printUsage :: IO ()
-printUsage = stderrLog $ LogEntry ERROR usage
+printUsage = unSendLogMsg stderrLog $ LogEntry ERROR usage
 
 usage :: ST
 usage = ST.unlines
@@ -71,7 +71,7 @@ runBoostrap :: Config -> Action () -> IO ()
 runBoostrap cfg action = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
-    let logMsg = log ^. msgDaemonSend
+    let logMsg = SendLogMsg $ log ^. msgDaemonSend
     withPersist cfg $ \rp -> do
         let runAction = mkRunAction (ActionEnv rp cfg logMsg Nothing)
         unNat (exceptToFail . runAction) action
@@ -125,4 +125,4 @@ main = do
 
     createInitState cfg opts
     initCsrfToken
-    aulaLog (cfg ^. logging) $ LogEntry INFO "done."
+    (unSendLogMsg $ aulaLog (cfg ^. logging)) $ LogEntry INFO "done."
