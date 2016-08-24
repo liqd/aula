@@ -85,7 +85,7 @@ wdStep (Free (CreateIdea title desc cat k)) = do
     click          =<< byXPath ("//*[contains(@id,'.idea-category." <> (cs . show $ fromEnum cat) <> "')]")
     submitIdea k
 
--- TODO: Check
+-- FIXME: Check
 wdStep (Free (EditIdea _ot nt d c k)) = do
     -- FIXME: Navigate to the idea?
     currentPage (Proxy :: Proxy Page.ViewIdea)
