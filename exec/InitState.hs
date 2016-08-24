@@ -22,6 +22,7 @@ import Text.Show.Pretty (ppShow)
 import Thentos.CookieSession.CSRF
 
 import qualified Data.ByteString as BS
+import qualified Data.Text as ST
 
 import Action (ActionEnv(..), update)
 import Action.Implementation
@@ -53,8 +54,11 @@ options os = Options <$> arg adminArg <*> arg adminPwdArg <*> arg termsFileArg
     arg a = let a' = "--" <> a <> "="
             in stripPrefix a' =<< find (a' `isPrefixOf`) os
 
-usage :: String
-usage = unlines
+printUsage :: IO ()
+printUsage = stderrLog $ LogEntry ERROR usage
+
+usage :: ST
+usage = ST.unlines
     [ "Usage: aula-init-state --admin=username --admin-pwd=password --terms-of-use=terms.md"
     , "       $AULA_ROOT_PATH must be set to target directory."
     , "       Config file $AULA_ROOT_PATH/aula.yaml must exist."
@@ -102,7 +106,7 @@ main = do
     setCurrentDirectoryToAulaRoot
     cfg <- readConfig CrashMissing
 
-    opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
+    opts <- maybe (printUsage >> exitFailure) pure . options =<< getArgs
     dataDir <- Paths_aula.getDataDir
 
     let cloneDir item = copyDir item "."
@@ -121,4 +125,4 @@ main = do
 
     createInitState cfg opts
     initCsrfToken
-    putStrLn "DONE!"
+    aulaLog cfg $ LogEntry INFO "done."
