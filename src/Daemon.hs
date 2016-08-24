@@ -171,12 +171,14 @@ unsafeLogDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
 unsafeLogDaemon cfg = do
     msgDaemon logMsg "logger" logMsg (const $ pure ()) False
   where
-    logMsg (LogEntry NOLOG _)        = pure ()
-    logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ do
-                                            now <- getCurrentTime
-                                            appendFile (cfg ^. logPath) $
-                                                cshow now <> " [" <> cshow level <> "] " <> cs msg
-    logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
+    logMsg (LogEntry NOLOG _) =
+        pure ()
+    logMsg (LogEntry level msg) =
+        when (level >= cfg ^. logLevel) $ do
+            now <- getCurrentTime
+            appendFile (cfg ^. logPath) $ cshow now <> " [" <> cshow level <> "] " <> cs msg
+    logMsg (LogEntryForModerator ev) =
+        LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
 
 
 -- * cleanup daemon
