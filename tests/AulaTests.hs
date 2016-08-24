@@ -93,7 +93,7 @@ testConfig = do
         & listener . listenerPort         .~ pop
         & persist . dbPath                .~ "./state/AulaData_Tests"
         & persist . persistenceImpl       .~ AcidStateInMem
-        & logging . logLevel              .~ NOLOG
+        & logging . logCfgLevel           .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
         & avatarPath                      .~ avt
         & Config.devMode                  .~ True

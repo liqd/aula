@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
@@ -28,15 +27,11 @@ import Control.Lens
 import Control.Monad (filterM, forever, forM_, join, when)
 import Data.Functor.Infix ((<$$>))
 import Data.List (isPrefixOf)
-import Data.Time.Clock (getCurrentTime)
 import Data.String.Conversions (cs, (<>))
 import System.Directory
 import System.FilePath
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
-
-import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.Lazy as LBS
 
 import Logger
 import Types hiding (logLevel)
@@ -172,18 +167,6 @@ logDaemonLock = unsafePerformIO $ newMVar False
 unsafeLogDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
 unsafeLogDaemon cfg = do
     msgDaemon (aulaLog cfg) "logger" (aulaLog cfg) (const $ pure ()) False
-
--- | FIXME: should be in "Logger", but that triggers cyclical module dependency.
-aulaLog :: LogConfig -> LogEntry -> IO ()
-aulaLog cfg = \case
-    (LogEntry NOLOG _) ->
-        pure ()
-    (LogEntry level msg) ->
-        when (level >= cfg ^. logLevel) $ do
-            now <- getCurrentTime
-            appendFile (cfg ^. logPath) $ cshow now <> " [" <> cshow level <> "] " <> cs msg
-    (LogEntryForModerator ev) ->
-        LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
 
 
 -- * cleanup daemon

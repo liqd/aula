@@ -10,7 +10,6 @@ module Config
     ( Config(Config)
     , ListenerConfig(..)
     , SmtpConfig(SmtpConfig)
-    , LogConfig(..)
     , CleanUpConfig(..)
     , CleanUpRule(..)
 
@@ -44,8 +43,8 @@ module Config
     , listenerInterface
     , listenerPort
     , logging
-    , logLevel
-    , logPath
+    , logCfgLevel
+    , logCfgPath
     , monitoring
     , persist
     , persistenceImpl
@@ -122,15 +121,6 @@ data PersistConfig = PersistConfig
   deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''PersistConfig
-
-data LogConfig = LogConfig
-    { _logLevel     :: LogLevel
-    , _logPath      :: FilePath
-    , _eventLogPath :: FilePath
-    }
-  deriving (Show, Generic, ToJSON, FromJSON)
-
-makeLenses ''LogConfig
 
 data ListenerConfig = ListenerConfig
     { _listenerInterface :: String
@@ -214,8 +204,8 @@ defaultPersistConfig = PersistConfig
 
 defaultLogConfig :: LogConfig
 defaultLogConfig = LogConfig
-    { _logLevel     = DEBUG
-    , _logPath      = "./aula.log"
+    { _logCfgLevel  = DEBUG
+    , _logCfgPath   = "./aula.log"
     , _eventLogPath = "./aulaEventLog.json"
     }
 
