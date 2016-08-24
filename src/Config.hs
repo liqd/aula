@@ -45,6 +45,7 @@ module Config
     , logging
     , logCfgLevel
     , logCfgPath
+    , logmotd
     , monitoring
     , persist
     , persistenceImpl
@@ -78,9 +79,11 @@ import GHC.Generics
 import System.Directory
 import System.Environment
 import System.FilePath ((</>))
+import Text.Show.Pretty (ppShow)
 import Thentos.CookieSession.CSRF (GetCsrfSecret(..), CsrfSecret(..))
 
 import qualified System.IO.Unsafe
+import qualified Data.Text as ST
 
 import Logger
 import Types hiding (logLevel)
@@ -333,3 +336,22 @@ checkPathExistsAndIsEmpty path = do
     isempty <- null <$> getDirectoryContentsNoDots path
     unless isempty . throwIO . ErrorCall $
         show path <> " does not exist, is not a directory, or is not empty."
+
+
+-- * motd
+
+logmotd :: Config -> FilePath -> IO ()
+logmotd cfg wd = do
+    now <- getCurrentTime
+    name <- getProgName
+    aulaLog (cfg ^. logging) . LogEntry INFO . ST.unlines $
+        [ ""
+        , cshow now
+        , "this is " <> cs name <> "!"
+        , "\nrelease:"
+        , cs Config.releaseVersion
+        , "\nroot path:"
+        , cs wd
+        , "\nsetup:", cs $ ppShow cfg
+        , ""
+        ]

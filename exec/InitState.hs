@@ -117,16 +117,7 @@ main = do
     checkAvatarPathExistsAndIsEmpty cfg
 
     wd <- getCurrentDirectory
-    hPutStrLn stderr $ unlines
-        [ ""
-        , "this is aula-init-state!"
-        , "\nrelease:"
-        , Config.releaseVersion
-        , "\nroot path:"
-        , wd
-        , "\nsetup:", ppShow cfg
-        , ""
-        ]
+    logmotd cfg wd
 
     createInitState cfg opts
     initCsrfToken

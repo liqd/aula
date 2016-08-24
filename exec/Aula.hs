@@ -27,16 +27,6 @@ main = do
     checkAvatarPathExists cfg
 
     wd <- getCurrentDirectory
-    aulaLog (cfg ^. logging) . LogEntry INFO . ST.unlines $
-        [ ""
-        , cshow now
-        , "this is aula-server!"
-        , "\nrelease:"
-        , cs Config.releaseVersion
-        , "\nroot path:"
-        , cs wd
-        , "\nsetup:", cs $ ppShow cfg
-        , ""
-        ]
+    logmotd cfg wd
 
     runFrontend cfg
