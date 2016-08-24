@@ -177,6 +177,9 @@ unsafeLogDaemon cfg = do
                                             hPutStrLn stderr (cshow now <> " [" <> cshow level <> "] " <> cs msg)
     logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
 
+
+-- * cleanup daemon
+
 cleanUpDaemon :: SystemLogger -> CleanUpConfig -> TimeoutDaemon
 cleanUpDaemon logger CleanUpConfig{..} =
     timeoutDaemon' logger "CLEANUP" _cleanUpInterval (mapM_ (cleanUpDir logger) _cleanUpRules)

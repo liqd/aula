@@ -27,8 +27,8 @@ module Config
     , checkStaticHtmlPathExists
     , cleanUp
     , cleanUpDirectory
-    , cleanUpKeepnum
     , cleanUpInterval
+    , cleanUpKeepnum
     , cleanUpPrefix
     , cleanUpRules
     , dbPath
