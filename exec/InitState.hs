@@ -85,7 +85,7 @@ createInitState cfg o = do
 
 initCsrfToken :: IO ()
 initCsrfToken = do
-    cfg <- readConfig print CrashMissing
+    cfg <- readConfig CrashMissing
     rnd <- genCsrfSecret
     writeConfig . (cfgCsrfSecret .~ rnd) $ cfg
 
@@ -99,12 +99,11 @@ writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode c
 -- FIXME: write test script that is run as part of the release process.
 main :: IO ()
 main = do
+    setCurrentDirectoryToAulaRoot
+    cfg <- readConfig CrashMissing
+
     opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
     dataDir <- Paths_aula.getDataDir
-
-    setCurrentDirectoryToAulaRoot
-    -- FIXME: Do not use print.
-    cfg <- readConfig print CrashMissing
 
     let cloneDir item = copyDir item "."
         copyDir item to = do

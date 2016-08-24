@@ -5,10 +5,15 @@
 module Logger
 where
 
+import System.IO (stderr)
 import Data.String.Conversions (ST)
+
+import qualified Data.Text.IO as ST
 
 import Logger.EventLog
 import Types.Log (LogLevel)
+import Types.Prelude (cshow)
+
 
 -- FIXME: EventLog should be merged with this module and everything in it renamed to something
 -- saying `moderator`; ST should change into an ADT that has a constructor for EventLogItems, but
@@ -22,3 +27,6 @@ data LogEntry =
 
 nullLog :: LogEntry -> IO ()
 nullLog _ = pure ()
+
+stderrLog :: LogEntry -> IO ()
+stderrLog = ST.hPutStr stderr . cshow

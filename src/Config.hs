@@ -253,8 +253,10 @@ sanitize = exposedUrl %~ (\u -> if "/" `isSuffixOf` u then init u else u)
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
-readConfig :: (LogEntry -> IO ()) -> WarnMissing -> IO Config
-readConfig logger warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt)
+-- | In case of @WarnMissing :: WarnMissing@, print the warning to stderr.  (We don't have logging
+-- configured yet.)
+readConfig :: WarnMissing -> IO Config
+readConfig warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt)
   where
     dflt :: IO Config
     dflt = pure defaultConfig
@@ -278,7 +280,7 @@ readConfig logger warnMissing = sanitize <$> (configFilePath >>= maybe (errr msg
     errr :: [String] -> IO ()
     errr msgH = case warnMissing of
         DontWarnMissing -> pure ()
-        WarnMissing     -> logger . LogEntry ERROR $ cs msgs
+        WarnMissing     -> stderrLog . LogEntry ERROR $ cs msgs
         CrashMissing    -> throwIO . ErrorCall $ msgs
       where
         msgs = unlines $ [""] <> msgH <> ["", cs $ encode defaultConfig]

@@ -21,8 +21,7 @@ import Types
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
-    -- FIXME: Do not use print.
-    cfg <- readConfig print CrashMissing
+    cfg <- readConfig CrashMissing
     now <- getCurrentTime
     checkSendMail cfg
     checkAvatarPathExists cfg
