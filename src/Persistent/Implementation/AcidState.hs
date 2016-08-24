@@ -25,8 +25,7 @@ import Control.Lens
 import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
-import Data.Monoid ((<>))
-import Data.String.Conversions (cs)
+import Data.String.Conversions
 import System.Exit
 
 import Config
@@ -54,7 +53,8 @@ mkRunPersistOnDisk :: Config -> IO RunPersist
 mkRunPersistOnDisk cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
-    logger = aulaLog (cfg ^. logging) . LogEntry ERROR . cs
+    logger :: LogEntry -> IO ()
+    logger = aulaLog (cfg ^. logging)
 
     opn aulaData = do
         st <- explainException $ openLocalStateFrom (cfg ^. persist . dbPath) aulaData
@@ -70,7 +70,7 @@ mkRunPersistOnDisk cfg =
 
     explainException :: IO a -> IO a
     explainException = handle $ \(SomeException e) -> do
-        logger $ "openLocalStateFrom failed: " <> show e
+        logger . LogEntry ERROR . cs $ "openLocalStateFrom failed: " <> show e
         exitWith $ ExitFailure 1
 
 mkRunPersistInMemory :: IO RunPersist
