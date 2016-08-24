@@ -345,9 +345,8 @@ logmotd cfg wd = do
     now <- getCurrentTime
     name <- getProgName
     aulaLog (cfg ^. logging) . LogEntry INFO . ST.unlines $
-        [ ""
-        , cshow now
-        , "this is " <> cs name <> "!"
+        [ "starting " <> cs name
+        , ""
         , "\nrelease:"
         , cs Config.releaseVersion
         , "\nroot path:"
