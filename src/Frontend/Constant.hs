@@ -52,4 +52,4 @@ avatarMaxByteSize :: ST
 avatarMaxByteSize = "10MB"
 
 initialAvatarsPath :: String
-initialAvatarsPath = "default-avatars"  -- TODO: this assumes @(cfg ^. htmlPath == "./static"@!
+initialAvatarsPath = "default-avatars"
