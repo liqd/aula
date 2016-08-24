@@ -132,9 +132,10 @@ checkSendMail cfg = do
     let address = Address Nothing (cfg ^. smtp . defaultRecipient . csi)
         msg     = EmailMessage (IdeaSpaceSubject SchoolSpace) "[starting aula-server]" msgbody Nothing
         msgbody = "config:\n\n" <> cs (ppShow cfg)
+        logger  = aulaLog cfg . LogEntry ERROR . cs
 
         action :: ReaderT Config (ExceptT SendMailError IO) ()
-        action = sendMailToAddressIO print address msg
+        action = sendMailToAddressIO logger address msg
 
     r <- runExceptT (runReaderT action cfg)
     case r of

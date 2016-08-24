@@ -246,7 +246,7 @@ sanitize = exposedUrl %~ (\u -> if "/" `isSuffixOf` u then init u else u)
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
--- | In case of @WarnMissing :: WarnMissing@, print the warning to stderr.  (We don't have logging
+-- | In case of @WarnMissing :: WarnMissing@, log the warning to stderr.  (We don't have logging
 -- configured yet.)
 readConfig :: WarnMissing -> IO Config
 readConfig warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt)
