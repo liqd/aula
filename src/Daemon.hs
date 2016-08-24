@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
@@ -15,6 +16,7 @@ module Daemon
     , timeoutDaemon'
     , logDaemon
     , unsafeLogDaemon
+    , aulaLog
     , cleanUpDaemon
     )
 where
@@ -169,15 +171,18 @@ logDaemonLock = unsafePerformIO $ newMVar False
 
 unsafeLogDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
 unsafeLogDaemon cfg = do
-    msgDaemon logMsg "logger" logMsg (const $ pure ()) False
-  where
-    logMsg (LogEntry NOLOG _) =
+    msgDaemon (aulaLog cfg) "logger" (aulaLog cfg) (const $ pure ()) False
+
+-- | FIXME: should be in "Logger", but that triggers cyclical module dependency.
+aulaLog :: LogConfig -> LogEntry -> IO ()
+aulaLog cfg = \case
+    (LogEntry NOLOG _) ->
         pure ()
-    logMsg (LogEntry level msg) =
+    (LogEntry level msg) ->
         when (level >= cfg ^. logLevel) $ do
             now <- getCurrentTime
             appendFile (cfg ^. logPath) $ cshow now <> " [" <> cshow level <> "] " <> cs msg
-    logMsg (LogEntryForModerator ev) =
+    (LogEntryForModerator ev) ->
         LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
 
 

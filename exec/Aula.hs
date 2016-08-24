@@ -1,15 +1,21 @@
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 
 module Main where
 
 import Data.Time
 import System.Directory
-import System.IO
 import Text.Show.Pretty
 
-import Frontend
-import Config
+import qualified Data.Text as ST
+
 import Action.Smtp
+import AulaPrelude
+import Config
+import Daemon
+import Frontend
+import Logger
+import Types
 
 
 main :: IO ()
@@ -22,15 +28,15 @@ main = do
     checkAvatarPathExists cfg
 
     wd <- getCurrentDirectory
-    hPutStrLn stderr $ unlines
+    aulaLog (cfg ^. logging) . LogEntry INFO . ST.unlines $
         [ ""
-        , show now
+        , cshow now
         , "this is aula-server!"
         , "\nrelease:"
-        , Config.releaseVersion
+        , cs Config.releaseVersion
         , "\nroot path:"
-        , wd
-        , "\nsetup:", ppShow cfg
+        , cs wd
+        , "\nsetup:", cs $ ppShow cfg
         , ""
         ]
 
