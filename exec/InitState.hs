@@ -16,9 +16,7 @@ import System.Directory
 import System.Environment (getArgs)
 import System.FilePath ((</>))
 import System.Exit
-import System.IO
 import System.Process (system)
-import Text.Show.Pretty (ppShow)
 import Thentos.CookieSession.CSRF
 
 import qualified Data.ByteString as BS
@@ -74,7 +72,7 @@ runBoostrap cfg action = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
     let logMsg = log ^. msgDaemonSend
-    withPersist logMsg cfg $ \rp -> do
+    withPersist cfg $ \rp -> do
         let runAction = mkRunAction (ActionEnv rp cfg logMsg Nothing)
         unNat (exceptToFail . runAction) action
 
@@ -127,4 +125,4 @@ main = do
 
     createInitState cfg opts
     initCsrfToken
-    aulaLog cfg $ LogEntry INFO "done."
+    aulaLog (cfg ^. logging) $ LogEntry INFO "done."
