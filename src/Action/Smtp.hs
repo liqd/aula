@@ -86,7 +86,7 @@ class (MonadSendMailError e m, MonadReaderConfig r m) => HasSendMail e r m where
 
 sendMailToAddressIO
     :: (MonadSendMailError e m, MonadReaderConfig r m, MonadIO m)
-    => SendLogMsg -> Address -> EmailMessage -> m ()
+    => (LogEntry -> IO ()) -> Address -> EmailMessage -> m ()
 sendMailToAddressIO logger receiver msg = do
     -- FIXME: when logger gets its config implicitely one can use a "viewSmtpConfig"
     -- It would be actually even nicer to un-tangle the logger using a MonadWriter.

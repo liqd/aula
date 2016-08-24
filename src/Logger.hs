@@ -20,7 +20,5 @@ data LogEntry =
   | LogEntryForModerator EventLogItemCold
   deriving (Eq, Show)
 
-type SendLogMsg = LogEntry -> IO ()
-
 nullLog :: LogEntry -> IO ()
 nullLog _ = pure ()

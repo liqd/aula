@@ -214,7 +214,7 @@ userLoggedOut = UserState Nothing Nothing Nothing []
 data ActionEnv = ActionEnv
     { _envRunPersist :: RunPersist
     , _envConfig     :: Config
-    , _envLogger     :: SendLogMsg
+    , _envLogger     :: LogEntry -> IO ()
     , _envMetrics    :: Maybe AulaMetrics
     }
 

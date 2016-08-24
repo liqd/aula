@@ -13,7 +13,7 @@ import Logger
 import Persistent.Api
 import Persistent.Implementation.AcidState
 
-withPersist :: SendLogMsg -> Config -> (RunPersist -> IO a) -> IO a
+withPersist :: (LogEntry -> IO ()) -> Config -> (RunPersist -> IO a) -> IO a
 withPersist logger = withPersist' . mkRunPersist logger
 
 -- | A more low-level variant of 'Persistent.Implementation.withPersist' with the implementation
@@ -24,7 +24,7 @@ withPersist' mkRunP m = do
     putStrLn $ "persistence: " <> desc -- FIXME: use logger for this (or perhaps log in the construction of Action, where we have a logger?)
     m rp `finally` close  -- closing happens here
 
-mkRunPersist :: SendLogMsg -> Config -> IO RunPersist
+mkRunPersist :: (LogEntry -> IO ()) -> Config -> IO RunPersist
 mkRunPersist logger cfg =
     case cfg ^. persist . persistenceImpl of
         AcidStateInMem  -> mkRunPersistInMemory

@@ -50,7 +50,7 @@ mkRunPersistGeneric desc openState closeState initialState = do
                     , _rpClose  = closeState st h
                     }
 
-mkRunPersistOnDisk :: SendLogMsg -> Config -> IO RunPersist
+mkRunPersistOnDisk :: (LogEntry -> IO ()) -> Config -> IO RunPersist
 mkRunPersistOnDisk logger cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
