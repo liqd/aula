@@ -340,9 +340,9 @@ checkPathExistsAndIsEmpty path = do
 
 -- * motd
 
+-- | Log the message (motto) of the day (like /etc/motd).
 logmotd :: Config -> FilePath -> IO ()
 logmotd cfg wd = do
-    now <- getCurrentTime
     name <- getProgName
     aulaLog (cfg ^. logging) . LogEntry INFO . ST.unlines $
         [ "starting " <> cs name

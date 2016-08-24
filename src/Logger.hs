@@ -49,7 +49,7 @@ nullLog :: LogEntry -> IO ()
 nullLog _ = pure ()
 
 stderrLog :: LogEntry -> IO ()
-stderrLog = ST.hPutStr stderr . cshow
+stderrLog = ST.hPutStrLn stderr . cshow
 
 aulaLog :: LogConfig -> LogEntry -> IO ()
 aulaLog cfg = \case
@@ -58,6 +58,6 @@ aulaLog cfg = \case
     (LogEntry level msg) ->
         when (level >= _logCfgLevel cfg) $ do
             now <- getCurrentTime
-            appendFile (_logCfgPath cfg) $ cshow now <> " [" <> cshow level <> "] " <> cs msg
+            appendFile (_logCfgPath cfg) $ cshow now <> " [" <> cshow level <> "] " <> cs msg <> "\n"
     (LogEntryForModerator ev) ->
         LBS.appendFile (_eventLogPath cfg) $ encode ev <> cs "\n"
