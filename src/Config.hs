@@ -45,6 +45,7 @@ module Config
     , listenerPort
     , logging
     , logLevel
+    , logPath
     , monitoring
     , persist
     , persistenceImpl
@@ -124,6 +125,7 @@ makeLenses ''PersistConfig
 
 data LogConfig = LogConfig
     { _logLevel     :: LogLevel
+    , _logPath      :: FilePath
     , _eventLogPath :: FilePath
     }
   deriving (Show, Generic, ToJSON, FromJSON)
@@ -213,6 +215,7 @@ defaultPersistConfig = PersistConfig
 defaultLogConfig :: LogConfig
 defaultLogConfig = LogConfig
     { _logLevel     = DEBUG
+    , _logPath      = "./aula.log"
     , _eventLogPath = "./aulaEventLog.json"
     }
 
