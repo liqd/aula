@@ -172,7 +172,7 @@ instance FormPage PageUserSettings where
                         "email" v
                 h2_ [class_ "label-header"] "Passwort ändern"
                 label_ $ do
-                    span_ [class_ "label-text"] "aktualles Passwort"
+                    span_ [class_ "label-text"] "aktuelles Passwort"
                     inputPassword_ [class_ "m-small"]
                         "old-password" v
                 label_ $ do
