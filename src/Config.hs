@@ -35,7 +35,6 @@ module Config
     , defaultRecipient
     , delegateLikes
     , devMode
-    , eventLogPath
     , exposedUrl
     , getSamplesPath
     , htmlStatic
@@ -43,8 +42,6 @@ module Config
     , listenerInterface
     , listenerPort
     , logging
-    , logCfgLevel
-    , logCfgPath
     , logmotd
     , monitoring
     , persist
