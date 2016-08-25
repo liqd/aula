@@ -25,8 +25,7 @@ import Control.Lens
 import Data.Acid
 import Data.Acid.Local (createCheckpointAndClose)
 import Data.Acid.Memory (openMemoryState)
-import Data.Monoid ((<>))
-import Data.String.Conversions (cs)
+import Data.String.Conversions
 import System.Exit
 
 import Config
@@ -50,10 +49,13 @@ mkRunPersistGeneric desc openState closeState initialState = do
                     , _rpClose  = closeState st h
                     }
 
-mkRunPersistOnDisk :: SendLogMsg -> Config -> IO RunPersist
-mkRunPersistOnDisk logger cfg =
+mkRunPersistOnDisk :: Config -> IO RunPersist
+mkRunPersistOnDisk cfg =
     mkRunPersistGeneric "acid-state (disk)" opn cls emptyAulaData
   where
+    logger :: SendLogMsg
+    logger = aulaLog (cfg ^. logging)
+
     opn aulaData = do
         st <- explainException $ openLocalStateFrom (cfg ^. persist . dbPath) aulaData
         let delay = cfg ^. persist . snapshotInterval
@@ -68,10 +70,7 @@ mkRunPersistOnDisk logger cfg =
 
     explainException :: IO a -> IO a
     explainException = handle $ \(SomeException e) -> do
-        let msg = "openLocalStateFrom failed: " <> show e
-        logger . LogEntry ERROR . cs $ msg
-        putStrLn msg  -- if we write this to stderr and a `print` logger is running, the
-                      -- output will be interleaved byte-by-byte.
+        unSendLogMsg logger . LogEntry ERROR . cs $ "openLocalStateFrom failed: " <> show e
         exitWith $ ExitFailure 1
 
 mkRunPersistInMemory :: IO RunPersist

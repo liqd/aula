@@ -71,14 +71,14 @@ content-login: .phony
 	[ "$(AULA_MK_CONTENT_URL)" != "" ] || ( echo "set with e.g. 'export AULA_MK_CONTENT_URL=http://localhost:8080'"; false )
 	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_MK_CONTENT_URL)/login
 
-content: content-login
+content:
 	curl -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-init
 	make content-login
 	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-demo
 	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-votes
 	rm -f cookie-jar
 
-content-deleg: content-loging
+content-deleg:
 	make content-login
 	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-delegations
 	rm -f cookie-jar

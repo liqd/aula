@@ -1,14 +1,29 @@
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass  #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Logger
 where
 
-import Data.String.Conversions (ST)
+import Control.Lens (makeLenses)
+import Control.Monad (when)
+import Data.Aeson
+import Data.Monoid ((<>))
+import Data.String.Conversions (ST, cs)
+import Data.Time (getCurrentTime)
+import GHC.Generics
+import System.IO (stderr)
+
+import qualified Data.Text.IO as ST
+import qualified Data.ByteString.Lazy as LBS
 
 import Logger.EventLog
-import Types.Log (LogLevel)
+import Types.Log (LogLevel(NOLOG))
+import Types.Prelude (cshow)
+
 
 -- FIXME: EventLog should be merged with this module and everything in it renamed to something
 -- saying `moderator`; ST should change into an ADT that has a constructor for EventLogItems, but
@@ -20,7 +35,31 @@ data LogEntry =
   | LogEntryForModerator EventLogItemCold
   deriving (Eq, Show)
 
-type SendLogMsg = LogEntry -> IO ()
+data LogConfig = LogConfig
+    { _logCfgLevel  :: LogLevel
+    , _logCfgPath   :: FilePath
+    , _eventLogPath :: FilePath
+    }
+  deriving (Show, Generic, ToJSON, FromJSON)
 
-nullLog :: LogEntry -> IO ()
-nullLog _ = pure ()
+makeLenses ''LogConfig
+
+newtype SendLogMsg = SendLogMsg { unSendLogMsg :: LogEntry -> IO () }
+
+
+nullLog :: SendLogMsg
+nullLog = SendLogMsg $ \_ -> pure ()
+
+stderrLog :: SendLogMsg
+stderrLog = SendLogMsg $ ST.hPutStrLn stderr . cshow
+
+aulaLog :: LogConfig -> SendLogMsg
+aulaLog cfg = SendLogMsg $ \case
+    (LogEntry NOLOG _) ->
+        pure ()
+    (LogEntry level msg) ->
+        when (level >= _logCfgLevel cfg) $ do
+            now <- getCurrentTime
+            appendFile (_logCfgPath cfg) $ cshow now <> " [" <> cshow level <> "] " <> cs msg <> "\n"
+    (LogEntryForModerator ev) ->
+        LBS.appendFile (_eventLogPath cfg) $ encode ev <> cs "\n"

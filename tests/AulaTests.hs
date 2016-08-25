@@ -93,7 +93,7 @@ testConfig = do
         & listener . listenerPort         .~ pop
         & persist . dbPath                .~ "./state/AulaData_Tests"
         & persist . persistenceImpl       .~ AcidStateInMem
-        & logging . logLevel              .~ NOLOG
+        & logging . logCfgLevel           .~ NOLOG
         & logging . eventLogPath          .~ "/dev/null"
         & avatarPath                      .~ avt
         & Config.devMode                  .~ True
@@ -183,7 +183,7 @@ withServer' cfg action = do
 
 withServerAsAdmin :: (WreqQuery -> IO a) -> IO a
 withServerAsAdmin action = withServer $ \wreq -> do
-    putStrLn "logging in as admin"
+    putStrLn "logging in as admin"  -- FIXME: use Logger?
     loginAsAdmin wreq
     putStrLn "logged in as admin"
     action wreq
@@ -204,7 +204,7 @@ runFrontendSafeFork' :: Config -> IO ThreadId
 runFrontendSafeFork' cfg = do
     logger <- unsafeLogDaemon (cfg ^. logging)
     void $ logger ^. start
-    threadId <- forkIO $ runFrontendWithLogger cfg (logger ^. msgDaemonSend) Nothing
+    threadId <- forkIO $ runFrontendWithLogger cfg (SendLogMsg $ logger ^. msgDaemonSend) Nothing
     waitForListener 37 >> return threadId
   where
     waitForListener :: Int -> IO ()

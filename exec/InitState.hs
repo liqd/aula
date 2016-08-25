@@ -16,12 +16,11 @@ import System.Directory
 import System.Environment (getArgs)
 import System.FilePath ((</>))
 import System.Exit
-import System.IO
 import System.Process (system)
-import Text.Show.Pretty (ppShow)
 import Thentos.CookieSession.CSRF
 
 import qualified Data.ByteString as BS
+import qualified Data.Text as ST
 
 import Action (ActionEnv(..), update)
 import Action.Implementation
@@ -29,9 +28,11 @@ import Config
 import Daemon (logDaemon, msgDaemonSend, start)
 import Data.Markdown (markdown)
 import DemoData (genSchoolSpace, genAdminUser)
+import Logger
 import Persistent.Api
 import Persistent (withPersist)
 import Types.Prelude (exceptToFail)
+import Types.Log
 
 import Paths_aula
 
@@ -53,8 +54,11 @@ options os = Options <$> arg adminArg <*> arg adminPwdArg <*> arg termsFileArg
     arg a = let a' = "--" <> a <> "="
             in stripPrefix a' =<< find (a' `isPrefixOf`) os
 
-usage :: String
-usage = unlines
+printUsage :: IO ()
+printUsage = unSendLogMsg stderrLog $ LogEntry ERROR usage
+
+usage :: ST
+usage = ST.unlines
     [ "Usage: aula-init-state --admin=username --admin-pwd=password --terms-of-use=terms.md"
     , "       $AULA_ROOT_PATH must be set to target directory."
     , "       Config file $AULA_ROOT_PATH/aula.yaml must exist."
@@ -67,8 +71,8 @@ runBoostrap :: Config -> Action () -> IO ()
 runBoostrap cfg action = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
-    let logMsg = log ^. msgDaemonSend
-    withPersist logMsg cfg $ \rp -> do
+    let logMsg = SendLogMsg $ log ^. msgDaemonSend
+    withPersist cfg $ \rp -> do
         let runAction = mkRunAction (ActionEnv rp cfg logMsg Nothing)
         unNat (exceptToFail . runAction) action
 
@@ -85,7 +89,7 @@ createInitState cfg o = do
 
 initCsrfToken :: IO ()
 initCsrfToken = do
-    cfg <- readConfig print CrashMissing
+    cfg <- readConfig CrashMissing
     rnd <- genCsrfSecret
     writeConfig . (cfgCsrfSecret .~ rnd) $ cfg
 
@@ -99,12 +103,11 @@ writeConfig cfg = configFilePath >>= \(Just path) -> BS.writeFile path (encode c
 -- FIXME: write test script that is run as part of the release process.
 main :: IO ()
 main = do
-    opts <- maybe (putStrLn usage >> exitFailure) pure . options =<< getArgs
-    dataDir <- Paths_aula.getDataDir
-
     setCurrentDirectoryToAulaRoot
-    -- FIXME: Do not use print.
-    cfg <- readConfig print CrashMissing
+    cfg <- readConfig CrashMissing
+
+    opts <- maybe (printUsage >> exitFailure) pure . options =<< getArgs
+    dataDir <- Paths_aula.getDataDir
 
     let cloneDir item = copyDir item "."
         copyDir item to = do
@@ -118,17 +121,8 @@ main = do
     checkAvatarPathExistsAndIsEmpty cfg
 
     wd <- getCurrentDirectory
-    hPutStrLn stderr $ unlines
-        [ ""
-        , "this is aula-init-state!"
-        , "\nrelease:"
-        , Config.releaseVersion
-        , "\nroot path:"
-        , wd
-        , "\nsetup:", ppShow cfg
-        , ""
-        ]
+    logmotd cfg wd
 
     createInitState cfg opts
     initCsrfToken
-    putStrLn "DONE!"
+    unSendLogMsg (aulaLog (cfg ^. logging)) $ LogEntry INFO "done."

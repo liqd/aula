@@ -80,14 +80,10 @@ data SendMailFlag = IgnoreMissingEmails
 class (MonadSendMailError e m, MonadReaderConfig r m) => HasSendMail e r m where
     sendMailToAddress :: Address -> EmailMessage -> m ()
 
-    default sendMailToAddress :: MonadIO m => Address -> EmailMessage -> m ()
-    -- FIXME: Do not use print.
-    sendMailToAddress = sendMailToAddressIO print
-
 sendMailToAddressIO
     :: (MonadSendMailError e m, MonadReaderConfig r m, MonadIO m)
     => SendLogMsg -> Address -> EmailMessage -> m ()
-sendMailToAddressIO logger receiver msg = do
+sendMailToAddressIO (SendLogMsg logger) receiver msg = do
     -- FIXME: when logger gets its config implicitely one can use a "viewSmtpConfig"
     -- It would be actually even nicer to un-tangle the logger using a MonadWriter.
     -- Then only the SmtpConfig would be pulled in.
@@ -136,9 +132,10 @@ checkSendMail cfg = do
     let address = Address Nothing (cfg ^. smtp . defaultRecipient . csi)
         msg     = EmailMessage (IdeaSpaceSubject SchoolSpace) "[starting aula-server]" msgbody Nothing
         msgbody = "config:\n\n" <> cs (ppShow cfg)
+        logger  = aulaLog (cfg ^. logging)
 
         action :: ReaderT Config (ExceptT SendMailError IO) ()
-        action = sendMailToAddressIO print address msg
+        action = sendMailToAddressIO logger address msg
 
     r <- runExceptT (runReaderT action cfg)
     case r of

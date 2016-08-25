@@ -53,6 +53,7 @@ import Action
 import AulaMetrics
 import Config
 import Frontend.Constant
+import Logger
 import Logger.EventLog
 import Persistent
 import Persistent.Api
@@ -96,11 +97,11 @@ instance HasSendMail ActionExcept ActionEnv Action where
 
 instance ActionLog Action where
     log msg = do
-        level <- view (Config.getConfig . Config.logging . Config.logLevel)
+        level <- view (Config.getConfig . Config.logging . Logger.logCfgLevel)
         case msg of
             LogEntry level' _st
                 | level' < level -> pure ()
-            _                    -> actionIO =<< views envLogger ($ msg)
+            _                    -> actionIO =<< views envLogger (($ msg) . unSendLogMsg)
 
     readEventLog = do
         cfg <- viewConfig

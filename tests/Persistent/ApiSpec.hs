@@ -48,7 +48,7 @@ data MkStateSetup = MkStateEmpty | MkStateInitial
 mkState :: MkStateSetup -> PersistenceImpl -> (RunPersist -> IO a) -> IO a
 mkState setup impl k = do
     cfg <- (persist . persistenceImpl .~ impl) <$> testConfig
-    withPersist nullLog cfg $ \rp -> do
+    withPersist cfg $ \rp -> do
         case setup of
             MkStateEmpty   -> pure ()
             MkStateInitial -> runA cfg rp genInitialTestDb

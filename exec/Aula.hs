@@ -1,37 +1,25 @@
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+
+{-# OPTIONS_GHC -Wall -Werror #-}
 
 module Main where
 
-import Data.Time
 import System.Directory
-import System.IO
-import Text.Show.Pretty
 
-import Frontend
-import Config
 import Action.Smtp
+import Config
+import Frontend
 
 
 main :: IO ()
 main = do
     setCurrentDirectoryToAulaRoot
-    -- FIXME: Do not use print.
-    cfg <- readConfig print CrashMissing
-    now <- getCurrentTime
+    cfg <- readConfig CrashMissing
     checkSendMail cfg
     checkAvatarPathExists cfg
 
     wd <- getCurrentDirectory
-    hPutStrLn stderr $ unlines
-        [ ""
-        , show now
-        , "this is aula-server!"
-        , "\nrelease:"
-        , Config.releaseVersion
-        , "\nroot path:"
-        , wd
-        , "\nsetup:", ppShow cfg
-        , ""
-        ]
+    logmotd cfg wd
 
     runFrontend cfg

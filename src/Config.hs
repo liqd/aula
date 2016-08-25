@@ -10,7 +10,6 @@ module Config
     ( Config(Config)
     , ListenerConfig(..)
     , SmtpConfig(SmtpConfig)
-    , LogConfig(..)
     , CleanUpConfig(..)
     , CleanUpRule(..)
 
@@ -27,8 +26,8 @@ module Config
     , checkStaticHtmlPathExists
     , cleanUp
     , cleanUpDirectory
-    , cleanUpKeepnum
     , cleanUpInterval
+    , cleanUpKeepnum
     , cleanUpPrefix
     , cleanUpRules
     , dbPath
@@ -36,7 +35,6 @@ module Config
     , defaultRecipient
     , delegateLikes
     , devMode
-    , eventLogPath
     , exposedUrl
     , getSamplesPath
     , htmlStatic
@@ -44,7 +42,7 @@ module Config
     , listenerInterface
     , listenerPort
     , logging
-    , logLevel
+    , logmotd
     , monitoring
     , persist
     , persistenceImpl
@@ -78,9 +76,11 @@ import GHC.Generics
 import System.Directory
 import System.Environment
 import System.FilePath ((</>))
+import Text.Show.Pretty (ppShow)
 import Thentos.CookieSession.CSRF (GetCsrfSecret(..), CsrfSecret(..))
 
 import qualified System.IO.Unsafe
+import qualified Data.Text as ST
 
 import Logger
 import Types hiding (logLevel)
@@ -121,14 +121,6 @@ data PersistConfig = PersistConfig
   deriving (Show, Generic, ToJSON, FromJSON)
 
 makeLenses ''PersistConfig
-
-data LogConfig = LogConfig
-    { _logLevel     :: LogLevel
-    , _eventLogPath :: FilePath
-    }
-  deriving (Show, Generic, ToJSON, FromJSON)
-
-makeLenses ''LogConfig
 
 data ListenerConfig = ListenerConfig
     { _listenerInterface :: String
@@ -212,7 +204,8 @@ defaultPersistConfig = PersistConfig
 
 defaultLogConfig :: LogConfig
 defaultLogConfig = LogConfig
-    { _logLevel     = DEBUG
+    { _logCfgLevel  = DEBUG
+    , _logCfgPath   = "./aula.log"
     , _eventLogPath = "./aulaEventLog.json"
     }
 
@@ -250,8 +243,10 @@ sanitize = exposedUrl %~ (\u -> if "/" `isSuffixOf` u then init u else u)
 data WarnMissing = DontWarnMissing | WarnMissing | CrashMissing
   deriving (Eq, Show)
 
-readConfig :: SendLogMsg -> WarnMissing -> IO Config
-readConfig logger warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt)
+-- | In case of @WarnMissing :: WarnMissing@, log the warning to stderr.  (We don't have logging
+-- configured yet.)
+readConfig :: WarnMissing -> IO Config
+readConfig warnMissing = sanitize <$> (configFilePath >>= maybe (errr msgAulaPathNotSet >> dflt) decodeFileDflt)
   where
     dflt :: IO Config
     dflt = pure defaultConfig
@@ -275,7 +270,7 @@ readConfig logger warnMissing = sanitize <$> (configFilePath >>= maybe (errr msg
     errr :: [String] -> IO ()
     errr msgH = case warnMissing of
         DontWarnMissing -> pure ()
-        WarnMissing     -> logger . LogEntry ERROR $ cs msgs
+        WarnMissing     -> unSendLogMsg stderrLog . LogEntry ERROR $ cs msgs
         CrashMissing    -> throwIO . ErrorCall $ msgs
       where
         msgs = unlines $ [""] <> msgH <> ["", cs $ encode defaultConfig]
@@ -338,3 +333,21 @@ checkPathExistsAndIsEmpty path = do
     isempty <- null <$> getDirectoryContentsNoDots path
     unless isempty . throwIO . ErrorCall $
         show path <> " does not exist, is not a directory, or is not empty."
+
+
+-- * motd
+
+-- | Log the message (motto) of the day (like /etc/motd).
+logmotd :: Config -> FilePath -> IO ()
+logmotd cfg wd = do
+    name <- getProgName
+    unSendLogMsg (aulaLog (cfg ^. logging)) . LogEntry INFO . ST.unlines $
+        [ "starting " <> cs name
+        , ""
+        , "\nrelease:"
+        , cs Config.releaseVersion
+        , "\nroot path:"
+        , cs wd
+        , "\nsetup:", cs $ ppShow cfg
+        , ""
+        ]

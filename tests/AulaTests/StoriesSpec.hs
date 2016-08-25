@@ -48,7 +48,7 @@ story :: (Eq a, Show a) => String -> Behavior a -> a -> Spec
 story msg program expected = it msg $ do
     join $ do
         cfg <- testConfig
-        Persistent.withPersist nullLog cfg $ \(persist :: Persistent.RunPersist) -> do
+        Persistent.withPersist cfg $ \(persist :: Persistent.RunPersist) -> do
 
             let runAction :: Action :~> IO
                 runAction = exceptToFail . mkRunAction (Action.ActionEnv persist cfg nullLog Nothing)

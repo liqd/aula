@@ -243,7 +243,7 @@ instance LogMessage ActionExcept where
     logLevel = \case
         ActionExcept e
           | errHTTPCode e < 500            -> DEBUG
-        ActionPersistExcept persistExcept  -> logLevel persistExcept
+        ActionPersistExcept persistExcept  -> Types.logLevel persistExcept
         _                                  -> ERROR
     logMessage = \case
         ActionExcept servantErr            -> cs $ cshow (errHTTPCode servantErr) <> " " <> errBody servantErr

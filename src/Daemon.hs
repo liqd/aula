@@ -5,8 +5,7 @@
 {-# OPTIONS_GHC -Werror -Wall #-}
 
 module Daemon
-    ( SystemLogger
-    , MsgDaemon
+    ( MsgDaemon
     , TimeoutDaemon
     , Daemon(..)
     , msgDaemon
@@ -15,6 +14,7 @@ module Daemon
     , timeoutDaemon'
     , logDaemon
     , unsafeLogDaemon
+    , aulaLog
     , cleanUpDaemon
     )
 where
@@ -26,22 +26,16 @@ import Control.Lens
 import Control.Monad (filterM, forever, forM_, join, when)
 import Data.Functor.Infix ((<$$>))
 import Data.List (isPrefixOf)
-import Data.Time.Clock (getCurrentTime)
 import Data.String.Conversions (cs, (<>))
 import System.Directory
 import System.FilePath
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 
-import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.Lazy as LBS
-
 import Logger
 import Types hiding (logLevel)
 import Config
 
-
-type SystemLogger = LogEntry -> IO ()
 
 -- | The daemon is implemented as a thread.  `_msgDaemonStart` starts a new daemon.
 --
@@ -72,13 +66,13 @@ instance Daemon TimeoutDaemon where
 -- daemon (receive log messages and append them to a log file) and sendmail daemon (receive typed
 -- emails over 'Chan' and deliver them).
 msgDaemon
-    :: SystemLogger
+    :: SendLogMsg
     -> String
     -> (a -> IO ())
     -> (SomeException -> IO ())
     -> Bool
     -> IO (MsgDaemon a)
-msgDaemon logger name computation handleException threadSafe = do
+msgDaemon (SendLogMsg logger) name computation handleException threadSafe = do
     chan <- newTChanIO
     alreadyRunningRef :: MVar (Maybe ThreadId) <- newMVar Nothing
 
@@ -109,13 +103,13 @@ msgDaemon logger name computation handleException threadSafe = do
 -- | Run an action in constant intervals (the first time *after* the first interval).
 -- Example uses are phase timeout and acid-state snapshot.
 timeoutDaemon
-    :: SystemLogger
+    :: SendLogMsg
     -> String
     -> Timespan
     -> IO ()
     -> (SomeException -> IO ())
     -> TimeoutDaemon
-timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
+timeoutDaemon (SendLogMsg logger) name delay computation handleException = TimeoutDaemon $ do
     let run = do
             logger . LogEntry INFO . cs $
                 concat ["daemon [", name, "] triggered (at frequency ", showTimespan delay, ")."]
@@ -129,7 +123,7 @@ timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
     forkIO . forever $ do
         threadDelay (timespanUs delay)
         run `catch` (\(e@(SomeException _)) -> do
-            -- (alternatively, we could change the 'SystemLogger' type to a newtype, make it
+            -- (alternatively, we could change the 'SendLogMsg' type to a newtype, make it
             -- abstract, and make sure that every system logger we ever encounter in the wild will
             -- have a handler wrapped around it.)
             hPutStrLn stderr $ "*** timeoutDaemon: exception in except handler: " <> show e
@@ -138,7 +132,7 @@ timeoutDaemon logger name delay computation handleException = TimeoutDaemon $ do
 -- | Same as timeoutDaemon but without any extra exception handling.
 -- Errors are still sent to the logger.
 timeoutDaemon'
-    :: SystemLogger
+    :: SendLogMsg
     -> String
     -> Timespan
     -> IO ()
@@ -169,20 +163,19 @@ logDaemonLock = unsafePerformIO $ newMVar False
 
 unsafeLogDaemon :: LogConfig -> IO (MsgDaemon LogEntry)
 unsafeLogDaemon cfg = do
-    msgDaemon logMsg "logger" logMsg (const $ pure ()) False
+    msgDaemon logger "logger" (unSendLogMsg logger) (const $ pure ()) False
   where
-    logMsg (LogEntry NOLOG _)        = pure ()
-    logMsg (LogEntry level msg)      = when (level >= cfg ^. logLevel) $ do
-                                            now <- getCurrentTime
-                                            hPutStrLn stderr (cshow now <> " [" <> cshow level <> "] " <> cs msg)
-    logMsg (LogEntryForModerator ev) = LBS.appendFile (cfg ^. eventLogPath) $ Aeson.encode ev <> cs "\n"
+    logger = aulaLog cfg
 
-cleanUpDaemon :: SystemLogger -> CleanUpConfig -> TimeoutDaemon
+
+-- * cleanup daemon
+
+cleanUpDaemon :: SendLogMsg -> CleanUpConfig -> TimeoutDaemon
 cleanUpDaemon logger CleanUpConfig{..} =
     timeoutDaemon' logger "CLEANUP" _cleanUpInterval (mapM_ (cleanUpDir logger) _cleanUpRules)
 
-cleanUpDir :: SystemLogger -> CleanUpRule -> IO ()
-cleanUpDir logger CleanUpRule{..} = do
+cleanUpDir :: SendLogMsg -> CleanUpRule -> IO ()
+cleanUpDir (SendLogMsg logger) CleanUpRule{..} = do
     files <- filterM doesFileExist =<< (_cleanUpDirectory </>) <$$> filter (_cleanUpPrefix `isPrefixOf`)
              <$> getDirectoryContents' _cleanUpDirectory
     mods  <- mapM getModificationTime files

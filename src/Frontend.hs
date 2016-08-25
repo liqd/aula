@@ -60,7 +60,7 @@ runFrontend cfg = do
     log <- logDaemon (cfg ^. logging)
     void $ log ^. start
     metrics <- startEKG cfg
-    runFrontendWithLogger cfg (log ^. msgDaemonSend) metrics
+    runFrontendWithLogger cfg (SendLogMsg $ log ^. msgDaemonSend) metrics
 
 startEKG :: Config -> IO (Maybe (EKG.WaiMetrics, AulaMetrics))
 startEKG cfg =
@@ -70,12 +70,15 @@ startEKG cfg =
         (,) <$> EKG.registerWaiMetrics store
             <*> registerAulaMetrics store
 
-runFrontendWithLogger :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> IO ()
-runFrontendWithLogger cfg log metrics = withPersist log cfg (runFrontendWithLoggerAndPersist cfg log metrics)
+runFrontendWithLogger
+    :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> IO ()
+runFrontendWithLogger cfg log metrics =
+    withPersist cfg (runFrontendWithLoggerAndPersist cfg log metrics)
 
 -- | Open a warp listener that serves the aula 'Application'.  (No content is created; on users are
 -- logged in.)
-runFrontendWithLoggerAndPersist :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> RunPersist -> IO ()
+runFrontendWithLoggerAndPersist
+    :: Config -> SendLogMsg -> Maybe (EKG.WaiMetrics, AulaMetrics) -> RunPersist -> IO ()
 runFrontendWithLoggerAndPersist cfg log metrics rp = do
     let runAction :: Action :~> ExceptT ServantErr IO
         runAction = mkRunAction (ActionEnv rp cfg log (snd <$> metrics))
