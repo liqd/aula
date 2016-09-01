@@ -117,7 +117,9 @@ cacheHeadersNoCache =
 
 cacheHeadersCacheStatic :: [(ST, ResponseHeaders)]
 cacheHeadersCacheStatic =
-    ("/static", [("Cache-Control", "public")]) : cacheHeadersNoCache
+    ("/static", [("Cache-Control", "public")]) :
+    ("/avatar", [("Cache-Control", "public, must-revalidate, max-age=10800")]) :
+    cacheHeadersNoCache
 
 cacheRelevantMethod :: Method -> Bool
 cacheRelevantMethod = (`elem` ["GET", "HEAD"])
