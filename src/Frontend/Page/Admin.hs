@@ -893,7 +893,7 @@ adminCreateClass = formPageHandlerWithMsg (pure AdminCreateClass) q msgOk
     q (BatchCreateUsersFormData _clname Nothing) =
         throwError500 "upload FAILED: no file!"  -- FIXME: status code?
     q (BatchCreateUsersFormData clname (Just file)) = do
-        eCsv :: Either String [CsvUserRecord] <- readTempCsvFile file
+        eCsv :: Either String [CsvUserRecord] <- catMaybes <$$> readTempCsvFile file
         case eCsv of
             Left msg      -> throwError500 $ "csv parsing FAILED: " <> cs msg
                                              -- FIXME: status code?
@@ -1043,9 +1043,13 @@ instance Page InitialPasswordsCsv where
 
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
 -- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
-instance Csv.FromRecord CsvUserRecord where
-    parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = mkRecord
+instance Csv.FromRecord (Maybe CsvUserRecord) where
+    parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = filterEmpty <$> mkRecord
       where
+        filterEmpty :: CsvUserRecord -> Maybe CsvUserRecord
+        filterEmpty r@(CsvUserRecord (UserFirstName f) (UserLastName l) _ _ _) =
+            if ST.null f && ST.null l then Nothing else Just r
+
         mkRecord :: Csv.Parser CsvUserRecord
         mkRecord = CsvUserRecord
             <$> (UserFirstName <$> parseName 50 0)

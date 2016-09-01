@@ -80,7 +80,7 @@ spec = describe "file upload" $ do
                  ]
 
         forM_ ts $ \(label, file) -> it label $ do
-            let v :: Either String [CsvUserRecord] = decodeCsv $ LBS.unlines file
+            let v :: Either String [CsvUserRecord] = catMaybes <$> decodeCsv (LBS.unlines file)
             length <$> v `shouldBe` Right (length file - 1)
 
         -- input sanitizing
@@ -125,7 +125,7 @@ spec = describe "file upload" $ do
                  ]
 
         forM_ is $ \(label, file, wantedNames) -> it label $ do
-            let Right v :: Either String [CsvUserRecord] = decodeCsv $ LBS.unlines file
+            let Right v :: Either String [CsvUserRecord] = catMaybes <$> decodeCsv (LBS.unlines file)
             forM_ (zip v wantedNames) $
                 \( CsvUserRecord (UserFirstName gotFirstName) (UserLastName gotLastName)
                                               Nothing Nothing Nothing
