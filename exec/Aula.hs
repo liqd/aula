@@ -5,13 +5,16 @@
 
 module Main where
 
-import Data.Monoid ((<>))
 import Control.Exception
+import Control.Lens ((^.))
+import Data.String.Conversions (cs, (<>))
 import System.Directory
 
 import Action.Smtp
 import Config
 import Frontend
+import Logger
+import Types.Log
 
 
 main :: IO ()
@@ -25,4 +28,7 @@ main = do
     wd <- getCurrentDirectory
     logmotd cfg wd
 
-    runFrontend cfg
+    runFrontend cfg `catch` \(e :: SomeException) -> do
+        let lg = unSendLogMsg (aulaLog (cfg ^. logging)) . LogEntry INFO . cs
+        lg (show e)
+        lg "shutdown."
