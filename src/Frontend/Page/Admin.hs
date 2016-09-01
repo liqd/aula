@@ -1044,13 +1044,16 @@ instance Page InitialPasswordsCsv where
 -- | NOTE: If there are any passwords in the csv input file, they are silently ignored.  (This can
 -- be easily changed, if we want the admins / moderators / ... to make up passwords instead.)
 instance Csv.FromRecord CsvUserRecord where
-    parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = CsvUserRecord
-        <$> (UserFirstName <$> parseName 50 0)
-        <*> (UserLastName <$> parseName 50 1)
-        <*> parseMEmail 2
-        <*> pure (parseMLogin 3)
-        <*> pure Nothing
+    parseRecord (fmap (ST.strip . cs) . toList -> (v :: [ST])) = mkRecord
       where
+        mkRecord :: Csv.Parser CsvUserRecord
+        mkRecord = CsvUserRecord
+            <$> (UserFirstName <$> parseName 50 0)
+            <*> (UserLastName <$> parseName 50 1)
+            <*> parseMEmail 2
+            <*> pure (parseMLogin 3)
+            <*> pure Nothing
+
         parseName :: (Monad m) => Int -> Int -> m ST
         parseName mxLength i
             | length v < i + 1
