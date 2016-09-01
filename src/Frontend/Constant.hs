@@ -45,6 +45,12 @@ avatarDefaultSize = 600
 avatarExtraSizes :: [Int]
 avatarExtraSizes = [64, 100, 300]
 
+avatarSizeSmall :: Int
+avatarSizeSmall = 100
+
+avatarSizeMedium :: Int
+avatarSizeMedium = 300
+
 -- | This is just for showing the information.  To enforce this limit, set up a reverse proxie like
 -- nginx and configure it accordingly.  See ./docs/deployment.md for details.  FIXME: this should be
 -- in Config.hs so changing nginx config doesn't make recompilation necessary.

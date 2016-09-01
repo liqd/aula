@@ -110,6 +110,6 @@ instance (Typeable a) => ToHtml (AuthorWidget a) where
         div_ [class_ "author"] .
             a_ [href_ $ U.viewUserIdProfile (mi ^. metaCreatedBy)] $ do
                 span_ [class_ "author-image"] $
-                    userAvatarImg' avatarDefaultSize (mi ^. metaCreatedBy) (mi ^. metaCreatedByLogin)
+                    userAvatarImg' avatarSizeSmall (mi ^. metaCreatedBy) (mi ^. metaCreatedByLogin)
                 span_ [class_ "author-text"] $
                     mi ^. metaCreatedByLogin . unUserLogin . html
