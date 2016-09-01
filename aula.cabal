@@ -184,6 +184,7 @@ library
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
@@ -323,6 +324,7 @@ executable aula-avatars
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
@@ -396,6 +398,7 @@ executable aula-html-dummies
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
@@ -472,6 +475,7 @@ executable aula-i18n
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
@@ -547,6 +551,7 @@ executable aula-init-state
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
@@ -620,6 +625,7 @@ executable aula-server
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
@@ -694,6 +700,7 @@ test-suite spec
     , string-conversions
     , template-haskell
     , text
+    , text-icu
     , time
     , transformers
     , vector
