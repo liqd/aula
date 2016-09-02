@@ -7,3 +7,12 @@ Thu Aug 25 21:56:25 2016 +0200 - v0.28.0 .. v0.27.1
  - write system log to file, not stdout.  use path from Config.
  - use logging consistently instead of print, putStrLn, ...
  - cache control: always cache /static, never cache anything else.
+
+
+Fri Sep  2 21:46:19 2016 +0200 - v0.29.0 .. v0.28.0
+
+ - csv upload supports empty entries, iso-latin-1
+ - emails contain instance info in sig
+ - avatar sizes are smaller in lists
+ - log entry on shutdown
+
