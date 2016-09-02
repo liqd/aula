@@ -3,8 +3,6 @@
 /liqd/aula/.travis/docker-link-stack-workdir.sh
 /liqd/aula/docker/selenium.sh restart
 
-apt-get install libicu-dev --yes
-
 # Change to the source directory which is attached as docker volume
 cd /liqd/aula
 
