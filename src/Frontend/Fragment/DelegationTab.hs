@@ -57,7 +57,7 @@ renderDelegations whatsPage delegations =
         li_ [class_ "small-avatar-list-item"] $ do
             div_ [class_ "col-1-12"] $ do
                 div_ [class_ "small-avatar-list-image"] $ do
-                    userAvatarImg avatarDefaultSize delegate
+                    userAvatarImg avatarSizeSmall delegate
             div_ [class_ "col-11-12"] $ do
                 h3_ $ a_ [href_ $ U.viewUserProfile delegate]
                     (delegate ^. userLogin . unUserLogin  . html)

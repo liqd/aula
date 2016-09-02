@@ -62,7 +62,7 @@ instance ToHtml ListItemIdea where
             a_ [href_ $ U.viewIdea idea] $ do
                 div_ [class_ "col-5-12"] $ do
                     div_ [class_ "ideas-list-img-container"] $
-                        userAvatarImg' avatarDefaultSize (idea ^. createdBy) (idea ^. createdByLogin)
+                        userAvatarImg' avatarSizeSmall (idea ^. createdBy) (idea ^. createdByLogin)
                     div_ [class_ "ideas-list-text-container"] $ do
                         h2_ [class_ "ideas-list-title"] $ do
                             idea ^. ideaTitle . html

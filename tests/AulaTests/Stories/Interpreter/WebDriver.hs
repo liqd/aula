@@ -175,6 +175,7 @@ byXPath = findElem . ByXPath
 clearAndSendKeys :: WebDriver wd => ST -> Element -> wd ()
 clearAndSendKeys st e = clearInput e >> sendKeys st e
 
+-- | FIXME: rename to 'currentPageShouldBe'
 currentPage :: (Typeable p, WebDriver wd) => Proxy p -> wd ()
 currentPage = void . findElem . semanticDivSelector
 

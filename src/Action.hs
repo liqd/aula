@@ -161,11 +161,13 @@ import Data.Foldable (forM_)
 import Prelude hiding (log)
 import Servant
 import Servant.Missing
+import System.IO.Unsafe (unsafePerformIO)
 import Thentos.CookieSession.CSRF (HasSessionCsrfToken(..), GetCsrfSecret(..), CsrfToken)
 import Thentos.CookieSession.Types (GetThentosSessionToken(..), ThentosSessionToken(..))
 
 import qualified Data.Csv as Csv
 import qualified Data.Text as ST
+import qualified Data.Text.ICU.Convert as CsvEnc
 import qualified Data.Vector as V
 
 import Action.Smtp
@@ -995,9 +997,21 @@ readTempCsvFile :: (ReadTempFile m, Csv.FromRecord r) => FilePath -> m (Either S
 readTempCsvFile = fmap decodeCsv . readTempFile
 
 decodeCsv :: Csv.FromRecord r => LBS -> Either String [r]
-decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader
+decodeCsv = fmap V.toList . Csv.decodeWith opts Csv.HasHeader . unsafeEncodeToUtf8
   where
     opts = Csv.defaultDecodeOptions { Csv.decDelimiter = fromIntegral (ord ';') }
+
+-- | Try to convert from ISO-8859-1.  This works for umlauts if the encoding is actually UTF-8.
+--
+-- WARNING: There is a lot of guess-work involved here.  We really shouldn't support csv upload and
+-- use https://hackage.haskell.org/package/xlsx instead.
+--
+-- (See also: https://github.com/bos/text-icu/issues/8)
+{-# NOINLINE unsafeEncodeToUtf8 #-}
+unsafeEncodeToUtf8 :: LBS -> LBS
+unsafeEncodeToUtf8 lbs = unsafePerformIO $ do
+    conv <- CsvEnc.open "ISO-8859-1" Nothing
+    pure . cs . CsvEnc.toUnicode conv . cs $ lbs
 
 
 -- * moderator's event log

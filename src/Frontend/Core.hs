@@ -863,7 +863,7 @@ headerMarkup mUser = header_ [class_ "main-header", id_ "main-header"] $ do
                         -- FIXME: please add class m-selected to currently selected menu item
 
                         div_ [class_ "user-avatar"] $
-                            userAvatarImg avatarDefaultSize `mapM_` mUser
+                            userAvatarImg avatarSizeMedium `mapM_` mUser
                         span_ [class_ "user-name"] $ do
                             "Hi " <> (usr ^. userLogin . unUserLogin . html)
 

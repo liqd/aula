@@ -27,6 +27,7 @@ import Control.Monad.Trans.Reader
 import Network.Mail.Mime (Address(Address), sendmailCustomCaptureOutput, simpleMail', renderMail')
 
 import qualified Data.ByteString as SB
+import qualified Data.Text as ST
 
 import AulaPrelude
 import Config
@@ -91,7 +92,7 @@ sendMailToAddressIO (SendLogMsg logger) receiver msg = do
     let scfg   = cfg ^. smtp
         sender = Address (Just $ scfg ^. senderName . to cs) (scfg ^. senderEmail . to cs)
         subj   = "[" <> subjectLabel <> "] " <> msg ^. msgSubjectText
-        mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody)
+        mail   = simpleMail' receiver sender subj (cs $ msg ^. msgBody <> extraInstanceInfo cfg)
     r <- liftIO $ do
         logger . LogEntry DEBUG . cs $ "sending email: " <> ppShow (receiver, msg)
         when (isJust $ msg ^. msgHtml) . logger . LogEntry WARN $ "No support for the optional HTML part"
@@ -112,6 +113,14 @@ sendMailToAddressIO (SendLogMsg logger) receiver msg = do
     subjectLabel = case msg ^. msgSubjectLabel of
         IdeaSpaceSubject is -> is ^. uilabeled
         UserLoginSubject ul -> ul ^. unUserLogin
+
+    extraInstanceInfo :: Config -> ST
+    extraInstanceInfo cfg = ST.unlines
+        [ ""
+        , ""
+        , "--"
+        , "Diese email wurde automatisch von " <> cs (cfg ^. exposedUrl) <> " erstellt."
+        ]
 
 sendMailToUser :: HasSendMail e r m => [SendMailFlag] -> User -> EmailMessage -> m ()
 sendMailToUser _ user _

@@ -49,6 +49,7 @@ spec = describe "file upload" $ do
                                 ,bodyShouldContain "_unUserLastName = &quot;Kuhn&quot"]
 
     describe "csv file parser" $ do
+        -- valid input
         let ts :: [(String, [LBS])]
             ts = [ ("empty file",
                     "Vorname;Nachname;email;Login-Name" :
@@ -79,5 +80,57 @@ spec = describe "file upload" $ do
                  ]
 
         forM_ ts $ \(label, file) -> it label $ do
-            let v :: Either String [CsvUserRecord] = decodeCsv $ LBS.unlines file
+            let v :: Either String [CsvUserRecord] = catMaybes <$> decodeCsv (LBS.unlines file)
             length <$> v `shouldBe` Right (length file - 1)
+
+        -- input sanitizing
+        let is :: [(String, [LBS], [(ST, ST)])]
+            is = [ ("UTF-8 with LF linebreaks",
+                    "Vorname;Nachname" :
+                    "Jühti Toih;Mtohi" :
+                    "Mhyi;Syti" :
+                    "Muria;Tüßq" :
+                    [],
+                    ("Jühti Toih", "Mtohi") :
+                    ("Mhyi", "Syti") :
+                    ("Muria", "Tüßq") :
+                    [])
+                 , ("ISO-8859 with CRLF linebreaks",
+                    "Vorname;Nachname\r" :
+                    "J\252hti Toih;Mtohi\r" :
+                    "Mhyi;Syti\r" :
+                    "Muria;T\246\223q\r" :
+                    [],
+                    ("Jühti Toih", "Mtohi") :
+                    ("Mhyi", "Syti") :
+                    ("Muria", "Tößq") :
+                    [])
+                 , ("Empty names",
+                    "Vorname;Nachname\r" :
+                    "Wrg;Oiuy\r" :
+                    ";\r" :
+                    "" :
+                    "" :
+                    ";\r" :
+                    "" :
+                    "Mhyi;Syti\r" :
+                    ";\r" :
+                    "" :
+                    ";\r" :
+                    "" :
+                    [],
+                    ("Wrg", "Oiuy") :
+                    ("Mhyi", "Syti") :
+                    [])
+                 ]
+
+        forM_ is $ \(label, file, wantedNames) -> it label $ do
+            let Right v :: Either String [CsvUserRecord] = catMaybes <$> decodeCsv (LBS.unlines file)
+            forM_ (zip v wantedNames) $
+                \( CsvUserRecord (UserFirstName gotFirstName) (UserLastName gotLastName)
+                                              Nothing Nothing Nothing
+                 , (wantedFirstName, wantedLastName)
+                 ) -> do
+                       print (gotFirstName, gotLastName)
+                       gotFirstName `shouldBe` wantedFirstName
+                       gotLastName  `shouldBe` wantedLastName
