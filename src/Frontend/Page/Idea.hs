@@ -386,7 +386,7 @@ instance ToHtml ViewIdea where
                         (when (CanComment `elem` caps) .
                             a_ [href_ $ U.commentOnIdea idea] $
                                 "Gib den ersten Verbesserungsvorschlag ab!")
-                        (toHtml . CommentWidget ctx caps)
+                        (\comment -> toHtml $ CommentWidget (ctx & capCtxComment .~ Just comment) caps comment)
                         (idea ^. ideaComments)
 
 
