@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           aula
-version:        0.29.0
+version:        0.29.1
 category:       Web
 homepage:       https://github.com/liqd/aula#readme
 bug-reports:    https://github.com/liqd/aula/issues
@@ -755,5 +755,6 @@ test-suite spec
       Test.Hspec.Missing
       Test.QuickCheck.Missing
       Test.WebDriver.Missing
+      Types.VDocSpec
       TypesSpec
   default-language: Haskell2010

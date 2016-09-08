@@ -1,12 +1,9 @@
 -*- mode: text -*-
 
 
-Thu Aug 25 21:56:25 2016 +0200 - v0.28.0 .. v0.27.1
+Thu Sep  8 13:27:11 CEST 2016 v0.29.1..v0.29.0
 
- - fix: show menu on mobile.
- - write system log to file, not stdout.  use path from Config.
- - use logging consistently instead of print, putStrLn, ...
- - cache control: always cache /static, never cache anything else.
+ - fix permissions for moderator in idea discussions #986
 
 
 Fri Sep  2 21:46:19 2016 +0200 - v0.29.0 .. v0.28.0
@@ -15,4 +12,13 @@ Fri Sep  2 21:46:19 2016 +0200 - v0.29.0 .. v0.28.0
  - emails contain instance info in sig
  - avatar sizes are smaller in lists
  - log entry on shutdown
+
+
+Thu Aug 25 21:56:25 2016 +0200 - v0.28.0 .. v0.27.1
+
+ - fix: show menu on mobile.
+ - write system log to file, not stdout.  use path from Config.
+ - use logging consistently instead of print, putStrLn, ...
+ - cache control: always cache /static, never cache anything else.
+
 
