@@ -58,9 +58,13 @@ type S = DScope
 
 -- * types
 
+-- | Delegatees give their vote to me, so i vote for them:
+-- "für wen stimme ich ab?" ("for whom do i vote?")
 newtype Delegatee v = Delegatee { unDelegatee :: v }
   deriving (Eq, Ord, Show, Read)
 
+-- | Delegates get their vote from me, so they vote for me:
+-- "wer stimmt für mich ab?" ("who votes for me?")
 newtype Delegate  v = Delegate { unDelegate :: v }
   deriving (Eq, Ord, Show, Read)
 

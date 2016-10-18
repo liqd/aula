@@ -297,8 +297,8 @@ delegatedDScopes delegatee (DelegationListsMap xs) = fullDScopeToDScope . fst <$
 
 data UserProfileTab
     = UserIdeasTab
-    | UserDelegateesTab
-    | UserDelegatesTab
+    | UserDelegateesTab -- Delegatees give their vote to me, so i vote for them: "für wen stimme ich ab?" ("for whom do i vote?")
+    | UserDelegatesTab  -- Delegates get their vote from me, so they vote for me: "wer stimmt für mich ab?" ("who votes for me?")
   deriving (Eq)
 
 -- | FUTUREWORK: 'Frontend.Page.Topic.tabLink' shares some non-trivial code with this function that
@@ -313,8 +313,8 @@ userProfileTab ctx activeTab user = when (canCreateIdeas' || canDelegate') $ do
 
     allTabs dd = do
         when canCreateIdeas' $ tabLink dd UserIdeasTab      (U.viewUserProfile user)     "Erstellte Ideen"
-        when canDelegate'    $ tabLink dd UserDelegateesTab (U.userDelegationsTo user)   "Wer stimmt für mich ab?"
-        when canDelegate'    $ tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "Für wen stimme ich ab?"
+        when canDelegate'    $ tabLink dd UserDelegateesTab (U.userDelegationsTo user)   "Für wen stimme ich ab?"
+        when canDelegate'    $ tabLink dd UserDelegatesTab  (U.userDelegationsFrom user) "Wer stimmt für mich ab?"
 
     tabLink True  = tabLinkDropdown
     tabLink False = tabLinkDiv
