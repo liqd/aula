@@ -34,8 +34,8 @@ spec = do
                 , elements "@#$%^&*()!"
                 ]
             validInvalidRealnames =
-                (,) <$> manyNM 3 3 validInvalidChars
-                    <*> manyNM 3 3 validInvalidChars
+                (,) <$> manyNM 3 6 validInvalidChars
+                    <*> manyNM 3 6 validInvalidChars
 
         it "generates non-empty list and the first 5 items contain allowed characters only." $ do
             genUserLoginFromRealname "_a_" "b-b"

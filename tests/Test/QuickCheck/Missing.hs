@@ -32,6 +32,6 @@ uniqueOf numOfTries gen = go numOfTries
             then go (n - 1)
             else pure x
 
--- | Generates a list which size is n to m.
+-- | Generates a list of length between @n@ and @m@.
 manyNM :: Int -> Int -> Gen a -> Gen [a]
-manyNM n p g = (++) <$> vectorOf n g <*> (take p <$> listOf g)
+manyNM n m g = choose (n, m) >>= (`vectorOf` g)
