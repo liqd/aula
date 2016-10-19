@@ -972,8 +972,8 @@ addFirstUser now proto = do
 
 genUserLoginCandidates :: UserFirstName -> UserLastName -> [ST]
 genUserLoginCandidates
-    (ST.take 3 . ST.filter usernameAllowedChar . view unUserFirstName -> fn)
-    (ST.take 3 . ST.filter usernameAllowedChar . view unUserLastName  -> ln)
+    (pruneAndPad 3 . ST.filter usernameAllowedChar . view unUserFirstName -> fn)
+    (pruneAndPad 3 . ST.filter usernameAllowedChar . view unUserLastName  -> ln)
         = mutate (fn <> ln) <$> noise
   where
     mutate :: ST -> ST -> ST
@@ -981,6 +981,10 @@ genUserLoginCandidates
 
     noise :: [ST]
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
+
+pruneAndPad :: Int -> ST -> ST
+pruneAndPad i s = ST.take i $ s <> cs (replicate i 'o')
+
 
 mkUserLoginFromProto :: ProtoUser -> AUpdate UserLogin
 mkUserLoginFromProto protoUser = pick $ genUserLoginCandidates
