@@ -16,6 +16,7 @@ import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Missing (manyNM)
 
+
 -- | The number of elements under inspection as the
 -- genUserLoginFromRealname could generate many.
 sampleUsernameSize :: Int
