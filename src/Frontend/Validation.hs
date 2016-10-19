@@ -210,7 +210,7 @@ usernameV' = dimap (view _UserLogin) mkUserLogin usernameV
 -- The issue above does not apply here for various reasons but still we can be cautious.
 usernameV :: StringFieldValidator
 usernameV = fieldParser
-    (cs <$> manyNM minUsernameLength maxUsernameLength letter)
+    (cs <$> manyNM minUsernameLength maxUsernameLength (satisfy usernameAllowedChar))
     (concat [ show minUsernameLength, "-"
             , show maxUsernameLength, " Buchstaben"])
 

@@ -84,6 +84,7 @@ module Persistent.Pure
     , getUsersInClass
     , getSchoolClasses
     , loginIsAvailable
+    , genUserLoginFromRealname
     , addUser
     , addFirstUser
     , mkMetaInfo
@@ -969,8 +970,20 @@ addFirstUser now proto = do
 
     dbUserMap . at (user ^. _Id) <?= user
 
+genUserLoginFromRealname :: ST -> ST -> [ST]
+genUserLoginFromRealname
+    (ST.take 3 . ST.filter usernameAllowedChar -> fn)
+    (ST.take 3 . ST.filter usernameAllowedChar -> ln)
+        = mutate (fn <> ln) <$> noise
+  where
+    mutate :: ST -> ST -> ST
+    mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
+
+    noise :: [ST]
+    noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
+
 mkUserLoginFromProto :: ProtoUser -> AUpdate UserLogin
-mkUserLoginFromProto protoUser = pick (gen firstn lastn)
+mkUserLoginFromProto protoUser = pick (genUserLoginFromRealname firstn lastn)
   where
     firstn :: ST = protoUser ^. protoUserFirstName . unUserFirstName
     lastn  :: ST = protoUser ^. protoUserLastName  . unUserLastName
@@ -979,15 +992,6 @@ mkUserLoginFromProto protoUser = pick (gen firstn lastn)
     pick ((mkUserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
     pick []                      = error "impossible.  (well, unlikely.)"
                                  -- FIXME: use throwError(500) here?
-
-    gen :: ST -> ST -> [ST]
-    gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise
-
-    mutate :: ST -> ST -> ST
-    mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
-
-    noise :: [ST]
-    noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
 
 instance FromProto Idea where
     fromProto i m = Idea
