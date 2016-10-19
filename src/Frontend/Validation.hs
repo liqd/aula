@@ -10,10 +10,12 @@ module Frontend.Validation
     ( module TP
 
       -- * field validation
+    , FieldValidator
     , FieldName
     , FieldParser
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
+    , testValidator
     , fieldParser
 
       -- * common validators
@@ -161,6 +163,11 @@ validateOptional
     => FieldName -> FieldValidator s a -> Form (HtmlT n ()) m (Maybe s) -> Form (HtmlT n ()) m (Maybe a)
 validateOptional = DF.validateOptional <..> validate'
 
+-- | Run validator in tests.
+testValidator :: FieldValidator a b -> a -> Either (HtmlT Identity ()) b
+testValidator v x = case validate' "test" v x of
+    DF.Success s -> Right s
+    DF.Error   e -> Left e
 
 -- * simple validators
 

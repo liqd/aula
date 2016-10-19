@@ -31,3 +31,7 @@ uniqueOf numOfTries gen = go numOfTries
         if needOtherOne
             then go (n - 1)
             else pure x
+
+-- | Generates a list which size is n to m.
+manyNM :: Int -> Int -> Gen a -> Gen [a]
+manyNM n p g = (++) <$> vectorOf n g <*> (take p <$> listOf g)
