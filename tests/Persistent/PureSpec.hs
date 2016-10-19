@@ -8,19 +8,19 @@ import Data.Either (isRight)
 import Data.String.Conversions (ST, cs)
 import qualified Data.Text as ST (all)
 
-import Types.Core (usernameAllowedChar)
+import Types.Core (usernameAllowedChar, UserFirstName(..), UserLastName(..))
 import Frontend.Validation (FieldValidator, testValidator, usernameV)
-import Persistent.Pure (genUserLoginFromRealname)
+import Persistent.Pure (genUserLoginCandidates)
 
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Missing (manyNM)
 
 
--- | The number of elements under inspection as the
--- genUserLoginFromRealname could generate many.
+-- | The number of elements under inspection as
+-- 'genUserLoginCandidates' output is practially infinite.
 sampleUsernameSize :: Int
-sampleUsernameSize = 5
+sampleUsernameSize = 15
 
 spec :: Spec
 spec = do
@@ -28,22 +28,28 @@ spec = do
 
         let checkValidUsernames  = all (ST.all usernameAllowedChar)
             checkValidUsernames' = all (isRight . testValidator (usernameV :: FieldValidator ST String))
-            validInvalidChars   = oneof
+
+            validChars = oneof
                 [ elements ['a'..'z']
                 , elements ['A'..'Z']
                 , elements "_- "
-                , elements "@#$%^&*()!"
                 ]
-            validInvalidRealnames =
-                (,) <$> manyNM 3 6 validInvalidChars
-                    <*> manyNM 3 6 validInvalidChars
+            invalidChars = oneof
+                [ elements "@#$%^&*()!"
+                ]
+            validOrInvalidChars = oneof [validChars, invalidChars]
+
+            validOrInvalidRealnames =
+                (,) <$> manyNM 3 6 validOrInvalidChars
+                    <*> manyNM 3 6 validOrInvalidChars
 
         it "generates non-empty list and the first 5 items contain allowed characters only." $ do
-            genUserLoginFromRealname "_a_" "b-b"
+            genUserLoginCandidates "_a_" "b-b"
                 `shouldSatisfy`
                 ((&&) <$> not . null
                       <*> checkValidUsernames . take sampleUsernameSize)
 
         it "generates usernames that the usernameV can validate" . property .
-            forAll validInvalidRealnames $ \(fn, ln) ->
-                checkValidUsernames' . take sampleUsernameSize $ genUserLoginFromRealname (cs fn) (cs ln)
+            forAll validOrInvalidRealnames $ \(fn, ln) ->
+                checkValidUsernames' . take sampleUsernameSize $
+                    genUserLoginCandidates (UserFirstName $ cs fn) (UserLastName $ cs ln)

@@ -84,7 +84,7 @@ module Persistent.Pure
     , getUsersInClass
     , getSchoolClasses
     , loginIsAvailable
-    , genUserLoginFromRealname
+    , genUserLoginCandidates
     , addUser
     , addFirstUser
     , mkMetaInfo
@@ -970,10 +970,10 @@ addFirstUser now proto = do
 
     dbUserMap . at (user ^. _Id) <?= user
 
-genUserLoginFromRealname :: ST -> ST -> [ST]
-genUserLoginFromRealname
-    (ST.take 3 . ST.filter usernameAllowedChar -> fn)
-    (ST.take 3 . ST.filter usernameAllowedChar -> ln)
+genUserLoginCandidates :: UserFirstName -> UserLastName -> [ST]
+genUserLoginCandidates
+    (ST.take 3 . ST.filter usernameAllowedChar . view unUserFirstName -> fn)
+    (ST.take 3 . ST.filter usernameAllowedChar . view unUserLastName  -> ln)
         = mutate (fn <> ln) <$> noise
   where
     mutate :: ST -> ST -> ST
@@ -983,11 +983,10 @@ genUserLoginFromRealname
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
 
 mkUserLoginFromProto :: ProtoUser -> AUpdate UserLogin
-mkUserLoginFromProto protoUser = pick (genUserLoginFromRealname firstn lastn)
+mkUserLoginFromProto protoUser = pick $ genUserLoginCandidates
+    (protoUser ^. protoUserFirstName)
+    (protoUser ^. protoUserLastName)
   where
-    firstn :: ST = protoUser ^. protoUserFirstName . unUserFirstName
-    lastn  :: ST = protoUser ^. protoUserLastName  . unUserLastName
-
     pick :: [ST] -> AUpdate UserLogin
     pick ((mkUserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
     pick []                      = error "impossible.  (well, unlikely.)"
