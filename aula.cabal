@@ -755,6 +755,5 @@ test-suite spec
       Test.Hspec.Missing
       Test.QuickCheck.Missing
       Test.WebDriver.Missing
-      Types.VDocSpec
       TypesSpec
   default-language: Haskell2010
