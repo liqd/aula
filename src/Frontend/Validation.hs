@@ -169,6 +169,7 @@ testValidator v x = case validate' "test" v x of
     DF.Success s -> Right s
     DF.Error   e -> Left e
 
+
 -- * simple validators
 
 inRangeV :: (ConvertibleStrings s String) => Int -> Int -> FieldValidator s Int
