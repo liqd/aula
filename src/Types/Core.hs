@@ -159,6 +159,9 @@ newtype UserLogin     = UserLogin     { _unUserLogin     :: ST }
 mkUserLogin :: ST -> UserLogin
 mkUserLogin = UserLogin . ST.toLower
 
+usernameAllowedChar :: Char -> Bool
+usernameAllowedChar = (`elem` ['a'..'z']) . toLower
+
 newtype UserFirstName = UserFirstName { _unUserFirstName :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 

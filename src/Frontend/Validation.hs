@@ -10,10 +10,12 @@ module Frontend.Validation
     ( module TP
 
       -- * field validation
+    , FieldValidator
     , FieldName
     , FieldParser
     , Frontend.Validation.validate
     , Frontend.Validation.validateOptional
+    , testValidator
     , fieldParser
 
       -- * common validators
@@ -161,6 +163,12 @@ validateOptional
     => FieldName -> FieldValidator s a -> Form (HtmlT n ()) m (Maybe s) -> Form (HtmlT n ()) m (Maybe a)
 validateOptional = DF.validateOptional <..> validate'
 
+-- | Run validator in tests.
+testValidator :: FieldValidator a b -> a -> Either (HtmlT Identity ()) b
+testValidator v x = case validate' "test" v x of
+    DF.Success s -> Right s
+    DF.Error   e -> Left e
+
 
 -- * simple validators
 
@@ -210,7 +218,7 @@ usernameV' = dimap (view _UserLogin) mkUserLogin usernameV
 -- The issue above does not apply here for various reasons but still we can be cautious.
 usernameV :: StringFieldValidator
 usernameV = fieldParser
-    (cs <$> manyNM minUsernameLength maxUsernameLength letter)
+    (cs <$> manyNM minUsernameLength maxUsernameLength (satisfy usernameAllowedChar))
     (concat [ show minUsernameLength, "-"
             , show maxUsernameLength, " Buchstaben"])
 

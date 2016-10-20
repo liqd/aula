@@ -84,6 +84,7 @@ module Persistent.Pure
     , getUsersInClass
     , getSchoolClasses
     , loginIsAvailable
+    , genUserLoginCandidates
     , addUser
     , addFirstUser
     , mkMetaInfo
@@ -969,25 +970,31 @@ addFirstUser now proto = do
 
     dbUserMap . at (user ^. _Id) <?= user
 
-mkUserLoginFromProto :: ProtoUser -> AUpdate UserLogin
-mkUserLoginFromProto protoUser = pick (gen firstn lastn)
+genUserLoginCandidates :: UserFirstName -> UserLastName -> [ST]
+genUserLoginCandidates
+    (pruneAndPad 3 . ST.filter usernameAllowedChar . view unUserFirstName -> fn)
+    (pruneAndPad 3 . ST.filter usernameAllowedChar . view unUserLastName  -> ln)
+        = mutate (fn <> ln) <$> noise
   where
-    firstn :: ST = protoUser ^. protoUserFirstName . unUserFirstName
-    lastn  :: ST = protoUser ^. protoUserLastName  . unUserLastName
-
-    pick :: [ST] -> AUpdate UserLogin
-    pick ((mkUserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
-    pick []                      = error "impossible.  (well, unlikely.)"
-                                 -- FIXME: use throwError(500) here?
-
-    gen :: ST -> ST -> [ST]
-    gen (ST.take 3 -> fn) (ST.take 3 -> ln) = mutate (fn <> ln) <$> noise
-
     mutate :: ST -> ST -> ST
     mutate sig noi = ST.take (6 - ST.length noi) sig <> noi
 
     noise :: [ST]
     noise = nub $ cs . mconcat <$> replicateM 5 ("" : ((:[]) <$> ['a'..'z']))
+
+pruneAndPad :: Int -> ST -> ST
+pruneAndPad i s = ST.take i $ s <> cs (replicate i 'o')
+
+
+mkUserLoginFromProto :: ProtoUser -> AUpdate UserLogin
+mkUserLoginFromProto protoUser = pick $ genUserLoginCandidates
+    (protoUser ^. protoUserFirstName)
+    (protoUser ^. protoUserLastName)
+  where
+    pick :: [ST] -> AUpdate UserLogin
+    pick ((mkUserLogin -> l):ls) = maybe (pure l) (\_ -> pick ls) =<< liftAQuery (findUserByLogin l)
+    pick []                      = error "impossible.  (well, unlikely.)"
+                                 -- FIXME: use throwError(500) here?
 
 instance FromProto Idea where
     fromProto i m = Idea

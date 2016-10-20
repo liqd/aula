@@ -751,6 +751,7 @@ test-suite spec
       FrontendSpec
       MonoidSpec
       Persistent.ApiSpec
+      Persistent.PureSpec
       SeleniumSpec
       Test.Hspec.Missing
       Test.QuickCheck.Missing
