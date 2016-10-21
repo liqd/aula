@@ -177,6 +177,7 @@ data Top (r :: AllowedMethod) =
   | TopTesting UriPath
   | TopSamples
   | TopStatic UriPath
+  | TopAvatar UriPath
   deriving Generic
 
 instance SOP.Generic (Top r)
@@ -189,6 +190,7 @@ top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
 top (TopStatic p)  = nil </> "static" <> p
+top (TopAvatar p)  = nil </> "avatars" <> p
 
 
 -- ** Main

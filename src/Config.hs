@@ -153,7 +153,11 @@ data Config = Config
     , _listener             :: ListenerConfig
     , _monitoring           :: Maybe ListenerConfig
     , _htmlStatic           :: FilePath
-    , _avatarPath           :: FilePath  -- avatars are stored in this directory
+    , _avatarPath           :: FilePath  -- avatars are stored in this directory:
+                                         -- FIXME: i think this is not working.  run `git grep
+                                         -- \"/avatars\"`, and you will find a few places where
+                                         -- Config should be consulted, but a string literal is used
+                                         -- instead!
     , _cfgCsrfSecret        :: CsrfSecret
     , _logging              :: LogConfig
     , _persist              :: PersistConfig
