@@ -97,13 +97,12 @@ instance FormPage PageDelegateVote where
             DF.inputHidden "selected-delegate" v
             div_ [class_ "delegate-image-select"] $ do
                 ul_ . for_ options' $ \user -> do
-                    let url = "avatars/" <> uid <> ".png"
-                        uid = user ^. _Id . unAUID . showed
+                    let uid = user ^. _Id . unAUID . showed
                         unm = user ^. userLogin . unUserLogin
                     li_ [ class_ "icon-list-button col-3-12"
                           , id_ $ "page-delegate-vote-uid." <> cs uid
                           ] $ do
-                        img_ [ src_ . U.TopStatic $ fromString url
+                        img_ [ src_ . U.TopAvatar . fromString $ uid <> ".png"
                              , alt_ $ user ^. userLogin . unUserLogin
                              ]
                         span_ $ toHtml unm
