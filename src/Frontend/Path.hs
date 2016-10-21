@@ -190,7 +190,7 @@ top (TopMain p)    = relPath p
 top (TopTesting p) = nil </> "testing" <> p
 top TopSamples     = nil </> "samples"
 top (TopStatic p)  = nil </> "static" <> p
-top (TopAvatar p)  = nil </> "avatars" <> p
+top (TopAvatar p)  = nil </> "avatar" <> p
 
 
 -- ** Main
