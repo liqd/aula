@@ -1,6 +1,13 @@
 -*- mode: text -*-
 
 
+Thu Sep  8 13:27:11 CEST 2016 v0.30.0..v0.29.1
+
+ - #991: fix permissions for moderator in idea discussions #986
+ - #994: from liqd/2016-10-18-ap-fix-990-filter-out-invalid-characters-at-user-creation
+ - #992: profile avatar images are not shown in `PageDelegateVote`
+
+
 Thu Sep  8 13:27:11 CEST 2016 v0.29.1..v0.29.0
 
  - fix permissions for moderator in idea discussions #986
@@ -20,5 +27,3 @@ Thu Aug 25 21:56:25 2016 +0200 - v0.28.0 .. v0.27.1
  - write system log to file, not stdout.  use path from Config.
  - use logging consistently instead of print, putStrLn, ...
  - cache control: always cache /static, never cache anything else.
-
-
