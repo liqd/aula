@@ -1,7 +1,12 @@
 -*- mode: text -*-
 
 
-Thu Sep  8 13:27:11 CEST 2016 v0.30.0..v0.29.1
+Thu Oct 21 01:23:13 CEST 2016 v0.30.1..v0.30.0
+
+ - typo in avatars path.
+
+
+Thu Oct 21 23:27:11 CEST 2016 v0.30.0..v0.29.1
 
  - #991: fix permissions for moderator in idea discussions #986
  - #994: from liqd/2016-10-18-ap-fix-990-filter-out-invalid-characters-at-user-creation
