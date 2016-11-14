@@ -95,4 +95,5 @@ $(makeAcidic ''AulaData
     , 'deleteComment
     , 'deactivateUser
     , 'setTermsOfUse
+    , 'wipeUserContent
     ])

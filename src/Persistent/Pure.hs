@@ -149,6 +149,7 @@ module Persistent.Pure
     , dangerousRenameAllLogins
     , termsOfUse
     , setTermsOfUse
+    , wipeUserContent
 
     , TraverseMetas
     , commentMetas
@@ -1057,6 +1058,14 @@ termsOfUse = view dbTermsOfUse
 
 setTermsOfUse :: Document -> AUpdate ()
 setTermsOfUse doc = void $ dbTermsOfUse <.= doc
+
+-- TODO: Implement
+wipeUserContent :: AUpdate ()
+wipeUserContent = do
+    -- Remove all the ides
+    -- Remove all the topics
+    -- Remove all the delegations which are topics
+    pure ()
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums
