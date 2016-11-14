@@ -149,7 +149,7 @@ module Persistent.Pure
     , dangerousRenameAllLogins
     , termsOfUse
     , setTermsOfUse
-    , wipeUserContent
+    , wipeIdeasAndTopics
 
     , TraverseMetas
     , commentMetas
@@ -1059,12 +1059,12 @@ termsOfUse = view dbTermsOfUse
 setTermsOfUse :: Document -> AUpdate ()
 setTermsOfUse doc = void $ dbTermsOfUse <.= doc
 
-wipeUserContent :: AUpdate ()
-wipeUserContent = do
+wipeIdeasAndTopics :: AUpdate ()
+wipeIdeasAndTopics = do
     topics <- use $ dbTopicMap . to Map.keys
     dbIdeaMap  .= Map.empty
     dbTopicMap .= Map.empty
-    forM_ topics $ \topic -> dbDelegations %= removeDelecationsByScope (DScopeTopicId topic)
+    forM_ topics $ \topic -> dbDelegations %= removeDelegationsByScope (DScopeTopicId topic)
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums
