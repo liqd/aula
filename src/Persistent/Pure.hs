@@ -149,6 +149,7 @@ module Persistent.Pure
     , dangerousRenameAllLogins
     , termsOfUse
     , setTermsOfUse
+    , wipeIdeasAndTopics
 
     , TraverseMetas
     , commentMetas
@@ -162,7 +163,7 @@ import Control.Lens
 import Control.Monad.Except (MonadError, ExceptT(ExceptT), runExceptT)
 import Control.Monad.Reader (MonadReader, runReader, asks)
 import Control.Monad.State (MonadState, gets, put)
-import Control.Monad (foldM, unless, when, replicateM, forM, filterM)
+import Control.Monad (foldM, unless, when, replicateM, forM, forM_, filterM)
 import Data.Acid.Core
 import Data.Acid.Memory.Pure (Event(UpdateEvent))
 import Data.Acid (UpdateEvent, EventState, EventResult)
@@ -1057,6 +1058,13 @@ termsOfUse = view dbTermsOfUse
 
 setTermsOfUse :: Document -> AUpdate ()
 setTermsOfUse doc = void $ dbTermsOfUse <.= doc
+
+wipeIdeasAndTopics :: AUpdate ()
+wipeIdeasAndTopics = do
+    topics <- use $ dbTopicMap . to Map.keys
+    dbIdeaMap  .= Map.empty
+    dbTopicMap .= Map.empty
+    forM_ topics $ \topic -> dbDelegations %= removeDelegationsByScope (DScopeTopicId topic)
 
 dbDurations :: Lens' AulaData Durations
 dbQuorums   :: Lens' AulaData Quorums

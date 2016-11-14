@@ -1,7 +1,8 @@
 SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --allow-different-user --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
-AULA_SOURCES=-isrc -itests -iexec -idist/build/autogen
+AULA_AUTOGEN_PATH=`dirname \`find ./.stack-work/ ./dist/build/ -path '*build/autogen/Paths_aula.hs'\``
+AULA_SOURCES=-isrc -itests -iexec -i$(AULA_AUTOGEN_PATH)
 AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.4
 
 .phony:
@@ -70,6 +71,11 @@ content-login: .phony
 	rm -f cookie-jar
 	[ "$(AULA_MK_CONTENT_URL)" != "" ] || ( echo "set with e.g. 'export AULA_MK_CONTENT_URL=http://localhost:8080'"; false )
 	curl -c cookie-jar -F /login.user=admin -F /login.pass=pssst $(AULA_MK_CONTENT_URL)/login
+
+test-wipe-ideas-and-topics:
+	make content-login
+	curl -b cookie-jar -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/wipe
+	rm -f cookie-jar
 
 content:
 	curl -XPOST $(AULA_MK_CONTENT_URL)/api/manage-state/create-init

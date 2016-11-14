@@ -60,7 +60,7 @@ type ManageStateApi =
 
 manageStateApi :: (GenArbitrary m, ActionM m) => ServerT ManageStateApi m
 manageStateApi =
-       runPostHandler (pure NeedAdmin) (update DangerousResetAulaData)
+       runPostHandler (pure NeedAdmin) (update WipeIdeasAndTopics)
   :<|> runPostHandler (pure NeedEmptyUserMap) genInitialTestDb
   :<|> runPostHandler (pure NeedAdmin) (void (mkUniverse defaultUniverseSize))
   :<|> runPostHandler (pure NeedAdmin) genVotingPhaseTopic
