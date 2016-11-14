@@ -8,6 +8,7 @@ module Data.Delegation
     , Delegate(..)
     , Delegations
     , emptyDelegations
+    , removeDelecationsByScope
     , setDelegation
     , deleteDelegation
     , delegates
@@ -95,6 +96,12 @@ data Delegations = Delegations {
 
 emptyDelegations :: Delegations
 emptyDelegations = Delegations (DelegationMap Map.empty) (CoDelegationMap Map.empty)
+
+removeDelecationsByScope :: DScope -> Delegations -> Delegations
+removeDelecationsByScope dscope (Delegations (DelegationMap dm) (CoDelegationMap codm)) =
+    Delegations
+        (DelegationMap   (Map.map (Map.delete dscope) dm))
+        (CoDelegationMap (Map.map (Map.delete dscope) codm))
 
 
 -- * delegation handling
