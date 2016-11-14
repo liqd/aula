@@ -1,7 +1,8 @@
 SHELL=/bin/bash
 EXEC=`test -d .stack-work/ && echo "stack exec --allow-different-user --" || echo "cabal exec --"`
 HLINT=$(EXEC) hlint
-AULA_SOURCES=-isrc -itests -iexec -idist/build/autogen
+AULA_AUTOGEN_PATH=`dirname \`find ./.stack-work/ ./dist/build/ -path '*build/autogen/Paths_aula.hs'\``
+AULA_SOURCES=-isrc -itests -iexec -i$(AULA_AUTOGEN_PATH)
 AULA_IMAGE=quay.io/liqd/aula:aula-docker-0.4
 
 .phony:
