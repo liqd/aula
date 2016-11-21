@@ -652,6 +652,7 @@ schoolClasses = SchoolClass <$> years <*> names
   where
     years = [theOnlySchoolYearHack]
     names = [ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ]
+         <> [ "___", "wef-wef", "wef-wef-wef", "---" ]
 
 instance Arbitrary ProtoTopic where
     arbitrary =

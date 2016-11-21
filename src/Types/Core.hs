@@ -163,7 +163,7 @@ usernameAllowedChar :: Char -> Bool
 usernameAllowedChar = (`elem` ['a'..'z']) . toLower
 
 classnameAllowedChar :: Char -> Bool
-classnameAllowedChar = (`elem` (['a'..'z'] <> ['0'..'9'] <> ['_'])) . toLower
+classnameAllowedChar = (`elem` (['a'..'z'] <> ['0'..'9'] <> ['_', '-'])) . toLower
 
 newtype UserFirstName = UserFirstName { _unUserFirstName :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
@@ -240,14 +240,19 @@ parseIdeaSpaceCode = \case
     ["school"] -> pure SchoolSpace
     xs         -> ClassSpace <$> parseSchoolClassCode xs
 
+parseIdeaSpaceCode' :: (IsString err, Monoid err) => ST -> Either err IdeaSpace
+parseIdeaSpaceCode' = parseIdeaSpaceCode . ST.splitOn "-"
+
 parseSchoolClassCode :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
 parseSchoolClassCode = \case
-    [year, name] -> (`SchoolClass` name) <$> readYear year
-    _:_:_:_      -> err "Too many parts (two parts expected)"
-    _            -> err "Too few parts (two parts expected)"
+    (year : name) -> (`SchoolClass` ST.intercalate "-" name) <$> readYear year
+    _             -> err "Too few parts (two parts expected)"
   where
     err msg = Left $ "Ill-formed school class: " <> msg
     readYear = maybe (err "Year should be only digits") Right . readMaybe . cs
+
+parseSchoolClassCode' :: (IsString err, Monoid err) => ST -> Either err SchoolClass
+parseSchoolClassCode' = parseSchoolClassCode . ST.splitOn "-"
 
 guestRole :: IdeaSpace -> Role
 guestRole = \case
@@ -807,7 +812,7 @@ instance ToHttpApiData IdeaSpace where
     toUrlPiece = cs . ideaSpaceCode
 
 instance FromHttpApiData IdeaSpace where
-    parseUrlPiece = parseIdeaSpaceCode . ST.splitOn "-"
+    parseUrlPiece = parseIdeaSpaceCode'
 
 
 -- | for the first school year, we can ignore the year.  (after that, we have different options.
@@ -820,7 +825,7 @@ instance HasUriPart SchoolClass where
     uriPart = fromString . schoolClassCode
 
 instance FromHttpApiData SchoolClass where
-    parseUrlPiece = parseSchoolClassCode . ST.splitOn "-"
+    parseUrlPiece = parseSchoolClassCode'
 
 
 -- ** delegations

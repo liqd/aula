@@ -230,7 +230,7 @@ classnameV :: StringFieldValidator
 classnameV = fieldParser
     (cs <$> manyNM minClassnameLength maxClassnameLength (satisfy classnameAllowedChar))
     (concat [ show minClassnameLength, "-"
-            , show maxClassnameLength, " Zeichen (0-9, a-z, A-Z, _)"])
+            , show maxClassnameLength, " Zeichen (0-9, a-z, A-Z, _, -)"])
   where
     minClassnameLength = 2
     maxClassnameLength = 40
