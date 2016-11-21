@@ -640,8 +640,8 @@ instance Arbitrary CommentWidget where
 -- * idea space, topic, phase
 
 instance Arbitrary IdeaSpace where
-    arbitrary = garbitrary
-    shrink    = gshrink
+    arbitrary = oneof [pure SchoolSpace, ClassSpace <$> arbitrary]
+    shrink _  = []
 
 instance Arbitrary SchoolClass where
     arbitrary = elements schoolClasses
@@ -650,8 +650,9 @@ instance Arbitrary SchoolClass where
 schoolClasses :: [SchoolClass]
 schoolClasses = SchoolClass <$> years <*> names
   where
-    years = [2016]
+    years = [theOnlySchoolYearHack]
     names = [ cs $ show age <> [branch] | age <- [5..12 :: Int], branch <- ['a'..'c'] ]
+         <> [ "___", "wef-wef", "wef-wef-wef", "---" ]
 
 instance Arbitrary ProtoTopic where
     arbitrary =

@@ -28,6 +28,7 @@ module Frontend.Validation
     , StringFieldValidator
     , usernameV'
     , usernameV
+    , classnameV
     , passwordV
     , titleV
     , markdownV
@@ -42,19 +43,16 @@ module Frontend.Validation
 where
 
 import Prelude hiding ((.))
-
 import Control.Arrow
 import Control.Category as Cat
-
 import Text.Digestive as DF
 import Text.Email.Validate as Email
 import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
+import qualified Data.Text as ST
 
 import Frontend.Constant
 import Frontend.Prelude as Frontend hiding ((<|>))
-
-import qualified Data.Text as ST
 
 
 type FieldName = String
@@ -227,6 +225,15 @@ passwordV = fieldParser
     (cs <$> manyNM minPasswordLength maxPasswordLength anyChar)
     (concat [ show minPasswordLength, "-"
             , show maxPasswordLength, " Zeichen"])
+
+classnameV :: StringFieldValidator
+classnameV = fieldParser
+    (cs <$> manyNM minClassnameLength maxClassnameLength (satisfy classnameAllowedChar))
+    (concat [ show minClassnameLength, "-"
+            , show maxClassnameLength, " Zeichen (0-9, a-z, A-Z, _, -)"])
+  where
+    minClassnameLength = 2
+    maxClassnameLength = 40
 
 titleV :: StringFieldValidator
 titleV = fieldParser (cs <$> many1 anyChar) "nicht leer"

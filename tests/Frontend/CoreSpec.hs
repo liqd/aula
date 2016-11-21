@@ -598,7 +598,7 @@ instance PayloadToEnv CreateUserPayload where
 -}
 
 instance ArbFormPagePayload AdminCreateClass where
-    arbFormPagePayload _ = BatchCreateUsersFormData <$> arbPhrase <*> arb
+    arbFormPagePayload _ = BatchCreateUsersFormData <$> (_className <$> (arb :: Gen SchoolClass)) <*> arb
 
 instance PayloadToEnv BatchCreateUsersFormData where
     payloadToEnvMapping _ _ (BatchCreateUsersFormData classname mfilepath) = \case
