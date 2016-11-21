@@ -246,6 +246,9 @@ parseIdeaSpaceCode' = parseIdeaSpaceCode . ST.splitOn "-"
 parseSchoolClassCode :: (IsString err, Monoid err) => [ST] -> Either err SchoolClass
 parseSchoolClassCode = \case
     (year : name) -> (`SchoolClass` ST.intercalate "-" name) <$> readYear year
+                      -- (splitOn-then-intercalate is not pretty, but there is nothing better
+                      -- fitting in the ST module for what we actually need here, and we don't want
+                      -- to spend time writing more aux functions, again.)
     _             -> err "Too few parts (two parts expected)"
   where
     err msg = Left $ "Ill-formed school class: " <> msg
