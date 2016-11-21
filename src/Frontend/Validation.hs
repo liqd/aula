@@ -42,19 +42,16 @@ module Frontend.Validation
 where
 
 import Prelude hiding ((.))
-
 import Control.Arrow
 import Control.Category as Cat
-
 import Text.Digestive as DF
 import Text.Email.Validate as Email
 import Text.Parsec as TP hiding (Reply(..))
 import Text.Parsec.Error
+import qualified Data.Text as ST
 
 import Frontend.Constant
 import Frontend.Prelude as Frontend hiding ((<|>))
-
-import qualified Data.Text as ST
 
 
 type FieldName = String
