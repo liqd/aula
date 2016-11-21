@@ -772,8 +772,7 @@ instance HasUILabel IdeaLocation where
     uilabel (IdeaLocationTopic s (AUID t)) = "Thema #" <> fromString (show t) <> " in " <> uilabel s
 
 
--- e.g.: ["Klasse 10a", "Klasse 7b", "Klasse 7a"]
---   ==> ["Klasse 7a", "Klasse 7b", "Klasse 10a"]
+-- e.g.: ["10a", "7b", "7a"] ==> ["7a", "7b", "10a"]
 instance Ord IdeaSpace where
     compare = compare `on` sortableName
       where
