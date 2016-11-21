@@ -162,6 +162,9 @@ mkUserLogin = UserLogin . ST.toLower
 usernameAllowedChar :: Char -> Bool
 usernameAllowedChar = (`elem` ['a'..'z']) . toLower
 
+classnameAllowedChar :: Char -> Bool
+classnameAllowedChar = (`elem` (['a'..'z'] <> ['0'..'9'] <> ['_'])) . toLower
+
 newtype UserFirstName = UserFirstName { _unUserFirstName :: ST }
   deriving (Eq, Ord, Show, Read, IsString, Monoid, Generic, FromHttpApiData)
 

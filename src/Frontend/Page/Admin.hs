@@ -865,12 +865,8 @@ instance FormPage AdminCreateClass where
     redirectOf _ _ = U.adminViewClasses
 
     makeForm _ = BatchCreateUsersFormData
-        <$> ("classname" .: classname (DF.string Nothing))
+        <$> ("classname" .: validate "Klasse" classnameV (DF.string Nothing))
         <*> ("file"      .: DF.file)
-      where
-        classname = validate
-            "Name der Klasse"
-            (fieldParser (cs <$> many1 anyChar) "nicht leer")
 
     formPage v form p = adminFrame p . semanticDiv p $ do
         h3_ "Klasse anlegen"
