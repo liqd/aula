@@ -161,7 +161,7 @@ instance HasSearchTerm Comment where
     hasSearchTerm c = hasSearchTerm (c ^. commentText, c ^. commentReplies)
 
 instance HasSearchTerm Idea where
-    hasSearchTerm i = hasSearchTerm (i ^. ideaTitle, i ^. ideaDesc, i ^. ideaComments)
+    hasSearchTerm i = hasSearchTerm (i ^. ideaTitle, i ^. ideaDesc)
 
 instance HasSearchTerm IdeaStats where
     hasSearchTerm i = hasSearchTerm (i ^. ideaStatsIdea)
