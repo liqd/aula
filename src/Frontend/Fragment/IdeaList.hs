@@ -144,7 +144,7 @@ ideaListHeader whatListPage ideasQuery = do
 
     div_ [class_ "clearfix"] $ do
         searchBox "has" (pathToIdeaListPage whatListPage (Just ideasQuery))
-                        (fromMaybe "TODO" (ideasQuery ^. ideasQueryT . unSearchTerm . from (non "")))
+                        (fromMaybe "Suchen" (ideasQuery ^. ideasQueryT . unSearchTerm . from (non "")))
         div_ [class_ "btn-settings pop-menu"] $ do
             i_ [class_ "icon-sort", title_ "Sortieren nach"] nil
             ul_ [class_ "pop-menu-list"] $ do
