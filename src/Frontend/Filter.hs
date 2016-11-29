@@ -168,7 +168,11 @@ instance HasSearchTerm IdeaStats where
 
 instance HasSearchTerm a => Filter (SearchTerm a) where
     type Filtered (SearchTerm a) = a
-    applyFilter                  = filter . flip hasSearchTerm
+    applyFilter  t  | t == nil   = id
+                    | otherwise  = filter prd
+        where
+            ts    = SearchTerm <$> ST.words (t ^. unSearchTerm)
+            prd x = all (hasSearchTerm x) ts
     renderFilter t  | t == nil   = id
                     | otherwise  = renderQueryParam t
 
@@ -259,6 +263,7 @@ makeLenses ''SearchUsers
 
 instance SOP.Generic SearchUsers
 
+-- NOTE: SearchUsers could be replaced by SearchTerm and an instance of HasSearchTerm.
 instance Filter SearchUsers where
     type Filtered SearchUsers = UserView
 
