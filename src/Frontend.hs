@@ -344,7 +344,7 @@ topicApi space
   where
     postH action tid = runPostHandler (NeedCap . fst <$> Action.topicCapCtx tid) $ action tid
 
-    viewTopicTab tab tid qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qf qs)) tid
+    viewTopicTab tab tid qt qf qs = runHandler $ Page.viewTopic (tab (mkIdeasQuery qt qf qs)) tid
 
 type AulaSpace
     =  IdeaApi
@@ -355,7 +355,7 @@ type AulaSpace
 aulaSpace :: ActionM m => IdeaSpace -> ServerT AulaSpace m
 aulaSpace space
     =  ideaApi (IdeaLocationSpace space)
-  :<|> (runHandler . Page.viewIdeas space) <..> mkIdeasQuery
+  :<|> (runHandler . Page.viewIdeas space) <...> mkIdeasQuery
   :<|> topicApi space
 
 type AulaUser =
@@ -370,7 +370,7 @@ type AulaUser =
 
 aulaUser :: forall m. ActionM m => AUID User -> ServerT AulaUser m
 aulaUser userId =
-       (runHandler . Page.createdIdeas userId) <..> mkIdeasQuery
+       (runHandler . Page.createdIdeas userId) <...> mkIdeasQuery
   :<|> runHandler (Page.userProfileUserAsDelegate userId)
   :<|> runHandler (Page.userProfileUserAsDelegatee userId)
   :<|> form (Page.editUserProfile userId)
